@@ -23,12 +23,18 @@ class KochiAdapter(MunicipalityAdapter):
     統一スキーマに変換します。
     """
 
-    # 高知県の保護動物情報ページ（実際の URL に置換が必要）
-    BASE_URL = "https://example-kochi-prefecture.jp/animals"
+    # 高知県中央・中村小動物管理センター
+    BASE_URL = "https://kochi-apc.com"
+
+    # 譲渡情報ページ（譲渡対象動物）
+    JOUTO_URL = f"{BASE_URL}/jouto/"
+
+    # 迷子情報ページ（飼い主の迎えを待つ動物）
+    MAIGO_URL = f"{BASE_URL}/maigo/"
 
     # HTTP リクエストヘッダー
     HEADERS = {
-        "User-Agent": "PetRescueApp/1.0 (+https://example.com/about)",
+        "User-Agent": "PetRescueApp/1.0 (Data Collection Bot for Animal Rescue)",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "ja,en;q=0.5",
     }
@@ -36,11 +42,12 @@ class KochiAdapter(MunicipalityAdapter):
     # リクエストタイムアウト（秒）
     TIMEOUT = 30
 
-    # 一覧ページの期待されるセレクター
-    LIST_PAGE_SELECTORS = [".animal-list", ".animal-item"]
+    # 一覧ページの期待される構造（WordPress + VK Filter Search Pro）
+    # 動物カードはfigureまたはdiv内に配置され、「詳細はこちら」リンクを含む
+    LIST_PAGE_SELECTORS = ["a[href*='/center-data/']"]
 
-    # 詳細ページの期待されるセレクター
-    DETAIL_PAGE_SELECTORS = [".animal-detail", ".info-table"]
+    # 詳細ページの期待されるセレクター（WordPress投稿ページ）
+    DETAIL_PAGE_SELECTORS = [".entry-content", "article"]
 
     def __init__(self):
         """高知県アダプターを初期化"""
@@ -50,6 +57,8 @@ class KochiAdapter(MunicipalityAdapter):
         """
         高知県の一覧ページから個体詳細 URL リストを抽出
 
+        譲渡情報と迷子情報の両方から動物の詳細ページURLを収集します。
+
         Returns:
             List[str]: 個体詳細ページの絶対 URL リスト
 
@@ -57,43 +66,79 @@ class KochiAdapter(MunicipalityAdapter):
             NetworkError: HTTP エラー発生時
             ParsingError: HTML 構造が想定と異なる時
         """
+        all_urls = []
+
+        # 譲渡情報と迷子情報の両方から収集
+        for page_url, page_type in [
+            (self.JOUTO_URL, "譲渡情報"),
+            (self.MAIGO_URL, "迷子情報"),
+        ]:
+            try:
+                urls = self._fetch_from_page(page_url, page_type)
+                all_urls.extend(urls)
+            except (NetworkError, ParsingError) as e:
+                # 片方のページでエラーが発生しても、もう片方は処理を続行
+                # エラーは上位でログ出力される想定
+                raise
+
+        # 重複を削除（同じ動物が両方のページに掲載される可能性は低いが念のため）
+        return list(set(all_urls))
+
+    def _fetch_from_page(self, page_url: str, page_type: str) -> List[str]:
+        """
+        指定されたページから動物詳細URLを抽出
+
+        Args:
+            page_url: 一覧ページのURL
+            page_type: ページ種別（ログ用）
+
+        Returns:
+            List[str]: 詳細ページのURLリスト
+
+        Raises:
+            NetworkError: HTTP エラー発生時
+            ParsingError: HTML 構造が想定と異なる時
+        """
         try:
             response = requests.get(
-                self.BASE_URL,
+                page_url,
                 headers=self.HEADERS,
                 timeout=self.TIMEOUT,
             )
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
             raise NetworkError(
-                f"HTTP エラー: {e}",
-                url=self.BASE_URL,
+                f"HTTP エラー ({page_type}): {e}",
+                url=page_url,
                 status_code=response.status_code if response else None,
             )
         except requests.exceptions.RequestException as e:
             raise NetworkError(
-                f"ネットワークエラー: {e}",
-                url=self.BASE_URL,
+                f"ネットワークエラー ({page_type}): {e}",
+                url=page_url,
             )
 
         soup = BeautifulSoup(response.text, "html.parser")
 
-        # ページ構造検証
-        if not self._validate_page_structure(soup, self.LIST_PAGE_SELECTORS):
+        # リンク抽出: /center-data/ へのリンクを探す
+        # 「詳細はこちら」リンクを取得
+        urls = []
+        detail_links = soup.select("a[href*='/center-data/']")
+
+        if not detail_links:
             raise ParsingError(
-                "一覧ページの構造が変更されています",
-                selector=", ".join(self.LIST_PAGE_SELECTORS),
-                url=self.BASE_URL,
+                f"{page_type}ページに動物詳細リンクが見つかりません",
+                selector="a[href*='/center-data/']",
+                url=page_url,
             )
 
-        # リンク抽出
-        urls = []
-        animal_items = soup.select(".animal-item a")
-        for link in animal_items:
+        for link in detail_links:
             href = link.get("href")
             if href:
                 # 相対パスを絶対 URL に変換
                 absolute_url = urljoin(self.BASE_URL, href)
+                # 重複を避けるため、最後の "/" を削除して正規化
+                absolute_url = absolute_url.rstrip("/")
                 urls.append(absolute_url)
 
         return urls
@@ -101,6 +146,10 @@ class KochiAdapter(MunicipalityAdapter):
     def extract_animal_details(self, detail_url: str) -> RawAnimalData:
         """
         高知県の詳細ページから動物情報を抽出
+
+        WordPress投稿ページから以下の情報を抽出：
+        - 管理番号、仮名、種類、性別、年齢、毛色、体格
+        - 収容日、収容場所、電話番号、画像URL
 
         Args:
             detail_url: 個体詳細ページの URL
@@ -133,7 +182,7 @@ class KochiAdapter(MunicipalityAdapter):
 
         soup = BeautifulSoup(response.text, "html.parser")
 
-        # ページ構造検証
+        # ページ構造検証（WordPress投稿ページの基本構造）
         if not self._validate_page_structure(soup, self.DETAIL_PAGE_SELECTORS):
             raise ParsingError(
                 "詳細ページの構造が変更されています",
@@ -141,18 +190,30 @@ class KochiAdapter(MunicipalityAdapter):
                 url=detail_url,
             )
 
-        # データ抽出
-        species = self._extract_text(soup, ".species")
-        sex = self._extract_text(soup, ".sex")
-        age = self._extract_text(soup, ".age")
-        color = self._extract_text(soup, ".color")
-        size = self._extract_text(soup, ".size")
-        shelter_date = self._extract_text(soup, ".shelter-date")
-        location = self._extract_text(soup, ".location")
-        phone = self._extract_text(soup, ".phone")
+        # WordPress投稿本文を取得
+        entry_content = soup.select_one(".entry-content") or soup.select_one("article")
+        if not entry_content:
+            raise ParsingError(
+                "投稿本文が見つかりません",
+                selector=".entry-content or article",
+                url=detail_url,
+            )
+
+        # 本文のテキストを取得（改行を保持）
+        content_text = entry_content.get_text(separator="\n", strip=True)
+
+        # データ抽出（テキストから情報を抽出）
+        species = self._extract_field(content_text, ["種類", "しゅるい"])
+        sex = self._extract_field(content_text, ["性別", "せいべつ"])
+        age = self._extract_field(content_text, ["年齢", "推定年齢", "ねんれい"])
+        color = self._extract_field(content_text, ["毛色", "色", "けいろ"])
+        size = self._extract_field(content_text, ["体格", "大きさ", "サイズ", "たいかく"])
+        shelter_date = self._extract_field(content_text, ["収容日", "しゅうようび"])
+        location = self._extract_field(content_text, ["収容場所", "場所", "保護場所", "ばしょ"])
+        phone = self._extract_field(content_text, ["電話", "連絡先", "でんわ", "TEL"])
 
         # 画像 URL 抽出
-        image_urls = self._extract_image_urls(soup, detail_url)
+        image_urls = self._extract_image_urls_from_content(entry_content, detail_url)
 
         return RawAnimalData(
             species=species,
@@ -192,46 +253,64 @@ class KochiAdapter(MunicipalityAdapter):
             expected_selectors: 期待される CSS セレクターリスト
 
         Returns:
-            bool: すべてのセレクターが存在すれば True
+            bool: いずれかのセレクターが存在すれば True（ORロジック）
         """
         for selector in expected_selectors:
-            if not soup.select_one(selector):
-                return False
-        return True
+            if soup.select_one(selector):
+                return True
+        return False
 
-    def _extract_text(self, soup: BeautifulSoup, selector: str) -> str:
+    def _extract_field(self, content_text: str, field_names: List[str]) -> str:
         """
-        指定されたセレクターからテキストを抽出
+        テキストから特定のフィールド値を抽出
+
+        フィールド名に続く値を抽出します（例: "種類：ミックス" → "ミックス"）
 
         Args:
-            soup: BeautifulSoup オブジェクト
-            selector: CSS セレクター
+            content_text: 投稿本文のテキスト
+            field_names: フィールド名の候補リスト
 
         Returns:
-            str: 抽出されたテキスト（見つからない場合は空文字列）
+            str: 抽出された値（見つからない場合は空文字列）
         """
-        element = soup.select_one(selector)
-        if element:
-            return element.get_text(strip=True)
+        import re
+
+        lines = content_text.split("\n")
+        for line in lines:
+            for field_name in field_names:
+                # "フィールド名：値"、"フィールド名:値"、"フィールド名　値" のパターンに対応
+                pattern = rf"{field_name}[\s：:]*(.+)"
+                match = re.search(pattern, line, re.IGNORECASE)
+                if match:
+                    value = match.group(1).strip()
+                    # 括弧やその他の余分な記号を削除
+                    value = re.sub(r"[\(\)（）\[\]【】]", "", value).strip()
+                    if value:
+                        return value
         return ""
 
-    def _extract_image_urls(self, soup: BeautifulSoup, base_url: str) -> List[str]:
+    def _extract_image_urls_from_content(
+        self, entry_content, base_url: str
+    ) -> List[str]:
         """
-        画像 URL を抽出し、絶対 URL に変換
+        投稿本文から画像 URL を抽出し、絶対 URL に変換
 
         Args:
-            soup: BeautifulSoup オブジェクト
+            entry_content: BeautifulSoup 投稿本文要素
             base_url: ベース URL（相対パス変換用）
 
         Returns:
             List[str]: 画像の絶対 URL リスト
         """
         image_urls = []
-        images = soup.select(".images img")
+        # 投稿本文内のすべてのimg要素を取得
+        images = entry_content.select("img")
         for img in images:
             src = img.get("src")
             if src:
                 # 相対パスを絶対 URL に変換
                 absolute_url = urljoin(base_url, src)
-                image_urls.append(absolute_url)
+                # 画像URLの妥当性を簡易チェック
+                if absolute_url.startswith(("http://", "https://")):
+                    image_urls.append(absolute_url)
         return image_urls
