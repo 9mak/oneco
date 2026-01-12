@@ -204,6 +204,20 @@ class DataNormalizer:
             date_obj = datetime(year, month, day).date()
             return date_obj.strftime("%Y-%m-%d")
 
+        # RN.M/D のパターン（例: R3.11/16 → 2021-11-16, R8.1/9 → 2026-01-09）
+        match = re.search(r'R(\d{1,2})\.(\d{1,2})/(\d{1,2})', date_str)
+        if match:
+            reiwa_year = int(match.group(1))
+            month = int(match.group(2))
+            day = int(match.group(3))
+
+            # 令和N年 = 2018 + N
+            year = 2018 + reiwa_year
+
+            # 日付の妥当性チェック
+            date_obj = datetime(year, month, day).date()
+            return date_obj.strftime("%Y-%m-%d")
+
         # YYYY/MM/DD のパターン
         match = re.search(r'(\d{4})/(\d{1,2})/(\d{1,2})', date_str)
         if match:

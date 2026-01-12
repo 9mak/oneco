@@ -46,8 +46,8 @@ class KochiAdapter(MunicipalityAdapter):
     # 動物カードはfigureまたはdiv内に配置され、「詳細はこちら」リンクを含む
     LIST_PAGE_SELECTORS = ["a[href*='/center-data/']"]
 
-    # 詳細ページの期待されるセレクター（WordPress投稿ページ）
-    DETAIL_PAGE_SELECTORS = [".entry-content", "article"]
+    # 詳細ページの期待される構造（定義リストまたはテーブル）
+    DETAIL_PAGE_SELECTORS = ["dl", "dt", "dd", "table", "body"]
 
     def __init__(self):
         """高知県アダプターを初期化"""
@@ -190,27 +190,40 @@ class KochiAdapter(MunicipalityAdapter):
                 url=detail_url,
             )
 
-        # WordPress投稿本文を取得
-        entry_content = soup.select_one(".entry-content") or soup.select_one("article")
+        # ページ本文を取得（body全体）
+        entry_content = soup.select_one("body")
         if not entry_content:
             raise ParsingError(
-                "投稿本文が見つかりません",
-                selector=".entry-content or article",
+                "body要素が見つかりません",
+                selector="body",
                 url=detail_url,
             )
 
-        # 本文のテキストを取得（改行を保持）
-        content_text = entry_content.get_text(separator="\n", strip=True)
-
-        # データ抽出（テキストから情報を抽出）
-        species = self._extract_field(content_text, ["種類", "しゅるい"])
-        sex = self._extract_field(content_text, ["性別", "せいべつ"])
-        age = self._extract_field(content_text, ["年齢", "推定年齢", "ねんれい"])
-        color = self._extract_field(content_text, ["毛色", "色", "けいろ"])
-        size = self._extract_field(content_text, ["体格", "大きさ", "サイズ", "たいかく"])
-        shelter_date = self._extract_field(content_text, ["収容日", "しゅうようび"])
-        location = self._extract_field(content_text, ["収容場所", "場所", "保護場所", "ばしょ"])
-        phone = self._extract_field(content_text, ["電話", "連絡先", "でんわ", "TEL"])
+        # 定義リストまたはテーブルから情報を抽出
+        species = self._extract_from_structured_data(
+            entry_content, ["品種", "種類", "しゅるい"]
+        )
+        sex = self._extract_from_structured_data(entry_content, ["性別", "せいべつ"])
+        age = self._extract_from_structured_data(
+            entry_content, ["年齢", "推定年齢", "ねんれい", "月齢"]
+        )
+        color = self._extract_from_structured_data(
+            entry_content, ["毛色", "色", "けいろ"]
+        )
+        size = self._extract_from_structured_data(
+            entry_content, ["体格", "大きさ", "サイズ", "たいかく"]
+        )
+        shelter_date = self._extract_from_structured_data(
+            entry_content, ["保護した日時", "保護日時", "収容日", "保護日", "しゅうようび"]
+        )
+        location = self._extract_from_structured_data(
+            entry_content, ["保護した場所", "保護場所", "収容場所", "場所", "ばしょ"]
+        )
+        # 電話番号は管轄保健所の情報に含まれている
+        phone = self._extract_from_structured_data(
+            entry_content,
+            ["管轄保健所", "電話", "連絡先", "でんわ", "TEL", "問い合わせ先"],
+        )
 
         # 画像 URL 抽出
         image_urls = self._extract_image_urls_from_content(entry_content, detail_url)
@@ -260,9 +273,110 @@ class KochiAdapter(MunicipalityAdapter):
                 return True
         return False
 
-    def _extract_field(self, content_text: str, field_names: List[str]) -> str:
+    def _extract_from_structured_data(self, content, field_names: List[str]) -> str:
         """
-        テキストから特定のフィールド値を抽出
+        構造化データ（定義リストまたはテーブル）から特定のフィールド値を抽出
+
+        Args:
+            content: BeautifulSoup要素
+            field_names: フィールド名の候補リスト
+
+        Returns:
+            str: 抽出された値（見つからない場合は空文字列）
+        """
+        # 定義リスト（dl/dt/dd）から抽出を試みる
+        value = self._extract_from_definition_list(content, field_names)
+        if value:
+            return value
+
+        # テーブル（table/tr/td）から抽出を試みる
+        value = self._extract_from_table(content, field_names)
+        if value:
+            return value
+
+        # フォールバック: テキストベースの抽出
+        return self._extract_field_from_text(
+            content.get_text(separator="\n", strip=True), field_names
+        )
+
+    def _extract_from_definition_list(
+        self, content, field_names: List[str]
+    ) -> str:
+        """
+        定義リスト（dl/dt/dd）から特定のフィールド値を抽出
+
+        Args:
+            content: BeautifulSoup要素
+            field_names: フィールド名の候補リスト
+
+        Returns:
+            str: 抽出された値（見つからない場合は空文字列）
+        """
+        # すべてのdtとddのペアを取得
+        dt_elements = content.select("dt")
+        for dt in dt_elements:
+            label = dt.get_text(strip=True)
+
+            # フィールド名と一致するか確認
+            for field_name in field_names:
+                if field_name in label:
+                    # 次のdd要素を取得
+                    dd = dt.find_next_sibling("dd")
+                    if dd:
+                        return dd.get_text(strip=True)
+
+        return ""
+
+    def _extract_from_table(self, content, field_names: List[str]) -> str:
+        """
+        テーブル構造から特定のフィールド値を抽出
+
+        テーブルの行（tr）から、ラベル（th/td）に一致する値（td）を抽出します。
+        例: <tr><th>品種</th><td>柴犬</td></tr> → "柴犬"
+        例: <tr><td>品種</td><td>柴犬</td></tr> → "柴犬"
+
+        Args:
+            content: BeautifulSoup要素
+            field_names: フィールド名の候補リスト
+
+        Returns:
+            str: 抽出された値（見つからない場合は空文字列）
+        """
+        # テーブル内のすべてのtrを取得
+        rows = content.select("tr")
+        for row in rows:
+            # th + td のパターンを試す
+            ths = row.select("th")
+            tds = row.select("td")
+
+            if len(ths) >= 1 and len(tds) >= 1:
+                # th（ラベル）とtd（値）のペア
+                label = ths[0].get_text(strip=True)
+                value = tds[0].get_text(strip=True)
+
+                # フィールド名と一致するか確認
+                for field_name in field_names:
+                    if field_name in label:
+                        return value
+
+            elif len(tds) >= 2:
+                # td + td のパターン（古い実装との互換性）
+                label = tds[0].get_text(strip=True)
+                value = tds[1].get_text(strip=True)
+
+                # フィールド名と一致するか確認
+                for field_name in field_names:
+                    if field_name in label:
+                        return value
+
+        # テーブルで見つからない場合、テキストベースのフォールバック
+        return self._extract_field_from_text(
+            content.get_text(separator="\n", strip=True), field_names
+        )
+
+    def _extract_field_from_text(self, content_text: str, field_names: List[str]) -> str:
+        """
+        テキストから特定のフィールド値を抽出（フォールバック用）
 
         フィールド名に続く値を抽出します（例: "種類：ミックス" → "ミックス"）
 
