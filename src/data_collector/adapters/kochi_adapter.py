@@ -245,6 +245,7 @@ class KochiAdapter(MunicipalityAdapter):
         """
         生データを統一スキーマに正規化
 
+        KochiAdapter固有のフォールバック処理を行い、
         DataNormalizer に処理を委譲します。
 
         Args:
@@ -253,6 +254,20 @@ class KochiAdapter(MunicipalityAdapter):
         Returns:
             AnimalData: 正規化済みデータ
         """
+        # locationが空の場合は「高知県」をフォールバック値として設定
+        if not raw_data.location:
+            raw_data = RawAnimalData(
+                species=raw_data.species,
+                sex=raw_data.sex,
+                age=raw_data.age,
+                color=raw_data.color,
+                size=raw_data.size,
+                shelter_date=raw_data.shelter_date,
+                location="高知県",
+                phone=raw_data.phone,
+                image_urls=raw_data.image_urls,
+                source_url=raw_data.source_url,
+            )
         return DataNormalizer.normalize(raw_data)
 
     def _validate_page_structure(

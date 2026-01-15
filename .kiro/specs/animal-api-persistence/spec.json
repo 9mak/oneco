@@ -1,0 +1,23 @@
+{
+  "feature_name": "animal-api-persistence",
+  "created_at": "2026-01-13T00:00:00Z",
+  "updated_at": "2026-01-14T08:00:00Z",
+  "language": "ja",
+  "phase": "tasks-generated",
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": true
+    },
+    "design": {
+      "generated": true,
+      "approved": true
+    },
+    "tasks": {
+      "generated": true,
+      "approved": true
+    }
+  },
+  "ready_for_implementation": true
+}
+

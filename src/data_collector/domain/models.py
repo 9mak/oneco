@@ -42,6 +42,7 @@ class AnimalData(BaseModel):
     # 必須フィールド
     species: str = Field(..., description="動物種別 ('犬', '猫', 'その他')")
     shelter_date: date = Field(..., description="収容日 (ISO 8601)")
+    location: str = Field(..., description="収容場所（最低限都道府県名）")
     source_url: HttpUrl = Field(..., description="元ページURL")
 
     # 準必須フィールド (不明値許容)
@@ -49,7 +50,6 @@ class AnimalData(BaseModel):
     age_months: Optional[int] = Field(default=None, description="推定年齢 (月単位)")
     color: Optional[str] = Field(default=None, description="毛色")
     size: Optional[str] = Field(default=None, description="体格")
-    location: Optional[str] = Field(default=None, description="収容場所")
     phone: Optional[str] = Field(default=None, description="電話番号 (ハイフン含む)")
     image_urls: List[HttpUrl] = Field(default_factory=list, description="画像URL一覧")
 

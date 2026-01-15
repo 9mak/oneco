@@ -244,6 +244,46 @@ class TestNormalizerIntegration:
         assert animal_data.sex == "不明"
         assert animal_data.age_months is None
         assert animal_data.shelter_date == date(2026, 1, 5)
+        # location が空の場合は "不明" にフォールバック
+        assert animal_data.location == "不明"
+
+    def test_normalize_location_fallback_to_unknown(self):
+        """location が空の場合は '不明' にフォールバック"""
+        raw_data = RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="2歳",
+            color="茶色",
+            size="中型",
+            shelter_date="令和8年1月5日",
+            location="",  # 空の location
+            phone="0881234567",
+            image_urls=["https://example.com/image1.jpg"],
+            source_url="https://example.com/dog"
+        )
+
+        animal_data = DataNormalizer.normalize(raw_data)
+
+        assert animal_data.location == "不明"
+
+    def test_normalize_location_preserved_when_valid(self):
+        """location が有効な値の場合はそのまま保持"""
+        raw_data = RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="2歳",
+            color="茶色",
+            size="中型",
+            shelter_date="令和8年1月5日",
+            location="高知県動物愛護センター",
+            phone="0881234567",
+            image_urls=["https://example.com/image1.jpg"],
+            source_url="https://example.com/dog"
+        )
+
+        animal_data = DataNormalizer.normalize(raw_data)
+
+        assert animal_data.location == "高知県動物愛護センター"
 
     def test_normalize_triggers_validation_error(self):
         """正規化後のデータが AnimalData のバリデーションを満たさない場合の動作確認"""

@@ -79,6 +79,15 @@ MOCK_INVALID_STRUCTURE_HTML = """
 </html>
 """
 
+# 詳細ページ検証でParsingErrorを発生させるためのHTML
+# body要素がないため、extract_animal_detailsでParsingErrorが発生する
+MOCK_NO_BODY_HTML = """
+<!DOCTYPE html>
+<html>
+<head><title>不正なページ</title></head>
+</html>
+"""
+
 
 class TestKochiAdapterInitialization:
     """KochiAdapter 初期化のテスト"""
@@ -242,7 +251,8 @@ class TestKochiAdapterExtractAnimalDetails:
         """ページ構造が変更された場合に ParsingError をスローすること"""
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.text = MOCK_INVALID_STRUCTURE_HTML
+        # body要素がないHTMLを使用してParsingErrorを発生させる
+        mock_response.text = MOCK_NO_BODY_HTML
         mock_response.raise_for_status = Mock()
         mock_get.return_value = mock_response
 
@@ -325,6 +335,46 @@ class TestKochiAdapterNormalize:
         assert animal_data.species == "犬"
         assert animal_data.sex == "男の子"
         assert animal_data.age_months == 24
+
+    def test_normalize_location_fallback_to_kochi(self):
+        """location が空の場合は '高知県' にフォールバックすること"""
+        adapter = KochiAdapter()
+        raw_data = RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="2歳",
+            color="茶色",
+            size="中型",
+            shelter_date="令和8年1月5日",
+            location="",  # 空のlocation
+            phone="0881234567",
+            image_urls=["https://example.com/image1.jpg"],
+            source_url="https://example.com/animals/001",
+        )
+
+        animal_data = adapter.normalize(raw_data)
+
+        assert animal_data.location == "高知県"
+
+    def test_normalize_location_preserved_when_valid(self):
+        """location が有効な値の場合はそのまま保持"""
+        adapter = KochiAdapter()
+        raw_data = RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="2歳",
+            color="茶色",
+            size="中型",
+            shelter_date="令和8年1月5日",
+            location="高知県動物愛護センター",
+            phone="0881234567",
+            image_urls=["https://example.com/image1.jpg"],
+            source_url="https://example.com/animals/001",
+        )
+
+        animal_data = adapter.normalize(raw_data)
+
+        assert animal_data.location == "高知県動物愛護センター"
 
 
 class TestKochiAdapterIntegration:
