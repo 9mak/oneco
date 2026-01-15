@@ -123,6 +123,7 @@ class TestAnimalData:
         animal_dog = AnimalData(
             species="犬",
             shelter_date=date(2026, 1, 5),
+            location="高知県",
             source_url="https://example.com/1"
         )
         assert animal_dog.species == "犬"
@@ -131,6 +132,7 @@ class TestAnimalData:
         animal_cat = AnimalData(
             species="猫",
             shelter_date=date(2026, 1, 5),
+            location="高知県",
             source_url="https://example.com/2"
         )
         assert animal_cat.species == "猫"
@@ -139,6 +141,7 @@ class TestAnimalData:
         animal_other = AnimalData(
             species="その他",
             shelter_date=date(2026, 1, 5),
+            location="高知県",
             source_url="https://example.com/3"
         )
         assert animal_other.species == "その他"
@@ -149,6 +152,7 @@ class TestAnimalData:
             AnimalData(
                 species="鳥",  # "犬", "猫", "その他" 以外は無効
                 shelter_date=date(2026, 1, 5),
+                location="高知県",
                 source_url="https://example.com/1"
             )
 
@@ -163,6 +167,7 @@ class TestAnimalData:
             species="犬",
             sex="男の子",
             shelter_date=date(2026, 1, 5),
+            location="高知県",
             source_url="https://example.com/1"
         )
         assert animal_male.sex == "男の子"
@@ -172,6 +177,7 @@ class TestAnimalData:
             species="猫",
             sex="女の子",
             shelter_date=date(2026, 1, 5),
+            location="高知県",
             source_url="https://example.com/2"
         )
         assert animal_female.sex == "女の子"
@@ -181,6 +187,7 @@ class TestAnimalData:
             species="その他",
             sex="不明",
             shelter_date=date(2026, 1, 5),
+            location="高知県",
             source_url="https://example.com/3"
         )
         assert animal_unknown.sex == "不明"
@@ -192,6 +199,7 @@ class TestAnimalData:
                 species="犬",
                 sex="オス",  # "男の子", "女の子", "不明" 以外は無効
                 shelter_date=date(2026, 1, 5),
+                location="高知県",
                 source_url="https://example.com/1"
             )
 
@@ -205,6 +213,7 @@ class TestAnimalData:
                 species="犬",
                 age_months=-5,  # 負値は無効
                 shelter_date=date(2026, 1, 5),
+                location="高知県",
                 source_url="https://example.com/1"
             )
 
@@ -217,6 +226,7 @@ class TestAnimalData:
             species="犬",
             age_months=None,
             shelter_date=date(2026, 1, 5),
+            location="高知県",
             source_url="https://example.com/1"
         )
         assert animal.age_months is None
@@ -227,6 +237,7 @@ class TestAnimalData:
         with pytest.raises(ValidationError) as exc_info:
             AnimalData(
                 shelter_date=date(2026, 1, 5),
+                location="高知県",
                 source_url="https://example.com/1"
             )
         assert any("species" in str(err["loc"]) for err in exc_info.value.errors())
@@ -235,15 +246,26 @@ class TestAnimalData:
         with pytest.raises(ValidationError) as exc_info:
             AnimalData(
                 species="犬",
+                location="高知県",
                 source_url="https://example.com/1"
             )
         assert any("shelter_date" in str(err["loc"]) for err in exc_info.value.errors())
+
+        # location が欠損
+        with pytest.raises(ValidationError) as exc_info:
+            AnimalData(
+                species="犬",
+                shelter_date=date(2026, 1, 5),
+                source_url="https://example.com/1"
+            )
+        assert any("location" in str(err["loc"]) for err in exc_info.value.errors())
 
         # source_url が欠損
         with pytest.raises(ValidationError) as exc_info:
             AnimalData(
                 species="犬",
-                shelter_date=date(2026, 1, 5)
+                shelter_date=date(2026, 1, 5),
+                location="高知県"
             )
         assert any("source_url" in str(err["loc"]) for err in exc_info.value.errors())
 
@@ -280,6 +302,7 @@ class TestAnimalData:
         animal = AnimalData(
             species="犬",
             shelter_date=date(2026, 1, 5),
+            location="高知県",  # location は必須フィールド
             source_url="https://example.com/1"
         )
 
@@ -289,11 +312,23 @@ class TestAnimalData:
         # age_months のデフォルトは None
         assert animal.age_months is None
 
-        # color, size, location, phone のデフォルトは None
+        # color, size, phone のデフォルトは None
         assert animal.color is None
         assert animal.size is None
-        assert animal.location is None
         assert animal.phone is None
 
         # image_urls のデフォルトは空リスト
         assert animal.image_urls == []
+
+    def test_location_is_required(self):
+        """location フィールドが必須であることを確認"""
+        with pytest.raises(ValidationError) as exc_info:
+            AnimalData(
+                species="犬",
+                shelter_date=date(2026, 1, 5),
+                source_url="https://example.com/1"
+                # location を意図的に省略
+            )
+
+        error = exc_info.value.errors()[0]
+        assert "location" in error["loc"]

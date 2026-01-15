@@ -3,6 +3,7 @@
 import sys
 import logging
 import os
+from typing import Optional
 
 from .orchestration.collector_service import CollectorService
 from .adapters.kochi_adapter import KochiAdapter
@@ -10,6 +11,8 @@ from .domain.diff_detector import DiffDetector
 from .infrastructure.snapshot_store import SnapshotStore
 from .infrastructure.output_writer import OutputWriter
 from .infrastructure.notification_client import NotificationClient
+from .infrastructure.database.connection import DatabaseConnection
+from .infrastructure.database.repository import AnimalRepository
 
 
 def main():
@@ -32,6 +35,9 @@ def main():
     )
     logger = logging.getLogger(__name__)
 
+    db_connection: Optional[DatabaseConnection] = None
+    repository: Optional[AnimalRepository] = None
+
     try:
         # 依存関係の初期化
         adapter = KochiAdapter()
@@ -46,13 +52,25 @@ def main():
         }
         notification_client = NotificationClient(notification_config)
 
+        # データベース接続（DATABASE_URL が設定されている場合）
+        database_url = os.environ.get("DATABASE_URL")
+        if database_url:
+            logger.info("Initializing database connection...")
+            db_connection = DatabaseConnection()
+            # 非同期セッションを取得してRepositoryを初期化
+            # Note: 実際の非同期セッションはrun_collection内で取得される
+            # ここではRepositoryのセッション取得はCollectorServiceの_save_to_databaseで行う
+            repository = None  # セッションは_save_to_database内で取得
+            logger.info("Database connection initialized")
+
         # CollectorService の初期化
         service = CollectorService(
             adapter=adapter,
             diff_detector=diff_detector,
             output_writer=output_writer,
             notification_client=notification_client,
-            snapshot_store=snapshot_store
+            snapshot_store=snapshot_store,
+            repository=repository
         )
 
         # 収集実行
@@ -78,6 +96,16 @@ def main():
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}", exc_info=True)
         sys.exit(1)
+
+    finally:
+        # データベース接続のクリーンアップ
+        if db_connection:
+            import asyncio
+            try:
+                asyncio.get_event_loop().run_until_complete(db_connection.close())
+                logger.info("Database connection closed")
+            except Exception as e:
+                logger.warning(f"Error closing database connection: {str(e)}")
 
 
 if __name__ == "__main__":

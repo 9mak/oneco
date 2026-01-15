@@ -56,7 +56,7 @@ class DataNormalizer:
             shelter_date=datetime.strptime(
                 DataNormalizer._normalize_date(raw_data.shelter_date), "%Y-%m-%d"
             ).date(),
-            location=raw_data.location if raw_data.location else None,
+            location=raw_data.location if raw_data.location else "不明",
             phone=DataNormalizer._normalize_phone(raw_data.phone),
             image_urls=image_urls_raw,
             source_url=raw_data.source_url

@@ -18,7 +18,8 @@ def create_animal(
     species: str = "犬",
     sex: str = "男の子",
     age_months: int = 24,
-    color: str = "茶色"
+    color: str = "茶色",
+    location: str = "高知県"
 ) -> AnimalData:
     """テスト用 AnimalData を作成するヘルパー"""
     return AnimalData(
@@ -27,6 +28,7 @@ def create_animal(
         age_months=age_months,
         color=color,
         shelter_date=date(2026, 1, 5),
+        location=location,
         source_url=source_url
     )
 

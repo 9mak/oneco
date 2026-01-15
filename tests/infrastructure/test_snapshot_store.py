@@ -89,11 +89,13 @@ class TestSnapshotStoreLoadSnapshot:
                 {
                     "species": "犬",
                     "shelter_date": "2026-01-05",
+                    "location": "高知県",
                     "source_url": "https://example.com/animals/001"
                 },
                 {
                     "species": "猫",
                     "shelter_date": "2026-01-06",
+                    "location": "高知県",
                     "source_url": "https://example.com/animals/002"
                 }
             ]
@@ -134,6 +136,7 @@ class TestSnapshotStoreSaveSnapshot:
             animal = AnimalData(
                 species="犬",
                 shelter_date=date(2026, 1, 5),
+                location="高知県",
                 source_url="https://example.com/animals/001"
             )
             store.save_snapshot([animal])
@@ -152,6 +155,7 @@ class TestSnapshotStoreSaveSnapshot:
                 sex="男の子",
                 age_months=24,
                 shelter_date=date(2026, 1, 5),
+                location="高知県",
                 source_url="https://example.com/animals/001"
             )
             store.save_snapshot([animal])
@@ -195,6 +199,7 @@ class TestSnapshotStoreSaveSnapshot:
             animal = AnimalData(
                 species="犬",
                 shelter_date=date(2026, 1, 5),
+                location="高知県",
                 source_url="https://example.com/animals/001"
             )
             store.save_snapshot([animal])
@@ -217,6 +222,7 @@ class TestSnapshotStoreSaveSnapshot:
             animal1 = AnimalData(
                 species="犬",
                 shelter_date=date(2026, 1, 5),
+                location="高知県",
                 source_url="https://example.com/animals/001"
             )
             store.save_snapshot([animal1])
@@ -225,6 +231,7 @@ class TestSnapshotStoreSaveSnapshot:
             animal2 = AnimalData(
                 species="猫",
                 shelter_date=date(2026, 1, 6),
+                location="高知県",
                 source_url="https://example.com/animals/002"
             )
             store.save_snapshot([animal2])
@@ -262,6 +269,7 @@ class TestSnapshotStoreRoundTrip:
                     sex="女の子",
                     age_months=12,
                     shelter_date=date(2026, 1, 6),
+                    location="高知県",
                     source_url="https://example.com/animals/002"
                 )
             ]

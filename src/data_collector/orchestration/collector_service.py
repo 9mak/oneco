@@ -1,10 +1,11 @@
 """収集オーケストレーションサービス"""
 
-from typing import List
+from typing import List, Optional, TYPE_CHECKING
 from pathlib import Path
 import logging
 import time
 import uuid
+import asyncio
 from pydantic import BaseModel
 
 from ..adapters.municipality_adapter import MunicipalityAdapter, NetworkError, ParsingError
@@ -13,6 +14,9 @@ from ..domain.models import AnimalData
 from ..infrastructure.output_writer import OutputWriter
 from ..infrastructure.notification_client import NotificationClient, NotificationLevel
 from ..infrastructure.snapshot_store import SnapshotStore
+
+if TYPE_CHECKING:
+    from ..infrastructure.database.repository import AnimalRepository
 
 
 class CollectionResult(BaseModel):
@@ -58,7 +62,8 @@ class CollectorService:
         diff_detector: DiffDetector,
         output_writer: OutputWriter,
         notification_client: NotificationClient,
-        snapshot_store: SnapshotStore
+        snapshot_store: SnapshotStore,
+        repository: Optional["AnimalRepository"] = None
     ):
         """
         CollectorService を初期化
@@ -69,12 +74,14 @@ class CollectorService:
             output_writer: JSON 出力サービス
             notification_client: 通知クライアント
             snapshot_store: スナップショットストア
+            repository: 動物データリポジトリ（オプション）
         """
         self.adapter = adapter
         self.diff_detector = diff_detector
         self.output_writer = output_writer
         self.notification_client = notification_client
         self.snapshot_store = snapshot_store
+        self.repository = repository
         self.logger = logging.getLogger(__name__)
         self._structure_changed = False
 
@@ -129,6 +136,10 @@ class CollectorService:
             # 新規データ通知
             if diff_result.new:
                 self.notification_client.notify_new_animals(diff_result.new)
+
+            # データベース永続化（Repositoryが設定されている場合）
+            if self.repository:
+                self._save_to_database(collected_data)
 
             # 出力
             output_path = self.output_writer.write_output(collected_data, diff_result)
@@ -288,3 +299,64 @@ class CollectorService:
             str: UUID 形式の実行 ID
         """
         return str(uuid.uuid4())
+
+    def _save_to_database(self, collected_data: List[AnimalData]) -> None:
+        """
+        収集データをデータベースに永続化
+
+        Args:
+            collected_data: 収集した動物データリスト
+
+        Note:
+            - 非同期Repositoryを同期的に呼び出す
+            - 個別のエラーはログに記録してスキップ
+            - 全体のエラーはアラートを送信
+        """
+        if not self.repository:
+            return
+
+        saved_count = 0
+        error_count = 0
+
+        for animal in collected_data:
+            try:
+                # 非同期メソッドを同期的に呼び出す
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # イベントループが実行中の場合は新しいスレッドで実行
+                    import concurrent.futures
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future = executor.submit(
+                            asyncio.run,
+                            self.repository.save_animal(animal)
+                        )
+                        future.result()
+                else:
+                    loop.run_until_complete(self.repository.save_animal(animal))
+                saved_count += 1
+            except Exception as e:
+                error_count += 1
+                self.logger.warning(
+                    f"Failed to save animal to database: {animal.source_url}",
+                    extra={"error": str(e)}
+                )
+
+        self.logger.info(
+            f"Database persistence completed",
+            extra={
+                "saved_count": saved_count,
+                "error_count": error_count
+            }
+        )
+
+        # エラーが多い場合はアラート送信
+        if error_count > 0 and error_count >= len(collected_data) / 2:
+            self.notification_client.send_alert(
+                NotificationLevel.WARNING,
+                "Database persistence errors",
+                {
+                    "prefecture": self.adapter.municipality_name,
+                    "saved_count": saved_count,
+                    "error_count": error_count
+                }
+            )

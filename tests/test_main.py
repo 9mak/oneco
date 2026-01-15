@@ -184,3 +184,80 @@ class TestCLI:
 
         # logging.basicConfig が呼ばれたことを確認
         mock_logging_config.assert_called_once()
+
+
+class TestCLIWithDatabase:
+    """DATABASE_URL 設定時の CLI テストケース"""
+
+    @patch.dict('os.environ', {'DATABASE_URL': 'postgresql+asyncpg://user:pass@localhost/test'})
+    @patch('src.data_collector.__main__.DatabaseConnection')
+    @patch('src.data_collector.__main__.AnimalRepository')
+    @patch('src.data_collector.__main__.CollectorService')
+    @patch('src.data_collector.__main__.KochiAdapter')
+    @patch('src.data_collector.__main__.SnapshotStore')
+    @patch('src.data_collector.__main__.DiffDetector')
+    @patch('src.data_collector.__main__.OutputWriter')
+    @patch('src.data_collector.__main__.NotificationClient')
+    def test_main_initializes_database_when_url_set(
+        self,
+        mock_notification_client_class,
+        mock_output_writer_class,
+        mock_diff_detector_class,
+        mock_snapshot_store_class,
+        mock_kochi_adapter_class,
+        mock_collector_service_class,
+        mock_repository_class,
+        mock_db_connection_class
+    ):
+        """DATABASE_URL 設定時に DatabaseConnection が初期化されることを確認"""
+        # モックの設定
+        mock_service = Mock()
+        mock_service.run_collection.return_value = CollectionResult(
+            success=True,
+            total_collected=0,
+            errors=[],
+            execution_time_seconds=0.1
+        )
+        mock_collector_service_class.return_value = mock_service
+
+        # main() を実行
+        with pytest.raises(SystemExit):
+            main()
+
+        # DatabaseConnection が初期化されたことを確認
+        mock_db_connection_class.assert_called_once()
+
+    @patch.dict('os.environ', {}, clear=True)
+    @patch('src.data_collector.__main__.CollectorService')
+    @patch('src.data_collector.__main__.KochiAdapter')
+    @patch('src.data_collector.__main__.SnapshotStore')
+    @patch('src.data_collector.__main__.DiffDetector')
+    @patch('src.data_collector.__main__.OutputWriter')
+    @patch('src.data_collector.__main__.NotificationClient')
+    def test_main_skips_database_when_url_not_set(
+        self,
+        mock_notification_client_class,
+        mock_output_writer_class,
+        mock_diff_detector_class,
+        mock_snapshot_store_class,
+        mock_kochi_adapter_class,
+        mock_collector_service_class
+    ):
+        """DATABASE_URL 未設定時は repository=None で CollectorService が作成されることを確認"""
+        # モックの設定
+        mock_service = Mock()
+        mock_service.run_collection.return_value = CollectionResult(
+            success=True,
+            total_collected=0,
+            errors=[],
+            execution_time_seconds=0.1
+        )
+        mock_collector_service_class.return_value = mock_service
+
+        # main() を実行
+        with pytest.raises(SystemExit):
+            main()
+
+        # CollectorService が repository=None で呼ばれたことを確認
+        call_kwargs = mock_collector_service_class.call_args[1]
+        assert call_kwargs.get('repository') is None
