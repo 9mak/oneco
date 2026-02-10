@@ -1,0 +1,78 @@
+# Ruff Configuration
+# https://docs.astral.sh/ruff/
+
+# Exclude patterns
+exclude = [
+    ".git",
+    ".github",
+    ".pytest_cache",
+    ".ruff_cache",
+    "__pycache__",
+    "venv",
+    "env",
+    "build",
+    "dist",
+    "*.egg-info",
+    "alembic/versions/*.py",  # Auto-generated migrations
+    "frontend/node_modules",
+]
+
+# Python version
+target-version = "py311"
+
+# Line length
+line-length = 100
+
+[lint]
+# Enable rules
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "DTZ", # flake8-datetimez
+    "T10", # flake8-debugger
+    "PL",  # pylint
+    "RUF", # ruff-specific rules
+]
+
+# Disable specific rules
+ignore = [
+    "E501",   # line-too-long (handled by formatter)
+    "PLR0913", # too-many-arguments
+    "PLR2004", # magic-value-comparison
+    "N805",   # first-argument-should-be-named-self (for Pydantic validators)
+]
+
+# Allow autofix for all enabled rules
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when prefixed with underscore
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[lint.per-file-ignores]
+# Ignore import errors in __init__.py files
+"__init__.py" = ["F401", "F403"]
+# Ignore assert statements in tests
+"tests/**/*.py" = ["S101", "PLR2004"]
+
+[lint.isort]
+# Import sorting configuration
+known-first-party = ["data_collector", "notification_manager", "syndication_service"]
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+
+[lint.pydocstyle]
+# Docstring convention
+convention = "google"
+
+[format]
+# Format configuration
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
