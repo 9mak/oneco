@@ -4,7 +4,7 @@
 高知県自治体サイトから保護動物情報をスクレイピングするアダプターです。
 """
 
-from typing import List
+from typing import List, Tuple
 from urllib.parse import urljoin
 
 import requests
@@ -32,6 +32,10 @@ class KochiAdapter(MunicipalityAdapter):
     # 迷子情報ページ（飼い主の迎えを待つ動物）
     MAIGO_URL = f"{BASE_URL}/maigo/"
 
+    # カテゴリ定数
+    CATEGORY_ADOPTION = "adoption"
+    CATEGORY_LOST = "lost"
+
     # HTTP リクエストヘッダー
     HEADERS = {
         "User-Agent": "PetRescueApp/1.0 (Data Collection Bot for Animal Rescue)",
@@ -53,14 +57,15 @@ class KochiAdapter(MunicipalityAdapter):
         """高知県アダプターを初期化"""
         super().__init__(prefecture_code="39", municipality_name="高知県")
 
-    def fetch_animal_list(self) -> List[str]:
+    def fetch_animal_list(self) -> List[Tuple[str, str]]:
         """
-        高知県の一覧ページから個体詳細 URL リストを抽出
+        高知県の一覧ページから個体詳細 URL とカテゴリのリストを抽出
 
-        譲渡情報と迷子情報の両方から動物の詳細ページURLを収集します。
+        譲渡情報と迷子情報の両方から動物の詳細ページURLとカテゴリを収集します。
 
         Returns:
-            List[str]: 個体詳細ページの絶対 URL リスト
+            List[Tuple[str, str]]: (個体詳細ページURL, category) のタプルリスト
+                category: 'adoption' (譲渡対象) または 'lost' (迷子)
 
         Raises:
             NetworkError: HTTP エラー発生時
@@ -69,13 +74,14 @@ class KochiAdapter(MunicipalityAdapter):
         all_urls = []
 
         # 譲渡情報と迷子情報の両方から収集
-        for page_url, page_type in [
-            (self.JOUTO_URL, "譲渡情報"),
-            (self.MAIGO_URL, "迷子情報"),
+        for page_url, page_type, category in [
+            (self.JOUTO_URL, "譲渡情報", self.CATEGORY_ADOPTION),
+            (self.MAIGO_URL, "迷子情報", self.CATEGORY_LOST),
         ]:
             try:
                 urls = self._fetch_from_page(page_url, page_type)
-                all_urls.extend(urls)
+                # 各URLにカテゴリを付与
+                all_urls.extend([(url, category) for url in urls])
             except (NetworkError, ParsingError) as e:
                 # 片方のページでエラーが発生しても、もう片方は処理を続行
                 # エラーは上位でログ出力される想定
@@ -143,19 +149,22 @@ class KochiAdapter(MunicipalityAdapter):
 
         return urls
 
-    def extract_animal_details(self, detail_url: str) -> RawAnimalData:
+    def extract_animal_details(
+        self, detail_url: str, category: str = "adoption"
+    ) -> RawAnimalData:
         """
         高知県の詳細ページから動物情報を抽出
 
         WordPress投稿ページから以下の情報を抽出：
         - 管理番号、仮名、種類、性別、年齢、毛色、体格
-        - 収容日、収容場所、電話番号、画像URL
+        - 収容日、収容場所、電話番号、画像URL、カテゴリ
 
         Args:
             detail_url: 個体詳細ページの URL
+            category: カテゴリ ('adoption' または 'lost')、デフォルトは 'adoption'
 
         Returns:
-            RawAnimalData: 抽出した生データ
+            RawAnimalData: 抽出した生データ（category を含む）
 
         Raises:
             NetworkError: HTTP エラー発生時
@@ -239,6 +248,7 @@ class KochiAdapter(MunicipalityAdapter):
             phone=phone,
             image_urls=image_urls,
             source_url=detail_url,
+            category=category,
         )
 
     def normalize(self, raw_data: RawAnimalData) -> AnimalData:
@@ -267,6 +277,7 @@ class KochiAdapter(MunicipalityAdapter):
                 phone=raw_data.phone,
                 image_urls=raw_data.image_urls,
                 source_url=raw_data.source_url,
+                category=raw_data.category,
             )
         return DataNormalizer.normalize(raw_data)
 

@@ -39,8 +39,9 @@ class TestNotificationClient:
                 location="高知県動物愛護センター",
                 phone="088-123-4567",
                 image_urls=["https://example.com/image1.jpg"],
-                source_url="https://example-kochi.jp/animals/123"
-            )
+                source_url="https://example-kochi.jp/animals/123",
+            category="adoption"
+        )
         ]
 
     def test_initialization_with_config(self, notification_config):

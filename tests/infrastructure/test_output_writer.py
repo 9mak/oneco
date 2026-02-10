@@ -35,8 +35,9 @@ class TestOutputWriter:
                 location="高知県動物愛護センター",
                 phone="088-123-4567",
                 image_urls=["https://example.com/image1.jpg"],
-                source_url="https://example-kochi.jp/animals/123"
-            ),
+                source_url="https://example-kochi.jp/animals/123",
+            category="adoption"
+        ),
             AnimalData(
                 species="猫",
                 sex="女の子",
@@ -47,8 +48,9 @@ class TestOutputWriter:
                 location="高知県動物愛護センター",
                 phone="088-123-4567",
                 image_urls=[],
-                source_url="https://example-kochi.jp/animals/124"
-            )
+                source_url="https://example-kochi.jp/animals/124",
+            category="adoption"
+        )
         ]
 
     @pytest.fixture

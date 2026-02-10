@@ -48,6 +48,11 @@ htmlcov/
 snapshots/
 output/
 
+# Environment variables
+.env
+.env.local
+.env.*.local
+
 # macOS
 .DS_Store
 

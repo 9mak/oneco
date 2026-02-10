@@ -18,7 +18,8 @@ from pathlib import Path
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 
-from src.data_collector.infrastructure.database.models import Animal, Base
+from src.data_collector.infrastructure.database.models import Animal, AnimalStatusHistory, Base
+from src.data_collector.domain.models import AnimalStatus
 from src.data_collector.infrastructure.database.repository import AnimalRepository
 from src.data_collector.infrastructure.api.app import create_app
 from src.data_collector.infrastructure.api.dependencies import get_session
@@ -66,6 +67,7 @@ def sample_animal_data_list():
             phone="088-123-4567",
             image_urls=["https://example.com/img1.jpg"],
             source_url="https://example-kochi.jp/animals/001",
+            category="adoption"
         ),
         AnimalData(
             species="猫",
@@ -78,6 +80,7 @@ def sample_animal_data_list():
             phone="088-999-8888",
             image_urls=["https://example.com/img2.jpg"],
             source_url="https://example-kochi.jp/animals/002",
+            category="adoption"
         ),
         AnimalData(
             species="犬",
@@ -90,6 +93,7 @@ def sample_animal_data_list():
             phone="088-111-2222",
             image_urls=[],
             source_url="https://example-kochi.jp/animals/003",
+            category="adoption"
         ),
     ]
 
@@ -159,6 +163,7 @@ class TestE2EDataPersistenceFlow:
             phone="088-123-4567",
             image_urls=["https://example.com/img1.jpg"],
             source_url="https://example-kochi.jp/animals/001",  # 同じURL
+            category="adoption"
         )
         await repository.save_animal(updated_data)
 
@@ -297,11 +302,11 @@ class TestE2ECollectorServiceFlow:
         adapter.prefecture_code = "39"
         adapter.municipality_name = "高知県"
 
-        # URLリストを返す
+        # URL-カテゴリのタプルリストを返す
         adapter.fetch_animal_list.return_value = [
-            "https://example-kochi.jp/animals/001",
-            "https://example-kochi.jp/animals/002",
-            "https://example-kochi.jp/animals/003",
+            ("https://example-kochi.jp/animals/001", "adoption"),
+            ("https://example-kochi.jp/animals/002", "adoption"),
+            ("https://example-kochi.jp/animals/003", "adoption"),
         ]
 
         # 詳細データを返す
@@ -404,3 +409,149 @@ class TestE2ECollectorServiceFlow:
         assert "https://example-kochi.jp/animals/001" in source_urls
         assert "https://example-kochi.jp/animals/002" in source_urls
         assert "https://example-kochi.jp/animals/003" in source_urls
+
+
+class TestE2EStatusManagementFlow:
+    """ステータス管理フローのE2Eテスト"""
+
+    @pytest.mark.asyncio
+    async def test_e2e_status_update_via_api(
+        self, repository, test_app, sample_animal_data_list
+    ):
+        """ステータス更新がAPI経由で正しく動作することを確認"""
+        # 1. データを保存
+        saved_animal = await repository.save_animal(sample_animal_data_list[0])
+
+        # 2. リストで取得してIDを確認
+        async with AsyncClient(
+            transport=ASGITransport(app=test_app), base_url="http://test"
+        ) as client:
+            list_response = await client.get("/animals")
+            items = list_response.json()["items"]
+            target_item = next(
+                (item for item in items if item["source_url"] == str(saved_animal.source_url)),
+                None
+            )
+            animal_id = target_item["id"]
+
+            # 3. ステータスを更新
+            update_response = await client.patch(
+                f"/animals/{animal_id}/status",
+                json={"status": "adopted"}
+            )
+
+        # 4. 検証
+        assert update_response.status_code == 200
+        data = update_response.json()
+        assert data["success"] is True
+        assert data["animal"]["status"] == "adopted"
+
+    @pytest.mark.asyncio
+    async def test_e2e_status_history_recorded(
+        self, repository, test_app, async_session, sample_animal_data_list
+    ):
+        """ステータス変更履歴が記録されることを確認"""
+        # 1. データを保存
+        saved_animal = await repository.save_animal(sample_animal_data_list[0])
+
+        # 2. リストで取得してIDを確認
+        async with AsyncClient(
+            transport=ASGITransport(app=test_app), base_url="http://test"
+        ) as client:
+            list_response = await client.get("/animals")
+            items = list_response.json()["items"]
+            target_item = next(
+                (item for item in items if item["source_url"] == str(saved_animal.source_url)),
+                None
+            )
+            animal_id = target_item["id"]
+
+            # 3. ステータスを複数回更新
+            await client.patch(
+                f"/animals/{animal_id}/status",
+                json={"status": "adopted"}
+            )
+            await client.patch(
+                f"/animals/{animal_id}/status",
+                json={"status": "returned"}
+            )
+
+        # 4. 履歴が記録されていることを確認
+        from sqlalchemy import select, func
+        stmt = select(func.count()).select_from(AnimalStatusHistory).where(
+            AnimalStatusHistory.animal_id == animal_id
+        )
+        result = await async_session.execute(stmt)
+        count = result.scalar()
+
+        assert count == 2
+
+    @pytest.mark.asyncio
+    async def test_e2e_status_filter_via_api(
+        self, repository, test_app, sample_animal_data_list
+    ):
+        """ステータスフィルタリングがAPI経由で正しく動作することを確認"""
+        # 1. データを保存
+        for animal_data in sample_animal_data_list:
+            await repository.save_animal(animal_data)
+
+        # 2. リストで取得してIDを確認し、一部をステータス変更
+        async with AsyncClient(
+            transport=ASGITransport(app=test_app), base_url="http://test"
+        ) as client:
+            list_response = await client.get("/animals")
+            items = list_response.json()["items"]
+
+            # 最初の動物を adopted に変更
+            await client.patch(
+                f"/animals/{items[0]['id']}/status",
+                json={"status": "adopted"}
+            )
+
+            # 3. ステータスでフィルタリング
+            sheltered_response = await client.get("/animals?status=sheltered")
+            adopted_response = await client.get("/animals?status=adopted")
+
+        # 4. 検証
+        sheltered_data = sheltered_response.json()
+        adopted_data = adopted_response.json()
+
+        assert sheltered_data["meta"]["total_count"] == 2
+        assert adopted_data["meta"]["total_count"] == 1
+        assert all(item["status"] == "sheltered" for item in sheltered_data["items"])
+        assert all(item["status"] == "adopted" for item in adopted_data["items"])
+
+    @pytest.mark.asyncio
+    async def test_e2e_invalid_status_transition_rejected(
+        self, repository, test_app, sample_animal_data_list
+    ):
+        """不正なステータス遷移がAPI経由で拒否されることを確認"""
+        # 1. データを保存
+        saved_animal = await repository.save_animal(sample_animal_data_list[0])
+
+        async with AsyncClient(
+            transport=ASGITransport(app=test_app), base_url="http://test"
+        ) as client:
+            # 2. リストで取得してIDを確認
+            list_response = await client.get("/animals")
+            items = list_response.json()["items"]
+            target_item = next(
+                (item for item in items if item["source_url"] == str(saved_animal.source_url)),
+                None
+            )
+            animal_id = target_item["id"]
+
+            # 3. deceased に変更
+            await client.patch(
+                f"/animals/{animal_id}/status",
+                json={"status": "deceased"}
+            )
+
+            # 4. deceased から sheltered への不正な遷移を試行
+            invalid_response = await client.patch(
+                f"/animals/{animal_id}/status",
+                json={"status": "sheltered"}
+            )
+
+        # 5. 検証 - 422 エラーが返される
+        assert invalid_response.status_code == 422

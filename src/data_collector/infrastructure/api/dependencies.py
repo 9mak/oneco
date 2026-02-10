@@ -8,7 +8,7 @@ FastAPI 依存性注入
 from typing import AsyncGenerator, Annotated
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.data_collector.infrastructure.api.app import db_connection
+import src.data_collector.infrastructure.api.app as app_module
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
@@ -24,7 +24,7 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
     Raises:
         DatabaseError: データベース接続エラー
     """
-    async with db_connection.get_session() as session:
+    async with app_module.db_connection.get_session() as session:
         yield session
 
 

@@ -53,6 +53,7 @@ def create_test_animal_data(index: int) -> AnimalData:
     species_list = ["犬", "猫", "その他"]
     sex_list = ["男の子", "女の子", "不明"]
     locations = ["高知県動物愛護センター", "高知市", "高知県", "南国市"]
+    categories = ["adoption", "lost"]
 
     return AnimalData(
         species=species_list[index % 3],
@@ -65,6 +66,7 @@ def create_test_animal_data(index: int) -> AnimalData:
         phone="088-123-4567",
         image_urls=[f"https://example.com/img{index}.jpg"],
         source_url=f"https://example.com/animal/{index}",
+        category=categories[index % 2],
     )
 
 
@@ -206,6 +208,7 @@ async def test_upsert_update_existing_performance(async_session):
             phone=animal_data.phone,
             image_urls=animal_data.image_urls,
             source_url=animal_data.source_url,
+            category=animal_data.category,
         )
         await repository.save_animal(animal_data)
 
