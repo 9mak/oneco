@@ -227,6 +227,52 @@ class TestOpenAPIDocumentation:
         assert "text/html" in response.headers["content-type"]
 
 
+class TestSyndicationRouteRegistration:
+    """syndication-service ルートが main app に登録されているかのテスト"""
+
+    @pytest.mark.asyncio
+    async def test_openapi_schema_contains_feeds_rss_endpoint(self, test_app):
+        """OpenAPIスキーマに /feeds/rss エンドポイントが含まれているか"""
+        async with AsyncClient(
+            transport=ASGITransport(app=test_app), base_url="http://test"
+        ) as client:
+            response = await client.get("/openapi.json")
+
+        schema = response.json()
+        paths = schema.get("paths", {})
+
+        assert "/feeds/rss" in paths
+        assert "get" in paths["/feeds/rss"]
+
+    @pytest.mark.asyncio
+    async def test_openapi_schema_contains_feeds_atom_endpoint(self, test_app):
+        """OpenAPIスキーマに /feeds/atom エンドポイントが含まれているか"""
+        async with AsyncClient(
+            transport=ASGITransport(app=test_app), base_url="http://test"
+        ) as client:
+            response = await client.get("/openapi.json")
+
+        schema = response.json()
+        paths = schema.get("paths", {})
+
+        assert "/feeds/atom" in paths
+        assert "get" in paths["/feeds/atom"]
+
+    @pytest.mark.asyncio
+    async def test_openapi_schema_contains_feeds_archive_endpoints(self, test_app):
+        """OpenAPIスキーマにアーカイブフィードエンドポイントが含まれているか"""
+        async with AsyncClient(
+            transport=ASGITransport(app=test_app), base_url="http://test"
+        ) as client:
+            response = await client.get("/openapi.json")
+
+        schema = response.json()
+        paths = schema.get("paths", {})
+
+        assert "/feeds/archive/rss" in paths
+        assert "/feeds/archive/atom" in paths
+
+
 class TestOpenAPIResponseSchemas:
     """OpenAPIレスポンススキーマの検証テスト"""
 

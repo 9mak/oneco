@@ -4,11 +4,30 @@
 このモジュールは data-collector のドメイン層のデータモデルを定義します:
 - RawAnimalData: 自治体サイトから抽出した正規化前の生データ
 - AnimalData: 統一スキーマに正規化された保護動物データ
+- AnimalStatus: 動物ステータスの列挙型
 """
 
 from typing import List, Optional
-from datetime import date
+from datetime import date, datetime
+from enum import Enum
 from pydantic import BaseModel, Field, field_validator, HttpUrl
+
+
+class AnimalStatus(str, Enum):
+    """
+    動物ステータス
+
+    保護動物の状態を表す列挙型。
+    - SHELTERED: 収容中
+    - ADOPTED: 譲渡済み
+    - RETURNED: 返還済み
+    - DECEASED: 死亡
+    """
+
+    SHELTERED = "sheltered"
+    ADOPTED = "adopted"
+    RETURNED = "returned"
+    DECEASED = "deceased"
 
 
 class RawAnimalData(BaseModel):
@@ -29,6 +48,7 @@ class RawAnimalData(BaseModel):
     phone: str = Field(..., description="電話番号 (正規化前)")
     image_urls: List[str] = Field(..., description="画像URL一覧")
     source_url: str = Field(..., description="元ページURL")
+    category: str = Field(..., description="カテゴリ ('adoption' or 'lost')")
 
 
 class AnimalData(BaseModel):
@@ -44,6 +64,7 @@ class AnimalData(BaseModel):
     shelter_date: date = Field(..., description="収容日 (ISO 8601)")
     location: str = Field(..., description="収容場所（最低限都道府県名）")
     source_url: HttpUrl = Field(..., description="元ページURL")
+    category: str = Field(..., description="カテゴリ ('adoption', 'lost')")
 
     # 準必須フィールド (不明値許容)
     sex: str = Field(default="不明", description="性別 ('男の子', '女の子', '不明')")
@@ -52,6 +73,24 @@ class AnimalData(BaseModel):
     size: Optional[str] = Field(default=None, description="体格")
     phone: Optional[str] = Field(default=None, description="電話番号 (ハイフン含む)")
     image_urls: List[HttpUrl] = Field(default_factory=list, description="画像URL一覧")
+
+    # 拡張フィールド (全てオプショナルで後方互換性を確保)
+    status: Optional[AnimalStatus] = Field(
+        default=None,
+        description="動物ステータス ('sheltered', 'adopted', 'returned', 'deceased')"
+    )
+    status_changed_at: Optional[datetime] = Field(
+        default=None,
+        description="ステータス変更日時"
+    )
+    outcome_date: Optional[date] = Field(
+        default=None,
+        description="成果日（譲渡日/返還日）"
+    )
+    local_image_paths: Optional[List[str]] = Field(
+        default=None,
+        description="ローカル保存された画像のパス一覧"
+    )
 
     @field_validator("species")
     @classmethod
@@ -112,6 +151,27 @@ class AnimalData(BaseModel):
         """
         if v is not None and v < 0:
             raise ValueError(f"年齢は負の値にできません: {v}")
+        return v
+
+    @field_validator("category")
+    @classmethod
+    def validate_category(cls, v: str) -> str:
+        """
+        カテゴリの2値制約バリデーション
+
+        Args:
+            v: カテゴリの値
+
+        Returns:
+            str: バリデーション済みのカテゴリ
+
+        Raises:
+            ValueError: 'adoption', 'lost' 以外の値が渡された場合
+        """
+        if v not in ["adoption", "lost"]:
+            raise ValueError(
+                f"無効なカテゴリ: {v}。'adoption', 'lost' のいずれかである必要があります"
+            )
         return v
 
     class Config:

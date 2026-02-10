@@ -63,7 +63,8 @@ class TestSnapshotStoreLoadSnapshot:
                     "location": "高知県動物愛護センター",
                     "phone": "088-123-4567",
                     "image_urls": ["https://example.com/image1.jpg"],
-                    "source_url": "https://example.com/animals/001"
+                    "source_url": "https://example.com/animals/001",
+                    "category": "adoption"
                 }
             ]
             with open(snapshot_file, "w", encoding="utf-8") as f:
@@ -90,13 +91,15 @@ class TestSnapshotStoreLoadSnapshot:
                     "species": "犬",
                     "shelter_date": "2026-01-05",
                     "location": "高知県",
-                    "source_url": "https://example.com/animals/001"
+                    "source_url": "https://example.com/animals/001",
+                    "category": "adoption"
                 },
                 {
                     "species": "猫",
                     "shelter_date": "2026-01-06",
                     "location": "高知県",
-                    "source_url": "https://example.com/animals/002"
+                    "source_url": "https://example.com/animals/002",
+                    "category": "adoption"
                 }
             ]
             with open(snapshot_file, "w", encoding="utf-8") as f:
@@ -137,8 +140,9 @@ class TestSnapshotStoreSaveSnapshot:
                 species="犬",
                 shelter_date=date(2026, 1, 5),
                 location="高知県",
-                source_url="https://example.com/animals/001"
-            )
+                source_url="https://example.com/animals/001",
+            category="adoption"
+        )
             store.save_snapshot([animal])
 
             snapshot_file = snapshot_dir / "latest.json"
@@ -156,8 +160,9 @@ class TestSnapshotStoreSaveSnapshot:
                 age_months=24,
                 shelter_date=date(2026, 1, 5),
                 location="高知県",
-                source_url="https://example.com/animals/001"
-            )
+                source_url="https://example.com/animals/001",
+            category="adoption"
+        )
             store.save_snapshot([animal])
 
             snapshot_file = snapshot_dir / "latest.json"
@@ -179,8 +184,9 @@ class TestSnapshotStoreSaveSnapshot:
                 species="犬",
                 location="高知県動物愛護センター",
                 shelter_date=date(2026, 1, 5),
-                source_url="https://example.com/animals/001"
-            )
+                source_url="https://example.com/animals/001",
+            category="adoption"
+        )
             store.save_snapshot([animal])
 
             snapshot_file = snapshot_dir / "latest.json"
@@ -200,8 +206,9 @@ class TestSnapshotStoreSaveSnapshot:
                 species="犬",
                 shelter_date=date(2026, 1, 5),
                 location="高知県",
-                source_url="https://example.com/animals/001"
-            )
+                source_url="https://example.com/animals/001",
+            category="adoption"
+        )
             store.save_snapshot([animal])
 
             snapshot_file = snapshot_dir / "latest.json"
@@ -223,8 +230,9 @@ class TestSnapshotStoreSaveSnapshot:
                 species="犬",
                 shelter_date=date(2026, 1, 5),
                 location="高知県",
-                source_url="https://example.com/animals/001"
-            )
+                source_url="https://example.com/animals/001",
+            category="adoption"
+        )
             store.save_snapshot([animal1])
 
             # 新しいデータで上書き
@@ -232,8 +240,9 @@ class TestSnapshotStoreSaveSnapshot:
                 species="猫",
                 shelter_date=date(2026, 1, 6),
                 location="高知県",
-                source_url="https://example.com/animals/002"
-            )
+                source_url="https://example.com/animals/002",
+            category="adoption"
+        )
             store.save_snapshot([animal2])
 
             # 読み込んで確認
@@ -262,16 +271,18 @@ class TestSnapshotStoreRoundTrip:
                     location="高知県動物愛護センター",
                     phone="088-123-4567",
                     image_urls=["https://example.com/image1.jpg"],
-                    source_url="https://example.com/animals/001"
-                ),
+                    source_url="https://example.com/animals/001",
+            category="adoption"
+        ),
                 AnimalData(
                     species="猫",
                     sex="女の子",
                     age_months=12,
                     shelter_date=date(2026, 1, 6),
                     location="高知県",
-                    source_url="https://example.com/animals/002"
-                )
+                    source_url="https://example.com/animals/002",
+            category="adoption"
+        )
             ]
 
             store.save_snapshot(original_animals)

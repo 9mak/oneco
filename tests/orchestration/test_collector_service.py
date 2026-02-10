@@ -3,6 +3,7 @@
 import pytest
 import asyncio
 from pathlib import Path
+from datetime import date
 from unittest.mock import Mock, patch, MagicMock, AsyncMock
 import time
 
@@ -13,6 +14,10 @@ from src.data_collector.orchestration.collector_service import (
 from src.data_collector.domain.models import AnimalData
 from src.data_collector.domain.diff_detector import DiffResult
 from src.data_collector.adapters.municipality_adapter import NetworkError, ParsingError
+from src.data_collector.infrastructure.notification_manager_client import (
+    NotificationManagerClient,
+    NotificationManagerConfig,
+)
 
 
 class TestCollectorService:
@@ -88,11 +93,12 @@ class TestCollectorService:
                 age_months=24,
                 color="茶色",
                 size="中型",
-                shelter_date="2026-01-05",
+                shelter_date=date(2026, 1, 5),
                 location="高知県動物愛護センター",
                 phone="088-123-4567",
                 image_urls=["https://example.com/image1.jpg"],
-                source_url="https://example-kochi.jp/animals/123"
+                source_url="https://example-kochi.jp/animals/123",
+                category="adoption"
             )
         ]
 
@@ -164,7 +170,7 @@ class TestCollectorService:
     ):
         """1回目の試行で成功することを確認"""
         mock_adapter.fetch_animal_list.return_value = [
-            "https://example-kochi.jp/animals/123"
+            (("https://example-kochi.jp/animals/123", "adoption"), "adoption")
         ]
         mock_adapter.extract_animal_details.return_value = Mock()
         mock_adapter.normalize.return_value = sample_animal_data[0]
@@ -184,7 +190,7 @@ class TestCollectorService:
         mock_adapter.fetch_animal_list.side_effect = [
             NetworkError("Network error"),
             NetworkError("Network error"),
-            ["https://example-kochi.jp/animals/123"]
+            [(("https://example-kochi.jp/animals/123", "adoption"), "adoption")]
         ]
         mock_adapter.extract_animal_details.return_value = Mock()
         mock_adapter.normalize.return_value = sample_animal_data[0]
@@ -236,7 +242,7 @@ class TestCollectorService:
         """収集フロー全体が正常に動作することを確認"""
         # アダプターのモック設定
         mock_adapter.fetch_animal_list.return_value = [
-            "https://example-kochi.jp/animals/123"
+            ("https://example-kochi.jp/animals/123", "adoption")
         ]
         mock_adapter.extract_animal_details.return_value = Mock()
         mock_adapter.normalize.return_value = sample_animal_data[0]
@@ -289,7 +295,7 @@ class TestCollectorService:
         """新規動物がある場合、通知が送信されることを確認"""
         # アダプターのモック設定
         mock_adapter.fetch_animal_list.return_value = [
-            "https://example-kochi.jp/animals/123"
+            ("https://example-kochi.jp/animals/123", "adoption")
         ]
         mock_adapter.extract_animal_details.return_value = Mock()
         mock_adapter.normalize.return_value = sample_animal_data[0]
@@ -317,7 +323,7 @@ class TestCollectorService:
         """実行ログが記録されることを確認"""
         # アダプターのモック設定
         mock_adapter.fetch_animal_list.return_value = [
-            "https://example-kochi.jp/animals/123"
+            ("https://example-kochi.jp/animals/123", "adoption")
         ]
         mock_adapter.extract_animal_details.return_value = Mock()
         mock_adapter.normalize.return_value = sample_animal_data[0]
@@ -337,7 +343,7 @@ class TestCollectorService:
         """実行時間が測定されることを確認"""
         # アダプターのモック設定
         mock_adapter.fetch_animal_list.return_value = [
-            "https://example-kochi.jp/animals/123"
+            ("https://example-kochi.jp/animals/123", "adoption")
         ]
         mock_adapter.extract_animal_details.return_value = Mock()
         mock_adapter.normalize.return_value = sample_animal_data[0]
@@ -434,11 +440,12 @@ class TestCollectorServiceWithRepository:
                 age_months=24,
                 color="茶色",
                 size="中型",
-                shelter_date="2026-01-05",
+                shelter_date=date(2026, 1, 5),
                 location="高知県動物愛護センター",
                 phone="088-123-4567",
                 image_urls=["https://example.com/image1.jpg"],
-                source_url="https://example-kochi.jp/animals/123"
+                source_url="https://example-kochi.jp/animals/123",
+                category="adoption"
             )
         ]
 
@@ -494,7 +501,7 @@ class TestCollectorServiceWithRepository:
     ):
         """収集後にRepositoryにデータが保存されることを確認"""
         mock_adapter.fetch_animal_list.return_value = [
-            "https://example-kochi.jp/animals/123"
+            ("https://example-kochi.jp/animals/123", "adoption")
         ]
         mock_adapter.extract_animal_details.return_value = Mock()
         mock_adapter.normalize.return_value = sample_animal_data[0]
@@ -516,7 +523,7 @@ class TestCollectorServiceWithRepository:
     ):
         """データベースエラー時にアラートが送信されることを確認"""
         mock_adapter.fetch_animal_list.return_value = [
-            "https://example-kochi.jp/animals/123"
+            ("https://example-kochi.jp/animals/123", "adoption")
         ]
         mock_adapter.extract_animal_details.return_value = Mock()
         mock_adapter.normalize.return_value = sample_animal_data[0]
@@ -528,3 +535,224 @@ class TestCollectorServiceWithRepository:
         assert result.success
         # データベースエラーはログに記録される（アラート送信）
         # 注: 現在の実装では個別のエラーはスキップされる
+
+
+class TestCollectorServiceWithNotificationManager:
+    """notification-manager 統合のテストケース"""
+
+    @pytest.fixture
+    def mock_adapter(self):
+        """モック MunicipalityAdapter"""
+        adapter = Mock()
+        adapter.prefecture_code = "39"
+        adapter.municipality_name = "高知県"
+        return adapter
+
+    @pytest.fixture
+    def mock_diff_detector(self):
+        """モック DiffDetector"""
+        detector = Mock()
+        detector.detect_diff.return_value = DiffResult(
+            new=[],
+            updated=[],
+            deleted_candidates=[]
+        )
+        return detector
+
+    @pytest.fixture
+    def mock_output_writer(self):
+        """モック OutputWriter"""
+        writer = Mock()
+        writer.write_output.return_value = Path("output/animals.json")
+        return writer
+
+    @pytest.fixture
+    def mock_notification_client(self):
+        """モック NotificationClient（Slack通知用）"""
+        return Mock()
+
+    @pytest.fixture
+    def mock_snapshot_store(self):
+        """モック SnapshotStore"""
+        store = Mock()
+        store.load_snapshot.return_value = []
+        return store
+
+    @pytest.fixture
+    def mock_notification_manager_client(self):
+        """モック NotificationManagerClient"""
+        client = Mock(spec=NotificationManagerClient)
+        client.notify_new_animals_sync.return_value = True
+        return client
+
+    @pytest.fixture
+    def sample_animal_data(self):
+        """サンプル AnimalData を作成"""
+        return [
+            AnimalData(
+                species="犬",
+                sex="男の子",
+                age_months=24,
+                color="茶色",
+                size="中型",
+                shelter_date=date(2026, 1, 5),
+                location="高知県動物愛護センター",
+                phone="088-123-4567",
+                image_urls=["https://example.com/image1.jpg"],
+                source_url="https://example-kochi.jp/animals/123",
+                category="adoption"
+            )
+        ]
+
+    @pytest.fixture
+    def collector_service_with_nm(
+        self,
+        tmp_path,
+        mock_adapter,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+        mock_notification_manager_client
+    ):
+        """notification-manager クライアント付き CollectorService"""
+        service = CollectorService(
+            adapter=mock_adapter,
+            diff_detector=mock_diff_detector,
+            output_writer=mock_output_writer,
+            notification_client=mock_notification_client,
+            snapshot_store=mock_snapshot_store,
+            notification_manager_client=mock_notification_manager_client
+        )
+        service.LOCK_FILE = tmp_path / ".collector.lock"
+        return service
+
+    def test_collector_service_accepts_notification_manager_client(
+        self,
+        tmp_path,
+        mock_adapter,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+        mock_notification_manager_client
+    ):
+        """notification_manager_client がオプショナルで渡せることを確認"""
+        service = CollectorService(
+            adapter=mock_adapter,
+            diff_detector=mock_diff_detector,
+            output_writer=mock_output_writer,
+            notification_client=mock_notification_client,
+            snapshot_store=mock_snapshot_store,
+            notification_manager_client=mock_notification_manager_client
+        )
+        assert service.notification_manager_client is mock_notification_manager_client
+
+    def test_collector_service_without_notification_manager(
+        self,
+        tmp_path,
+        mock_adapter,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store
+    ):
+        """notification_manager_client なしでも動作することを確認"""
+        service = CollectorService(
+            adapter=mock_adapter,
+            diff_detector=mock_diff_detector,
+            output_writer=mock_output_writer,
+            notification_client=mock_notification_client,
+            snapshot_store=mock_snapshot_store
+        )
+        assert service.notification_manager_client is None
+
+    def test_run_collection_notifies_notification_manager_on_new_animals(
+        self,
+        collector_service_with_nm,
+        mock_adapter,
+        mock_diff_detector,
+        mock_notification_manager_client,
+        sample_animal_data
+    ):
+        """新規動物がある場合、notification-manager に通知されることを確認"""
+        mock_adapter.fetch_animal_list.return_value = [
+            ("https://example-kochi.jp/animals/123", "adoption")
+        ]
+        mock_adapter.extract_animal_details.return_value = Mock()
+        mock_adapter.normalize.return_value = sample_animal_data[0]
+
+        # 差分検知で新規動物を検知
+        mock_diff_detector.detect_diff.return_value = DiffResult(
+            new=[sample_animal_data[0]],
+            updated=[],
+            deleted_candidates=[]
+        )
+
+        result = collector_service_with_nm.run_collection()
+
+        assert result.success
+        # notification-manager に通知されたことを確認
+        mock_notification_manager_client.notify_new_animals_sync.assert_called_once()
+        call_args = mock_notification_manager_client.notify_new_animals_sync.call_args[0][0]
+        assert len(call_args) == 1
+        assert call_args[0].species == "犬"
+
+    def test_run_collection_skips_notification_manager_when_no_new_animals(
+        self,
+        collector_service_with_nm,
+        mock_adapter,
+        mock_diff_detector,
+        mock_notification_manager_client,
+        sample_animal_data
+    ):
+        """新規動物がない場合、notification-manager に通知しないことを確認"""
+        mock_adapter.fetch_animal_list.return_value = [
+            ("https://example-kochi.jp/animals/123", "adoption")
+        ]
+        mock_adapter.extract_animal_details.return_value = Mock()
+        mock_adapter.normalize.return_value = sample_animal_data[0]
+
+        # 差分検知で新規なし
+        mock_diff_detector.detect_diff.return_value = DiffResult(
+            new=[],
+            updated=[sample_animal_data[0]],  # 更新のみ
+            deleted_candidates=[]
+        )
+
+        result = collector_service_with_nm.run_collection()
+
+        assert result.success
+        # notification-manager には通知されない
+        mock_notification_manager_client.notify_new_animals_sync.assert_not_called()
+
+    def test_run_collection_continues_on_notification_manager_error(
+        self,
+        collector_service_with_nm,
+        mock_adapter,
+        mock_diff_detector,
+        mock_notification_manager_client,
+        sample_animal_data
+    ):
+        """notification-manager エラー時も収集処理は継続することを確認"""
+        mock_adapter.fetch_animal_list.return_value = [
+            ("https://example-kochi.jp/animals/123", "adoption")
+        ]
+        mock_adapter.extract_animal_details.return_value = Mock()
+        mock_adapter.normalize.return_value = sample_animal_data[0]
+
+        # 差分検知で新規動物を検知
+        mock_diff_detector.detect_diff.return_value = DiffResult(
+            new=[sample_animal_data[0]],
+            updated=[],
+            deleted_candidates=[]
+        )
+
+        # notification-manager がエラーを返す
+        mock_notification_manager_client.notify_new_animals_sync.return_value = False
+
+        result = collector_service_with_nm.run_collection()
+
+        # 収集自体は成功（best-effort）
+        assert result.success
+        assert result.new_count == 1

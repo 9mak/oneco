@@ -6,7 +6,7 @@
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from ..domain.models import RawAnimalData, AnimalData
 
@@ -82,12 +82,13 @@ class MunicipalityAdapter(ABC):
         self.municipality_name = municipality_name
 
     @abstractmethod
-    def fetch_animal_list(self) -> List[str]:
+    def fetch_animal_list(self) -> List[Tuple[str, str]]:
         """
-        一覧ページから個体詳細ページの URL リストを取得
+        一覧ページから個体詳細ページの URL リストとカテゴリを取得
 
         Returns:
-            List[str]: 個体詳細ページの絶対 URL リスト
+            List[Tuple[str, str]]: (詳細ページURL, category) のタプルリスト
+                category: 'adoption' (譲渡対象) または 'lost' (迷子)
 
         Raises:
             NetworkError: HTTP エラー発生時
@@ -96,15 +97,18 @@ class MunicipalityAdapter(ABC):
         pass
 
     @abstractmethod
-    def extract_animal_details(self, detail_url: str) -> RawAnimalData:
+    def extract_animal_details(
+        self, detail_url: str, category: str = "adoption"
+    ) -> RawAnimalData:
         """
         個体詳細ページから動物情報を抽出
 
         Args:
             detail_url: 個体詳細ページの URL
+            category: カテゴリ ('adoption' または 'lost')、デフォルトは 'adoption'
 
         Returns:
-            RawAnimalData: 抽出した生データ
+            RawAnimalData: 抽出した生データ（category を含む）
 
         Raises:
             NetworkError: HTTP エラー発生時

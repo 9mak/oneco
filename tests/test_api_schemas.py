@@ -30,6 +30,7 @@ def test_animal_public_schema_from_dict():
         "phone": "088-123-4567",
         "image_urls": ["https://example.com/img1.jpg"],
         "source_url": "https://example.com/animal/1",
+        "category": "adoption",
     }
 
     animal = AnimalPublic(**data)
@@ -61,6 +62,7 @@ def test_animal_public_schema_from_orm():
         phone="088-999-8888",
         image_urls=["https://example.com/img2.jpg"],
         source_url="https://example.com/animal/2",
+        category="adoption",
     )
 
     animal = AnimalPublic.model_validate(orm_animal)
@@ -82,6 +84,7 @@ def test_animal_public_schema_optional_fields():
         "location": "高知県",
         "image_urls": [],
         "source_url": "https://example.com/animal/1",
+        "category": "adoption",
     }
 
     animal = AnimalPublic(**data)
@@ -100,6 +103,7 @@ def test_animal_public_schema_missing_required_fields():
         # shelter_date が欠損
         "location": "高知県",
         "source_url": "https://example.com/animal/1",
+        "category": "adoption"
     }
 
     with pytest.raises(ValidationError) as exc_info:
@@ -193,6 +197,7 @@ def test_paginated_response_schema():
             phone="088-123-4567",
             image_urls=["https://example.com/img1.jpg"],
             source_url="https://example.com/animal/1",
+            category="adoption",
         )
     ]
 
@@ -243,6 +248,7 @@ def test_animal_public_serialization_to_json():
         phone="088-123-4567",
         image_urls=["https://example.com/img1.jpg"],
         source_url="https://example.com/animal/1",
+        category="adoption",
     )
 
     json_data = animal.model_dump()
@@ -263,6 +269,7 @@ def test_animal_public_date_serialization():
         location="高知県",
         image_urls=[],
         source_url="https://example.com/animal/1",
+        category="adoption",
     )
 
     # model_dump(mode="json") で ISO 8601 形式になることを確認

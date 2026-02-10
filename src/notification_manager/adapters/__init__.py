@@ -1,0 +1,1 @@
+"""notification-manager アダプター層"""

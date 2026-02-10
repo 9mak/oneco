@@ -80,7 +80,45 @@ def create_app() -> FastAPI:
     )
 
     # ルーター登録
-    from src.data_collector.infrastructure.api.routes import router
+    from src.data_collector.infrastructure.api.routes import router, archive_router
     app.include_router(router)
+    app.include_router(archive_router)
+
+    # Syndication Service ルーター登録
+    from src.syndication_service.api.routes import create_syndication_router
+    from src.syndication_service.api.health import create_health_router
+    from src.syndication_service.services.feed_generator import FeedGenerator
+    from src.syndication_service.services.cache_manager import CacheManager
+    from src.syndication_service.services.metrics_collector import MetricsCollector
+    from src.syndication_service.middleware.rate_limiter import create_limiter, rate_limit_error_handler
+    from slowapi.errors import RateLimitExceeded
+    from slowapi.middleware import SlowAPIMiddleware
+
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    feed_generator = FeedGenerator()
+    cache_manager = CacheManager(redis_url=redis_url)
+    metrics_collector = MetricsCollector()
+
+    # Rate limiter 初期化（Redis 障害時は None → graceful degradation）
+    limiter = create_limiter(redis_url=redis_url)
+    if limiter:
+        app.state.limiter = limiter
+        app.add_exception_handler(RateLimitExceeded, rate_limit_error_handler)
+        app.add_middleware(SlowAPIMiddleware)
+
+    syndication_router = create_syndication_router(
+        feed_generator=feed_generator,
+        cache_manager=cache_manager,
+        metrics_collector=metrics_collector,
+        limiter=limiter
+    )
+    app.include_router(syndication_router, prefix="/feeds", tags=["syndication"])
+
+    # Health Check ルーター登録（syndication-service）
+    health_router = create_health_router(
+        metrics_collector=metrics_collector,
+        cache_manager=cache_manager
+    )
+    app.include_router(health_router, tags=["health"])
 
     return app

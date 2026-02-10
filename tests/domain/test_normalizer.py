@@ -152,6 +152,41 @@ class TestNormalizeDate:
         assert DataNormalizer._normalize_date("2026年1月5日") == "2026-01-05"
         assert DataNormalizer._normalize_date("2025年12月31日") == "2025-12-31"
 
+    def test_normalize_date_reiwa_space_format(self):
+        """令和略記（スペース区切り）を ISO 8601 に変換"""
+        # 全角スペース区切り
+        assert DataNormalizer._normalize_date("R6　9/27") == "2024-09-27"
+        assert DataNormalizer._normalize_date("R7　1/15") == "2025-01-15"
+        # 半角スペース区切り
+        assert DataNormalizer._normalize_date("R6 9/27") == "2024-09-27"
+        assert DataNormalizer._normalize_date("R7 1/15") == "2025-01-15"
+
+    def test_normalize_date_reiwa_space_with_time_suffix(self):
+        """時刻付き令和略記から日付のみ抽出"""
+        assert DataNormalizer._normalize_date("R7　8/27　午前10時頃") == "2025-08-27"
+        assert DataNormalizer._normalize_date("R6　9/27　午後3時頃") == "2024-09-27"
+
+    def test_normalize_date_month_day_only(self):
+        """月/日のみの場合、当年を補完"""
+        from datetime import datetime
+        current_year = datetime.now().year
+
+        assert DataNormalizer._normalize_date("4/30") == f"{current_year}-04-30"
+        assert DataNormalizer._normalize_date("6/17") == f"{current_year}-06-17"
+        assert DataNormalizer._normalize_date("12/1") == f"{current_year}-12-01"
+
+    def test_normalize_date_month_day_with_time_suffix(self):
+        """時刻付き月/日のみの場合、当年を補完"""
+        from datetime import datetime
+        current_year = datetime.now().year
+
+        assert DataNormalizer._normalize_date("1/31　午前10時頃") == f"{current_year}-01-31"
+
+    def test_normalize_date_reiwa_dot_format(self):
+        """RN.M/D 形式（ドット区切り）を ISO 8601 に変換"""
+        assert DataNormalizer._normalize_date("R3.11/16") == "2021-11-16"
+        assert DataNormalizer._normalize_date("R8.1/9") == "2026-01-09"
+
     def test_normalize_date_invalid_format(self):
         """無効な日付形式は ValueError をスロー"""
         with pytest.raises(ValueError):
@@ -208,6 +243,8 @@ class TestNormalizerIntegration:
             phone="0881234567",
             image_urls=["https://example.com/image1.jpg"],
             source_url="https://example-kochi.jp/animals/123"
+,
+            category="adoption"
         )
 
         animal_data = DataNormalizer.normalize(raw_data)
@@ -236,6 +273,8 @@ class TestNormalizerIntegration:
             phone="",
             image_urls=[],
             source_url="https://example.com/123"
+,
+            category="adoption"
         )
 
         animal_data = DataNormalizer.normalize(raw_data)
@@ -260,6 +299,8 @@ class TestNormalizerIntegration:
             phone="0881234567",
             image_urls=["https://example.com/image1.jpg"],
             source_url="https://example.com/dog"
+,
+            category="adoption"
         )
 
         animal_data = DataNormalizer.normalize(raw_data)
@@ -279,6 +320,8 @@ class TestNormalizerIntegration:
             phone="0881234567",
             image_urls=["https://example.com/image1.jpg"],
             source_url="https://example.com/dog"
+,
+            category="adoption"
         )
 
         animal_data = DataNormalizer.normalize(raw_data)
@@ -306,6 +349,8 @@ class TestNormalizerIntegration:
                     phone="088-111-2222",
                     image_urls=["https://example.com/cat.jpg"],
                     source_url="https://example.com/cat"
+,
+            category="lost"
                 ),
                 "expected": {
                     "species": "猫",
@@ -325,6 +370,8 @@ class TestNormalizerIntegration:
                     phone="09012345678",
                     image_urls=[],
                     source_url="https://example.com/dog"
+,
+            category="adoption"
                 ),
                 "expected": {
                     "species": "犬",
@@ -339,3 +386,47 @@ class TestNormalizerIntegration:
             assert animal_data.species == case["expected"]["species"]
             assert animal_data.sex == case["expected"]["sex"]
             assert animal_data.age_months == case["expected"]["age_months"]
+
+
+class TestNormalizeCategory:
+    """カテゴリパススルーのテスト"""
+
+    def test_normalize_category_adoption_passthrough(self):
+        """'adoption' カテゴリがそのままパススルーされることを確認"""
+        raw_data = RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="2歳",
+            color="茶色",
+            size="中型",
+            shelter_date="2026-01-05",
+            location="高知県",
+            phone="088-123-4567",
+            image_urls=["https://example.com/image.jpg"],
+            source_url="https://example.com/1",
+            category="adoption"
+        )
+
+        animal_data = DataNormalizer.normalize(raw_data)
+
+        assert animal_data.category == "adoption"
+
+    def test_normalize_category_lost_passthrough(self):
+        """'lost' カテゴリがそのままパススルーされることを確認"""
+        raw_data = RawAnimalData(
+            species="猫",
+            sex="メス",
+            age="1歳",
+            color="白",
+            size="小型",
+            shelter_date="2026-01-05",
+            location="高知県",
+            phone="088-123-4567",
+            image_urls=["https://example.com/image.jpg"],
+            source_url="https://example.com/2",
+            category="lost"
+        )
+
+        animal_data = DataNormalizer.normalize(raw_data)
+
+        assert animal_data.category == "lost"

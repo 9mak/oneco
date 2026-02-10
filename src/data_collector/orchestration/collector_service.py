@@ -14,6 +14,7 @@ from ..domain.models import AnimalData
 from ..infrastructure.output_writer import OutputWriter
 from ..infrastructure.notification_client import NotificationClient, NotificationLevel
 from ..infrastructure.snapshot_store import SnapshotStore
+from ..infrastructure.notification_manager_client import NotificationManagerClient
 
 if TYPE_CHECKING:
     from ..infrastructure.database.repository import AnimalRepository
@@ -63,7 +64,8 @@ class CollectorService:
         output_writer: OutputWriter,
         notification_client: NotificationClient,
         snapshot_store: SnapshotStore,
-        repository: Optional["AnimalRepository"] = None
+        repository: Optional["AnimalRepository"] = None,
+        notification_manager_client: Optional[NotificationManagerClient] = None
     ):
         """
         CollectorService を初期化
@@ -75,6 +77,7 @@ class CollectorService:
             notification_client: 通知クライアント
             snapshot_store: スナップショットストア
             repository: 動物データリポジトリ（オプション）
+            notification_manager_client: notification-manager クライアント（オプション）
         """
         self.adapter = adapter
         self.diff_detector = diff_detector
@@ -82,6 +85,7 @@ class CollectorService:
         self.notification_client = notification_client
         self.snapshot_store = snapshot_store
         self.repository = repository
+        self.notification_manager_client = notification_manager_client
         self.logger = logging.getLogger(__name__)
         self._structure_changed = False
 
@@ -133,9 +137,13 @@ class CollectorService:
                     {"prefecture": self.adapter.municipality_name}
                 )
 
-            # 新規データ通知
+            # 新規データ通知（運用者向け Slack）
             if diff_result.new:
                 self.notification_client.notify_new_animals(diff_result.new)
+
+            # notification-manager への通知（ユーザー向け LINE）
+            if diff_result.new and self.notification_manager_client:
+                self.notification_manager_client.notify_new_animals_sync(diff_result.new)
 
             # データベース永続化（Repositoryが設定されている場合）
             if self.repository:
@@ -220,26 +228,26 @@ class CollectorService:
 
         while retry_count < max_retries:
             try:
-                # 一覧ページから個体詳細 URL リストを取得
-                detail_urls = self.adapter.fetch_animal_list()
+                # 一覧ページから個体詳細 URL リストとカテゴリを取得
+                detail_url_category_pairs = self.adapter.fetch_animal_list()
 
                 # 各個体詳細ページから情報を抽出・正規化
                 collected_data = []
-                for url in detail_urls:
+                for url, category in detail_url_category_pairs:
                     try:
-                        raw_data = self.adapter.extract_animal_details(url)
+                        raw_data = self.adapter.extract_animal_details(url, category)
                         normalized_data = self.adapter.normalize(raw_data)
                         collected_data.append(normalized_data)
                     except NetworkError as e:
                         # 個別ページのネットワークエラーはスキップ
                         self.logger.warning(
-                            f"Failed to fetch detail page: {url}",
+                            f"Failed to fetch detail page: {url} (category: {category})",
                             extra={"error": str(e)}
                         )
                     except Exception as e:
                         # その他のエラーもスキップ（ベストエフォート）
                         self.logger.warning(
-                            f"Failed to process detail page: {url}",
+                            f"Failed to process detail page: {url} (category: {category})",
                             extra={"error": str(e)}
                         )
 

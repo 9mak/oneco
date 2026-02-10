@@ -59,7 +59,8 @@ class DataNormalizer:
             location=raw_data.location if raw_data.location else "不明",
             phone=DataNormalizer._normalize_phone(raw_data.phone),
             image_urls=image_urls_raw,
-            source_url=raw_data.source_url
+            source_url=raw_data.source_url,
+            category=raw_data.category
         )
 
     @staticmethod
@@ -204,8 +205,9 @@ class DataNormalizer:
             date_obj = datetime(year, month, day).date()
             return date_obj.strftime("%Y-%m-%d")
 
-        # RN.M/D のパターン（例: R3.11/16 → 2021-11-16, R8.1/9 → 2026-01-09）
-        match = re.search(r'R(\d{1,2})\.(\d{1,2})/(\d{1,2})', date_str)
+        # RN.M/D または RN　M/D または RN M/D のパターン
+        # （例: R3.11/16, R6　9/27, R6 9/27, R7　8/27　午前10時頃）
+        match = re.search(r'R(\d{1,2})[.\s\u3000](\d{1,2})/(\d{1,2})', date_str)
         if match:
             reiwa_year = int(match.group(1))
             month = int(match.group(2))
@@ -235,6 +237,18 @@ class DataNormalizer:
             year = int(match.group(1))
             month = int(match.group(2))
             day = int(match.group(3))
+
+            # 日付の妥当性チェック
+            date_obj = datetime(year, month, day).date()
+            return date_obj.strftime("%Y-%m-%d")
+
+        # M/D のパターン（年なし、当年を補完）
+        # （例: 4/30, 6/17, 1/31　午前10時頃）
+        match = re.search(r'^(\d{1,2})/(\d{1,2})', date_str)
+        if match:
+            month = int(match.group(1))
+            day = int(match.group(2))
+            year = datetime.now().year
 
             # 日付の妥当性チェック
             date_obj = datetime(year, month, day).date()
