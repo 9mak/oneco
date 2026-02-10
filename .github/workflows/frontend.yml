@@ -131,6 +131,7 @@ jobs:
         with:
           name: nextjs-build
           path: frontend/.next/
+          include-hidden-files: true
           retention-days: 1
 
   lighthouse:
