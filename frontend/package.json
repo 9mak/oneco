@@ -41,6 +41,7 @@
     "playwright": "^1.57.0",
     "tailwindcss": "^4",
     "typescript": "^5",
+    "@vitest/coverage-v8": "^4.0.17",
     "vitest": "^4.0.17"
   }
 }

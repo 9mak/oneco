@@ -3,7 +3,7 @@
  * axe-coreを使用したWCAG 2.1 AA準拠のアクセシビリティテスト
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { LoadingSpinner } from './LoadingSpinner';

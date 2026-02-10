@@ -15,8 +15,7 @@ afterEach(() => {
 // Mock Next.js Image component
 vi.mock('next/image', () => ({
   __esModule: true,
-  default: (props: any) => {
-    // eslint-disable-next-line jsx-a11y/alt-text, @next/next/no-img-element
+  default: (props: Record<string, unknown>) => {
     return React.createElement('img', props);
   },
 }));
@@ -24,7 +23,7 @@ vi.mock('next/image', () => ({
 // Mock Next.js Link component
 vi.mock('next/link', () => ({
   __esModule: true,
-  default: ({ children, href, ...props }: any) => {
+  default: ({ children, href, ...props }: { children?: React.ReactNode; href: string; [key: string]: unknown }) => {
     return React.createElement('a', { href, ...props }, children);
   },
 }));

@@ -1,11 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ImageGallery } from './ImageGallery';
 
 // ImageModalをモック
 vi.mock('./ImageModal', () => ({
-  ImageModal: ({ imageUrl, alt, onClose }: any) => (
+  ImageModal: ({ imageUrl, alt, onClose }: { imageUrl: string; alt: string; onClose: () => void }) => (
     <div data-testid="image-modal">
       <img src={imageUrl} alt={alt} />
       <button onClick={onClose}>Close</button>
@@ -26,6 +26,7 @@ describe('ImageGallery', () => {
   });
 
   it('画像配列がnullの場合、「画像がありません」メッセージが表示される', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     render(<ImageGallery imageUrls={null as any} alt="犬" />);
     expect(screen.getByText('画像がありません')).toBeInTheDocument();
   });

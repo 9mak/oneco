@@ -40,20 +40,6 @@ export function ImageGallery({ imageUrls, alt }: ImageGalleryProps) {
     setSelectedImageIndex(null);
   };
 
-  // 次の画像へ移動
-  const handleNextImage = () => {
-    if (selectedImageIndex !== null && selectedImageIndex < imageUrls.length - 1) {
-      setSelectedImageIndex(selectedImageIndex + 1);
-    }
-  };
-
-  // 前の画像へ移動
-  const handlePrevImage = () => {
-    if (selectedImageIndex !== null && selectedImageIndex > 0) {
-      setSelectedImageIndex(selectedImageIndex - 1);
-    }
-  };
-
   return (
     <div>
       {/* ギャラリーグリッド */}

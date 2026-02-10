@@ -23,13 +23,13 @@ vi.mock('next/navigation', () => ({
 
 // Mock CategoryBadge component
 vi.mock('@/components/ui/CategoryBadge', () => ({
-  CategoryBadge: ({ category }: any) =>
+  CategoryBadge: ({ category }: { category: string }) =>
     React.createElement('span', {}, category === 'adoption' ? '譲渡対象' : '迷子'),
 }));
 
 // Mock ImageGallery component
 vi.mock('./ImageGallery', () => ({
-  ImageGallery: ({ imageUrls, alt }: any) =>
+  ImageGallery: ({ imageUrls, alt }: { imageUrls: string[]; alt: string }) =>
     React.createElement(
       'div',
       { 'data-testid': 'image-gallery' },
@@ -40,7 +40,7 @@ vi.mock('./ImageGallery', () => ({
 
 // Mock ContactInfo component
 vi.mock('./ContactInfo', () => ({
-  ContactInfo: ({ location, phone, category }: any) =>
+  ContactInfo: ({ location, phone, category }: { location: string; phone: string; category: string }) =>
     React.createElement(
       'div',
       { 'data-testid': 'contact-info' },
@@ -52,7 +52,7 @@ vi.mock('./ContactInfo', () => ({
 
 // Mock ExternalLink component
 vi.mock('./ExternalLink', () => ({
-  ExternalLink: ({ sourceUrl }: any) =>
+  ExternalLink: ({ sourceUrl }: { sourceUrl: string }) =>
     React.createElement('a', { 'data-testid': 'external-link', href: sourceUrl }, '元のページを見る'),
 }));
 
