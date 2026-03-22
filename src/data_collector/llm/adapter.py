@@ -17,7 +17,7 @@ from ..adapters.municipality_adapter import MunicipalityAdapter, NetworkError
 from ..domain.models import AnimalData, RawAnimalData
 from ..domain.normalizer import DataNormalizer
 from .config import SiteConfig
-from .fetcher import PageFetcher, PlaywrightFetcher, StaticFetcher
+from .fetcher import PageFetcher, PdfFetcher, PlaywrightFetcher, StaticFetcher
 from .html_preprocessor import HtmlPreprocessor
 from .providers.base import ExtractionResult, LlmProvider
 
@@ -157,10 +157,13 @@ class LlmAdapter(MunicipalityAdapter):
         )
 
     def _fetch_page(self, url: str) -> str:
-        """URLからHTMLを取得"""
+        """URLからHTML（またはPDFテキスト）を取得"""
         if self._fetcher is not None:
             # テスト用インジェクション済みフェッチャーを使用
             return self._fetcher.fetch(url)
+        # .pdf で終わるURLはPdfFetcherを使用
+        if url.lower().endswith(".pdf"):
+            return PdfFetcher().fetch(url)
         if self.site_config.requires_js:
             fetcher: PageFetcher = PlaywrightFetcher(
                 wait_selector=self.site_config.wait_selector
@@ -174,6 +177,11 @@ class LlmAdapter(MunicipalityAdapter):
         if self.site_config.single_page:
             # 一覧ページ自体に動物情報が埋め込まれている（個別詳細ページなし）
             return [base_url]
+        if self.site_config.pdf_link_pattern:
+            # CSSセレクターでPDFリンクを抽出
+            return self._extract_urls_by_selector(
+                html, base_url, self.site_config.pdf_link_pattern
+            )
         if self.site_config.list_link_pattern:
             # CSSセレクターで抽出
             return self._extract_urls_by_selector(
