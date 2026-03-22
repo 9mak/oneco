@@ -19,7 +19,7 @@ sites:
     prefecture: "徳島県"
     prefecture_code: "36"
     list_url: "https://douai-tokushima.com/stray/"
-    category: "adoption"
+    category: "lost"
     requires_js: true
 
   # ===================================================================
@@ -33,14 +33,14 @@ sites:
     prefecture_code: "37"
     list_url: "https://www.city.takamatsu.kagawa.jp/udanimo/ani_infolist1.html?infotype=1&animaltype=1"
     list_link_pattern: "a[href*='ani_infodetail']"
-    category: "adoption"
+    category: "lost"
 
   - name: "高松市 わんにゃん高松（収容中猫）"
     prefecture: "香川県"
     prefecture_code: "37"
     list_url: "https://www.city.takamatsu.kagawa.jp/udanimo/ani_infolist1.html?infotype=1&animaltype=2"
     list_link_pattern: "a[href*='ani_infodetail']"
-    category: "adoption"
+    category: "lost"
 
   # 【さぬき動物愛護センター】PDF形式のため、HTMLスクレイピング不可。
   # Playwrightで動的PDFリンクの取得は可能だが、PDFパーサーが別途必要。
@@ -66,7 +66,7 @@ sites:
     prefecture: "愛媛県"
     prefecture_code: "38"
     list_url: "https://www.pref.ehime.jp/page/16976.html"
-    category: "adoption"
+    category: "lost"
     single_page: true
 
   # 【譲渡予定動物】健康管理済みで譲渡候補になった動物

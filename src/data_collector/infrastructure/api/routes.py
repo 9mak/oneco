@@ -50,10 +50,10 @@ async def list_animals(
     フィルタリング、ソート、ページネーション機能を提供します。
     """
     # カテゴリバリデーション
-    if category is not None and category not in ["adoption", "lost"]:
+    if category is not None and category not in ["adoption", "lost", "sheltered"]:
         raise HTTPException(
             status_code=400,
-            detail=f"無効なカテゴリ: {category}。'adoption', 'lost' のいずれかを指定してください"
+            detail=f"無効なカテゴリ: {category}。'adoption', 'lost', 'sheltered' のいずれかを指定してください"
         )
 
     # ステータスバリデーション

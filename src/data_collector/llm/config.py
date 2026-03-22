@@ -43,9 +43,9 @@ class SiteConfig(BaseModel):
     @field_validator("category")
     @classmethod
     def validate_category(cls, v: str) -> str:
-        if v not in ("adoption", "lost"):
+        if v not in ("adoption", "lost", "sheltered"):
             raise ValueError(
-                f"無効なカテゴリ: {v}。'adoption' または 'lost' を指定してください"
+                f"無効なカテゴリ: {v}。'adoption', 'lost' または 'sheltered' を指定してください"
             )
         return v
 

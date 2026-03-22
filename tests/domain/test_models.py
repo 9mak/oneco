@@ -450,6 +450,18 @@ class TestAnimalDataCategory:
 
         assert animal.category == "lost"
 
+    def test_animal_data_category_validates_sheltered(self):
+        """AnimalData が 'sheltered' カテゴリを受け入れることを確認"""
+        animal = AnimalData(
+            species="犬",
+            shelter_date=date(2026, 1, 5),
+            location="高知県",
+            source_url="https://example.com/3",
+            category="sheltered"
+        )
+
+        assert animal.category == "sheltered"
+
     def test_animal_data_category_rejects_invalid_values(self):
         """AnimalData が無効なカテゴリ値を拒否することを確認"""
         with pytest.raises(ValidationError) as exc_info:
@@ -463,7 +475,7 @@ class TestAnimalDataCategory:
 
         error = exc_info.value.errors()[0]
         assert "category" in error["loc"]
-        assert "adoption" in str(error["msg"]) or "lost" in str(error["msg"])
+        assert "adoption" in str(error["msg"]) or "lost" in str(error["msg"]) or "sheltered" in str(error["msg"])
 
 
 class TestAnimalStatus:
