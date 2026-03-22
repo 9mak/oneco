@@ -3,6 +3,8 @@
 import sys
 import logging
 import os
+import time
+from pathlib import Path
 from typing import Optional
 
 from .orchestration.collector_service import CollectorService
@@ -13,6 +15,101 @@ from .infrastructure.output_writer import OutputWriter
 from .infrastructure.notification_client import NotificationClient
 from .infrastructure.database.connection import DatabaseConnection
 from .infrastructure.database.repository import AnimalRepository
+from .llm.config import SiteConfigLoader, SitesConfig
+from .llm.adapter import LlmAdapter, validate_extraction
+from .llm.html_preprocessor import HtmlPreprocessor
+from .llm.providers.base import LlmProvider
+from .llm.providers.anthropic_provider import AnthropicProvider
+from .llm.providers.google_provider import GoogleProvider
+
+
+PROVIDER_REGISTRY = {
+    "anthropic": AnthropicProvider,
+    "google": GoogleProvider,
+}
+
+
+def create_provider(provider_name: str, model: str) -> LlmProvider:
+    """プロバイダーインスタンスを生成"""
+    cls = PROVIDER_REGISTRY.get(provider_name)
+    if cls is None:
+        supported = ", ".join(sorted(PROVIDER_REGISTRY.keys()))
+        raise ValueError(
+            f"未対応プロバイダー: {provider_name}。サポート対象: {supported}"
+        )
+    return cls(model=model)
+
+
+def run_llm_sites(
+    config: SitesConfig,
+    snapshot_store: SnapshotStore,
+    diff_detector: DiffDetector,
+    output_writer: OutputWriter,
+    notification_client: NotificationClient,
+    repository: Optional[AnimalRepository],
+    logger: logging.Logger,
+) -> bool:
+    """LLMベースのサイト群を収集"""
+    all_success = True
+
+    for site in config.sites:
+        if site.extraction != "llm":
+            continue
+
+        site_start = time.time()
+        logger.info(f"=== LLM収集開始: {site.name} ===")
+
+        try:
+            # プロバイダー解決
+            provider_name, model = SiteConfigLoader.resolve_provider(site, config)
+            provider = create_provider(provider_name, model)
+
+            # LlmAdapter生成
+            adapter = LlmAdapter(
+                site_config=site,
+                provider=provider,
+                preprocessor=HtmlPreprocessor(),
+            )
+
+            # CollectorServiceで実行
+            service = CollectorService(
+                adapter=adapter,
+                diff_detector=diff_detector,
+                output_writer=output_writer,
+                notification_client=notification_client,
+                snapshot_store=snapshot_store,
+                repository=repository,
+            )
+
+            result = service.run_collection()
+
+            elapsed = time.time() - site_start
+            adapter.log_stats()
+
+            if result.success:
+                logger.info(
+                    f"[{site.name}] 収集完了: "
+                    f"{result.total_collected}件, "
+                    f"新規{result.new_count}, "
+                    f"更新{result.updated_count}, "
+                    f"処理時間{elapsed:.1f}秒"
+                )
+            else:
+                logger.error(
+                    f"[{site.name}] 収集失敗: {', '.join(result.errors)}"
+                )
+                all_success = False
+
+        except Exception as e:
+            elapsed = time.time() - site_start
+            logger.error(
+                f"[{site.name}] エラー発生 ({elapsed:.1f}秒): {e}",
+                exc_info=True,
+            )
+            all_success = False
+            continue  # 他のサイトの処理を継続
+
+    return all_success
 
 
 def main():
@@ -21,12 +118,12 @@ def main():
 
     Usage:
         python -m data_collector
+        python -m data_collector --llm-only     # LLMサイトのみ
+        python -m data_collector --kochi-only    # 高知県のみ
 
     Exit codes:
         0: 成功
         1: 失敗
-
-    Requirements: 6.1
     """
     # ロギング設定
     logging.basicConfig(
@@ -38,67 +135,86 @@ def main():
     db_connection: Optional[DatabaseConnection] = None
     repository: Optional[AnimalRepository] = None
 
+    # コマンドライン引数
+    args = sys.argv[1:]
+    llm_only = "--llm-only" in args
+    kochi_only = "--kochi-only" in args
+
     try:
-        # 依存関係の初期化
-        adapter = KochiAdapter()
+        # 共通依存
         snapshot_store = SnapshotStore()
         diff_detector = DiffDetector(snapshot_store)
         output_writer = OutputWriter()
 
-        # 通知設定を環境変数から読み込み
         notification_config = {
             "email": os.environ.get("NOTIFICATION_EMAIL", ""),
             "slack_webhook_url": os.environ.get("SLACK_WEBHOOK_URL", "")
         }
         notification_client = NotificationClient(notification_config)
 
-        # データベース接続（DATABASE_URL が設定されている場合）
         database_url = os.environ.get("DATABASE_URL")
         if database_url:
             logger.info("Initializing database connection...")
             db_connection = DatabaseConnection()
-            # 非同期セッションを取得してRepositoryを初期化
-            # Note: 実際の非同期セッションはrun_collection内で取得される
-            # ここではRepositoryのセッション取得はCollectorServiceの_save_to_databaseで行う
-            repository = None  # セッションは_save_to_database内で取得
+            repository = None
             logger.info("Database connection initialized")
 
-        # CollectorService の初期化
-        service = CollectorService(
-            adapter=adapter,
-            diff_detector=diff_detector,
-            output_writer=output_writer,
-            notification_client=notification_client,
-            snapshot_store=snapshot_store,
-            repository=repository
-        )
+        success = True
 
-        # 収集実行
-        logger.info("Starting data collection...")
-        result = service.run_collection()
+        # === 高知県（ルールベース） ===
+        if not llm_only:
+            logger.info("=== 高知県（ルールベース）収集開始 ===")
+            adapter = KochiAdapter()
+            service = CollectorService(
+                adapter=adapter,
+                diff_detector=diff_detector,
+                output_writer=output_writer,
+                notification_client=notification_client,
+                snapshot_store=snapshot_store,
+                repository=repository
+            )
+            result = service.run_collection()
 
-        # 結果ログ出力
-        if result.success:
-            logger.info(
-                f"Collection completed successfully: "
-                f"{result.total_collected} animals collected, "
-                f"{result.new_count} new, "
-                f"{result.updated_count} updated, "
-                f"{result.deleted_count} deleted candidates"
-            )
-            sys.exit(0)
-        else:
-            logger.error(
-                f"Collection failed: {', '.join(result.errors)}"
-            )
-            sys.exit(1)
+            if result.success:
+                logger.info(
+                    f"高知県収集完了: {result.total_collected}件, "
+                    f"新規{result.new_count}, 更新{result.updated_count}"
+                )
+            else:
+                logger.error(f"高知県収集失敗: {', '.join(result.errors)}")
+                success = False
+
+        # === LLMサイト群 ===
+        if not kochi_only:
+            config_path = Path(__file__).parent / "config" / "sites.yaml"
+            if config_path.exists():
+                config = SiteConfigLoader.load(config_path)
+                logger.info(
+                    f"LLMサイト設定読込: {len(config.sites)}サイト "
+                    f"(provider={config.extraction.default_provider}, "
+                    f"model={config.extraction.default_model})"
+                )
+                llm_success = run_llm_sites(
+                    config=config,
+                    snapshot_store=snapshot_store,
+                    diff_detector=diff_detector,
+                    output_writer=output_writer,
+                    notification_client=notification_client,
+                    repository=repository,
+                    logger=logger,
+                )
+                if not llm_success:
+                    success = False
+            else:
+                logger.info("LLMサイト設定なし（sites.yaml が見つかりません）")
+
+        sys.exit(0 if success else 1)
 
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}", exc_info=True)
         sys.exit(1)
 
     finally:
-        # データベース接続のクリーンアップ
         if db_connection:
             import asyncio
             try:

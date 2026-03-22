@@ -6,8 +6,13 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**.kochi-apc.com', // 高知県動物愛護センター
-        pathname: '/images/**',
+        hostname: 'kochi-apc.com', // 高知県中央・中村小動物管理センター
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.kochi-apc.com',
+        pathname: '/**',
       },
       // 将来的に他の都道府県ドメインを追加
     ],
@@ -22,7 +27,13 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; img-src 'self' https://*.kochi-apc.com; script-src 'self' 'unsafe-inline' 'unsafe-eval';",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: https://*.kochi-apc.com",
+              `connect-src 'self' ${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}`,
+            ].join('; '),
           },
         ],
       },

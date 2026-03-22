@@ -1,9 +1,9 @@
 {
   "feature_name": "animal-repository",
   "created_at": "2026-01-06T15:50:00+09:00",
-  "updated_at": "2026-01-27T15:00:00+09:00",
+  "updated_at": "2026-03-13T00:00:00+09:00",
   "language": "ja",
-  "phase": "tasks-generated",
+  "phase": "implementation-completed",
   "approvals": {
     "requirements": {
       "generated": true,
@@ -18,5 +18,23 @@
       "approved": true
     }
   },
-  "ready_for_implementation": true
+  "ready_for_implementation": true,
+  "implementation": {
+    "completed": true,
+    "completion_date": "2026-03-13T00:00:00+09:00",
+    "tests_passing": true,
+    "test_count": 753,
+    "core_features_implemented": true,
+    "features": [
+      "AnimalStatus 列挙型とステータス管理（sheltered/adopted/returned/deceased）",
+      "StatusTransitionValidator によるステータス遷移検証",
+      "StatusHistoryRepository によるステータス変更履歴記録",
+      "AnimalRepository.update_status() トランザクション原子的更新",
+      "LocalImageStorage + ImageStorageService による画像永続化",
+      "ArchiveService + APScheduler による自動アーカイブ（180日保持）",
+      "AnimalMetricsCollector によるメトリクス収集・日次レポート",
+      "PATCH /animals/{id}/status API エンドポイント",
+      "GET /archive/animals アーカイブ参照 API"
+    ]
+  }
 }
