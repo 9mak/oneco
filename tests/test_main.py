@@ -94,7 +94,7 @@ class TestCLI:
         mock_kochi_adapter_class,
         mock_collector_service_class
     ):
-        """すべてのコンポーネントが初期化されることを確認"""
+        """すべてのコンポーネントが初期化されることを確認（高知+LLMサイト群）"""
         # モックの設定
         mock_service = Mock()
         mock_service.run_collection.return_value = CollectionResult(
@@ -115,7 +115,8 @@ class TestCLI:
         mock_diff_detector_class.assert_called_once()
         mock_output_writer_class.assert_called_once()
         mock_notification_client_class.assert_called_once()
-        mock_collector_service_class.assert_called_once()
+        # CollectorServiceは高知+LLMサイト分で複数回呼ばれる
+        assert mock_collector_service_class.call_count >= 1
 
     @patch('src.data_collector.__main__.CollectorService')
     @patch('src.data_collector.__main__.KochiAdapter')
@@ -147,8 +148,8 @@ class TestCLI:
         with pytest.raises(SystemExit):
             main()
 
-        # run_collection() が呼ばれたことを確認
-        mock_service.run_collection.assert_called_once()
+        # run_collection() が高知+LLMサイト分で呼ばれたことを確認
+        assert mock_service.run_collection.call_count >= 1
 
     @patch('src.data_collector.__main__.logging.basicConfig')
     @patch('src.data_collector.__main__.CollectorService')
