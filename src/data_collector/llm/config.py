@@ -32,6 +32,7 @@ class SiteConfig(BaseModel):
     request_interval: float = 1.0
     requires_js: bool = False  # TrueのときPlaywrightを使用
     wait_selector: Optional[str] = None  # JS描画完了を待つCSSセレクター
+    pdf_link_pattern: Optional[str] = None  # PDFリンクのCSSセレクター（指定時はPDFをダウンロードして抽出）
 
     @field_validator("name", "prefecture", "list_url")
     @classmethod

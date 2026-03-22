@@ -22,6 +22,22 @@ sites:
     category: "lost"
     requires_js: true
 
+  # 【徳島県動物愛護管理センター 譲渡予定】douai-tokushima.com の譲渡犬・譲渡猫ページ
+  # 動的ページのため requires_js: true
+  - name: "徳島県動物愛護管理センター（譲渡犬）"
+    prefecture: "徳島県"
+    prefecture_code: "36"
+    list_url: "https://douai-tokushima.com/transfer/doglist"
+    category: "adoption"
+    requires_js: true
+
+  - name: "徳島県動物愛護管理センター（譲渡猫）"
+    prefecture: "徳島県"
+    prefecture_code: "36"
+    list_url: "https://douai-tokushima.com/transfer/catlist"
+    category: "adoption"
+    requires_js: true
+
   # ===================================================================
   # 香川県
   # ===================================================================
@@ -42,20 +58,49 @@ sites:
     list_link_pattern: "a[href*='ani_infodetail']"
     category: "lost"
 
-  # 【さぬき動物愛護センター】PDF形式のため、HTMLスクレイピング不可。
-  # Playwrightで動的PDFリンクの取得は可能だが、PDFパーサーが別途必要。
-  # PDF URL例: /documents/6103/MMDD dog.pdf, /documents/6103/MMDDcat.pdf
-  # → PDFパーサー実装後に有効化
-  #
-  # - name: "さぬき動物愛護センター（譲渡犬猫）"
-  #   prefecture: "香川県"
-  #   prefecture_code: "37"
-  #   list_url: "https://www.pref.kagawa.lg.jp/s-doubutuaigo/sanukidouaicenter/jyouto/s04u6e190311095146.html"
-  #   category: "adoption"
-  #   requires_js: true   # PDFリンクがJSで描画される
+  # 【さぬき動物愛護センター】PDF形式。Playwrightでページを取得しPDFリンクを抽出。
+  # PDFはPdfFetcherでダウンロード＆テキスト抽出してLLMに渡す。
+  # 確認済みPDF URL例: /documents/6103/0318dog.pdf, /documents/6103/0321cat.pdf
+  - name: "さぬき動物愛護センター（譲渡犬猫）"
+    prefecture: "香川県"
+    prefecture_code: "37"
+    list_url: "https://www.pref.kagawa.lg.jp/s-doubutuaigo/sanukidouaicenter/jyouto/s04u6e190311095146.html"
+    category: "adoption"
+    requires_js: true
+    pdf_link_pattern: "a[href$='.pdf']"
 
-  # 【各保健所】東讃・中讃・西讃・小豆 = いずれもPDF形式のため同上
-  # → PDFパーサー実装後に対応
+  # 【東讃保健福祉事務所】収容動物情報PDF（静的HTML）
+  # ページID 7023。PDF URL例: /documents/7023/20260316.pdf
+  - name: "東讃保健福祉事務所（収容動物）"
+    prefecture: "香川県"
+    prefecture_code: "37"
+    list_url: "https://www.pref.kagawa.lg.jp/tosanhoken/tosanhoken/animal/sjiaen191105113550.html"
+    category: "lost"
+    pdf_link_pattern: "a[href*='/documents/7023/'][href$='.pdf']"
+
+  # 【中讃保健福祉事務所】収容動物情報PDF（静的HTML）
+  - name: "中讃保健福祉事務所（収容動物）"
+    prefecture: "香川県"
+    prefecture_code: "37"
+    list_url: "https://www.pref.kagawa.lg.jp/chusanhoken/chusanhoken/inu-neko/s058kw191105221746.html"
+    category: "lost"
+    pdf_link_pattern: "a[href$='.pdf']"
+
+  # 【西讃保健福祉事務所】収容動物情報PDF（静的HTML）
+  - name: "西讃保健福祉事務所（収容動物）"
+    prefecture: "香川県"
+    prefecture_code: "37"
+    list_url: "https://www.pref.kagawa.lg.jp/seisanhoken/seisanhoken/doubutuaigo/sqvuo1191030100247.html"
+    category: "lost"
+    pdf_link_pattern: "a[href$='.pdf']"
+
+  # 【小豆総合事務所保健部】収容動物情報PDF（静的HTML）
+  - name: "小豆保健所（収容動物）"
+    prefecture: "香川県"
+    prefecture_code: "37"
+    list_url: "https://www.pref.kagawa.lg.jp/shozu/hoken/syuuyou_info.html"
+    category: "lost"
+    pdf_link_pattern: "a[href$='.pdf']"
 
   # ===================================================================
   # 愛媛県
@@ -78,13 +123,11 @@ sites:
     category: "adoption"
     single_page: true
 
-  # 【松山市 はぴまるの丘】JS必須 + SPA構成のためPlaywrightでも動物一覧が取得できない。
-  # 正しい動物リスト取得URLが不明。要調査。
-  # → 調査後に有効化
-  #
-  # - name: "松山市 はぴまるの丘（収容中）"
-  #   prefecture: "愛媛県"
-  #   prefecture_code: "38"
-  #   list_url: "https://www.city.matsuyama.ehime.jp/kurashi/kurashi/aigo/hogoinu/index.html"
-  #   category: "adoption"
-  #   requires_js: true
+  # 【松山市 はぴまるの丘】静的HTML。犬・猫の収容情報がHTMLに直接埋め込まれている。
+  # 正しいURL: /kurashi/kurashi/aigo/index.html（個別ページなし single_page形式）
+  - name: "松山市 はぴまるの丘（収容中）"
+    prefecture: "愛媛県"
+    prefecture_code: "38"
+    list_url: "https://www.city.matsuyama.ehime.jp/kurashi/kurashi/aigo/index.html"
+    category: "lost"
+    single_page: true
