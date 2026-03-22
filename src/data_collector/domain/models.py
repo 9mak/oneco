@@ -168,9 +168,9 @@ class AnimalData(BaseModel):
         Raises:
             ValueError: 'adoption', 'lost' 以外の値が渡された場合
         """
-        if v not in ["adoption", "lost"]:
+        if v not in ["adoption", "lost", "sheltered"]:
             raise ValueError(
-                f"無効なカテゴリ: {v}。'adoption', 'lost' のいずれかである必要があります"
+                f"無効なカテゴリ: {v}。'adoption', 'lost', 'sheltered' のいずれかである必要があります"
             )
         return v
 

@@ -132,6 +132,16 @@ class TestSiteConfigValidation:
                 category="invalid",
             )
 
+    def test_sheltered_category_is_valid(self):
+        config = SiteConfig(
+            name="テスト",
+            prefecture="テスト県",
+            prefecture_code="99",
+            list_url="https://example.com/",
+            category="sheltered",
+        )
+        assert config.category == "sheltered"
+
     def test_invalid_extraction_raises(self):
         with pytest.raises(ValidationError, match="無効な抽出方式"):
             SiteConfig(
