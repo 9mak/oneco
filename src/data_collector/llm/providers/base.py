@@ -19,6 +19,15 @@ class ExtractionResult:
     output_tokens: int = 0
 
 
+@dataclass
+class MultiExtractionResult:
+    """複数動物LLM抽出結果（PDF一覧表など複数頭が1ページに記載される場合用）"""
+
+    animals: List[Dict[str, Any]]
+    input_tokens: int = 0
+    output_tokens: int = 0
+
+
 class LlmProvider(ABC):
     """LLMプロバイダー抽象基底クラス"""
 
@@ -59,3 +68,32 @@ class LlmProvider(ABC):
             詳細ページURLのリスト
         """
         ...
+
+    def extract_multiple_animals(
+        self,
+        content: str,
+        source_url: str,
+        category: str,
+        hint_species: str = "",
+    ) -> MultiExtractionResult:
+        """
+        一覧表形式のコンテンツ（PDF等）から複数動物情報を抽出
+
+        デフォルト実装は extract_animal_data を1回呼ぶだけ（後方互換）。
+        複数件抽出に対応するプロバイダーはこのメソッドをオーバーライドする。
+
+        Args:
+            content: 抽出対象テキスト（PDF抽出テキスト等）
+            source_url: 元ページのURL
+            category: カテゴリ ('adoption' or 'lost')
+            hint_species: 種別ヒント（'犬' / '猫' / ''）。URLから判明している場合に渡す
+
+        Returns:
+            MultiExtractionResult: 複数動物の抽出結果リスト
+        """
+        result = self.extract_animal_data(content, source_url, category)
+        return MultiExtractionResult(
+            animals=[result.fields] if result.fields else [],
+            input_tokens=result.input_tokens,
+            output_tokens=result.output_tokens,
+        )

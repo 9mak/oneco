@@ -60,6 +60,7 @@ sites:
 
   # 【さぬき動物愛護センター】PDF形式。Playwrightでページを取得しPDFリンクを抽出。
   # PDFはPdfFetcherでダウンロード＆テキスト抽出してLLMに渡す。
+  # PDFは複数頭の一覧表形式のため pdf_multi_animal: true で全頭を個別抽出する。
   # 確認済みPDF URL例: /documents/6103/0318dog.pdf, /documents/6103/0321cat.pdf
   - name: "さぬき動物愛護センター（譲渡犬猫）"
     prefecture: "香川県"
@@ -67,7 +68,8 @@ sites:
     list_url: "https://www.pref.kagawa.lg.jp/s-doubutuaigo/sanukidouaicenter/jyouto/s04u6e190311095146.html"
     category: "adoption"
     requires_js: true
-    pdf_link_pattern: "a[href$='.pdf']"
+    pdf_link_pattern: "a[href*='/documents/6103/'][href$='.pdf']"
+    pdf_multi_animal: true
 
   # 【東讃保健福祉事務所】収容動物情報PDF（静的HTML）
   # ページID 7023。PDF URL例: /documents/7023/20260316.pdf
@@ -79,20 +81,22 @@ sites:
     pdf_link_pattern: "a[href*='/documents/7023/'][href$='.pdf']"
 
   # 【中讃保健福祉事務所】収容動物情報PDF（静的HTML）
+  # 確認済みdocumentフォルダ: /documents/375/
   - name: "中讃保健福祉事務所（収容動物）"
     prefecture: "香川県"
     prefecture_code: "37"
     list_url: "https://www.pref.kagawa.lg.jp/chusanhoken/chusanhoken/inu-neko/s058kw191105221746.html"
     category: "lost"
-    pdf_link_pattern: "a[href$='.pdf']"
+    pdf_link_pattern: "a[href*='/documents/375/'][href$='.pdf']"
 
   # 【西讃保健福祉事務所】収容動物情報PDF（静的HTML）
+  # 確認済みdocumentフォルダ: /documents/6282/
   - name: "西讃保健福祉事務所（収容動物）"
     prefecture: "香川県"
     prefecture_code: "37"
     list_url: "https://www.pref.kagawa.lg.jp/seisanhoken/seisanhoken/doubutuaigo/sqvuo1191030100247.html"
     category: "lost"
-    pdf_link_pattern: "a[href$='.pdf']"
+    pdf_link_pattern: "a[href*='/documents/6282/'][href$='.pdf']"
 
   # 【小豆総合事務所保健部】収容動物情報PDF（静的HTML）
   - name: "小豆保健所（収容動物）"
