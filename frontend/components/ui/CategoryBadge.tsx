@@ -7,8 +7,8 @@
 'use client';
 
 interface CategoryBadgeProps {
-  /** カテゴリ ("adoption": 譲渡対象, "lost": 迷子) */
-  category: 'adoption' | 'lost';
+  /** カテゴリ ("adoption": 譲渡対象, "lost": 迷子, "sheltered": 収容中) */
+  category: 'adoption' | 'lost' | 'sheltered';
   /** バッジサイズ (デフォルト: "md") */
   size?: 'sm' | 'md' | 'lg';
 }
@@ -23,6 +23,11 @@ export function CategoryBadge({ category, size = 'md' }: CategoryBadgeProps) {
     },
     lost: {
       label: '迷子',
+      bgColor: 'bg-[var(--color-category-lost)]',
+      textColor: 'text-black',
+    },
+    sheltered: {
+      label: '収容中',
       bgColor: 'bg-[var(--color-category-lost)]',
       textColor: 'text-black',
     },

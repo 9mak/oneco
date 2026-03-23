@@ -11,8 +11,8 @@ interface ContactInfoProps {
   location: string;
   /** 電話番号 */
   phone: string | null;
-  /** カテゴリ ("adoption": 譲渡対象, "lost": 迷子) */
-  category: 'adoption' | 'lost';
+  /** カテゴリ ("adoption": 譲渡対象, "lost": 迷子, "sheltered": 収容中) */
+  category: 'adoption' | 'lost' | 'sheltered';
 }
 
 export function ContactInfo({ location, phone, category }: ContactInfoProps) {
@@ -20,6 +20,7 @@ export function ContactInfo({ location, phone, category }: ContactInfoProps) {
   const categoryMessage = {
     adoption: '譲渡についてはお電話でお問い合わせください',
     lost: '飼い主の方はお早めにご連絡ください',
+    sheltered: '飼い主の方はお早めにご連絡ください',
   };
 
   return (
