@@ -13,7 +13,7 @@ from typing import List, Optional
 from google import genai
 from google.genai import types
 
-from .base import ExtractionResult, LlmProvider
+from .base import ExtractionResult, MultiExtractionResult, LlmProvider
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +94,99 @@ LINK_EXTRACTION_FUNCTION = types.FunctionDeclaration(
     ),
 )
 
+MULTI_ANIMAL_EXTRACTION_FUNCTION = types.FunctionDeclaration(
+    name="extract_multiple_animals",
+    description="一覧表形式のPDFやページから複数の動物情報をリストで構造化抽出する",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "animals": types.Schema(
+                type=types.Type.ARRAY,
+                description="抽出した動物情報のリスト",
+                items=types.Schema(
+                    type=types.Type.OBJECT,
+                    properties={
+                        "species": types.Schema(
+                            type=types.Type.STRING,
+                            description="動物種別。'犬' または '猫' または 'その他'",
+                        ),
+                        "management_number": types.Schema(
+                            type=types.Type.STRING,
+                            description="センター管理番号（例: 5中-D0524）",
+                        ),
+                        "sex": types.Schema(
+                            type=types.Type.STRING,
+                            description="性別。オス/メス等の表記をそのまま返す",
+                        ),
+                        "age": types.Schema(
+                            type=types.Type.STRING,
+                            description="推定生年月日または年齢テキスト",
+                        ),
+                        "color": types.Schema(
+                            type=types.Type.STRING,
+                            description="毛色",
+                        ),
+                        "size": types.Schema(
+                            type=types.Type.STRING,
+                            description="成犬/成猫時の体重・体格",
+                        ),
+                        "shelter_date": types.Schema(
+                            type=types.Type.STRING,
+                            description=(
+                                "収容日・掲載日。ISO 8601形式（YYYY-MM-DD）に変換して返す。"
+                                "PDFに「掲載日」が記載されていればその日付を使う。"
+                                "令和表記（例: R6.5.1）も変換する"
+                            ),
+                        ),
+                        "location": types.Schema(
+                            type=types.Type.STRING,
+                            description="収容場所（センター名や管理番号から推定）",
+                        ),
+                        "phone": types.Schema(
+                            type=types.Type.STRING,
+                            description="連絡先電話番号",
+                        ),
+                        "image_urls": types.Schema(
+                            type=types.Type.ARRAY,
+                            items=types.Schema(type=types.Type.STRING),
+                            description="動物の写真URLのリスト（PDFの場合は空リストでよい）",
+                        ),
+                        "features": types.Schema(
+                            type=types.Type.STRING,
+                            description="特徴・備考欄のテキスト",
+                        ),
+                    },
+                    required=[
+                        "species", "sex", "age", "color", "size",
+                        "shelter_date", "location", "phone", "image_urls",
+                    ],
+                ),
+            ),
+        },
+        required=["animals"],
+    ),
+)
+
+MULTI_ANIMAL_SYSTEM_PROMPT = """あなたは日本の自治体の保護動物PDFから動物情報を抽出する専門家です。
+一覧表形式のPDFテキストから、記載されている全ての動物情報を個別に抽出してください。
+
+ルール:
+1. 種別（species）: '犬' または '猫' または 'その他' のいずれかを返す
+   - ファイル名に 'dog' が含まれていれば全て '犬'、'cat' が含まれていれば全て '猫'
+2. 管理番号（management_number）: センター管理番号をそのまま返す（例: 5中-D0524）
+3. 性別（sex）: PDFに記載された性別をそのまま返す（オス/メス、去勢済/不妊済等も含める）
+4. 年齢（age）: 推定生年月日（例: R5.11.30 → 令和5年11月30日）をISO形式で返す
+5. 毛色（color）: PDFに記載された毛色をそのまま返す
+6. 体格（size）: 成犬/成猫時の体重や大きさをそのまま返す（例: 約16kg, 15～20㎏）
+7. 収容日（shelter_date）: PDFに「掲載日」が記載されている場合はその日付をISO形式で返す
+   - 令和表記（R7.3.22 → 2025-03-22）に変換する
+   - 令和1年=2019年、令和2年=2020年、令和3年=2021年、令和4年=2022年、令和5年=2023年、令和6年=2024年、令和7年=2025年
+8. 場所（location）: センター名や管理番号の「中」「西」「東」「高」等から推定する
+9. 電話番号（phone）: 記載があれば返す、なければ空文字
+10. 画像URL（image_urls）: PDFには画像URLがないため空リストを返す
+
+記載されている全動物を漏れなく抽出すること。"""
+
 EXTRACTION_SYSTEM_PROMPT = """あなたは日本の自治体の保護動物サイトから動物情報を抽出する専門家です。
 HTMLから以下のルールに従って正確に情報を抽出してください:
 
@@ -166,6 +259,39 @@ class GoogleProvider(LlmProvider):
 
         return ExtractionResult(
             fields=fields,
+            input_tokens=getattr(usage, "prompt_token_count", 0),
+            output_tokens=getattr(usage, "candidates_token_count", 0),
+        )
+
+    def extract_multiple_animals(
+        self,
+        content: str,
+        source_url: str,
+        category: str,
+        hint_species: str = "",
+    ) -> MultiExtractionResult:
+        """一覧表形式のPDF等から複数動物情報を抽出"""
+        species_hint = f"\nヒント: このPDFに含まれる動物はすべて「{hint_species}」です。" if hint_species else ""
+        prompt = (
+            f"以下のPDFテキストから、記載されている全ての動物情報を抽出してください。\n"
+            f"出典URL: {source_url}\n"
+            f"カテゴリ: {category}{species_hint}\n\n"
+            f"{content}"
+        )
+
+        response = self._call_with_retry(
+            system=MULTI_ANIMAL_SYSTEM_PROMPT,
+            prompt=prompt,
+            tool=MULTI_ANIMAL_EXTRACTION_FUNCTION,
+            function_name="extract_multiple_animals",
+        )
+
+        args = self._extract_function_args(response, "extract_multiple_animals")
+        animals = args.get("animals", [])
+        usage = response.usage_metadata
+
+        return MultiExtractionResult(
+            animals=animals,
             input_tokens=getattr(usage, "prompt_token_count", 0),
             output_tokens=getattr(usage, "candidates_token_count", 0),
         )
