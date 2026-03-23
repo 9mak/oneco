@@ -28,7 +28,8 @@ describe('FilterPanel', () => {
       />
     );
 
-    expect(screen.getByText('絞り込み検索')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '収容中の子を探す' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '家族を迎える' })).toBeInTheDocument();
     expect(screen.getByText('42件の動物')).toBeInTheDocument();
   });
 
@@ -42,8 +43,8 @@ describe('FilterPanel', () => {
       />
     );
 
-    const categorySelect = screen.getByLabelText('カテゴリ');
-    fireEvent.change(categorySelect, { target: { value: 'adoption' } });
+    const adoptionTab = screen.getByRole('tab', { name: '家族を迎える' });
+    fireEvent.click(adoptionTab);
 
     expect(mockOnFilterChange).toHaveBeenCalledWith('category', 'adoption');
   });
@@ -157,7 +158,9 @@ describe('FilterPanel', () => {
       />
     );
 
-    expect(screen.getByLabelText('カテゴリ')).toHaveValue('lost');
+    // lost は「収容中の子を探す」タブが選択される
+    expect(screen.getByRole('tab', { name: '収容中の子を探す' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: '家族を迎える' })).toHaveAttribute('aria-selected', 'false');
     expect(screen.getByLabelText('種別')).toHaveValue('猫');
     expect(screen.getByLabelText('性別')).toHaveValue('女の子');
     expect(screen.getByLabelText('地域')).toHaveValue('北海道');
@@ -174,8 +177,9 @@ describe('FilterPanel', () => {
       />
     );
 
-    const categorySelect = screen.getByLabelText('カテゴリ');
-    fireEvent.change(categorySelect, { target: { value: '' } });
+    // アクティブなタブを再クリックするとカテゴリが解除される
+    const adoptionTab = screen.getByRole('tab', { name: '家族を迎える' });
+    fireEvent.click(adoptionTab);
 
     expect(mockOnFilterChange).toHaveBeenCalledWith('category', undefined);
   });
@@ -190,14 +194,18 @@ describe('FilterPanel', () => {
       />
     );
 
-    const categorySelect = screen.getByLabelText('カテゴリ');
+    const shelteredTab = screen.getByRole('tab', { name: '収容中の子を探す' });
+    const adoptionTab = screen.getByRole('tab', { name: '家族を迎える' });
     const speciesSelect = screen.getByLabelText('種別');
     const sexSelect = screen.getByLabelText('性別');
     const locationInput = screen.getByLabelText('地域');
 
     // フォーカス可能なことを確認
-    categorySelect.focus();
-    expect(categorySelect).toHaveFocus();
+    shelteredTab.focus();
+    expect(shelteredTab).toHaveFocus();
+
+    adoptionTab.focus();
+    expect(adoptionTab).toHaveFocus();
 
     speciesSelect.focus();
     expect(speciesSelect).toHaveFocus();
