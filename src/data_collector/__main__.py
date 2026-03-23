@@ -5,6 +5,12 @@ import logging
 import os
 import time
 from pathlib import Path
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 from typing import Optional
 
 from .orchestration.collector_service import CollectorService
@@ -13,7 +19,7 @@ from .domain.diff_detector import DiffDetector
 from .infrastructure.snapshot_store import SnapshotStore
 from .infrastructure.output_writer import OutputWriter
 from .infrastructure.notification_client import NotificationClient
-from .infrastructure.database.connection import DatabaseConnection
+from .infrastructure.database.connection import DatabaseConnection, DatabaseSettings
 from .infrastructure.database.repository import AnimalRepository
 from .llm.config import SiteConfigLoader, SitesConfig
 from .llm.adapter import LlmAdapter, validate_extraction
@@ -155,7 +161,8 @@ def main():
         database_url = os.environ.get("DATABASE_URL")
         if database_url:
             logger.info("Initializing database connection...")
-            db_connection = DatabaseConnection()
+            db_settings = DatabaseSettings(database_url=database_url)
+            db_connection = DatabaseConnection(settings=db_settings)
             repository = None
             logger.info("Database connection initialized")
 
