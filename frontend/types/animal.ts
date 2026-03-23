@@ -29,8 +29,8 @@ export interface AnimalPublic {
   image_urls: string[];
   /** 元のページURL */
   source_url: string;
-  /** カテゴリ ("adoption": 譲渡対象, "lost": 迷子) */
-  category: 'adoption' | 'lost';
+  /** カテゴリ ("adoption": 譲渡対象, "lost": 迷子, "sheltered": 収容中) */
+  category: 'adoption' | 'lost' | 'sheltered';
 }
 
 /**
@@ -66,7 +66,7 @@ export interface PaginatedResponse<T> {
  */
 export interface FilterState {
   /** カテゴリフィルタ */
-  category?: 'adoption' | 'lost';
+  category?: 'adoption' | 'lost' | 'sheltered';
   /** 種別フィルタ */
   species?: '犬' | '猫';
   /** 性別フィルタ */

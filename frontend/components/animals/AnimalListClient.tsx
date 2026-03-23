@@ -25,7 +25,7 @@ export function AnimalListClient({ initialAnimals, initialTotalCount }: AnimalLi
 
   // URLクエリパラメータからフィルタ状態を取得
   const filters: FilterState = {
-    category: (searchParams.get('category') as 'adoption' | 'lost') || undefined,
+    category: (searchParams.get('category') as 'adoption' | 'lost' | 'sheltered') || undefined,
     species: (searchParams.get('species') as '犬' | '猫') || undefined,
     sex: (searchParams.get('sex') as '男の子' | '女の子' | '不明') || undefined,
     location: searchParams.get('location') || undefined,
