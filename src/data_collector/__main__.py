@@ -152,10 +152,11 @@ def main():
         diff_detector = DiffDetector(snapshot_store)
         output_writer = OutputWriter()
 
-        notification_config = {
-            "email": os.environ.get("NOTIFICATION_EMAIL", ""),
-            "slack_webhook_url": os.environ.get("SLACK_WEBHOOK_URL", "")
-        }
+        notification_config: dict[str, str] = {}
+        if email := os.environ.get("NOTIFICATION_EMAIL"):
+            notification_config["email"] = email
+        if slack_url := os.environ.get("SLACK_WEBHOOK_URL"):
+            notification_config["slack_webhook_url"] = slack_url
         notification_client = NotificationClient(notification_config)
 
         database_url = os.environ.get("DATABASE_URL")
