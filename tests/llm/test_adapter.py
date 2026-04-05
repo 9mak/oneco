@@ -1,12 +1,17 @@
 """LlmAdapter の統合テスト（モックLlmProvider使用）"""
 
-import pytest
 from unittest.mock import MagicMock, patch
 
-from src.data_collector.llm.adapter import LlmAdapter, CollectionStats, validate_extraction
-from src.data_collector.llm.config import SiteConfig
-from src.data_collector.llm.providers.base import ExtractionResult, MultiExtractionResult, LlmProvider
+import pytest
+
 from src.data_collector.domain.models import RawAnimalData
+from src.data_collector.llm.adapter import CollectionStats, LlmAdapter, validate_extraction
+from src.data_collector.llm.config import SiteConfig
+from src.data_collector.llm.providers.base import (
+    ExtractionResult,
+    LlmProvider,
+    MultiExtractionResult,
+)
 
 
 class MockProvider(LlmProvider):
@@ -146,9 +151,7 @@ class TestFetchAnimalList:
         mock_response.apparent_encoding = "utf-8"
         mock_get.return_value = mock_response
 
-        adapter = LlmAdapter(
-            site_config=site_config_no_selector, provider=mock_provider
-        )
+        adapter = LlmAdapter(site_config=site_config_no_selector, provider=mock_provider)
         result = adapter.fetch_animal_list()
 
         assert len(result) == 2
@@ -192,7 +195,7 @@ class TestFetchAnimalList:
         mock_get.return_value = mock_response
 
         adapter = LlmAdapter(site_config=config, provider=mock_provider)
-        result = adapter.fetch_animal_list()
+        adapter.fetch_animal_list()
 
         assert mock_get.call_count == 1  # 1ページのみ
 
@@ -200,18 +203,14 @@ class TestFetchAnimalList:
 class TestExtractAnimalDetails:
     @patch("src.data_collector.llm.adapter.requests.get")
     @patch("src.data_collector.llm.adapter.time.sleep")
-    def test_extracts_and_returns_raw_data(
-        self, mock_sleep, mock_get, site_config, mock_provider
-    ):
+    def test_extracts_and_returns_raw_data(self, mock_sleep, mock_get, site_config, mock_provider):
         mock_response = MagicMock()
         mock_response.text = "<html><body><p>Dog info</p></body></html>"
         mock_response.apparent_encoding = "utf-8"
         mock_get.return_value = mock_response
 
         adapter = LlmAdapter(site_config=site_config, provider=mock_provider)
-        result = adapter.extract_animal_details(
-            "https://example.com/detail/1", "adoption"
-        )
+        result = adapter.extract_animal_details("https://example.com/detail/1", "adoption")
 
         assert isinstance(result, RawAnimalData)
         assert result.species == "犬"
@@ -343,9 +342,7 @@ class TestPdfMultiAnimal:
         class CapturingProvider(MockProvider):
             def extract_multiple_animals(self, content, source_url, category, hint_species=""):
                 captured["hint_species"] = hint_species
-                return super().extract_multiple_animals(
-                    content, source_url, category, hint_species
-                )
+                return super().extract_multiple_animals(content, source_url, category, hint_species)
 
         with patch("src.data_collector.llm.adapter.time.sleep"):
             adapter = LlmAdapter(
@@ -372,9 +369,7 @@ class TestPdfMultiAnimal:
         class CapturingProvider(MockProvider):
             def extract_multiple_animals(self, content, source_url, category, hint_species=""):
                 captured["hint_species"] = hint_species
-                return super().extract_multiple_animals(
-                    content, source_url, category, hint_species
-                )
+                return super().extract_multiple_animals(content, source_url, category, hint_species)
 
         with patch("src.data_collector.llm.adapter.time.sleep"):
             adapter = LlmAdapter(

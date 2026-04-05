@@ -8,9 +8,8 @@ Requirements: 2.1, 2.2 (notification-manager との連携)
 
 import asyncio
 import logging
-from datetime import datetime, timezone
-from typing import List, Optional
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 try:
     import httpx
@@ -64,7 +63,7 @@ class NotificationManagerClient:
         self.config = config
         self.logger = logging.getLogger(__name__)
 
-    async def notify_new_animals(self, new_animals: List[AnimalData]) -> bool:
+    async def notify_new_animals(self, new_animals: list[AnimalData]) -> bool:
         """
         新着動物を notification-manager に通知（非同期）
 
@@ -120,12 +119,12 @@ class NotificationManagerClient:
         except Exception as e:
             # best-effort: 通知失敗時はログ記録のみで処理継続
             self.logger.error(
-                f"Failed to notify notification-manager: {str(e)}",
+                f"Failed to notify notification-manager: {e!s}",
                 exc_info=True,
             )
             return False
 
-    def notify_new_animals_sync(self, new_animals: List[AnimalData]) -> bool:
+    def notify_new_animals_sync(self, new_animals: list[AnimalData]) -> bool:
         """
         新着動物を notification-manager に通知（同期ラッパー）
 
@@ -144,20 +143,18 @@ class NotificationManagerClient:
                 import concurrent.futures
 
                 with concurrent.futures.ThreadPoolExecutor() as executor:
-                    future = executor.submit(
-                        asyncio.run, self.notify_new_animals(new_animals)
-                    )
+                    future = executor.submit(asyncio.run, self.notify_new_animals(new_animals))
                     return future.result()
             else:
                 return loop.run_until_complete(self.notify_new_animals(new_animals))
         except Exception as e:
             self.logger.error(
-                f"Failed to notify notification-manager (sync): {str(e)}",
+                f"Failed to notify notification-manager (sync): {e!s}",
                 exc_info=True,
             )
             return False
 
-    def _build_payload(self, animals: List[AnimalData]) -> dict:
+    def _build_payload(self, animals: list[AnimalData]) -> dict:
         """
         notification-manager Webhook リクエストペイロードを構築
 
@@ -170,7 +167,7 @@ class NotificationManagerClient:
         return {
             "animals": [self._serialize_animal(animal) for animal in animals],
             "source": "data-collector",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     def _serialize_animal(self, animal: AnimalData) -> dict:
@@ -198,7 +195,7 @@ class NotificationManagerClient:
         }
 
 
-def create_notification_manager_client_from_env() -> Optional[NotificationManagerClient]:
+def create_notification_manager_client_from_env() -> NotificationManagerClient | None:
     """
     環境変数から NotificationManagerClient を作成
 

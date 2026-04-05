@@ -4,11 +4,12 @@ DataNormalizer のユニットテスト
 データ正規化ロジックの各メソッドを個別にテストし、
 統合テストで RawAnimalData → AnimalData の変換を検証します。
 """
-import pytest
-from datetime import date
-from pydantic import ValidationError
 
-from src.data_collector.domain.models import RawAnimalData, AnimalData
+from datetime import date
+
+import pytest
+
+from src.data_collector.domain.models import RawAnimalData
 from src.data_collector.domain.normalizer import DataNormalizer
 
 
@@ -169,6 +170,7 @@ class TestNormalizeDate:
     def test_normalize_date_month_day_only(self):
         """月/日のみの場合、当年を補完"""
         from datetime import datetime
+
         current_year = datetime.now().year
 
         assert DataNormalizer._normalize_date("4/30") == f"{current_year}-04-30"
@@ -178,6 +180,7 @@ class TestNormalizeDate:
     def test_normalize_date_month_day_with_time_suffix(self):
         """時刻付き月/日のみの場合、当年を補完"""
         from datetime import datetime
+
         current_year = datetime.now().year
 
         assert DataNormalizer._normalize_date("1/31　午前10時頃") == f"{current_year}-01-31"
@@ -242,9 +245,8 @@ class TestNormalizerIntegration:
             location="高知県動物愛護センター",
             phone="0881234567",
             image_urls=["https://example.com/image1.jpg"],
-            source_url="https://example-kochi.jp/animals/123"
-,
-            category="adoption"
+            source_url="https://example-kochi.jp/animals/123",
+            category="adoption",
         )
 
         animal_data = DataNormalizer.normalize(raw_data)
@@ -272,9 +274,8 @@ class TestNormalizerIntegration:
             location="",
             phone="",
             image_urls=[],
-            source_url="https://example.com/123"
-,
-            category="adoption"
+            source_url="https://example.com/123",
+            category="adoption",
         )
 
         animal_data = DataNormalizer.normalize(raw_data)
@@ -298,9 +299,8 @@ class TestNormalizerIntegration:
             location="",  # 空の location
             phone="0881234567",
             image_urls=["https://example.com/image1.jpg"],
-            source_url="https://example.com/dog"
-,
-            category="adoption"
+            source_url="https://example.com/dog",
+            category="adoption",
         )
 
         animal_data = DataNormalizer.normalize(raw_data)
@@ -319,9 +319,8 @@ class TestNormalizerIntegration:
             location="高知県動物愛護センター",
             phone="0881234567",
             image_urls=["https://example.com/image1.jpg"],
-            source_url="https://example.com/dog"
-,
-            category="adoption"
+            source_url="https://example.com/dog",
+            category="adoption",
         )
 
         animal_data = DataNormalizer.normalize(raw_data)
@@ -348,9 +347,8 @@ class TestNormalizerIntegration:
                     location="センター",
                     phone="088-111-2222",
                     image_urls=["https://example.com/cat.jpg"],
-                    source_url="https://example.com/cat"
-,
-            category="lost"
+                    source_url="https://example.com/cat",
+                    category="lost",
                 ),
                 "expected": {
                     "species": "猫",
@@ -369,9 +367,8 @@ class TestNormalizerIntegration:
                     location="保健所",
                     phone="09012345678",
                     image_urls=[],
-                    source_url="https://example.com/dog"
-,
-            category="adoption"
+                    source_url="https://example.com/dog",
+                    category="adoption",
                 ),
                 "expected": {
                     "species": "犬",
@@ -404,7 +401,7 @@ class TestNormalizeCategory:
             phone="088-123-4567",
             image_urls=["https://example.com/image.jpg"],
             source_url="https://example.com/1",
-            category="adoption"
+            category="adoption",
         )
 
         animal_data = DataNormalizer.normalize(raw_data)
@@ -424,7 +421,7 @@ class TestNormalizeCategory:
             phone="088-123-4567",
             image_urls=["https://example.com/image.jpg"],
             source_url="https://example.com/2",
-            category="lost"
+            category="lost",
         )
 
         animal_data = DataNormalizer.normalize(raw_data)

@@ -12,18 +12,18 @@ Requirements: 1.1-1.7, 3.1-3.5, 4.1-4.6, 5.2, 5.3, 8.1-8.5
 import asyncio
 import logging
 import time
-from typing import List, Optional, Protocol
+from typing import Protocol
 
+from src.data_collector.domain.models import AnimalData
 from src.notification_manager.domain.models import (
-    UserEntity,
-    NotificationPreferenceInput,
-    NotificationPreferenceEntity,
     MatchResult,
     NotificationMessage,
-    SendResult,
+    NotificationPreferenceEntity,
+    NotificationPreferenceInput,
     NotificationResult,
+    SendResult,
+    UserEntity,
 )
-from src.data_collector.domain.models import AnimalData
 
 logger = logging.getLogger(__name__)
 
@@ -32,11 +32,11 @@ class UserRepositoryProtocol(Protocol):
     """ユーザーリポジトリプロトコル"""
 
     def create_user(self, encrypted_line_user_id: str) -> UserEntity: ...
-    def get_by_encrypted_line_id(self, encrypted_line_user_id: str) -> Optional[UserEntity]: ...
-    def get_by_id(self, user_id: int) -> Optional[UserEntity]: ...
+    def get_by_encrypted_line_id(self, encrypted_line_user_id: str) -> UserEntity | None: ...
+    def get_by_id(self, user_id: int) -> UserEntity | None: ...
     def deactivate(self, encrypted_line_user_id: str) -> bool: ...
-    def reactivate(self, encrypted_line_user_id: str) -> Optional[UserEntity]: ...
-    def get_active_users(self) -> List[UserEntity]: ...
+    def reactivate(self, encrypted_line_user_id: str) -> UserEntity | None: ...
+    def get_active_users(self) -> list[UserEntity]: ...
 
 
 class PreferenceRepositoryProtocol(Protocol):
@@ -45,9 +45,9 @@ class PreferenceRepositoryProtocol(Protocol):
     def create_or_update(
         self, user_id: int, pref_input: NotificationPreferenceInput
     ) -> NotificationPreferenceEntity: ...
-    def get_by_user_id(self, user_id: int) -> Optional[NotificationPreferenceEntity]: ...
+    def get_by_user_id(self, user_id: int) -> NotificationPreferenceEntity | None: ...
     def set_notifications_enabled(self, user_id: int, enabled: bool) -> bool: ...
-    def get_active_preferences(self) -> List[NotificationPreferenceEntity]: ...
+    def get_active_preferences(self) -> list[NotificationPreferenceEntity]: ...
 
 
 class NotificationHistoryRepositoryProtocol(Protocol):
@@ -97,7 +97,7 @@ class MatchingService:
         self._preference_repository = preference_repository
         self._user_repository = user_repository
 
-    def find_matching_users(self, animal: AnimalData) -> List[MatchResult]:
+    def find_matching_users(self, animal: AnimalData) -> list[MatchResult]:
         """
         動物データに対してマッチするユーザーを検索
 
@@ -122,14 +122,9 @@ class MatchingService:
                             match_score=1.0,
                         )
                     )
-                    logger.debug(
-                        f"Match found: user_id={pref.user_id}, "
-                        f"animal={animal.source_url}"
-                    )
+                    logger.debug(f"Match found: user_id={pref.user_id}, animal={animal.source_url}")
 
-        logger.info(
-            f"Matching completed: {len(results)} matches for animal {animal.source_url}"
-        )
+        logger.info(f"Matching completed: {len(results)} matches for animal {animal.source_url}")
         return results
 
     def _matches(self, animal: AnimalData, pref: NotificationPreferenceEntity) -> bool:
@@ -178,7 +173,7 @@ class MatchingService:
 
         return True
 
-    def _location_matches(self, location: str, prefectures: List[str]) -> bool:
+    def _location_matches(self, location: str, prefectures: list[str]) -> bool:
         """
         収容場所が指定都道府県のいずれかに含まれるかチェック
 
@@ -262,7 +257,7 @@ class UserService:
         logger.info(f"Updating preferences for user_id={user_id}")
         return self._pref_repository.create_or_update(user_id, preferences)
 
-    def get_preferences(self, user_id: int) -> Optional[NotificationPreferenceEntity]:
+    def get_preferences(self, user_id: int) -> NotificationPreferenceEntity | None:
         """
         通知条件を取得
 
@@ -337,9 +332,7 @@ class NotificationService:
         self._line_adapter = line_adapter
         self._encryption_service = encryption_service
 
-    async def process_new_animals(
-        self, animals: List[AnimalData]
-    ) -> NotificationResult:
+    async def process_new_animals(self, animals: list[AnimalData]) -> NotificationResult:
         """
         新着動物の通知処理を実行
 
@@ -362,7 +355,7 @@ class NotificationService:
 
             # バッチ処理
             for i in range(0, len(matches), self.BATCH_SIZE):
-                batch = matches[i:i + self.BATCH_SIZE]
+                batch = matches[i : i + self.BATCH_SIZE]
                 tasks = []
 
                 for match in batch:
@@ -382,22 +375,16 @@ class NotificationService:
                 if tasks:
                     # 並列送信（最大10並列）
                     results = await self._run_parallel(tasks)
-                    for result, match in zip(results, batch):
+                    for result, match in zip(results, batch, strict=False):
                         if isinstance(result, Exception):
                             failed_count += 1
-                            self._record_history(
-                                match.user_id, str(animal.source_url), "failed"
-                            )
+                            self._record_history(match.user_id, str(animal.source_url), "failed")
                         elif result.success:
                             sent_count += 1
-                            self._record_history(
-                                match.user_id, str(animal.source_url), "sent"
-                            )
+                            self._record_history(match.user_id, str(animal.source_url), "sent")
                         else:
                             failed_count += 1
-                            self._record_history(
-                                match.user_id, str(animal.source_url), "failed"
-                            )
+                            self._record_history(match.user_id, str(animal.source_url), "failed")
 
         processing_time = time.time() - start_time
 
@@ -419,9 +406,7 @@ class NotificationService:
 
         return result
 
-    async def _send_notification(
-        self, animal: AnimalData, match: MatchResult
-    ) -> SendResult:
+    async def _send_notification(self, animal: AnimalData, match: MatchResult) -> SendResult:
         """
         個別通知を送信
 
@@ -446,7 +431,7 @@ class NotificationService:
 
         return await self._line_adapter.send_with_retry(line_user_id, message)
 
-    async def _run_parallel(self, tasks: list, max_parallel: int = None) -> list:
+    async def _run_parallel(self, tasks: list, max_parallel: int | None = None) -> list:
         """
         タスクを並列実行
 

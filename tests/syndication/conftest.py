@@ -1,18 +1,24 @@
 """
 Shared fixtures for syndication service tests.
 """
+
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock, MagicMock
-
-from src.syndication_service.api.routes import create_syndication_router, get_animal_repository, get_archive_repository
-from src.syndication_service.services.feed_generator import FeedGenerator
-from src.syndication_service.services.cache_manager import CacheManager
-from src.syndication_service.services.metrics_collector import MetricsCollector
-from src.syndication_service.middleware.rate_limiter import create_limiter, rate_limit_error_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+
+from src.syndication_service.api.routes import (
+    create_syndication_router,
+    get_animal_repository,
+    get_archive_repository,
+)
+from src.syndication_service.middleware.rate_limiter import create_limiter, rate_limit_error_handler
+from src.syndication_service.services.cache_manager import CacheManager
+from src.syndication_service.services.feed_generator import FeedGenerator
+from src.syndication_service.services.metrics_collector import MetricsCollector
 
 
 @pytest.fixture
@@ -55,7 +61,7 @@ def app(mock_animal_repo, mock_cache_manager):
         feed_generator=feed_generator,
         cache_manager=mock_cache_manager,
         metrics_collector=metrics_collector,
-        limiter=limiter
+        limiter=limiter,
     )
 
     app.include_router(router, prefix="/feeds")

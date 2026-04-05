@@ -5,13 +5,15 @@ AnimalPublic, PaginationMeta, PaginatedResponse の Pydantic スキーマが
 要件通りに実装されているかを検証します。
 """
 
-import pytest
 from datetime import date
+
+import pytest
 from pydantic import ValidationError
+
 from src.data_collector.infrastructure.api.schemas import (
     AnimalPublic,
-    PaginationMeta,
     PaginatedResponse,
+    PaginationMeta,
 )
 from src.data_collector.infrastructure.database.models import Animal
 
@@ -103,7 +105,7 @@ def test_animal_public_schema_missing_required_fields():
         # shelter_date が欠損
         "location": "高知県",
         "source_url": "https://example.com/animal/1",
-        "category": "adoption"
+        "category": "adoption",
     }
 
     with pytest.raises(ValidationError) as exc_info:

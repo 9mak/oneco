@@ -8,12 +8,12 @@ import pytest
 from pydantic import ValidationError
 
 from src.notification_manager.domain.models import (
-    UserEntity,
-    NotificationPreferenceInput,
-    NotificationPreferenceEntity,
     MatchResult,
     NotificationMessage,
+    NotificationPreferenceEntity,
+    NotificationPreferenceInput,
     SendResult,
+    UserEntity,
 )
 
 

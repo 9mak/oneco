@@ -8,7 +8,6 @@ PDFダウンロード＆テキスト抽出にも対応する。
 
 import io
 from abc import ABC, abstractmethod
-from typing import Optional
 
 import requests
 
@@ -134,7 +133,7 @@ class PlaywrightFetcher(PageFetcher):
     def __init__(
         self,
         wait_until: str = "networkidle",
-        wait_selector: Optional[str] = None,
+        wait_selector: str | None = None,
         timeout: int = 30000,
     ) -> None:
         """

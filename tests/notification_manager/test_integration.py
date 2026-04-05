@@ -4,31 +4,31 @@ notification-manager 統合テスト
 Task 9.1-9.4: data-collector連携、LINE連携、重複通知防止、パフォーマンスのテスト
 """
 
-import pytest
 import asyncio
-from unittest.mock import Mock, AsyncMock, patch
-from datetime import date, datetime, timezone, timedelta
+from datetime import date
+from unittest.mock import AsyncMock, Mock
+
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from src.notification_manager.infrastructure.api.routes import (
-    create_notification_router,
-    NotificationWebhookDeps,
+from src.data_collector.domain.models import AnimalData
+from src.notification_manager.domain.models import (
+    MatchResult,
+    NotificationPreferenceEntity,
+    NotificationResult,
+    SendResult,
+    UserEntity,
 )
 from src.notification_manager.domain.services import (
     MatchingService,
-    UserService,
     NotificationService,
+    UserService,
 )
-from src.notification_manager.domain.models import (
-    UserEntity,
-    NotificationPreferenceEntity,
-    NotificationPreferenceInput,
-    MatchResult,
-    SendResult,
-    NotificationResult,
+from src.notification_manager.infrastructure.api.routes import (
+    NotificationWebhookDeps,
+    create_notification_router,
 )
-from src.data_collector.domain.models import AnimalData
 
 
 class TestDataCollectorIntegration:
@@ -385,7 +385,7 @@ class TestDuplicateNotificationPrevention:
         self, mock_repos, mock_line_adapter, mock_encryption, sample_animal
     ):
         """既に通知済みの場合はスキップする (Req: 5.2, 5.3)"""
-        pref_repo, user_repo, history_repo = mock_repos
+        _pref_repo, _user_repo, history_repo = mock_repos
 
         # マッチング結果
         match_result = MatchResult(
@@ -423,7 +423,7 @@ class TestDuplicateNotificationPrevention:
         self, mock_repos, mock_line_adapter, mock_encryption, sample_animal
     ):
         """送信後に履歴を記録する (Req: 5.1)"""
-        pref_repo, user_repo, history_repo = mock_repos
+        _pref_repo, _user_repo, history_repo = mock_repos
 
         match_result = MatchResult(
             user_id=100,
@@ -455,11 +455,9 @@ class TestDuplicateNotificationPrevention:
         )
 
     @pytest.mark.asyncio
-    async def test_records_history_on_failure(
-        self, mock_repos, mock_encryption, sample_animal
-    ):
+    async def test_records_history_on_failure(self, mock_repos, mock_encryption, sample_animal):
         """送信失敗時も履歴を記録する (Req: 5.1)"""
-        pref_repo, user_repo, history_repo = mock_repos
+        _pref_repo, _user_repo, history_repo = mock_repos
 
         match_result = MatchResult(
             user_id=100,
@@ -556,9 +554,7 @@ class TestPerformanceAndScalability:
     ):
         """100件バッチ処理 (Req: 8.2)"""
         matching_service = Mock(spec=MatchingService)
-        matching_service.find_matching_users = Mock(
-            return_value=self.create_match_results(100)
-        )
+        matching_service.find_matching_users = Mock(return_value=self.create_match_results(100))
 
         history_repo = Mock()
         history_repo.is_already_notified = Mock(return_value=False)
@@ -583,9 +579,7 @@ class TestPerformanceAndScalability:
     ):
         """10並列送信 (Req: 8.3)"""
         matching_service = Mock(spec=MatchingService)
-        matching_service.find_matching_users = Mock(
-            return_value=self.create_match_results(20)
-        )
+        matching_service.find_matching_users = Mock(return_value=self.create_match_results(20))
 
         history_repo = Mock()
         history_repo.is_already_notified = Mock(return_value=False)
@@ -613,9 +607,7 @@ class TestPerformanceAndScalability:
         """処理時間が5秒以内 (Req: 8.4)"""
         matching_service = Mock(spec=MatchingService)
         # 50ユーザーへの通知
-        matching_service.find_matching_users = Mock(
-            return_value=self.create_match_results(50)
-        )
+        matching_service.find_matching_users = Mock(return_value=self.create_match_results(50))
 
         history_repo = Mock()
         history_repo.is_already_notified = Mock(return_value=False)
@@ -637,14 +629,10 @@ class TestPerformanceAndScalability:
         assert result.processing_time_seconds < 1.0
 
     @pytest.mark.asyncio
-    async def test_large_batch_200_users(
-        self, mock_line_adapter, mock_encryption, sample_animal
-    ):
+    async def test_large_batch_200_users(self, mock_line_adapter, mock_encryption, sample_animal):
         """200件の大量通知（2バッチ）"""
         matching_service = Mock(spec=MatchingService)
-        matching_service.find_matching_users = Mock(
-            return_value=self.create_match_results(200)
-        )
+        matching_service.find_matching_users = Mock(return_value=self.create_match_results(200))
 
         history_repo = Mock()
         history_repo.is_already_notified = Mock(return_value=False)
@@ -665,9 +653,7 @@ class TestPerformanceAndScalability:
         assert history_repo.record.call_count == 200
 
     @pytest.mark.asyncio
-    async def test_multiple_animals_processing(
-        self, mock_line_adapter, mock_encryption
-    ):
+    async def test_multiple_animals_processing(self, mock_line_adapter, mock_encryption):
         """複数動物の連続処理"""
         animals = [
             AnimalData(
@@ -684,9 +670,7 @@ class TestPerformanceAndScalability:
 
         matching_service = Mock(spec=MatchingService)
         # 各動物に10ユーザーがマッチ
-        matching_service.find_matching_users = Mock(
-            return_value=self.create_match_results(10)
-        )
+        matching_service.find_matching_users = Mock(return_value=self.create_match_results(10))
 
         history_repo = Mock()
         history_repo.is_already_notified = Mock(return_value=False)
@@ -857,9 +841,7 @@ class TestMatchingIntegration:
         results = service.find_matching_users(sample_animals[2])
         assert len(results) == 0
 
-    def test_matching_all_species_all_prefectures(
-        self, sample_animals, sample_preferences
-    ):
+    def test_matching_all_species_all_prefectures(self, sample_animals, sample_preferences):
         """全種別・全地域の設定は全てにマッチ"""
         pref_repo = Mock()
         user_repo = Mock()

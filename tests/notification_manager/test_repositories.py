@@ -4,26 +4,23 @@ notification-manager リポジトリ層のテスト
 Task 3.1, 3.2, 3.3: UserRepository, PreferenceRepository, NotificationHistoryRepository のテスト
 """
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
-from datetime import datetime, timezone, timedelta
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
+from src.notification_manager.domain.models import (
+    NotificationPreferenceInput,
+)
 from src.notification_manager.infrastructure.database.models import (
     NotificationBase,
-    User,
-    NotificationPreference,
     NotificationHistory,
 )
 from src.notification_manager.infrastructure.database.repository import (
-    UserRepository,
-    PreferenceRepository,
     NotificationHistoryRepository,
-)
-from src.notification_manager.domain.models import (
-    UserEntity,
-    NotificationPreferenceInput,
-    NotificationPreferenceEntity,
+    PreferenceRepository,
+    UserRepository,
 )
 
 
@@ -88,7 +85,7 @@ class TestUserRepository:
     def test_deactivate_user(self, session):
         """ユーザーを無効化できる"""
         repo = UserRepository(session)
-        user = repo.create_user("encrypted_to_deactivate")
+        repo.create_user("encrypted_to_deactivate")
 
         result = repo.deactivate("encrypted_to_deactivate")
         assert result is True
@@ -107,7 +104,7 @@ class TestUserRepository:
         repo = UserRepository(session)
         repo.create_user("encrypted_active1")
         repo.create_user("encrypted_active2")
-        user3 = repo.create_user("encrypted_inactive")
+        repo.create_user("encrypted_inactive")
         repo.deactivate("encrypted_inactive")
 
         active_users = repo.get_active_users()
@@ -266,7 +263,7 @@ class TestNotificationHistoryRepository:
             user_id=user.id,
             animal_source_url="https://example.com/animals/old",
             status="sent",
-            notified_at=datetime.now(timezone.utc) - timedelta(days=91),
+            notified_at=datetime.now(UTC) - timedelta(days=91),
         )
         session.add(old_history)
         session.commit()

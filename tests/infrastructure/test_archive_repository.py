@@ -4,12 +4,14 @@ ArchiveRepository のテスト
 アーカイブデータの読み取り専用アクセス機能をテストします。
 """
 
+from datetime import UTC, date, datetime
+
 import pytest
 import pytest_asyncio
-from datetime import date, datetime, timezone, timedelta
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from src.data_collector.infrastructure.database.models import Animal, AnimalArchive, Base
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 from src.data_collector.domain.models import AnimalData, AnimalStatus
+from src.data_collector.infrastructure.database.models import Animal, AnimalArchive, Base
 
 
 @pytest_asyncio.fixture
@@ -41,6 +43,7 @@ async def async_session(async_engine):
 async def archive_repository(async_session):
     """テスト用の ArchiveRepository を作成"""
     from src.data_collector.infrastructure.database.archive_repository import ArchiveRepository
+
     return ArchiveRepository(async_session)
 
 
@@ -51,6 +54,7 @@ class TestArchiveRepositoryInitialization:
     async def test_repository_initialization(self, async_session):
         """ArchiveRepository が正しく初期化されるか"""
         from src.data_collector.infrastructure.database.archive_repository import ArchiveRepository
+
         repo = ArchiveRepository(async_session)
         assert repo.session == async_session
 
@@ -77,9 +81,9 @@ class TestGetArchivedById:
             source_url="https://example.com/animal/archived1",
             category="adoption",
             status="adopted",
-            status_changed_at=datetime(2025, 6, 15, tzinfo=timezone.utc),
+            status_changed_at=datetime(2025, 6, 15, tzinfo=UTC),
             outcome_date=date(2025, 6, 15),
-            archived_at=datetime(2025, 12, 15, tzinfo=timezone.utc),
+            archived_at=datetime(2025, 12, 15, tzinfo=UTC),
         )
         async_session.add(archived_animal)
         await async_session.commit()
@@ -116,7 +120,7 @@ class TestListArchived:
                 source_url=f"https://example.com/animal/archived{i}",
                 category="adoption",
                 status="adopted",
-                archived_at=datetime(2025, 12, 15, tzinfo=timezone.utc),
+                archived_at=datetime(2025, 12, 15, tzinfo=UTC),
             )
             async_session.add(archived_animal)
         await async_session.commit()
@@ -131,26 +135,30 @@ class TestListArchived:
     async def test_list_archived_filters_by_species(self, archive_repository, async_session):
         """list_archived() が species でフィルタリングできるか"""
         # 異なる種別のアーカイブデータを挿入
-        async_session.add(AnimalArchive(
-            original_id=101,
-            species="犬",
-            shelter_date=date(2025, 6, 1),
-            location="高知県",
-            source_url="https://example.com/archived_dog",
-            category="adoption",
-            status="adopted",
-            archived_at=datetime.now(timezone.utc),
-        ))
-        async_session.add(AnimalArchive(
-            original_id=102,
-            species="猫",
-            shelter_date=date(2025, 6, 1),
-            location="高知県",
-            source_url="https://example.com/archived_cat",
-            category="adoption",
-            status="adopted",
-            archived_at=datetime.now(timezone.utc),
-        ))
+        async_session.add(
+            AnimalArchive(
+                original_id=101,
+                species="犬",
+                shelter_date=date(2025, 6, 1),
+                location="高知県",
+                source_url="https://example.com/archived_dog",
+                category="adoption",
+                status="adopted",
+                archived_at=datetime.now(UTC),
+            )
+        )
+        async_session.add(
+            AnimalArchive(
+                original_id=102,
+                species="猫",
+                shelter_date=date(2025, 6, 1),
+                location="高知県",
+                source_url="https://example.com/archived_cat",
+                category="adoption",
+                status="adopted",
+                archived_at=datetime.now(UTC),
+            )
+        )
         await async_session.commit()
 
         result, total = await archive_repository.list_archived(species="犬")
@@ -163,31 +171,33 @@ class TestListArchived:
     async def test_list_archived_filters_by_archived_from(self, archive_repository, async_session):
         """list_archived() が archived_from でフィルタリングできるか"""
         # 異なる日時のアーカイブデータを挿入
-        async_session.add(AnimalArchive(
-            original_id=103,
-            species="犬",
-            shelter_date=date(2025, 6, 1),
-            location="高知県",
-            source_url="https://example.com/archived_old",
-            category="adoption",
-            status="adopted",
-            archived_at=datetime(2025, 10, 1, tzinfo=timezone.utc),
-        ))
-        async_session.add(AnimalArchive(
-            original_id=104,
-            species="猫",
-            shelter_date=date(2025, 6, 1),
-            location="高知県",
-            source_url="https://example.com/archived_new",
-            category="adoption",
-            status="adopted",
-            archived_at=datetime(2025, 12, 1, tzinfo=timezone.utc),
-        ))
+        async_session.add(
+            AnimalArchive(
+                original_id=103,
+                species="犬",
+                shelter_date=date(2025, 6, 1),
+                location="高知県",
+                source_url="https://example.com/archived_old",
+                category="adoption",
+                status="adopted",
+                archived_at=datetime(2025, 10, 1, tzinfo=UTC),
+            )
+        )
+        async_session.add(
+            AnimalArchive(
+                original_id=104,
+                species="猫",
+                shelter_date=date(2025, 6, 1),
+                location="高知県",
+                source_url="https://example.com/archived_new",
+                category="adoption",
+                status="adopted",
+                archived_at=datetime(2025, 12, 1, tzinfo=UTC),
+            )
+        )
         await async_session.commit()
 
-        result, total = await archive_repository.list_archived(
-            archived_from=date(2025, 11, 1)
-        )
+        result, total = await archive_repository.list_archived(archived_from=date(2025, 11, 1))
 
         assert len(result) == 1
         assert total == 1
@@ -196,31 +206,33 @@ class TestListArchived:
     @pytest.mark.asyncio
     async def test_list_archived_filters_by_archived_to(self, archive_repository, async_session):
         """list_archived() が archived_to でフィルタリングできるか"""
-        async_session.add(AnimalArchive(
-            original_id=105,
-            species="犬",
-            shelter_date=date(2025, 6, 1),
-            location="高知県",
-            source_url="https://example.com/archived_early",
-            category="adoption",
-            status="adopted",
-            archived_at=datetime(2025, 9, 1, tzinfo=timezone.utc),
-        ))
-        async_session.add(AnimalArchive(
-            original_id=106,
-            species="猫",
-            shelter_date=date(2025, 6, 1),
-            location="高知県",
-            source_url="https://example.com/archived_late",
-            category="adoption",
-            status="adopted",
-            archived_at=datetime(2025, 12, 1, tzinfo=timezone.utc),
-        ))
+        async_session.add(
+            AnimalArchive(
+                original_id=105,
+                species="犬",
+                shelter_date=date(2025, 6, 1),
+                location="高知県",
+                source_url="https://example.com/archived_early",
+                category="adoption",
+                status="adopted",
+                archived_at=datetime(2025, 9, 1, tzinfo=UTC),
+            )
+        )
+        async_session.add(
+            AnimalArchive(
+                original_id=106,
+                species="猫",
+                shelter_date=date(2025, 6, 1),
+                location="高知県",
+                source_url="https://example.com/archived_late",
+                category="adoption",
+                status="adopted",
+                archived_at=datetime(2025, 12, 1, tzinfo=UTC),
+            )
+        )
         await async_session.commit()
 
-        result, total = await archive_repository.list_archived(
-            archived_to=date(2025, 10, 1)
-        )
+        result, total = await archive_repository.list_archived(archived_to=date(2025, 10, 1))
 
         assert len(result) == 1
         assert total == 1
@@ -231,16 +243,18 @@ class TestListArchived:
         """list_archived() がページネーションを正しく適用するか"""
         # アーカイブテストデータを10件挿入
         for i in range(10):
-            async_session.add(AnimalArchive(
-                original_id=200 + i,
-                species="犬",
-                shelter_date=date(2025, 6, 1),
-                location="高知県",
-                source_url=f"https://example.com/archived_page{i}",
-                category="adoption",
-                status="adopted",
-                archived_at=datetime(2025, 12, 15, tzinfo=timezone.utc),
-            ))
+            async_session.add(
+                AnimalArchive(
+                    original_id=200 + i,
+                    species="犬",
+                    shelter_date=date(2025, 6, 1),
+                    location="高知県",
+                    source_url=f"https://example.com/archived_page{i}",
+                    category="adoption",
+                    status="adopted",
+                    archived_at=datetime(2025, 12, 15, tzinfo=UTC),
+                )
+            )
         await async_session.commit()
 
         result, total = await archive_repository.list_archived(limit=3, offset=2)
@@ -273,7 +287,7 @@ class TestInsertArchive:
             source_url="https://example.com/animal/to_archive",
             category="adoption",
             status="adopted",
-            status_changed_at=datetime(2025, 6, 15, tzinfo=timezone.utc),
+            status_changed_at=datetime(2025, 6, 15, tzinfo=UTC),
             outcome_date=date(2025, 6, 15),
         )
         async_session.add(animal)
@@ -285,6 +299,7 @@ class TestInsertArchive:
 
         # 挿入されていることを確認
         from sqlalchemy import select
+
         stmt = select(AnimalArchive).where(
             AnimalArchive.source_url == "https://example.com/animal/to_archive"
         )
@@ -315,7 +330,7 @@ class TestInsertArchive:
             source_url="https://example.com/animal/preserve_fields",
             category="lost",
             status="returned",
-            status_changed_at=datetime(2025, 5, 20, tzinfo=timezone.utc),
+            status_changed_at=datetime(2025, 5, 20, tzinfo=UTC),
             outcome_date=date(2025, 5, 20),
         )
         async_session.add(animal)
@@ -325,6 +340,7 @@ class TestInsertArchive:
         await archive_repository.insert_archive(animal)
 
         from sqlalchemy import select
+
         stmt = select(AnimalArchive).where(AnimalArchive.original_id == 501)
         result = await async_session.execute(stmt)
         archived = result.scalar_one()
@@ -350,9 +366,9 @@ class TestReadOnlyConstraint:
     @pytest.mark.asyncio
     async def test_archive_repository_has_no_update_method(self, archive_repository):
         """ArchiveRepository に update メソッドがないことを確認"""
-        assert not hasattr(archive_repository, 'update_archive')
+        assert not hasattr(archive_repository, "update_archive")
 
     @pytest.mark.asyncio
     async def test_archive_repository_has_no_delete_method(self, archive_repository):
         """ArchiveRepository に delete メソッドがないことを確認"""
-        assert not hasattr(archive_repository, 'delete_archive')
+        assert not hasattr(archive_repository, "delete_archive")

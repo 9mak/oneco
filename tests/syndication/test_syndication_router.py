@@ -9,19 +9,19 @@ TDD アプローチ:
 - アーカイブフィード
 """
 
+from datetime import date
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from datetime import date, datetime
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock, patch, MagicMock
 from pydantic import HttpUrl
 
-from src.syndication_service.api.routes import create_syndication_router
-from src.syndication_service.services.feed_generator import FeedGenerator
-from src.syndication_service.services.cache_manager import CacheManager
-from src.syndication_service.services.input_validator import InputValidator
-from src.syndication_service.services.metrics_collector import MetricsCollector
 from src.data_collector.domain.models import AnimalData, AnimalStatus
+from src.syndication_service.api.routes import create_syndication_router
+from src.syndication_service.services.cache_manager import CacheManager
+from src.syndication_service.services.feed_generator import FeedGenerator
+from src.syndication_service.services.metrics_collector import MetricsCollector
 
 
 @pytest.fixture
@@ -54,7 +54,7 @@ def app(mock_animal_repo, mock_cache_manager):
     router = create_syndication_router(
         feed_generator=feed_generator,
         cache_manager=mock_cache_manager,
-        metrics_collector=metrics_collector
+        metrics_collector=metrics_collector,
     )
 
     app.include_router(router, prefix="/feeds")
@@ -102,8 +102,9 @@ class TestFeedQueryParams:
 
     def test_feed_query_params_limit_validation(self):
         """limit パラメータが 1~100 の範囲でバリデーションされること"""
-        from src.syndication_service.models.schemas import FeedQueryParams
         from pydantic import ValidationError
+
+        from src.syndication_service.models.schemas import FeedQueryParams
 
         # 正常値
         params = FeedQueryParams(limit=50)
@@ -234,8 +235,7 @@ class TestArchiveFeedQueryParams:
         from src.syndication_service.models.schemas import ArchiveFeedQueryParams
 
         params = ArchiveFeedQueryParams(
-            archived_from=date(2026, 1, 1),
-            archived_to=date(2026, 1, 31)
+            archived_from=date(2026, 1, 1), archived_to=date(2026, 1, 31)
         )
 
         assert params.archived_from == date(2026, 1, 1)
@@ -245,10 +245,7 @@ class TestArchiveFeedQueryParams:
         """to_dict() が日付を文字列に変換すること"""
         from src.syndication_service.models.schemas import ArchiveFeedQueryParams
 
-        params = ArchiveFeedQueryParams(
-            species="犬",
-            archived_from=date(2026, 1, 1)
-        )
+        params = ArchiveFeedQueryParams(species="犬", archived_from=date(2026, 1, 1))
         result = params.to_dict()
 
         assert result["species"] == "犬"

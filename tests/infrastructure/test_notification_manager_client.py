@@ -1,8 +1,9 @@
 """NotificationManagerClient のテスト"""
 
-import pytest
 from datetime import date
-from unittest.mock import AsyncMock, Mock, patch, MagicMock
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 from pydantic import HttpUrl
 
 from src.data_collector.domain.models import AnimalData
@@ -166,9 +167,7 @@ class TestNotificationManagerClient:
             mock_client = AsyncMock()
             mock_response = Mock()
             mock_response.status_code = 500
-            mock_response.raise_for_status = Mock(
-                side_effect=Exception("Internal Server Error")
-            )
+            mock_response.raise_for_status = Mock(side_effect=Exception("Internal Server Error"))
             mock_client.post = AsyncMock(return_value=mock_response)
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client.__aexit__ = AsyncMock(return_value=None)

@@ -9,7 +9,6 @@ Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 7.4
 
 import asyncio
 import logging
-from typing import Optional
 
 from src.notification_manager.domain.models import NotificationMessage, SendResult
 
@@ -22,8 +21,8 @@ class LineAdapterError(Exception):
     def __init__(
         self,
         message: str,
-        error_code: Optional[str] = None,
-        retry_after: Optional[int] = None,
+        error_code: str | None = None,
+        retry_after: int | None = None,
     ):
         super().__init__(message)
         self.error_code = error_code
@@ -97,10 +96,10 @@ class LineNotificationAdapter:
         """
         self._ensure_initialized()
         try:
-            if hasattr(self, '_webhook_parser'):
+            if hasattr(self, "_webhook_parser"):
                 # 実際のline-bot-sdk使用時
                 # 署名検証はパース時に行われる
-                self._webhook_parser.parse(body.decode('utf-8'), signature)
+                self._webhook_parser.parse(body.decode("utf-8"), signature)
                 return True
             elif self._signature_validator:
                 # モック使用時
@@ -220,7 +219,7 @@ class LineNotificationAdapter:
                 delay = result.retry_after
             else:
                 # 指数バックオフ
-                delay = base_delay * (2 ** attempt)
+                delay = base_delay * (2**attempt)
 
             if attempt < max_retries - 1:
                 logger.info(
@@ -229,25 +228,23 @@ class LineNotificationAdapter:
                 )
                 await asyncio.sleep(delay)
 
-        logger.error(
-            f"All {max_retries} retries failed for {line_user_id[:8]}..."
-        )
+        logger.error(f"All {max_retries} retries failed for {line_user_id[:8]}...")
         return last_result
 
-    def _extract_error_code(self, exception: Exception) -> Optional[str]:
+    def _extract_error_code(self, exception: Exception) -> str | None:
         """例外からエラーコードを抽出"""
-        if hasattr(exception, 'status_code'):
+        if hasattr(exception, "status_code"):
             return str(exception.status_code)
-        if hasattr(exception, 'error_code'):
+        if hasattr(exception, "error_code"):
             return str(exception.error_code)
         return "UNKNOWN"
 
-    def _extract_retry_after(self, exception: Exception) -> Optional[int]:
+    def _extract_retry_after(self, exception: Exception) -> int | None:
         """例外からRetry-After値を抽出"""
-        if hasattr(exception, 'retry_after'):
+        if hasattr(exception, "retry_after"):
             return exception.retry_after
-        if hasattr(exception, 'headers'):
-            retry_after = exception.headers.get('Retry-After')
+        if hasattr(exception, "headers"):
+            retry_after = exception.headers.get("Retry-After")
             if retry_after:
                 return int(retry_after)
         return None

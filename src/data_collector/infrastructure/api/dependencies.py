@@ -5,9 +5,12 @@ FastAPI 依存性注入
 テスト用にオーバーライド可能な設計になっています。
 """
 
-from typing import AsyncGenerator, Annotated
+from collections.abc import AsyncGenerator
+from typing import Annotated
+
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+
 import src.data_collector.infrastructure.api.app as app_module
 
 

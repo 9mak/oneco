@@ -8,8 +8,10 @@ TDD アプローチ:
 - Redis 障害時の graceful degradation
 """
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, Mock, patch
+
 from src.syndication_service.services.cache_manager import CacheManager
 
 
@@ -90,7 +92,7 @@ class TestCacheRetrival:
 
     async def test_get_cached_feed_cache_miss(self, cache_manager, filter_params_1):
         """キャッシュミス時に (None, None, False) を返すこと"""
-        with patch.object(cache_manager, 'redis_client', new_callable=AsyncMock) as mock_redis:
+        with patch.object(cache_manager, "redis_client", new_callable=AsyncMock) as mock_redis:
             mock_redis.get.return_value = None  # キャッシュミス
 
             feed_xml, etag, is_304 = await cache_manager.get_cached_feed("rss", filter_params_1)
@@ -103,7 +105,7 @@ class TestCacheRetrival:
         """キャッシュヒット時にフィード XML と ETag を返すこと"""
         cached_xml = '<?xml version="1.0"?><rss>...</rss>'
 
-        with patch.object(cache_manager, 'redis_client', new_callable=AsyncMock) as mock_redis:
+        with patch.object(cache_manager, "redis_client", new_callable=AsyncMock) as mock_redis:
             mock_redis.get.return_value = cached_xml
 
             feed_xml, etag, is_304 = await cache_manager.get_cached_feed("rss", filter_params_1)
@@ -117,7 +119,7 @@ class TestCacheRetrival:
         """If-None-Match ヘッダーが一致した場合、is_304=True を返すこと"""
         cached_xml = '<?xml version="1.0"?><rss>...</rss>'
 
-        with patch.object(cache_manager, 'redis_client', new_callable=AsyncMock) as mock_redis:
+        with patch.object(cache_manager, "redis_client", new_callable=AsyncMock) as mock_redis:
             mock_redis.get.return_value = cached_xml
 
             # 最初にキャッシュを取得して ETag を取得
@@ -141,7 +143,7 @@ class TestCacheSaving:
         """キャッシュ保存が成功し、ETag を返すこと"""
         feed_xml = '<?xml version="1.0"?><rss>...</rss>'
 
-        with patch.object(cache_manager, 'redis_client', new_callable=AsyncMock) as mock_redis:
+        with patch.object(cache_manager, "redis_client", new_callable=AsyncMock) as mock_redis:
             mock_redis.setex.return_value = True
 
             etag = await cache_manager.save_cached_feed("rss", filter_params_1, feed_xml)
@@ -158,7 +160,7 @@ class TestCacheSaving:
         """キャッシュの TTL が 300秒であることを確認"""
         feed_xml = '<?xml version="1.0"?><rss>...</rss>'
 
-        with patch.object(cache_manager, 'redis_client', new_callable=AsyncMock) as mock_redis:
+        with patch.object(cache_manager, "redis_client", new_callable=AsyncMock) as mock_redis:
             await cache_manager.save_cached_feed("rss", filter_params_1, feed_xml)
 
             # setex の第2引数が TTL
@@ -172,7 +174,7 @@ class TestGracefulDegradation:
 
     async def test_get_cached_feed_redis_failure_returns_miss(self, cache_manager, filter_params_1):
         """Redis 接続失敗時にキャッシュミスとして扱うこと"""
-        with patch.object(cache_manager, 'redis_client', new_callable=AsyncMock) as mock_redis:
+        with patch.object(cache_manager, "redis_client", new_callable=AsyncMock) as mock_redis:
             mock_redis.get.side_effect = Exception("Redis connection error")
 
             feed_xml, etag, is_304 = await cache_manager.get_cached_feed("rss", filter_params_1)
@@ -186,7 +188,7 @@ class TestGracefulDegradation:
         """Redis 接続失敗時にも処理を継続すること（例外を発生させない）"""
         feed_xml = '<?xml version="1.0"?><rss>...</rss>'
 
-        with patch.object(cache_manager, 'redis_client', new_callable=AsyncMock) as mock_redis:
+        with patch.object(cache_manager, "redis_client", new_callable=AsyncMock) as mock_redis:
             mock_redis.setex.side_effect = Exception("Redis connection error")
 
             # 例外が発生せず、None または空文字列の ETag を返す

@@ -13,16 +13,17 @@ Requirements Coverage:
 """
 
 import hashlib
-from datetime import datetime, timezone
-from typing import List, Literal, Optional
+from datetime import UTC, datetime
+from typing import Literal
+
 from feedgen.feed import FeedGenerator as PyFeedGenerator
-from feedgen.entry import FeedEntry
 
 from src.data_collector.domain.models import AnimalData
 
 
 class FeedGenerationError(Exception):
     """フィード生成エラー"""
+
     pass
 
 
@@ -37,9 +38,9 @@ class FeedGenerator:
 
     def generate_rss(
         self,
-        animals: List[AnimalData],
+        animals: list[AnimalData],
         filter_params: dict,
-        feed_type: Literal["active", "archive"] = "active"
+        feed_type: Literal["active", "archive"] = "active",
     ) -> str:
         """
         RSS 2.0 フィードを生成
@@ -63,15 +64,15 @@ class FeedGenerator:
                 self._add_rss_item(fg, animal)
 
             # RSS 2.0 XML を生成
-            return fg.rss_str(pretty=True).decode('utf-8')
+            return fg.rss_str(pretty=True).decode("utf-8")
         except Exception as e:
             raise FeedGenerationError(f"RSS フィード生成に失敗しました: {e}")
 
     def generate_atom(
         self,
-        animals: List[AnimalData],
+        animals: list[AnimalData],
         filter_params: dict,
-        feed_type: Literal["active", "archive"] = "active"
+        feed_type: Literal["active", "archive"] = "active",
     ) -> str:
         """
         Atom 1.0 フィードを生成
@@ -95,15 +96,12 @@ class FeedGenerator:
                 self._add_atom_entry(fg, animal)
 
             # Atom 1.0 XML を生成
-            return fg.atom_str(pretty=True).decode('utf-8')
+            return fg.atom_str(pretty=True).decode("utf-8")
         except Exception as e:
             raise FeedGenerationError(f"Atom フィード生成に失敗しました: {e}")
 
     def _create_feed_generator(
-        self,
-        filter_params: dict,
-        feed_type: str,
-        format_type: str
+        self, filter_params: dict, feed_type: str, format_type: str
     ) -> PyFeedGenerator:
         """
         FeedGenerator インスタンスを作成し、チャンネル/フィード情報を設定
@@ -128,13 +126,13 @@ class FeedGenerator:
 
         # 基本情報設定
         fg.title(title)
-        fg.link(href=feed_url, rel='self')
+        fg.link(href=feed_url, rel="self")
         fg.description(description)
 
         # Atom の場合は追加フィールド
         if format_type == "atom":
             # Atom の id: tag URI スキーム
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             feed_id = f"tag:example.com,{now.strftime('%Y-%m-%d')}:/feeds/atom"
             fg.id(feed_id)
             fg.subtitle(description)
@@ -143,7 +141,7 @@ class FeedGenerator:
         # RSS の場合は TTL 設定
         if format_type == "rss":
             fg.ttl(3600)  # 1時間ごとの更新チェックを推奨
-            fg.lastBuildDate(datetime.now(timezone.utc))
+            fg.lastBuildDate(datetime.now(UTC))
 
         return fg
 
@@ -221,7 +219,7 @@ class FeedGenerator:
 
         # pubDate: shelter_date
         # datetime に変換（date -> datetime、UTC タイムゾーン付き）
-        pub_date = datetime.combine(animal.shelter_date, datetime.min.time(), tzinfo=timezone.utc)
+        pub_date = datetime.combine(animal.shelter_date, datetime.min.time(), tzinfo=UTC)
         fe.pubDate(pub_date)
 
         # GUID: source_url の MD5 ハッシュ
@@ -258,18 +256,22 @@ class FeedGenerator:
 
         # id: tag URI スキーム
         guid = self._generate_guid(str(animal.source_url))
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         entry_id = f"tag:example.com,{now.strftime('%Y-%m-%d')}:/animals/{guid}"
         fe.id(entry_id)
 
         # published: shelter_date
-        published = datetime.combine(animal.shelter_date, datetime.min.time(), tzinfo=timezone.utc)
+        published = datetime.combine(animal.shelter_date, datetime.min.time(), tzinfo=UTC)
         fe.published(published)
 
         # updated: status_changed_at または現在時刻
         if animal.status_changed_at:
             # status_changed_at にタイムゾーンがない場合は UTC と仮定
-            updated = animal.status_changed_at.replace(tzinfo=timezone.utc) if animal.status_changed_at.tzinfo is None else animal.status_changed_at
+            updated = (
+                animal.status_changed_at.replace(tzinfo=UTC)
+                if animal.status_changed_at.tzinfo is None
+                else animal.status_changed_at
+            )
         else:
             updated = now
         fe.updated(updated)

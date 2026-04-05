@@ -6,11 +6,9 @@ sites.yaml からサイト定義を読み込み、Pydantic モデルでバリデ
 """
 
 from pathlib import Path
-from typing import List, Optional
 
 import yaml
 from pydantic import BaseModel, field_validator
-
 
 SUPPORTED_PROVIDERS = {"anthropic", "openai", "google"}
 
@@ -22,17 +20,19 @@ class SiteConfig(BaseModel):
     prefecture: str
     prefecture_code: str
     list_url: str
-    list_link_pattern: Optional[str] = None
+    list_link_pattern: str | None = None
     category: str = "adoption"
     extraction: str = "llm"
     single_page: bool = False  # True の場合、list_url 自体が動物情報を含む（detail pageなし）
-    max_pages: Optional[int] = None
-    provider: Optional[str] = None
-    model: Optional[str] = None
+    max_pages: int | None = None
+    provider: str | None = None
+    model: str | None = None
     request_interval: float = 1.0
     requires_js: bool = False  # TrueのときPlaywrightを使用
-    wait_selector: Optional[str] = None  # JS描画完了を待つCSSセレクター
-    pdf_link_pattern: Optional[str] = None  # PDFリンクのCSSセレクター（指定時はPDFをダウンロードして抽出）
+    wait_selector: str | None = None  # JS描画完了を待つCSSセレクター
+    pdf_link_pattern: str | None = (
+        None  # PDFリンクのCSSセレクター（指定時はPDFをダウンロードして抽出）
+    )
     pdf_multi_animal: bool = False  # TrueのときPDF1件から複数動物を抽出（一覧表形式PDF用）
 
     @field_validator("name", "prefecture", "list_url")
@@ -55,18 +55,15 @@ class SiteConfig(BaseModel):
     @classmethod
     def validate_extraction(cls, v: str) -> str:
         if v not in ("llm", "rule-based"):
-            raise ValueError(
-                f"無効な抽出方式: {v}。'llm' または 'rule-based' を指定してください"
-            )
+            raise ValueError(f"無効な抽出方式: {v}。'llm' または 'rule-based' を指定してください")
         return v
 
     @field_validator("provider")
     @classmethod
-    def validate_provider(cls, v: Optional[str]) -> Optional[str]:
+    def validate_provider(cls, v: str | None) -> str | None:
         if v is not None and v not in SUPPORTED_PROVIDERS:
             raise ValueError(
-                f"未対応プロバイダー: {v}。"
-                f"サポート対象: {', '.join(sorted(SUPPORTED_PROVIDERS))}"
+                f"未対応プロバイダー: {v}。サポート対象: {', '.join(sorted(SUPPORTED_PROVIDERS))}"
             )
         return v
 
@@ -74,9 +71,7 @@ class SiteConfig(BaseModel):
     @classmethod
     def validate_request_interval(cls, v: float) -> float:
         if v < 1.0:
-            raise ValueError(
-                f"request_interval は1.0秒以上である必要があります（指定値: {v}）"
-            )
+            raise ValueError(f"request_interval は1.0秒以上である必要があります（指定値: {v}）")
         return v
 
 
@@ -91,8 +86,7 @@ class ExtractionConfig(BaseModel):
     def validate_default_provider(cls, v: str) -> str:
         if v not in SUPPORTED_PROVIDERS:
             raise ValueError(
-                f"未対応プロバイダー: {v}。"
-                f"サポート対象: {', '.join(sorted(SUPPORTED_PROVIDERS))}"
+                f"未対応プロバイダー: {v}。サポート対象: {', '.join(sorted(SUPPORTED_PROVIDERS))}"
             )
         return v
 
@@ -101,11 +95,11 @@ class SitesConfig(BaseModel):
     """トップレベル設定（extraction + sites）"""
 
     extraction: ExtractionConfig = ExtractionConfig()
-    sites: List[SiteConfig]
+    sites: list[SiteConfig]
 
     @field_validator("sites")
     @classmethod
-    def must_have_sites(cls, v: List[SiteConfig]) -> List[SiteConfig]:
+    def must_have_sites(cls, v: list[SiteConfig]) -> list[SiteConfig]:
         if not v:
             raise ValueError("sites には1つ以上のサイト定義が必要です")
         return v
@@ -133,7 +127,7 @@ class SiteConfigLoader:
         if not config_path.exists():
             raise FileNotFoundError(f"設定ファイルが見つかりません: {config_path}")
 
-        with open(config_path, "r", encoding="utf-8") as f:
+        with open(config_path, encoding="utf-8") as f:
             raw = yaml.safe_load(f)
 
         if not isinstance(raw, dict):
@@ -142,9 +136,7 @@ class SiteConfigLoader:
         return SitesConfig(**raw)
 
     @staticmethod
-    def resolve_provider(
-        site: SiteConfig, config: SitesConfig
-    ) -> tuple[str, str]:
+    def resolve_provider(site: SiteConfig, config: SitesConfig) -> tuple[str, str]:
         """
         サイト定義のプロバイダー/モデルをグローバルデフォルトで解決する
 

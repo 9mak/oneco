@@ -10,21 +10,21 @@ Requirements: 2.1-2.5, 6.6, 7.2-7.4
 """
 
 import logging
-from datetime import datetime, timezone
-from typing import Callable, Optional
+from collections.abc import Callable
+from datetime import UTC, datetime
 
-from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request, Response
+from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 
+from src.data_collector.domain.models import AnimalData
+from src.notification_manager.adapters.line_adapter import LineNotificationAdapter
+from src.notification_manager.domain.services import NotificationService, UserService
 from src.notification_manager.infrastructure.api.schemas import (
-    NewAnimalWebhookRequest,
-    WebhookResponse,
     HealthResponse,
     LineWebhookRequest,
+    NewAnimalWebhookRequest,
+    WebhookResponse,
 )
-from src.notification_manager.domain.services import NotificationService, UserService
-from src.notification_manager.adapters.line_adapter import LineNotificationAdapter
-from src.data_collector.domain.models import AnimalData
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +41,9 @@ class NotificationWebhookDeps:
         notification_service: NotificationService = None,
         user_service: UserService = None,
         line_adapter: LineNotificationAdapter = None,
-        api_key: str = None,
-        db_check_func: Callable[[], bool] = None,
-        line_api_check_func: Callable[[], bool] = None,
+        api_key: str | None = None,
+        db_check_func: Callable[[], bool] | None = None,
+        line_api_check_func: Callable[[], bool] | None = None,
     ):
         self._notification_service = notification_service
         self._user_service = user_service
@@ -77,7 +77,7 @@ def create_notification_router(deps: NotificationWebhookDeps) -> APIRouter:
     async def receive_notification_webhook(
         request: NewAnimalWebhookRequest,
         background_tasks: BackgroundTasks,
-        x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+        x_api_key: str | None = Header(None, alias="X-API-Key"),
     ):
         """
         data-collectorからの新着動物Webhookを受信
@@ -90,7 +90,7 @@ def create_notification_router(deps: NotificationWebhookDeps) -> APIRouter:
             raise HTTPException(status_code=401, detail="API key required")
 
         if x_api_key != deps._api_key:
-            logger.warning(f"Webhook request with invalid API key")
+            logger.warning("Webhook request with invalid API key")
             raise HTTPException(status_code=401, detail="Invalid API key")
 
         # AnimalDataに変換
@@ -118,9 +118,7 @@ def create_notification_router(deps: NotificationWebhookDeps) -> APIRouter:
             animals,
         )
 
-        logger.info(
-            f"Webhook received: {len(animals)} animals from {request.source}"
-        )
+        logger.info(f"Webhook received: {len(animals)} animals from {request.source}")
 
         return WebhookResponse(
             status="accepted",
@@ -136,7 +134,7 @@ def create_notification_router(deps: NotificationWebhookDeps) -> APIRouter:
     async def receive_line_webhook(
         request: Request,
         background_tasks: BackgroundTasks,
-        x_line_signature: Optional[str] = Header(None, alias="X-Line-Signature"),
+        x_line_signature: str | None = Header(None, alias="X-Line-Signature"),
     ):
         """
         LINEプラットフォームからのWebhookを受信
@@ -150,9 +148,7 @@ def create_notification_router(deps: NotificationWebhookDeps) -> APIRouter:
 
         body = await request.body()
 
-        if deps._line_adapter and not deps._line_adapter.verify_signature(
-            body, x_line_signature
-        ):
+        if deps._line_adapter and not deps._line_adapter.verify_signature(body, x_line_signature):
             logger.warning("LINE webhook signature verification failed")
             raise HTTPException(status_code=400, detail="Invalid signature")
 
@@ -170,18 +166,14 @@ def create_notification_router(deps: NotificationWebhookDeps) -> APIRouter:
                 # 友だち追加
                 user_id = event.source.get("userId")
                 if user_id and deps._user_service:
-                    background_tasks.add_task(
-                        deps._user_service.register_user, user_id
-                    )
+                    background_tasks.add_task(deps._user_service.register_user, user_id)
                     logger.info(f"Follow event received: {user_id[:8]}...")
 
             elif event.type == "unfollow":
                 # ブロック/削除
                 user_id = event.source.get("userId")
                 if user_id and deps._user_service:
-                    background_tasks.add_task(
-                        deps._user_service.deactivate_user, user_id
-                    )
+                    background_tasks.add_task(deps._user_service.deactivate_user, user_id)
                     logger.info(f"Unfollow event received: {user_id[:8]}...")
 
             elif event.type == "message":
@@ -227,7 +219,7 @@ def create_notification_router(deps: NotificationWebhookDeps) -> APIRouter:
             status=status,
             database=db_ok,
             line_api=line_api_ok,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
 
         if status_code != 200:

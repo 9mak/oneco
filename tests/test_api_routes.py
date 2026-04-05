@@ -5,16 +5,16 @@ GET /animals と GET /animals/{id} エンドポイントが
 要件通りに実装されているかを検証します。
 """
 
+from datetime import date
+
 import pytest
 import pytest_asyncio
-from datetime import date
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from src.data_collector.infrastructure.database.models import Animal, AnimalStatusHistory, Base
-from src.data_collector.infrastructure.database.repository import AnimalRepository
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 from src.data_collector.infrastructure.api.app import create_app
 from src.data_collector.infrastructure.api.dependencies import get_session
-from src.data_collector.domain.models import AnimalStatus
+from src.data_collector.infrastructure.database.models import Animal, Base
 
 
 @pytest_asyncio.fixture
@@ -72,7 +72,7 @@ async def populated_session(async_session):
             phone="088-123-4567",
             image_urls=["https://example.com/img1.jpg"],
             source_url="https://example.com/animal/1",
-            category="adoption"
+            category="adoption",
         ),
         Animal(
             species="猫",
@@ -85,7 +85,7 @@ async def populated_session(async_session):
             phone="088-999-8888",
             image_urls=["https://example.com/img2.jpg"],
             source_url="https://example.com/animal/2",
-            category="adoption"
+            category="adoption",
         ),
         Animal(
             species="犬",
@@ -98,7 +98,7 @@ async def populated_session(async_session):
             phone="088-111-2222",
             image_urls=[],
             source_url="https://example.com/animal/3",
-            category="adoption"
+            category="adoption",
         ),
     ]
 
@@ -324,10 +324,7 @@ async def test_update_status_success(test_app, animal_for_status_update):
     animal_id = animal_for_status_update.id
 
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
-        response = await client.patch(
-            f"/animals/{animal_id}/status",
-            json={"status": "adopted"}
-        )
+        response = await client.patch(f"/animals/{animal_id}/status", json={"status": "adopted"})
 
     assert response.status_code == 200
     data = response.json()
@@ -344,8 +341,7 @@ async def test_update_status_with_outcome_date(test_app, animal_for_status_updat
 
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
         response = await client.patch(
-            f"/animals/{animal_id}/status",
-            json={"status": "adopted", "outcome_date": "2026-01-20"}
+            f"/animals/{animal_id}/status", json={"status": "adopted", "outcome_date": "2026-01-20"}
         )
 
     assert response.status_code == 200
@@ -371,10 +367,7 @@ async def test_update_status_invalid_transition(test_app, async_session):
     await async_session.refresh(animal)
 
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
-        response = await client.patch(
-            f"/animals/{animal.id}/status",
-            json={"status": "sheltered"}
-        )
+        response = await client.patch(f"/animals/{animal.id}/status", json={"status": "sheltered"})
 
     assert response.status_code == 422
     data = response.json()
@@ -385,10 +378,7 @@ async def test_update_status_invalid_transition(test_app, async_session):
 async def test_update_status_not_found(test_app, async_session):
     """PATCH /animals/{id}/status が存在しない動物で 404 を返すか"""
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
-        response = await client.patch(
-            "/animals/99999/status",
-            json={"status": "adopted"}
-        )
+        response = await client.patch("/animals/99999/status", json={"status": "adopted"})
 
     assert response.status_code == 404
 
@@ -400,8 +390,7 @@ async def test_update_status_invalid_status_value(test_app, animal_for_status_up
 
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
         response = await client.patch(
-            f"/animals/{animal_id}/status",
-            json={"status": "invalid_status"}
+            f"/animals/{animal_id}/status", json={"status": "invalid_status"}
         )
 
     assert response.status_code == 422
@@ -460,7 +449,9 @@ async def test_list_animals_filters_by_status_api(test_app, animals_with_differe
 
 
 @pytest.mark.asyncio
-async def test_list_animals_without_status_returns_all_api(test_app, animals_with_different_statuses):
+async def test_list_animals_without_status_returns_all_api(
+    test_app, animals_with_different_statuses
+):
     """GET /animals でステータス指定なしの場合全ステータスを返すか"""
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
         response = await client.get("/animals")
@@ -481,9 +472,12 @@ async def test_list_animals_invalid_status_returns_400(test_app, animals_with_di
 
 
 @pytest.mark.asyncio
-async def test_get_animal_includes_status_fields(test_app, animals_with_different_statuses, async_session):
+async def test_get_animal_includes_status_fields(
+    test_app, animals_with_different_statuses, async_session
+):
     """GET /animals/{id} がステータスフィールドを含むか"""
     from sqlalchemy import select
+
     stmt = select(Animal).limit(1)
     result = await async_session.execute(stmt)
     animal = result.scalar_one()
@@ -504,8 +498,9 @@ async def test_get_animal_includes_status_fields(test_app, animals_with_differen
 @pytest_asyncio.fixture
 async def archived_animals(async_session):
     """アーカイブされた動物データを作成"""
-    from src.data_collector.infrastructure.database.models import AnimalArchive
     from datetime import datetime
+
+    from src.data_collector.infrastructure.database.models import AnimalArchive
 
     archives = [
         AnimalArchive(

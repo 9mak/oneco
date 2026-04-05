@@ -5,9 +5,9 @@ SQLAlchemy データベースモデル定義
 PostgreSQL を対象としていますが、テストでは SQLite も使用可能です。
 """
 
-from typing import List, Optional
 from datetime import date, datetime
-from sqlalchemy import Column, Integer, String, Date, DateTime, Text, Index, JSON, ForeignKey
+
+from sqlalchemy import JSON, Column, Date, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, relationship
 
@@ -55,7 +55,7 @@ class Animal(Base):
     phone: str = Column(String(20), nullable=True)
 
     # JSON配列（PostgreSQLではJSONB、SQLiteではJSONとして扱う）
-    image_urls: List[str] = Column(
+    image_urls: list[str] = Column(
         JSON().with_variant(JSONB, "postgresql"),
         nullable=False,
         default=list,
@@ -72,17 +72,17 @@ class Animal(Base):
         server_default="sheltered",
         index=True,
     )
-    status_changed_at: Optional[datetime] = Column(
+    status_changed_at: datetime | None = Column(
         DateTime(timezone=True),
         nullable=True,
     )
-    outcome_date: Optional[date] = Column(
+    outcome_date: date | None = Column(
         Date,
         nullable=True,
     )
 
     # 画像永続化フィールド
-    local_image_paths: List[str] = Column(
+    local_image_paths: list[str] = Column(
         JSON().with_variant(JSONB, "postgresql"),
         nullable=False,
         default=list,
@@ -141,7 +141,7 @@ class AnimalStatusHistory(Base):
         nullable=False,
         default=datetime.utcnow,
     )
-    changed_by: Optional[str] = Column(String(100), nullable=True)
+    changed_by: str | None = Column(String(100), nullable=True)
 
     # Animal へのリレーション
     animal = relationship("Animal", back_populates="status_history")
@@ -207,19 +207,19 @@ class AnimalArchive(Base):
     # 動物情報（animals テーブルと同一スキーマ）
     species: str = Column(String(50), nullable=False, index=True)
     sex: str = Column(String(20), nullable=False, default="不明")
-    age_months: Optional[int] = Column(Integer, nullable=True)
-    color: Optional[str] = Column(String(100), nullable=True)
-    size: Optional[str] = Column(String(50), nullable=True)
+    age_months: int | None = Column(Integer, nullable=True)
+    color: str | None = Column(String(100), nullable=True)
+    size: str | None = Column(String(50), nullable=True)
     shelter_date: date = Column(Date, nullable=False)
     location: str = Column(Text, nullable=False)
-    phone: Optional[str] = Column(String(20), nullable=True)
-    image_urls: List[str] = Column(
+    phone: str | None = Column(String(20), nullable=True)
+    image_urls: list[str] = Column(
         JSON().with_variant(JSONB, "postgresql"),
         nullable=False,
         default=list,
         server_default="[]",
     )
-    local_image_paths: List[str] = Column(
+    local_image_paths: list[str] = Column(
         JSON().with_variant(JSONB, "postgresql"),
         nullable=False,
         default=list,
@@ -228,8 +228,8 @@ class AnimalArchive(Base):
     source_url: str = Column(Text, nullable=False, unique=True)
     category: str = Column(String(20), nullable=False)
     status: str = Column(String(20), nullable=False)
-    status_changed_at: Optional[datetime] = Column(DateTime(timezone=True), nullable=True)
-    outcome_date: Optional[date] = Column(Date, nullable=True)
+    status_changed_at: datetime | None = Column(DateTime(timezone=True), nullable=True)
+    outcome_date: date | None = Column(Date, nullable=True)
 
     # アーカイブ情報
     archived_at: datetime = Column(
@@ -242,6 +242,5 @@ class AnimalArchive(Base):
     def __repr__(self) -> str:
         """デバッグ用の文字列表現"""
         return (
-            f"<AnimalArchive(id={self.id}, original_id={self.original_id}, "
-            f"species={self.species})>"
+            f"<AnimalArchive(id={self.id}, original_id={self.original_id}, species={self.species})>"
         )

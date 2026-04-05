@@ -10,10 +10,10 @@ from src.data_collector.llm.config import SiteConfig
 from src.data_collector.llm.fetcher import PageFetcher, PdfFetcher, PlaywrightFetcher, StaticFetcher
 from src.data_collector.llm.providers.base import ExtractionResult, LlmProvider
 
-
 # ---------------------------------------------------------------------------
 # テスト用ヘルパー
 # ---------------------------------------------------------------------------
+
 
 class MockProvider(LlmProvider):
     """最小限のモックLlmProvider"""
@@ -26,14 +26,14 @@ class MockProvider(LlmProvider):
 
 
 def _make_site_config(**kwargs) -> SiteConfig:
-    defaults = dict(
-        name="テストサイト",
-        prefecture="テスト県",
-        prefecture_code="99",
-        list_url="https://example.com/list",
-        category="adoption",
-        request_interval=1.0,
-    )
+    defaults = {
+        "name": "テストサイト",
+        "prefecture": "テスト県",
+        "prefecture_code": "99",
+        "list_url": "https://example.com/list",
+        "category": "adoption",
+        "request_interval": 1.0,
+    }
     defaults.update(kwargs)
     return SiteConfig(**defaults)
 
@@ -41,6 +41,7 @@ def _make_site_config(**kwargs) -> SiteConfig:
 # ---------------------------------------------------------------------------
 # StaticFetcher
 # ---------------------------------------------------------------------------
+
 
 class TestStaticFetcher:
     def test_static_fetcher_uses_requests(self):
@@ -82,6 +83,7 @@ class TestStaticFetcher:
 # PdfFetcher
 # ---------------------------------------------------------------------------
 
+
 class TestPdfFetcher:
     def test_pdf_fetcher_downloads_and_extracts_text(self):
         """PdfFetcherがPDFをダウンロードしてテキストを抽出すること"""
@@ -101,9 +103,7 @@ class TestPdfFetcher:
             "src.data_collector.llm.fetcher.requests.get",
             return_value=mock_response,
         ):
-            with patch(
-                "src.data_collector.llm.fetcher.pdfplumber"
-            ) as mock_pdfplumber:
+            with patch("src.data_collector.llm.fetcher.pdfplumber") as mock_pdfplumber:
                 mock_pdfplumber.open.return_value = mock_pdf_instance
 
                 fetcher = PdfFetcher()
@@ -133,9 +133,7 @@ class TestPdfFetcher:
             "src.data_collector.llm.fetcher.requests.get",
             return_value=mock_response,
         ):
-            with patch(
-                "src.data_collector.llm.fetcher.pdfplumber"
-            ) as mock_pdfplumber:
+            with patch("src.data_collector.llm.fetcher.pdfplumber") as mock_pdfplumber:
                 mock_pdfplumber.open.return_value = mock_pdf_instance
 
                 fetcher = PdfFetcher()
@@ -168,9 +166,7 @@ class TestPdfFetcher:
             "src.data_collector.llm.fetcher.requests.get",
             return_value=mock_response,
         ):
-            with patch(
-                "src.data_collector.llm.fetcher.pdfplumber"
-            ) as mock_pdfplumber:
+            with patch("src.data_collector.llm.fetcher.pdfplumber") as mock_pdfplumber:
                 mock_pdfplumber.open.side_effect = Exception("invalid PDF")
 
                 fetcher = PdfFetcher()
@@ -203,9 +199,7 @@ class TestPdfFetcher:
             "src.data_collector.llm.fetcher.requests.get",
             return_value=mock_response,
         ):
-            with patch(
-                "src.data_collector.llm.fetcher.pdfplumber"
-            ) as mock_pdfplumber:
+            with patch("src.data_collector.llm.fetcher.pdfplumber") as mock_pdfplumber:
                 mock_pdfplumber.open.return_value = mock_pdf_instance
 
                 fetcher = PdfFetcher()
@@ -217,6 +211,7 @@ class TestPdfFetcher:
 # ---------------------------------------------------------------------------
 # PlaywrightFetcher
 # ---------------------------------------------------------------------------
+
 
 class TestPlaywrightFetcher:
     def test_playwright_fetcher_uses_playwright(self):
@@ -356,6 +351,7 @@ class TestPlaywrightFetcher:
 # LlmAdapter のフェッチャー選択ロジック
 # ---------------------------------------------------------------------------
 
+
 class TestAdapterFetcherSelection:
     def test_adapter_uses_static_fetcher_by_default(self):
         """requires_js=False のサイトはStaticFetcherを使うこと"""
@@ -364,11 +360,9 @@ class TestAdapterFetcherSelection:
             list_link_pattern="a.link",
         )
 
-        mock_static_fetch = MagicMock(return_value="<html><body><a class='link' href='/d/1'>x</a></body></html>")
+        MagicMock(return_value="<html><body><a class='link' href='/d/1'>x</a></body></html>")
 
-        with patch(
-            "src.data_collector.llm.fetcher.requests.get"
-        ) as mock_get:
+        with patch("src.data_collector.llm.fetcher.requests.get") as mock_get:
             mock_response = MagicMock()
             mock_response.text = "<html><body><a class='link' href='/d/1'>x</a></body></html>"
             mock_response.apparent_encoding = "utf-8"
@@ -447,9 +441,7 @@ class TestAdapterFetcherSelection:
         # (pdf_link_pattern未設定でlist_link_patternで.pdfを抽出した場合)
         # → _fetch_pageでPdfFetcherが呼ばれることをテスト
 
-        with patch(
-            "src.data_collector.llm.fetcher.requests.get"
-        ) as mock_get:
+        with patch("src.data_collector.llm.fetcher.requests.get") as mock_get:
             # 1回目: 一覧ページ取得（StaticFetcher）
             list_response = MagicMock()
             list_response.text = "<html><body><a class='link' href='/d/1.pdf'>pdf</a></body></html>"
@@ -473,9 +465,7 @@ class TestAdapterFetcherSelection:
                     mock_pdf_instance.pages = [mock_page]
                     mock_pdf.open.return_value = mock_pdf_instance
 
-                    with patch(
-                        "src.data_collector.llm.providers.base.LlmProvider"
-                    ):
+                    with patch("src.data_collector.llm.providers.base.LlmProvider"):
                         adapter = LlmAdapter(
                             site_config=site_config,
                             provider=MockProvider(),

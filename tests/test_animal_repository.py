@@ -5,14 +5,16 @@ Repository パターンによるデータアクセス層が要件通りに実装
 upsert、取得、フィルタリング、ページネーション機能をテストします。
 """
 
+from datetime import UTC, date, datetime
+
 import pytest
 import pytest_asyncio
-from datetime import date, datetime, timezone
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from src.data_collector.infrastructure.database.models import Animal, AnimalStatusHistory, Base
-from src.data_collector.infrastructure.database.repository import AnimalRepository
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 from src.data_collector.domain.models import AnimalData, AnimalStatus
 from src.data_collector.domain.status_transition import StatusTransitionError
+from src.data_collector.infrastructure.database.models import Animal, AnimalStatusHistory, Base
+from src.data_collector.infrastructure.database.repository import AnimalRepository
 
 
 @pytest_asyncio.fixture
@@ -167,9 +169,7 @@ async def test_save_animal_updates_existing_record(repository, async_session):
     # データベースのレコードが更新されていることを確認
     from sqlalchemy import select
 
-    stmt = select(Animal).where(
-        Animal.source_url == "https://example.com/animal/existing"
-    )
+    stmt = select(Animal).where(Animal.source_url == "https://example.com/animal/existing")
     db_result = await async_session.execute(stmt)
     animals = db_result.scalars().all()
 
@@ -187,8 +187,8 @@ async def test_get_animal_by_id_returns_animal(repository, async_session):
         shelter_date=date(2026, 1, 5),
         location="高知県",
         source_url="https://example.com/animal/100",
-            category="adoption"
-        )
+        category="adoption",
+    )
     async_session.add(animal)
     await async_session.commit()
     await async_session.refresh(animal)
@@ -242,7 +242,7 @@ async def test_list_animals_filters_by_species(repository, async_session):
             shelter_date=date(2026, 1, 5),
             location="高知県",
             source_url="https://example.com/dog",
-            category="adoption"
+            category="adoption",
         )
     )
     async_session.add(
@@ -251,7 +251,7 @@ async def test_list_animals_filters_by_species(repository, async_session):
             shelter_date=date(2026, 1, 5),
             location="高知県",
             source_url="https://example.com/cat",
-            category="adoption"
+            category="adoption",
         )
     )
     await async_session.commit()
@@ -513,9 +513,8 @@ async def test_update_status_records_history(repository, async_session):
 
     # 履歴が記録されていることを確認
     from sqlalchemy import select
-    stmt = select(AnimalStatusHistory).where(
-        AnimalStatusHistory.animal_id == animal.id
-    )
+
+    stmt = select(AnimalStatusHistory).where(AnimalStatusHistory.animal_id == animal.id)
     result = await async_session.execute(stmt)
     history = result.scalar_one_or_none()
 
@@ -576,9 +575,12 @@ async def test_update_status_atomic_with_history(repository, async_session):
     await repository.update_status(animal.id, AnimalStatus.RETURNED)
 
     # 履歴が2件記録されていることを確認
-    from sqlalchemy import select, func
-    stmt = select(func.count()).select_from(AnimalStatusHistory).where(
-        AnimalStatusHistory.animal_id == animal.id
+    from sqlalchemy import func, select
+
+    stmt = (
+        select(func.count())
+        .select_from(AnimalStatusHistory)
+        .where(AnimalStatusHistory.animal_id == animal.id)
     )
     result = await async_session.execute(stmt)
     count = result.scalar()
@@ -824,7 +826,7 @@ async def test_find_archivable_animals_returns_animals_past_retention(repository
     # 200日前に譲渡された動物（180日保持期間を超過）
     old_outcome_date = date.today() - timedelta(days=200)
     old_status_changed_at = datetime(
-        old_outcome_date.year, old_outcome_date.month, old_outcome_date.day, tzinfo=timezone.utc
+        old_outcome_date.year, old_outcome_date.month, old_outcome_date.day, tzinfo=UTC
     )
     async_session.add(
         Animal(
@@ -842,7 +844,7 @@ async def test_find_archivable_animals_returns_animals_past_retention(repository
     # 100日前に譲渡された動物（まだ保持期間内）
     recent_outcome_date = date.today() - timedelta(days=100)
     recent_status_changed_at = datetime(
-        recent_outcome_date.year, recent_outcome_date.month, recent_outcome_date.day, tzinfo=timezone.utc
+        recent_outcome_date.year, recent_outcome_date.month, recent_outcome_date.day, tzinfo=UTC
     )
     async_session.add(
         Animal(
@@ -884,7 +886,7 @@ async def test_find_archivable_animals_includes_returned_status(repository, asyn
     # 200日前に返還された動物
     old_outcome_date = date.today() - timedelta(days=200)
     old_status_changed_at = datetime(
-        old_outcome_date.year, old_outcome_date.month, old_outcome_date.day, tzinfo=timezone.utc
+        old_outcome_date.year, old_outcome_date.month, old_outcome_date.day, tzinfo=UTC
     )
     async_session.add(
         Animal(
@@ -914,7 +916,7 @@ async def test_find_archivable_animals_respects_limit(repository, async_session)
     # 200日前に譲渡された動物を5件作成
     old_outcome_date = date.today() - timedelta(days=200)
     old_status_changed_at = datetime(
-        old_outcome_date.year, old_outcome_date.month, old_outcome_date.day, tzinfo=timezone.utc
+        old_outcome_date.year, old_outcome_date.month, old_outcome_date.day, tzinfo=UTC
     )
     for i in range(5):
         async_session.add(
@@ -944,7 +946,7 @@ async def test_find_archivable_animals_custom_retention_days(repository, async_s
     # 50日前に譲渡された動物
     outcome_date = date.today() - timedelta(days=50)
     status_changed_at = datetime(
-        outcome_date.year, outcome_date.month, outcome_date.day, tzinfo=timezone.utc
+        outcome_date.year, outcome_date.month, outcome_date.day, tzinfo=UTC
     )
     async_session.add(
         Animal(
@@ -976,7 +978,7 @@ async def test_find_archivable_animals_returns_orm_models(repository, async_sess
 
     old_outcome_date = date.today() - timedelta(days=200)
     old_status_changed_at = datetime(
-        old_outcome_date.year, old_outcome_date.month, old_outcome_date.day, tzinfo=timezone.utc
+        old_outcome_date.year, old_outcome_date.month, old_outcome_date.day, tzinfo=UTC
     )
     async_session.add(
         Animal(
@@ -1004,7 +1006,7 @@ async def test_find_archivable_animals_excludes_deceased(repository, async_sessi
     from datetime import timedelta
 
     # 200日前に死亡した動物（アーカイブ対象外）
-    old_status_changed_at = datetime.now(timezone.utc) - timedelta(days=200)
+    old_status_changed_at = datetime.now(UTC) - timedelta(days=200)
     async_session.add(
         Animal(
             species="犬",
@@ -1042,6 +1044,7 @@ async def test_delete_animal_removes_record(repository, async_session):
 
     # 削除されていることを確認
     from sqlalchemy import select
+
     stmt = select(Animal).where(Animal.id == animal.id)
     result = await async_session.execute(stmt)
     assert result.scalar_one_or_none() is None
@@ -1060,22 +1063,46 @@ async def test_delete_animal_raises_on_not_found(repository):
 async def test_get_status_counts_returns_counts_by_status(repository, async_session):
     """get_status_counts() がステータス別の件数を返すか"""
     # 異なるステータスの動物を挿入
-    async_session.add(Animal(
-        species="犬", shelter_date=date(2025, 1, 1), location="高知県",
-        source_url="https://example.com/count1", category="adoption", status="sheltered",
-    ))
-    async_session.add(Animal(
-        species="犬", shelter_date=date(2025, 1, 1), location="高知県",
-        source_url="https://example.com/count2", category="adoption", status="sheltered",
-    ))
-    async_session.add(Animal(
-        species="猫", shelter_date=date(2025, 1, 1), location="高知県",
-        source_url="https://example.com/count3", category="adoption", status="adopted",
-    ))
-    async_session.add(Animal(
-        species="犬", shelter_date=date(2025, 1, 1), location="高知県",
-        source_url="https://example.com/count4", category="adoption", status="deceased",
-    ))
+    async_session.add(
+        Animal(
+            species="犬",
+            shelter_date=date(2025, 1, 1),
+            location="高知県",
+            source_url="https://example.com/count1",
+            category="adoption",
+            status="sheltered",
+        )
+    )
+    async_session.add(
+        Animal(
+            species="犬",
+            shelter_date=date(2025, 1, 1),
+            location="高知県",
+            source_url="https://example.com/count2",
+            category="adoption",
+            status="sheltered",
+        )
+    )
+    async_session.add(
+        Animal(
+            species="猫",
+            shelter_date=date(2025, 1, 1),
+            location="高知県",
+            source_url="https://example.com/count3",
+            category="adoption",
+            status="adopted",
+        )
+    )
+    async_session.add(
+        Animal(
+            species="犬",
+            shelter_date=date(2025, 1, 1),
+            location="高知県",
+            source_url="https://example.com/count4",
+            category="adoption",
+            status="deceased",
+        )
+    )
     await async_session.commit()
 
     result = await repository.get_status_counts()

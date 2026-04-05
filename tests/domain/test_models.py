@@ -1,11 +1,13 @@
 """
 データモデル (AnimalData, RawAnimalData) のユニットテスト
 """
-import pytest
-from datetime import date, datetime
-from pydantic import ValidationError, HttpUrl
 
-from src.data_collector.domain.models import RawAnimalData, AnimalData, AnimalStatus
+from datetime import date, datetime
+
+import pytest
+from pydantic import ValidationError
+
+from src.data_collector.domain.models import AnimalData, AnimalStatus, RawAnimalData
 
 
 class TestRawAnimalData:
@@ -24,7 +26,7 @@ class TestRawAnimalData:
             phone="0881234567",
             image_urls=["https://example.com/image1.jpg", "https://example.com/image2.jpg"],
             source_url="https://example-kochi.jp/animals/123",
-            category="adoption"
+            category="adoption",
         )
 
         assert raw_data.species == "いぬ"
@@ -52,7 +54,7 @@ class TestRawAnimalData:
             phone="088-123-4567",
             image_urls=["url1", "url2"],
             source_url="https://example.com",
-            category="adoption"
+            category="adoption",
         )
 
         # すべてのフィールドが文字列型であることを確認
@@ -78,7 +80,7 @@ class TestRawAnimalData:
             phone="088-111-2222",
             image_urls=["https://example.com/cat.jpg"],
             source_url="https://example.com/123",
-            category="lost"
+            category="lost",
         )
 
         # model_dump
@@ -108,7 +110,7 @@ class TestAnimalData:
             phone="088-123-4567",
             image_urls=["https://example.com/image1.jpg"],
             source_url="https://example-kochi.jp/animals/123",
-            category="adoption"
+            category="adoption",
         )
 
         assert animal.species == "犬"
@@ -130,7 +132,7 @@ class TestAnimalData:
             shelter_date=date(2026, 1, 5),
             location="高知県",
             source_url="https://example.com/1",
-            category="adoption"
+            category="adoption",
         )
         assert animal_dog.species == "犬"
 
@@ -140,7 +142,7 @@ class TestAnimalData:
             shelter_date=date(2026, 1, 5),
             location="高知県",
             source_url="https://example.com/2",
-            category="adoption"
+            category="adoption",
         )
         assert animal_cat.species == "猫"
 
@@ -150,7 +152,7 @@ class TestAnimalData:
             shelter_date=date(2026, 1, 5),
             location="高知県",
             source_url="https://example.com/3",
-            category="adoption"
+            category="adoption",
         )
         assert animal_other.species == "その他"
 
@@ -162,12 +164,14 @@ class TestAnimalData:
                 shelter_date=date(2026, 1, 5),
                 location="高知県",
                 source_url="https://example.com/1",
-            category="adoption"
+                category="adoption",
             )
 
         error = exc_info.value.errors()[0]
         assert "species" in error["loc"]
-        assert "犬" in str(error["msg"]) or "猫" in str(error["msg"]) or "その他" in str(error["msg"])
+        assert (
+            "犬" in str(error["msg"]) or "猫" in str(error["msg"]) or "その他" in str(error["msg"])
+        )
 
     def test_sex_validation_valid_values(self):
         """sex フィールドの3値制約テスト (有効な値)"""
@@ -178,7 +182,7 @@ class TestAnimalData:
             shelter_date=date(2026, 1, 5),
             location="高知県",
             source_url="https://example.com/1",
-            category="adoption"
+            category="adoption",
         )
         assert animal_male.sex == "男の子"
 
@@ -189,7 +193,7 @@ class TestAnimalData:
             shelter_date=date(2026, 1, 5),
             location="高知県",
             source_url="https://example.com/2",
-            category="adoption"
+            category="adoption",
         )
         assert animal_female.sex == "女の子"
 
@@ -200,7 +204,7 @@ class TestAnimalData:
             shelter_date=date(2026, 1, 5),
             location="高知県",
             source_url="https://example.com/3",
-            category="adoption"
+            category="adoption",
         )
         assert animal_unknown.sex == "不明"
 
@@ -213,7 +217,7 @@ class TestAnimalData:
                 shelter_date=date(2026, 1, 5),
                 location="高知県",
                 source_url="https://example.com/1",
-            category="adoption"
+                category="adoption",
             )
 
         error = exc_info.value.errors()[0]
@@ -228,7 +232,7 @@ class TestAnimalData:
                 shelter_date=date(2026, 1, 5),
                 location="高知県",
                 source_url="https://example.com/1",
-            category="adoption"
+                category="adoption",
             )
 
         error = exc_info.value.errors()[0]
@@ -242,7 +246,7 @@ class TestAnimalData:
             shelter_date=date(2026, 1, 5),
             location="高知県",
             source_url="https://example.com/1",
-            category="adoption"
+            category="adoption",
         )
         assert animal.age_months is None
 
@@ -254,7 +258,7 @@ class TestAnimalData:
                 shelter_date=date(2026, 1, 5),
                 location="高知県",
                 source_url="https://example.com/1",
-            category="adoption"
+                category="adoption",
             )
         assert any("species" in str(err["loc"]) for err in exc_info.value.errors())
 
@@ -264,7 +268,7 @@ class TestAnimalData:
                 species="犬",
                 location="高知県",
                 source_url="https://example.com/1",
-            category="adoption"
+                category="adoption",
             )
         assert any("shelter_date" in str(err["loc"]) for err in exc_info.value.errors())
 
@@ -274,17 +278,13 @@ class TestAnimalData:
                 species="犬",
                 shelter_date=date(2026, 1, 5),
                 source_url="https://example.com/1",
-            category="adoption"
+                category="adoption",
             )
         assert any("location" in str(err["loc"]) for err in exc_info.value.errors())
 
         # source_url が欠損
         with pytest.raises(ValidationError) as exc_info:
-            AnimalData(
-                species="犬",
-                shelter_date=date(2026, 1, 5),
-                location="高知県"
-            )
+            AnimalData(species="犬", shelter_date=date(2026, 1, 5), location="高知県")
         assert any("source_url" in str(err["loc"]) for err in exc_info.value.errors())
 
     def test_json_serialization_deserialization(self):
@@ -299,7 +299,7 @@ class TestAnimalData:
             phone="088-123-4567",
             image_urls=["https://example.com/image.jpg"],
             source_url="https://example.com/123",
-            category="adoption"
+            category="adoption",
         )
 
         # シリアライゼーション
@@ -323,7 +323,7 @@ class TestAnimalData:
             shelter_date=date(2026, 1, 5),
             location="高知県",  # location は必須フィールド
             source_url="https://example.com/1",
-            category="adoption"
+            category="adoption",
         )
 
         # sex のデフォルトは "不明"
@@ -347,7 +347,7 @@ class TestAnimalData:
                 species="犬",
                 shelter_date=date(2026, 1, 5),
                 source_url="https://example.com/1",
-            category="adoption"
+                category="adoption",
                 # location を意図的に省略
             )
 
@@ -371,7 +371,7 @@ class TestRawAnimalDataCategory:
             phone="088-123-4567",
             image_urls=["https://example.com/image.jpg"],
             source_url="https://example.com/1",
-            category="adoption"
+            category="adoption",
         )
 
         assert raw_data.category == "adoption"
@@ -407,7 +407,7 @@ class TestAnimalDataCategory:
             shelter_date=date(2026, 1, 5),
             location="高知県",
             source_url="https://example.com/1",
-            category="adoption"
+            category="adoption",
         )
 
         assert animal.category == "adoption"
@@ -433,7 +433,7 @@ class TestAnimalDataCategory:
             shelter_date=date(2026, 1, 5),
             location="高知県",
             source_url="https://example.com/1",
-            category="adoption"
+            category="adoption",
         )
 
         assert animal.category == "adoption"
@@ -445,7 +445,7 @@ class TestAnimalDataCategory:
             shelter_date=date(2026, 1, 5),
             location="高知県",
             source_url="https://example.com/2",
-            category="lost"
+            category="lost",
         )
 
         assert animal.category == "lost"
@@ -457,7 +457,7 @@ class TestAnimalDataCategory:
             shelter_date=date(2026, 1, 5),
             location="高知県",
             source_url="https://example.com/3",
-            category="sheltered"
+            category="sheltered",
         )
 
         assert animal.category == "sheltered"
@@ -470,12 +470,16 @@ class TestAnimalDataCategory:
                 shelter_date=date(2026, 1, 5),
                 location="高知県",
                 source_url="https://example.com/1",
-                category="invalid"
+                category="invalid",
             )
 
         error = exc_info.value.errors()[0]
         assert "category" in error["loc"]
-        assert "adoption" in str(error["msg"]) or "lost" in str(error["msg"]) or "sheltered" in str(error["msg"])
+        assert (
+            "adoption" in str(error["msg"])
+            or "lost" in str(error["msg"])
+            or "sheltered" in str(error["msg"])
+        )
 
 
 class TestAnimalStatus:
@@ -520,7 +524,7 @@ class TestAnimalDataExtended:
             shelter_date=date(2026, 1, 5),
             location="高知県",
             source_url="https://example.com/1",
-            category="adoption"
+            category="adoption",
         )
 
         # status はデフォルトで None（後方互換性）
@@ -534,7 +538,7 @@ class TestAnimalDataExtended:
             location="高知県",
             source_url="https://example.com/1",
             category="adoption",
-            status=AnimalStatus.SHELTERED
+            status=AnimalStatus.SHELTERED,
         )
 
         assert animal.status == AnimalStatus.SHELTERED
@@ -547,7 +551,7 @@ class TestAnimalDataExtended:
             location="高知県",
             source_url="https://example.com/1",
             category="adoption",
-            status="adopted"
+            status="adopted",
         )
 
         assert animal.status == AnimalStatus.ADOPTED
@@ -559,7 +563,7 @@ class TestAnimalDataExtended:
             shelter_date=date(2026, 1, 5),
             location="高知県",
             source_url="https://example.com/1",
-            category="adoption"
+            category="adoption",
         )
 
         assert animal.status_changed_at is None
@@ -574,7 +578,7 @@ class TestAnimalDataExtended:
             source_url="https://example.com/1",
             category="adoption",
             status=AnimalStatus.ADOPTED,
-            status_changed_at=now
+            status_changed_at=now,
         )
 
         assert animal.status_changed_at == now
@@ -586,7 +590,7 @@ class TestAnimalDataExtended:
             shelter_date=date(2026, 1, 5),
             location="高知県",
             source_url="https://example.com/1",
-            category="adoption"
+            category="adoption",
         )
 
         assert animal.outcome_date is None
@@ -600,7 +604,7 @@ class TestAnimalDataExtended:
             source_url="https://example.com/1",
             category="adoption",
             status=AnimalStatus.ADOPTED,
-            outcome_date=date(2026, 1, 20)
+            outcome_date=date(2026, 1, 20),
         )
 
         assert animal.outcome_date == date(2026, 1, 20)
@@ -612,7 +616,7 @@ class TestAnimalDataExtended:
             shelter_date=date(2026, 1, 5),
             location="高知県",
             source_url="https://example.com/1",
-            category="adoption"
+            category="adoption",
         )
 
         assert animal.local_image_paths is None
@@ -626,7 +630,7 @@ class TestAnimalDataExtended:
             location="高知県",
             source_url="https://example.com/1",
             category="adoption",
-            local_image_paths=paths
+            local_image_paths=paths,
         )
 
         assert animal.local_image_paths == paths
@@ -646,7 +650,7 @@ class TestAnimalDataExtended:
             phone="088-123-4567",
             image_urls=["https://example.com/image1.jpg"],
             source_url="https://example-kochi.jp/animals/123",
-            category="adoption"
+            category="adoption",
         )
 
         # 既存フィールドは正常に動作
@@ -678,7 +682,7 @@ class TestAnimalDataExtended:
             status=AnimalStatus.ADOPTED,
             status_changed_at=now,
             outcome_date=date(2026, 1, 20),
-            local_image_paths=["/images/ab/cd/test.jpg"]
+            local_image_paths=["/images/ab/cd/test.jpg"],
         )
 
         assert animal.status == AnimalStatus.ADOPTED

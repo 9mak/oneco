@@ -5,7 +5,6 @@
 """
 
 import json
-from typing import List, Optional
 from pathlib import Path
 
 from ..domain.models import AnimalData
@@ -21,7 +20,7 @@ class SnapshotStore:
 
     LATEST_SNAPSHOT_FILENAME = "latest.json"
 
-    def __init__(self, snapshot_dir: Optional[Path] = None):
+    def __init__(self, snapshot_dir: Path | None = None):
         """
         SnapshotStore を初期化
 
@@ -37,7 +36,7 @@ class SnapshotStore:
         """最新スナップショットファイルのパス"""
         return self.snapshot_dir / self.LATEST_SNAPSHOT_FILENAME
 
-    def load_snapshot(self) -> List[AnimalData]:
+    def load_snapshot(self) -> list[AnimalData]:
         """
         最新スナップショットを読み込み
 
@@ -50,11 +49,11 @@ class SnapshotStore:
         if not self.snapshot_file.exists():
             return []
 
-        with open(self.snapshot_file, "r", encoding="utf-8") as f:
+        with open(self.snapshot_file, encoding="utf-8") as f:
             data = json.load(f)
             return [AnimalData(**item) for item in data]
 
-    def save_snapshot(self, data: List[AnimalData]) -> None:
+    def save_snapshot(self, data: list[AnimalData]) -> None:
         """
         今回の収集結果をスナップショットとして保存
 

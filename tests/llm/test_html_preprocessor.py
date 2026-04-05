@@ -1,7 +1,5 @@
 """HtmlPreprocessor のユニットテスト"""
 
-import pytest
-
 from src.data_collector.llm.html_preprocessor import HtmlPreprocessor
 
 
@@ -53,16 +51,12 @@ class TestPreprocess:
 
     def test_converts_relative_img_urls(self):
         html = '<html><body><img src="/images/dog.jpg"></body></html>'
-        result = HtmlPreprocessor.preprocess(
-            html, "https://example.com/page/"
-        )
+        result = HtmlPreprocessor.preprocess(html, "https://example.com/page/")
         assert "https://example.com/images/dog.jpg" in result
 
     def test_converts_relative_link_urls(self):
         html = '<html><body><a href="detail/123">Link</a></body></html>'
-        result = HtmlPreprocessor.preprocess(
-            html, "https://example.com/list/"
-        )
+        result = HtmlPreprocessor.preprocess(html, "https://example.com/list/")
         assert "https://example.com/list/detail/123" in result
 
     def test_normalizes_whitespace(self):
@@ -76,9 +70,7 @@ class TestPreprocess:
         assert result == ""
 
     def test_handles_plain_text(self):
-        result = HtmlPreprocessor.preprocess(
-            "Just plain text", "https://example.com"
-        )
+        result = HtmlPreprocessor.preprocess("Just plain text", "https://example.com")
         assert "Just plain text" in result
 
 

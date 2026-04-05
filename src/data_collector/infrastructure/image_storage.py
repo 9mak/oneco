@@ -5,9 +5,9 @@
 ハッシュベースのディレクトリ構造により、効率的な重複検出とファイル管理を実現します。
 """
 
-from pathlib import Path
-from typing import Optional, Protocol
 import shutil
+from pathlib import Path
+from typing import Protocol
 
 
 class ImageStorageProtocol(Protocol):
@@ -29,7 +29,7 @@ class ImageStorageProtocol(Protocol):
         """画像を削除"""
         ...
 
-    def exists(self, hash: str) -> Optional[str]:
+    def exists(self, hash: str) -> str | None:
         """ハッシュが存在するかチェック"""
         ...
 
@@ -117,7 +117,7 @@ class LocalImageStorage:
 
         return self._get_relative_path(hash, extension)
 
-    def exists(self, hash: str) -> Optional[str]:
+    def exists(self, hash: str) -> str | None:
         """
         ハッシュが存在するかチェック
 

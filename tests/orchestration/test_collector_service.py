@@ -1,23 +1,18 @@
 """CollectorService のユニットテスト"""
 
-import pytest
-import asyncio
-from pathlib import Path
 from datetime import date
-from unittest.mock import Mock, patch, MagicMock, AsyncMock
-import time
+from pathlib import Path
+from unittest.mock import AsyncMock, Mock, patch
 
-from src.data_collector.orchestration.collector_service import (
-    CollectorService,
-    CollectionResult
-)
-from src.data_collector.domain.models import AnimalData
-from src.data_collector.domain.diff_detector import DiffResult
+import pytest
+
 from src.data_collector.adapters.municipality_adapter import NetworkError, ParsingError
+from src.data_collector.domain.diff_detector import DiffResult
+from src.data_collector.domain.models import AnimalData
 from src.data_collector.infrastructure.notification_manager_client import (
     NotificationManagerClient,
-    NotificationManagerConfig,
 )
+from src.data_collector.orchestration.collector_service import CollectionResult, CollectorService
 
 
 class TestCollectorService:
@@ -35,11 +30,7 @@ class TestCollectorService:
     def mock_diff_detector(self):
         """モック DiffDetector"""
         detector = Mock()
-        detector.detect_diff.return_value = DiffResult(
-            new=[],
-            updated=[],
-            deleted_candidates=[]
-        )
+        detector.detect_diff.return_value = DiffResult(new=[], updated=[], deleted_candidates=[])
         return detector
 
     @pytest.fixture
@@ -69,7 +60,7 @@ class TestCollectorService:
         mock_diff_detector,
         mock_output_writer,
         mock_notification_client,
-        mock_snapshot_store
+        mock_snapshot_store,
     ):
         """CollectorService インスタンスを作成"""
         service = CollectorService(
@@ -77,7 +68,7 @@ class TestCollectorService:
             diff_detector=mock_diff_detector,
             output_writer=mock_output_writer,
             notification_client=mock_notification_client,
-            snapshot_store=mock_snapshot_store
+            snapshot_store=mock_snapshot_store,
         )
         # 一時ディレクトリを使用するように LOCK_FILE をオーバーライド
         service.LOCK_FILE = tmp_path / ".collector.lock"
@@ -98,7 +89,7 @@ class TestCollectorService:
                 phone="088-123-4567",
                 image_urls=["https://example.com/image1.jpg"],
                 source_url="https://example-kochi.jp/animals/123",
-                category="adoption"
+                category="adoption",
             )
         ]
 
@@ -132,11 +123,7 @@ class TestCollectorService:
 
         collector_service._release_lock()
 
-    def test_run_collection_prevents_duplicate_execution(
-        self,
-        collector_service,
-        mock_adapter
-    ):
+    def test_run_collection_prevents_duplicate_execution(self, collector_service, mock_adapter):
         """ロックファイルが存在する場合、重複実行を防止することを確認"""
         collector_service._acquire_lock()
 
@@ -147,11 +134,7 @@ class TestCollectorService:
 
         collector_service._release_lock()
 
-    def test_run_collection_releases_lock_on_exception(
-        self,
-        collector_service,
-        mock_adapter
-    ):
+    def test_run_collection_releases_lock_on_exception(self, collector_service, mock_adapter):
         """例外発生時もロックファイルがクリーンアップされることを確認"""
         mock_adapter.fetch_animal_list.side_effect = Exception("Test error")
 
@@ -163,10 +146,7 @@ class TestCollectorService:
 
     # Task 5.2: リトライロジックのテスト
     def test_collect_with_retry_success_on_first_attempt(
-        self,
-        collector_service,
-        mock_adapter,
-        sample_animal_data
+        self, collector_service, mock_adapter, sample_animal_data
     ):
         """1回目の試行で成功することを確認"""
         mock_adapter.fetch_animal_list.return_value = [
@@ -181,16 +161,13 @@ class TestCollectorService:
         assert mock_adapter.fetch_animal_list.call_count == 1
 
     def test_collect_with_retry_retries_on_network_error(
-        self,
-        collector_service,
-        mock_adapter,
-        sample_animal_data
+        self, collector_service, mock_adapter, sample_animal_data
     ):
         """NetworkError 時にリトライすることを確認"""
         mock_adapter.fetch_animal_list.side_effect = [
             NetworkError("Network error"),
             NetworkError("Network error"),
-            [(("https://example-kochi.jp/animals/123", "adoption"), "adoption")]
+            [(("https://example-kochi.jp/animals/123", "adoption"), "adoption")],
         ]
         mock_adapter.extract_animal_details.return_value = Mock()
         mock_adapter.normalize.return_value = sample_animal_data[0]
@@ -201,11 +178,7 @@ class TestCollectorService:
         assert mock_adapter.fetch_animal_list.call_count == 3
         assert len(result) == 1
 
-    def test_collect_with_retry_fails_after_max_retries(
-        self,
-        collector_service,
-        mock_adapter
-    ):
+    def test_collect_with_retry_fails_after_max_retries(self, collector_service, mock_adapter):
         """最大リトライ回数後に失敗することを確認"""
         mock_adapter.fetch_animal_list.side_effect = NetworkError("Network error")
 
@@ -215,11 +188,7 @@ class TestCollectorService:
         # 3回試行されたことを確認
         assert mock_adapter.fetch_animal_list.call_count == 3
 
-    def test_collect_with_retry_skips_on_parsing_error(
-        self,
-        collector_service,
-        mock_adapter
-    ):
+    def test_collect_with_retry_skips_on_parsing_error(self, collector_service, mock_adapter):
         """ParsingError 時にスキップすることを確認"""
         mock_adapter.fetch_animal_list.side_effect = ParsingError("Page structure changed")
 
@@ -237,7 +206,7 @@ class TestCollectorService:
         mock_diff_detector,
         mock_output_writer,
         mock_snapshot_store,
-        sample_animal_data
+        sample_animal_data,
     ):
         """収集フロー全体が正常に動作することを確認"""
         # アダプターのモック設定
@@ -249,9 +218,7 @@ class TestCollectorService:
 
         # 差分検知のモック設定
         mock_diff_detector.detect_diff.return_value = DiffResult(
-            new=[sample_animal_data[0]],
-            updated=[],
-            deleted_candidates=[]
+            new=[sample_animal_data[0]], updated=[], deleted_candidates=[]
         )
 
         result = collector_service.run_collection()
@@ -268,10 +235,7 @@ class TestCollectorService:
         mock_snapshot_store.save_snapshot.assert_called_once()
 
     def test_run_collection_notifies_on_structure_change(
-        self,
-        collector_service,
-        mock_adapter,
-        mock_notification_client
+        self, collector_service, mock_adapter, mock_notification_client
     ):
         """ページ構造変更時に通知が送信されることを確認"""
         mock_adapter.fetch_animal_list.side_effect = ParsingError("Page structure changed")
@@ -290,7 +254,7 @@ class TestCollectorService:
         mock_adapter,
         mock_diff_detector,
         mock_notification_client,
-        sample_animal_data
+        sample_animal_data,
     ):
         """新規動物がある場合、通知が送信されることを確認"""
         # アダプターのモック設定
@@ -302,12 +266,10 @@ class TestCollectorService:
 
         # 差分検知のモック設定（新規あり）
         mock_diff_detector.detect_diff.return_value = DiffResult(
-            new=[sample_animal_data[0]],
-            updated=[],
-            deleted_candidates=[]
+            new=[sample_animal_data[0]], updated=[], deleted_candidates=[]
         )
 
-        result = collector_service.run_collection()
+        collector_service.run_collection()
 
         # 新規動物通知が送信されたことを確認
         mock_notification_client.notify_new_animals.assert_called_once()
@@ -315,10 +277,7 @@ class TestCollectorService:
         assert len(call_args) == 1
 
     def test_run_collection_logs_execution_info(
-        self,
-        collector_service,
-        mock_adapter,
-        sample_animal_data
+        self, collector_service, mock_adapter, sample_animal_data
     ):
         """実行ログが記録されることを確認"""
         # アダプターのモック設定
@@ -328,17 +287,14 @@ class TestCollectorService:
         mock_adapter.extract_animal_details.return_value = Mock()
         mock_adapter.normalize.return_value = sample_animal_data[0]
 
-        with patch.object(collector_service.logger, 'info') as mock_log:
-            result = collector_service.run_collection()
+        with patch.object(collector_service.logger, "info") as mock_log:
+            collector_service.run_collection()
 
             # ログが記録されたことを確認（開始、完了）
             assert mock_log.call_count >= 2
 
     def test_run_collection_measures_execution_time(
-        self,
-        collector_service,
-        mock_adapter,
-        sample_animal_data
+        self, collector_service, mock_adapter, sample_animal_data
     ):
         """実行時間が測定されることを確認"""
         # アダプターのモック設定
@@ -362,7 +318,7 @@ class TestCollectorService:
             updated_count=2,
             deleted_count=1,
             errors=[],
-            execution_time_seconds=5.5
+            execution_time_seconds=5.5,
         )
 
         assert result.success
@@ -379,7 +335,7 @@ class TestCollectorService:
 
         # UUID 形式であることを確認（36文字）
         assert len(execution_id) == 36
-        assert execution_id.count('-') == 4
+        assert execution_id.count("-") == 4
 
 
 class TestCollectorServiceWithRepository:
@@ -397,11 +353,7 @@ class TestCollectorServiceWithRepository:
     def mock_diff_detector(self):
         """モック DiffDetector"""
         detector = Mock()
-        detector.detect_diff.return_value = DiffResult(
-            new=[],
-            updated=[],
-            deleted_candidates=[]
-        )
+        detector.detect_diff.return_value = DiffResult(new=[], updated=[], deleted_candidates=[])
         return detector
 
     @pytest.fixture
@@ -445,7 +397,7 @@ class TestCollectorServiceWithRepository:
                 phone="088-123-4567",
                 image_urls=["https://example.com/image1.jpg"],
                 source_url="https://example-kochi.jp/animals/123",
-                category="adoption"
+                category="adoption",
             )
         ]
 
@@ -458,7 +410,7 @@ class TestCollectorServiceWithRepository:
         mock_output_writer,
         mock_notification_client,
         mock_snapshot_store,
-        mock_repository
+        mock_repository,
     ):
         """Repository付き CollectorService インスタンスを作成"""
         service = CollectorService(
@@ -467,7 +419,7 @@ class TestCollectorServiceWithRepository:
             output_writer=mock_output_writer,
             notification_client=mock_notification_client,
             snapshot_store=mock_snapshot_store,
-            repository=mock_repository
+            repository=mock_repository,
         )
         service.LOCK_FILE = tmp_path / ".collector.lock"
         return service
@@ -479,7 +431,7 @@ class TestCollectorServiceWithRepository:
         mock_diff_detector,
         mock_output_writer,
         mock_notification_client,
-        mock_snapshot_store
+        mock_snapshot_store,
     ):
         """Repository がオプショナルで渡せることを確認"""
         # repository なしでもインスタンス化可能
@@ -488,16 +440,12 @@ class TestCollectorServiceWithRepository:
             diff_detector=mock_diff_detector,
             output_writer=mock_output_writer,
             notification_client=mock_notification_client,
-            snapshot_store=mock_snapshot_store
+            snapshot_store=mock_snapshot_store,
         )
         assert service.repository is None
 
     def test_run_collection_saves_to_repository(
-        self,
-        collector_service_with_repo,
-        mock_adapter,
-        mock_repository,
-        sample_animal_data
+        self, collector_service_with_repo, mock_adapter, mock_repository, sample_animal_data
     ):
         """収集後にRepositoryにデータが保存されることを確認"""
         mock_adapter.fetch_animal_list.return_value = [
@@ -519,7 +467,7 @@ class TestCollectorServiceWithRepository:
         mock_adapter,
         mock_repository,
         mock_notification_client,
-        sample_animal_data
+        sample_animal_data,
     ):
         """データベースエラー時にアラートが送信されることを確認"""
         mock_adapter.fetch_animal_list.return_value = [
@@ -552,11 +500,7 @@ class TestCollectorServiceWithNotificationManager:
     def mock_diff_detector(self):
         """モック DiffDetector"""
         detector = Mock()
-        detector.detect_diff.return_value = DiffResult(
-            new=[],
-            updated=[],
-            deleted_candidates=[]
-        )
+        detector.detect_diff.return_value = DiffResult(new=[], updated=[], deleted_candidates=[])
         return detector
 
     @pytest.fixture
@@ -600,7 +544,7 @@ class TestCollectorServiceWithNotificationManager:
                 phone="088-123-4567",
                 image_urls=["https://example.com/image1.jpg"],
                 source_url="https://example-kochi.jp/animals/123",
-                category="adoption"
+                category="adoption",
             )
         ]
 
@@ -613,7 +557,7 @@ class TestCollectorServiceWithNotificationManager:
         mock_output_writer,
         mock_notification_client,
         mock_snapshot_store,
-        mock_notification_manager_client
+        mock_notification_manager_client,
     ):
         """notification-manager クライアント付き CollectorService"""
         service = CollectorService(
@@ -622,7 +566,7 @@ class TestCollectorServiceWithNotificationManager:
             output_writer=mock_output_writer,
             notification_client=mock_notification_client,
             snapshot_store=mock_snapshot_store,
-            notification_manager_client=mock_notification_manager_client
+            notification_manager_client=mock_notification_manager_client,
         )
         service.LOCK_FILE = tmp_path / ".collector.lock"
         return service
@@ -635,7 +579,7 @@ class TestCollectorServiceWithNotificationManager:
         mock_output_writer,
         mock_notification_client,
         mock_snapshot_store,
-        mock_notification_manager_client
+        mock_notification_manager_client,
     ):
         """notification_manager_client がオプショナルで渡せることを確認"""
         service = CollectorService(
@@ -644,7 +588,7 @@ class TestCollectorServiceWithNotificationManager:
             output_writer=mock_output_writer,
             notification_client=mock_notification_client,
             snapshot_store=mock_snapshot_store,
-            notification_manager_client=mock_notification_manager_client
+            notification_manager_client=mock_notification_manager_client,
         )
         assert service.notification_manager_client is mock_notification_manager_client
 
@@ -655,7 +599,7 @@ class TestCollectorServiceWithNotificationManager:
         mock_diff_detector,
         mock_output_writer,
         mock_notification_client,
-        mock_snapshot_store
+        mock_snapshot_store,
     ):
         """notification_manager_client なしでも動作することを確認"""
         service = CollectorService(
@@ -663,7 +607,7 @@ class TestCollectorServiceWithNotificationManager:
             diff_detector=mock_diff_detector,
             output_writer=mock_output_writer,
             notification_client=mock_notification_client,
-            snapshot_store=mock_snapshot_store
+            snapshot_store=mock_snapshot_store,
         )
         assert service.notification_manager_client is None
 
@@ -673,7 +617,7 @@ class TestCollectorServiceWithNotificationManager:
         mock_adapter,
         mock_diff_detector,
         mock_notification_manager_client,
-        sample_animal_data
+        sample_animal_data,
     ):
         """新規動物がある場合、notification-manager に通知されることを確認"""
         mock_adapter.fetch_animal_list.return_value = [
@@ -684,9 +628,7 @@ class TestCollectorServiceWithNotificationManager:
 
         # 差分検知で新規動物を検知
         mock_diff_detector.detect_diff.return_value = DiffResult(
-            new=[sample_animal_data[0]],
-            updated=[],
-            deleted_candidates=[]
+            new=[sample_animal_data[0]], updated=[], deleted_candidates=[]
         )
 
         result = collector_service_with_nm.run_collection()
@@ -704,7 +646,7 @@ class TestCollectorServiceWithNotificationManager:
         mock_adapter,
         mock_diff_detector,
         mock_notification_manager_client,
-        sample_animal_data
+        sample_animal_data,
     ):
         """新規動物がない場合、notification-manager に通知しないことを確認"""
         mock_adapter.fetch_animal_list.return_value = [
@@ -717,7 +659,7 @@ class TestCollectorServiceWithNotificationManager:
         mock_diff_detector.detect_diff.return_value = DiffResult(
             new=[],
             updated=[sample_animal_data[0]],  # 更新のみ
-            deleted_candidates=[]
+            deleted_candidates=[],
         )
 
         result = collector_service_with_nm.run_collection()
@@ -732,7 +674,7 @@ class TestCollectorServiceWithNotificationManager:
         mock_adapter,
         mock_diff_detector,
         mock_notification_manager_client,
-        sample_animal_data
+        sample_animal_data,
     ):
         """notification-manager エラー時も収集処理は継続することを確認"""
         mock_adapter.fetch_animal_list.return_value = [
@@ -743,9 +685,7 @@ class TestCollectorServiceWithNotificationManager:
 
         # 差分検知で新規動物を検知
         mock_diff_detector.detect_diff.return_value = DiffResult(
-            new=[sample_animal_data[0]],
-            updated=[],
-            deleted_candidates=[]
+            new=[sample_animal_data[0]], updated=[], deleted_candidates=[]
         )
 
         # notification-manager がエラーを返す

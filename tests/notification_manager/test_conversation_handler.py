@@ -4,17 +4,17 @@ notification-manager 対話機能のテスト
 Task 7.1-7.2: コマンド解析、対話フロー制御、条件入力のテスト
 """
 
+from unittest.mock import Mock
+
 import pytest
-from unittest.mock import Mock, AsyncMock
 
 from src.notification_manager.domain.conversation import (
+    Command,
     ConversationHandler,
     ConversationState,
-    Command,
 )
 from src.notification_manager.domain.models import (
     NotificationPreferenceInput,
-    NotificationPreferenceEntity,
 )
 
 
