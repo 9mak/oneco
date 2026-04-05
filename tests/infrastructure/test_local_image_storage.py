@@ -1,7 +1,8 @@
 """LocalImageStorage のユニットテスト"""
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 from src.data_collector.infrastructure.image_storage import LocalImageStorage
 
@@ -87,9 +88,7 @@ class TestLocalImageStorage:
             assert local_path.endswith(f".{ext}")
             assert Path(storage.base_path / local_path).exists()
 
-    def test_save_overwrites_existing_file(
-        self, storage: LocalImageStorage, sample_hash: str
-    ):
+    def test_save_overwrites_existing_file(self, storage: LocalImageStorage, sample_hash: str):
         """save() が既存ファイルを上書きすることを確認"""
         content1 = b"first content"
         content2 = b"second content"
@@ -146,9 +145,7 @@ class TestLocalImageStorage:
         assert result is True
         assert not Path(storage.base_path / local_path).exists()
 
-    def test_delete_returns_false_for_nonexistent_file(
-        self, storage: LocalImageStorage
-    ):
+    def test_delete_returns_false_for_nonexistent_file(self, storage: LocalImageStorage):
         """delete() が存在しないファイルに対して False を返すことを確認"""
         result = storage.delete("nonexistent/path/file.jpg")
 
@@ -190,15 +187,13 @@ class TestLocalImageStorage:
 
         new_path = storage.move(source_path, "archive")
 
-        path = Path(new_path)
+        Path(new_path)
         # アーカイブプレフィックスが含まれていることを確認
         assert "archive" in new_path
 
     # === get_usage_bytes() のテスト ===
 
-    def test_get_usage_bytes_returns_zero_for_empty_storage(
-        self, storage: LocalImageStorage
-    ):
+    def test_get_usage_bytes_returns_zero_for_empty_storage(self, storage: LocalImageStorage):
         """get_usage_bytes() が空のストレージに対して 0 を返すことを確認"""
         usage = storage.get_usage_bytes()
 
@@ -214,9 +209,7 @@ class TestLocalImageStorage:
 
         assert usage == len(sample_image_content)
 
-    def test_get_usage_bytes_sums_multiple_files(
-        self, storage: LocalImageStorage
-    ):
+    def test_get_usage_bytes_sums_multiple_files(self, storage: LocalImageStorage):
         """get_usage_bytes() が複数ファイルのサイズを合計することを確認"""
         content1 = b"a" * 100
         content2 = b"b" * 200

@@ -4,22 +4,21 @@ notification-manager API層のテスト
 Task 6.1-6.3: Webhookエンドポイント、ヘルスチェックのテスト
 """
 
+from datetime import date
+from unittest.mock import AsyncMock, Mock
+
 import pytest
-from unittest.mock import Mock, AsyncMock, patch
-from datetime import date, datetime, timezone
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from src.notification_manager.domain.models import NotificationResult
 from src.notification_manager.infrastructure.api.routes import (
-    create_notification_router,
     NotificationWebhookDeps,
+    create_notification_router,
 )
 from src.notification_manager.infrastructure.api.schemas import (
-    NewAnimalWebhookRequest,
-    HealthResponse,
     AnimalDataSchema,
 )
-from src.notification_manager.domain.models import NotificationResult
 
 
 class TestNotificationWebhook:

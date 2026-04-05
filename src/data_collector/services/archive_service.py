@@ -8,12 +8,11 @@ ArchiveService - アーカイブ処理オーケストレーションサービス
 import logging
 import os
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import List, Optional, Protocol
+from datetime import UTC, datetime
+from typing import Optional, Protocol
 
-from src.data_collector.infrastructure.database.repository import AnimalRepository
 from src.data_collector.infrastructure.database.archive_repository import ArchiveRepository
-
+from src.data_collector.infrastructure.database.repository import AnimalRepository
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +38,7 @@ class ArchiveJobResult:
     processed_count: int
     success_count: int
     error_count: int
-    errors: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
 
 class ArchiveService:
@@ -57,9 +56,9 @@ class ArchiveService:
         animal_repository: AnimalRepository,
         archive_repository: ArchiveRepository,
         image_storage_service: Optional["ImageStorageService"] = None,
-        notification_client: Optional[NotificationClient] = None,
-        retention_days: Optional[int] = None,
-        batch_size: Optional[int] = None,
+        notification_client: NotificationClient | None = None,
+        retention_days: int | None = None,
+        batch_size: int | None = None,
     ):
         """
         ArchiveService を初期化
@@ -82,7 +81,9 @@ class ArchiveService:
             self.retention_days = retention_days
         else:
             env_retention = os.environ.get("RETENTION_DAYS")
-            self.retention_days = int(env_retention) if env_retention else self.DEFAULT_RETENTION_DAYS
+            self.retention_days = (
+                int(env_retention) if env_retention else self.DEFAULT_RETENTION_DAYS
+            )
 
         self.batch_size = batch_size if batch_size is not None else self.DEFAULT_BATCH_SIZE
 
@@ -96,11 +97,11 @@ class ArchiveService:
         Returns:
             ArchiveJobResult: ジョブ実行結果
         """
-        started_at = datetime.now(timezone.utc)
+        started_at = datetime.now(UTC)
         processed_count = 0
         success_count = 0
         error_count = 0
-        errors: List[str] = []
+        errors: list[str] = []
         failed_ids: set = set()  # エラーが発生した動物IDを追跡
 
         try:
@@ -129,16 +130,16 @@ class ArchiveService:
                         logger.info(f"アーカイブ完了: animal_id={animal.id}")
                     except Exception as e:
                         error_count += 1
-                        error_msg = f"animal_id={animal.id}: {str(e)}"
+                        error_msg = f"animal_id={animal.id}: {e!s}"
                         errors.append(error_msg)
                         failed_ids.add(animal.id)  # 失敗した動物を追跡
                         logger.error(f"アーカイブエラー: {error_msg}")
 
         except Exception as e:
             logger.exception("アーカイブジョブ中に予期しないエラー発生")
-            errors.append(f"Job error: {str(e)}")
+            errors.append(f"Job error: {e!s}")
 
-        completed_at = datetime.now(timezone.utc)
+        completed_at = datetime.now(UTC)
 
         result = ArchiveJobResult(
             started_at=started_at,
@@ -174,7 +175,7 @@ class ArchiveService:
             )
             await self.notification_client.send_alert(message, level="error")
         except Exception as e:
-            logger.error(f"エラー通知の送信に失敗: {str(e)}")
+            logger.error(f"エラー通知の送信に失敗: {e!s}")
 
     async def _archive_single_animal(self, animal) -> None:
         """
@@ -217,7 +218,7 @@ class ArchiveService:
         status_counts = await self.animal_repository.get_status_counts()
 
         report = {
-            "date": datetime.now(timezone.utc).date().isoformat(),
+            "date": datetime.now(UTC).date().isoformat(),
             "archivable_count": archivable_count,
             "status_counts": status_counts,
         }

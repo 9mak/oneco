@@ -4,17 +4,18 @@ notification-manager データベースモデルのテスト
 Task 1.1, 1.2, 1.3: Users, NotificationPreferences, NotificationHistory テーブルのテスト
 """
 
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, timezone
-from sqlalchemy import create_engine, select, text
-from sqlalchemy.orm import Session
+from sqlalchemy import create_engine, select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 from src.notification_manager.infrastructure.database.models import (
     NotificationBase,
-    User,
-    NotificationPreference,
     NotificationHistory,
+    NotificationPreference,
+    User,
 )
 
 
@@ -82,11 +83,11 @@ class TestUserModel:
 
     def test_user_timestamps_auto_set(self, session):
         """created_at と updated_at は自動設定される"""
-        before = datetime.now(timezone.utc)
+        datetime.now(UTC)
         user = User(line_user_id_encrypted="encrypted_timestamp_test")
         session.add(user)
         session.commit()
-        after = datetime.now(timezone.utc)
+        datetime.now(UTC)
 
         assert user.created_at is not None
         assert user.updated_at is not None

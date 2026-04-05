@@ -1,5 +1,7 @@
 """Tests for MetricsCollector service"""
+
 from datetime import datetime, timedelta
+
 from src.syndication_service.services.metrics_collector import MetricsCollector
 
 
@@ -24,7 +26,7 @@ class TestMetricsCollector:
         collector.record_cache_hit()
         collector.record_cache_hit()
 
-        snapshot = collector.get_metrics_snapshot()
+        collector.get_metrics_snapshot()
         assert collector.cache_hits == 2
 
     def test_record_cache_miss(self):
@@ -33,7 +35,7 @@ class TestMetricsCollector:
 
         collector.record_cache_miss()
 
-        snapshot = collector.get_metrics_snapshot()
+        collector.get_metrics_snapshot()
         assert collector.cache_misses == 1
 
     def test_calculate_cache_hit_rate(self):
@@ -102,8 +104,8 @@ class TestMetricsCollector:
 
         snapshot = collector.get_metrics_snapshot()
 
-        assert hasattr(snapshot, 'feed_generation_count_1h')
-        assert hasattr(snapshot, 'cache_hit_rate')
-        assert hasattr(snapshot, 'response_time_p50')
-        assert hasattr(snapshot, 'response_time_p95')
-        assert hasattr(snapshot, 'response_time_p99')
+        assert hasattr(snapshot, "feed_generation_count_1h")
+        assert hasattr(snapshot, "cache_hit_rate")
+        assert hasattr(snapshot, "response_time_p50")
+        assert hasattr(snapshot, "response_time_p95")
+        assert hasattr(snapshot, "response_time_p99")

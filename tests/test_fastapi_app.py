@@ -6,9 +6,9 @@ FastAPI インスタンス、CORS設定、ライフサイクルイベントが
 """
 
 import pytest
-import pytest_asyncio
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+
 from src.data_collector.infrastructure.api.app import create_app
 
 
@@ -41,10 +41,11 @@ def test_app_cors_middleware_configured():
     app = create_app()
 
     # ミドルウェアが存在することを確認
-    middleware_types = [type(m.cls) for m in app.user_middleware]
+    [type(m.cls) for m in app.user_middleware]
 
     # CORSMiddleware がインストールされているか確認
     from fastapi.middleware.cors import CORSMiddleware
+
     assert any(m.cls == CORSMiddleware for m in app.user_middleware)
 
 

@@ -10,14 +10,16 @@
 - 大量データでのページネーション (offset=9000): < 200ms
 """
 
-import pytest
-import pytest_asyncio
 import time
 from datetime import date, timedelta
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from src.data_collector.infrastructure.database.models import Animal, Base
-from src.data_collector.infrastructure.database.repository import AnimalRepository
+
+import pytest
+import pytest_asyncio
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 from src.data_collector.domain.models import AnimalData
+from src.data_collector.infrastructure.database.models import Base
+from src.data_collector.infrastructure.database.repository import AnimalRepository
 
 
 @pytest_asyncio.fixture
@@ -36,9 +38,7 @@ async def async_engine():
 @pytest_asyncio.fixture
 async def async_session_maker(async_engine):
     """テスト用の非同期セッションメーカーを作成"""
-    return async_sessionmaker(
-        async_engine, class_=AsyncSession, expire_on_commit=False
-    )
+    return async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
 
 
 @pytest_asyncio.fixture
@@ -103,20 +103,22 @@ async def test_filtered_query_performance(async_session):
     # クエリパフォーマンステスト
     start_time = time.time()
 
-    results, total = await repository.list_animals(
+    _results, _total = await repository.list_animals(
         species="犬",
         sex="男の子",
         location="高知",
         shelter_date_from=date(2026, 1, 1),
         shelter_date_to=date(2026, 6, 30),
         limit=50,
-        offset=0
+        offset=0,
     )
 
     elapsed_time = time.time() - start_time
 
     # 100ms以内に完了することを確認
-    assert elapsed_time < 0.1, f"フィルタクエリに{elapsed_time * 1000:.2f}msかかりました（目標: <100ms）"
+    assert elapsed_time < 0.1, (
+        f"フィルタクエリに{elapsed_time * 1000:.2f}msかかりました（目標: <100ms）"
+    )
 
 
 @pytest.mark.asyncio
@@ -134,13 +136,15 @@ async def test_pagination_with_large_offset_performance(async_session):
 
     results, total = await repository.list_animals(
         limit=50,
-        offset=900  # 900番目から取得
+        offset=900,  # 900番目から取得
     )
 
     elapsed_time = time.time() - start_time
 
     # 200ms以内に完了することを確認
-    assert elapsed_time < 0.2, f"高オフセットページネーションに{elapsed_time * 1000:.2f}msかかりました（目標: <200ms）"
+    assert elapsed_time < 0.2, (
+        f"高オフセットページネーションに{elapsed_time * 1000:.2f}msかかりました（目標: <200ms）"
+    )
 
     # 正しいデータが返されることも確認
     assert len(results) == 50 or len(results) == total - 900
@@ -163,7 +167,7 @@ async def test_concurrent_read_performance(async_session_maker):
         """読み取り操作"""
         async with session_maker() as session:
             repository = AnimalRepository(session)
-            results, total = await repository.list_animals(limit=10)
+            results, _total = await repository.list_animals(limit=10)
             return len(results)
 
     # 10件の同時読み取りを実行
@@ -178,7 +182,9 @@ async def test_concurrent_read_performance(async_session_maker):
     assert all(r == 10 for r in results)
 
     # 同時読み取りが合計500ms以内に完了することを確認
-    assert elapsed_time < 0.5, f"10件の同時読み取りに{elapsed_time * 1000:.2f}msかかりました（目標: <500ms）"
+    assert elapsed_time < 0.5, (
+        f"10件の同時読み取りに{elapsed_time * 1000:.2f}msかかりました（目標: <500ms）"
+    )
 
 
 @pytest.mark.asyncio

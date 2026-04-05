@@ -4,14 +4,14 @@ ArchiveService のテスト
 アーカイブ処理のオーケストレーション機能をテストします。
 """
 
+from datetime import UTC, date, datetime, timedelta
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 import pytest_asyncio
-from datetime import date, datetime, timezone, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from src.data_collector.infrastructure.database.models import Animal, AnimalArchive, Base
-from src.data_collector.domain.models import AnimalStatus
 
 
 @pytest_asyncio.fixture
@@ -43,6 +43,7 @@ async def async_session(async_engine):
 async def animal_repository(async_session):
     """テスト用の AnimalRepository を作成"""
     from src.data_collector.infrastructure.database.repository import AnimalRepository
+
     return AnimalRepository(async_session)
 
 
@@ -50,6 +51,7 @@ async def animal_repository(async_session):
 async def archive_repository(async_session):
     """テスト用の ArchiveRepository を作成"""
     from src.data_collector.infrastructure.database.archive_repository import ArchiveRepository
+
     return ArchiveRepository(async_session)
 
 
@@ -65,6 +67,7 @@ def mock_image_storage_service():
 async def archive_service(animal_repository, archive_repository, mock_image_storage_service):
     """テスト用の ArchiveService を作成"""
     from src.data_collector.services.archive_service import ArchiveService
+
     return ArchiveService(
         animal_repository=animal_repository,
         archive_repository=archive_repository,
@@ -77,9 +80,12 @@ class TestArchiveServiceInitialization:
     """ArchiveService 初期化テスト"""
 
     @pytest.mark.asyncio
-    async def test_initialization(self, animal_repository, archive_repository, mock_image_storage_service):
+    async def test_initialization(
+        self, animal_repository, archive_repository, mock_image_storage_service
+    ):
         """ArchiveService が正しく初期化されるか"""
         from src.data_collector.services.archive_service import ArchiveService
+
         service = ArchiveService(
             animal_repository=animal_repository,
             archive_repository=archive_repository,
@@ -90,9 +96,12 @@ class TestArchiveServiceInitialization:
         assert service.batch_size == 1000  # デフォルト値
 
     @pytest.mark.asyncio
-    async def test_initialization_with_defaults(self, animal_repository, archive_repository, mock_image_storage_service):
+    async def test_initialization_with_defaults(
+        self, animal_repository, archive_repository, mock_image_storage_service
+    ):
         """ArchiveService がデフォルト値で初期化されるか"""
         from src.data_collector.services.archive_service import ArchiveService
+
         service = ArchiveService(
             animal_repository=animal_repository,
             archive_repository=archive_repository,
@@ -111,7 +120,7 @@ class TestRunArchiveJob:
         # 200日前に譲渡された動物を挿入
         old_outcome_date = date.today() - timedelta(days=200)
         old_status_changed_at = datetime(
-            old_outcome_date.year, old_outcome_date.month, old_outcome_date.day, tzinfo=timezone.utc
+            old_outcome_date.year, old_outcome_date.month, old_outcome_date.day, tzinfo=UTC
         )
         animal = Animal(
             species="犬",
@@ -137,6 +146,7 @@ class TestRunArchiveJob:
 
         # アーカイブに移動されていることを確認
         from sqlalchemy import select
+
         archive_stmt = select(AnimalArchive).where(
             AnimalArchive.source_url == "https://example.com/archive_test1"
         )
@@ -146,9 +156,7 @@ class TestRunArchiveJob:
         assert archived.species == "犬"
 
         # 元のテーブルから削除されていることを確認
-        animal_stmt = select(Animal).where(
-            Animal.source_url == "https://example.com/archive_test1"
-        )
+        animal_stmt = select(Animal).where(Animal.source_url == "https://example.com/archive_test1")
         animal_result = await async_session.execute(animal_stmt)
         assert animal_result.scalar_one_or_none() is None
 
@@ -158,7 +166,7 @@ class TestRunArchiveJob:
         # 100日前に譲渡された動物（まだ保持期間内）
         recent_outcome_date = date.today() - timedelta(days=100)
         recent_status_changed_at = datetime(
-            recent_outcome_date.year, recent_outcome_date.month, recent_outcome_date.day, tzinfo=timezone.utc
+            recent_outcome_date.year, recent_outcome_date.month, recent_outcome_date.day, tzinfo=UTC
         )
         animal = Animal(
             species="猫",
@@ -179,11 +187,13 @@ class TestRunArchiveJob:
         assert result.success_count == 0
 
     @pytest.mark.asyncio
-    async def test_run_archive_job_moves_images(self, archive_service, async_session, mock_image_storage_service):
+    async def test_run_archive_job_moves_images(
+        self, archive_service, async_session, mock_image_storage_service
+    ):
         """run_archive_job() が画像ファイルも移動するか"""
         old_outcome_date = date.today() - timedelta(days=200)
         old_status_changed_at = datetime(
-            old_outcome_date.year, old_outcome_date.month, old_outcome_date.day, tzinfo=timezone.utc
+            old_outcome_date.year, old_outcome_date.month, old_outcome_date.day, tzinfo=UTC
         )
         animal = Animal(
             species="犬",
@@ -221,7 +231,7 @@ class TestRunArchiveJob:
         # 5件のアーカイブ対象動物を作成
         old_outcome_date = date.today() - timedelta(days=200)
         old_status_changed_at = datetime(
-            old_outcome_date.year, old_outcome_date.month, old_outcome_date.day, tzinfo=timezone.utc
+            old_outcome_date.year, old_outcome_date.month, old_outcome_date.day, tzinfo=UTC
         )
         for i in range(5):
             animal = Animal(
@@ -265,7 +275,7 @@ class TestGetArchivableCount:
         # アーカイブ対象動物を3件作成
         old_outcome_date = date.today() - timedelta(days=200)
         old_status_changed_at = datetime(
-            old_outcome_date.year, old_outcome_date.month, old_outcome_date.day, tzinfo=timezone.utc
+            old_outcome_date.year, old_outcome_date.month, old_outcome_date.day, tzinfo=UTC
         )
         for i in range(3):
             animal = Animal(
@@ -283,7 +293,7 @@ class TestGetArchivableCount:
         # 保持期間内の動物を1件作成
         recent_outcome_date = date.today() - timedelta(days=100)
         recent_status_changed_at = datetime(
-            recent_outcome_date.year, recent_outcome_date.month, recent_outcome_date.day, tzinfo=timezone.utc
+            recent_outcome_date.year, recent_outcome_date.month, recent_outcome_date.day, tzinfo=UTC
         )
         recent_animal = Animal(
             species="猫",
@@ -307,12 +317,14 @@ class TestErrorHandling:
     """エラーハンドリングのテスト"""
 
     @pytest.mark.asyncio
-    async def test_run_archive_job_continues_on_error(self, archive_service, async_session, mock_image_storage_service):
+    async def test_run_archive_job_continues_on_error(
+        self, archive_service, async_session, mock_image_storage_service
+    ):
         """run_archive_job() がエラー発生時に次の動物へ継続するか"""
         # アーカイブ対象動物を2件作成（画像パスありでエラーを発生させる）
         old_outcome_date = date.today() - timedelta(days=200)
         old_status_changed_at = datetime(
-            old_outcome_date.year, old_outcome_date.month, old_outcome_date.day, tzinfo=timezone.utc
+            old_outcome_date.year, old_outcome_date.month, old_outcome_date.day, tzinfo=UTC
         )
         for i in range(2):
             animal = Animal(
@@ -346,11 +358,13 @@ class TestErrorHandling:
         assert len(result.errors) == 1
 
     @pytest.mark.asyncio
-    async def test_run_archive_job_records_error_message(self, archive_service, async_session, mock_image_storage_service):
+    async def test_run_archive_job_records_error_message(
+        self, archive_service, async_session, mock_image_storage_service
+    ):
         """run_archive_job() がエラーメッセージを記録するか"""
         old_outcome_date = date.today() - timedelta(days=200)
         old_status_changed_at = datetime(
-            old_outcome_date.year, old_outcome_date.month, old_outcome_date.day, tzinfo=timezone.utc
+            old_outcome_date.year, old_outcome_date.month, old_outcome_date.day, tzinfo=UTC
         )
         animal = Animal(
             species="犬",

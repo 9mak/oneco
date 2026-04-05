@@ -12,10 +12,11 @@ FastAPIの自動生成ドキュメント（/docs, /openapi.json）が
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from src.data_collector.infrastructure.database.models import Base
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 from src.data_collector.infrastructure.api.app import create_app
 from src.data_collector.infrastructure.api.dependencies import get_session
+from src.data_collector.infrastructure.database.models import Base
 
 
 @pytest_asyncio.fixture
@@ -169,8 +170,13 @@ class TestOpenAPIDocumentation:
 
         # 必須フィールドの確認
         expected_fields = [
-            "id", "species", "sex", "shelter_date",
-            "location", "source_url", "image_urls"
+            "id",
+            "species",
+            "sex",
+            "shelter_date",
+            "location",
+            "source_url",
+            "image_urls",
         ]
         for field in expected_fields:
             assert field in properties, f"Field {field} should be in AnimalPublic schema"
@@ -194,8 +200,12 @@ class TestOpenAPIDocumentation:
 
         # 必須フィールドの確認
         expected_fields = [
-            "total_count", "limit", "offset",
-            "current_page", "total_pages", "has_next"
+            "total_count",
+            "limit",
+            "offset",
+            "current_page",
+            "total_pages",
+            "has_next",
         ]
         for field in expected_fields:
             assert field in properties, f"Field {field} should be in PaginationMeta schema"
@@ -324,10 +334,7 @@ class TestOpenAPIResponseSchemas:
         animals_get = schema["paths"]["/animals"]["get"]
 
         # limit パラメータを探す
-        limit_param = next(
-            (p for p in animals_get["parameters"] if p["name"] == "limit"),
-            None
-        )
+        limit_param = next((p for p in animals_get["parameters"] if p["name"] == "limit"), None)
         assert limit_param is not None
 
         # スキーマにle（最大値）制約があることを確認

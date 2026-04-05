@@ -10,12 +10,11 @@ import logging
 import statistics
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Dict, List, Optional
+from datetime import UTC, datetime
+from enum import StrEnum
 
 
-class MetricType(str, Enum):
+class MetricType(StrEnum):
     """メトリクスの種類"""
 
     NOTIFICATIONS_SENT = "notifications_sent"
@@ -24,7 +23,7 @@ class MetricType(str, Enum):
     MATCHING_TIME = "matching_time"
 
 
-class AlertLevel(str, Enum):
+class AlertLevel(StrEnum):
     """アラートレベル"""
 
     WARNING = "warning"
@@ -37,7 +36,7 @@ class Alert:
 
     level: AlertLevel
     message: str
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 class MetricsCollector:
@@ -52,8 +51,8 @@ class MetricsCollector:
     """
 
     def __init__(self) -> None:
-        self._counts: Dict[MetricType, int] = defaultdict(int)
-        self._timings: Dict[MetricType, List[float]] = defaultdict(list)
+        self._counts: dict[MetricType, int] = defaultdict(int)
+        self._timings: dict[MetricType, list[float]] = defaultdict(list)
 
     def record(self, metric_type: MetricType, value: int) -> None:
         """カウントメトリクスを記録"""
@@ -67,7 +66,7 @@ class MetricsCollector:
         """カウントメトリクスを取得"""
         return self._counts[metric_type]
 
-    def get_timing_stats(self, metric_type: MetricType) -> Dict[str, float]:
+    def get_timing_stats(self, metric_type: MetricType) -> dict[str, float]:
         """タイミングメトリクスの統計を取得"""
         values = self._timings[metric_type]
         if not values:
@@ -84,7 +83,7 @@ class MetricsCollector:
             "p99": self._percentile(sorted_values, 99),
         }
 
-    def _percentile(self, sorted_values: List[float], percentile: int) -> float:
+    def _percentile(self, sorted_values: list[float], percentile: int) -> float:
         """パーセンタイルを計算"""
         if not sorted_values:
             return 0.0
@@ -101,7 +100,7 @@ class MetricsCollector:
             return 0.0
         return errors / total
 
-    def get_hourly_stats(self) -> Dict[str, int]:
+    def get_hourly_stats(self) -> dict[str, int]:
         """1時間あたりの統計を取得"""
         return {
             "notifications_sent": self._counts[MetricType.NOTIFICATIONS_SENT],
@@ -137,9 +136,9 @@ class AlertManager:
         self,
         error_rate: float,
         response_time_p95: float,
-    ) -> List[Alert]:
+    ) -> list[Alert]:
         """閾値をチェックしてアラートを生成"""
-        alerts: List[Alert] = []
+        alerts: list[Alert] = []
 
         # エラー率チェック
         if error_rate >= self.critical_error_rate:
@@ -187,22 +186,18 @@ class AuditLogger:
         self,
         source: str,
         reason: str,
-        ip_address: Optional[str] = None,
+        ip_address: str | None = None,
     ) -> None:
         """認証エラーをログ記録"""
-        self._logger.warning(
-            f"AUTH_FAILURE | source={source} | reason={reason} | ip={ip_address}"
-        )
+        self._logger.warning(f"AUTH_FAILURE | source={source} | reason={reason} | ip={ip_address}")
 
     def log_signature_failure(
         self,
         source: str,
-        ip_address: Optional[str] = None,
+        ip_address: str | None = None,
     ) -> None:
         """署名検証失敗をログ記録"""
-        self._logger.warning(
-            f"SIGNATURE_FAILURE | source={source} | ip={ip_address}"
-        )
+        self._logger.warning(f"SIGNATURE_FAILURE | source={source} | ip={ip_address}")
 
     def log_db_error(
         self,
@@ -210,9 +205,7 @@ class AuditLogger:
         error: str,
     ) -> None:
         """データベースエラーをログ記録"""
-        self._logger.error(
-            f"DB_ERROR | operation={operation} | error={error}"
-        )
+        self._logger.error(f"DB_ERROR | operation={operation} | error={error}")
 
     def log_line_api_error(
         self,

@@ -4,15 +4,16 @@
 ロギングが要件通りに設定され、適切なログが出力されることを検証します。
 """
 
-import pytest
-import pytest_asyncio
 import logging
 from io import StringIO
-from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from src.data_collector.infrastructure.database.models import Base
+
+import pytest
+import pytest_asyncio
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 from src.data_collector.infrastructure.api.app import create_app
 from src.data_collector.infrastructure.api.dependencies import get_session
+from src.data_collector.infrastructure.database.models import Base
 
 
 @pytest_asyncio.fixture
@@ -76,9 +77,7 @@ async def test_logging_format():
     handler = logging.StreamHandler(log_stream)
 
     # フォーマットを設定
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 

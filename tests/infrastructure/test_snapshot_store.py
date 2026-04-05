@@ -5,13 +5,14 @@ SnapshotStore のユニットテスト
 """
 
 import json
-import pytest
-from pathlib import Path
 from datetime import date
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from src.data_collector.infrastructure.snapshot_store import SnapshotStore
+import pytest
+
 from src.data_collector.domain.models import AnimalData
+from src.data_collector.infrastructure.snapshot_store import SnapshotStore
 
 
 class TestSnapshotStoreInitialization:
@@ -21,7 +22,7 @@ class TestSnapshotStoreInitialization:
         """SnapshotStore 初期化時にディレクトリが自動作成されること"""
         with TemporaryDirectory() as tmp_dir:
             snapshot_dir = Path(tmp_dir) / "snapshots"
-            store = SnapshotStore(snapshot_dir=snapshot_dir)
+            SnapshotStore(snapshot_dir=snapshot_dir)
             assert snapshot_dir.exists()
 
     def test_snapshot_store_with_existing_directory(self):
@@ -29,7 +30,7 @@ class TestSnapshotStoreInitialization:
         with TemporaryDirectory() as tmp_dir:
             snapshot_dir = Path(tmp_dir) / "snapshots"
             snapshot_dir.mkdir()
-            store = SnapshotStore(snapshot_dir=snapshot_dir)
+            SnapshotStore(snapshot_dir=snapshot_dir)
             assert snapshot_dir.exists()
 
 
@@ -64,7 +65,7 @@ class TestSnapshotStoreLoadSnapshot:
                     "phone": "088-123-4567",
                     "image_urls": ["https://example.com/image1.jpg"],
                     "source_url": "https://example.com/animals/001",
-                    "category": "adoption"
+                    "category": "adoption",
                 }
             ]
             with open(snapshot_file, "w", encoding="utf-8") as f:
@@ -92,15 +93,15 @@ class TestSnapshotStoreLoadSnapshot:
                     "shelter_date": "2026-01-05",
                     "location": "高知県",
                     "source_url": "https://example.com/animals/001",
-                    "category": "adoption"
+                    "category": "adoption",
                 },
                 {
                     "species": "猫",
                     "shelter_date": "2026-01-06",
                     "location": "高知県",
                     "source_url": "https://example.com/animals/002",
-                    "category": "adoption"
-                }
+                    "category": "adoption",
+                },
             ]
             with open(snapshot_file, "w", encoding="utf-8") as f:
                 json.dump(test_data, f, ensure_ascii=False)
@@ -141,8 +142,8 @@ class TestSnapshotStoreSaveSnapshot:
                 shelter_date=date(2026, 1, 5),
                 location="高知県",
                 source_url="https://example.com/animals/001",
-            category="adoption"
-        )
+                category="adoption",
+            )
             store.save_snapshot([animal])
 
             snapshot_file = snapshot_dir / "latest.json"
@@ -161,12 +162,12 @@ class TestSnapshotStoreSaveSnapshot:
                 shelter_date=date(2026, 1, 5),
                 location="高知県",
                 source_url="https://example.com/animals/001",
-            category="adoption"
-        )
+                category="adoption",
+            )
             store.save_snapshot([animal])
 
             snapshot_file = snapshot_dir / "latest.json"
-            with open(snapshot_file, "r", encoding="utf-8") as f:
+            with open(snapshot_file, encoding="utf-8") as f:
                 saved_data = json.load(f)
 
             assert len(saved_data) == 1
@@ -185,12 +186,12 @@ class TestSnapshotStoreSaveSnapshot:
                 location="高知県動物愛護センター",
                 shelter_date=date(2026, 1, 5),
                 source_url="https://example.com/animals/001",
-            category="adoption"
-        )
+                category="adoption",
+            )
             store.save_snapshot([animal])
 
             snapshot_file = snapshot_dir / "latest.json"
-            with open(snapshot_file, "r", encoding="utf-8") as f:
+            with open(snapshot_file, encoding="utf-8") as f:
                 content = f.read()
 
             # 日本語がそのまま含まれていること（Unicode エスケープされていない）
@@ -207,12 +208,12 @@ class TestSnapshotStoreSaveSnapshot:
                 shelter_date=date(2026, 1, 5),
                 location="高知県",
                 source_url="https://example.com/animals/001",
-            category="adoption"
-        )
+                category="adoption",
+            )
             store.save_snapshot([animal])
 
             snapshot_file = snapshot_dir / "latest.json"
-            with open(snapshot_file, "r", encoding="utf-8") as f:
+            with open(snapshot_file, encoding="utf-8") as f:
                 content = f.read()
 
             # インデントが含まれていること
@@ -231,8 +232,8 @@ class TestSnapshotStoreSaveSnapshot:
                 shelter_date=date(2026, 1, 5),
                 location="高知県",
                 source_url="https://example.com/animals/001",
-            category="adoption"
-        )
+                category="adoption",
+            )
             store.save_snapshot([animal1])
 
             # 新しいデータで上書き
@@ -241,8 +242,8 @@ class TestSnapshotStoreSaveSnapshot:
                 shelter_date=date(2026, 1, 6),
                 location="高知県",
                 source_url="https://example.com/animals/002",
-            category="adoption"
-        )
+                category="adoption",
+            )
             store.save_snapshot([animal2])
 
             # 読み込んで確認
@@ -272,8 +273,8 @@ class TestSnapshotStoreRoundTrip:
                     phone="088-123-4567",
                     image_urls=["https://example.com/image1.jpg"],
                     source_url="https://example.com/animals/001",
-            category="adoption"
-        ),
+                    category="adoption",
+                ),
                 AnimalData(
                     species="猫",
                     sex="女の子",
@@ -281,8 +282,8 @@ class TestSnapshotStoreRoundTrip:
                     shelter_date=date(2026, 1, 6),
                     location="高知県",
                     source_url="https://example.com/animals/002",
-            category="adoption"
-        )
+                    category="adoption",
+                ),
             ]
 
             store.save_snapshot(original_animals)

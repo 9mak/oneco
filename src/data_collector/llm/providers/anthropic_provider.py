@@ -7,7 +7,6 @@ tool_use + strict mode で RawAnimalData スキーマに準拠した構造化デ
 import logging
 import os
 import time
-from typing import List, Optional
 
 import anthropic
 
@@ -35,9 +34,7 @@ ANIMAL_EXTRACTION_TOOL = {
             },
             "age": {
                 "type": "string",
-                "description": (
-                    "年齢。テキスト表記（高齢、成犬、生年月日等）をそのまま返す"
-                ),
+                "description": ("年齢。テキスト表記（高齢、成犬、生年月日等）をそのまま返す"),
             },
             "color": {
                 "type": "string",
@@ -132,14 +129,12 @@ class AnthropicProvider(LlmProvider):
     def __init__(
         self,
         model: str = "claude-haiku-4-5-20251001",
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         max_retries: int = 3,
     ) -> None:
         self.model = model
         self.max_retries = max_retries
-        self.client = anthropic.Anthropic(
-            api_key=api_key or os.environ.get("ANTHROPIC_API_KEY")
-        )
+        self.client = anthropic.Anthropic(api_key=api_key or os.environ.get("ANTHROPIC_API_KEY"))
 
     def extract_animal_data(
         self,
@@ -179,7 +174,7 @@ class AnthropicProvider(LlmProvider):
         self,
         html_content: str,
         base_url: str,
-    ) -> List[str]:
+    ) -> list[str]:
         """HTMLから動物詳細ページへのリンクをLLMで推定抽出"""
         user_message = (
             f"以下の一覧ページHTMLから、動物の詳細ページへのリンクを抽出してください。\n"
@@ -233,8 +228,6 @@ class AnthropicProvider(LlmProvider):
                     )
                     time.sleep(wait)
                 else:
-                    logger.error(
-                        f"API呼び出し失敗 (最大リトライ回数到達): {e}"
-                    )
+                    logger.error(f"API呼び出し失敗 (最大リトライ回数到達): {e}")
 
         raise last_error  # type: ignore[misc]

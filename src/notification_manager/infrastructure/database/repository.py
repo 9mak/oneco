@@ -7,21 +7,20 @@ Repository パターンによりドメイン層とデータベース層を分離
 Requirements: 1.1, 1.4, 1.6, 3.1, 5.1, 5.2, 5.3, 5.4, 5.5, 7.5
 """
 
-from datetime import datetime, timezone, timedelta
-from typing import List, Optional
+from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select, delete
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from src.notification_manager.infrastructure.database.models import (
-    User,
-    NotificationPreference,
-    NotificationHistory,
-)
 from src.notification_manager.domain.models import (
-    UserEntity,
-    NotificationPreferenceInput,
     NotificationPreferenceEntity,
+    NotificationPreferenceInput,
+    UserEntity,
+)
+from src.notification_manager.infrastructure.database.models import (
+    NotificationHistory,
+    NotificationPreference,
+    User,
 )
 
 
@@ -62,7 +61,7 @@ class UserRepository:
         self.session.refresh(user)
         return self._to_entity(user)
 
-    def get_by_encrypted_line_id(self, encrypted_line_user_id: str) -> Optional[UserEntity]:
+    def get_by_encrypted_line_id(self, encrypted_line_user_id: str) -> UserEntity | None:
         """
         暗号化LINEユーザーIDでユーザーを取得
 
@@ -72,9 +71,7 @@ class UserRepository:
         Returns:
             Optional[UserEntity]: ユーザー、存在しない場合はNone
         """
-        stmt = select(User).where(
-            User.line_user_id_encrypted == encrypted_line_user_id
-        )
+        stmt = select(User).where(User.line_user_id_encrypted == encrypted_line_user_id)
         result = self.session.execute(stmt)
         user = result.scalar_one_or_none()
         return self._to_entity(user) if user else None
@@ -104,9 +101,7 @@ class UserRepository:
         Returns:
             bool: 無効化成功時はTrue、ユーザーが存在しない場合はFalse
         """
-        stmt = select(User).where(
-            User.line_user_id_encrypted == encrypted_line_user_id
-        )
+        stmt = select(User).where(User.line_user_id_encrypted == encrypted_line_user_id)
         result = self.session.execute(stmt)
         user = result.scalar_one_or_none()
 
@@ -114,11 +109,11 @@ class UserRepository:
             return False
 
         user.is_active = False
-        user.updated_at = datetime.now(timezone.utc)
+        user.updated_at = datetime.now(UTC)
         self.session.commit()
         return True
 
-    def get_by_id(self, user_id: int) -> Optional[UserEntity]:
+    def get_by_id(self, user_id: int) -> UserEntity | None:
         """
         ユーザーIDでユーザーを取得
 
@@ -133,7 +128,7 @@ class UserRepository:
         user = result.scalar_one_or_none()
         return self._to_entity(user) if user else None
 
-    def reactivate(self, encrypted_line_user_id: str) -> Optional[UserEntity]:
+    def reactivate(self, encrypted_line_user_id: str) -> UserEntity | None:
         """
         ユーザーを再アクティブ化
 
@@ -143,9 +138,7 @@ class UserRepository:
         Returns:
             Optional[UserEntity]: 再アクティブ化されたユーザー、存在しない場合はNone
         """
-        stmt = select(User).where(
-            User.line_user_id_encrypted == encrypted_line_user_id
-        )
+        stmt = select(User).where(User.line_user_id_encrypted == encrypted_line_user_id)
         result = self.session.execute(stmt)
         user = result.scalar_one_or_none()
 
@@ -153,19 +146,19 @@ class UserRepository:
             return None
 
         user.is_active = True
-        user.updated_at = datetime.now(timezone.utc)
+        user.updated_at = datetime.now(UTC)
         self.session.commit()
         self.session.refresh(user)
         return self._to_entity(user)
 
-    def get_active_users(self) -> List[UserEntity]:
+    def get_active_users(self) -> list[UserEntity]:
         """
         アクティブなユーザー一覧を取得
 
         Returns:
             List[UserEntity]: アクティブユーザーのリスト
         """
-        stmt = select(User).where(User.is_active == True)
+        stmt = select(User).where(User.is_active)
         result = self.session.execute(stmt)
         users = result.scalars().all()
         return [self._to_entity(u) for u in users]
@@ -210,9 +203,7 @@ class PreferenceRepository:
         Returns:
             NotificationPreferenceEntity: 作成/更新された通知条件
         """
-        stmt = select(NotificationPreference).where(
-            NotificationPreference.user_id == user_id
-        )
+        stmt = select(NotificationPreference).where(NotificationPreference.user_id == user_id)
         result = self.session.execute(stmt)
         existing = result.scalar_one_or_none()
 
@@ -224,7 +215,7 @@ class PreferenceRepository:
             existing.age_max_months = pref_input.age_max_months
             existing.size = pref_input.size
             existing.sex = pref_input.sex
-            existing.updated_at = datetime.now(timezone.utc)
+            existing.updated_at = datetime.now(UTC)
             pref = existing
         else:
             # 新規作成
@@ -244,7 +235,7 @@ class PreferenceRepository:
         self.session.refresh(pref)
         return self._to_entity(pref)
 
-    def get_by_user_id(self, user_id: int) -> Optional[NotificationPreferenceEntity]:
+    def get_by_user_id(self, user_id: int) -> NotificationPreferenceEntity | None:
         """
         ユーザーIDで通知条件を取得
 
@@ -254,9 +245,7 @@ class PreferenceRepository:
         Returns:
             Optional[NotificationPreferenceEntity]: 通知条件、存在しない場合はNone
         """
-        stmt = select(NotificationPreference).where(
-            NotificationPreference.user_id == user_id
-        )
+        stmt = select(NotificationPreference).where(NotificationPreference.user_id == user_id)
         result = self.session.execute(stmt)
         pref = result.scalar_one_or_none()
         return self._to_entity(pref) if pref else None
@@ -272,9 +261,7 @@ class PreferenceRepository:
         Returns:
             bool: 設定成功時はTrue、条件が存在しない場合はFalse
         """
-        stmt = select(NotificationPreference).where(
-            NotificationPreference.user_id == user_id
-        )
+        stmt = select(NotificationPreference).where(NotificationPreference.user_id == user_id)
         result = self.session.execute(stmt)
         pref = result.scalar_one_or_none()
 
@@ -282,11 +269,11 @@ class PreferenceRepository:
             return False
 
         pref.notifications_enabled = enabled
-        pref.updated_at = datetime.now(timezone.utc)
+        pref.updated_at = datetime.now(UTC)
         self.session.commit()
         return True
 
-    def get_active_preferences(self) -> List[NotificationPreferenceEntity]:
+    def get_active_preferences(self) -> list[NotificationPreferenceEntity]:
         """
         アクティブな通知条件を一括取得（マッチング用）
 
@@ -297,8 +284,8 @@ class PreferenceRepository:
             select(NotificationPreference)
             .join(User)
             .where(
-                NotificationPreference.notifications_enabled == True,
-                User.is_active == True,
+                NotificationPreference.notifications_enabled,
+                User.is_active,
             )
         )
         result = self.session.execute(stmt)
@@ -338,9 +325,7 @@ class NotificationHistoryRepository:
         """
         self.session = session
 
-    def record(
-        self, user_id: int, animal_source_url: str, status: str
-    ) -> NotificationHistory:
+    def record(self, user_id: int, animal_source_url: str, status: str) -> NotificationHistory:
         """
         通知履歴を記録
 
@@ -390,17 +375,15 @@ class NotificationHistoryRepository:
         Returns:
             int: 削除した履歴の件数
         """
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
-        stmt = delete(NotificationHistory).where(
-            NotificationHistory.notified_at < cutoff_date
-        )
+        cutoff_date = datetime.now(UTC) - timedelta(days=days)
+        stmt = delete(NotificationHistory).where(NotificationHistory.notified_at < cutoff_date)
         result = self.session.execute(stmt)
         self.session.commit()
         return result.rowcount
 
     def get_history_for_user(
-        self, user_id: int, status: Optional[str] = None, limit: int = 100
-    ) -> List[NotificationHistory]:
+        self, user_id: int, status: str | None = None, limit: int = 100
+    ) -> list[NotificationHistory]:
         """
         ユーザーの通知履歴を取得
 
@@ -412,9 +395,7 @@ class NotificationHistoryRepository:
         Returns:
             List[NotificationHistory]: 通知履歴のリスト
         """
-        stmt = select(NotificationHistory).where(
-            NotificationHistory.user_id == user_id
-        )
+        stmt = select(NotificationHistory).where(NotificationHistory.user_id == user_id)
         if status:
             stmt = stmt.where(NotificationHistory.status == status)
         stmt = stmt.order_by(NotificationHistory.notified_at.desc()).limit(limit)

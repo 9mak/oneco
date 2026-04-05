@@ -5,12 +5,13 @@ Task 2.2: Fernet暗号化/復号ユーティリティのテスト
 """
 
 import os
-import pytest
 from unittest.mock import patch
 
+import pytest
+
 from src.notification_manager.domain.encryption import (
-    EncryptionService,
     EncryptionError,
+    EncryptionService,
     generate_encryption_key,
 )
 

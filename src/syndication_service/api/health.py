@@ -10,13 +10,12 @@ Requirements Coverage:
 
 import logging
 from datetime import datetime
-from typing import Optional
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from src.syndication_service.services.metrics_collector import MetricsCollector
 from src.syndication_service.models.metrics import MetricsSnapshot
-
+from src.syndication_service.services.metrics_collector import MetricsCollector
 
 logger = logging.getLogger(__name__)
 
@@ -28,13 +27,13 @@ class HealthCheckResponse(BaseModel):
     timestamp: datetime
     upstream_api_status: str  # "ok" / "error"
     cache_status: str  # "ok" / "error"
-    metrics: Optional[MetricsSnapshot] = None
+    metrics: MetricsSnapshot | None = None
 
 
 def create_health_router(
-    metrics_collector: Optional[MetricsCollector] = None,
-    cache_manager: Optional[object] = None,
-    repository_factory: Optional[callable] = None
+    metrics_collector: MetricsCollector | None = None,
+    cache_manager: object | None = None,
+    repository_factory: callable | None = None,
 ) -> APIRouter:
     """
     HealthCheckRouter を作成
@@ -83,7 +82,7 @@ def create_health_router(
         if repository_factory:
             try:
                 # 軽量クエリで接続確認
-                async with repository_factory() as repo:
+                async with repository_factory():
                     # AnimalRepository には接続確認メソッドがないため、スキップ
                     pass
                 logger.info("Database health check: OK")
@@ -104,8 +103,8 @@ def create_health_router(
                     timestamp=timestamp,
                     upstream_api_status=upstream_status,
                     cache_status=cache_status,
-                    metrics=metrics
-                ).model_dump()
+                    metrics=metrics,
+                ).model_dump(),
             )
 
         return HealthCheckResponse(
@@ -113,7 +112,7 @@ def create_health_router(
             timestamp=timestamp,
             upstream_api_status=upstream_status,
             cache_status=cache_status,
-            metrics=metrics
+            metrics=metrics,
         )
 
     return router

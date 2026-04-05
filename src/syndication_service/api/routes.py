@@ -12,19 +12,18 @@ Requirements Coverage:
 
 import logging
 from datetime import datetime
-from typing import Optional
-from fastapi import APIRouter, Depends, Header, Request, Response, HTTPException, Query
+
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response
 from fastapi.responses import Response as FastAPIResponse
 
-from src.syndication_service.models.schemas import FeedQueryParams, ArchiveFeedQueryParams
-from src.syndication_service.services.feed_generator import FeedGenerator, FeedGenerationError
+from src.data_collector.infrastructure.database.archive_repository import ArchiveRepository
+from src.data_collector.infrastructure.database.repository import AnimalRepository
+from src.syndication_service.middleware.rate_limiter import DEFAULT_RATE_LIMIT
+from src.syndication_service.models.schemas import ArchiveFeedQueryParams, FeedQueryParams
 from src.syndication_service.services.cache_manager import CacheManager
+from src.syndication_service.services.feed_generator import FeedGenerationError, FeedGenerator
 from src.syndication_service.services.input_validator import InputValidator
 from src.syndication_service.services.metrics_collector import MetricsCollector
-from src.syndication_service.middleware.rate_limiter import DEFAULT_RATE_LIMIT
-from src.data_collector.infrastructure.database.repository import AnimalRepository
-from src.data_collector.infrastructure.database.archive_repository import ArchiveRepository
-
 
 logger = logging.getLogger(__name__)
 
@@ -46,10 +45,10 @@ async def get_archive_repository() -> ArchiveRepository:
 
 
 def create_syndication_router(
-    feed_generator: Optional[FeedGenerator] = None,
-    cache_manager: Optional[CacheManager] = None,
-    metrics_collector: Optional[MetricsCollector] = None,
-    limiter: Optional[object] = None
+    feed_generator: FeedGenerator | None = None,
+    cache_manager: CacheManager | None = None,
+    metrics_collector: MetricsCollector | None = None,
+    limiter: object | None = None,
 ) -> APIRouter:
     """
     SyndicationRouter を作成
@@ -82,14 +81,14 @@ def create_syndication_router(
     async def get_rss_feed(
         request: Request,
         response: Response,
-        species: Optional[str] = Query(None, description="種別フィルタ"),
-        category: Optional[str] = Query(None, description="カテゴリフィルタ"),
-        location: Optional[str] = Query(None, description="地域フィルタ"),
-        status: Optional[str] = Query(None, description="ステータスフィルタ"),
-        sex: Optional[str] = Query(None, description="性別フィルタ"),
+        species: str | None = Query(None, description="種別フィルタ"),
+        category: str | None = Query(None, description="カテゴリフィルタ"),
+        location: str | None = Query(None, description="地域フィルタ"),
+        status: str | None = Query(None, description="ステータスフィルタ"),
+        sex: str | None = Query(None, description="性別フィルタ"),
         limit: int = Query(50, ge=1, le=100, description="アイテム数"),
-        if_none_match: Optional[str] = Header(None, alias="If-None-Match"),
-        repository: AnimalRepository = Depends(get_animal_repository)
+        if_none_match: str | None = Header(None, alias="If-None-Match"),
+        repository: AnimalRepository = Depends(get_animal_repository),
     ):
         """
         RSS 2.0 フィードを取得
@@ -103,7 +102,7 @@ def create_syndication_router(
             location=location,
             status=status,
             sex=sex,
-            limit=limit
+            limit=limit,
         )
 
         # バリデーション
@@ -121,10 +120,7 @@ def create_syndication_router(
             return Response(
                 content="",
                 status_code=304,
-                headers={
-                    "ETag": etag,
-                    "Cache-Control": "public, max-age=300"
-                }
+                headers={"ETag": etag, "Cache-Control": "public, max-age=300"},
             )
 
         if feed_xml:
@@ -133,10 +129,7 @@ def create_syndication_router(
             return Response(
                 content=feed_xml,
                 media_type="application/rss+xml; charset=utf-8",
-                headers={
-                    "ETag": etag,
-                    "Cache-Control": "public, max-age=300"
-                }
+                headers={"ETag": etag, "Cache-Control": "public, max-age=300"},
             )
 
         # キャッシュミス: データ取得
@@ -149,7 +142,7 @@ def create_syndication_router(
             location=params.location,
             status=params.status,
             sex=params.sex,
-            limit=params.limit
+            limit=params.limit,
         )
 
         # RSS フィード生成
@@ -168,10 +161,7 @@ def create_syndication_router(
         return Response(
             content=feed_xml,
             media_type="application/rss+xml; charset=utf-8",
-            headers={
-                "ETag": etag,
-                "Cache-Control": "public, max-age=300"
-            }
+            headers={"ETag": etag, "Cache-Control": "public, max-age=300"},
         )
 
     @router.get("/atom", response_class=FastAPIResponse)
@@ -179,14 +169,14 @@ def create_syndication_router(
     async def get_atom_feed(
         request: Request,
         response: Response,
-        species: Optional[str] = Query(None, description="種別フィルタ"),
-        category: Optional[str] = Query(None, description="カテゴリフィルタ"),
-        location: Optional[str] = Query(None, description="地域フィルタ"),
-        status: Optional[str] = Query(None, description="ステータスフィルタ"),
-        sex: Optional[str] = Query(None, description="性別フィルタ"),
+        species: str | None = Query(None, description="種別フィルタ"),
+        category: str | None = Query(None, description="カテゴリフィルタ"),
+        location: str | None = Query(None, description="地域フィルタ"),
+        status: str | None = Query(None, description="ステータスフィルタ"),
+        sex: str | None = Query(None, description="性別フィルタ"),
         limit: int = Query(50, ge=1, le=100, description="アイテム数"),
-        if_none_match: Optional[str] = Header(None, alias="If-None-Match"),
-        repository: AnimalRepository = Depends(get_animal_repository)
+        if_none_match: str | None = Header(None, alias="If-None-Match"),
+        repository: AnimalRepository = Depends(get_animal_repository),
     ):
         """
         Atom 1.0 フィードを取得
@@ -200,7 +190,7 @@ def create_syndication_router(
             location=location,
             status=status,
             sex=sex,
-            limit=limit
+            limit=limit,
         )
 
         # バリデーション
@@ -218,10 +208,7 @@ def create_syndication_router(
             return Response(
                 content="",
                 status_code=304,
-                headers={
-                    "ETag": etag,
-                    "Cache-Control": "public, max-age=300"
-                }
+                headers={"ETag": etag, "Cache-Control": "public, max-age=300"},
             )
 
         if feed_xml:
@@ -230,10 +217,7 @@ def create_syndication_router(
             return Response(
                 content=feed_xml,
                 media_type="application/atom+xml; charset=utf-8",
-                headers={
-                    "ETag": etag,
-                    "Cache-Control": "public, max-age=300"
-                }
+                headers={"ETag": etag, "Cache-Control": "public, max-age=300"},
             )
 
         # キャッシュミス: データ取得
@@ -246,7 +230,7 @@ def create_syndication_router(
             location=params.location,
             status=params.status,
             sex=params.sex,
-            limit=params.limit
+            limit=params.limit,
         )
 
         # Atom フィード生成
@@ -265,10 +249,7 @@ def create_syndication_router(
         return Response(
             content=feed_xml,
             media_type="application/atom+xml; charset=utf-8",
-            headers={
-                "ETag": etag,
-                "Cache-Control": "public, max-age=300"
-            }
+            headers={"ETag": etag, "Cache-Control": "public, max-age=300"},
         )
 
     @router.get("/archive/rss", response_class=FastAPIResponse)
@@ -276,13 +257,13 @@ def create_syndication_router(
     async def get_archive_rss_feed(
         request: Request,
         response: Response,
-        species: Optional[str] = Query(None, description="種別フィルタ"),
-        location: Optional[str] = Query(None, description="地域フィルタ"),
-        archived_from: Optional[str] = Query(None, description="アーカイブ開始日 (YYYY-MM-DD)"),
-        archived_to: Optional[str] = Query(None, description="アーカイブ終了日 (YYYY-MM-DD)"),
+        species: str | None = Query(None, description="種別フィルタ"),
+        location: str | None = Query(None, description="地域フィルタ"),
+        archived_from: str | None = Query(None, description="アーカイブ開始日 (YYYY-MM-DD)"),
+        archived_to: str | None = Query(None, description="アーカイブ終了日 (YYYY-MM-DD)"),
         limit: int = Query(50, ge=1, le=100, description="アイテム数"),
-        if_none_match: Optional[str] = Header(None, alias="If-None-Match"),
-        repository: ArchiveRepository = Depends(get_archive_repository)
+        if_none_match: str | None = Header(None, alias="If-None-Match"),
+        repository: ArchiveRepository = Depends(get_archive_repository),
     ):
         """
         アーカイブ RSS 2.0 フィードを取得
@@ -301,7 +282,7 @@ def create_syndication_router(
             location=location,
             archived_from=archived_from_date,
             archived_to=archived_to_date,
-            limit=limit
+            limit=limit,
         )
 
         # バリデーション
@@ -319,10 +300,7 @@ def create_syndication_router(
             return Response(
                 content="",
                 status_code=304,
-                headers={
-                    "ETag": etag,
-                    "Cache-Control": "public, max-age=300"
-                }
+                headers={"ETag": etag, "Cache-Control": "public, max-age=300"},
             )
 
         if feed_xml:
@@ -331,10 +309,7 @@ def create_syndication_router(
             return Response(
                 content=feed_xml,
                 media_type="application/rss+xml; charset=utf-8",
-                headers={
-                    "ETag": etag,
-                    "Cache-Control": "public, max-age=300"
-                }
+                headers={"ETag": etag, "Cache-Control": "public, max-age=300"},
             )
 
         # キャッシュミス: データ取得
@@ -345,12 +320,14 @@ def create_syndication_router(
             species=params.species,
             archived_from=params.archived_from,
             archived_to=params.archived_to,
-            limit=params.limit
+            limit=params.limit,
         )
 
         # RSS フィード生成（feed_type="archive"）
         try:
-            feed_xml = _feed_generator.generate_rss(archived_animals, filter_dict, feed_type="archive")
+            feed_xml = _feed_generator.generate_rss(
+                archived_animals, filter_dict, feed_type="archive"
+            )
         except FeedGenerationError as e:
             logger.error(f"アーカイブ RSS フィード生成エラー: {e}")
             raise HTTPException(status_code=500, detail="フィード生成に失敗しました")
@@ -364,10 +341,7 @@ def create_syndication_router(
         return Response(
             content=feed_xml,
             media_type="application/rss+xml; charset=utf-8",
-            headers={
-                "ETag": etag,
-                "Cache-Control": "public, max-age=300"
-            }
+            headers={"ETag": etag, "Cache-Control": "public, max-age=300"},
         )
 
     @router.get("/archive/atom", response_class=FastAPIResponse)
@@ -375,13 +349,13 @@ def create_syndication_router(
     async def get_archive_atom_feed(
         request: Request,
         response: Response,
-        species: Optional[str] = Query(None, description="種別フィルタ"),
-        location: Optional[str] = Query(None, description="地域フィルタ"),
-        archived_from: Optional[str] = Query(None, description="アーカイブ開始日 (YYYY-MM-DD)"),
-        archived_to: Optional[str] = Query(None, description="アーカイブ終了日 (YYYY-MM-DD)"),
+        species: str | None = Query(None, description="種別フィルタ"),
+        location: str | None = Query(None, description="地域フィルタ"),
+        archived_from: str | None = Query(None, description="アーカイブ開始日 (YYYY-MM-DD)"),
+        archived_to: str | None = Query(None, description="アーカイブ終了日 (YYYY-MM-DD)"),
         limit: int = Query(50, ge=1, le=100, description="アイテム数"),
-        if_none_match: Optional[str] = Header(None, alias="If-None-Match"),
-        repository: ArchiveRepository = Depends(get_archive_repository)
+        if_none_match: str | None = Header(None, alias="If-None-Match"),
+        repository: ArchiveRepository = Depends(get_archive_repository),
     ):
         """
         アーカイブ Atom 1.0 フィードを取得
@@ -400,7 +374,7 @@ def create_syndication_router(
             location=location,
             archived_from=archived_from_date,
             archived_to=archived_to_date,
-            limit=limit
+            limit=limit,
         )
 
         # バリデーション
@@ -418,10 +392,7 @@ def create_syndication_router(
             return Response(
                 content="",
                 status_code=304,
-                headers={
-                    "ETag": etag,
-                    "Cache-Control": "public, max-age=300"
-                }
+                headers={"ETag": etag, "Cache-Control": "public, max-age=300"},
             )
 
         if feed_xml:
@@ -430,10 +401,7 @@ def create_syndication_router(
             return Response(
                 content=feed_xml,
                 media_type="application/atom+xml; charset=utf-8",
-                headers={
-                    "ETag": etag,
-                    "Cache-Control": "public, max-age=300"
-                }
+                headers={"ETag": etag, "Cache-Control": "public, max-age=300"},
             )
 
         # キャッシュミス: データ取得
@@ -444,12 +412,14 @@ def create_syndication_router(
             species=params.species,
             archived_from=params.archived_from,
             archived_to=params.archived_to,
-            limit=params.limit
+            limit=params.limit,
         )
 
         # Atom フィード生成（feed_type="archive"）
         try:
-            feed_xml = _feed_generator.generate_atom(archived_animals, filter_dict, feed_type="archive")
+            feed_xml = _feed_generator.generate_atom(
+                archived_animals, filter_dict, feed_type="archive"
+            )
         except FeedGenerationError as e:
             logger.error(f"アーカイブ Atom フィード生成エラー: {e}")
             raise HTTPException(status_code=500, detail="フィード生成に失敗しました")
@@ -463,10 +433,7 @@ def create_syndication_router(
         return Response(
             content=feed_xml,
             media_type="application/atom+xml; charset=utf-8",
-            headers={
-                "ETag": etag,
-                "Cache-Control": "public, max-age=300"
-            }
+            headers={"ETag": etag, "Cache-Control": "public, max-age=300"},
         )
 
     return router

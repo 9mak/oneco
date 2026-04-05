@@ -3,16 +3,19 @@ StatusHistoryRepository のテスト
 
 ステータス履歴リポジトリが要件通りに実装されているかを検証します。
 """
+
+from datetime import UTC, datetime
+
 import pytest
 import pytest_asyncio
-from datetime import datetime, timezone
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+from src.data_collector.domain.models import AnimalStatus
 from src.data_collector.infrastructure.database.models import Animal, AnimalStatusHistory, Base
 from src.data_collector.infrastructure.database.status_history_repository import (
-    StatusHistoryRepository,
     StatusHistoryEntry,
+    StatusHistoryRepository,
 )
-from src.data_collector.domain.models import AnimalStatus
 
 
 @pytest_asyncio.fixture
@@ -50,6 +53,7 @@ async def repository(async_session):
 async def sample_animal(async_session):
     """テスト用の動物データを作成"""
     from datetime import date
+
     animal = Animal(
         species="犬",
         shelter_date=date(2026, 1, 5),
@@ -74,9 +78,7 @@ class TestStatusHistoryRepository:
         assert repo.session == async_session
 
     @pytest.mark.asyncio
-    async def test_record_transition_creates_history_entry(
-        self, repository, sample_animal
-    ):
+    async def test_record_transition_creates_history_entry(self, repository, sample_animal):
         """record_transition() がステータス履歴エントリを作成するか"""
         entry = await repository.record_transition(
             animal_id=sample_animal.id,
@@ -92,9 +94,7 @@ class TestStatusHistoryRepository:
         assert entry.id is not None
 
     @pytest.mark.asyncio
-    async def test_record_transition_with_changed_by(
-        self, repository, sample_animal
-    ):
+    async def test_record_transition_with_changed_by(self, repository, sample_animal):
         """record_transition() が changed_by を記録するか"""
         entry = await repository.record_transition(
             animal_id=sample_animal.id,
@@ -118,9 +118,8 @@ class TestStatusHistoryRepository:
 
         # データベースから直接確認
         from sqlalchemy import select
-        stmt = select(AnimalStatusHistory).where(
-            AnimalStatusHistory.animal_id == sample_animal.id
-        )
+
+        stmt = select(AnimalStatusHistory).where(AnimalStatusHistory.animal_id == sample_animal.id)
         result = await async_session.execute(stmt)
         db_entry = result.scalar_one_or_none()
 
@@ -129,9 +128,7 @@ class TestStatusHistoryRepository:
         assert db_entry.new_status == "adopted"
 
     @pytest.mark.asyncio
-    async def test_get_history_returns_entries_for_animal(
-        self, repository, sample_animal
-    ):
+    async def test_get_history_returns_entries_for_animal(self, repository, sample_animal):
         """get_history() が動物のステータス履歴を返すか"""
         # 複数の履歴エントリを作成
         await repository.record_transition(
@@ -154,18 +151,14 @@ class TestStatusHistoryRepository:
         assert history[1].new_status == AnimalStatus.RETURNED
 
     @pytest.mark.asyncio
-    async def test_get_history_returns_empty_list_if_no_history(
-        self, repository, sample_animal
-    ):
+    async def test_get_history_returns_empty_list_if_no_history(self, repository, sample_animal):
         """get_history() が履歴がない場合空リストを返すか"""
         history = await repository.get_history(sample_animal.id)
 
         assert history == []
 
     @pytest.mark.asyncio
-    async def test_get_history_returns_empty_list_for_nonexistent_animal(
-        self, repository
-    ):
+    async def test_get_history_returns_empty_list_for_nonexistent_animal(self, repository):
         """get_history() が存在しない動物IDの場合空リストを返すか"""
         history = await repository.get_history(99999)
 
@@ -174,7 +167,7 @@ class TestStatusHistoryRepository:
     @pytest.mark.asyncio
     async def test_status_history_entry_dataclass(self):
         """StatusHistoryEntry データクラスが正しく定義されているか"""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         entry = StatusHistoryEntry(
             id=1,
             animal_id=100,
@@ -194,7 +187,7 @@ class TestStatusHistoryRepository:
     @pytest.mark.asyncio
     async def test_status_history_entry_dataclass_optional_changed_by(self):
         """StatusHistoryEntry の changed_by がオプショナルか"""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         entry = StatusHistoryEntry(
             id=1,
             animal_id=100,

@@ -4,7 +4,8 @@
 前回収集時からの差分を検知し、新規・更新・削除候補を識別します。
 """
 
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
+
 from pydantic import BaseModel, Field
 
 from .models import AnimalData
@@ -20,11 +21,10 @@ class DiffResult(BaseModel):
     新規・更新・削除候補の分類結果を保持します。
     """
 
-    new: List[AnimalData] = Field(default_factory=list, description="新規個体リスト")
-    updated: List[AnimalData] = Field(default_factory=list, description="更新個体リスト")
-    deleted_candidates: List[str] = Field(
-        default_factory=list,
-        description="削除候補の source_url リスト"
+    new: list[AnimalData] = Field(default_factory=list, description="新規個体リスト")
+    updated: list[AnimalData] = Field(default_factory=list, description="更新個体リスト")
+    deleted_candidates: list[str] = Field(
+        default_factory=list, description="削除候補の source_url リスト"
     )
 
 
@@ -45,7 +45,7 @@ class DiffDetector:
         """
         self.snapshot_store = snapshot_store
 
-    def detect_diff(self, current_data: List[AnimalData]) -> DiffResult:
+    def detect_diff(self, current_data: list[AnimalData]) -> DiffResult:
         """
         前回スナップショットとの差分を検知
 

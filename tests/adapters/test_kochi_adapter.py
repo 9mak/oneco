@@ -4,8 +4,10 @@ KochiAdapter のユニットテスト
 高知県自治体サイト向けスクレイピングアダプターのテストです。
 モック HTML を使用してスクレイピングロジックを検証します。
 """
+
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import patch, Mock
 from bs4 import BeautifulSoup
 
 from src.data_collector.adapters.kochi_adapter import KochiAdapter
@@ -14,8 +16,7 @@ from src.data_collector.adapters.municipality_adapter import (
     NetworkError,
     ParsingError,
 )
-from src.data_collector.domain.models import RawAnimalData, AnimalData
-
+from src.data_collector.domain.models import AnimalData, RawAnimalData
 
 # モック HTML データ（実際の高知県サイト構造に基づく）
 MOCK_LIST_PAGE_HTML = """
@@ -331,7 +332,7 @@ class TestKochiAdapterNormalize:
             phone="0881234567",
             image_urls=["https://example.com/image1.jpg"],
             source_url="https://example.com/animals/001",
-            category="adoption"
+            category="adoption",
         )
 
         animal_data = adapter.normalize(raw_data)
@@ -355,7 +356,7 @@ class TestKochiAdapterNormalize:
             phone="0881234567",
             image_urls=["https://example.com/image1.jpg"],
             source_url="https://example.com/animals/001",
-            category="adoption"
+            category="adoption",
         )
 
         animal_data = adapter.normalize(raw_data)
@@ -376,7 +377,7 @@ class TestKochiAdapterNormalize:
             phone="0881234567",
             image_urls=["https://example.com/image1.jpg"],
             source_url="https://example.com/animals/001",
-            category="adoption"
+            category="adoption",
         )
 
         animal_data = adapter.normalize(raw_data)
@@ -488,8 +489,7 @@ class TestKochiAdapterIntegration:
 
         adapter = KochiAdapter()
         raw_data = adapter.extract_animal_details(
-            "https://kochi-apc.com/center-data/r8-001/",
-            category="adoption"
+            "https://kochi-apc.com/center-data/r8-001/", category="adoption"
         )
 
         assert hasattr(raw_data, "category")
@@ -509,8 +509,6 @@ class TestKochiAdapterIntegration:
         mock_get.side_effect = mock_response
 
         adapter = KochiAdapter()
-        raw_data = adapter.extract_animal_details(
-            "https://kochi-apc.com/center-data/r8-001/"
-        )
+        raw_data = adapter.extract_animal_details("https://kochi-apc.com/center-data/r8-001/")
 
         assert raw_data.category == "adoption"
