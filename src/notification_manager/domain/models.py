@@ -12,7 +12,6 @@ notification-manager ドメインモデル定義
 Requirements: 1.1, 1.3, 3.1-3.5, 4.1, 4.2
 """
 
-from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
@@ -38,28 +37,18 @@ class NotificationPreferenceInput(BaseModel):
     すべてのフィールドがオプショナルで、NULLは「すべて許可」を意味する
     """
 
-    species: Optional[str] = Field(
-        default=None, description="動物種別 ('犬', '猫', None=両方)"
-    )
-    prefectures: Optional[List[str]] = Field(
-        default=None, description="都道府県リスト（複数選択可）"
-    )
-    age_min_months: Optional[int] = Field(
-        default=None, ge=0, description="年齢下限（月単位）"
-    )
-    age_max_months: Optional[int] = Field(
-        default=None, ge=0, description="年齢上限（月単位）"
-    )
-    size: Optional[str] = Field(
+    species: str | None = Field(default=None, description="動物種別 ('犬', '猫', None=両方)")
+    prefectures: list[str] | None = Field(default=None, description="都道府県リスト（複数選択可）")
+    age_min_months: int | None = Field(default=None, ge=0, description="年齢下限（月単位）")
+    age_max_months: int | None = Field(default=None, ge=0, description="年齢上限（月単位）")
+    size: str | None = Field(
         default=None, description="サイズ ('小型', '中型', '大型', None=すべて)"
     )
-    sex: Optional[str] = Field(
-        default=None, description="性別 ('男の子', '女の子', None=不問)"
-    )
+    sex: str | None = Field(default=None, description="性別 ('男の子', '女の子', None=不問)")
 
     @field_validator("species")
     @classmethod
-    def validate_species(cls, v: Optional[str]) -> Optional[str]:
+    def validate_species(cls, v: str | None) -> str | None:
         """動物種別のバリデーション"""
         if v is not None and v not in ["犬", "猫"]:
             raise ValueError(f"無効な動物種別: {v}。'犬', '猫' のいずれかである必要があります")
@@ -67,17 +56,15 @@ class NotificationPreferenceInput(BaseModel):
 
     @field_validator("sex")
     @classmethod
-    def validate_sex(cls, v: Optional[str]) -> Optional[str]:
+    def validate_sex(cls, v: str | None) -> str | None:
         """性別のバリデーション"""
         if v is not None and v not in ["男の子", "女の子"]:
-            raise ValueError(
-                f"無効な性別: {v}。'男の子', '女の子' のいずれかである必要があります"
-            )
+            raise ValueError(f"無効な性別: {v}。'男の子', '女の子' のいずれかである必要があります")
         return v
 
     @field_validator("size")
     @classmethod
-    def validate_size(cls, v: Optional[str]) -> Optional[str]:
+    def validate_size(cls, v: str | None) -> str | None:
         """サイズのバリデーション"""
         if v is not None and v not in ["小型", "中型", "大型"]:
             raise ValueError(
@@ -95,12 +82,12 @@ class NotificationPreferenceEntity(BaseModel):
 
     id: int = Field(..., description="通知条件ID")
     user_id: int = Field(..., description="ユーザーID")
-    species: Optional[str] = Field(default=None, description="動物種別")
-    prefectures: Optional[List[str]] = Field(default=None, description="都道府県リスト")
-    age_min_months: Optional[int] = Field(default=None, description="年齢下限（月単位）")
-    age_max_months: Optional[int] = Field(default=None, description="年齢上限（月単位）")
-    size: Optional[str] = Field(default=None, description="サイズ")
-    sex: Optional[str] = Field(default=None, description="性別")
+    species: str | None = Field(default=None, description="動物種別")
+    prefectures: list[str] | None = Field(default=None, description="都道府県リスト")
+    age_min_months: int | None = Field(default=None, description="年齢下限（月単位）")
+    age_max_months: int | None = Field(default=None, description="年齢上限（月単位）")
+    size: str | None = Field(default=None, description="サイズ")
+    sex: str | None = Field(default=None, description="性別")
     notifications_enabled: bool = Field(default=True, description="通知有効フラグ")
 
     model_config = ConfigDict(from_attributes=True)
@@ -116,9 +103,7 @@ class MatchResult(BaseModel):
     user_id: int = Field(..., description="ユーザーID")
     line_user_id_encrypted: str = Field(..., description="暗号化されたLINEユーザーID")
     preference_id: int = Field(..., description="通知条件ID")
-    match_score: float = Field(
-        ..., ge=0.0, le=1.0, description="マッチスコア (1.0 = 完全マッチ)"
-    )
+    match_score: float = Field(..., ge=0.0, le=1.0, description="マッチスコア (1.0 = 完全マッチ)")
 
 
 class NotificationMessage(BaseModel):
@@ -130,8 +115,8 @@ class NotificationMessage(BaseModel):
 
     species: str = Field(..., description="動物種別")
     sex: str = Field(..., description="性別")
-    age_months: Optional[int] = Field(default=None, description="推定年齢（月単位）")
-    size: Optional[str] = Field(default=None, description="サイズ")
+    age_months: int | None = Field(default=None, description="推定年齢（月単位）")
+    size: str | None = Field(default=None, description="サイズ")
     location: str = Field(..., description="収容地域（都道府県・市区町村）")
     source_url: str = Field(..., description="元ページURL")
     category: str = Field(..., description="カテゴリ ('adoption', 'lost')")
@@ -167,11 +152,13 @@ class NotificationMessage(BaseModel):
         if self.size:
             lines.append(f"サイズ: {self.size}")
 
-        lines.extend([
-            f"収容場所: {self.location}",
-            "",
-            f"詳細はこちら: {self.source_url}",
-        ])
+        lines.extend(
+            [
+                f"収容場所: {self.location}",
+                "",
+                f"詳細はこちら: {self.source_url}",
+            ]
+        )
 
         return "\n".join(lines)
 
@@ -184,8 +171,8 @@ class SendResult(BaseModel):
     """
 
     success: bool = Field(..., description="送信成功フラグ")
-    error_code: Optional[str] = Field(default=None, description="エラーコード")
-    retry_after: Optional[int] = Field(
+    error_code: str | None = Field(default=None, description="エラーコード")
+    retry_after: int | None = Field(
         default=None, description="リトライ待機時間（秒）- レート制限時"
     )
 

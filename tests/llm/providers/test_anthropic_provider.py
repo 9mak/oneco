@@ -1,13 +1,14 @@
 """AnthropicProvider のユニットテスト（モック使用）"""
 
-import pytest
-from unittest.mock import MagicMock, patch, PropertyMock
 from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from src.data_collector.llm.providers.anthropic_provider import (
-    AnthropicProvider,
     ANIMAL_EXTRACTION_TOOL,
     LINK_EXTRACTION_TOOL,
+    AnthropicProvider,
 )
 from src.data_collector.llm.providers.base import ExtractionResult
 
@@ -128,13 +129,12 @@ class TestRetryLogic:
         mock_anthropic_cls.return_value = mock_client
 
         # 2回失敗、3回目に成功
-        rate_limit_error = type("RateLimitError", (Exception,), {})
+        type("RateLimitError", (Exception,), {})
 
         # anthropic.RateLimitError をモック
         import src.data_collector.llm.providers.anthropic_provider as mod
 
         original_rate_limit = mod.anthropic.RateLimitError
-        original_api_status = mod.anthropic.APIStatusError
 
         mock_client.messages.create.side_effect = [
             original_rate_limit("rate limited", response=MagicMock(), body=None),
@@ -159,9 +159,7 @@ class TestRetryLogic:
 
         import src.data_collector.llm.providers.anthropic_provider as mod
 
-        error = mod.anthropic.RateLimitError(
-            "rate limited", response=MagicMock(), body=None
-        )
+        error = mod.anthropic.RateLimitError("rate limited", response=MagicMock(), body=None)
         mock_client.messages.create.side_effect = error
 
         provider = AnthropicProvider(api_key="test-key", max_retries=3)

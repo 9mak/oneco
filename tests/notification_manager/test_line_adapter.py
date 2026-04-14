@@ -5,16 +5,14 @@ Task 4.1, 4.2, 4.3: LINE Messaging API連携、エラーハンドリング、メ
 """
 
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
-import asyncio
 
 from src.notification_manager.adapters.line_adapter import (
-    LineNotificationAdapter,
     LineAdapterError,
+    LineNotificationAdapter,
     MockLineApiClient,
     MockSignatureValidator,
 )
-from src.notification_manager.domain.models import NotificationMessage, SendResult
+from src.notification_manager.domain.models import NotificationMessage
 
 
 class TestLineNotificationAdapter:
@@ -184,9 +182,7 @@ class TestLineAdapterRetry:
 
         adapter._api_client.push_message = flaky_send
 
-        result = await adapter.send_with_retry(
-            "U123", msg, max_retries=3, base_delay=0.01
-        )
+        result = await adapter.send_with_retry("U123", msg, max_retries=3, base_delay=0.01)
 
         assert result.success is True
         assert call_count == 3
@@ -207,9 +203,7 @@ class TestLineAdapterRetry:
 
         adapter._api_client.push_message = always_fail
 
-        result = await adapter.send_with_retry(
-            "U123", msg, max_retries=3, base_delay=0.01
-        )
+        result = await adapter.send_with_retry("U123", msg, max_retries=3, base_delay=0.01)
 
         assert result.success is False
         assert result.error_code == "500"
@@ -234,9 +228,7 @@ class TestLineAdapterRetry:
 
         adapter._api_client.push_message = auth_error
 
-        result = await adapter.send_with_retry(
-            "U123", msg, max_retries=3, base_delay=0.01
-        )
+        result = await adapter.send_with_retry("U123", msg, max_retries=3, base_delay=0.01)
 
         assert result.success is False
         assert result.error_code == "401"
@@ -260,17 +252,13 @@ class TestLineAdapterRetry:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
-                raise LineAdapterError(
-                    "Rate limited", error_code="429", retry_after=1
-                )
+                raise LineAdapterError("Rate limited", error_code="429", retry_after=1)
             # 2回目で成功
 
         adapter._api_client.push_message = rate_limited_then_success
 
         # 小さい基本遅延だが、retry_afterが優先される
-        result = await adapter.send_with_retry(
-            "U123", msg, max_retries=3, base_delay=0.001
-        )
+        result = await adapter.send_with_retry("U123", msg, max_retries=3, base_delay=0.001)
 
         assert result.success is True
         assert call_count == 2

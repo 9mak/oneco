@@ -2,13 +2,12 @@
 
 import pytest
 import pytest_asyncio
-from datetime import datetime, timezone
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from src.data_collector.infrastructure.database.models import Base, ImageHash
 from src.data_collector.infrastructure.database.image_hash_repository import (
     ImageHashRepository,
 )
+from src.data_collector.infrastructure.database.models import Base
 
 
 @pytest_asyncio.fixture

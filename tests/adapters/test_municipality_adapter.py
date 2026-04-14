@@ -3,15 +3,17 @@ MunicipalityAdapter 抽象基底クラスのユニットテスト
 
 アダプターの抽象インターフェースとカスタム例外クラスをテストします。
 """
-import pytest
+
 from abc import ABC
+
+import pytest
 
 from src.data_collector.adapters.municipality_adapter import (
     MunicipalityAdapter,
     NetworkError,
     ParsingError,
 )
-from src.data_collector.domain.models import RawAnimalData, AnimalData
+from src.data_collector.domain.models import RawAnimalData
 
 
 class TestMunicipalityAdapterInterface:

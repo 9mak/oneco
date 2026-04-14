@@ -1,12 +1,13 @@
 """OutputWriter のユニットテスト"""
 
 import json
-from pathlib import Path
 from datetime import datetime
+
 import pytest
-from src.data_collector.infrastructure.output_writer import OutputWriter
-from src.data_collector.domain.models import AnimalData
+
 from src.data_collector.domain.diff_detector import DiffResult
+from src.data_collector.domain.models import AnimalData
+from src.data_collector.infrastructure.output_writer import OutputWriter
 
 
 class TestOutputWriter:
@@ -36,8 +37,8 @@ class TestOutputWriter:
                 phone="088-123-4567",
                 image_urls=["https://example.com/image1.jpg"],
                 source_url="https://example-kochi.jp/animals/123",
-            category="adoption"
-        ),
+                category="adoption",
+            ),
             AnimalData(
                 species="猫",
                 sex="女の子",
@@ -49,20 +50,18 @@ class TestOutputWriter:
                 phone="088-123-4567",
                 image_urls=[],
                 source_url="https://example-kochi.jp/animals/124",
-            category="adoption"
-        )
+                category="adoption",
+            ),
         ]
 
     @pytest.fixture
     def sample_diff_result(self, sample_animal_data):
         """サンプル DiffResult を作成"""
-        return DiffResult(
-            new=[sample_animal_data[0]],
-            updated=[],
-            deleted_candidates=[]
-        )
+        return DiffResult(new=[sample_animal_data[0]], updated=[], deleted_candidates=[])
 
-    def test_write_output_creates_directory(self, output_writer, sample_animal_data, sample_diff_result):
+    def test_write_output_creates_directory(
+        self, output_writer, sample_animal_data, sample_diff_result
+    ):
         """出力ディレクトリが自動作成されることを確認"""
         assert not output_writer.OUTPUT_DIR.exists()
 
@@ -79,11 +78,13 @@ class TestOutputWriter:
         assert output_path.is_file()
         assert output_path == output_writer.OUTPUT_FILE
 
-    def test_write_output_json_structure(self, output_writer, sample_animal_data, sample_diff_result):
+    def test_write_output_json_structure(
+        self, output_writer, sample_animal_data, sample_diff_result
+    ):
         """JSON 出力の構造が正しいことを確認"""
         output_path = output_writer.write_output(sample_animal_data, sample_diff_result)
 
-        with open(output_path, "r", encoding="utf-8") as f:
+        with open(output_path, encoding="utf-8") as f:
             output_data = json.load(f)
 
         # 必須フィールドの存在確認
@@ -97,11 +98,13 @@ class TestOutputWriter:
         assert "updated_count" in output_data["diff"]
         assert "deleted_count" in output_data["diff"]
 
-    def test_write_output_correct_counts(self, output_writer, sample_animal_data, sample_diff_result):
+    def test_write_output_correct_counts(
+        self, output_writer, sample_animal_data, sample_diff_result
+    ):
         """カウント値が正しく設定されることを確認"""
         output_path = output_writer.write_output(sample_animal_data, sample_diff_result)
 
-        with open(output_path, "r", encoding="utf-8") as f:
+        with open(output_path, encoding="utf-8") as f:
             output_data = json.load(f)
 
         assert output_data["total_count"] == 2
@@ -109,11 +112,13 @@ class TestOutputWriter:
         assert output_data["diff"]["updated_count"] == 0
         assert output_data["diff"]["deleted_count"] == 0
 
-    def test_write_output_animals_array(self, output_writer, sample_animal_data, sample_diff_result):
+    def test_write_output_animals_array(
+        self, output_writer, sample_animal_data, sample_diff_result
+    ):
         """animals 配列が正しくシリアライズされることを確認"""
         output_path = output_writer.write_output(sample_animal_data, sample_diff_result)
 
-        with open(output_path, "r", encoding="utf-8") as f:
+        with open(output_path, encoding="utf-8") as f:
             output_data = json.load(f)
 
         assert len(output_data["animals"]) == 2
@@ -127,11 +132,13 @@ class TestOutputWriter:
         assert first_animal["shelter_date"] == "2026-01-05"
         assert first_animal["source_url"] == "https://example-kochi.jp/animals/123"
 
-    def test_write_output_timestamp_format(self, output_writer, sample_animal_data, sample_diff_result):
+    def test_write_output_timestamp_format(
+        self, output_writer, sample_animal_data, sample_diff_result
+    ):
         """collected_at が ISO 8601 形式であることを確認"""
         output_path = output_writer.write_output(sample_animal_data, sample_diff_result)
 
-        with open(output_path, "r", encoding="utf-8") as f:
+        with open(output_path, encoding="utf-8") as f:
             output_data = json.load(f)
 
         collected_at = output_data["collected_at"]
@@ -140,11 +147,13 @@ class TestOutputWriter:
         # Z サフィックスの確認
         assert collected_at.endswith("Z")
 
-    def test_write_output_json_encoding(self, output_writer, sample_animal_data, sample_diff_result):
+    def test_write_output_json_encoding(
+        self, output_writer, sample_animal_data, sample_diff_result
+    ):
         """JSON が UTF-8 エンコーディングで日本語を含むことを確認"""
         output_path = output_writer.write_output(sample_animal_data, sample_diff_result)
 
-        with open(output_path, "r", encoding="utf-8") as f:
+        with open(output_path, encoding="utf-8") as f:
             content = f.read()
 
         # 日本語が正しくエンコードされていることを確認
@@ -153,7 +162,9 @@ class TestOutputWriter:
         assert "男の子" in content
         assert "女の子" in content
 
-    def test_write_output_overwrites_existing_file(self, output_writer, sample_animal_data, sample_diff_result):
+    def test_write_output_overwrites_existing_file(
+        self, output_writer, sample_animal_data, sample_diff_result
+    ):
         """既存ファイルが上書きされることを確認"""
         # 最初の書き込み
         output_writer.write_output(sample_animal_data, sample_diff_result)
@@ -163,7 +174,7 @@ class TestOutputWriter:
         new_diff = DiffResult(new=[], updated=[new_data[0]], deleted_candidates=[])
         output_writer.write_output(new_data, new_diff)
 
-        with open(output_writer.OUTPUT_FILE, "r", encoding="utf-8") as f:
+        with open(output_writer.OUTPUT_FILE, encoding="utf-8") as f:
             output_data = json.load(f)
 
         # 新しいデータが反映されていることを確認
@@ -178,7 +189,7 @@ class TestOutputWriter:
 
         output_path = output_writer.write_output(empty_data, empty_diff)
 
-        with open(output_path, "r", encoding="utf-8") as f:
+        with open(output_path, encoding="utf-8") as f:
             output_data = json.load(f)
 
         assert output_data["total_count"] == 0
@@ -190,12 +201,12 @@ class TestOutputWriter:
         diff_with_deletions = DiffResult(
             new=[sample_animal_data[0]],
             updated=[],
-            deleted_candidates=["https://example.com/deleted1", "https://example.com/deleted2"]
+            deleted_candidates=["https://example.com/deleted1", "https://example.com/deleted2"],
         )
 
         output_path = output_writer.write_output(sample_animal_data, diff_with_deletions)
 
-        with open(output_path, "r", encoding="utf-8") as f:
+        with open(output_path, encoding="utf-8") as f:
             output_data = json.load(f)
 
         assert output_data["diff"]["deleted_count"] == 2

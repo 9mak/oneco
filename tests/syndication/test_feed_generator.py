@@ -9,17 +9,17 @@ TDD アプローチ:
 - 空リストのフィード生成
 """
 
-import pytest
 from datetime import date, datetime
-from typing import List
+
+import pytest
 from pydantic import HttpUrl
 
-from src.syndication_service.services.feed_generator import FeedGenerator, FeedGenerationError
 from src.data_collector.domain.models import AnimalData, AnimalStatus
+from src.syndication_service.services.feed_generator import FeedGenerator
 
 
 @pytest.fixture
-def sample_animals() -> List[AnimalData]:
+def sample_animals() -> list[AnimalData]:
     """テスト用サンプル動物データ"""
     return [
         AnimalData(
@@ -143,6 +143,7 @@ class TestRSSItemGeneration:
 
         # MD5 ハッシュは32文字の16進数文字列
         import re
+
         guid_pattern = r'<guid isPermaLink="false">([a-f0-9]{32})</guid>'
         matches = re.findall(guid_pattern, rss_xml)
         assert len(matches) == 2  # 2件の動物データ
@@ -166,7 +167,7 @@ class TestAtomFeedGeneration:
 
         assert "<title>保護動物情報</title>" in atom_xml
         assert "<subtitle>条件に合致する保護動物の情報</subtitle>" in atom_xml
-        assert '<link href=' in atom_xml
+        assert "<link href=" in atom_xml
         assert "<id>tag:" in atom_xml
         assert "<updated>" in atom_xml
 
@@ -177,7 +178,8 @@ class TestAtomFeedGeneration:
 
         # tag: URI スキーム（例: tag:example.com,2026-02-02:/feeds/atom）
         import re
-        id_pattern = r'<id>tag:[^<]+</id>'
+
+        id_pattern = r"<id>tag:[^<]+</id>"
         matches = re.findall(id_pattern, atom_xml)
         assert len(matches) >= 1  # フィード自身の id
 

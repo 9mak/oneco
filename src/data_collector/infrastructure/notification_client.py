@@ -1,8 +1,8 @@
 """運用者通知クライアント"""
 
-from typing import Dict, Any, List
-from enum import Enum
 import logging
+from enum import StrEnum
+from typing import Any
 
 try:
     import requests
@@ -12,8 +12,9 @@ except ImportError:
 from ..domain.models import AnimalData
 
 
-class NotificationLevel(str, Enum):
+class NotificationLevel(StrEnum):
     """通知レベル"""
+
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
@@ -32,7 +33,7 @@ class NotificationClient:
     Requirements: 1.5
     """
 
-    def __init__(self, notification_config: Dict[str, Any]):
+    def __init__(self, notification_config: dict[str, Any]):
         """
         NotificationClient を初期化
 
@@ -42,12 +43,7 @@ class NotificationClient:
         self.config = notification_config
         self.logger = logging.getLogger(__name__)
 
-    def send_alert(
-        self,
-        level: NotificationLevel,
-        message: str,
-        details: Dict[str, Any]
-    ) -> None:
+    def send_alert(self, level: NotificationLevel, message: str, details: dict[str, Any]) -> None:
         """
         運用者にアラートを送信
 
@@ -71,12 +67,9 @@ class NotificationClient:
                 )
         except Exception as e:
             # best-effort: 通知失敗時はログ記録のみ（収集処理自体は継続）
-            self.logger.error(
-                f"Failed to send alert: {str(e)}",
-                exc_info=True
-            )
+            self.logger.error(f"Failed to send alert: {e!s}", exc_info=True)
 
-    def notify_new_animals(self, new_animals: List[AnimalData]) -> None:
+    def notify_new_animals(self, new_animals: list[AnimalData]) -> None:
         """
         新規収容動物を通知（オプション機能）
 
@@ -99,16 +92,10 @@ class NotificationClient:
                 )
         except Exception as e:
             # best-effort: 通知失敗時はログ記録のみ
-            self.logger.error(
-                f"Failed to notify new animals: {str(e)}",
-                exc_info=True
-            )
+            self.logger.error(f"Failed to notify new animals: {e!s}", exc_info=True)
 
     def _send_slack_alert(
-        self,
-        level: NotificationLevel,
-        message: str,
-        details: Dict[str, Any]
+        self, level: NotificationLevel, message: str, details: dict[str, Any]
     ) -> None:
         """
         Slack にアラートを送信
@@ -129,16 +116,14 @@ class NotificationClient:
         for key, value in details.items():
             text += f"- {key}: {value}\n"
 
-        payload = {
-            "text": text
-        }
+        payload = {"text": text}
 
         response = requests.post(webhook_url, json=payload)
         response.raise_for_status()
 
         self.logger.info(f"Alert sent to Slack: {level} - {message}")
 
-    def _send_new_animals_slack(self, new_animals: List[AnimalData]) -> None:
+    def _send_new_animals_slack(self, new_animals: list[AnimalData]) -> None:
         """
         Slack に新規収容動物を通知
 
@@ -163,9 +148,7 @@ class NotificationClient:
         if len(new_animals) > 5:
             text += f"... 他 {len(new_animals) - 5}件\n"
 
-        payload = {
-            "text": text
-        }
+        payload = {"text": text}
 
         response = requests.post(webhook_url, json=payload)
         response.raise_for_status()

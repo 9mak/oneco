@@ -4,7 +4,6 @@ DiffDetector のユニットテスト
 前回スナップショットと今回データの差分検知ロジックを検証します。
 """
 
-import pytest
 from datetime import date
 from unittest.mock import Mock
 
@@ -20,7 +19,7 @@ def create_animal(
     age_months: int = 24,
     color: str = "茶色",
     location: str = "高知県",
-    category: str = "adoption"
+    category: str = "adoption",
 ) -> AnimalData:
     """テスト用 AnimalData を作成するヘルパー"""
     return AnimalData(
@@ -31,7 +30,7 @@ def create_animal(
         shelter_date=date(2026, 1, 5),
         location=location,
         source_url=source_url,
-        category=category
+        category=category,
     )
 
 
@@ -49,9 +48,7 @@ class TestDiffResult:
         """DiffResult に値を設定できること"""
         animal = create_animal("https://example.com/001")
         result = DiffResult(
-            new=[animal],
-            updated=[],
-            deleted_candidates=["https://example.com/002"]
+            new=[animal], updated=[], deleted_candidates=["https://example.com/002"]
         )
         assert len(result.new) == 1
         assert result.new[0].source_url == animal.source_url
@@ -79,7 +76,7 @@ class TestDiffDetectorNewDetection:
         detector = DiffDetector(snapshot_store=mock_store)
         current_data = [
             create_animal("https://example.com/001"),
-            create_animal("https://example.com/002")
+            create_animal("https://example.com/002"),
         ]
 
         result = detector.detect_diff(current_data)
@@ -97,7 +94,7 @@ class TestDiffDetectorNewDetection:
         detector = DiffDetector(snapshot_store=mock_store)
         current_data = [
             existing_animal,  # 既存
-            create_animal("https://example.com/002")  # 新規
+            create_animal("https://example.com/002"),  # 新規
         ]
 
         result = detector.detect_diff(current_data)
@@ -182,7 +179,7 @@ class TestDiffDetectorDeleteDetection:
         old_animals = [
             create_animal("https://example.com/001"),
             create_animal("https://example.com/002"),
-            create_animal("https://example.com/003")
+            create_animal("https://example.com/003"),
         ]
         mock_store = Mock(spec=SnapshotStore)
         mock_store.load_snapshot.return_value = old_animals
@@ -209,7 +206,7 @@ class TestDiffDetectorEmptySnapshot:
         current_data = [
             create_animal("https://example.com/001"),
             create_animal("https://example.com/002"),
-            create_animal("https://example.com/003")
+            create_animal("https://example.com/003"),
         ]
 
         result = detector.detect_diff(current_data)
@@ -227,7 +224,7 @@ class TestDiffDetectorComplexScenario:
         old_animals = [
             create_animal("https://example.com/001", sex="男の子"),  # 更新される
             create_animal("https://example.com/002"),  # そのまま
-            create_animal("https://example.com/003")  # 削除候補
+            create_animal("https://example.com/003"),  # 削除候補
         ]
         mock_store = Mock(spec=SnapshotStore)
         mock_store.load_snapshot.return_value = old_animals
@@ -236,7 +233,7 @@ class TestDiffDetectorComplexScenario:
         current_data = [
             create_animal("https://example.com/001", sex="女の子"),  # 更新
             create_animal("https://example.com/002"),  # 変更なし
-            create_animal("https://example.com/004")  # 新規
+            create_animal("https://example.com/004"),  # 新規
         ]
 
         result = detector.detect_diff(current_data)

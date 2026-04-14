@@ -5,18 +5,20 @@ Pydantic モデルでクエリパラメータとレスポンスを定義。
 """
 
 from datetime import date
-from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
 class FeedQueryParams(BaseModel):
     """通常フィードのクエリパラメータ"""
 
-    species: Optional[str] = Field(None, description="種別フィルタ ('犬', '猫', 'その他')")
-    category: Optional[str] = Field(None, description="カテゴリフィルタ ('adoption', 'lost')")
-    location: Optional[str] = Field(None, description="地域フィルタ（部分一致）")
-    status: Optional[str] = Field(None, description="ステータスフィルタ ('sheltered', 'adopted', 'returned', 'deceased')")
-    sex: Optional[str] = Field(None, description="性別フィルタ ('男の子', '女の子', '不明')")
+    species: str | None = Field(None, description="種別フィルタ ('犬', '猫', 'その他')")
+    category: str | None = Field(None, description="カテゴリフィルタ ('adoption', 'lost')")
+    location: str | None = Field(None, description="地域フィルタ（部分一致）")
+    status: str | None = Field(
+        None, description="ステータスフィルタ ('sheltered', 'adopted', 'returned', 'deceased')"
+    )
+    sex: str | None = Field(None, description="性別フィルタ ('男の子', '女の子', '不明')")
     limit: int = Field(50, ge=1, le=100, description="アイテム数（最大100、デフォルト50）")
 
     def to_dict(self) -> dict:
@@ -27,10 +29,10 @@ class FeedQueryParams(BaseModel):
 class ArchiveFeedQueryParams(BaseModel):
     """アーカイブフィードのクエリパラメータ"""
 
-    species: Optional[str] = Field(None, description="種別フィルタ")
-    location: Optional[str] = Field(None, description="地域フィルタ")
-    archived_from: Optional[date] = Field(None, description="アーカイブ開始日")
-    archived_to: Optional[date] = Field(None, description="アーカイブ終了日")
+    species: str | None = Field(None, description="種別フィルタ")
+    location: str | None = Field(None, description="地域フィルタ")
+    archived_from: date | None = Field(None, description="アーカイブ開始日")
+    archived_to: date | None = Field(None, description="アーカイブ終了日")
     limit: int = Field(50, ge=1, le=100, description="アイテム数（最大100、デフォルト50）")
 
     def to_dict(self) -> dict:

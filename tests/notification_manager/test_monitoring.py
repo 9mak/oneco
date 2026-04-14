@@ -4,16 +4,16 @@ notification-manager 監視機能のテスト
 Task 8.1-8.3: メトリクス記録、アラート、ログのテスト
 """
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import Mock, patch
-from datetime import datetime, timezone, timedelta
 
 from src.notification_manager.infrastructure.monitoring import (
-    MetricsCollector,
+    AlertLevel,
     AlertManager,
     AuditLogger,
+    MetricsCollector,
     MetricType,
-    AlertLevel,
 )
 
 

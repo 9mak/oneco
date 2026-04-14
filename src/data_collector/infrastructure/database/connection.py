@@ -5,11 +5,17 @@
 コネクションプール、セッションライフサイクル、環境変数からの設定読み込みを担当します。
 """
 
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from pydantic import Field
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine, AsyncSession, async_sessionmaker
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 
 class DatabaseSettings(BaseSettings):
@@ -21,7 +27,9 @@ class DatabaseSettings(BaseSettings):
 
     database_url: str = Field(..., description="データベース接続URL")
     pool_size: int = Field(default=5, alias="DB_POOL_SIZE", description="コネクションプールサイズ")
-    max_overflow: int = Field(default=10, alias="DB_MAX_OVERFLOW", description="プール最大オーバーフロー数")
+    max_overflow: int = Field(
+        default=10, alias="DB_MAX_OVERFLOW", description="プール最大オーバーフロー数"
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env",

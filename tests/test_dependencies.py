@@ -5,12 +5,13 @@ get_session依存性とSessionDepタイプエイリアスが
 要件通りに実装されているかを検証します。
 """
 
-import pytest
 import inspect
+from typing import Annotated, get_args, get_origin
+
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.data_collector.infrastructure.api.dependencies import get_session, SessionDep
-from fastapi import Depends
-from typing import Annotated, get_origin, get_args
+
+from src.data_collector.infrastructure.api.dependencies import SessionDep, get_session
 
 
 def test_get_session_is_async_generator():
@@ -101,8 +102,8 @@ def test_get_session_references_db_connection_dynamically():
 
     # lifespan 後の動的参照をシミュレーション:
     # app_module.db_connection を設定した後、get_session が正しい参照を取得できるか
-    from unittest.mock import MagicMock, AsyncMock
     from contextlib import asynccontextmanager
+    from unittest.mock import AsyncMock, MagicMock
 
     mock_session = AsyncMock(spec=AsyncSession)
 
@@ -129,9 +130,10 @@ def test_get_session_references_db_connection_dynamically():
 @pytest.mark.asyncio
 async def test_get_session_works_after_lifespan_sets_db_connection():
     """lifespan後にdb_connectionが設定された状態でget_sessionが動作するか"""
-    import src.data_collector.infrastructure.api.app as app_module
-    from unittest.mock import MagicMock, AsyncMock
     from contextlib import asynccontextmanager
+    from unittest.mock import AsyncMock, MagicMock
+
+    import src.data_collector.infrastructure.api.app as app_module
 
     mock_session = AsyncMock(spec=AsyncSession)
 

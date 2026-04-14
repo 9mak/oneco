@@ -7,7 +7,7 @@ AnimalMetricsCollector - 動物データのメトリクス収集
 
 import logging
 from dataclasses import dataclass
-from typing import Dict, Optional
+from typing import Optional
 
 from src.data_collector.infrastructure.database.repository import AnimalRepository
 
@@ -23,8 +23,8 @@ class AnimalMetrics:
     """
 
     total_count: int
-    status_counts: Dict[str, int]
-    category_counts: Dict[str, int]
+    status_counts: dict[str, int]
+    category_counts: dict[str, int]
     archivable_count: int
     image_download_failure_rate: float
     storage_usage_bytes: int
@@ -92,7 +92,7 @@ class AnimalMetricsCollector:
             storage_usage_bytes=storage_usage,
         )
 
-    async def get_status_counts(self) -> Dict[str, int]:
+    async def get_status_counts(self) -> dict[str, int]:
         """
         ステータス別件数を取得
 
@@ -101,7 +101,7 @@ class AnimalMetricsCollector:
         """
         return await self.animal_repository.get_status_counts()
 
-    async def get_category_counts(self) -> Dict[str, int]:
+    async def get_category_counts(self) -> dict[str, int]:
         """
         カテゴリ別件数を取得
 
@@ -109,10 +109,10 @@ class AnimalMetricsCollector:
             Dict[str, int]: {category: count} 形式のカテゴリ別件数
         """
         # list_animals を使用してカテゴリ別件数を取得
-        adoption_animals, adoption_count = await self.animal_repository.list_animals(
+        _adoption_animals, adoption_count = await self.animal_repository.list_animals(
             category="adoption", limit=0
         )
-        lost_animals, lost_count = await self.animal_repository.list_animals(
+        _lost_animals, lost_count = await self.animal_repository.list_animals(
             category="lost", limit=0
         )
 
@@ -135,8 +135,8 @@ class AlertManager:
     def __init__(
         self,
         notification_client: Optional["NotificationClient"] = None,
-        failure_rate_threshold: Optional[float] = None,
-        storage_threshold_bytes: Optional[int] = None,
+        failure_rate_threshold: float | None = None,
+        storage_threshold_bytes: int | None = None,
     ):
         """
         AlertManager を初期化
@@ -193,8 +193,7 @@ class AlertManager:
                 "type": "storage_usage",
                 "level": "warning",
                 "message": (
-                    f"ストレージ使用量が閾値を超えました: "
-                    f"{storage_gb:.1f}GB > {threshold_gb:.1f}GB"
+                    f"ストレージ使用量が閾値を超えました: {storage_gb:.1f}GB > {threshold_gb:.1f}GB"
                 ),
                 "value": metrics.storage_usage_bytes,
                 "threshold": self.storage_threshold_bytes,
@@ -221,7 +220,7 @@ class AlertManager:
                 message += f"- [{alert['level'].upper()}] {alert['message']}\n"
             await self.notification_client.send_alert(message, level="warning")
         except Exception as e:
-            logger.error(f"アラート送信に失敗: {str(e)}")
+            logger.error(f"アラート送信に失敗: {e!s}")
 
 
 class AuditLogger:
@@ -240,7 +239,7 @@ class AuditLogger:
         animal_id: int,
         old_status: str,
         new_status: str,
-        changed_by: Optional[str] = None,
+        changed_by: str | None = None,
     ) -> None:
         """
         ステータス変更を監査ログに記録
@@ -265,16 +264,14 @@ class AuditLogger:
             animal_id: アーカイブID
             original_id: 元の動物ID
         """
-        self.logger.info(
-            f"ARCHIVE: animal_id={animal_id}, original_id={original_id}"
-        )
+        self.logger.info(f"ARCHIVE: animal_id={animal_id}, original_id={original_id}")
 
     def log_image_download(
         self,
         animal_id: int,
         url: str,
         success: bool,
-        error: Optional[str] = None,
+        error: str | None = None,
     ) -> None:
         """
         画像ダウンロード操作を監査ログに記録
@@ -289,6 +286,5 @@ class AuditLogger:
             self.logger.info(f"IMAGE_DOWNLOAD: animal_id={animal_id}, url={url}, success=True")
         else:
             self.logger.warning(
-                f"IMAGE_DOWNLOAD: animal_id={animal_id}, url={url}, "
-                f"success=False, error={error}"
+                f"IMAGE_DOWNLOAD: animal_id={animal_id}, url={url}, success=False, error={error}"
             )

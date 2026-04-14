@@ -6,15 +6,15 @@ LLMプロバイダーの統一インターフェース
 """
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
 class ExtractionResult:
     """LLM抽出結果"""
 
-    fields: Dict[str, Any]
+    fields: dict[str, Any]
     input_tokens: int = 0
     output_tokens: int = 0
 
@@ -23,7 +23,7 @@ class ExtractionResult:
 class MultiExtractionResult:
     """複数動物LLM抽出結果（PDF一覧表など複数頭が1ページに記載される場合用）"""
 
-    animals: List[Dict[str, Any]]
+    animals: list[dict[str, Any]]
     input_tokens: int = 0
     output_tokens: int = 0
 
@@ -56,7 +56,7 @@ class LlmProvider(ABC):
         self,
         html_content: str,
         base_url: str,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         HTMLから動物詳細ページへのリンクを推定抽出
 

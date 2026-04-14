@@ -5,17 +5,18 @@ FastAPI リクエスト/レスポンスのPydanticスキーマを定義します
 既存のAnimalDataとの変換ロジックをサポートします。
 """
 
-from pydantic import BaseModel, ConfigDict, field_validator
-from typing import List, Generic, TypeVar, Optional
 from datetime import date, datetime
-from enum import Enum
+from enum import StrEnum
+from typing import Generic, TypeVar
+
+from pydantic import BaseModel, ConfigDict
+
+T = TypeVar("T")
 
 
-T = TypeVar('T')
-
-
-class AnimalStatusEnum(str, Enum):
+class AnimalStatusEnum(StrEnum):
     """動物ステータス（API用）"""
+
     SHELTERED = "sheltered"
     ADOPTED = "adopted"
     RETURNED = "returned"
@@ -33,20 +34,20 @@ class AnimalPublic(BaseModel):
     id: int
     species: str
     sex: str
-    age_months: Optional[int] = None
-    color: Optional[str] = None
-    size: Optional[str] = None
+    age_months: int | None = None
+    color: str | None = None
+    size: str | None = None
     shelter_date: date
     location: str
-    phone: Optional[str] = None
-    image_urls: List[str]
+    phone: str | None = None
+    image_urls: list[str]
     source_url: str
     category: str
     # 拡張フィールド（オプション）
-    status: Optional[str] = None
-    status_changed_at: Optional[datetime] = None
-    outcome_date: Optional[date] = None
-    local_image_paths: Optional[List[str]] = None
+    status: str | None = None
+    status_changed_at: datetime | None = None
+    outcome_date: date | None = None
+    local_image_paths: list[str] | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -73,7 +74,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
     ジェネリック型を使用し、任意のアイテム型をサポートします。
     """
 
-    items: List[T]
+    items: list[T]
     meta: PaginationMeta
 
 
@@ -83,7 +84,7 @@ class StatusUpdateRequest(BaseModel):
     """
 
     status: AnimalStatusEnum
-    outcome_date: Optional[date] = None
+    outcome_date: date | None = None
 
 
 class StatusUpdateResponse(BaseModel):
@@ -106,19 +107,19 @@ class ArchivedAnimalPublic(BaseModel):
     original_id: int
     species: str
     sex: str
-    age_months: Optional[int] = None
-    color: Optional[str] = None
-    size: Optional[str] = None
+    age_months: int | None = None
+    color: str | None = None
+    size: str | None = None
     shelter_date: date
     location: str
-    phone: Optional[str] = None
-    image_urls: List[str]
+    phone: str | None = None
+    image_urls: list[str]
     source_url: str
     category: str
     status: str
-    status_changed_at: Optional[datetime] = None
-    outcome_date: Optional[date] = None
-    local_image_paths: Optional[List[str]] = None
+    status_changed_at: datetime | None = None
+    outcome_date: date | None = None
+    local_image_paths: list[str] | None = None
     archived_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

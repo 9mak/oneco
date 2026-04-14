@@ -10,16 +10,17 @@ Note:
 
 import logging
 import os
-from typing import Optional, Callable, Awaitable
+from collections.abc import Awaitable, Callable
 
 logger = logging.getLogger(__name__)
 
 # APScheduler はオプショナル依存
 try:
+    from apscheduler.executors.asyncio import AsyncIOExecutor
+    from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
     from apscheduler.schedulers.asyncio import AsyncIOScheduler
     from apscheduler.triggers.cron import CronTrigger
-    from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
-    from apscheduler.executors.asyncio import AsyncIOExecutor
+
     APSCHEDULER_AVAILABLE = True
 except ImportError:
     APSCHEDULER_AVAILABLE = False
@@ -40,10 +41,10 @@ class ArchiveScheduler:
 
     def __init__(
         self,
-        database_url: Optional[str] = None,
-        hour: Optional[int] = None,
-        minute: Optional[int] = None,
-        timezone: Optional[str] = None,
+        database_url: str | None = None,
+        hour: int | None = None,
+        minute: int | None = None,
+        timezone: str | None = None,
     ):
         """
         ArchiveScheduler を初期化
@@ -91,7 +92,7 @@ class ArchiveScheduler:
             timezone=self.timezone,
         )
 
-        self._archive_job_func: Optional[Callable[[], Awaitable]] = None
+        self._archive_job_func: Callable[[], Awaitable] | None = None
 
     def set_archive_job(self, job_func: Callable[[], Awaitable]) -> None:
         """

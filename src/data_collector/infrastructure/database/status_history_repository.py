@@ -4,11 +4,12 @@ StatusHistoryRepository - ステータス履歴リポジトリ
 動物のステータス変更履歴の記録と取得を担当するリポジトリ層です。
 """
 
-from typing import List, Optional
-from datetime import datetime, timezone
 from dataclasses import dataclass
+from datetime import UTC, datetime
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.data_collector.domain.models import AnimalStatus
 from src.data_collector.infrastructure.database.models import AnimalStatusHistory
 
@@ -26,7 +27,7 @@ class StatusHistoryEntry:
     old_status: AnimalStatus
     new_status: AnimalStatus
     changed_at: datetime
-    changed_by: Optional[str] = None
+    changed_by: str | None = None
 
 
 class StatusHistoryRepository:
@@ -70,7 +71,7 @@ class StatusHistoryRepository:
         animal_id: int,
         old_status: AnimalStatus,
         new_status: AnimalStatus,
-        changed_by: Optional[str] = None,
+        changed_by: str | None = None,
     ) -> StatusHistoryEntry:
         """
         ステータス遷移を記録
@@ -88,7 +89,7 @@ class StatusHistoryRepository:
             animal_id=animal_id,
             old_status=old_status.value,
             new_status=new_status.value,
-            changed_at=datetime.now(timezone.utc),
+            changed_at=datetime.now(UTC),
             changed_by=changed_by,
         )
 
@@ -101,7 +102,7 @@ class StatusHistoryRepository:
     async def get_history(
         self,
         animal_id: int,
-    ) -> List[StatusHistoryEntry]:
+    ) -> list[StatusHistoryEntry]:
         """
         動物のステータス履歴を取得
 

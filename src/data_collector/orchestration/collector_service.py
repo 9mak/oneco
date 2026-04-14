@@ -1,20 +1,21 @@
 """収集オーケストレーションサービス"""
 
-from typing import List, Optional, TYPE_CHECKING
-from pathlib import Path
+import asyncio
 import logging
 import time
 import uuid
-import asyncio
+from pathlib import Path
+from typing import TYPE_CHECKING, Optional
+
 from pydantic import BaseModel
 
 from ..adapters.municipality_adapter import MunicipalityAdapter, NetworkError, ParsingError
-from ..domain.diff_detector import DiffDetector, DiffResult
+from ..domain.diff_detector import DiffDetector
 from ..domain.models import AnimalData
-from ..infrastructure.output_writer import OutputWriter
 from ..infrastructure.notification_client import NotificationClient, NotificationLevel
-from ..infrastructure.snapshot_store import SnapshotStore
 from ..infrastructure.notification_manager_client import NotificationManagerClient
+from ..infrastructure.output_writer import OutputWriter
+from ..infrastructure.snapshot_store import SnapshotStore
 
 if TYPE_CHECKING:
     from ..infrastructure.database.repository import AnimalRepository
@@ -33,12 +34,13 @@ class CollectionResult(BaseModel):
         errors: エラーメッセージリスト
         execution_time_seconds: 実行時間（秒）
     """
+
     success: bool
     total_collected: int = 0
     new_count: int = 0
     updated_count: int = 0
     deleted_count: int = 0
-    errors: List[str] = []
+    errors: list[str] = []
     execution_time_seconds: float = 0.0
 
 
@@ -65,7 +67,7 @@ class CollectorService:
         notification_client: NotificationClient,
         snapshot_store: SnapshotStore,
         repository: Optional["AnimalRepository"] = None,
-        notification_manager_client: Optional[NotificationManagerClient] = None
+        notification_manager_client: NotificationManagerClient | None = None,
     ):
         """
         CollectorService を初期化
@@ -103,10 +105,7 @@ class CollectorService:
         # 重複実行チェック
         if self._is_running():
             self.logger.warning("Collection already running, skipping...")
-            return CollectionResult(
-                success=False,
-                errors=["Already running"]
-            )
+            return CollectionResult(success=False, errors=["Already running"])
 
         self._acquire_lock()
         start_time = time.time()
@@ -119,8 +118,8 @@ class CollectorService:
                 f"Starting collection for {self.adapter.municipality_name}",
                 extra={
                     "prefecture_code": self.adapter.prefecture_code,
-                    "execution_id": execution_id
-                }
+                    "execution_id": execution_id,
+                },
             )
 
             # 収集実行
@@ -134,7 +133,7 @@ class CollectorService:
                 self.notification_client.send_alert(
                     NotificationLevel.CRITICAL,
                     "Page structure changed",
-                    {"prefecture": self.adapter.municipality_name}
+                    {"prefecture": self.adapter.municipality_name},
                 )
 
             # 新規データ通知（運用者向け Slack）
@@ -150,7 +149,7 @@ class CollectorService:
                 self._save_to_database(collected_data)
 
             # 出力
-            output_path = self.output_writer.write_output(collected_data, diff_result)
+            self.output_writer.write_output(collected_data, diff_result)
 
             # スナップショット保存
             self.snapshot_store.save_snapshot(collected_data)
@@ -165,8 +164,8 @@ class CollectorService:
                     "updated_count": len(diff_result.updated),
                     "deleted_count": len(diff_result.deleted_candidates),
                     "errors_count": len(errors),
-                    "execution_time_seconds": execution_time
-                }
+                    "execution_time_seconds": execution_time,
+                },
             )
 
             return CollectionResult(
@@ -176,40 +175,36 @@ class CollectorService:
                 updated_count=len(diff_result.updated),
                 deleted_count=len(diff_result.deleted_candidates),
                 errors=errors,
-                execution_time_seconds=execution_time
+                execution_time_seconds=execution_time,
             )
 
         except ParsingError as e:
             # ページ構造変更検知
-            self.logger.error(f"Parsing error (structure changed): {str(e)}", exc_info=True)
+            self.logger.error(f"Parsing error (structure changed): {e!s}", exc_info=True)
             self._structure_changed = True
             self.notification_client.send_alert(
                 NotificationLevel.CRITICAL,
                 "Page structure changed",
-                {"prefecture": self.adapter.municipality_name, "error": str(e)}
+                {"prefecture": self.adapter.municipality_name, "error": str(e)},
             )
             errors.append(str(e))
             execution_time = time.time() - start_time
             return CollectionResult(
-                success=False,
-                errors=errors,
-                execution_time_seconds=execution_time
+                success=False, errors=errors, execution_time_seconds=execution_time
             )
 
         except Exception as e:
-            self.logger.error(f"Collection failed: {str(e)}", exc_info=True)
+            self.logger.error(f"Collection failed: {e!s}", exc_info=True)
             errors.append(str(e))
             execution_time = time.time() - start_time
             return CollectionResult(
-                success=False,
-                errors=errors,
-                execution_time_seconds=execution_time
+                success=False, errors=errors, execution_time_seconds=execution_time
             )
 
         finally:
             self._release_lock()
 
-    def _collect_with_retry(self, max_retries: int = 3) -> List[AnimalData]:
+    def _collect_with_retry(self, max_retries: int = 3) -> list[AnimalData]:
         """
         リトライ付き収集
 
@@ -242,18 +237,18 @@ class CollectorService:
                         # 個別ページのネットワークエラーはスキップ
                         self.logger.warning(
                             f"Failed to fetch detail page: {url} (category: {category})",
-                            extra={"error": str(e)}
+                            extra={"error": str(e)},
                         )
                     except Exception as e:
                         # その他のエラーもスキップ（ベストエフォート）
                         self.logger.warning(
                             f"Failed to process detail page: {url} (category: {category})",
-                            extra={"error": str(e)}
+                            extra={"error": str(e)},
                         )
 
                 return collected_data
 
-            except ParsingError as e:
+            except ParsingError:
                 # ParsingError の場合はリトライせず即座にスロー
                 self._structure_changed = True
                 raise
@@ -263,16 +258,15 @@ class CollectorService:
                 last_error = e
                 if retry_count < max_retries:
                     # 指数バックオフ
-                    sleep_time = 2 ** retry_count
+                    sleep_time = 2**retry_count
                     self.logger.warning(
                         f"Network error, retrying in {sleep_time}s (attempt {retry_count}/{max_retries})",
-                        extra={"error": str(e)}
+                        extra={"error": str(e)},
                     )
                     time.sleep(sleep_time)
                 else:
                     self.logger.error(
-                        f"Max retries exceeded for network error",
-                        extra={"error": str(e)}
+                        "Max retries exceeded for network error", extra={"error": str(e)}
                     )
 
         # 最大リトライ回数を超えた場合
@@ -308,7 +302,7 @@ class CollectorService:
         """
         return str(uuid.uuid4())
 
-    def _save_to_database(self, collected_data: List[AnimalData]) -> None:
+    def _save_to_database(self, collected_data: list[AnimalData]) -> None:
         """
         収集データをデータベースに永続化
 
@@ -333,11 +327,9 @@ class CollectorService:
                 if loop.is_running():
                     # イベントループが実行中の場合は新しいスレッドで実行
                     import concurrent.futures
+
                     with concurrent.futures.ThreadPoolExecutor() as executor:
-                        future = executor.submit(
-                            asyncio.run,
-                            self.repository.save_animal(animal)
-                        )
+                        future = executor.submit(asyncio.run, self.repository.save_animal(animal))
                         future.result()
                 else:
                     loop.run_until_complete(self.repository.save_animal(animal))
@@ -346,15 +338,12 @@ class CollectorService:
                 error_count += 1
                 self.logger.warning(
                     f"Failed to save animal to database: {animal.source_url}",
-                    extra={"error": str(e)}
+                    extra={"error": str(e)},
                 )
 
         self.logger.info(
-            f"Database persistence completed",
-            extra={
-                "saved_count": saved_count,
-                "error_count": error_count
-            }
+            "Database persistence completed",
+            extra={"saved_count": saved_count, "error_count": error_count},
         )
 
         # エラーが多い場合はアラート送信
@@ -365,6 +354,6 @@ class CollectorService:
                 {
                     "prefecture": self.adapter.municipality_name,
                     "saved_count": saved_count,
-                    "error_count": error_count
-                }
+                    "error_count": error_count,
+                },
             )

@@ -1,4 +1,5 @@
 """Middleware components for syndication service."""
-from .rate_limiter import create_limiter, rate_limit_error_handler, DEFAULT_RATE_LIMIT
 
-__all__ = ["create_limiter", "rate_limit_error_handler", "DEFAULT_RATE_LIMIT"]
+from .rate_limiter import DEFAULT_RATE_LIMIT, create_limiter, rate_limit_error_handler
+
+__all__ = ["DEFAULT_RATE_LIMIT", "create_limiter", "rate_limit_error_handler"]

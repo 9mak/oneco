@@ -5,10 +5,11 @@ ArchiveRepository - アーカイブデータアクセス層
 更新・削除機能は意図的に提供しません（読み取り専用）。
 """
 
-from typing import List, Optional, Tuple
-from datetime import date, datetime, timezone
-from sqlalchemy import select, func
+from datetime import UTC, date, datetime
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.data_collector.domain.models import AnimalData, AnimalStatus
 from src.data_collector.infrastructure.database.models import Animal, AnimalArchive
 
@@ -61,7 +62,7 @@ class ArchiveRepository:
     async def get_archived_by_id(
         self,
         archive_id: int,
-    ) -> Optional[AnimalData]:
+    ) -> AnimalData | None:
         """
         アーカイブから動物データを取得
 
@@ -82,7 +83,7 @@ class ArchiveRepository:
     async def get_archived_by_original_id(
         self,
         original_id: int,
-    ) -> Optional[AnimalData]:
+    ) -> AnimalData | None:
         """
         元の動物IDからアーカイブデータを取得
 
@@ -102,12 +103,12 @@ class ArchiveRepository:
 
     async def list_archived(
         self,
-        species: Optional[str] = None,
-        archived_from: Optional[date] = None,
-        archived_to: Optional[date] = None,
+        species: str | None = None,
+        archived_from: date | None = None,
+        archived_to: date | None = None,
         limit: int = 50,
         offset: int = 0,
-    ) -> Tuple[List[AnimalData], int]:
+    ) -> tuple[list[AnimalData], int]:
         """
         アーカイブデータをリスト取得
 
@@ -187,7 +188,7 @@ class ArchiveRepository:
             status=animal.status,
             status_changed_at=animal.status_changed_at,
             outcome_date=animal.outcome_date,
-            archived_at=datetime.now(timezone.utc),
+            archived_at=datetime.now(UTC),
         )
         self.session.add(archived)
         await self.session.flush()
