@@ -4,20 +4,19 @@ notification-manager ドメインサービスのテスト
 Task 5.1-5.4: ユーザーサービス、マッチングサービス、通知サービスのテスト
 """
 
-import pytest
-from unittest.mock import Mock, AsyncMock, patch
 from datetime import date
+from unittest.mock import AsyncMock, Mock
 
-from src.notification_manager.domain.models import (
-    UserEntity,
-    NotificationPreferenceInput,
-    NotificationPreferenceEntity,
-    MatchResult,
-    NotificationMessage,
-    SendResult,
-    NotificationResult,
-)
+import pytest
+
 from src.data_collector.domain.models import AnimalData
+from src.notification_manager.domain.models import (
+    MatchResult,
+    NotificationPreferenceEntity,
+    NotificationPreferenceInput,
+    SendResult,
+    UserEntity,
+)
 
 
 class TestMatchingService:
@@ -186,7 +185,9 @@ class TestMatchingService:
 
         assert len(results) == 1
 
-    def test_none_prefectures_matches_any(self, matching_service, sample_animal, matching_preference):
+    def test_none_prefectures_matches_any(
+        self, matching_service, sample_animal, matching_preference
+    ):
         """都道府県がNoneまたは空の場合は全都道府県にマッチ"""
         matching_preference.prefectures = None
         matching_service._preference_repository.get_active_preferences.return_value = [
@@ -263,13 +264,25 @@ class TestMatchingService:
         """複数ユーザーがマッチする場合"""
         prefs = [
             NotificationPreferenceEntity(
-                id=1, user_id=100, species="犬", prefectures=["高知県"],
-                age_min_months=None, age_max_months=None, size=None, sex=None,
+                id=1,
+                user_id=100,
+                species="犬",
+                prefectures=["高知県"],
+                age_min_months=None,
+                age_max_months=None,
+                size=None,
+                sex=None,
                 notifications_enabled=True,
             ),
             NotificationPreferenceEntity(
-                id=2, user_id=200, species=None, prefectures=None,
-                age_min_months=None, age_max_months=None, size=None, sex=None,
+                id=2,
+                user_id=200,
+                species=None,
+                prefectures=None,
+                age_min_months=None,
+                age_max_months=None,
+                size=None,
+                sex=None,
                 notifications_enabled=True,
             ),
         ]
@@ -281,6 +294,7 @@ class TestMatchingService:
                 line_user_id_encrypted=f"encrypted_{user_id}",
                 is_active=True,
             )
+
         matching_service._user_repository.get_by_id = Mock(side_effect=get_user_by_id)
 
         results = matching_service.find_matching_users(sample_animal)
@@ -433,9 +447,7 @@ class TestUserService:
         result = user_service.toggle_notifications(100, False)
 
         assert result is True
-        user_service._pref_repository.set_notifications_enabled.assert_called_once_with(
-            100, False
-        )
+        user_service._pref_repository.set_notifications_enabled.assert_called_once_with(100, False)
 
 
 class TestNotificationService:

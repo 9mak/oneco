@@ -1,12 +1,11 @@
 """JSON 出力コンポーネント"""
 
-from typing import List
-from pathlib import Path
 import json
 from datetime import datetime
+from pathlib import Path
 
-from ..domain.models import AnimalData
 from ..domain.diff_detector import DiffResult
+from ..domain.models import AnimalData
 
 
 class OutputWriter:
@@ -28,7 +27,7 @@ class OutputWriter:
         """OutputWriter を初期化"""
         pass
 
-    def write_output(self, data: List[AnimalData], diff_result: DiffResult) -> Path:
+    def write_output(self, data: list[AnimalData], diff_result: DiffResult) -> Path:
         """
         正規化済みデータを JSON ファイルに出力
 
@@ -52,9 +51,9 @@ class OutputWriter:
             "diff": {
                 "new_count": len(diff_result.new),
                 "updated_count": len(diff_result.updated),
-                "deleted_count": len(diff_result.deleted_candidates)
+                "deleted_count": len(diff_result.deleted_candidates),
             },
-            "animals": [animal.model_dump(mode='json') for animal in data]
+            "animals": [animal.model_dump(mode="json") for animal in data],
         }
 
         # JSON ファイルに書き込み

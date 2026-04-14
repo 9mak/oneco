@@ -6,9 +6,8 @@
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple
 
-from ..domain.models import RawAnimalData, AnimalData
+from ..domain.models import AnimalData, RawAnimalData
 
 
 class NetworkError(Exception):
@@ -21,8 +20,8 @@ class NetworkError(Exception):
     def __init__(
         self,
         message: str,
-        url: Optional[str] = None,
-        status_code: Optional[int] = None,
+        url: str | None = None,
+        status_code: int | None = None,
     ):
         """
         Args:
@@ -46,8 +45,8 @@ class ParsingError(Exception):
     def __init__(
         self,
         message: str,
-        selector: Optional[str] = None,
-        url: Optional[str] = None,
+        selector: str | None = None,
+        url: str | None = None,
     ):
         """
         Args:
@@ -82,7 +81,7 @@ class MunicipalityAdapter(ABC):
         self.municipality_name = municipality_name
 
     @abstractmethod
-    def fetch_animal_list(self) -> List[Tuple[str, str]]:
+    def fetch_animal_list(self) -> list[tuple[str, str]]:
         """
         一覧ページから個体詳細ページの URL リストとカテゴリを取得
 
@@ -97,9 +96,7 @@ class MunicipalityAdapter(ABC):
         pass
 
     @abstractmethod
-    def extract_animal_details(
-        self, detail_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, detail_url: str, category: str = "adoption") -> RawAnimalData:
         """
         個体詳細ページから動物情報を抽出
 

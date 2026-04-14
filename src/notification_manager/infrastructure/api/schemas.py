@@ -10,9 +10,9 @@ Requirements: 2.1, 2.3, 6.6
 """
 
 from datetime import date, datetime
-from typing import List, Literal, Optional
+from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 
 class AnimalDataSchema(BaseModel):
@@ -31,11 +31,11 @@ class AnimalDataSchema(BaseModel):
     source_url: HttpUrl = Field(..., description="元ページURL")
     category: str = Field(..., description="カテゴリ ('adoption', 'lost')")
     sex: str = Field(default="不明", description="性別 ('男の子', '女の子', '不明')")
-    age_months: Optional[int] = Field(default=None, description="推定年齢 (月単位)")
-    color: Optional[str] = Field(default=None, description="毛色")
-    size: Optional[str] = Field(default=None, description="体格")
-    phone: Optional[str] = Field(default=None, description="電話番号")
-    image_urls: List[HttpUrl] = Field(default_factory=list, description="画像URL一覧")
+    age_months: int | None = Field(default=None, description="推定年齢 (月単位)")
+    color: str | None = Field(default=None, description="毛色")
+    size: str | None = Field(default=None, description="体格")
+    phone: str | None = Field(default=None, description="電話番号")
+    image_urls: list[HttpUrl] = Field(default_factory=list, description="画像URL一覧")
 
     @field_validator("species")
     @classmethod
@@ -75,7 +75,7 @@ class NewAnimalWebhookRequest(BaseModel):
     Requirement 2.1, 2.3: 新着動物データの受信と検証
     """
 
-    animals: List[AnimalDataSchema] = Field(..., description="新着動物データのリスト")
+    animals: list[AnimalDataSchema] = Field(..., description="新着動物データのリスト")
     source: str = Field(..., description="送信元 ('data-collector')")
     timestamp: datetime = Field(..., description="リクエストタイムスタンプ")
 
@@ -98,14 +98,10 @@ class HealthResponse(BaseModel):
     Requirement 6.6: サービス状態の確認
     """
 
-    status: Literal["healthy", "degraded", "unhealthy"] = Field(
-        ..., description="サービス状態"
-    )
+    status: Literal["healthy", "degraded", "unhealthy"] = Field(..., description="サービス状態")
     database: bool = Field(..., description="データベース接続状態")
     line_api: bool = Field(..., description="LINE API接続状態")
-    timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(), description="チェック時刻"
-    )
+    timestamp: datetime = Field(default_factory=datetime.now, description="チェック時刻")
 
 
 class LineWebhookEvent(BaseModel):
@@ -114,11 +110,11 @@ class LineWebhookEvent(BaseModel):
     type: str = Field(..., description="イベントタイプ")
     source: dict = Field(..., description="イベントソース")
     timestamp: int = Field(..., description="タイムスタンプ")
-    replyToken: Optional[str] = Field(default=None, description="リプライトークン")
-    message: Optional[dict] = Field(default=None, description="メッセージ（message eventの場合）")
+    replyToken: str | None = Field(default=None, description="リプライトークン")
+    message: dict | None = Field(default=None, description="メッセージ（message eventの場合）")
 
 
 class LineWebhookRequest(BaseModel):
     """LINE Webhookリクエスト"""
 
-    events: List[LineWebhookEvent] = Field(..., description="イベントリスト")
+    events: list[LineWebhookEvent] = Field(..., description="イベントリスト")

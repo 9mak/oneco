@@ -9,10 +9,10 @@ notification-manager データベースモデル定義
 Requirements: 1.1, 1.3, 1.4, 5.1, 5.2, 5.3, 7.1
 """
 
-from datetime import datetime, timezone
-from typing import List, Optional
+from datetime import UTC, datetime
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     Column,
     DateTime,
@@ -21,7 +21,6 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
-    JSON,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, relationship
@@ -49,9 +48,7 @@ class User(NotificationBase):
     id: int = Column(Integer, primary_key=True, autoincrement=True)
 
     # 暗号化されたLINEユーザーID（Fernet暗号化、255文字まで）
-    line_user_id_encrypted: str = Column(
-        String(255), nullable=False, unique=True, index=True
-    )
+    line_user_id_encrypted: str = Column(String(255), nullable=False, unique=True, index=True)
 
     # アクティブフラグ（ブロック/削除時にFalseに設定）
     is_active: bool = Column(Boolean, nullable=False, default=True)
@@ -60,13 +57,13 @@ class User(NotificationBase):
     created_at: datetime = Column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     updated_at: datetime = Column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
     # リレーション
@@ -87,7 +84,7 @@ class User(NotificationBase):
         Index(
             "idx_notification_users_active",
             "is_active",
-            postgresql_where=(is_active == True),
+            postgresql_where=(is_active),
         ),
     )
 
@@ -119,15 +116,15 @@ class NotificationPreference(NotificationBase):
     )
 
     # 条件項目（NULLは「すべて許可」）
-    species: Optional[str] = Column(String(20), nullable=True)  # '犬', '猫', NULL=両方
-    prefectures: Optional[List[str]] = Column(
+    species: str | None = Column(String(20), nullable=True)  # '犬', '猫', NULL=両方
+    prefectures: list[str] | None = Column(
         JSON().with_variant(JSONB, "postgresql"),
         nullable=True,
     )  # ["高知県", "愛媛県"]
-    age_min_months: Optional[int] = Column(Integer, nullable=True)
-    age_max_months: Optional[int] = Column(Integer, nullable=True)
-    size: Optional[str] = Column(String(20), nullable=True)  # '小型', '中型', '大型'
-    sex: Optional[str] = Column(String(20), nullable=True)  # '男の子', '女の子'
+    age_min_months: int | None = Column(Integer, nullable=True)
+    age_max_months: int | None = Column(Integer, nullable=True)
+    size: str | None = Column(String(20), nullable=True)  # '小型', '中型', '大型'
+    sex: str | None = Column(String(20), nullable=True)  # '男の子', '女の子'
 
     # 通知有効フラグ
     notifications_enabled: bool = Column(Boolean, nullable=False, default=True)
@@ -136,13 +133,13 @@ class NotificationPreference(NotificationBase):
     created_at: datetime = Column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     updated_at: datetime = Column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
     # リレーション
@@ -153,7 +150,7 @@ class NotificationPreference(NotificationBase):
         Index(
             "idx_notification_preferences_active",
             "notifications_enabled",
-            postgresql_where=(notifications_enabled == True),
+            postgresql_where=(notifications_enabled),
         ),
     )
 
@@ -193,7 +190,7 @@ class NotificationHistory(NotificationBase):
     notified_at: datetime = Column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     # リレーション

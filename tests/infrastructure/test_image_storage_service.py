@@ -1,18 +1,19 @@
 """ImageStorageService のユニットテスト"""
 
+import hashlib
+from pathlib import Path
+from unittest.mock import patch
+
 import pytest
 import pytest_asyncio
-import hashlib
-from unittest.mock import AsyncMock, MagicMock, patch, AsyncMock
-from pathlib import Path
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from src.data_collector.infrastructure.database.image_hash_repository import ImageHashRepository
 from src.data_collector.infrastructure.database.models import Base
 from src.data_collector.infrastructure.image_storage import LocalImageStorage
-from src.data_collector.infrastructure.database.image_hash_repository import ImageHashRepository
 from src.data_collector.infrastructure.image_storage_service import (
-    ImageStorageService,
     ImageDownloadResult,
+    ImageStorageService,
 )
 
 
@@ -196,7 +197,11 @@ class TestImageStorageServiceBasics:
 
     @pytest.mark.asyncio
     async def test_save_image_registers_hash(
-        self, service: ImageStorageService, sample_jpeg_content: bytes, image_hash_repo, async_session
+        self,
+        service: ImageStorageService,
+        sample_jpeg_content: bytes,
+        image_hash_repo,
+        async_session,
     ):
         """save_image() がハッシュを登録することを確認"""
         result = await service.save_image(sample_jpeg_content, "jpg")
@@ -250,9 +255,7 @@ class TestImageStorageServiceDownload:
             assert all(r.success for r in results)
 
     @pytest.mark.asyncio
-    async def test_download_and_store_handles_failure(
-        self, service: ImageStorageService
-    ):
+    async def test_download_and_store_handles_failure(self, service: ImageStorageService):
         """download_and_store() がダウンロード失敗を処理することを確認"""
         with patch.object(service, "download_image") as mock_download:
             mock_download.return_value = (None, None, "タイムアウト")
@@ -293,19 +296,19 @@ class TestImageStorageServiceDownload:
                 return (None, None, "エラー")
 
         with patch.object(service, "download_image", side_effect=mock_download):
-            results = await service.download_and_store([
-                "https://example.com/success.jpg",
-                "https://example.com/fail.jpg",
-            ])
+            results = await service.download_and_store(
+                [
+                    "https://example.com/success.jpg",
+                    "https://example.com/fail.jpg",
+                ]
+            )
 
             assert len(results) == 2
             assert results[0].success is True
             assert results[1].success is False
 
     @pytest.mark.asyncio
-    async def test_download_and_store_updates_failure_counter(
-        self, service: ImageStorageService
-    ):
+    async def test_download_and_store_updates_failure_counter(self, service: ImageStorageService):
         """download_and_store() が失敗カウンターを更新することを確認"""
         with patch.object(service, "download_image") as mock_download:
             mock_download.return_value = (None, None, "エラー")
@@ -352,13 +355,15 @@ class TestImageStorageServiceMonitoring:
 
             mock_download.side_effect = mock_download_fn
 
-            await service.download_and_store([
-                "https://example.com/1.jpg",
-                "https://example.com/2.jpg",
-                "https://example.com/3.jpg",
-                "https://example.com/4.jpg",
-                "https://example.com/5.jpg",
-            ])
+            await service.download_and_store(
+                [
+                    "https://example.com/1.jpg",
+                    "https://example.com/2.jpg",
+                    "https://example.com/3.jpg",
+                    "https://example.com/4.jpg",
+                    "https://example.com/5.jpg",
+                ]
+            )
 
             # 3/5 = 0.6
             assert service.get_failure_rate() == 0.6

@@ -3,9 +3,11 @@ Tests for rate limiter middleware.
 
 RED phase: Write failing tests for rate limiting functionality.
 """
+
+from unittest.mock import patch
+
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import Mock, patch
 
 
 class TestRateLimiter:
@@ -24,7 +26,7 @@ class TestRateLimiter:
         """Test that requests within limit are allowed."""
         # Make 5 requests (well within 60/minute limit)
         for i in range(5):
-            response = client.get(f"/feeds/rss?species=犬&limit={10+i}")
+            response = client.get(f"/feeds/rss?species=犬&limit={10 + i}")
             assert response.status_code == 200
 
             remaining = int(response.headers.get("X-RateLimit-Remaining", "0"))

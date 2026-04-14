@@ -6,8 +6,8 @@ DatabaseConnection のテスト
 """
 
 import pytest
-import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.data_collector.infrastructure.database.connection import (
     DatabaseConnection,
     DatabaseSettings,

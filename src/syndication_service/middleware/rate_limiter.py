@@ -3,19 +3,20 @@ Rate limiter middleware using slowapi.
 
 This module implements IP-based rate limiting for syndication service endpoints.
 """
+
 import logging
-from typing import Optional
-from slowapi import Limiter
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
-from fastapi import Request, Response
-from fastapi.responses import JSONResponse
 import os
+
+from fastapi import Request
+from fastapi.responses import JSONResponse
+from slowapi import Limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 logger = logging.getLogger(__name__)
 
 
-def create_limiter(redis_url: Optional[str] = None) -> Optional[Limiter]:
+def create_limiter(redis_url: str | None = None) -> Limiter | None:
     """
     Create a slowapi Limiter instance.
 

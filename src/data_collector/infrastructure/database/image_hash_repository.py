@@ -4,8 +4,7 @@ ImageHashRepository - 画像ハッシュのデータアクセス層
 画像の重複検出とハッシュ管理のためのリポジトリを提供します。
 """
 
-from typing import Optional
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.data_collector.infrastructure.database.models import ImageHash
@@ -28,7 +27,7 @@ class ImageHashRepository:
         """
         self.session = session
 
-    async def find_by_hash(self, hash: str) -> Optional[ImageHash]:
+    async def find_by_hash(self, hash: str) -> ImageHash | None:
         """
         ハッシュで画像情報を検索
 
@@ -76,7 +75,7 @@ class ImageHashRepository:
         await self.session.flush()
         return image_hash
 
-    async def check_duplicate(self, hash: str) -> Optional[str]:
+    async def check_duplicate(self, hash: str) -> str | None:
         """
         重複チェック
 

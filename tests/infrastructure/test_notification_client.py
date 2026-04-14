@@ -1,12 +1,14 @@
 """NotificationClient のユニットテスト"""
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import Mock, patch, call
+
+from src.data_collector.domain.models import AnimalData
 from src.data_collector.infrastructure.notification_client import (
     NotificationClient,
-    NotificationLevel
+    NotificationLevel,
 )
-from src.data_collector.domain.models import AnimalData
 
 
 class TestNotificationClient:
@@ -17,7 +19,7 @@ class TestNotificationClient:
         """テスト用通知設定"""
         return {
             "email": "test@example.com",
-            "slack_webhook_url": "https://hooks.slack.com/services/TEST/WEBHOOK/URL"
+            "slack_webhook_url": "https://hooks.slack.com/services/TEST/WEBHOOK/URL",
         }
 
     @pytest.fixture
@@ -40,8 +42,8 @@ class TestNotificationClient:
                 phone="088-123-4567",
                 image_urls=["https://example.com/image1.jpg"],
                 source_url="https://example-kochi.jp/animals/123",
-            category="adoption"
-        )
+                category="adoption",
+            )
         ]
 
     def test_initialization_with_config(self, notification_config):
@@ -56,7 +58,7 @@ class TestNotificationClient:
         assert NotificationLevel.ERROR == "error"
         assert NotificationLevel.CRITICAL == "critical"
 
-    @patch('src.data_collector.infrastructure.notification_client.requests.post')
+    @patch("src.data_collector.infrastructure.notification_client.requests.post")
     def test_send_alert_slack_success(self, mock_post, client):
         """Slack アラート送信が成功することを確認"""
         mock_post.return_value.status_code = 200
@@ -64,7 +66,7 @@ class TestNotificationClient:
         client.send_alert(
             level=NotificationLevel.CRITICAL,
             message="Page structure changed",
-            details={"prefecture": "高知県"}
+            details={"prefecture": "高知県"},
         )
 
         # Slack webhook が呼ばれたことを確認
@@ -75,7 +77,7 @@ class TestNotificationClient:
         call_args = mock_post.call_args
         assert call_args[0][0] == "https://hooks.slack.com/services/TEST/WEBHOOK/URL"
 
-    @patch('src.data_collector.infrastructure.notification_client.requests.post')
+    @patch("src.data_collector.infrastructure.notification_client.requests.post")
     def test_send_alert_handles_failure_gracefully(self, mock_post, client):
         """通知失敗時も例外を投げず、ログ記録のみで処理継続することを確認"""
         mock_post.side_effect = Exception("Network error")
@@ -83,14 +85,12 @@ class TestNotificationClient:
         # 例外が発生しないことを確認（best-effort）
         try:
             client.send_alert(
-                level=NotificationLevel.ERROR,
-                message="Test error",
-                details={"error": "test"}
+                level=NotificationLevel.ERROR, message="Test error", details={"error": "test"}
             )
         except Exception:
             pytest.fail("send_alert should not raise exceptions")
 
-    @patch('src.data_collector.infrastructure.notification_client.requests.post')
+    @patch("src.data_collector.infrastructure.notification_client.requests.post")
     def test_send_alert_includes_details(self, mock_post, client):
         """アラートに詳細情報が含まれることを確認"""
         mock_post.return_value.status_code = 200
@@ -98,13 +98,11 @@ class TestNotificationClient:
         details = {
             "prefecture": "高知県",
             "url": "https://example.com",
-            "error_type": "ParsingError"
+            "error_type": "ParsingError",
         }
 
         client.send_alert(
-            level=NotificationLevel.CRITICAL,
-            message="Page structure changed",
-            details=details
+            level=NotificationLevel.CRITICAL, message="Page structure changed", details=details
         )
 
         # POST リクエストの JSON ボディに details が含まれることを確認
@@ -114,7 +112,7 @@ class TestNotificationClient:
         assert "Page structure changed" in json_data["text"]
         assert "高知県" in json_data["text"]
 
-    @patch('src.data_collector.infrastructure.notification_client.requests.post')
+    @patch("src.data_collector.infrastructure.notification_client.requests.post")
     def test_notify_new_animals_slack(self, mock_post, client, sample_animal_data):
         """新規収容動物の通知が送信されることを確認"""
         mock_post.return_value.status_code = 200
@@ -130,7 +128,7 @@ class TestNotificationClient:
 
         assert "新規収容動物" in json_data["text"] or "1件" in json_data["text"]
 
-    @patch('src.data_collector.infrastructure.notification_client.requests.post')
+    @patch("src.data_collector.infrastructure.notification_client.requests.post")
     def test_notify_new_animals_empty_list(self, mock_post, client):
         """新規動物が0件の場合、通知が送信されないことを確認"""
         client.notify_new_animals([])
@@ -138,8 +136,10 @@ class TestNotificationClient:
         # 空リストの場合は通知しない
         assert not mock_post.called
 
-    @patch('src.data_collector.infrastructure.notification_client.requests.post')
-    def test_notify_new_animals_handles_failure_gracefully(self, mock_post, client, sample_animal_data):
+    @patch("src.data_collector.infrastructure.notification_client.requests.post")
+    def test_notify_new_animals_handles_failure_gracefully(
+        self, mock_post, client, sample_animal_data
+    ):
         """新規動物通知の失敗時も例外を投げないことを確認"""
         mock_post.side_effect = Exception("Network error")
 
@@ -155,7 +155,7 @@ class TestNotificationClient:
         client = NotificationClient(config)
         assert client.config == config
 
-    @patch('src.data_collector.infrastructure.notification_client.requests.post')
+    @patch("src.data_collector.infrastructure.notification_client.requests.post")
     def test_send_alert_different_levels(self, mock_post, client):
         """異なる通知レベルで送信できることを確認"""
         mock_post.return_value.status_code = 200
@@ -164,14 +164,12 @@ class TestNotificationClient:
             NotificationLevel.INFO,
             NotificationLevel.WARNING,
             NotificationLevel.ERROR,
-            NotificationLevel.CRITICAL
+            NotificationLevel.CRITICAL,
         ]
 
         for level in levels:
             client.send_alert(
-                level=level,
-                message=f"Test {level} message",
-                details={"test": "data"}
+                level=level, message=f"Test {level} message", details={"test": "data"}
             )
 
         # 4回呼ばれたことを確認

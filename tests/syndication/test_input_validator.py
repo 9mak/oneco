@@ -1,6 +1,8 @@
 """Tests for InputValidator service"""
+
 import pytest
 from fastapi import HTTPException
+
 from src.syndication_service.services.input_validator import InputValidator
 
 
@@ -14,7 +16,7 @@ class TestInputValidator:
             "category": "adoption",
             "status": "sheltered",
             "sex": "男の子",
-            "location": "高知県"
+            "location": "高知県",
         }
         # Should not raise exception
         InputValidator.validate_query_params(params)
@@ -77,11 +79,7 @@ class TestInputValidator:
 
     def test_validate_none_values_allowed(self):
         """None 値は許可される"""
-        params = {
-            "species": None,
-            "category": None,
-            "location": "高知県"
-        }
+        params = {"species": None, "category": None, "location": "高知県"}
         # Should not raise exception
         InputValidator.validate_query_params(params)
 

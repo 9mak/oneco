@@ -4,19 +4,19 @@ AnimalMetricsCollector テスト
 メトリクス収集機能とアラート機能をテストします。
 """
 
-import pytest
-import pytest_asyncio
 from datetime import date
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+import pytest
+import pytest_asyncio
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from src.data_collector.infrastructure.database.models import Animal, Base
 from src.data_collector.infrastructure.database.repository import AnimalRepository
 from src.data_collector.services.metrics_collector import (
-    AnimalMetricsCollector,
-    AnimalMetrics,
     AlertManager,
+    AnimalMetrics,
+    AnimalMetricsCollector,
     AuditLogger,
 )
 
@@ -190,7 +190,9 @@ async def test_collect_metrics_with_image_storage_service(populated_session):
 @pytest.mark.asyncio
 async def test_alert_manager_no_alert_when_below_threshold():
     """閾値以下の場合はアラートが発生しないか"""
-    manager = AlertManager(failure_rate_threshold=0.1, storage_threshold_bytes=10 * 1024 * 1024 * 1024)
+    manager = AlertManager(
+        failure_rate_threshold=0.1, storage_threshold_bytes=10 * 1024 * 1024 * 1024
+    )
 
     metrics = AnimalMetrics(
         total_count=100,

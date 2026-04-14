@@ -9,11 +9,10 @@ notification-manager 対話機能
 Requirements: 1.2, 1.5, 1.6, 1.7
 """
 
-import re
 import logging
+import re
+from dataclasses import dataclass
 from enum import Enum, auto
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 
 from src.notification_manager.domain.models import NotificationPreferenceInput
 
@@ -21,14 +20,53 @@ logger = logging.getLogger(__name__)
 
 # 都道府県リスト（バリデーション用）
 PREFECTURES = [
-    "北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県",
-    "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県",
-    "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県",
-    "岐阜県", "静岡県", "愛知県", "三重県",
-    "滋賀県", "京都府", "大阪府", "兵庫県", "奈良県", "和歌山県",
-    "鳥取県", "島根県", "岡山県", "広島県", "山口県",
-    "徳島県", "香川県", "愛媛県", "高知県",
-    "福岡県", "佐賀県", "長崎県", "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県",
+    "北海道",
+    "青森県",
+    "岩手県",
+    "宮城県",
+    "秋田県",
+    "山形県",
+    "福島県",
+    "茨城県",
+    "栃木県",
+    "群馬県",
+    "埼玉県",
+    "千葉県",
+    "東京都",
+    "神奈川県",
+    "新潟県",
+    "富山県",
+    "石川県",
+    "福井県",
+    "山梨県",
+    "長野県",
+    "岐阜県",
+    "静岡県",
+    "愛知県",
+    "三重県",
+    "滋賀県",
+    "京都府",
+    "大阪府",
+    "兵庫県",
+    "奈良県",
+    "和歌山県",
+    "鳥取県",
+    "島根県",
+    "岡山県",
+    "広島県",
+    "山口県",
+    "徳島県",
+    "香川県",
+    "愛媛県",
+    "高知県",
+    "福岡県",
+    "佐賀県",
+    "長崎県",
+    "熊本県",
+    "大分県",
+    "宮崎県",
+    "鹿児島県",
+    "沖縄県",
 ]
 
 
@@ -36,22 +74,22 @@ class Command(Enum):
     """認識可能なコマンド"""
 
     SETTINGS = auto()  # 設定開始
-    CHANGE = auto()    # 条件変更
-    STOP = auto()      # 通知停止
-    RESUME = auto()    # 通知再開
-    STATUS = auto()    # 現在の設定確認
-    HELP = auto()      # ヘルプ
+    CHANGE = auto()  # 条件変更
+    STOP = auto()  # 通知停止
+    RESUME = auto()  # 通知再開
+    STATUS = auto()  # 現在の設定確認
+    HELP = auto()  # ヘルプ
 
 
 class ConversationState(Enum):
     """対話状態"""
 
-    IDLE = auto()                 # 待機中
-    AWAITING_SPECIES = auto()     # 種別待ち
-    AWAITING_PREFECTURES = auto() # 都道府県待ち
-    AWAITING_AGE = auto()         # 年齢待ち
-    AWAITING_SIZE = auto()        # サイズ待ち
-    AWAITING_SEX = auto()         # 性別待ち
+    IDLE = auto()  # 待機中
+    AWAITING_SPECIES = auto()  # 種別待ち
+    AWAITING_PREFECTURES = auto()  # 都道府県待ち
+    AWAITING_AGE = auto()  # 年齢待ち
+    AWAITING_SIZE = auto()  # サイズ待ち
+    AWAITING_SEX = auto()  # 性別待ち
 
 
 @dataclass
@@ -60,9 +98,9 @@ class ValidationResult:
 
     is_valid: bool
     value: any = None
-    error_message: Optional[str] = None
-    min_months: Optional[int] = None
-    max_months: Optional[int] = None
+    error_message: str | None = None
+    min_months: int | None = None
+    max_months: int | None = None
 
 
 @dataclass
@@ -70,12 +108,12 @@ class UserConversation:
     """ユーザー対話状態"""
 
     state: ConversationState = ConversationState.IDLE
-    species: Optional[str] = None
-    prefectures: Optional[List[str]] = None
-    age_min_months: Optional[int] = None
-    age_max_months: Optional[int] = None
-    size: Optional[str] = None
-    sex: Optional[str] = None
+    species: str | None = None
+    prefectures: list[str] | None = None
+    age_min_months: int | None = None
+    age_max_months: int | None = None
+    size: str | None = None
+    sex: str | None = None
 
 
 class ConversationHandler:
@@ -107,9 +145,9 @@ class ConversationHandler:
         """
         self._user_service = user_service
         self._line_adapter = line_adapter
-        self._conversations: Dict[str, UserConversation] = {}
+        self._conversations: dict[str, UserConversation] = {}
 
-    def parse_command(self, text: str) -> Optional[Command]:
+    def parse_command(self, text: str) -> Command | None:
         """
         テキストからコマンドを解析
 
@@ -146,12 +184,10 @@ class ConversationHandler:
         Args:
             user_id: ユーザーID
         """
-        self._conversations[user_id] = UserConversation(
-            state=ConversationState.AWAITING_SPECIES
-        )
+        self._conversations[user_id] = UserConversation(state=ConversationState.AWAITING_SPECIES)
         logger.info(f"Started settings flow for user {user_id[:8]}...")
 
-    def process_input(self, user_id: str, text: str) -> Optional[str]:
+    def process_input(self, user_id: str, text: str) -> str | None:
         """
         ユーザー入力を処理
 
@@ -262,8 +298,7 @@ class ConversationHandler:
             return ValidationResult(is_valid=True, value=None)
 
         return ValidationResult(
-            is_valid=False,
-            error_message="「犬」「猫」「どちらでも」のいずれかを選択してください。"
+            is_valid=False, error_message="「犬」「猫」「どちらでも」のいずれかを選択してください。"
         )
 
     def validate_prefectures(self, text: str) -> ValidationResult:
@@ -295,14 +330,13 @@ class ConversationHandler:
                 valid_prefs.append(normalized)
             else:
                 return ValidationResult(
-                    is_valid=False,
-                    error_message=f"「{part}」は有効な都道府県名ではありません。"
+                    is_valid=False, error_message=f"「{part}」は有効な都道府県名ではありません。"
                 )
 
         if not valid_prefs:
             return ValidationResult(
                 is_valid=False,
-                error_message="都道府県名を入力するか、「指定なし」を選択してください。"
+                error_message="都道府県名を入力するか、「指定なし」を選択してください。",
             )
 
         return ValidationResult(is_valid=True, value=valid_prefs)
@@ -359,9 +393,7 @@ class ConversationHandler:
             return ValidationResult(is_valid=True, min_months=None, max_months=months)
 
         # "1歳から3歳", "1〜3歳"
-        range_match = re.match(
-            r"(\d+)\s*(歳|才)?\s*(から|〜|-)\s*(\d+)\s*(歳|才)?", text
-        )
+        range_match = re.match(r"(\d+)\s*(歳|才)?\s*(から|〜|-)\s*(\d+)\s*(歳|才)?", text)
         if range_match:
             min_num = int(range_match.group(1))
             max_num = int(range_match.group(4))
@@ -375,7 +407,7 @@ class ConversationHandler:
             is_valid=False,
             error_message=(
                 "年齢は「1歳以上」「3歳以下」「1〜3歳」「指定なし」などの形式で入力してください。"
-            )
+            ),
         )
 
     def validate_size(self, text: str) -> ValidationResult:
@@ -402,7 +434,7 @@ class ConversationHandler:
 
         return ValidationResult(
             is_valid=False,
-            error_message="「小型」「中型」「大型」「指定なし」のいずれかを選択してください。"
+            error_message="「小型」「中型」「大型」「指定なし」のいずれかを選択してください。",
         )
 
     def validate_sex(self, text: str) -> ValidationResult:
@@ -427,7 +459,7 @@ class ConversationHandler:
 
         return ValidationResult(
             is_valid=False,
-            error_message="「男の子」「女の子」「指定なし」のいずれかを選択してください。"
+            error_message="「男の子」「女の子」「指定なし」のいずれかを選択してください。",
         )
 
     def get_prompt_message(self, state: ConversationState) -> str:
@@ -442,10 +474,7 @@ class ConversationHandler:
         """
         prompts = {
             ConversationState.AWAITING_SPECIES: (
-                "動物の種別を選択してください。\n"
-                "・犬\n"
-                "・猫\n"
-                "・どちらでも"
+                "動物の種別を選択してください。\n・犬\n・猫\n・どちらでも"
             ),
             ConversationState.AWAITING_PREFECTURES: (
                 "希望する都道府県を入力してください。\n"
@@ -459,17 +488,10 @@ class ConversationHandler:
                 "指定しない場合は「指定なし」と入力してください。"
             ),
             ConversationState.AWAITING_SIZE: (
-                "希望するサイズを選択してください。\n"
-                "・小型\n"
-                "・中型\n"
-                "・大型\n"
-                "・指定なし"
+                "希望するサイズを選択してください。\n・小型\n・中型\n・大型\n・指定なし"
             ),
             ConversationState.AWAITING_SEX: (
-                "希望する性別を選択してください。\n"
-                "・男の子\n"
-                "・女の子\n"
-                "・指定なし"
+                "希望する性別を選択してください。\n・男の子\n・女の子\n・指定なし"
             ),
         }
         return prompts.get(state, "")

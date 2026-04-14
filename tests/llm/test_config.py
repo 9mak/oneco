@@ -1,15 +1,16 @@
 """SiteConfigLoader のユニットテスト"""
 
+from pathlib import Path
+
 import pytest
 import yaml
-from pathlib import Path
 from pydantic import ValidationError
 
 from src.data_collector.llm.config import (
-    SiteConfig,
     ExtractionConfig,
-    SitesConfig,
+    SiteConfig,
     SiteConfigLoader,
+    SitesConfig,
 )
 
 
@@ -206,9 +207,7 @@ class TestResolveProvider:
                 )
             ],
         )
-        provider, model = SiteConfigLoader.resolve_provider(
-            config.sites[0], config
-        )
+        provider, model = SiteConfigLoader.resolve_provider(config.sites[0], config)
         assert provider == "anthropic"
         assert model == "claude-haiku-4-5-20251001"
 
@@ -229,8 +228,6 @@ class TestResolveProvider:
                 )
             ],
         )
-        provider, model = SiteConfigLoader.resolve_provider(
-            config.sites[0], config
-        )
+        provider, model = SiteConfigLoader.resolve_provider(config.sites[0], config)
         assert provider == "openai"
         assert model == "gpt-4o-mini"

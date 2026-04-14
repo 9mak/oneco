@@ -8,12 +8,11 @@ Google AI Studio の無料APIキーで動作する。
 import logging
 import os
 import time
-from typing import List, Optional
 
 from google import genai
 from google.genai import types
 
-from .base import ExtractionResult, MultiExtractionResult, LlmProvider
+from .base import ExtractionResult, LlmProvider, MultiExtractionResult
 
 logger = logging.getLogger(__name__)
 
@@ -72,8 +71,15 @@ ANIMAL_EXTRACTION_FUNCTION = types.FunctionDeclaration(
             ),
         },
         required=[
-            "species", "sex", "age", "color", "size",
-            "shelter_date", "location", "phone", "image_urls",
+            "species",
+            "sex",
+            "age",
+            "color",
+            "size",
+            "shelter_date",
+            "location",
+            "phone",
+            "image_urls",
         ],
     ),
 )
@@ -157,8 +163,15 @@ MULTI_ANIMAL_EXTRACTION_FUNCTION = types.FunctionDeclaration(
                         ),
                     },
                     required=[
-                        "species", "sex", "age", "color", "size",
-                        "shelter_date", "location", "phone", "image_urls",
+                        "species",
+                        "sex",
+                        "age",
+                        "color",
+                        "size",
+                        "shelter_date",
+                        "location",
+                        "phone",
+                        "image_urls",
                     ],
                 ),
             ),
@@ -218,13 +231,13 @@ class GoogleProvider(LlmProvider):
     def __init__(
         self,
         model: str = "gemini-2.5-flash",
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         max_retries: int = 3,
     ) -> None:
         self.model_name = model
         self.max_retries = max_retries
         self._api_key = api_key or os.environ.get("GOOGLE_API_KEY")
-        self._client: Optional[genai.Client] = None  # 遅延初期化
+        self._client: genai.Client | None = None  # 遅延初期化
 
     @property
     def client(self) -> genai.Client:
@@ -271,7 +284,11 @@ class GoogleProvider(LlmProvider):
         hint_species: str = "",
     ) -> MultiExtractionResult:
         """一覧表形式のPDF等から複数動物情報を抽出"""
-        species_hint = f"\nヒント: このPDFに含まれる動物はすべて「{hint_species}」です。" if hint_species else ""
+        species_hint = (
+            f"\nヒント: このPDFに含まれる動物はすべて「{hint_species}」です。"
+            if hint_species
+            else ""
+        )
         prompt = (
             f"以下のPDFテキストから、記載されている全ての動物情報を抽出してください。\n"
             f"出典URL: {source_url}\n"
@@ -300,7 +317,7 @@ class GoogleProvider(LlmProvider):
         self,
         html_content: str,
         base_url: str,
-    ) -> List[str]:
+    ) -> list[str]:
         """HTMLから動物詳細ページへのリンクをFunction Callingで抽出"""
         prompt = (
             f"以下の一覧ページHTMLから、動物の詳細ページへのリンクを抽出してください。\n"
@@ -350,7 +367,7 @@ class GoogleProvider(LlmProvider):
                 error_str = str(e).lower()
                 if any(k in error_str for k in ["quota", "rate", "429", "500", "503"]):
                     if attempt < self.max_retries - 1:
-                        wait = self._parse_retry_delay(str(e)) or (2 ** attempt)
+                        wait = self._parse_retry_delay(str(e)) or (2**attempt)
                         logger.warning(
                             f"Gemini API呼び出し失敗 (attempt {attempt + 1}/{self.max_retries}): "
                             f"{e}. {wait}秒後にリトライ..."
@@ -364,11 +381,12 @@ class GoogleProvider(LlmProvider):
         raise last_error  # type: ignore[misc]
 
     @staticmethod
-    def _parse_retry_delay(error_str: str) -> Optional[float]:
+    def _parse_retry_delay(error_str: str) -> float | None:
         """APIエラーメッセージから推奨待機秒数を抽出する。
         例: 'Please retry in 47.25s' または retryDelay: '47s'
         """
         import re
+
         # "retry in 47.25s" / "retry in 47s" 形式
         m = re.search(r"retry[^0-9]*(\d+(?:\.\d+)?)\s*s", error_str, re.IGNORECASE)
         if m:

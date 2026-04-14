@@ -4,15 +4,14 @@
 高知県自治体サイトから保護動物情報をスクレイピングするアダプターです。
 """
 
-from typing import List, Tuple
 from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
 
-from .municipality_adapter import MunicipalityAdapter, NetworkError, ParsingError
-from ..domain.models import RawAnimalData, AnimalData
+from ..domain.models import AnimalData, RawAnimalData
 from ..domain.normalizer import DataNormalizer
+from .municipality_adapter import MunicipalityAdapter, NetworkError, ParsingError
 
 
 class KochiAdapter(MunicipalityAdapter):
@@ -63,23 +62,23 @@ class KochiAdapter(MunicipalityAdapter):
     # 正規化共通ロジック (DataNormalizer) では "N歳", "Nヶ月" 等の数値パターンのみ対応
     # 高知県サイト固有の日本語テキスト年齢表記に対応
     _KOCHI_AGE_ESTIMATES = {
-        "高齢": 120,      # 10歳相当
-        "老齢": 120,      # 10歳相当
-        "老犬": 120,      # 10歳相当
-        "老猫": 120,      # 10歳相当
-        "成犬": 36,       # 3歳相当
-        "成猫": 36,       # 3歳相当
-        "成熟": 36,       # 3歳相当
-        "中齢": 60,       # 5歳相当
-        "若犬": 18,       # 1.5歳相当
-        "若猫": 18,       # 1.5歳相当
-        "若齢": 18,       # 1.5歳相当
-        "仔犬": 3,        # 3ヶ月相当
-        "子犬": 3,        # 3ヶ月相当
-        "仔猫": 3,        # 3ヶ月相当
-        "子猫": 3,        # 3ヶ月相当
-        "幼齢": 3,        # 3ヶ月相当
-        "乳飲み子": 1,    # 1ヶ月相当
+        "高齢": 120,  # 10歳相当
+        "老齢": 120,  # 10歳相当
+        "老犬": 120,  # 10歳相当
+        "老猫": 120,  # 10歳相当
+        "成犬": 36,  # 3歳相当
+        "成猫": 36,  # 3歳相当
+        "成熟": 36,  # 3歳相当
+        "中齢": 60,  # 5歳相当
+        "若犬": 18,  # 1.5歳相当
+        "若猫": 18,  # 1.5歳相当
+        "若齢": 18,  # 1.5歳相当
+        "仔犬": 3,  # 3ヶ月相当
+        "子犬": 3,  # 3ヶ月相当
+        "仔猫": 3,  # 3ヶ月相当
+        "子猫": 3,  # 3ヶ月相当
+        "幼齢": 3,  # 3ヶ月相当
+        "乳飲み子": 1,  # 1ヶ月相当
     }
 
     def __init__(self):
@@ -89,7 +88,7 @@ class KochiAdapter(MunicipalityAdapter):
         # key: detail_url, value: "犬" or "猫"
         self._species_from_list: dict = {}
 
-    def fetch_animal_list(self) -> List[Tuple[str, str]]:
+    def fetch_animal_list(self) -> list[tuple[str, str]]:
         """
         高知県の一覧ページから個体詳細 URL とカテゴリのリストを抽出
 
@@ -115,7 +114,7 @@ class KochiAdapter(MunicipalityAdapter):
                 urls_with_species = self._fetch_from_page(page_url, page_type)
                 # 各URLにカテゴリを付与（species情報はインスタンス変数で保持）
                 all_urls.extend([(url, category) for url, _species in urls_with_species])
-            except (NetworkError, ParsingError) as e:
+            except (NetworkError, ParsingError):
                 # 片方のページでエラーが発生しても、もう片方は処理を続行
                 # エラーは上位でログ出力される想定
                 raise
@@ -123,7 +122,7 @@ class KochiAdapter(MunicipalityAdapter):
         # 重複を削除（同じ動物が両方のページに掲載される可能性は低いが念のため）
         return list(set(all_urls))
 
-    def _fetch_from_page(self, page_url: str, page_type: str) -> List[Tuple[str, str]]:
+    def _fetch_from_page(self, page_url: str, page_type: str) -> list[tuple[str, str]]:
         """
         指定されたページから動物詳細URLと犬猫種別を抽出
 
@@ -232,9 +231,7 @@ class KochiAdapter(MunicipalityAdapter):
                 detail_url = urljoin(self.BASE_URL, detail_href).rstrip("/")
                 self._species_from_list[detail_url] = detected_species
 
-    def extract_animal_details(
-        self, detail_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, detail_url: str, category: str = "adoption") -> RawAnimalData:
         """
         高知県の詳細ページから動物情報を抽出
 
@@ -294,9 +291,7 @@ class KochiAdapter(MunicipalityAdapter):
         # 定義リストまたはテーブルから情報を抽出
         # 【高知県特別ルール】品種フィールドは「雑種」等の品種名を返すため、
         # 一覧ページで判定した犬猫種別を優先使用し、品種名はフォールバック
-        breed = self._extract_from_structured_data(
-            entry_content, ["品種", "種類", "しゅるい"]
-        )
+        breed = self._extract_from_structured_data(entry_content, ["品種", "種類", "しゅるい"])
         species = self._species_from_list.get(detail_url, "")
         if not species:
             # フォールバック: 品種名に犬/猫が含まれているか、ページ内テキストから推定
@@ -305,9 +300,7 @@ class KochiAdapter(MunicipalityAdapter):
         age = self._extract_from_structured_data(
             entry_content, ["年齢", "推定年齢", "ねんれい", "月齢"]
         )
-        color = self._extract_from_structured_data(
-            entry_content, ["毛色", "色", "けいろ"]
-        )
+        color = self._extract_from_structured_data(entry_content, ["毛色", "色", "けいろ"])
         size = self._extract_from_structured_data(
             entry_content, ["体格", "大きさ", "サイズ", "たいかく"]
         )
@@ -371,6 +364,7 @@ class KochiAdapter(MunicipalityAdapter):
         if not shelter_date or not shelter_date.strip():
             # 日付が空の場合、本日の日付をフォールバックとして使用
             from datetime import date
+
             shelter_date = date.today().strftime("%Y-%m-%d")
 
         # locationが空の場合は「高知県」をフォールバック値として設定
@@ -389,9 +383,7 @@ class KochiAdapter(MunicipalityAdapter):
         )
         return DataNormalizer.normalize(raw_data)
 
-    def _validate_page_structure(
-        self, soup: BeautifulSoup, expected_selectors: List[str]
-    ) -> bool:
+    def _validate_page_structure(self, soup: BeautifulSoup, expected_selectors: list[str]) -> bool:
         """
         ページ構造が想定通りか検証
 
@@ -407,7 +399,7 @@ class KochiAdapter(MunicipalityAdapter):
                 return True
         return False
 
-    def _extract_from_structured_data(self, content, field_names: List[str]) -> str:
+    def _extract_from_structured_data(self, content, field_names: list[str]) -> str:
         """
         構造化データ（定義リストまたはテーブル）から特定のフィールド値を抽出
 
@@ -433,9 +425,7 @@ class KochiAdapter(MunicipalityAdapter):
             content.get_text(separator="\n", strip=True), field_names
         )
 
-    def _extract_from_definition_list(
-        self, content, field_names: List[str]
-    ) -> str:
+    def _extract_from_definition_list(self, content, field_names: list[str]) -> str:
         """
         定義リスト（dl/dt/dd）から特定のフィールド値を抽出
 
@@ -461,7 +451,7 @@ class KochiAdapter(MunicipalityAdapter):
 
         return ""
 
-    def _extract_from_table(self, content, field_names: List[str]) -> str:
+    def _extract_from_table(self, content, field_names: list[str]) -> str:
         """
         テーブル構造から特定のフィールド値を抽出
 
@@ -508,7 +498,7 @@ class KochiAdapter(MunicipalityAdapter):
             content.get_text(separator="\n", strip=True), field_names
         )
 
-    def _extract_field_from_text(self, content_text: str, field_names: List[str]) -> str:
+    def _extract_field_from_text(self, content_text: str, field_names: list[str]) -> str:
         """
         テキストから特定のフィールド値を抽出（フォールバック用）
 
@@ -537,9 +527,7 @@ class KochiAdapter(MunicipalityAdapter):
                         return value
         return ""
 
-    def _extract_image_urls_from_content(
-        self, entry_content, base_url: str
-    ) -> List[str]:
+    def _extract_image_urls_from_content(self, entry_content, base_url: str) -> list[str]:
         """
         投稿本文から画像 URL を抽出し、絶対 URL に変換
 
@@ -606,7 +594,7 @@ class KochiAdapter(MunicipalityAdapter):
         return breed
 
     @staticmethod
-    def _filter_kochi_image_urls(image_urls: List[str]) -> List[str]:
+    def _filter_kochi_image_urls(image_urls: list[str]) -> list[str]:
         """
         【高知県特別ルール】テンプレート画像を除外
 
@@ -620,10 +608,7 @@ class KochiAdapter(MunicipalityAdapter):
         Returns:
             List[str]: テンプレート画像を除外した画像URLリスト
         """
-        filtered = [
-            url for url in image_urls
-            if "/wp-content/uploads/" in url
-        ]
+        filtered = [url for url in image_urls if "/wp-content/uploads/" in url]
         # uploads画像が1枚もない場合は元のリストを返す（データ消失防止）
         return filtered if filtered else image_urls
 
@@ -646,12 +631,14 @@ class KochiAdapter(MunicipalityAdapter):
             return raw_age
 
         import re
-        from datetime import datetime, date
+        from datetime import date
 
         age_stripped = raw_age.strip()
 
         # 既に数値パターンを含む場合はそのまま返す
-        if re.search(r'\d+\s*[歳年]', age_stripped) or re.search(r'\d+\s*[ヶかカケ]月', age_stripped):
+        if re.search(r"\d+\s*[歳年]", age_stripped) or re.search(
+            r"\d+\s*[ヶかカケ]月", age_stripped
+        ):
             return raw_age
 
         # 【高知県特別ルール】生年月日から年齢を計算
@@ -660,15 +647,14 @@ class KochiAdapter(MunicipalityAdapter):
         if birthday:
             today = date.today()
             age_months = (today.year - birthday.year) * 12 + (today.month - birthday.month)
-            if age_months < 0:
-                age_months = 0
+            age_months = max(age_months, 0)
             if age_months >= 12:
                 return f"{age_months // 12}歳"
             else:
                 return f"{age_months}ヶ月"
 
         # 【高知県特別ルール】"推定N歳" や "N-M歳" の範囲パターン
-        range_match = re.search(r'(\d+)\s*[-~〜]\s*(\d+)\s*歳', age_stripped)
+        range_match = re.search(r"(\d+)\s*[-~〜]\s*(\d+)\s*歳", age_stripped)
         if range_match:
             low = int(range_match.group(1))
             high = int(range_match.group(2))
@@ -712,7 +698,7 @@ class KochiAdapter(MunicipalityAdapter):
             return None
 
         # 西暦パターン: 2018.8/2 or 2023.5.12
-        match = re.search(r'(\d{4})[./](\d{1,2})[./](\d{1,2})', age_text)
+        match = re.search(r"(\d{4})[./](\d{1,2})[./](\d{1,2})", age_text)
         if match:
             try:
                 return date(int(match.group(1)), int(match.group(2)), int(match.group(3)))
@@ -720,7 +706,7 @@ class KochiAdapter(MunicipalityAdapter):
                 pass
 
         # 令和パターン: R8.2/10, R1.5/19
-        match = re.search(r'R(\d{1,2})[./](\d{1,2})[./](\d{1,2})', age_text)
+        match = re.search(r"R(\d{1,2})[./](\d{1,2})[./](\d{1,2})", age_text)
         if match:
             try:
                 year = 2018 + int(match.group(1))
@@ -729,7 +715,7 @@ class KochiAdapter(MunicipalityAdapter):
                 pass
 
         # 平成パターン: H30.7/11
-        match = re.search(r'H(\d{1,2})[./](\d{1,2})[./](\d{1,2})', age_text)
+        match = re.search(r"H(\d{1,2})[./](\d{1,2})[./](\d{1,2})", age_text)
         if match:
             try:
                 year = 1988 + int(match.group(1))
@@ -757,10 +743,10 @@ class KochiAdapter(MunicipalityAdapter):
             return raw_date
 
         import re
-        from datetime import datetime, date
+        from datetime import date
 
         # RN.M/D パターン（"R5　9/26　夕方" 等の付加テキストにも対応）
-        match = re.search(r'R(\d{1,2})[.\s\u3000]+(\d{1,2})/(\d{1,2})', raw_date)
+        match = re.search(r"R(\d{1,2})[.\s\u3000]+(\d{1,2})/(\d{1,2})", raw_date)
         if match:
             reiwa_year = int(match.group(1))
             month = int(match.group(2))
@@ -780,7 +766,7 @@ class KochiAdapter(MunicipalityAdapter):
 
         # 年なし日付パターン: "6/17", "12/22　午後5時頃" 等
         # normalizerが今年を補完すると未来日付になる場合があるため、前年に補正
-        match = re.search(r'^(\d{1,2})/(\d{1,2})', raw_date.strip())
+        match = re.search(r"^(\d{1,2})/(\d{1,2})", raw_date.strip())
         if match:
             month = int(match.group(1))
             day = int(match.group(2))
@@ -794,7 +780,7 @@ class KochiAdapter(MunicipalityAdapter):
                 pass
 
         # 令和N年M月D日パターンも同様にチェック・変換
-        match = re.search(r'令和(\d+)年(\d+)月(\d+)日', raw_date)
+        match = re.search(r"令和(\d+)年(\d+)月(\d+)日", raw_date)
         if match:
             reiwa_year = int(match.group(1))
             month = int(match.group(2))

@@ -1,5 +1,7 @@
 """Input validation service for query parameters"""
-from typing import Dict, Any, Optional
+
+from typing import Any
+
 from fastapi import HTTPException
 
 
@@ -14,7 +16,7 @@ class InputValidator:
     MALICIOUS_PATTERNS = ["<", ">", "script", "SELECT", "DROP", "INSERT", "DELETE", "UPDATE"]
 
     @staticmethod
-    def validate_query_params(params: Dict[str, Any]) -> None:
+    def validate_query_params(params: dict[str, Any]) -> None:
         """
         クエリパラメータをバリデーション
 
@@ -25,14 +27,9 @@ class InputValidator:
             HTTPException(400): 無効なパラメータ時
         """
         # URL長チェック
-        query_str = "&".join(
-            f"{k}={v}" for k, v in params.items() if v is not None
-        )
+        query_str = "&".join(f"{k}={v}" for k, v in params.items() if v is not None)
         if len(query_str) > InputValidator.MAX_QUERY_LENGTH:
-            raise HTTPException(
-                status_code=400,
-                detail="リクエストURLが長すぎます"
-            )
+            raise HTTPException(status_code=400, detail="リクエストURLが長すぎます")
 
         # 悪意のある文字列検出
         for key, value in params.items():
@@ -40,29 +37,14 @@ class InputValidator:
                 value_str = str(value)
                 for pattern in InputValidator.MALICIOUS_PATTERNS:
                     if pattern in value_str:
-                        raise HTTPException(
-                            status_code=400,
-                            detail=f"無効なパラメータ: {key}"
-                        )
+                        raise HTTPException(status_code=400, detail=f"無効なパラメータ: {key}")
 
         # 有効値チェック
         if params.get("species") and params["species"] not in InputValidator.VALID_SPECIES:
-            raise HTTPException(
-                status_code=400,
-                detail="無効なパラメータ: species"
-            )
+            raise HTTPException(status_code=400, detail="無効なパラメータ: species")
         if params.get("category") and params["category"] not in InputValidator.VALID_CATEGORY:
-            raise HTTPException(
-                status_code=400,
-                detail="無効なパラメータ: category"
-            )
+            raise HTTPException(status_code=400, detail="無効なパラメータ: category")
         if params.get("status") and params["status"] not in InputValidator.VALID_STATUS:
-            raise HTTPException(
-                status_code=400,
-                detail="無効なパラメータ: status"
-            )
+            raise HTTPException(status_code=400, detail="無効なパラメータ: status")
         if params.get("sex") and params["sex"] not in InputValidator.VALID_SEX:
-            raise HTTPException(
-                status_code=400,
-                detail="無効なパラメータ: sex"
-            )
+            raise HTTPException(status_code=400, detail="無効なパラメータ: sex")

@@ -6,10 +6,9 @@
 """
 
 import re
-from typing import Optional
 from datetime import datetime
 
-from .models import RawAnimalData, AnimalData
+from .models import AnimalData, RawAnimalData
 
 
 class DataNormalizer:
@@ -60,7 +59,7 @@ class DataNormalizer:
             phone=DataNormalizer._normalize_phone(raw_data.phone),
             image_urls=image_urls_raw,
             source_url=raw_data.source_url,
-            category=raw_data.category
+            category=raw_data.category,
         )
 
     @staticmethod
@@ -116,7 +115,7 @@ class DataNormalizer:
         return "不明"
 
     @staticmethod
-    def _normalize_age(raw_age: str) -> Optional[int]:
+    def _normalize_age(raw_age: str) -> int | None:
         """
         年齢を月単位の数値に変換
 
@@ -139,19 +138,19 @@ class DataNormalizer:
             return None
 
         # "N歳" のパターン
-        match = re.search(r'(\d+)\s*歳', age_str)
+        match = re.search(r"(\d+)\s*歳", age_str)
         if match:
             years = int(match.group(1))
             return years * 12
 
         # "Nヶ月", "Nか月", "Nカ月", "Nケ月" のパターン
-        match = re.search(r'(\d+)\s*[ヶかカケ]月', age_str)
+        match = re.search(r"(\d+)\s*[ヶかカケ]月", age_str)
         if match:
             months = int(match.group(1))
             return months
 
         # "N年" のパターン
-        match = re.search(r'(\d+)\s*年', age_str)
+        match = re.search(r"(\d+)\s*年", age_str)
         if match:
             years = int(match.group(1))
             return years * 12
@@ -185,13 +184,13 @@ class DataNormalizer:
             raise ValueError("日付が空です")
 
         # すでに ISO 8601 形式の場合
-        if re.match(r'^\d{4}-\d{2}-\d{2}$', date_str):
+        if re.match(r"^\d{4}-\d{2}-\d{2}$", date_str):
             # 妥当性チェック
             datetime.strptime(date_str, "%Y-%m-%d")
             return date_str
 
         # 令和N年M月D日 のパターン
-        match = re.search(r'令和(\d+)年(\d+)月(\d+)日', date_str)
+        match = re.search(r"令和(\d+)年(\d+)月(\d+)日", date_str)
         if match:
             reiwa_year = int(match.group(1))
             month = int(match.group(2))
@@ -207,7 +206,7 @@ class DataNormalizer:
 
         # RN.M/D または RN　M/D または RN M/D のパターン
         # （例: R3.11/16, R6　9/27, R6 9/27, R7　8/27　午前10時頃）
-        match = re.search(r'R(\d{1,2})[.\s\u3000](\d{1,2})/(\d{1,2})', date_str)
+        match = re.search(r"R(\d{1,2})[.\s\u3000](\d{1,2})/(\d{1,2})", date_str)
         if match:
             reiwa_year = int(match.group(1))
             month = int(match.group(2))
@@ -221,7 +220,7 @@ class DataNormalizer:
             return date_obj.strftime("%Y-%m-%d")
 
         # YYYY/MM/DD のパターン
-        match = re.search(r'(\d{4})/(\d{1,2})/(\d{1,2})', date_str)
+        match = re.search(r"(\d{4})/(\d{1,2})/(\d{1,2})", date_str)
         if match:
             year = int(match.group(1))
             month = int(match.group(2))
@@ -232,7 +231,7 @@ class DataNormalizer:
             return date_obj.strftime("%Y-%m-%d")
 
         # YYYY年M月D日 のパターン
-        match = re.search(r'(\d{4})年(\d{1,2})月(\d{1,2})日', date_str)
+        match = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日", date_str)
         if match:
             year = int(match.group(1))
             month = int(match.group(2))
@@ -244,7 +243,7 @@ class DataNormalizer:
 
         # M/D のパターン（年なし、当年を補完）
         # （例: 4/30, 6/17, 1/31　午前10時頃）
-        match = re.search(r'^(\d{1,2})/(\d{1,2})', date_str)
+        match = re.search(r"^(\d{1,2})/(\d{1,2})", date_str)
         if match:
             month = int(match.group(1))
             day = int(match.group(2))
@@ -284,15 +283,15 @@ class DataNormalizer:
         # すでにハイフンが含まれている場合
         if "-" in phone_str:
             # 数字のみを抽出して再フォーマット
-            digits = re.sub(r'\D', '', phone_str)
+            digits = re.sub(r"\D", "", phone_str)
         else:
             # 数字のみを抽出
-            digits = re.sub(r'\D', '', phone_str)
+            digits = re.sub(r"\D", "", phone_str)
 
         # 10桁の場合: 市外局番に応じて分割
         if len(digits) == 10:
             # 2桁市外局番 (03, 04, 05, 06 など)
-            if digits[0:2] in ['03', '04', '05', '06']:
+            if digits[0:2] in ["03", "04", "05", "06"]:
                 return f"{digits[0:2]}-{digits[2:6]}-{digits[6:10]}"
             # 3桁市外局番 (088, 090 など)
             else:

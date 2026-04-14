@@ -13,9 +13,9 @@ Requirements Coverage:
 import hashlib
 import json
 import logging
-from typing import Optional, Tuple, Literal
-import redis.asyncio as redis
+from typing import Literal
 
+import redis.asyncio as redis
 
 logger = logging.getLogger(__name__)
 
@@ -33,16 +33,14 @@ class CacheManager:
             redis_url: Redis 接続 URL（例: redis://localhost:6379/0）
         """
         self.redis_url = redis_url
-        self.redis_client: Optional[redis.Redis] = None
+        self.redis_client: redis.Redis | None = None
         self._initialize_redis()
 
     def _initialize_redis(self):
         """Redis クライアントを初期化"""
         try:
             self.redis_client = redis.from_url(
-                self.redis_url,
-                encoding="utf-8",
-                decode_responses=True
+                self.redis_url, encoding="utf-8", decode_responses=True
             )
             logger.info(f"Redis client initialized: {self.redis_url}")
         except Exception as e:
@@ -50,11 +48,8 @@ class CacheManager:
             self.redis_client = None
 
     async def get_cached_feed(
-        self,
-        format: Literal["rss", "atom"],
-        filter_params: dict,
-        if_none_match: Optional[str] = None
-    ) -> Tuple[Optional[str], Optional[str], bool]:
+        self, format: Literal["rss", "atom"], filter_params: dict, if_none_match: str | None = None
+    ) -> tuple[str | None, str | None, bool]:
         """
         キャッシュからフィードを取得
 
@@ -99,10 +94,7 @@ class CacheManager:
             return None, None, False
 
     async def save_cached_feed(
-        self,
-        format: Literal["rss", "atom"],
-        filter_params: dict,
-        feed_xml: str
+        self, format: Literal["rss", "atom"], filter_params: dict, feed_xml: str
     ) -> str:
         """
         フィードを Redis にキャッシュ

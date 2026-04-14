@@ -7,15 +7,13 @@ SHA-256 ハッシュによる重複検出と、失敗率監視機能を含みま
 
 import hashlib
 import logging
-from dataclasses import dataclass, field
-from typing import List, Optional, Set
-from pathlib import Path
+from dataclasses import dataclass
 
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.data_collector.infrastructure.image_storage import LocalImageStorage
 from src.data_collector.infrastructure.database.image_hash_repository import ImageHashRepository
+from src.data_collector.infrastructure.image_storage import LocalImageStorage
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +28,9 @@ class ImageDownloadResult:
 
     url: str
     success: bool
-    local_path: Optional[str] = None
-    hash: Optional[str] = None
-    error: Optional[str] = None
+    local_path: str | None = None
+    hash: str | None = None
+    error: str | None = None
     is_duplicate: bool = False
 
 
@@ -44,7 +42,7 @@ class ImageStorageService:
     """
 
     # サポートする画像形式と対応する MIME タイプ
-    SUPPORTED_FORMATS: Set[str] = {
+    SUPPORTED_FORMATS: set[str] = {
         "image/jpeg",
         "image/png",
         "image/gif",
@@ -112,7 +110,7 @@ class ImageStorageService:
         """
         return content_type in self.SUPPORTED_FORMATS
 
-    def get_extension_from_content_type(self, content_type: str) -> Optional[str]:
+    def get_extension_from_content_type(self, content_type: str) -> str | None:
         """
         MIME タイプから拡張子を取得
 
@@ -124,7 +122,7 @@ class ImageStorageService:
         """
         return self.MIME_TO_EXTENSION.get(content_type)
 
-    async def check_duplicate(self, hash: str) -> Optional[str]:
+    async def check_duplicate(self, hash: str) -> str | None:
         """
         重複チェック
 
@@ -185,7 +183,7 @@ class ImageStorageService:
             is_duplicate=False,
         )
 
-    async def download_image(self, url: str) -> tuple[Optional[bytes], Optional[str], Optional[str]]:
+    async def download_image(self, url: str) -> tuple[bytes | None, str | None, str | None]:
         """
         画像をダウンロード
 
@@ -222,15 +220,15 @@ class ImageStorageService:
 
             except httpx.RequestError as e:
                 if attempt == self.MAX_RETRIES - 1:
-                    return None, None, f"リクエストエラー: {str(e)}"
+                    return None, None, f"リクエストエラー: {e!s}"
                 # リトライ
 
         return None, None, f"最大リトライ回数超過: {url}"
 
     async def download_and_store(
         self,
-        image_urls: List[str],
-    ) -> List[ImageDownloadResult]:
+        image_urls: list[str],
+    ) -> list[ImageDownloadResult]:
         """
         複数画像をダウンロードして保存
 
@@ -251,11 +249,13 @@ class ImageStorageService:
             if error:
                 self._failed_attempts += 1
                 logger.warning(f"画像ダウンロード失敗: {error}")
-                results.append(ImageDownloadResult(
-                    url=url,
-                    success=False,
-                    error=error,
-                ))
+                results.append(
+                    ImageDownloadResult(
+                        url=url,
+                        success=False,
+                        error=error,
+                    )
+                )
                 continue
 
             # 形式検証
@@ -263,11 +263,13 @@ class ImageStorageService:
                 self._failed_attempts += 1
                 error_msg = f"非対応の画像形式: {content_type}"
                 logger.warning(f"{error_msg} - {url}")
-                results.append(ImageDownloadResult(
-                    url=url,
-                    success=False,
-                    error=error_msg,
-                ))
+                results.append(
+                    ImageDownloadResult(
+                        url=url,
+                        success=False,
+                        error=error_msg,
+                    )
+                )
                 continue
 
             # 拡張子を取得
@@ -275,11 +277,13 @@ class ImageStorageService:
             if not extension:
                 self._failed_attempts += 1
                 error_msg = f"拡張子取得失敗: {content_type}"
-                results.append(ImageDownloadResult(
-                    url=url,
-                    success=False,
-                    error=error_msg,
-                ))
+                results.append(
+                    ImageDownloadResult(
+                        url=url,
+                        success=False,
+                        error=error_msg,
+                    )
+                )
                 continue
 
             # 保存
@@ -289,20 +293,22 @@ class ImageStorageService:
                 results.append(save_result)
             except Exception as e:
                 self._failed_attempts += 1
-                error_msg = f"保存エラー: {str(e)}"
+                error_msg = f"保存エラー: {e!s}"
                 logger.exception(f"画像保存中にエラー発生: {url}")
-                results.append(ImageDownloadResult(
-                    url=url,
-                    success=False,
-                    error=error_msg,
-                ))
+                results.append(
+                    ImageDownloadResult(
+                        url=url,
+                        success=False,
+                        error=error_msg,
+                    )
+                )
 
         return results
 
     async def move_to_archive(
         self,
-        local_paths: List[str],
-    ) -> List[str]:
+        local_paths: list[str],
+    ) -> list[str]:
         """
         画像をアーカイブストレージに移動
 

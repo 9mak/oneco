@@ -4,7 +4,6 @@ StatusTransitionValidator - ステータス遷移検証
 動物のステータス遷移の妥当性を検証するバリデータを提供します。
 """
 
-from typing import Set, Tuple
 from src.data_collector.domain.models import AnimalStatus
 
 
@@ -25,9 +24,7 @@ class StatusTransitionError(ValueError):
         """
         self.old_status = old_status
         self.new_status = new_status
-        super().__init__(
-            f"無効なステータス遷移: {old_status.value} → {new_status.value}"
-        )
+        super().__init__(f"無効なステータス遷移: {old_status.value} → {new_status.value}")
 
 
 class StatusTransitionValidator:
@@ -38,7 +35,7 @@ class StatusTransitionValidator:
     """
 
     # 有効な遷移: (from_status, to_status)
-    VALID_TRANSITIONS: Set[Tuple[AnimalStatus, AnimalStatus]] = {
+    VALID_TRANSITIONS: set[tuple[AnimalStatus, AnimalStatus]] = {
         (AnimalStatus.SHELTERED, AnimalStatus.ADOPTED),
         (AnimalStatus.SHELTERED, AnimalStatus.RETURNED),
         (AnimalStatus.SHELTERED, AnimalStatus.DECEASED),
@@ -48,11 +45,7 @@ class StatusTransitionValidator:
         (AnimalStatus.RETURNED, AnimalStatus.DECEASED),
     }
 
-    def validate_transition(
-        self,
-        old_status: AnimalStatus,
-        new_status: AnimalStatus
-    ) -> None:
+    def validate_transition(self, old_status: AnimalStatus, new_status: AnimalStatus) -> None:
         """
         ステータス遷移を検証
 

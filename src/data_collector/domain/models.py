@@ -7,13 +7,13 @@
 - AnimalStatus: 動物ステータスの列挙型
 """
 
-from typing import List, Optional
 from datetime import date, datetime
-from enum import Enum
-from pydantic import BaseModel, Field, field_validator, HttpUrl
+from enum import StrEnum
+
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 
-class AnimalStatus(str, Enum):
+class AnimalStatus(StrEnum):
     """
     動物ステータス
 
@@ -46,7 +46,7 @@ class RawAnimalData(BaseModel):
     shelter_date: str = Field(..., description="収容日 (正規化前)")
     location: str = Field(..., description="収容場所")
     phone: str = Field(..., description="電話番号 (正規化前)")
-    image_urls: List[str] = Field(..., description="画像URL一覧")
+    image_urls: list[str] = Field(..., description="画像URL一覧")
     source_url: str = Field(..., description="元ページURL")
     category: str = Field(..., description="カテゴリ ('adoption' or 'lost')")
 
@@ -68,28 +68,20 @@ class AnimalData(BaseModel):
 
     # 準必須フィールド (不明値許容)
     sex: str = Field(default="不明", description="性別 ('男の子', '女の子', '不明')")
-    age_months: Optional[int] = Field(default=None, description="推定年齢 (月単位)")
-    color: Optional[str] = Field(default=None, description="毛色")
-    size: Optional[str] = Field(default=None, description="体格")
-    phone: Optional[str] = Field(default=None, description="電話番号 (ハイフン含む)")
-    image_urls: List[HttpUrl] = Field(default_factory=list, description="画像URL一覧")
+    age_months: int | None = Field(default=None, description="推定年齢 (月単位)")
+    color: str | None = Field(default=None, description="毛色")
+    size: str | None = Field(default=None, description="体格")
+    phone: str | None = Field(default=None, description="電話番号 (ハイフン含む)")
+    image_urls: list[HttpUrl] = Field(default_factory=list, description="画像URL一覧")
 
     # 拡張フィールド (全てオプショナルで後方互換性を確保)
-    status: Optional[AnimalStatus] = Field(
-        default=None,
-        description="動物ステータス ('sheltered', 'adopted', 'returned', 'deceased')"
+    status: AnimalStatus | None = Field(
+        default=None, description="動物ステータス ('sheltered', 'adopted', 'returned', 'deceased')"
     )
-    status_changed_at: Optional[datetime] = Field(
-        default=None,
-        description="ステータス変更日時"
-    )
-    outcome_date: Optional[date] = Field(
-        default=None,
-        description="成果日（譲渡日/返還日）"
-    )
-    local_image_paths: Optional[List[str]] = Field(
-        default=None,
-        description="ローカル保存された画像のパス一覧"
+    status_changed_at: datetime | None = Field(default=None, description="ステータス変更日時")
+    outcome_date: date | None = Field(default=None, description="成果日（譲渡日/返還日）")
+    local_image_paths: list[str] | None = Field(
+        default=None, description="ローカル保存された画像のパス一覧"
     )
 
     @field_validator("species")
@@ -136,7 +128,7 @@ class AnimalData(BaseModel):
 
     @field_validator("age_months")
     @classmethod
-    def validate_age_months(cls, v: Optional[int]) -> Optional[int]:
+    def validate_age_months(cls, v: int | None) -> int | None:
         """
         年齢の負値チェックバリデーション
 
@@ -176,6 +168,7 @@ class AnimalData(BaseModel):
 
     class Config:
         """Pydantic 設定"""
+
         json_schema_extra = {
             "example": {
                 "species": "犬",
@@ -187,6 +180,6 @@ class AnimalData(BaseModel):
                 "location": "高知県動物愛護センター",
                 "phone": "088-123-4567",
                 "image_urls": ["https://example.com/image1.jpg"],
-                "source_url": "https://example-kochi.jp/animals/123"
+                "source_url": "https://example-kochi.jp/animals/123",
             }
         }
