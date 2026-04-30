@@ -2,7 +2,7 @@
 # GCP Cloud Run デプロイセットアップスクリプト
 set -euo pipefail
 
-PROJECT_ID="oneco-app-2026"
+PROJECT_ID="oneco-app"
 REGION="asia-northeast1"  # 東京
 SERVICE_NAME="oneco-api"
 REGISTRY="${REGION}-docker.pkg.dev/${PROJECT_ID}/oneco"
