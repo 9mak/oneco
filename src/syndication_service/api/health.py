@@ -33,7 +33,7 @@ class HealthCheckResponse(BaseModel):
 def create_health_router(
     metrics_collector: MetricsCollector | None = None,
     cache_manager: object | None = None,
-    repository_factory: callable | None = None,
+    repository_factory: object | None = None,
 ) -> APIRouter:
     """
     HealthCheckRouter を作成
