@@ -18,6 +18,7 @@ from ..infrastructure.output_writer import OutputWriter
 from ..infrastructure.snapshot_store import SnapshotStore
 
 if TYPE_CHECKING:
+    from ..infrastructure.database.connection import DatabaseConnection
     from ..infrastructure.database.repository import AnimalRepository
 
 
@@ -67,26 +68,16 @@ class CollectorService:
         notification_client: NotificationClient,
         snapshot_store: SnapshotStore,
         repository: Optional["AnimalRepository"] = None,
+        db_connection: Optional["DatabaseConnection"] = None,
         notification_manager_client: NotificationManagerClient | None = None,
     ):
-        """
-        CollectorService を初期化
-
-        Args:
-            adapter: 自治体別アダプター
-            diff_detector: 差分検知サービス
-            output_writer: JSON 出力サービス
-            notification_client: 通知クライアント
-            snapshot_store: スナップショットストア
-            repository: 動物データリポジトリ（オプション）
-            notification_manager_client: notification-manager クライアント（オプション）
-        """
         self.adapter = adapter
         self.diff_detector = diff_detector
         self.output_writer = output_writer
         self.notification_client = notification_client
         self.snapshot_store = snapshot_store
         self.repository = repository
+        self.db_connection = db_connection
         self.notification_manager_client = notification_manager_client
         self.logger = logging.getLogger(__name__)
         self._structure_changed = False
@@ -144,8 +135,8 @@ class CollectorService:
             if diff_result.new and self.notification_manager_client:
                 self.notification_manager_client.notify_new_animals_sync(diff_result.new)
 
-            # データベース永続化（Repositoryが設定されている場合）
-            if self.repository:
+            # データベース永続化
+            if self.db_connection or self.repository:
                 self._save_to_database(collected_data)
 
             # 出力
@@ -306,33 +297,47 @@ class CollectorService:
         """
         収集データをデータベースに永続化
 
-        Args:
-            collected_data: 収集した動物データリスト
-
-        Note:
-            - 非同期Repositoryを同期的に呼び出す
-            - 個別のエラーはログに記録してスキップ
-            - 全体のエラーはアラートを送信
+        db_connection が設定されている場合はセッションを作成して保存（本番用）。
+        repository が設定されている場合はそれを使って保存（テスト用）。
         """
-        if not self.repository:
-            return
+        if self.db_connection:
+            self._save_via_db_connection(collected_data)
+        elif self.repository:
+            self._save_via_repository(collected_data)
 
+    def _save_via_db_connection(self, collected_data: list[AnimalData]) -> None:
+        """db_connection からセッションを作成して一括保存"""
+        from ..infrastructure.database.repository import AnimalRepository
+
+        async def _do_save() -> tuple[int, int]:
+            saved = 0
+            errors = 0
+            assert self.db_connection is not None
+            async with self.db_connection.get_session() as session:
+                repo = AnimalRepository(session)
+                for animal in collected_data:
+                    try:
+                        await repo.save_animal(animal)
+                        saved += 1
+                    except Exception as e:
+                        errors += 1
+                        self.logger.warning(
+                            f"Failed to save animal to database: {animal.source_url}",
+                            extra={"error": str(e)},
+                        )
+            return saved, errors
+
+        saved_count, error_count = asyncio.run(_do_save())
+        self._log_db_result(saved_count, error_count, len(collected_data))
+
+    def _save_via_repository(self, collected_data: list[AnimalData]) -> None:
+        """既存の repository を使って保存（テスト用途）"""
         saved_count = 0
         error_count = 0
 
         for animal in collected_data:
             try:
-                # 非同期メソッドを同期的に呼び出す
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    # イベントループが実行中の場合は新しいスレッドで実行
-                    import concurrent.futures
-
-                    with concurrent.futures.ThreadPoolExecutor() as executor:
-                        future = executor.submit(asyncio.run, self.repository.save_animal(animal))
-                        future.result()
-                else:
-                    loop.run_until_complete(self.repository.save_animal(animal))
+                asyncio.run(self.repository.save_animal(animal))  # type: ignore[union-attr]
                 saved_count += 1
             except Exception as e:
                 error_count += 1
@@ -341,13 +346,14 @@ class CollectorService:
                     extra={"error": str(e)},
                 )
 
+        self._log_db_result(saved_count, error_count, len(collected_data))
+
+    def _log_db_result(self, saved_count: int, error_count: int, total: int) -> None:
         self.logger.info(
             "Database persistence completed",
             extra={"saved_count": saved_count, "error_count": error_count},
         )
-
-        # エラーが多い場合はアラート送信
-        if error_count > 0 and error_count >= len(collected_data) / 2:
+        if error_count > 0 and error_count >= total / 2:
             self.notification_client.send_alert(
                 NotificationLevel.WARNING,
                 "Database persistence errors",
