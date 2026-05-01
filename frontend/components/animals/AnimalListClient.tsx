@@ -7,6 +7,7 @@
 
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useTransition } from 'react';
 import { AnimalPublic, PaginatedResponse, FilterState } from '@/types/animal';
 import { AnimalCard } from './AnimalCard';
 import { FilterPanel } from './FilterPanel';
@@ -22,6 +23,7 @@ interface AnimalListClientProps {
 export function AnimalListClient({ initialAnimals, initialTotalCount }: AnimalListClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [, startTransition] = useTransition();
 
   // URLクエリパラメータからフィルタ状態を取得
   const filters: FilterState = {
@@ -99,12 +101,16 @@ export function AnimalListClient({ initialAnimals, initialTotalCount }: AnimalLi
     } else {
       newParams.delete(key);
     }
-    router.push(`?${newParams.toString()}`);
+    startTransition(() => {
+      router.replace(`?${newParams.toString()}`, { scroll: false });
+    });
   };
 
   // フィルタクリアハンドラ
   const handleClearFilters = () => {
-    router.push('/');
+    startTransition(() => {
+      router.replace('/', { scroll: false });
+    });
   };
 
   // ローディング状態
