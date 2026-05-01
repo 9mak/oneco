@@ -81,7 +81,7 @@ describe('FilterPanel', () => {
     expect(mockOnFilterChange).toHaveBeenCalledWith('sex', '男の子');
   });
 
-  it('地域フィルタが入力できる', () => {
+  it('地域フィルタで都道府県を選択できる', () => {
     render(
       <FilterPanel
         filters={defaultFilters}
@@ -91,11 +91,10 @@ describe('FilterPanel', () => {
       />
     );
 
-    const locationInput = screen.getByLabelText('地域') as HTMLInputElement;
-    fireEvent.change(locationInput, { target: { value: '高知' } });
+    const locationSelect = screen.getByLabelText('地域');
+    fireEvent.change(locationSelect, { target: { value: '高知県' } });
 
-    // 入力値が設定される
-    expect(locationInput.value).toBe('高知');
+    expect(mockOnFilterChange).toHaveBeenCalledWith('location', '高知県');
   });
 
   it('フィルタが適用されている場合、「フィルタをクリア」ボタンが表示される', () => {
