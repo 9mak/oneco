@@ -343,7 +343,8 @@ class CollectorService:
                 if loop.is_running():
                     with concurrent.futures.ThreadPoolExecutor() as executor:
                         future = executor.submit(
-                            asyncio.run, self.repository.save_animal(animal)  # type: ignore[union-attr]
+                            asyncio.run,
+                            self.repository.save_animal(animal),  # type: ignore[union-attr]
                         )
                         future.result()
                 else:
