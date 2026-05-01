@@ -17,7 +17,6 @@ except ImportError:
 from .adapters.kochi_adapter import KochiAdapter
 from .domain.diff_detector import DiffDetector
 from .infrastructure.database.connection import DatabaseConnection, DatabaseSettings
-from .infrastructure.database.repository import AnimalRepository
 from .infrastructure.notification_client import NotificationClient
 from .infrastructure.output_writer import OutputWriter
 from .infrastructure.snapshot_store import SnapshotStore
@@ -50,7 +49,7 @@ def run_llm_sites(
     diff_detector: DiffDetector,
     output_writer: OutputWriter,
     notification_client: NotificationClient,
-    repository: AnimalRepository | None,
+    db_connection: DatabaseConnection | None,
     logger: logging.Logger,
 ) -> bool:
     """LLMベースのサイト群を収集"""
@@ -82,7 +81,7 @@ def run_llm_sites(
                 output_writer=output_writer,
                 notification_client=notification_client,
                 snapshot_store=snapshot_store,
-                repository=repository,
+                db_connection=db_connection,
             )
 
             result = service.run_collection()
@@ -134,7 +133,6 @@ def main():
     logger = logging.getLogger(__name__)
 
     db_connection: DatabaseConnection | None = None
-    repository: AnimalRepository | None = None
 
     # コマンドライン引数
     args = sys.argv[1:]
@@ -159,7 +157,6 @@ def main():
             logger.info("Initializing database connection...")
             db_settings = DatabaseSettings(database_url=database_url)
             db_connection = DatabaseConnection(settings=db_settings)
-            repository = AnimalRepository(db_connection)
             logger.info("Database connection initialized")
 
         success = True
@@ -174,7 +171,7 @@ def main():
                 output_writer=output_writer,
                 notification_client=notification_client,
                 snapshot_store=snapshot_store,
-                repository=repository,
+                db_connection=db_connection,
             )
             result = service.run_collection()
 
@@ -203,7 +200,7 @@ def main():
                     diff_detector=diff_detector,
                     output_writer=output_writer,
                     notification_client=notification_client,
-                    repository=repository,
+                    db_connection=db_connection,
                     logger=logger,
                 )
                 if not llm_success:
