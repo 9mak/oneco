@@ -332,12 +332,22 @@ class CollectorService:
 
     def _save_via_repository(self, collected_data: list[AnimalData]) -> None:
         """既存の repository を使って保存（テスト用途）"""
+        import concurrent.futures
+
         saved_count = 0
         error_count = 0
 
         for animal in collected_data:
             try:
-                asyncio.run(self.repository.save_animal(animal))  # type: ignore[union-attr]
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future = executor.submit(
+                            asyncio.run, self.repository.save_animal(animal)  # type: ignore[union-attr]
+                        )
+                        future.result()
+                else:
+                    loop.run_until_complete(self.repository.save_animal(animal))  # type: ignore[union-attr]
                 saved_count += 1
             except Exception as e:
                 error_count += 1
