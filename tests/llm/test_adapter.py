@@ -119,7 +119,7 @@ class TestLlmAdapterInit:
 
 
 class TestFetchAnimalList:
-    @patch("src.data_collector.llm.adapter.requests.get")
+    @patch("src.data_collector.llm.fetcher.requests.get")
     @patch("src.data_collector.llm.adapter.time.sleep")
     def test_with_css_selector(self, mock_sleep, mock_get, site_config, mock_provider):
         mock_response = MagicMock()
@@ -141,7 +141,7 @@ class TestFetchAnimalList:
         assert result[1] == ("https://example.com/detail/2", "adoption")
         assert mock_provider.link_calls == 0  # LLMは使わない
 
-    @patch("src.data_collector.llm.adapter.requests.get")
+    @patch("src.data_collector.llm.fetcher.requests.get")
     @patch("src.data_collector.llm.adapter.time.sleep")
     def test_without_selector_uses_llm(
         self, mock_sleep, mock_get, site_config_no_selector, mock_provider
@@ -157,7 +157,7 @@ class TestFetchAnimalList:
         assert len(result) == 2
         assert mock_provider.link_calls == 1
 
-    @patch("src.data_collector.llm.adapter.requests.get")
+    @patch("src.data_collector.llm.fetcher.requests.get")
     @patch("src.data_collector.llm.adapter.time.sleep")
     def test_deduplicates_urls(self, mock_sleep, mock_get, site_config, mock_provider):
         mock_response = MagicMock()
@@ -175,7 +175,7 @@ class TestFetchAnimalList:
 
         assert len(result) == 1
 
-    @patch("src.data_collector.llm.adapter.requests.get")
+    @patch("src.data_collector.llm.fetcher.requests.get")
     @patch("src.data_collector.llm.adapter.time.sleep")
     def test_max_pages_limit(self, mock_sleep, mock_get, mock_provider):
         config = SiteConfig(
@@ -201,7 +201,7 @@ class TestFetchAnimalList:
 
 
 class TestExtractAnimalDetails:
-    @patch("src.data_collector.llm.adapter.requests.get")
+    @patch("src.data_collector.llm.fetcher.requests.get")
     @patch("src.data_collector.llm.adapter.time.sleep")
     def test_extracts_and_returns_raw_data(self, mock_sleep, mock_get, site_config, mock_provider):
         mock_response = MagicMock()
@@ -218,7 +218,7 @@ class TestExtractAnimalDetails:
         assert result.category == "adoption"
         assert mock_provider.extract_calls == 1
 
-    @patch("src.data_collector.llm.adapter.requests.get")
+    @patch("src.data_collector.llm.fetcher.requests.get")
     @patch("src.data_collector.llm.adapter.time.sleep")
     def test_tracks_stats(self, mock_sleep, mock_get, site_config, mock_provider):
         mock_response = MagicMock()
