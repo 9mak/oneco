@@ -229,8 +229,8 @@ jobs:
 
       - name: Run API server in background
         run: |
-          uvicorn src.data_collector.infrastructure.api.app:app --host 0.0.0.0 --port 8000 &
-          sleep 5
+          uvicorn run_server:app --host 0.0.0.0 --port 8000 &
+          sleep 8
 
       - name: Health check
         run: |
