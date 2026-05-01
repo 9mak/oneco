@@ -159,7 +159,7 @@ def main():
             logger.info("Initializing database connection...")
             db_settings = DatabaseSettings(database_url=database_url)
             db_connection = DatabaseConnection(settings=db_settings)
-            repository = None
+            repository = AnimalRepository(db_connection)
             logger.info("Database connection initialized")
 
         success = True
