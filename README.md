@@ -1,231 +1,149 @@
 # oneco - 保護動物情報管理システム
 
-保護動物情報を自動収集し、データベースで管理、REST API経由で提供、LINE通知を配信する統合システム
+保護動物情報を自動収集し、データベースで管理、REST API 経由で提供する統合システム
 
-## 🎯 概要
+## 概要
 
-**oneco**は、自治体の保護動物情報を自動収集・正規化し、データベースで一元管理、公開Webポータルで閲覧可能にし、LINE通知で新着情報を配信する包括的なシステムです。
+**oneco** は、自治体の保護動物情報を自動収集・正規化し、データベースで一元管理、公開 Web ポータルで閲覧可能にするシステムです。
 
 ### 主要機能
 
-- 🤖 **自動データ収集**: 自治体サイトから保護動物情報を毎日自動収集
-- 💾 **データベース管理**: PostgreSQLで動物データを永続化・管理
-- 🔍 **REST API**: 外部システムがデータを取得できるAPI提供
-- 📰 **RSS/Atom配信**: 保護動物情報をフィード形式で配信
-- 📱 **LINE通知**: ユーザーの条件に合致する動物を自動通知
-- 🌐 **公開Webポータル**: 一般ユーザーが保護動物情報を検索・閲覧
+- **自動データ収集**: 自治体サイトから保護動物情報を毎日自動収集（GitHub Actions）
+- **LLM 解析**: Gemini 2.5 Flash で各自治体の不定形な HTML・PDF を解析
+- **REST API**: FastAPI による動物データ API（フィルタ・ページング対応）
+- **Web ポータル**: Next.js による保護動物の検索・閲覧画面
 
-## 🏗️ アーキテクチャ
+## アーキテクチャ
 
 ```
-┌─────────────────┐
-│ 自治体サイト    │
-│ (高知県等)      │
-└────────┬────────┘
-         │ スクレイピング
-         ▼
-┌─────────────────┐      ┌──────────────┐
-│ data-collector  │─────▶│ PostgreSQL   │
-│ (Python)        │      │ Database     │
-└─────────────────┘      └──────┬───────┘
-         │                       │
-         │ 新着通知              │ データ取得
-         ▼                       ▼
-┌─────────────────┐      ┌──────────────┐
-│ notification-   │      │ REST API     │
-│ manager         │      │ (FastAPI)    │
-│ (LINE Bot)      │      └──────┬───────┘
-└─────────────────┘             │
-         │                      │ データ配信
-         │ LINE配信             ▼
-         ▼              ┌──────────────┐
-┌─────────────────┐    │ Webポータル  │
-│ LINE Users      │    │ (Next.js)    │
-└─────────────────┘    └──────────────┘
+自治体サイト
+     │ LLM スクレイピング (Gemini 2.5 Flash)
+     ▼
+GitHub Actions ──▶ Supabase PostgreSQL
+(data-collector)          │
+                          │ REST API
+                          ▼
+                   Google Cloud Run
+                   (FastAPI backend)
+                          │
+                          │ データ取得
+                          ▼
+                      Vercel
+                   (Next.js frontend)
 ```
 
-## 🚀 クイックスタート
+### 本番環境
+
+| コンポーネント | サービス | URL |
+|-------------|---------|-----|
+| Backend API | Google Cloud Run (`asia-northeast1`) | `https://oneco-api-tvlsrcvyuq-an.a.run.app` |
+| Frontend | Vercel | GitHub push で自動デプロイ |
+| Database | Supabase PostgreSQL | aws-1-ap-northeast-2 |
+| Data Collector | GitHub Actions | 毎日 JST 00:00 自動実行 |
+
+## プロジェクト構成
+
+```
+oneco/
+├── src/
+│   ├── data_collector/        # データ収集エンジン（Python）
+│   │   ├── domain/            # ドメインモデル・バリデーション
+│   │   ├── infrastructure/    # DB, API, LLM アダプター
+│   │   └── orchestration/     # 収集オーケストレーション
+│   ├── notification_manager/  # LINE 通知管理
+│   └── syndication_service/   # RSS/Atom 配信
+├── frontend/                  # Next.js Web ポータル
+├── tests/                     # テストコード
+├── alembic/                   # データベースマイグレーション
+├── .github/workflows/         # CI/CD
+│   ├── backend.yml            # Backend テスト
+│   ├── frontend.yml           # Frontend テスト + Vercel デプロイ
+│   └── data-collector.yml     # 毎日データ収集
+├── Dockerfile                 # Cloud Run 用イメージ
+└── run_server.py              # uvicorn エントリポイント
+```
+
+## ローカル開発
 
 ### 前提条件
 
 - Python 3.11+
 - Node.js 20+
-- Docker & Docker Compose
-- PostgreSQL 15+
-- Redis 7+
 
-### 開発環境セットアップ
+### セットアップ
 
 ```bash
 # リポジトリをクローン
-git clone https://github.com/your-org/oneco.git
+git clone https://github.com/9mak/oneco.git
 cd oneco
 
-# 環境変数を設定
+# Python 依存関係インストール
+pip install -e ".[dev]"
+
+# 環境変数を設定（.env.example を参考に）
 cp .env.example .env
-# .env を編集して必要な値を設定
 
-# Docker サービスを起動（PostgreSQL + Redis）
-docker-compose up -d
-
-# Python バックエンドをセットアップ
-pip install -r requirements.txt
-pip install -e .
-
-# データベースマイグレーションを実行
+# データベースマイグレーション
 alembic upgrade head
 
-# API サーバーを起動
-uvicorn data_collector.infrastructure.api.app:app --reload
+# API サーバー起動
+uvicorn run_server:app --reload
 
-# フロントエンドをセットアップ（別ターミナル）
-cd frontend
-npm install
-npm run dev
+# フロントエンド起動（別ターミナル）
+cd frontend && npm install && npm run dev
 ```
 
-### サービス起動確認
+| サービス | URL |
+|---------|-----|
+| API | http://localhost:8000 |
+| API docs | http://localhost:8000/docs |
+| Frontend | http://localhost:3000 |
 
-- API: http://localhost:8000
-- API ドキュメント: http://localhost:8000/docs
-- フロントエンド: http://localhost:3000
-- PostgreSQL: localhost:5432
-- Redis: localhost:6379
-
-## 📦 プロジェクト構成
-
-```
-oneco/
-├── src/
-│   ├── data_collector/        # データ収集エンジン
-│   │   ├── adapters/          # 自治体サイトアダプター
-│   │   ├── domain/            # ドメインモデル・ロジック
-│   │   ├── infrastructure/    # インフラ層（DB, API）
-│   │   └── orchestration/     # 収集オーケストレーション
-│   ├── notification_manager/  # LINE通知管理
-│   └── syndication_service/   # RSS/Atom配信
-├── frontend/                  # Next.js Webポータル
-├── tests/                     # テストコード
-├── alembic/                   # データベースマイグレーション
-├── .github/workflows/         # CI/CD設定
-├── docker-compose.yml         # 開発環境Docker構成
-├── docker-compose.prod.yml    # 本番環境Docker構成
-└── Dockerfile                 # Backend API Dockerfile
-```
-
-## 🧪 テスト
+## テスト
 
 ```bash
-# 全テスト実行
+# バックエンド全テスト
 pytest
 
-# カバレッジ付きテスト
-pytest --cov=src/data_collector --cov-report=html
-
-# 特定のテストのみ実行
-pytest tests/test_animal_repository.py -v
+# カバレッジ付き
+pytest --cov=src --cov-report=html
 
 # フロントエンドテスト
-cd frontend
-npm test
-npm run test:coverage
+cd frontend && npm test
 ```
 
-### テスト統計
+## 本番デプロイ
 
-| コンポーネント | テスト数 | 状態 |
-|--------------|---------|------|
-| animal-api-persistence | 110 | ✅ 100% |
-| data-collector | 178 | ✅ 100% |
-| notification-manager | 192 | ✅ 100% |
-| syndication-service | 61 | ✅ 100% |
-| public-web-portal | 74 | ✅ 100% |
-| **合計** | **615+** | **✅ 100%** |
+詳細は [DEPLOYMENT.md](./DEPLOYMENT.md) を参照。
 
-## 🚢 本番デプロイ
+### 環境変数（Backend）
 
-詳細は [DEPLOYMENT.md](./DEPLOYMENT.md) を参照してください。
+| 変数名 | 説明 | 必須 |
+|--------|------|------|
+| `DATABASE_URL` | Supabase PostgreSQL 接続 URL (`postgresql+asyncpg://...`) | ✅ |
+| `CORS_ORIGINS` | 許可する CORS オリジン（`*` または フロントエンド URL） | ✅ |
+| `LOG_LEVEL` | ログレベル（`INFO` / `DEBUG`） | - |
 
-### クイック本番デプロイ
+### 環境変数（Data Collector）
 
-```bash
-# 環境変数を設定
-cp .env.production.example .env.production
-vim .env.production
+| 変数名 | 説明 | 必須 |
+|--------|------|------|
+| `DATABASE_URL` | Supabase PostgreSQL 接続 URL | ✅ |
+| `GOOGLE_API_KEY` | Gemini 2.5 Flash 用 API キー | ✅ |
+| `ANTHROPIC_API_KEY` | Claude API キー | - |
+| `SLACK_WEBHOOK_URL` | 収集結果通知用 Slack Webhook | - |
 
-# Docker Compose で起動
-docker-compose -f docker-compose.prod.yml up -d
+## CI/CD
 
-# マイグレーション実行
-docker-compose -f docker-compose.prod.yml run --rm migration
+| ワークフロー | トリガー | 内容 |
+|------------|---------|------|
+| `backend.yml` | push / PR → main | Lint → Test → Build |
+| `frontend.yml` | push / PR → main | Lint → Test → Vercel デプロイ |
+| `data-collector.yml` | 毎日 JST 00:00 | 自治体サイトからデータ収集 |
 
-# ヘルスチェック
-curl http://localhost:8000/health
-```
+## ライセンス
 
-## 📚 ドキュメント
-
-- [API ドキュメント](http://localhost:8000/docs) - FastAPI自動生成
-- [デプロイガイド](./DEPLOYMENT.md) - 本番環境構築手順
-- [フロントエンド README](./frontend/README.md) - Next.jsアプリケーション
-- [Kiro 仕様](./.kiro/specs/) - 各機能の詳細仕様
-
-## 🔧 開発ガイドライン
-
-### コードスタイル
-
-```bash
-# Python Linting
-ruff check src/ tests/
-
-# Python Formatting
-ruff format src/ tests/
-
-# TypeScript Linting
-cd frontend
-npm run lint
-```
-
-### Git コミット
-
-```bash
-# Conventional Commits形式を推奨
-git commit -m "feat: 新機能追加"
-git commit -m "fix: バグ修正"
-git commit -m "docs: ドキュメント更新"
-```
-
-### CI/CD
-
-- **Backend**: `.github/workflows/backend.yml`
-  - Lint → Test → Build → Deploy
-- **Frontend**: `.github/workflows/frontend.yml`
-  - Lint → Test → Build → Vercel Deploy
-- **Data Collector**: `.github/workflows/data-collector.yml`
-  - 毎日 JST 00:00 自動実行
-
-## 🤝 コントリビューション
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'feat: Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📝 ライセンス
-
-MIT License - 詳細は [LICENSE](./LICENSE) を参照
-
-## 🙏 謝辞
-
-- 高知県動物愛護センター
-- Claude Code (Anthropic)
-- Kiro AI-DLC フレームワーク
-
-## 📞 サポート
-
-- GitHub Issues: https://github.com/your-org/oneco/issues
-- Email: admin@example.com
+MIT License
 
 ---
 
