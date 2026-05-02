@@ -217,7 +217,7 @@ def main():
     finally:
         if db_connection:
             try:
-                asyncio.get_event_loop().run_until_complete(db_connection.close())
+                asyncio.run(db_connection.close())
                 logger.info("Database connection closed")
             except Exception as e:
                 logger.warning(f"Error closing database connection: {e!s}")

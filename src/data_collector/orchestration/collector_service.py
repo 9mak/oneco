@@ -322,8 +322,7 @@ class CollectorService:
                     except Exception as e:
                         errors += 1
                         self.logger.warning(
-                            f"Failed to save animal to database: {animal.source_url}",
-                            extra={"error": str(e)},
+                            f"Failed to save animal to database: {animal.source_url}: {e}",
                         )
             return saved, errors
 
