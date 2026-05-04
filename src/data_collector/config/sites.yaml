@@ -6,8 +6,8 @@
 #   list_link_pattern  → 詳細リンクのCSSセレクター（静的HTML向け）
 
 extraction:
-  default_provider: google
-  default_model: gemini-2.5-flash
+  default_provider: groq
+  default_model: llama-3.3-70b-versatile
 
 sites:
   # ===================================================================

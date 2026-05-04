@@ -25,35 +25,22 @@ from .llm.config import SiteConfigLoader, SitesConfig
 from .llm.html_preprocessor import HtmlPreprocessor
 from .llm.providers.anthropic_provider import AnthropicProvider
 from .llm.providers.base import LlmProvider
-from .llm.providers.fallback_provider import FallbackProvider
-from .llm.providers.google_provider import GoogleProvider
 from .llm.providers.groq_provider import GroqProvider
 from .orchestration.collector_service import CollectorService
 
 PROVIDER_REGISTRY = {
     "anthropic": AnthropicProvider,
-    "google": GoogleProvider,
     "groq": GroqProvider,
 }
 
 
 def create_provider(provider_name: str, model: str) -> LlmProvider:
-    """プロバイダーインスタンスを生成。
-
-    google プロバイダーかつ GROQ_API_KEY が設定されている場合は
-    Gemini → Groq の自動フォールバック構成を返す。
-    """
+    """プロバイダーインスタンスを生成"""
     cls = PROVIDER_REGISTRY.get(provider_name)
     if cls is None:
         supported = ", ".join(sorted(PROVIDER_REGISTRY.keys()))
         raise ValueError(f"未対応プロバイダー: {provider_name}。サポート対象: {supported}")
-    provider = cls(model=model)
-
-    if provider_name == "google" and os.environ.get("GROQ_API_KEY"):
-        groq_fallback = GroqProvider()
-        return FallbackProvider(primary=provider, fallback=groq_fallback)
-
-    return provider
+    return cls(model=model)
 
 
 def run_llm_sites(

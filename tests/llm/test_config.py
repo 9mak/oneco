@@ -74,8 +74,8 @@ class TestSiteConfigLoader:
         assert site.max_pages is None
         assert site.provider is None
         assert site.model is None
-        assert config.extraction.default_provider == "anthropic"
-        assert config.extraction.default_model == "claude-haiku-4-5-20251001"
+        assert config.extraction.default_provider == "groq"
+        assert config.extraction.default_model == "llama-3.3-70b-versatile"
 
     def test_load_file_not_found(self, tmp_path: Path):
         with pytest.raises(FileNotFoundError, match="設定ファイルが見つかりません"):
@@ -174,7 +174,7 @@ class TestSiteConfigValidation:
             )
 
     def test_valid_providers_accepted(self):
-        for provider in ["anthropic", "openai", "google"]:
+        for provider in ["anthropic", "groq"]:
             site = SiteConfig(
                 name="テスト",
                 prefecture="テスト県",
@@ -214,8 +214,8 @@ class TestResolveProvider:
     def test_site_override_takes_precedence(self):
         config = SitesConfig(
             extraction=ExtractionConfig(
-                default_provider="anthropic",
-                default_model="claude-haiku-4-5-20251001",
+                default_provider="groq",
+                default_model="llama-3.3-70b-versatile",
             ),
             sites=[
                 SiteConfig(
@@ -223,11 +223,11 @@ class TestResolveProvider:
                     prefecture="テスト県",
                     prefecture_code="99",
                     list_url="https://example.com/",
-                    provider="openai",
-                    model="gpt-4o-mini",
+                    provider="anthropic",
+                    model="claude-haiku-4-5-20251001",
                 )
             ],
         )
         provider, model = SiteConfigLoader.resolve_provider(config.sites[0], config)
-        assert provider == "openai"
-        assert model == "gpt-4o-mini"
+        assert provider == "anthropic"
+        assert model == "claude-haiku-4-5-20251001"
