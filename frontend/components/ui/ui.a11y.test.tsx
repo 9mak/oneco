@@ -41,7 +41,7 @@ describe('EmptyState Accessibility', () => {
 
   it('should have no accessibility violations with clear button', async () => {
     const { container } = render(
-      <EmptyState showClearButton onClearFilters={() => {}} />
+      <EmptyState showClearButton />
     );
     const results = await axe(container);
     expect(results).toHaveNoViolations();
@@ -53,18 +53,19 @@ describe('EmptyState Accessibility', () => {
     expect(alert).toBeInTheDocument();
   });
 
-  it('should have accessible clear button with aria-label', () => {
-    render(<EmptyState showClearButton onClearFilters={() => {}} />);
-    const button = screen.getByRole('button', { name: /フィルタをクリア/i });
-    expect(button).toBeInTheDocument();
-    expect(button).toHaveAttribute('aria-label', 'フィルタをクリア');
+  it('should have accessible clear link with aria-label', () => {
+    render(<EmptyState showClearButton />);
+    const link = screen.getByRole('link', { name: /フィルタをクリア/i });
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute('aria-label', 'フィルタをクリア');
+    expect(link).toHaveAttribute('href', '/');
   });
 
-  it('clear button should meet minimum touch target size', () => {
-    render(<EmptyState showClearButton onClearFilters={() => {}} />);
-    const button = screen.getByRole('button', { name: /フィルタをクリア/i });
-    expect(button.className).toContain('min-h-[44px]');
-    expect(button.className).toContain('min-w-[44px]');
+  it('clear link should meet minimum touch target size', () => {
+    render(<EmptyState showClearButton />);
+    const link = screen.getByRole('link', { name: /フィルタをクリア/i });
+    expect(link.className).toContain('min-h-[44px]');
+    expect(link.className).toContain('min-w-[44px]');
   });
 });
 
