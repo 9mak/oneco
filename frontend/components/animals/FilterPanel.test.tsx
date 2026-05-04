@@ -62,7 +62,7 @@ describe('FilterPanel', () => {
     fireEvent.change(screen.getByLabelText('地域'), { target: { value: '高知県' } });
 
     expect(mockReplace).toHaveBeenCalledWith(
-      '?location=%E9%AB%98%E7%9F%A5%E7%9C%8C',
+      '?prefecture=%E9%AB%98%E7%9F%A5%E7%9C%8C',
       { scroll: false },
     );
   });

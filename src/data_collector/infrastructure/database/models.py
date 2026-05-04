@@ -36,6 +36,7 @@ class Animal(Base):
     species: str = Column(String(50), nullable=False, index=True)
     shelter_date: date = Column(Date, nullable=False, index=True)
     location: str = Column(Text, nullable=False, index=True)
+    prefecture: str | None = Column(String(20), nullable=True, index=True)
     source_url: str = Column(Text, nullable=False, unique=True)
 
     # 準必須フィールド（デフォルト値あり）

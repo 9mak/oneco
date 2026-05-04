@@ -61,6 +61,7 @@ class AnimalRepository:
             size=animal_data.size,
             shelter_date=animal_data.shelter_date,
             location=animal_data.location,
+            prefecture=animal_data.prefecture,
             phone=animal_data.phone,
             image_urls=[str(url) for url in animal_data.image_urls],
             source_url=str(animal_data.source_url),
@@ -90,6 +91,7 @@ class AnimalRepository:
             size=orm_animal.size,
             shelter_date=orm_animal.shelter_date,
             location=orm_animal.location,
+            prefecture=orm_animal.prefecture,
             phone=orm_animal.phone,
             image_urls=orm_animal.image_urls or [],
             source_url=orm_animal.source_url,
@@ -131,6 +133,7 @@ class AnimalRepository:
             existing_animal.size = animal_data.size
             existing_animal.shelter_date = animal_data.shelter_date
             existing_animal.location = animal_data.location
+            existing_animal.prefecture = animal_data.prefecture
             existing_animal.phone = animal_data.phone
             existing_animal.image_urls = [str(url) for url in animal_data.image_urls]
             existing_animal.category = animal_data.category
@@ -177,6 +180,7 @@ class AnimalRepository:
         species: str | None = None,
         sex: str | None = None,
         location: str | None = None,
+        prefecture: str | None = None,
         category: str | None = None,
         shelter_date_from: date | None = None,
         shelter_date_to: date | None = None,
@@ -212,6 +216,8 @@ class AnimalRepository:
             filters.append(Animal.sex == sex)
         if location:
             filters.append(Animal.location.like(f"%{location}%"))
+        if prefecture:
+            filters.append(Animal.prefecture == prefecture)
         if category:
             filters.append(Animal.category == category)
         if shelter_date_from:
@@ -247,6 +253,7 @@ class AnimalRepository:
         species: str | None = None,
         sex: str | None = None,
         location: str | None = None,
+        prefecture: str | None = None,
         category: str | None = None,
         shelter_date_from: date | None = None,
         shelter_date_to: date | None = None,
@@ -282,6 +289,8 @@ class AnimalRepository:
             filters.append(Animal.sex == sex)
         if location:
             filters.append(Animal.location.like(f"%{location}%"))
+        if prefecture:
+            filters.append(Animal.prefecture == prefecture)
         if category:
             filters.append(Animal.category == category)
         if shelter_date_from:

@@ -8,6 +8,7 @@
 import re
 from datetime import datetime
 
+from ..utils.prefecture import infer_prefecture_from_url
 from .models import AnimalData, RawAnimalData
 
 
@@ -56,6 +57,7 @@ class DataNormalizer:
                 DataNormalizer._normalize_date(raw_data.shelter_date), "%Y-%m-%d"
             ).date(),
             location=raw_data.location if raw_data.location else "不明",
+            prefecture=infer_prefecture_from_url(raw_data.source_url),
             phone=DataNormalizer._normalize_phone(raw_data.phone),
             image_urls=image_urls_raw,
             source_url=raw_data.source_url,
