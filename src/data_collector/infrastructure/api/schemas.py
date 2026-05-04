@@ -39,6 +39,7 @@ class AnimalPublic(BaseModel):
     size: str | None = None
     shelter_date: date
     location: str
+    prefecture: str | None = None
     phone: str | None = None
     image_urls: list[str]
     source_url: str
@@ -112,6 +113,7 @@ class ArchivedAnimalPublic(BaseModel):
     size: str | None = None
     shelter_date: date
     location: str
+    prefecture: str | None = None
     phone: str | None = None
     image_urls: list[str]
     source_url: str

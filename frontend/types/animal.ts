@@ -23,6 +23,8 @@ export interface AnimalPublic {
   shelter_date: string;
   /** 収容場所 */
   location: string;
+  /** 都道府県名 (例: '高知県') */
+  prefecture: string | null;
   /** 電話番号 */
   phone: string | null;
   /** 画像URL配列 */
@@ -73,4 +75,6 @@ export interface FilterState {
   sex?: '男の子' | '女の子' | '不明';
   /** 地域フィルタ (部分一致検索) */
   location?: string;
+  /** 都道府県フィルタ (完全一致) */
+  prefecture?: string;
 }

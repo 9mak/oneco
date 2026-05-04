@@ -38,6 +38,7 @@ async def list_animals(
     species: str | None = Query(None, description="動物種別フィルタ"),
     sex: str | None = Query(None, description="性別フィルタ"),
     location: str | None = Query(None, description="場所フィルタ（部分一致）"),
+    prefecture: str | None = Query(None, description="都道府県フィルタ (完全一致, 例: '高知県')"),
     category: str | None = Query(None, description="カテゴリフィルタ ('adoption' または 'lost')"),
     shelter_date_from: date | None = Query(None, description="収容日開始"),
     shelter_date_to: date | None = Query(None, description="収容日終了"),
@@ -72,8 +73,9 @@ async def list_animals(
 
     logger.info(
         f"GET /animals - species={species}, sex={sex}, location={location}, "
-        f"category={category}, status={status}, shelter_date_from={shelter_date_from}, "
-        f"shelter_date_to={shelter_date_to}, limit={limit}, offset={offset}"
+        f"prefecture={prefecture}, category={category}, status={status}, "
+        f"shelter_date_from={shelter_date_from}, shelter_date_to={shelter_date_to}, "
+        f"limit={limit}, offset={offset}"
     )
     repository = AnimalRepository(session)
 
@@ -82,6 +84,7 @@ async def list_animals(
         species=species,
         sex=sex,
         location=location,
+        prefecture=prefecture,
         category=category,
         status=status_enum,
         shelter_date_from=shelter_date_from,

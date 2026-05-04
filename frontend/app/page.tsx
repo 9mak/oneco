@@ -1,8 +1,8 @@
 import { Suspense } from 'react';
 import { fetchAnimals } from '@/lib/animals';
 import { AnimalGrid } from '@/components/animals/AnimalGrid';
+import { AnimalGridSkeleton } from '@/components/animals/AnimalGridSkeleton';
 import { FilterPanel } from '@/components/animals/FilterPanel';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import type { AnimalPublic, FilterState } from '@/types/animal';
 
 export const revalidate = 300;
@@ -11,6 +11,7 @@ interface HomePageProps {
   searchParams: Promise<{
     species?: string;
     sex?: string;
+    prefecture?: string;
     location?: string;
     category?: string;
   }>;
@@ -33,6 +34,9 @@ function parseFilters(params: Awaited<HomePageProps['searchParams']>): FilterSta
   ) {
     filters.category = params.category;
   }
+  if (params.prefecture) {
+    filters.prefecture = params.prefecture;
+  }
   if (params.location) {
     filters.location = params.location;
   }
@@ -51,7 +55,7 @@ async function AnimalsSection({ filters }: { filters: FilterState }) {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8">
+    <>
       <FilterPanel filters={filters} resultCount={totalCount} />
       <AnimalGrid
         initialItems={items}
@@ -59,8 +63,12 @@ async function AnimalsSection({ filters }: { filters: FilterState }) {
         filters={filters}
         pageSize={PAGE_SIZE}
       />
-    </div>
+    </>
   );
+}
+
+function FilterPanelSkeleton({ filters }: { filters: FilterState }) {
+  return <FilterPanel filters={filters} resultCount={0} />;
 }
 
 export default async function HomePage({ searchParams }: HomePageProps) {
@@ -68,15 +76,18 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const filters = parseFilters(params);
 
   return (
-    <Suspense
-      key={JSON.stringify(filters)}
-      fallback={
-        <div className="container mx-auto px-4 py-8">
-          <LoadingSpinner />
-        </div>
-      }
-    >
-      <AnimalsSection filters={filters} />
-    </Suspense>
+    <div className="container mx-auto px-4 py-8 space-y-8">
+      <Suspense
+        key={JSON.stringify(filters)}
+        fallback={
+          <>
+            <FilterPanelSkeleton filters={filters} />
+            <AnimalGridSkeleton />
+          </>
+        }
+      >
+        <AnimalsSection filters={filters} />
+      </Suspense>
+    </div>
   );
 }

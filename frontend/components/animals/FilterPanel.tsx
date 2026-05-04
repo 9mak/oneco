@@ -1,6 +1,5 @@
 'use client';
 
-import { useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FilterState } from '@/types/animal';
 
@@ -35,7 +34,6 @@ function categoryToTab(category: FilterState['category']): TabValue | null {
 export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isPending, startTransition] = useTransition();
 
   const updateParam = (key: keyof FilterState, value: string | undefined) => {
     const newParams = new URLSearchParams(searchParams.toString());
@@ -45,19 +43,19 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
       newParams.delete(key);
     }
     const qs = newParams.toString();
-    startTransition(() => {
-      router.replace(qs ? `?${qs}` : '/', { scroll: false });
-    });
+    router.replace(qs ? `?${qs}` : '/', { scroll: false });
   };
 
   const clearAll = () => {
-    startTransition(() => {
-      router.replace('/', { scroll: false });
-    });
+    router.replace('/', { scroll: false });
   };
 
   const hasActiveFilters =
-    filters.category || filters.species || filters.sex || filters.location;
+    filters.category ||
+    filters.species ||
+    filters.sex ||
+    filters.location ||
+    filters.prefecture;
 
   const activeTab = categoryToTab(filters.category);
 
@@ -70,13 +68,7 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
   };
 
   return (
-    <div
-      className={[
-        'bg-white rounded-lg shadow-md overflow-hidden transition-opacity',
-        isPending ? 'opacity-60' : 'opacity-100',
-      ].join(' ')}
-      aria-busy={isPending}
-    >
+    <div className="bg-white rounded-lg shadow-md overflow-hidden">
       <div
         className="flex border-b border-gray-200"
         role="tablist"
@@ -152,15 +144,15 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
 
           <div>
             <label
-              htmlFor="location-filter"
+              htmlFor="prefecture-filter"
               className="block text-sm font-medium text-[var(--color-text-primary)] mb-2"
             >
               地域
             </label>
             <select
-              id="location-filter"
-              value={filters.location || ''}
-              onChange={(e) => updateParam('location', e.target.value || undefined)}
+              id="prefecture-filter"
+              value={filters.prefecture || ''}
+              onChange={(e) => updateParam('prefecture', e.target.value || undefined)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] min-h-[44px]"
             >
               <option value="">すべて</option>

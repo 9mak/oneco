@@ -63,6 +63,7 @@ class AnimalData(BaseModel):
     species: str = Field(..., description="動物種別 ('犬', '猫', 'その他')")
     shelter_date: date = Field(..., description="収容日 (ISO 8601)")
     location: str = Field(..., description="収容場所（最低限都道府県名）")
+    prefecture: str | None = Field(default=None, description="都道府県名 (例: '高知県')")
     source_url: HttpUrl = Field(..., description="元ページURL")
     category: str = Field(..., description="カテゴリ ('adoption', 'lost')")
 

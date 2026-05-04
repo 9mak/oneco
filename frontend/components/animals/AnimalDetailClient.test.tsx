@@ -70,6 +70,7 @@ describe('AnimalDetailClient', () => {
     size: '中型',
     shelter_date: '2024-01-15',
     location: '高知県中央小動物管理センター',
+    prefecture: '高知県',
     phone: '088-831-7939',
     image_urls: [
       'https://example.com/image1.jpg',
