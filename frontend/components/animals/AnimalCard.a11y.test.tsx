@@ -20,6 +20,7 @@ const mockAnimal: AnimalPublic = {
   size: '中型',
   shelter_date: '2025-01-01',
   location: '高知県動物愛護センター',
+  prefecture: '高知県',
   phone: '088-123-4567',
   image_urls: ['https://example.com/dog.jpg'],
   source_url: 'https://example.com/dog/1',
