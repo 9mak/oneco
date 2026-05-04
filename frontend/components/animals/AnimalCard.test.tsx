@@ -68,7 +68,7 @@ describe('AnimalCard', () => {
     const noImageAnimal = { ...mockAnimal, image_urls: [] };
     render(<AnimalCard animal={noImageAnimal} />);
     const image = screen.getByAltText('犬の画像');
-    expect(image).toHaveAttribute('src', '/images/placeholder-animal.jpg');
+    expect(image).toHaveAttribute('src', '/images/placeholder-animal.svg');
   });
 
   it('詳細ページへのリンクが正しく設定される', () => {

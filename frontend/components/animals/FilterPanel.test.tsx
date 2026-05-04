@@ -1,231 +1,108 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { FilterPanel } from './FilterPanel';
 import { FilterState } from '@/types/animal';
 
+const mockReplace = vi.fn();
+let currentSearchParams = new URLSearchParams();
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    replace: mockReplace,
+  }),
+  useSearchParams: () => currentSearchParams,
+}));
+
 describe('FilterPanel', () => {
-  const mockOnFilterChange = vi.fn();
-  const mockOnClearFilters = vi.fn();
+  beforeEach(() => {
+    mockReplace.mockClear();
+    currentSearchParams = new URLSearchParams();
+  });
 
   const defaultFilters: FilterState = {};
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it('フィルタパネルが正しくレンダリングされる', () => {
-    render(
-      <FilterPanel
-        filters={defaultFilters}
-        onFilterChange={mockOnFilterChange}
-        onClearFilters={mockOnClearFilters}
-        resultCount={42}
-      />
-    );
+    render(<FilterPanel filters={defaultFilters} resultCount={42} />);
 
     expect(screen.getByRole('tab', { name: '収容中の子を探す' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '家族を迎える' })).toBeInTheDocument();
     expect(screen.getByText('42件の動物')).toBeInTheDocument();
   });
 
-  it('カテゴリフィルタが変更されるとonFilterChangeが呼ばれる', () => {
-    render(
-      <FilterPanel
-        filters={defaultFilters}
-        onFilterChange={mockOnFilterChange}
-        onClearFilters={mockOnClearFilters}
-        resultCount={42}
-      />
-    );
+  it('カテゴリタブをクリックするとURLが更新される', () => {
+    render(<FilterPanel filters={defaultFilters} resultCount={42} />);
 
-    const adoptionTab = screen.getByRole('tab', { name: '家族を迎える' });
-    fireEvent.click(adoptionTab);
+    fireEvent.click(screen.getByRole('tab', { name: '家族を迎える' }));
 
-    expect(mockOnFilterChange).toHaveBeenCalledWith('category', 'adoption');
+    expect(mockReplace).toHaveBeenCalledWith('?category=adoption', { scroll: false });
   });
 
-  it('種別フィルタが変更されるとonFilterChangeが呼ばれる', () => {
-    render(
-      <FilterPanel
-        filters={defaultFilters}
-        onFilterChange={mockOnFilterChange}
-        onClearFilters={mockOnClearFilters}
-        resultCount={42}
-      />
-    );
+  it('種別フィルタを変更するとURLが更新される', () => {
+    render(<FilterPanel filters={defaultFilters} resultCount={42} />);
 
-    const speciesSelect = screen.getByLabelText('種別');
-    fireEvent.change(speciesSelect, { target: { value: '犬' } });
+    fireEvent.change(screen.getByLabelText('種別'), { target: { value: '犬' } });
 
-    expect(mockOnFilterChange).toHaveBeenCalledWith('species', '犬');
+    expect(mockReplace).toHaveBeenCalledWith('?species=%E7%8A%AC', { scroll: false });
   });
 
-  it('性別フィルタが変更されるとonFilterChangeが呼ばれる', () => {
-    render(
-      <FilterPanel
-        filters={defaultFilters}
-        onFilterChange={mockOnFilterChange}
-        onClearFilters={mockOnClearFilters}
-        resultCount={42}
-      />
+  it('性別フィルタを変更するとURLが更新される', () => {
+    render(<FilterPanel filters={defaultFilters} resultCount={42} />);
+
+    fireEvent.change(screen.getByLabelText('性別'), { target: { value: '男の子' } });
+
+    expect(mockReplace).toHaveBeenCalledWith(
+      '?sex=%E7%94%B7%E3%81%AE%E5%AD%90',
+      { scroll: false },
     );
-
-    const sexSelect = screen.getByLabelText('性別');
-    fireEvent.change(sexSelect, { target: { value: '男の子' } });
-
-    expect(mockOnFilterChange).toHaveBeenCalledWith('sex', '男の子');
   });
 
-  it('地域フィルタで都道府県を選択できる', () => {
-    render(
-      <FilterPanel
-        filters={defaultFilters}
-        onFilterChange={mockOnFilterChange}
-        onClearFilters={mockOnClearFilters}
-        resultCount={42}
-      />
+  it('地域フィルタを変更するとURLが更新される', () => {
+    render(<FilterPanel filters={defaultFilters} resultCount={42} />);
+
+    fireEvent.change(screen.getByLabelText('地域'), { target: { value: '高知県' } });
+
+    expect(mockReplace).toHaveBeenCalledWith(
+      '?location=%E9%AB%98%E7%9F%A5%E7%9C%8C',
+      { scroll: false },
     );
-
-    const locationSelect = screen.getByLabelText('地域');
-    fireEvent.change(locationSelect, { target: { value: '高知県' } });
-
-    expect(mockOnFilterChange).toHaveBeenCalledWith('location', '高知県');
   });
 
-  it('フィルタが適用されている場合、「フィルタをクリア」ボタンが表示される', () => {
-    const activeFilters: FilterState = { category: 'adoption' };
-    render(
-      <FilterPanel
-        filters={activeFilters}
-        onFilterChange={mockOnFilterChange}
-        onClearFilters={mockOnClearFilters}
-        resultCount={10}
-      />
-    );
-
-    expect(screen.getByRole('button', { name: 'フィルタをクリア' })).toBeInTheDocument();
+  it('フィルタが空のときはクリアボタンが表示されない', () => {
+    render(<FilterPanel filters={defaultFilters} resultCount={42} />);
+    expect(
+      screen.queryByRole('button', { name: 'フィルタをクリア' }),
+    ).not.toBeInTheDocument();
   });
 
-  it('フィルタが適用されていない場合、「フィルタをクリア」ボタンが表示されない', () => {
-    render(
-      <FilterPanel
-        filters={defaultFilters}
-        onFilterChange={mockOnFilterChange}
-        onClearFilters={mockOnClearFilters}
-        resultCount={42}
-      />
-    );
-
-    expect(screen.queryByRole('button', { name: 'フィルタをクリア' })).not.toBeInTheDocument();
-  });
-
-  it('「フィルタをクリア」ボタンをクリックするとonClearFiltersが呼ばれる', () => {
-    const activeFilters: FilterState = { category: 'adoption', species: '犬' };
-    render(
-      <FilterPanel
-        filters={activeFilters}
-        onFilterChange={mockOnFilterChange}
-        onClearFilters={mockOnClearFilters}
-        resultCount={10}
-      />
-    );
+  it('フィルタが適用されている時にクリアボタンが表示される', () => {
+    const filters: FilterState = { species: '犬' };
+    currentSearchParams = new URLSearchParams({ species: '犬' });
+    render(<FilterPanel filters={filters} resultCount={42} />);
 
     const clearButton = screen.getByRole('button', { name: 'フィルタをクリア' });
+    expect(clearButton).toBeInTheDocument();
+
     fireEvent.click(clearButton);
-
-    expect(mockOnClearFilters).toHaveBeenCalledTimes(1);
+    expect(mockReplace).toHaveBeenCalledWith('/', { scroll: false });
   });
 
-  it('現在適用されているフィルタ値が選択状態で表示される', () => {
-    const activeFilters: FilterState = {
-      category: 'lost',
-      species: '猫',
-      sex: '女の子',
-      location: '北海道',
-    };
-    render(
-      <FilterPanel
-        filters={activeFilters}
-        onFilterChange={mockOnFilterChange}
-        onClearFilters={mockOnClearFilters}
-        resultCount={5}
-      />
-    );
+  it('同じカテゴリタブを再クリックするとカテゴリが解除される', () => {
+    const filters: FilterState = { category: 'adoption' };
+    currentSearchParams = new URLSearchParams({ category: 'adoption' });
+    render(<FilterPanel filters={filters} resultCount={42} />);
 
-    // lost は「収容中の子を探す」タブが選択される
-    expect(screen.getByRole('tab', { name: '収容中の子を探す' })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tab', { name: '家族を迎える' })).toHaveAttribute('aria-selected', 'false');
-    expect(screen.getByLabelText('種別')).toHaveValue('猫');
-    expect(screen.getByLabelText('性別')).toHaveValue('女の子');
-    expect(screen.getByLabelText('地域')).toHaveValue('北海道');
+    fireEvent.click(screen.getByRole('tab', { name: '家族を迎える' }));
+
+    expect(mockReplace).toHaveBeenCalledWith('/', { scroll: false });
   });
 
-  it('フィルタをデフォルト値に戻すとundefinedが渡される', () => {
-    const activeFilters: FilterState = { category: 'adoption' };
-    render(
-      <FilterPanel
-        filters={activeFilters}
-        onFilterChange={mockOnFilterChange}
-        onClearFilters={mockOnClearFilters}
-        resultCount={10}
-      />
-    );
+  it('種別を空に戻すとパラメータが削除される', () => {
+    const filters: FilterState = { species: '犬' };
+    currentSearchParams = new URLSearchParams({ species: '犬' });
+    render(<FilterPanel filters={filters} resultCount={42} />);
 
-    // アクティブなタブを再クリックするとカテゴリが解除される
-    const adoptionTab = screen.getByRole('tab', { name: '家族を迎える' });
-    fireEvent.click(adoptionTab);
+    fireEvent.change(screen.getByLabelText('種別'), { target: { value: '' } });
 
-    expect(mockOnFilterChange).toHaveBeenCalledWith('category', undefined);
-  });
-
-  it('キーボードナビゲーションで全フィルタにフォーカスできる', () => {
-    render(
-      <FilterPanel
-        filters={defaultFilters}
-        onFilterChange={mockOnFilterChange}
-        onClearFilters={mockOnClearFilters}
-        resultCount={42}
-      />
-    );
-
-    const shelteredTab = screen.getByRole('tab', { name: '収容中の子を探す' });
-    const adoptionTab = screen.getByRole('tab', { name: '家族を迎える' });
-    const speciesSelect = screen.getByLabelText('種別');
-    const sexSelect = screen.getByLabelText('性別');
-    const locationInput = screen.getByLabelText('地域');
-
-    // フォーカス可能なことを確認
-    shelteredTab.focus();
-    expect(shelteredTab).toHaveFocus();
-
-    adoptionTab.focus();
-    expect(adoptionTab).toHaveFocus();
-
-    speciesSelect.focus();
-    expect(speciesSelect).toHaveFocus();
-
-    sexSelect.focus();
-    expect(sexSelect).toHaveFocus();
-
-    locationInput.focus();
-    expect(locationInput).toHaveFocus();
-  });
-
-  it('結果件数が正しく表示される', () => {
-    render(
-      <FilterPanel
-        filters={defaultFilters}
-        onFilterChange={mockOnFilterChange}
-        onClearFilters={mockOnClearFilters}
-        resultCount={123}
-      />
-    );
-
-    expect(screen.getByText('123件の動物')).toBeInTheDocument();
+    expect(mockReplace).toHaveBeenCalledWith('/', { scroll: false });
   });
 });
