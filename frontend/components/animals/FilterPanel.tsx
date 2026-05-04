@@ -1,10 +1,7 @@
-/**
- * FilterPanel Component
- * フィルタUI提供、フィルタ状態管理、URLクエリパラメータ同期
- */
-
 'use client';
 
+import { useTransition } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { FilterState } from '@/types/animal';
 
 const PREFECTURES = [
@@ -19,12 +16,9 @@ const PREFECTURES = [
 
 interface FilterPanelProps {
   filters: FilterState;
-  onFilterChange: (key: keyof FilterState, value: string | undefined) => void;
-  onClearFilters: () => void;
   resultCount: number;
 }
 
-/** タブの定義 */
 type TabValue = 'sheltered' | 'adoption';
 
 const TABS: { value: TabValue; label: string }[] = [
@@ -32,23 +26,36 @@ const TABS: { value: TabValue; label: string }[] = [
   { value: 'adoption', label: '家族を迎える' },
 ];
 
-/**
- * フィルタのcategoryからアクティブタブを導出する。
- * "lost" と "sheltered" はどちらも「収容中」タブ扱い。
- */
 function categoryToTab(category: FilterState['category']): TabValue | null {
   if (category === 'adoption') return 'adoption';
   if (category === 'lost' || category === 'sheltered') return 'sheltered';
   return null;
 }
 
-export function FilterPanel({
-  filters,
-  onFilterChange,
-  onClearFilters,
-  resultCount,
-}: FilterPanelProps) {
-  // フィルタが適用されているかチェック
+export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+
+  const updateParam = (key: keyof FilterState, value: string | undefined) => {
+    const newParams = new URLSearchParams(searchParams.toString());
+    if (value) {
+      newParams.set(key, value);
+    } else {
+      newParams.delete(key);
+    }
+    const qs = newParams.toString();
+    startTransition(() => {
+      router.replace(qs ? `?${qs}` : '/', { scroll: false });
+    });
+  };
+
+  const clearAll = () => {
+    startTransition(() => {
+      router.replace('/', { scroll: false });
+    });
+  };
+
   const hasActiveFilters =
     filters.category || filters.species || filters.sex || filters.location;
 
@@ -56,16 +63,20 @@ export function FilterPanel({
 
   const handleTabClick = (tab: TabValue) => {
     if (activeTab === tab) {
-      // 同じタブを再クリック → タブ解除（全件表示）
-      onFilterChange('category', undefined);
+      updateParam('category', undefined);
     } else {
-      onFilterChange('category', tab);
+      updateParam('category', tab);
     }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      {/* タブ */}
+    <div
+      className={[
+        'bg-white rounded-lg shadow-md overflow-hidden transition-opacity',
+        isPending ? 'opacity-60' : 'opacity-100',
+      ].join(' ')}
+      aria-busy={isPending}
+    >
       <div
         className="flex border-b border-gray-200"
         role="tablist"
@@ -92,7 +103,6 @@ export function FilterPanel({
         })}
       </div>
 
-      {/* フィルタエリア */}
       <div className="p-6 space-y-4">
         <div className="flex items-center justify-between">
           <span className="text-sm text-[var(--color-text-secondary)]">
@@ -100,9 +110,7 @@ export function FilterPanel({
           </span>
         </div>
 
-        {/* フィルタフォーム */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* 種別フィルタ */}
           <div>
             <label
               htmlFor="species-filter"
@@ -113,9 +121,7 @@ export function FilterPanel({
             <select
               id="species-filter"
               value={filters.species || ''}
-              onChange={(e) =>
-                onFilterChange('species', e.target.value || undefined)
-              }
+              onChange={(e) => updateParam('species', e.target.value || undefined)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] min-h-[44px]"
             >
               <option value="">すべて</option>
@@ -124,7 +130,6 @@ export function FilterPanel({
             </select>
           </div>
 
-          {/* 性別フィルタ */}
           <div>
             <label
               htmlFor="sex-filter"
@@ -135,7 +140,7 @@ export function FilterPanel({
             <select
               id="sex-filter"
               value={filters.sex || ''}
-              onChange={(e) => onFilterChange('sex', e.target.value || undefined)}
+              onChange={(e) => updateParam('sex', e.target.value || undefined)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] min-h-[44px]"
             >
               <option value="">すべて</option>
@@ -145,7 +150,6 @@ export function FilterPanel({
             </select>
           </div>
 
-          {/* 地域フィルタ */}
           <div>
             <label
               htmlFor="location-filter"
@@ -156,7 +160,7 @@ export function FilterPanel({
             <select
               id="location-filter"
               value={filters.location || ''}
-              onChange={(e) => onFilterChange('location', e.target.value || undefined)}
+              onChange={(e) => updateParam('location', e.target.value || undefined)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] min-h-[44px]"
             >
               <option value="">すべて</option>
@@ -167,11 +171,10 @@ export function FilterPanel({
           </div>
         </div>
 
-        {/* フィルタクリアボタン */}
         {hasActiveFilters && (
           <div className="flex justify-end">
             <button
-              onClick={onClearFilters}
+              onClick={clearAll}
               className="px-4 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-primary-700)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 min-h-[44px]"
               aria-label="フィルタをクリア"
             >

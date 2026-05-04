@@ -1,48 +1,82 @@
-/**
- * HomePage - トップページ (Server Component)
- * 初期動物一覧データをサーバーサイドフェッチし、SEO最適化されたHTMLを生成
- */
-
 import { Suspense } from 'react';
-import { AnimalListClient } from '@/components/animals/AnimalListClient';
-import { AnimalPublic, PaginatedResponse } from '@/types/animal';
+import { fetchAnimals } from '@/lib/animals';
+import { AnimalGrid } from '@/components/animals/AnimalGrid';
+import { FilterPanel } from '@/components/animals/FilterPanel';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import type { AnimalPublic, FilterState } from '@/types/animal';
 
-// ISR (Incremental Static Regeneration) - 10分ごとに再生成
-export const revalidate = 600;
+export const revalidate = 300;
 
-async function getInitialAnimals(): Promise<{
-  animals: AnimalPublic[];
-  totalCount: number;
-}> {
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-    const response = await fetch(`${baseUrl}/animals?limit=20&offset=0`, {
-      next: { revalidate: 600 },
-    });
-
-    if (!response.ok) {
-      // エラー時は空配列を返す
-      return { animals: [], totalCount: 0 };
-    }
-
-    const data: PaginatedResponse<AnimalPublic> = await response.json();
-    return {
-      animals: data.items,
-      totalCount: data.meta.total_count,
-    };
-  } catch (error) {
-    console.error('Failed to fetch initial animals:', error);
-    // エラー時は空配列を返す
-    return { animals: [], totalCount: 0 };
-  }
+interface HomePageProps {
+  searchParams: Promise<{
+    species?: string;
+    sex?: string;
+    location?: string;
+    category?: string;
+  }>;
 }
 
-export default async function HomePage() {
-  const { animals, totalCount } = await getInitialAnimals();
+const PAGE_SIZE = 20;
+
+function parseFilters(params: Awaited<HomePageProps['searchParams']>): FilterState {
+  const filters: FilterState = {};
+  if (params.species === '犬' || params.species === '猫') {
+    filters.species = params.species;
+  }
+  if (params.sex === '男の子' || params.sex === '女の子' || params.sex === '不明') {
+    filters.sex = params.sex;
+  }
+  if (
+    params.category === 'adoption' ||
+    params.category === 'lost' ||
+    params.category === 'sheltered'
+  ) {
+    filters.category = params.category;
+  }
+  if (params.location) {
+    filters.location = params.location;
+  }
+  return filters;
+}
+
+async function AnimalsSection({ filters }: { filters: FilterState }) {
+  let items: AnimalPublic[] = [];
+  let totalCount = 0;
+  try {
+    const data = await fetchAnimals({ ...filters, limit: PAGE_SIZE, offset: 0 });
+    items = data.items;
+    totalCount = data.meta.total_count;
+  } catch (error) {
+    console.error('Failed to fetch animals:', error);
+  }
 
   return (
-    <Suspense fallback={<div className="container mx-auto px-4 py-8">読み込み中...</div>}>
-      <AnimalListClient initialAnimals={animals} initialTotalCount={totalCount} />
+    <div className="container mx-auto px-4 py-8 space-y-8">
+      <FilterPanel filters={filters} resultCount={totalCount} />
+      <AnimalGrid
+        initialItems={items}
+        totalCount={totalCount}
+        filters={filters}
+        pageSize={PAGE_SIZE}
+      />
+    </div>
+  );
+}
+
+export default async function HomePage({ searchParams }: HomePageProps) {
+  const params = await searchParams;
+  const filters = parseFilters(params);
+
+  return (
+    <Suspense
+      key={JSON.stringify(filters)}
+      fallback={
+        <div className="container mx-auto px-4 py-8">
+          <LoadingSpinner />
+        </div>
+      }
+    >
+      <AnimalsSection filters={filters} />
     </Suspense>
   );
 }
