@@ -10,7 +10,7 @@ from pathlib import Path
 import yaml
 from pydantic import BaseModel, field_validator
 
-SUPPORTED_PROVIDERS = {"anthropic", "openai", "google"}
+SUPPORTED_PROVIDERS = {"anthropic", "openai", "google", "groq"}
 
 
 class SiteConfig(BaseModel):
