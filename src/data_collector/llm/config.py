@@ -10,7 +10,7 @@ from pathlib import Path
 import yaml
 from pydantic import BaseModel, field_validator
 
-SUPPORTED_PROVIDERS = {"anthropic", "openai", "google", "groq"}
+SUPPORTED_PROVIDERS = {"anthropic", "groq"}
 
 
 class SiteConfig(BaseModel):
@@ -78,8 +78,8 @@ class SiteConfig(BaseModel):
 class ExtractionConfig(BaseModel):
     """グローバル抽出設定"""
 
-    default_provider: str = "anthropic"
-    default_model: str = "claude-haiku-4-5-20251001"
+    default_provider: str = "groq"
+    default_model: str = "llama-3.3-70b-versatile"
 
     @field_validator("default_provider")
     @classmethod
