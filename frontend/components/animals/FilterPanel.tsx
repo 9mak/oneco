@@ -21,21 +21,22 @@ interface FilterPanelProps {
 /**
  * UI タブ ＝ ユーザーの意図
  *
- * - 'sheltered': 収容中の子を探す（status=sheltered。category 制約なし → 譲渡対象＋迷子＋収容情報すべて）
- * - 'adoption':  家族を迎える（category=adoption + status=sheltered の暗黙適用）
- *
- * status と category は本来直交した軸だが、ホーム画面ではこの2つの意図軸に圧縮する。
- * 「迷子情報を見る」等は将来 category=lost のタブを追加するだけで増やせる。
+ * - 'sheltered': 収容中の子を探す（status=sheltered。category 制約なし → 全種別）
+ * - 'adoption':  家族を迎える（category=adoption。里親希望者向け）
+ * - 'lost':      迷子情報（category=lost。飼い主が探している子）
  */
-type TabValue = 'sheltered' | 'adoption';
+type TabValue = 'sheltered' | 'adoption' | 'lost';
 
 const TABS: { value: TabValue; label: string }[] = [
   { value: 'sheltered', label: '収容中の子を探す' },
   { value: 'adoption', label: '家族を迎える' },
+  { value: 'lost', label: '迷子情報' },
 ];
 
 function filtersToTab(filters: FilterState): TabValue {
-  return filters.category === 'adoption' ? 'adoption' : 'sheltered';
+  if (filters.category === 'adoption') return 'adoption';
+  if (filters.category === 'lost') return 'lost';
+  return 'sheltered';
 }
 
 export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
@@ -71,12 +72,10 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
   const activeTab = filtersToTab(filters);
 
   const handleTabClick = (tab: TabValue) => {
-    // 'sheltered' タブ = category なし（収容中の子をすべて表示）
-    // 'adoption' タブ = category=adoption（譲渡対象のみ）
-    if (tab === 'adoption') {
-      updateParam('category', 'adoption');
-    } else {
+    if (tab === 'sheltered') {
       updateParam('category', undefined);
+    } else {
+      updateParam('category', tab);
     }
   };
 
