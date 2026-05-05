@@ -7,6 +7,9 @@
 import { notFound } from 'next/navigation';
 import { AnimalPublic } from '@/types/animal';
 import { AnimalDetailClient } from '@/components/animals/AnimalDetailClient';
+import { PetSchema } from '@/components/animals/PetSchema';
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
 interface AnimalDetailPageProps {
   params: Promise<{
@@ -65,6 +68,7 @@ export default async function AnimalDetailPage({ params }: AnimalDetailPageProps
 
   return (
     <main className="min-h-screen bg-gray-50">
+      <PetSchema animal={animal} siteUrl={SITE_URL} />
       <div className="container mx-auto px-4 py-8">
         <h1 className="sr-only">{title}</h1>
         <AnimalDetailClient animal={animal} />
