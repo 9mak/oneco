@@ -26,7 +26,16 @@ describe('FilterPanel', () => {
 
     expect(screen.getByRole('tab', { name: '収容中の子を探す' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '家族を迎える' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '迷子情報' })).toBeInTheDocument();
     expect(screen.getByText('42件の動物')).toBeInTheDocument();
+  });
+
+  it('迷子情報タブをクリックするとURLが更新される', () => {
+    render(<FilterPanel filters={defaultFilters} resultCount={42} />);
+
+    fireEvent.click(screen.getByRole('tab', { name: '迷子情報' }));
+
+    expect(mockReplace).toHaveBeenCalledWith('?category=lost', { scroll: false });
   });
 
   it('カテゴリタブをクリックするとURLが更新される', () => {
