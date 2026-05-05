@@ -86,14 +86,34 @@ describe('FilterPanel', () => {
     expect(mockReplace).toHaveBeenCalledWith('/', { scroll: false });
   });
 
-  it('同じカテゴリタブを再クリックするとカテゴリが解除される', () => {
+  it('「収容中の子を探す」タブをクリックするとカテゴリ制約が外れる', () => {
     const filters: FilterState = { category: 'adoption' };
     currentSearchParams = new URLSearchParams({ category: 'adoption' });
     render(<FilterPanel filters={filters} resultCount={42} />);
 
-    fireEvent.click(screen.getByRole('tab', { name: '家族を迎える' }));
+    fireEvent.click(screen.getByRole('tab', { name: '収容中の子を探す' }));
 
+    // category=adoption が削除され、sheltered タブ（デフォルト）に戻る
     expect(mockReplace).toHaveBeenCalledWith('/', { scroll: false });
+  });
+
+  it('デフォルト状態では「収容中の子を探す」タブが active', () => {
+    render(<FilterPanel filters={{ status: 'sheltered' }} resultCount={42} />);
+
+    const shelteredTab = screen.getByRole('tab', { name: '収容中の子を探す' });
+    expect(shelteredTab).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('category=adoption 時は「家族を迎える」タブが active', () => {
+    render(
+      <FilterPanel
+        filters={{ status: 'sheltered', category: 'adoption' }}
+        resultCount={42}
+      />,
+    );
+
+    const adoptionTab = screen.getByRole('tab', { name: '家族を迎える' });
+    expect(adoptionTab).toHaveAttribute('aria-selected', 'true');
   });
 
   it('種別を空に戻すとパラメータが削除される', () => {
