@@ -16,6 +16,7 @@ function buildQuery(params: FetchAnimalsParams): string {
   if (params.location) search.set('location', params.location);
   if (params.prefecture) search.set('prefecture', params.prefecture);
   if (params.category) search.set('category', params.category);
+  if (params.status) search.set('status', params.status);
   return search.toString();
 }
 

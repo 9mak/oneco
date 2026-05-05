@@ -14,6 +14,7 @@ interface HomePageProps {
     prefecture?: string;
     location?: string;
     category?: string;
+    status?: string;
   }>;
 }
 
@@ -33,6 +34,17 @@ function parseFilters(params: Awaited<HomePageProps['searchParams']>): FilterSta
     params.category === 'sheltered'
   ) {
     filters.category = params.category;
+  }
+  // status は未指定時 'sheltered'（収容中）を暗黙適用。譲渡済等は明示指定で表示
+  if (
+    params.status === 'sheltered' ||
+    params.status === 'adopted' ||
+    params.status === 'returned' ||
+    params.status === 'deceased'
+  ) {
+    filters.status = params.status;
+  } else {
+    filters.status = 'sheltered';
   }
   if (params.prefecture) {
     filters.prefecture = params.prefecture;
