@@ -64,11 +64,21 @@ export interface PaginatedResponse<T> {
 }
 
 /**
+ * 動物の現在状態 (status)
+ *
+ * category（情報の種類）と直交する軸。
+ * デフォルトは 'sheltered'（収容中）— 譲渡済 / 返還済 / 死亡した動物は明示指定で表示。
+ */
+export type AnimalStatus = 'sheltered' | 'adopted' | 'returned' | 'deceased';
+
+/**
  * フィルタ状態
  */
 export interface FilterState {
-  /** カテゴリフィルタ */
+  /** カテゴリ（情報の種類: 譲渡対象 / 迷子 / 収容情報） */
   category?: 'adoption' | 'lost' | 'sheltered';
+  /** ステータス（動物の現在状態。未指定時は 'sheltered' を暗黙適用） */
+  status?: AnimalStatus;
   /** 種別フィルタ */
   species?: '犬' | '猫';
   /** 性別フィルタ */

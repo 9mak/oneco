@@ -18,6 +18,15 @@ interface FilterPanelProps {
   resultCount: number;
 }
 
+/**
+ * UI タブ ＝ ユーザーの意図
+ *
+ * - 'sheltered': 収容中の子を探す（status=sheltered。category 制約なし → 譲渡対象＋迷子＋収容情報すべて）
+ * - 'adoption':  家族を迎える（category=adoption + status=sheltered の暗黙適用）
+ *
+ * status と category は本来直交した軸だが、ホーム画面ではこの2つの意図軸に圧縮する。
+ * 「迷子情報を見る」等は将来 category=lost のタブを追加するだけで増やせる。
+ */
 type TabValue = 'sheltered' | 'adoption';
 
 const TABS: { value: TabValue; label: string }[] = [
@@ -25,10 +34,8 @@ const TABS: { value: TabValue; label: string }[] = [
   { value: 'adoption', label: '家族を迎える' },
 ];
 
-function categoryToTab(category: FilterState['category']): TabValue | null {
-  if (category === 'adoption') return 'adoption';
-  if (category === 'lost' || category === 'sheltered') return 'sheltered';
-  return null;
+function filtersToTab(filters: FilterState): TabValue {
+  return filters.category === 'adoption' ? 'adoption' : 'sheltered';
 }
 
 export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
@@ -50,20 +57,26 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
     router.replace('/', { scroll: false });
   };
 
-  const hasActiveFilters =
+  // 'sheltered' タブは default 状態。category 未指定 = 'sheltered' タブ active と等価。
+  // status のデフォルト 'sheltered' は明示フィルタとはみなさない。
+  const hasActiveFilters = Boolean(
     filters.category ||
-    filters.species ||
-    filters.sex ||
-    filters.location ||
-    filters.prefecture;
+      filters.species ||
+      filters.sex ||
+      filters.location ||
+      filters.prefecture ||
+      (filters.status && filters.status !== 'sheltered'),
+  );
 
-  const activeTab = categoryToTab(filters.category);
+  const activeTab = filtersToTab(filters);
 
   const handleTabClick = (tab: TabValue) => {
-    if (activeTab === tab) {
-      updateParam('category', undefined);
+    // 'sheltered' タブ = category なし（収容中の子をすべて表示）
+    // 'adoption' タブ = category=adoption（譲渡対象のみ）
+    if (tab === 'adoption') {
+      updateParam('category', 'adoption');
     } else {
-      updateParam('category', tab);
+      updateParam('category', undefined);
     }
   };
 
