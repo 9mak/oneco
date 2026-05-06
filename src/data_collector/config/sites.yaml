@@ -1418,3 +1418,179 @@ sites:
     list_url: "https://www.city.okazaki.lg.jp/1100/1107/1149/p008181.html"
     category: "sheltered"
     pdf_link_pattern: "a[href$='.pdf']"
+
+  # ===================================================================
+  # 北海道・東北バッチ1
+  # ===================================================================
+
+  # 【北海道】札幌市・旭川市・道北・道南
+  - name: "札幌市（迷子犬）"
+    prefecture: "北海道"
+    prefecture_code: "01"
+    list_url: "https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/maigoinu.html"
+    category: "lost"
+    single_page: true
+
+  - name: "札幌市（迷子猫）"
+    prefecture: "北海道"
+    prefecture_code: "01"
+    list_url: "https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/maigoneko2.html"
+    category: "lost"
+    single_page: true
+
+  # 【旭川市あにまある】専用ドメイン、URL構造化
+  - name: "旭川市あにまある（譲渡犬）"
+    prefecture: "北海道"
+    prefecture_code: "01"
+    list_url: "https://www.douaicenter.jp/animal/list/transfer/dog"
+    list_link_pattern: "a[href*='/animal/']"
+    category: "adoption"
+
+  - name: "旭川市あにまある（譲渡猫）"
+    prefecture: "北海道"
+    prefecture_code: "01"
+    list_url: "https://www.douaicenter.jp/animal/list/transfer/cat"
+    list_link_pattern: "a[href*='/animal/']"
+    category: "adoption"
+
+  - name: "旭川市あにまある（譲渡その他）"
+    prefecture: "北海道"
+    prefecture_code: "01"
+    list_url: "https://www.douaicenter.jp/animal/list/transfer/other"
+    list_link_pattern: "a[href*='/animal/']"
+    category: "adoption"
+
+  - name: "旭川市あにまある（収容犬）"
+    prefecture: "北海道"
+    prefecture_code: "01"
+    list_url: "https://www.douaicenter.jp/animal/list/sheltered/dog"
+    list_link_pattern: "a[href*='/animal/']"
+    category: "sheltered"
+
+  - name: "旭川市あにまある（収容猫）"
+    prefecture: "北海道"
+    prefecture_code: "01"
+    list_url: "https://www.douaicenter.jp/animal/list/sheltered/cat"
+    list_link_pattern: "a[href*='/animal/']"
+    category: "sheltered"
+
+  - name: "旭川市あにまある（収容その他）"
+    prefecture: "北海道"
+    prefecture_code: "01"
+    list_url: "https://www.douaicenter.jp/animal/list/sheltered/other"
+    list_link_pattern: "a[href*='/animal/']"
+    category: "sheltered"
+
+  - name: "旭川市あにまある（市民保護犬）"
+    prefecture: "北海道"
+    prefecture_code: "01"
+    list_url: "https://www.douaicenter.jp/other-animal/list/dog"
+    list_link_pattern: "a[href*='/other-animal/']"
+    category: "sheltered"
+
+  - name: "旭川市あにまある（市民保護猫）"
+    prefecture: "北海道"
+    prefecture_code: "01"
+    list_url: "https://www.douaicenter.jp/other-animal/list/cat"
+    list_link_pattern: "a[href*='/other-animal/']"
+    category: "sheltered"
+
+  # 【道北 アニウェル北海道】里親募集
+  - name: "アニウェル北海道（猫の里親募集）"
+    prefecture: "北海道"
+    prefecture_code: "01"
+    list_url: "https://aniwel.jp/cats/"
+    category: "adoption"
+    single_page: true
+
+  # 【道南 函館どうなん】 nyantomo.jp
+  - name: "函館どうなん動物愛護センター（里親募集）"
+    prefecture: "北海道"
+    prefecture_code: "01"
+    list_url: "https://nyantomo.jp/donanhakodate/"
+    category: "adoption"
+    single_page: true
+
+  # ===================================================================
+  # 東北
+  # ===================================================================
+
+  # 【秋田県 ワンニャピアあきた】CMS、個別詳細あり
+  - name: "ワンニャピアあきた（譲渡犬）"
+    prefecture: "秋田県"
+    prefecture_code: "05"
+    list_url: "https://wannyapia.akita.jp/pages/protective-dogs"
+    list_link_pattern: "a[href*='/pages/animals/']"
+    category: "adoption"
+
+  - name: "ワンニャピアあきた（譲渡猫）"
+    prefecture: "秋田県"
+    prefecture_code: "05"
+    list_url: "https://wannyapia.akita.jp/pages/protective-cats"
+    list_link_pattern: "a[href*='/pages/animals/']"
+    category: "adoption"
+
+  # 【宮城県 仙台市】3 URL
+  - name: "仙台市アニパル（譲渡犬）"
+    prefecture: "宮城県"
+    prefecture_code: "04"
+    list_url: "https://www.city.sendai.jp/dobutsu/kurashi/shizen/petto/hogodobutsu/joho/inu.html"
+    category: "adoption"
+    single_page: true
+
+  - name: "仙台市アニパル（譲渡猫）"
+    prefecture: "宮城県"
+    prefecture_code: "04"
+    list_url: "https://www.city.sendai.jp/dobutsu/kurashi/shizen/petto/hogodobutsu/joho/neko.html"
+    category: "adoption"
+    single_page: true
+
+  - name: "仙台市アニパル（譲渡子猫）"
+    prefecture: "宮城県"
+    prefecture_code: "04"
+    list_url: "https://www.city.sendai.jp/dobutsu/kurashi/shizen/petto/hogodobutsu/joho/koneko.html"
+    category: "adoption"
+    single_page: true
+
+  # 【福島県】3 拠点 × 2 動物 = 6 URL
+  - name: "福島県（中通り 迷子犬）"
+    prefecture: "福島県"
+    prefecture_code: "07"
+    list_url: "https://www.pref.fukushima.lg.jp/sec/21620a/maigo-dog-miharu.html"
+    category: "lost"
+    single_page: true
+
+  - name: "福島県（中通り 迷子猫）"
+    prefecture: "福島県"
+    prefecture_code: "07"
+    list_url: "https://www.pref.fukushima.lg.jp/sec/21620a/maigo-cat-miharu.html"
+    category: "lost"
+    single_page: true
+
+  - name: "福島県（会津 迷子犬）"
+    prefecture: "福島県"
+    prefecture_code: "07"
+    list_url: "https://www.pref.fukushima.lg.jp/sec/21621a/maigo-dog-aizu.html"
+    category: "lost"
+    single_page: true
+
+  - name: "福島県（会津 迷子猫）"
+    prefecture: "福島県"
+    prefecture_code: "07"
+    list_url: "https://www.pref.fukushima.lg.jp/sec/21621a/maigo-cat-aizu.html"
+    category: "lost"
+    single_page: true
+
+  - name: "福島県（相双 迷子犬）"
+    prefecture: "福島県"
+    prefecture_code: "07"
+    list_url: "https://www.pref.fukushima.lg.jp/sec/21622a/maigo-dog-soso.html"
+    category: "lost"
+    single_page: true
+
+  - name: "福島県（相双 迷子猫）"
+    prefecture: "福島県"
+    prefecture_code: "07"
+    list_url: "https://www.pref.fukushima.lg.jp/sec/21622a/maigo-cat-soso.html"
+    category: "lost"
+    single_page: true
