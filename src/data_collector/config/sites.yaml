@@ -1272,3 +1272,149 @@ sites:
     list_url: "https://www.pref.yamaguchi.lg.jp/site/doubutuaigo/list25-151.html"
     category: "sheltered"
     single_page: true
+
+  # ===================================================================
+  # 中部地方バッチ1: 県動愛・主要拠点
+  # ===================================================================
+
+  # 【富山県】8 厚生センター（県動愛のハブページ）
+  - name: "富山県（迷い犬猫情報）"
+    prefecture: "富山県"
+    prefecture_code: "16"
+    list_url: "https://www.pref.toyama.jp/1207/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/index.html"
+    category: "lost"
+    single_page: true
+
+  # 【石川県】いしかわ動愛センター
+  - name: "石川県（保護犬・猫情報）"
+    prefecture: "石川県"
+    prefecture_code: "17"
+    list_url: "https://www.pref.ishikawa.lg.jp/yakuji/doubutsu/hogoinuneko.html"
+    category: "sheltered"
+    single_page: true
+
+  # 【山梨県動物愛護指導センター】6 URL
+  - name: "山梨県（探している犬）"
+    prefecture: "山梨県"
+    prefecture_code: "19"
+    list_url: "https://www.pref.yamanashi.jp/doubutsu/m_dog/index.html"
+    category: "lost"
+    single_page: true
+
+  - name: "山梨県（探している猫）"
+    prefecture: "山梨県"
+    prefecture_code: "19"
+    list_url: "https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html"
+    category: "lost"
+    single_page: true
+
+  - name: "山梨県（探している他のペット）"
+    prefecture: "山梨県"
+    prefecture_code: "19"
+    list_url: "https://www.pref.yamanashi.jp/doubutsu/m_other/index.html"
+    category: "lost"
+    single_page: true
+
+  - name: "山梨県（保護されている犬）"
+    prefecture: "山梨県"
+    prefecture_code: "19"
+    list_url: "https://www.pref.yamanashi.jp/doubutsu/p_dog/index.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "山梨県（保護されている猫）"
+    prefecture: "山梨県"
+    prefecture_code: "19"
+    list_url: "https://www.pref.yamanashi.jp/doubutsu/p_cat/index.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "山梨県（保護されている他のペット）"
+    prefecture: "山梨県"
+    prefecture_code: "19"
+    list_url: "https://www.pref.yamanashi.jp/doubutsu/p_other/index.html"
+    category: "sheltered"
+    single_page: true
+
+  # 【岐阜県】12 保健所のハブページ
+  - name: "岐阜県（迷い犬情報）"
+    prefecture: "岐阜県"
+    prefecture_code: "21"
+    list_url: "https://www.pref.gifu.lg.jp/page/1638.html"
+    category: "lost"
+    single_page: true
+
+  # 【静岡県】県動愛
+  - name: "静岡県（保護犬猫情報）"
+    prefecture: "静岡県"
+    prefecture_code: "22"
+    list_url: "https://www.pref.shizuoka.jp/kenkofukushi/eiseiyakuji/dobutsuaigo/1066835/index.html"
+    category: "sheltered"
+    single_page: true
+
+  # 【浜松市はぴまるの丘】専用ドメイン
+  - name: "浜松市はぴまるの丘（保護犬）"
+    prefecture: "静岡県"
+    prefecture_code: "22"
+    list_url: "https://www.hama-aikyou.jp/hogoinu/index.html"
+    category: "lost"
+    single_page: true
+
+  # 【愛知県わんにゃんナビ】専用ドメイン、要 JS
+  - name: "愛知県わんにゃんナビ"
+    prefecture: "愛知県"
+    prefecture_code: "23"
+    list_url: "https://wannyan-navi.pref.aichi.jp/"
+    category: "adoption"
+    requires_js: true
+
+  # 【名古屋市】3 URL
+  - name: "名古屋市（飼主不明動物）"
+    prefecture: "愛知県"
+    prefecture_code: "23"
+    list_url: "https://www.city.nagoya.jp/kurashi/pet/1015473/1015489/1015493.html"
+    category: "lost"
+    single_page: true
+
+  - name: "名古屋市（譲渡犬）"
+    prefecture: "愛知県"
+    prefecture_code: "23"
+    list_url: "https://www.city.nagoya.jp/kurashi/pet/1015473/1015483/1015484.html"
+    category: "adoption"
+    single_page: true
+
+  - name: "名古屋市（譲渡猫）"
+    prefecture: "愛知県"
+    prefecture_code: "23"
+    list_url: "https://www.city.nagoya.jp/kurashi/pet/1015473/1015483/1015488.html"
+    category: "adoption"
+    single_page: true
+
+  # 【豊橋市あいくる】専用ドメイン
+  - name: "豊橋市あいくる（迷い犬）"
+    prefecture: "愛知県"
+    prefecture_code: "23"
+    list_url: "https://toyohashi-aikuru.jp/animal_category/lost-found?animal_type=dog"
+    category: "lost"
+
+  - name: "豊橋市あいくる（迷い猫）"
+    prefecture: "愛知県"
+    prefecture_code: "23"
+    list_url: "https://toyohashi-aikuru.jp/animal_category/lost-found?animal_type=cat"
+    category: "lost"
+
+  # 【豊田市】PDF 形式
+  - name: "豊田市動物愛護センター（迷子動物）"
+    prefecture: "愛知県"
+    prefecture_code: "23"
+    list_url: "https://www.city.toyota.aichi.jp/kurashi/sumai/pet/1003696.html"
+    category: "lost"
+    pdf_link_pattern: "a[href$='.pdf']"
+
+  # 【岡崎市】PDF 形式
+  - name: "岡崎市（保護動物）"
+    prefecture: "愛知県"
+    prefecture_code: "23"
+    list_url: "https://www.city.okazaki.lg.jp/1100/1107/1149/p008181.html"
+    category: "sheltered"
+    pdf_link_pattern: "a[href$='.pdf']"
