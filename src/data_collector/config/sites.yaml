@@ -452,3 +452,118 @@ sites:
     list_url: "https://www.city.kagoshima.lg.jp/kenkofukushi/hokenjo/seiei-jueki/kurashi/dobutsu/kainushi/joho/neko.html"
     category: "sheltered"
     single_page: true
+
+  # ===================================================================
+  # 九州・沖縄バッチ3: 動的 DB サイト（熊本・大分専用ドメイン + 那覇市）
+  # ===================================================================
+
+  # 【熊本県動物愛護センター】動的 DB、個別詳細あり
+  # 譲渡: type_id:2, 迷子: type_id:1 / animal_id:1=犬, 2=猫
+  - name: "熊本県動愛（センター譲渡犬）"
+    prefecture: "熊本県"
+    prefecture_code: "43"
+    list_url: "https://www.kumamoto-doubutuaigo.jp/animals/index/type_id:2/animal_id:1"
+    list_link_pattern: "a[href*='/animals/detail/']"
+    category: "adoption"
+    requires_js: true
+
+  - name: "熊本県動愛（センター譲渡猫）"
+    prefecture: "熊本県"
+    prefecture_code: "43"
+    list_url: "https://www.kumamoto-doubutuaigo.jp/animals/index/type_id:2/animal_id:2"
+    list_link_pattern: "a[href*='/animals/detail/']"
+    category: "adoption"
+    requires_js: true
+
+  - name: "熊本県動愛（団体譲渡犬）"
+    prefecture: "熊本県"
+    prefecture_code: "43"
+    list_url: "https://www.kumamoto-doubutuaigo.jp/animals/group/type_id:2/animal_id:1"
+    list_link_pattern: "a[href*='/animals/detail/']"
+    category: "adoption"
+    requires_js: true
+
+  - name: "熊本県動愛（団体譲渡猫）"
+    prefecture: "熊本県"
+    prefecture_code: "43"
+    list_url: "https://www.kumamoto-doubutuaigo.jp/animals/group/type_id:2/animal_id:2"
+    list_link_pattern: "a[href*='/animals/detail/']"
+    category: "adoption"
+    requires_js: true
+
+  - name: "熊本県動愛（個人保護犬）"
+    prefecture: "熊本県"
+    prefecture_code: "43"
+    list_url: "https://www.kumamoto-doubutuaigo.jp/post_animals/index/type_id:2/animal_id:1"
+    list_link_pattern: "a[href*='/post_animals/detail/']"
+    category: "sheltered"
+    requires_js: true
+
+  - name: "熊本県動愛（個人保護猫）"
+    prefecture: "熊本県"
+    prefecture_code: "43"
+    list_url: "https://www.kumamoto-doubutuaigo.jp/post_animals/index/type_id:2/animal_id:2"
+    list_link_pattern: "a[href*='/post_animals/detail/']"
+    category: "sheltered"
+    requires_js: true
+
+  - name: "熊本県動愛（迷子犬）"
+    prefecture: "熊本県"
+    prefecture_code: "43"
+    list_url: "https://www.kumamoto-doubutuaigo.jp/animals/index/type_id:1/animal_id:1"
+    list_link_pattern: "a[href*='/animals/detail/']"
+    category: "lost"
+    requires_js: true
+
+  - name: "熊本県動愛（迷子猫）"
+    prefecture: "熊本県"
+    prefecture_code: "43"
+    list_url: "https://www.kumamoto-doubutuaigo.jp/animals/index/type_id:1/animal_id:2"
+    list_link_pattern: "a[href*='/animals/detail/']"
+    category: "lost"
+    requires_js: true
+
+  # 【熊本市動物愛護センター】静的 list + 動的 search 混在
+  - name: "熊本市（迷子犬一覧）"
+    prefecture: "熊本県"
+    prefecture_code: "43"
+    list_url: "https://www.city.kumamoto.jp/doubutuaigo/list03612.html"
+    category: "lost"
+    list_link_pattern: "a[href*='/doubutuaigo/kiji']"
+
+  - name: "熊本市（迷子猫一覧）"
+    prefecture: "熊本県"
+    prefecture_code: "43"
+    list_url: "https://www.city.kumamoto.jp/doubutuaigo/list03615.html"
+    category: "lost"
+    list_link_pattern: "a[href*='/doubutuaigo/kiji']"
+
+  # 【おおいた動物愛護センター】動的、メインのみ追加（市町村別は 0 件中心のためスキップ）
+  - name: "おおいた動物愛護センター（迷子情報メイン）"
+    prefecture: "大分県"
+    prefecture_code: "44"
+    list_url: "https://oita-aigo.com/lostchild/"
+    category: "sheltered"
+    single_page: true
+
+  - name: "おおいた動物愛護センター（譲渡犬）"
+    prefecture: "大分県"
+    prefecture_code: "44"
+    list_url: "https://oita-aigo.com/information_doglist/anytimedog/"
+    category: "adoption"
+    single_page: true
+
+  - name: "おおいた動物愛護センター（譲渡猫）"
+    prefecture: "大分県"
+    prefecture_code: "44"
+    list_url: "https://oita-aigo.com/information_catlist/anytimecat/"
+    category: "adoption"
+    single_page: true
+
+  # 【那覇市】PDF 配布形式
+  - name: "那覇市（保護犬猫情報）"
+    prefecture: "沖縄県"
+    prefecture_code: "47"
+    list_url: "https://www.city.naha.okinawa.jp/kurasitetuduki/animal/1002271/1002278.html"
+    category: "sheltered"
+    pdf_link_pattern: "a[href$='.pdf']"
