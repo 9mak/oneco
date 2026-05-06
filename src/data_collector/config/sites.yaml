@@ -135,3 +135,190 @@ sites:
     list_url: "https://www.city.matsuyama.ehime.jp/kurashi/kurashi/aigo/index.html"
     category: "lost"
     single_page: true
+
+  # ===================================================================
+  # 福岡県（バッチ1: 九州・沖縄）
+  # ===================================================================
+  # 【公益財団法人 福岡県動物愛護協会】静的HTML、個別詳細あり
+  # 詳細URL: /animals/protection-detail/{UUID}（保健所収容）
+  # 「収容翌日から5日間掲載」と明記され更新頻度高
+  - name: "福岡県動物愛護協会（保健所収容犬）"
+    prefecture: "福岡県"
+    prefecture_code: "40"
+    list_url: "https://www.zaidan-fukuoka-douai.or.jp/animals/protections/dog"
+    list_link_pattern: "a[href*='/animals/protection-detail/']"
+    category: "lost"
+
+  - name: "福岡県動物愛護協会（保健所収容猫）"
+    prefecture: "福岡県"
+    prefecture_code: "40"
+    list_url: "https://www.zaidan-fukuoka-douai.or.jp/animals/protections/cat"
+    list_link_pattern: "a[href*='/animals/protection-detail/']"
+    category: "lost"
+
+  - name: "福岡県動物愛護協会（一般保護犬）"
+    prefecture: "福岡県"
+    prefecture_code: "40"
+    list_url: "https://www.zaidan-fukuoka-douai.or.jp/personal-animals/hogo/dog"
+    category: "sheltered"
+
+  - name: "福岡県動物愛護協会（一般保護猫）"
+    prefecture: "福岡県"
+    prefecture_code: "40"
+    list_url: "https://www.zaidan-fukuoka-douai.or.jp/personal-animals/hogo/cat"
+    category: "sheltered"
+
+  - name: "福岡県動物愛護協会（センター譲渡犬）"
+    prefecture: "福岡県"
+    prefecture_code: "40"
+    list_url: "https://www.zaidan-fukuoka-douai.or.jp/animals/centers/dog"
+    category: "adoption"
+
+  - name: "福岡県動物愛護協会（センター譲渡猫）"
+    prefecture: "福岡県"
+    prefecture_code: "40"
+    list_url: "https://www.zaidan-fukuoka-douai.or.jp/animals/centers/cat"
+    category: "adoption"
+
+  - name: "福岡県動物愛護協会（団体譲渡犬）"
+    prefecture: "福岡県"
+    prefecture_code: "40"
+    list_url: "https://www.zaidan-fukuoka-douai.or.jp/animals/groups/dog"
+    category: "adoption"
+
+  - name: "福岡県動物愛護協会（団体譲渡猫）"
+    prefecture: "福岡県"
+    prefecture_code: "40"
+    list_url: "https://www.zaidan-fukuoka-douai.or.jp/animals/groups/cat"
+    category: "adoption"
+
+  # ===================================================================
+  # 佐賀県
+  # ===================================================================
+  # 5地域別の保護犬猫情報 + 全県の譲渡情報
+  # 静的HTML（pref.saga.lg.jp の kiji0034xxxxx 形式）
+  - name: "佐賀県（佐賀市・多久・小城・神埼）保護犬猫"
+    prefecture: "佐賀県"
+    prefecture_code: "41"
+    list_url: "https://www.pref.saga.lg.jp/kiji00349237/index.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "佐賀県（鳥栖・三養基郡）保護犬猫"
+    prefecture: "佐賀県"
+    prefecture_code: "41"
+    list_url: "https://www.pref.saga.lg.jp/kiji00334357/index.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "佐賀県（唐津・東松浦郡）保護犬猫"
+    prefecture: "佐賀県"
+    prefecture_code: "41"
+    list_url: "https://www.pref.saga.lg.jp/kiji00365042/index.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "佐賀県（伊万里・西松浦郡）保護犬猫"
+    prefecture: "佐賀県"
+    prefecture_code: "41"
+    list_url: "https://www.pref.saga.lg.jp/kiji00334505/index.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "佐賀県（武雄・鹿島・嬉野・杵島・藤津）保護犬猫"
+    prefecture: "佐賀県"
+    prefecture_code: "41"
+    list_url: "https://www.pref.saga.lg.jp/kiji00334341/index.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "佐賀県（全県）譲渡犬猫"
+    prefecture: "佐賀県"
+    prefecture_code: "41"
+    list_url: "https://www.pref.saga.lg.jp/kiji00314888/index.html"
+    category: "adoption"
+    single_page: true
+
+  # ===================================================================
+  # 長崎県
+  # ===================================================================
+  # 【長崎犬猫ネット】専用ドメイン、動的DB
+  # 個別詳細URL: /animal/no-{ID}/
+  - name: "長崎犬猫ネット（保健所収容）"
+    prefecture: "長崎県"
+    prefecture_code: "42"
+    list_url: "https://animal-net.pref.nagasaki.jp/syuuyou"
+    list_link_pattern: "a[href*='/animal/no-']"
+    category: "sheltered"
+
+  - name: "長崎犬猫ネット（譲渡）"
+    prefecture: "長崎県"
+    prefecture_code: "42"
+    list_url: "https://animal-net.pref.nagasaki.jp/jyouto"
+    list_link_pattern: "a[href*='/animal/no-']"
+    category: "adoption"
+
+  - name: "長崎犬猫ネット（迷子）"
+    prefecture: "長崎県"
+    prefecture_code: "42"
+    list_url: "https://animal-net.pref.nagasaki.jp/maigo"
+    list_link_pattern: "a[href*='/animal/no-']"
+    category: "lost"
+
+  - name: "長崎犬猫ネット（保護）"
+    prefecture: "長崎県"
+    prefecture_code: "42"
+    list_url: "https://animal-net.pref.nagasaki.jp/hogo"
+    list_link_pattern: "a[href*='/animal/no-']"
+    category: "sheltered"
+
+  # ===================================================================
+  # 沖縄県
+  # ===================================================================
+  # 【沖縄県動物愛護管理センター】専用ドメイン、動的DB、URL構造化
+  # 個別詳細URL: /animals/{accommodate,missing,protection}_view/{ID}
+  - name: "沖縄県動物愛護管理センター（収容犬）"
+    prefecture: "沖縄県"
+    prefecture_code: "47"
+    list_url: "https://www.aniwel-pref.okinawa/animals/accommodate/dogs"
+    list_link_pattern: "a[href*='/animals/accommodate_view/']"
+    category: "sheltered"
+    requires_js: true
+
+  - name: "沖縄県動物愛護管理センター（収容猫）"
+    prefecture: "沖縄県"
+    prefecture_code: "47"
+    list_url: "https://www.aniwel-pref.okinawa/animals/accommodate/cats"
+    list_link_pattern: "a[href*='/animals/accommodate_view/']"
+    category: "sheltered"
+    requires_js: true
+
+  - name: "沖縄県動物愛護管理センター（行方不明犬）"
+    prefecture: "沖縄県"
+    prefecture_code: "47"
+    list_url: "https://www.aniwel-pref.okinawa/animals/missing/dogs"
+    list_link_pattern: "a[href*='/animals/missing_view/']"
+    category: "lost"
+    requires_js: true
+
+  - name: "沖縄県動物愛護管理センター（行方不明猫）"
+    prefecture: "沖縄県"
+    prefecture_code: "47"
+    list_url: "https://www.aniwel-pref.okinawa/animals/missing/cats"
+    list_link_pattern: "a[href*='/animals/missing_view/']"
+    category: "lost"
+    requires_js: true
+
+  - name: "沖縄県動物愛護管理センター（迷い込み保護犬）"
+    prefecture: "沖縄県"
+    prefecture_code: "47"
+    list_url: "https://www.aniwel-pref.okinawa/animals/protection/dogs"
+    category: "sheltered"
+    requires_js: true
+
+  - name: "沖縄県動物愛護管理センター（迷い込み保護猫）"
+    prefecture: "沖縄県"
+    prefecture_code: "47"
+    list_url: "https://www.aniwel-pref.okinawa/animals/protection/cats"
+    category: "sheltered"
+    requires_js: true
