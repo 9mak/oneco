@@ -6,7 +6,6 @@ DB バックフィルで同じロジックを共有する。
 
 from urllib.parse import urlparse
 
-
 PREFECTURE_DOMAIN_MAP: tuple[tuple[str, str], ...] = (
     ("kochi-apc.com", "高知県"),
     ("douai-tokushima.com", "徳島県"),
