@@ -142,3 +142,25 @@ class TestRetryOnQuotaError:
             provider.extract_animal_data("<p>html</p>", "https://example.com", "adoption")
 
         mock_sleep.assert_not_called()
+
+    @patch("src.data_collector.llm.providers.groq_provider.time.sleep")
+    def test_retries_on_tool_use_failed_error(self, mock_sleep):
+        """tool_use_failed (Groq の非決定的な function call 失敗) は retry 対象"""
+        mock_client = MagicMock()
+        tool_use_error = Exception(
+            "Error code: 400 - {'error': {'message': 'Failed to call a function...', "
+            "'type': 'invalid_request_error', 'code': 'tool_use_failed', "
+            "'failed_generation': '<function=extract_detail_links>{\"links\": [...}]'}}"
+        )
+        mock_client.chat.completions.create.side_effect = [
+            tool_use_error,
+            _make_chat_response(ANIMAL_FIELDS),
+        ]
+        provider = GroqProvider(api_key="test-key")
+        provider._client = mock_client
+
+        result = provider.extract_animal_data("<p>html</p>", "https://example.com", "adoption")
+
+        assert result.fields["species"] == "犬"
+        assert mock_client.chat.completions.create.call_count == 2
+        mock_sleep.assert_called_once()
