@@ -296,7 +296,13 @@ class GroqProvider(LlmProvider):
             except Exception as e:
                 last_error = e
                 error_str = str(e).lower()
-                if any(k in error_str for k in ["quota", "rate", "429", "500", "503"]):
+                # tool_use_failed: モデルが function call の JSON を不正に生成する
+                # 既知の Groq の非決定的バグ。非決定性のためリトライで成功することが多い。
+                is_transient = any(
+                    k in error_str
+                    for k in ["quota", "rate", "429", "500", "503", "tool_use_failed"]
+                )
+                if is_transient:
                     if attempt < self.max_retries - 1:
                         wait = 2**attempt
                         logger.warning(
