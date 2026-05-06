@@ -567,3 +567,183 @@ sites:
     list_url: "https://www.city.naha.okinawa.jp/kurasitetuduki/animal/1002271/1002278.html"
     category: "sheltered"
     pdf_link_pattern: "a[href$='.pdf']"
+
+  # ===================================================================
+  # 関東地方バッチ1: 県動愛・主要拠点
+  # ===================================================================
+
+  # 【茨城県】日次 PDF 公表
+  - name: "茨城県（収容中の動物たち）"
+    prefecture: "茨城県"
+    prefecture_code: "08"
+    list_url: "https://www.pref.ibaraki.jp/hokenfukushi/doshise/hogo/syuuyou.html"
+    category: "sheltered"
+    pdf_link_pattern: "a[href*='kouhyou'][href$='.pdf']"
+
+  - name: "茨城県（迷い犬・猫情報）"
+    prefecture: "茨城県"
+    prefecture_code: "08"
+    list_url: "https://www.pref.ibaraki.jp/hokenfukushi/doshise/hogo/mayoiinuneko.html"
+    category: "lost"
+    pdf_link_pattern: "a[href*='kouhyou'][href$='.pdf']"
+
+  # 【栃木県動物愛護指導センター】専用ドメイン、静的 HTML
+  - name: "栃木県動物愛護指導センター（保護動物）"
+    prefecture: "栃木県"
+    prefecture_code: "09"
+    list_url: "https://www.douai.pref.tochigi.lg.jp/work_category/custody/"
+    category: "sheltered"
+    list_link_pattern: "a[href*='/news/']"
+
+  - name: "栃木県動物愛護指導センター（譲渡動物）"
+    prefecture: "栃木県"
+    prefecture_code: "09"
+    list_url: "https://www.douai.pref.tochigi.lg.jp/jyouto/"
+    category: "adoption"
+    list_link_pattern: "a[href*='/news/']"
+
+  - name: "栃木県動物愛護指導センター（迷子動物）"
+    prefecture: "栃木県"
+    prefecture_code: "09"
+    list_url: "https://www.douai.pref.tochigi.lg.jp/work/custody-lostanimal/"
+    category: "lost"
+    list_link_pattern: "a[href*='/news/']"
+
+  # 【群馬県】3 ページ（県動愛犬・東部支所犬・猫）
+  - name: "群馬県動物愛護センター（保護犬）"
+    prefecture: "群馬県"
+    prefecture_code: "10"
+    list_url: "https://www.pref.gunma.jp/page/167499.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "群馬県動物愛護センター東部支所（保護犬）"
+    prefecture: "群馬県"
+    prefecture_code: "10"
+    list_url: "https://www.pref.gunma.jp/page/179441.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "群馬県動物愛護センター（保護猫）"
+    prefecture: "群馬県"
+    prefecture_code: "10"
+    list_url: "https://www.pref.gunma.jp/page/167523.html"
+    category: "sheltered"
+    single_page: true
+
+  # 【千葉県】静的 HTML
+  - name: "千葉県動愛センター本所（収容犬）"
+    prefecture: "千葉県"
+    prefecture_code: "12"
+    list_url: "https://www.pref.chiba.lg.jp/aigo/pet/inu-neko/shuuyou/shuu-inu.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "千葉県動愛センター本所（収容猫）"
+    prefecture: "千葉県"
+    prefecture_code: "12"
+    list_url: "https://www.pref.chiba.lg.jp/aigo/pet/inu-neko/shuuyou/shuu-neko.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "千葉県動愛センター本所（収容犬猫以外）"
+    prefecture: "千葉県"
+    prefecture_code: "12"
+    list_url: "https://www.pref.chiba.lg.jp/aigo/pet/sonohoka/inu-nekoigai/index.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "千葉県動愛センター東葛飾支所（収容犬）"
+    prefecture: "千葉県"
+    prefecture_code: "12"
+    list_url: "https://www.pref.chiba.lg.jp/aigo/pet/inu-neko/shuuyou/shuu-inu-tou.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "千葉県動愛センター東葛飾支所（収容猫）"
+    prefecture: "千葉県"
+    prefecture_code: "12"
+    list_url: "https://www.pref.chiba.lg.jp/aigo/pet/inu-neko/shuuyou/shuu-neko-tou.html"
+    category: "sheltered"
+    single_page: true
+
+  # 【東京都】専用検索 DB（最大データ量見込み）、要 JS
+  - name: "東京都収容動物情報（犬）"
+    prefecture: "東京都"
+    prefecture_code: "13"
+    list_url: "https://shuyojoho.metro.tokyo.lg.jp/"
+    category: "sheltered"
+    requires_js: true
+
+  - name: "東京都収容動物情報（猫等）"
+    prefecture: "東京都"
+    prefecture_code: "13"
+    list_url: "https://shuyojoho.metro.tokyo.lg.jp/cat"
+    category: "sheltered"
+    requires_js: true
+
+  # 【神奈川県】静的 HTML、4 URL
+  - name: "神奈川県動物愛護センター（保護犬）"
+    prefecture: "神奈川県"
+    prefecture_code: "14"
+    list_url: "https://www.pref.kanagawa.jp/osirase/1594/awc/lost/dog.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "神奈川県動物愛護センター（保護猫）"
+    prefecture: "神奈川県"
+    prefecture_code: "14"
+    list_url: "https://www.pref.kanagawa.jp/osirase/1594/awc/lost/cat.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "神奈川県動物愛護センター（その他動物）"
+    prefecture: "神奈川県"
+    prefecture_code: "14"
+    list_url: "https://www.pref.kanagawa.jp/osirase/1594/awc/lost/other.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "神奈川県動物愛護センター（センター外保護動物）"
+    prefecture: "神奈川県"
+    prefecture_code: "14"
+    list_url: "https://www.pref.kanagawa.jp/osirase/1594/awc/lost/outside.html"
+    category: "sheltered"
+    single_page: true
+
+  # 【横須賀市】専用ドメイン、6 URL
+  - name: "横須賀市（保護犬）"
+    prefecture: "神奈川県"
+    prefecture_code: "14"
+    list_url: "https://www.yokosuka-doubutu.com/protected-animals-dog/"
+    category: "sheltered"
+
+  - name: "横須賀市（保護猫）"
+    prefecture: "神奈川県"
+    prefecture_code: "14"
+    list_url: "https://www.yokosuka-doubutu.com/protected-animals-cat/"
+    category: "sheltered"
+
+  - name: "横須賀市（保護その他）"
+    prefecture: "神奈川県"
+    prefecture_code: "14"
+    list_url: "https://www.yokosuka-doubutu.com/protected-animals-other/"
+    category: "sheltered"
+
+  - name: "横須賀市（譲渡犬）"
+    prefecture: "神奈川県"
+    prefecture_code: "14"
+    list_url: "https://www.yokosuka-doubutu.com/adopted-animals-dog/"
+    category: "adoption"
+
+  - name: "横須賀市（譲渡猫）"
+    prefecture: "神奈川県"
+    prefecture_code: "14"
+    list_url: "https://www.yokosuka-doubutu.com/adopted-animals-cat/"
+    category: "adoption"
+
+  - name: "横須賀市（譲渡その他）"
+    prefecture: "神奈川県"
+    prefecture_code: "14"
+    list_url: "https://www.yokosuka-doubutu.com/adopted-animals-other/"
+    category: "adoption"
