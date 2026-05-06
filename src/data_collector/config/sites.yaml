@@ -1594,3 +1594,58 @@ sites:
     list_url: "https://www.pref.fukushima.lg.jp/sec/21622a/maigo-cat-soso.html"
     category: "lost"
     single_page: true
+
+  # ===================================================================
+  # 残り東北・北陸（県動愛ハブページ）
+  # ===================================================================
+
+  # 【青森県】(http only)
+  - name: "青森県動物愛護センター（収容情報）"
+    prefecture: "青森県"
+    prefecture_code: "02"
+    list_url: "http://www.aomori-animal.jp/01_MAIGO/Shuyo.html"
+    category: "sheltered"
+    single_page: true
+
+  # 【岩手県】保健所別ハブ
+  - name: "岩手県（保護動物情報・ハブ）"
+    prefecture: "岩手県"
+    prefecture_code: "03"
+    list_url: "https://www.pref.iwate.jp/kurashikankyou/anzenanshin/pet/1004615.html"
+    category: "sheltered"
+    single_page: true
+
+  # 【山形県】4 保健所ハブ
+  - name: "山形県（飼い主探し掲示板・ハブ）"
+    prefecture: "山形県"
+    prefecture_code: "06"
+    list_url: "https://www.pref.yamagata.jp/020071/kenfuku/doubutsuaigo/aigo/kainushisagashi/keijiban.html"
+    category: "sheltered"
+    single_page: true
+
+  # 【新潟県】※現在 0 件だが URL は安定（将来データが入る前提）
+  - name: "新潟県動物愛護センター（保護動物）"
+    prefecture: "新潟県"
+    prefecture_code: "15"
+    list_url: "https://www.pref.niigata.lg.jp/sec/seikatueisei/1333314133188.html"
+    category: "sheltered"
+    single_page: true
+
+  # 【福井県】動物保護協会ハブ（外部リンクあり）
+  - name: "福井県（動物保護センター）"
+    prefecture: "福井県"
+    prefecture_code: "18"
+    list_url: "https://www.pref.fukui.lg.jp/doc/doukansi/doubutukanrisidou/doukansi-c-4.html"
+    category: "adoption"
+    single_page: true
+
+  # ===================================================================
+  # 高知県（旧 KochiAdapter から sites.yaml 統合）
+  # ===================================================================
+  # 既存データで稼働中。LLM 抽出への移行を試行。
+  - name: "高知県動物愛護センター"
+    prefecture: "高知県"
+    prefecture_code: "39"
+    list_url: "https://kochi-apc.com/center-data/"
+    list_link_pattern: "a[href*='kochi-apc.com/center-data/']"
+    category: "adoption"
