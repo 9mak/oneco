@@ -747,3 +747,216 @@ sites:
     prefecture_code: "14"
     list_url: "https://www.yokosuka-doubutu.com/adopted-animals-other/"
     category: "adoption"
+
+  # ===================================================================
+  # 関東地方バッチ2: 政令指定都市・中核市
+  # ===================================================================
+
+  # 【水戸市動物愛護センター】静的 HTML
+  - name: "水戸市（迷子ペット情報）"
+    prefecture: "茨城県"
+    prefecture_code: "08"
+    list_url: "https://www.city.mito.lg.jp/site/doubutsuaigo/list358.html"
+    category: "lost"
+    single_page: true
+
+  - name: "水戸市（愛護センター収容中の動物たち）"
+    prefecture: "茨城県"
+    prefecture_code: "08"
+    list_url: "https://www.city.mito.lg.jp/site/doubutsuaigo/2043.html"
+    category: "sheltered"
+    single_page: true
+
+  # 【宇都宮市】静的 HTML
+  - name: "宇都宮市（迷子犬・負傷猫）"
+    prefecture: "栃木県"
+    prefecture_code: "09"
+    list_url: "https://www.city.utsunomiya.lg.jp/kurashi/pet/pet/1005584.html"
+    category: "lost"
+    single_page: true
+
+  # 【前橋市】管理番号別の個別詳細あり
+  - name: "前橋市（保護犬）"
+    prefecture: "群馬県"
+    prefecture_code: "10"
+    list_url: "https://www.city.maebashi.gunma.jp/soshiki/kenko/eiseikensa/gyomu/1/1/1/9484.html"
+    category: "sheltered"
+    list_link_pattern: "a[href*='/9484/']"
+
+  # 【さいたま市】静的 HTML
+  - name: "さいたま市（保護犬）"
+    prefecture: "埼玉県"
+    prefecture_code: "11"
+    list_url: "https://www.city.saitama.lg.jp/008/004/003/004/p003138.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "さいたま市（保護猫・その他）"
+    prefecture: "埼玉県"
+    prefecture_code: "11"
+    list_url: "https://www.city.saitama.lg.jp/008/004/003/004/p019971.html"
+    category: "sheltered"
+    single_page: true
+
+  # 【越谷市】静的 HTML
+  - name: "越谷市（保護犬）"
+    prefecture: "埼玉県"
+    prefecture_code: "11"
+    list_url: "https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/hogo/koshigaya_contents_dog.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "越谷市（保護猫）"
+    prefecture: "埼玉県"
+    prefecture_code: "11"
+    list_url: "https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/hogo/koshigaya_contents_cat.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "越谷市（個人保護犬猫）"
+    prefecture: "埼玉県"
+    prefecture_code: "11"
+    list_url: "https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/hogo/hogo_kojin.html"
+    category: "sheltered"
+    single_page: true
+
+  # 【千葉市】静的 HTML、6 URL
+  - name: "千葉市（迷子犬）"
+    prefecture: "千葉県"
+    prefecture_code: "12"
+    list_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/lost_dog.html"
+    category: "lost"
+    single_page: true
+
+  - name: "千葉市（迷子猫）"
+    prefecture: "千葉県"
+    prefecture_code: "12"
+    list_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/lost_cat.html"
+    category: "lost"
+    single_page: true
+
+  - name: "千葉市（迷子その他動物）"
+    prefecture: "千葉県"
+    prefecture_code: "12"
+    list_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/lost_another_animal.html"
+    category: "lost"
+    single_page: true
+
+  - name: "千葉市（市民保護犬）"
+    prefecture: "千葉県"
+    prefecture_code: "12"
+    list_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/hogo_dog.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "千葉市（市民保護猫）"
+    prefecture: "千葉県"
+    prefecture_code: "12"
+    list_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/hogo_cat.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "千葉市（市民保護その他）"
+    prefecture: "千葉県"
+    prefecture_code: "12"
+    list_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/lost_others.html"
+    category: "sheltered"
+    single_page: true
+
+  # 【船橋市】静的 HTML
+  - name: "船橋市（収容犬猫）"
+    prefecture: "千葉県"
+    prefecture_code: "12"
+    list_url: "https://www.city.funabashi.lg.jp/kurashi/doubutsu/003/p013242.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "船橋市（譲渡可能犬猫）"
+    prefecture: "千葉県"
+    prefecture_code: "12"
+    list_url: "https://www.city.funabashi.lg.jp/kurashi/doubutsu/003/joutoindex.html"
+    category: "adoption"
+    single_page: true
+
+  # 【柏市】静的 HTML
+  - name: "柏市（保護動物）"
+    prefecture: "千葉県"
+    prefecture_code: "12"
+    list_url: "https://www.city.kashiwa.lg.jp/dobutsuaigo/shiseijoho/shisei/health_hospital/mainmenu/dobutsu/hogo/hogo.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "柏市（譲渡対象動物）"
+    prefecture: "千葉県"
+    prefecture_code: "12"
+    list_url: "https://www.city.kashiwa.lg.jp/dobutsuaigo/shiseijoho/shisei/health_hospital/mainmenu/dobutsu/hogo/satoya.html"
+    category: "adoption"
+    single_page: true
+
+  # 【町田市】静的 HTML
+  - name: "町田市（収容動物のお知らせ）"
+    prefecture: "東京都"
+    prefecture_code: "13"
+    list_url: "https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/syuyou.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "町田市（保護情報）"
+    prefecture: "東京都"
+    prefecture_code: "13"
+    list_url: "https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/hogo.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "町田市（捜索：飼い主が探している）"
+    prefecture: "東京都"
+    prefecture_code: "13"
+    list_url: "https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/pet_fumei/index.html"
+    category: "lost"
+    single_page: true
+
+  # 【横浜市】静的 HTML、3 URL
+  - name: "横浜市（収容犬）"
+    prefecture: "神奈川県"
+    prefecture_code: "14"
+    list_url: "https://www.city.yokohama.lg.jp/kurashi/sumai-kurashi/pet-dobutsu/aigo/maigo/shuyoinfo.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "横浜市（収容猫）"
+    prefecture: "神奈川県"
+    prefecture_code: "14"
+    list_url: "https://www.city.yokohama.lg.jp/kurashi/sumai-kurashi/pet-dobutsu/aigo/maigo/20121004094818.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "横浜市（収容その他動物）"
+    prefecture: "神奈川県"
+    prefecture_code: "14"
+    list_url: "https://www.city.yokohama.lg.jp/kurashi/sumai-kurashi/pet-dobutsu/aigo/maigo/20121004110429.html"
+    category: "sheltered"
+    single_page: true
+
+  # 【川崎市】静的 HTML、3 URL（5日間掲載）
+  - name: "川崎市（収容犬）"
+    prefecture: "神奈川県"
+    prefecture_code: "14"
+    list_url: "https://www.city.kawasaki.jp/350/page/0000077270.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "川崎市（収容猫）"
+    prefecture: "神奈川県"
+    prefecture_code: "14"
+    list_url: "https://www.city.kawasaki.jp/350/page/0000109367.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "川崎市（収容その他動物）"
+    prefecture: "神奈川県"
+    prefecture_code: "14"
+    list_url: "https://www.city.kawasaki.jp/350/page/0000074729.html"
+    category: "sheltered"
+    single_page: true
+
+  # 【藤沢市・相模原市】現在 0 件のため後回し（実データ計上後に追加検討）
