@@ -960,3 +960,218 @@ sites:
     single_page: true
 
   # 【藤沢市・相模原市】現在 0 件のため後回し（実データ計上後に追加検討）
+
+  # ===================================================================
+  # 近畿地方バッチ1: 県動愛・主要拠点・政令指定都市
+  # ===================================================================
+
+  # 【三重県動物愛護管理センター】専用ドメイン (http only)
+  - name: "三重県動物愛護管理センター（迷い犬情報）"
+    prefecture: "三重県"
+    prefecture_code: "24"
+    list_url: "http://mie-dakc.server-shared.com/maigoinujyouhou.html"
+    category: "lost"
+    single_page: true
+
+  # 【四日市市】PDF 配布形式
+  - name: "四日市市（保護動物情報）"
+    prefecture: "三重県"
+    prefecture_code: "24"
+    list_url: "https://www.city.yokkaichi.lg.jp/www/contents/1001000000924/index.html"
+    category: "sheltered"
+    pdf_link_pattern: "a[href$='.pdf']"
+
+  # 【滋賀県動物保護管理協会】専用ドメイン、動的、個別詳細あり
+  - name: "滋賀県動物保護管理センター（迷い犬猫）"
+    prefecture: "滋賀県"
+    prefecture_code: "25"
+    list_url: "https://www.sapca.jp/lost"
+    list_link_pattern: "a[href*='/lost/'][href$='.html']"
+    category: "sheltered"
+
+  # 【大津市】静的 HTML
+  - name: "大津市動物愛護センター（迷い犬猫）"
+    prefecture: "滋賀県"
+    prefecture_code: "25"
+    list_url: "https://www.city.otsu.lg.jp/soshiki/021/1442/g/pet/mayoi/1387775941679.html"
+    category: "lost"
+    single_page: true
+
+  # 【京都府】保健所別 5 URL
+  - name: "京都府 山城北保健所（迷子犬）"
+    prefecture: "京都府"
+    prefecture_code: "26"
+    list_url: "https://www.pref.kyoto.jp/yamashiro/ho-kita/121852245466.html"
+    category: "lost"
+    single_page: true
+
+  - name: "京都府 山城北保健所（迷子猫）"
+    prefecture: "京都府"
+    prefecture_code: "26"
+    list_url: "https://www.pref.kyoto.jp/yamashiro/ho-kita/1305161925645.html"
+    category: "lost"
+    single_page: true
+
+  - name: "京都府 山城南保健所（飼い主不明動物）"
+    prefecture: "京都府"
+    prefecture_code: "26"
+    list_url: "https://www.pref.kyoto.jp/yamashiro/ho-minami/fumei.html"
+    category: "lost"
+    single_page: true
+
+  - name: "京都府 南丹保健所（迷子犬）"
+    prefecture: "京都府"
+    prefecture_code: "26"
+    list_url: "https://www.pref.kyoto.jp/nantan/ho-kikaku/280418missingdog.html"
+    category: "lost"
+    single_page: true
+
+  - name: "京都府 南丹保健所（迷子猫）"
+    prefecture: "京都府"
+    prefecture_code: "26"
+    list_url: "https://www.pref.kyoto.jp/nantan/ho-kikaku/280418missingcat.html"
+    category: "lost"
+    single_page: true
+
+  # 【京都市ペットラブ】専用ドメイン、静的・single_page
+  - name: "京都市ペットラブ（迷子犬）"
+    prefecture: "京都府"
+    prefecture_code: "26"
+    list_url: "https://kyoto-ani-love.com/lost-animal/dog/"
+    category: "lost"
+    single_page: true
+
+  - name: "京都市ペットラブ（迷子猫）"
+    prefecture: "京都府"
+    prefecture_code: "26"
+    list_url: "https://kyoto-ani-love.com/lost-animal/cat/"
+    category: "lost"
+    single_page: true
+
+  # 【大阪府】静的 HTML、受付番号付き
+  - name: "大阪府動物愛護管理センター（迷い犬猫）"
+    prefecture: "大阪府"
+    prefecture_code: "27"
+    list_url: "https://www.pref.osaka.lg.jp/o120200/doaicenter/doaicenter/maigoken.html"
+    category: "lost"
+    single_page: true
+
+  # 【大阪市】静的 HTML、4 URL
+  - name: "大阪市（迷子犬）"
+    prefecture: "大阪府"
+    prefecture_code: "27"
+    list_url: "https://www.city.osaka.lg.jp/kenko/page/0000110901.html"
+    category: "lost"
+    single_page: true
+
+  - name: "大阪市（迷子猫）"
+    prefecture: "大阪府"
+    prefecture_code: "27"
+    list_url: "https://www.city.osaka.lg.jp/kenko/page/0000117147.html"
+    category: "lost"
+    single_page: true
+
+  - name: "大阪市（譲渡犬）"
+    prefecture: "大阪府"
+    prefecture_code: "27"
+    list_url: "https://www.city.osaka.lg.jp/kenko/page/0000206024.html"
+    category: "adoption"
+    single_page: true
+
+  - name: "大阪市（譲渡猫）"
+    prefecture: "大阪府"
+    prefecture_code: "27"
+    list_url: "https://www.city.osaka.lg.jp/kenko/page/0000206027.html"
+    category: "adoption"
+    single_page: true
+
+  # 【高槻市・豊中市・東大阪市・枚方市】（現在 0 件中心、URL 安定なので将来用）
+  - name: "高槻市（迷子犬猫）"
+    prefecture: "大阪府"
+    prefecture_code: "27"
+    list_url: "https://www.city.takatsuki.osaka.jp/soshiki/39/2752.html"
+    category: "lost"
+    single_page: true
+
+  - name: "豊中市（迷子犬猫）"
+    prefecture: "大阪府"
+    prefecture_code: "27"
+    list_url: "https://www.city.toyonaka.osaka.jp/kurashi/pettp-inuneko/maigo.html"
+    category: "lost"
+    single_page: true
+
+  - name: "東大阪市（保護収容動物）"
+    prefecture: "大阪府"
+    prefecture_code: "27"
+    list_url: "https://www.city.higashiosaka.lg.jp/0000005910.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "枚方市（収容動物）"
+    prefecture: "大阪府"
+    prefecture_code: "27"
+    list_url: "https://www.city.hirakata.osaka.jp/0000001430.html"
+    category: "sheltered"
+    single_page: true
+
+  # 【兵庫県動物愛護センター】静的
+  - name: "兵庫県動物愛護センター（収容動物）"
+    prefecture: "兵庫県"
+    prefecture_code: "28"
+    list_url: "https://hyogo-douai.sakura.ne.jp/shuuyou.html"
+    category: "sheltered"
+    single_page: true
+
+  # 【神戸市】静的、画像付きカード形式
+  - name: "神戸市動物管理センター（収容動物）"
+    prefecture: "兵庫県"
+    prefecture_code: "28"
+    list_url: "https://www.city.kobe.lg.jp/a84140/kenko/health/hygiene/animal/zmenu/index.html"
+    category: "sheltered"
+    single_page: true
+
+  # 【尼崎市】静的、URL 安定
+  - name: "尼崎市動物愛護センター（収容動物）"
+    prefecture: "兵庫県"
+    prefecture_code: "28"
+    list_url: "https://www.city.amagasaki.hyogo.jp/kurashi/iryou/pet/051syuuyoudoubutu.html"
+    category: "sheltered"
+    single_page: true
+
+  # 【明石市】2 URL（犬・猫）
+  - name: "あかし動物センター（迷子犬）"
+    prefecture: "兵庫県"
+    prefecture_code: "28"
+    list_url: "https://www.city.akashi.lg.jp/kankyou/dobutsu/info/maigo/dog.html"
+    category: "lost"
+    single_page: true
+
+  - name: "あかし動物センター（迷子猫）"
+    prefecture: "兵庫県"
+    prefecture_code: "28"
+    list_url: "https://www.city.akashi.lg.jp/kankyou/dobutsu/info/maigo/cat.html"
+    category: "lost"
+    single_page: true
+
+  # 【奈良市】表形式
+  - name: "奈良市（保護動物情報）"
+    prefecture: "奈良県"
+    prefecture_code: "29"
+    list_url: "https://www.city.nara.lg.jp/life/4/34/134/"
+    category: "sheltered"
+    single_page: true
+
+  # 【和歌山県・和歌山市】
+  - name: "和歌山県（保護犬猫情報）"
+    prefecture: "和歌山県"
+    prefecture_code: "30"
+    list_url: "https://www.pref.wakayama.lg.jp/prefg/031601/d00156970.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "和歌山市動物愛護管理センター（譲渡候補）"
+    prefecture: "和歌山県"
+    prefecture_code: "30"
+    list_url: "https://www.city.wakayama.wakayama.jp/kurashi/kenko_iryo/1009125/1035775/1002096.html"
+    category: "adoption"
+    single_page: true
