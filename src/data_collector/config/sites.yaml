@@ -322,3 +322,133 @@ sites:
     list_url: "https://www.aniwel-pref.okinawa/animals/protection/cats"
     category: "sheltered"
     requires_js: true
+
+  # ===================================================================
+  # 九州・沖縄バッチ2: 政令指定都市・中核市
+  # ===================================================================
+
+  # 【北九州市】静的HTML、保護犬と譲渡犬の2 URL
+  - name: "北九州市（保護犬）"
+    prefecture: "福岡県"
+    prefecture_code: "40"
+    list_url: "https://www.city.kitakyushu.lg.jp/contents/924_11831.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "北九州市（譲渡犬）"
+    prefecture: "福岡県"
+    prefecture_code: "40"
+    list_url: "https://www.city.kitakyushu.lg.jp/contents/924_11834.html"
+    category: "adoption"
+    single_page: true
+
+  # 【福岡市わんにゃんよかネット】パラメータ駆動・動的、要 JS 検証
+  - name: "福岡市わんにゃん（犬保護中）"
+    prefecture: "福岡県"
+    prefecture_code: "40"
+    list_url: "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/index?type_id=1&sorting_id=4"
+    category: "sheltered"
+    requires_js: true
+
+  - name: "福岡市わんにゃん（猫保護中）"
+    prefecture: "福岡県"
+    prefecture_code: "40"
+    list_url: "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/index?type_id=2&sorting_id=4"
+    category: "sheltered"
+    requires_js: true
+
+  - name: "福岡市わんにゃん（犬譲渡）"
+    prefecture: "福岡県"
+    prefecture_code: "40"
+    list_url: "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/index?type_id=1&sorting_id=5"
+    category: "adoption"
+    requires_js: true
+
+  - name: "福岡市わんにゃん（猫譲渡）"
+    prefecture: "福岡県"
+    prefecture_code: "40"
+    list_url: "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/index?type_id=2&sorting_id=5"
+    category: "adoption"
+    requires_js: true
+
+  # 【長崎市動物愛護管理センター】静的HTML、里親募集
+  - name: "長崎市動物愛護管理センター（犬里親募集）"
+    prefecture: "長崎県"
+    prefecture_code: "42"
+    list_url: "https://www.city.nagasaki.lg.jp/site/doubutsuaigo/list7-19.html"
+    category: "adoption"
+    single_page: true
+
+  - name: "長崎市動物愛護管理センター（猫里親募集）"
+    prefecture: "長崎県"
+    prefecture_code: "42"
+    list_url: "https://www.city.nagasaki.lg.jp/site/doubutsuaigo/list7-18.html"
+    category: "adoption"
+    single_page: true
+
+  # 【佐世保市】静的HTML、個別詳細あり: /YYYYMMDD_{dog,cat}NN.html
+  - name: "佐世保市（保護犬）"
+    prefecture: "長崎県"
+    prefecture_code: "42"
+    list_url: "https://www.city.sasebo.lg.jp/hokenhukusi/seikat/hogodoubutsu.html"
+    category: "sheltered"
+    list_link_pattern: "a[href*='_dog']"
+
+  - name: "佐世保市（保護猫）"
+    prefecture: "長崎県"
+    prefecture_code: "42"
+    list_url: "https://www.city.sasebo.lg.jp/hokenhukusi/seikat/mayoinekohogo.html"
+    category: "sheltered"
+    list_link_pattern: "a[href*='_cat']"
+
+  # 【大分市】静的HTML
+  - name: "大分市（保護犬）"
+    prefecture: "大分県"
+    prefecture_code: "44"
+    list_url: "https://www.city.oita.oita.jp/kurashi/pet/inunohogo/index.html"
+    category: "sheltered"
+    single_page: true
+
+  # 【宮崎市】保護犬・保護猫・譲渡情報
+  - name: "宮崎市（直近保護犬）"
+    prefecture: "宮崎県"
+    prefecture_code: "45"
+    list_url: "https://www.city.miyazaki.miyazaki.jp/life/pet/protection/411118.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "宮崎市（直近保護猫）"
+    prefecture: "宮崎県"
+    prefecture_code: "45"
+    list_url: "https://www.city.miyazaki.miyazaki.jp/life/pet/protection/411116.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "宮崎市（センター保護犬・飼い主募集）"
+    prefecture: "宮崎県"
+    prefecture_code: "45"
+    list_url: "https://www.city.miyazaki.miyazaki.jp/life/pet/protection/109676.html"
+    category: "adoption"
+    single_page: true
+
+  - name: "宮崎市（センター保護猫・飼い主募集）"
+    prefecture: "宮崎県"
+    prefecture_code: "45"
+    list_url: "https://www.city.miyazaki.miyazaki.jp/life/pet/protection/339718.html"
+    category: "adoption"
+    single_page: true
+
+  # 【鹿児島市】静的HTML、保護犬・保護猫・飼い主募集
+  - name: "鹿児島市（保護犬）"
+    prefecture: "鹿児島県"
+    prefecture_code: "46"
+    list_url: "https://www.city.kagoshima.lg.jp/kenkofukushi/hokenjo/seiei-jueki/kurashi/dobutsu/kainushi/joho/inu.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "鹿児島市（保護猫）"
+    prefecture: "鹿児島県"
+    prefecture_code: "46"
+    list_url: "https://www.city.kagoshima.lg.jp/kenkofukushi/hokenjo/seiei-jueki/kurashi/dobutsu/kainushi/joho/neko.html"
+    category: "sheltered"
+    single_page: true
