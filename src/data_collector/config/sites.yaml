@@ -1175,3 +1175,100 @@ sites:
     list_url: "https://www.city.wakayama.wakayama.jp/kurashi/kenko_iryo/1009125/1035775/1002096.html"
     category: "adoption"
     single_page: true
+
+  # ===================================================================
+  # 中国地方バッチ1: 県動愛・主要拠点
+  # ===================================================================
+
+  # 【鳥取県】表形式 + PDF 詳細
+  - name: "鳥取県（迷子動物情報）"
+    prefecture: "鳥取県"
+    prefecture_code: "31"
+    list_url: "https://www.pref.tottori.lg.jp/221001.htm"
+    category: "lost"
+    single_page: true
+
+  # 【島根県 松江保健所】管理番号別の表形式
+  - name: "島根県 松江保健所（収容動物）"
+    prefecture: "島根県"
+    prefecture_code: "32"
+    list_url: "https://www.pref.shimane.lg.jp/infra/nature/animal/matsue_hoken/doubutu/hogozyouhou_kakobunn/syuyouari.html"
+    category: "sheltered"
+    single_page: true
+
+  # 【岡山県動物愛護センター】写真付き表形式
+  - name: "岡山県動物愛護センター（保護動物）"
+    prefecture: "岡山県"
+    prefecture_code: "33"
+    list_url: "https://www.pref.okayama.jp/page/859555.html"
+    category: "sheltered"
+    single_page: true
+
+  # 【岡山市】カテゴリページ、複数の個別保護犬猫記事
+  - name: "岡山市（保護動物情報）"
+    prefecture: "岡山県"
+    prefecture_code: "33"
+    list_url: "https://www.city.okayama.jp/kurashi/category/1-15-1-0-0-0-0-0-0-0.html"
+    category: "sheltered"
+    list_link_pattern: "a[href*='/kurashi/']"
+
+  # 【倉敷市】個別詳細あり、URL: /kurashi/pet/1013042/{ID}.html
+  - name: "倉敷市（保護動物）"
+    prefecture: "岡山県"
+    prefecture_code: "33"
+    list_url: "https://www.city.kurashiki.okayama.jp/kurashi/pet/1013042/index.html"
+    list_link_pattern: "a[href*='/kurashi/pet/1013042/']"
+    category: "sheltered"
+
+  # 【広島県動物愛護センター】2 URL（迷い犬・猫）
+  - name: "広島県動物愛護センター（迷い犬）"
+    prefecture: "広島県"
+    prefecture_code: "34"
+    list_url: "https://www.pref.hiroshima.lg.jp/site/apc/jouto-stray-dog-list.html"
+    category: "lost"
+    single_page: true
+
+  - name: "広島県動物愛護センター（迷い猫）"
+    prefecture: "広島県"
+    prefecture_code: "34"
+    list_url: "https://www.pref.hiroshima.lg.jp/site/apc/jouto-stray-cat-list.html"
+    category: "lost"
+    single_page: true
+
+  # 【広島市】犬・猫の 2 URL
+  - name: "広島市（迷子犬）"
+    prefecture: "広島県"
+    prefecture_code: "34"
+    list_url: "https://www.city.hiroshima.lg.jp/living/pet-doubutsu/1021301/1026245/1037461.html"
+    category: "lost"
+    single_page: true
+
+  - name: "広島市（迷子猫）"
+    prefecture: "広島県"
+    prefecture_code: "34"
+    list_url: "https://www.city.hiroshima.lg.jp/living/pet-doubutsu/1021301/1026245/1039097.html"
+    category: "lost"
+    single_page: true
+
+  # 【福山市】犬・猫の 2 URL（個別詳細あり）
+  - name: "福山市（保護犬）"
+    prefecture: "広島県"
+    prefecture_code: "34"
+    list_url: "https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/237722.html"
+    category: "sheltered"
+    list_link_pattern: "a[href*='/soshiki/dobutsuaigo/']"
+
+  - name: "福山市（保護猫）"
+    prefecture: "広島県"
+    prefecture_code: "34"
+    list_url: "https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/60970.html"
+    category: "sheltered"
+    single_page: true
+
+  # 【山口県】8 健康福祉センター（県動愛のハブページ）
+  - name: "山口県動物愛護センター（収容動物）"
+    prefecture: "山口県"
+    prefecture_code: "35"
+    list_url: "https://www.pref.yamaguchi.lg.jp/site/doubutuaigo/list25-151.html"
+    category: "sheltered"
+    single_page: true
