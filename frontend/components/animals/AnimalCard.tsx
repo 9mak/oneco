@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useState } from 'react';
 import { AnimalPublic } from '@/types/animal';
 import { CategoryBadge } from '@/components/ui/CategoryBadge';
+import { FavoriteButton } from '@/components/animals/FavoriteButton';
 
 interface AnimalCardProps {
   animal: AnimalPublic;
@@ -46,6 +47,9 @@ export function AnimalCard({ animal }: AnimalCardProps) {
         />
         <div className="absolute top-2 right-2">
           <CategoryBadge category={animal.category} size="sm" />
+        </div>
+        <div className="absolute top-2 left-2">
+          <FavoriteButton animalId={animal.id} size="sm" stopPropagation />
         </div>
       </div>
 
