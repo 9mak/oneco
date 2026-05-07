@@ -71,14 +71,24 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # CORS設定
-    allowed_origins = os.getenv("CORS_ORIGINS", "*").split(",")
+    # CORS 設定
+    # 公開 GET API のため認証クッキーは不要 → allow_credentials=False
+    # CORS_ORIGINS 環境変数で許可ドメインを明示する。未設定なら local dev 想定の安全なデフォルト
+    cors_env = os.getenv("CORS_ORIGINS", "").strip()
+    if cors_env == "*":
+        # 明示的に全開放を要求された場合のみ。allow_credentials は False を強制
+        allowed_origins = ["*"]
+    elif cors_env:
+        allowed_origins = [o.strip() for o in cors_env.split(",") if o.strip()]
+    else:
+        # デフォルトは local dev 限定（本番は env で明示設定すること）
+        allowed_origins = ["http://localhost:3000", "http://localhost:3002"]
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allowed_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_credentials=False,
+        allow_methods=["GET", "OPTIONS", "PATCH"],
+        allow_headers=["Content-Type", "X-Internal-Token"],
     )
 
     # ルーター登録

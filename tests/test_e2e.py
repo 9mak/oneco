@@ -446,8 +446,13 @@ class TestE2EStatusManagementFlow:
             animal_id = target_item["id"]
 
             # 3. ステータスを複数回更新
-            await client.patch(f"/animals/{animal_id}/status", json={"status": "adopted"})
-            await client.patch(f"/animals/{animal_id}/status", json={"status": "returned"})
+            _h = {"X-Internal-Token": "test-internal-token"}
+            await client.patch(
+                f"/animals/{animal_id}/status", json={"status": "adopted"}, headers=_h
+            )
+            await client.patch(
+                f"/animals/{animal_id}/status", json={"status": "returned"}, headers=_h
+            )
 
         # 4. 履歴が記録されていることを確認
         from sqlalchemy import func, select
@@ -477,7 +482,11 @@ class TestE2EStatusManagementFlow:
             items = list_response.json()["items"]
 
             # 最初の動物を adopted に変更
-            await client.patch(f"/animals/{items[0]['id']}/status", json={"status": "adopted"})
+            await client.patch(
+                f"/animals/{items[0]['id']}/status",
+                json={"status": "adopted"},
+                headers={"X-Internal-Token": "test-internal-token"},
+            )
 
             # 3. ステータスでフィルタリング
             sheltered_response = await client.get("/animals?status=sheltered")
@@ -512,11 +521,14 @@ class TestE2EStatusManagementFlow:
             animal_id = target_item["id"]
 
             # 3. deceased に変更
-            await client.patch(f"/animals/{animal_id}/status", json={"status": "deceased"})
+            _h = {"X-Internal-Token": "test-internal-token"}
+            await client.patch(
+                f"/animals/{animal_id}/status", json={"status": "deceased"}, headers=_h
+            )
 
             # 4. deceased から sheltered への不正な遷移を試行
             invalid_response = await client.patch(
-                f"/animals/{animal_id}/status", json={"status": "sheltered"}
+                f"/animals/{animal_id}/status", json={"status": "sheltered"}, headers=_h
             )
 
         # 5. 検証 - 422 エラーが返される
