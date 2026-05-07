@@ -35,3 +35,18 @@ export async function fetchAnimals(
 
   return res.json();
 }
+
+/**
+ * 都道府県別の保護動物数を取得（status='sheltered' のみ集計）
+ */
+export async function fetchPrefectureStats(): Promise<Record<string, number>> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/animals/stats/by-prefecture`, {
+      next: { revalidate: 600 },
+    });
+    if (!res.ok) return {};
+    return res.json();
+  } catch {
+    return {};
+  }
+}
