@@ -324,7 +324,11 @@ async def test_update_status_success(test_app, animal_for_status_update):
     animal_id = animal_for_status_update.id
 
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
-        response = await client.patch(f"/animals/{animal_id}/status", json={"status": "adopted"})
+        response = await client.patch(
+            f"/animals/{animal_id}/status",
+            json={"status": "adopted"},
+            headers={"X-Internal-Token": "test-internal-token"},
+        )
 
     assert response.status_code == 200
     data = response.json()
@@ -341,7 +345,9 @@ async def test_update_status_with_outcome_date(test_app, animal_for_status_updat
 
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
         response = await client.patch(
-            f"/animals/{animal_id}/status", json={"status": "adopted", "outcome_date": "2026-01-20"}
+            f"/animals/{animal_id}/status",
+            json={"status": "adopted", "outcome_date": "2026-01-20"},
+            headers={"X-Internal-Token": "test-internal-token"},
         )
 
     assert response.status_code == 200
@@ -367,7 +373,11 @@ async def test_update_status_invalid_transition(test_app, async_session):
     await async_session.refresh(animal)
 
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
-        response = await client.patch(f"/animals/{animal.id}/status", json={"status": "sheltered"})
+        response = await client.patch(
+            f"/animals/{animal.id}/status",
+            json={"status": "sheltered"},
+            headers={"X-Internal-Token": "test-internal-token"},
+        )
 
     assert response.status_code == 422
     data = response.json()
@@ -378,7 +388,11 @@ async def test_update_status_invalid_transition(test_app, async_session):
 async def test_update_status_not_found(test_app, async_session):
     """PATCH /animals/{id}/status が存在しない動物で 404 を返すか"""
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
-        response = await client.patch("/animals/99999/status", json={"status": "adopted"})
+        response = await client.patch(
+            "/animals/99999/status",
+            json={"status": "adopted"},
+            headers={"X-Internal-Token": "test-internal-token"},
+        )
 
     assert response.status_code == 404
 
@@ -390,10 +404,40 @@ async def test_update_status_invalid_status_value(test_app, animal_for_status_up
 
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
         response = await client.patch(
-            f"/animals/{animal_id}/status", json={"status": "invalid_status"}
+            f"/animals/{animal_id}/status",
+            json={"status": "invalid_status"},
+            headers={"X-Internal-Token": "test-internal-token"},
         )
 
     assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_update_status_requires_auth_token(test_app, animal_for_status_update):
+    """PATCH /animals/{id}/status は X-Internal-Token なしで 401 を返す"""
+    animal_id = animal_for_status_update.id
+
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
+        response = await client.patch(
+            f"/animals/{animal_id}/status", json={"status": "adopted"}
+        )
+
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_update_status_rejects_invalid_token(test_app, animal_for_status_update):
+    """PATCH /animals/{id}/status は不正な X-Internal-Token で 401 を返す"""
+    animal_id = animal_for_status_update.id
+
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
+        response = await client.patch(
+            f"/animals/{animal_id}/status",
+            json={"status": "adopted"},
+            headers={"X-Internal-Token": "wrong-token"},
+        )
+
+    assert response.status_code == 401
 
 
 # === Task 4.2: 既存 API のステータスフィルタリング対応テスト ===
