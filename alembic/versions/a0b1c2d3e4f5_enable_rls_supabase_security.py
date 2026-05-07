@@ -38,6 +38,7 @@ TABLES_NO_PUBLIC_ACCESS = [
     "notification_users",
     "notification_preferences",
     "notification_history",
+    "alembic_version",  # マイグレーション履歴 — anon 公開不要
 ]
 
 
