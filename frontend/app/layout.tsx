@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-const SITE_NAME = 'oneco - 保護動物情報ポータル';
+const SITE_NAME = 'oneco';
 const SITE_DESCRIPTION =
   '全国の自治体に保護されている犬・猫の情報を一元化したポータルサイト。譲渡対象動物・迷子情報を都道府県別・条件別に検索できます。';
 
