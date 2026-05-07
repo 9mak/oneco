@@ -14,6 +14,9 @@ permissions:
 jobs:
   collect:
     runs-on: ubuntu-latest
+    # GitHub Actions のデフォルト 6h は 200+ サイトを処理しきれずタイムアウトすることがあるため
+    # 5h で打ち切り、artifact upload と commit&push の時間を確保する
+    timeout-minutes: 300
 
     steps:
       - name: Checkout repository
@@ -37,6 +40,9 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # 1 サイトの処理が固まっても次のサイトへ進めるため、SIGALRM ベースの per-site timeout
+          SITE_TIMEOUT_SEC: '120'
+          SITE_TIMEOUT_JS_SEC: '180'
         run: |
           python -m data_collector
 
