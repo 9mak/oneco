@@ -15,6 +15,7 @@ interface HomePageProps {
     location?: string;
     category?: string;
     status?: string;
+    q?: string;
   }>;
 }
 
@@ -51,6 +52,9 @@ function parseFilters(params: Awaited<HomePageProps['searchParams']>): FilterSta
   }
   if (params.location) {
     filters.location = params.location;
+  }
+  if (params.q && params.q.trim()) {
+    filters.q = params.q.trim().slice(0, 100);
   }
   return filters;
 }
