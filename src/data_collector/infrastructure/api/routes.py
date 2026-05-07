@@ -4,10 +4,12 @@ API ルート定義
 動物データ取得のためのREST APIエンドポイントを提供します。
 """
 
+import os
+import secrets
 from datetime import date, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Path, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Path, Query
 
 from src.data_collector.domain.models import AnimalStatus
 from src.data_collector.domain.status_transition import StatusTransitionError
@@ -30,6 +32,25 @@ from src.data_collector.infrastructure.logging_config import get_logger
 logger = get_logger(__name__)
 router = APIRouter(tags=["animals"])
 archive_router = APIRouter(prefix="/archive", tags=["archive"])
+
+
+def require_internal_token(
+    x_internal_token: Annotated[str | None, Header(alias="X-Internal-Token")] = None,
+) -> None:
+    """
+    内部 API のトークン認証
+
+    ステータス更新等の書き込み系エンドポイントで使う。
+    INTERNAL_API_TOKEN 環境変数（Cloud Run シークレット）と一致しない要求は 401。
+    secrets.compare_digest でタイミング攻撃を防止。
+    """
+    expected = os.getenv("INTERNAL_API_TOKEN", "").strip()
+    if not expected:
+        # トークン未設定時は本番設定ミスとして 503（誰も認証通せない）
+        logger.error("INTERNAL_API_TOKEN is not configured")
+        raise HTTPException(status_code=503, detail="Server misconfigured")
+    if not x_internal_token or not secrets.compare_digest(x_internal_token, expected):
+        raise HTTPException(status_code=401, detail="Unauthorized")
 
 
 @router.get("/animals", response_model=PaginatedResponse[AnimalPublic])
@@ -141,7 +162,11 @@ async def get_animal(
     return AnimalPublic.model_validate(orm_animal)
 
 
-@router.patch("/animals/{animal_id}/status", response_model=StatusUpdateResponse)
+@router.patch(
+    "/animals/{animal_id}/status",
+    response_model=StatusUpdateResponse,
+    dependencies=[Depends(require_internal_token)],
+)
 async def update_animal_status(
     animal_id: Annotated[int, Path(description="動物ID")],
     request: StatusUpdateRequest,
@@ -203,13 +228,14 @@ async def health_check(session: SessionDep) -> dict:
             "timestamp": datetime.utcnow().isoformat(),
         }
     except Exception as e:
+        # エラー詳細はログのみ。レスポンスには汎用メッセージのみ（DB ホスト名等の漏洩防止）
         logger.error(f"Health check failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=503,
             detail={
                 "status": "unhealthy",
                 "timestamp": datetime.utcnow().isoformat(),
-                "error": str(e),
+                "error": "database connection failed",
             },
         )
 
