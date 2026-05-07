@@ -60,7 +60,7 @@ export function Footer() {
 
         <div className="mt-4 text-center">
           <p className="text-sm text-[var(--color-text-secondary)]">
-            &copy; 2026 oneco - 保護動物情報ポータル. All rights reserved.
+            &copy; 2026 oneco. All rights reserved.
           </p>
         </div>
       </div>
