@@ -1,7 +1,7 @@
 # 画像永続化・重複検出 ロードマップ
 
 **作成日:** 2026-05-07
-**状態:** Phase 1 部分実装、Phase 2-3 未着手
+**状態:** Phase 1 完了、Phase 2-3 未着手
 
 ---
 
@@ -24,11 +24,15 @@
 
 ## ロードマップ
 
-### Phase 1（今回・MVP）✅ 部分実装
+### Phase 1（MVP）✅ 完了
 
 - [x] `image_hashes` テーブルに URL ベースの SHA-256 を蓄積（重複検出の最低限）
-- [x] 同一 URL を持つ動物の発見 API
-- [ ] 実装：`collector_service` でのフックは未対応（次フェーズ）
+- [x] `URLHashRecorder` ヘルパー実装 (`src/data_collector/infrastructure/url_hash_recorder.py`)
+- [x] `CollectorService._save_via_db_connection` にフック追加（保存成功時に画像URLを記録）
+- [x] 失敗時のフォールバック（メイン保存処理は中断しない）
+- [x] テスト: ヘルパー単体 10件 + 統合テスト 2件
+- [ ] **未対応**: `_save_via_repository` 経路（テスト用途のためスキップ。Phase 2 で必要なら統一検討）
+- [ ] **未対応**: 同一 URL を持つ動物の発見 API（蓄積データの活用は Phase 3 で）
 
 ### Phase 2（次フェーズ）— 画像永続化 + Supabase Storage 連携
 
