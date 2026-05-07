@@ -1,8 +1,10 @@
 """CLI エントリーポイント"""
 
 import asyncio
+import contextlib
 import logging
 import os
+import signal
 import sys
 import time
 from pathlib import Path
@@ -33,6 +35,38 @@ PROVIDER_REGISTRY = {
     "groq": GroqProvider,
 }
 
+# サイト別収集のタイムアウト（秒）
+# 209+ サイトを GitHub Actions の 6 時間以内に収まらせるため、ハングしたサイトを
+# 切り捨てて次に進む。requires_js=True サイトは Playwright 起動が重いので長め。
+SITE_TIMEOUT_SEC = int(os.getenv("SITE_TIMEOUT_SEC", "120"))
+SITE_TIMEOUT_JS_SEC = int(os.getenv("SITE_TIMEOUT_JS_SEC", "180"))
+
+
+class SiteCollectionTimeoutError(Exception):
+    """1 サイトの収集処理がタイムアウトした"""
+
+
+@contextlib.contextmanager
+def site_timeout(seconds: int, site_name: str):
+    """SIGALRM ベースで site collection 全体のタイムアウトを設ける。
+
+    Linux/macOS のみ動作（CI は Linux）。Windows では noop（signal が無い）。
+    """
+
+    def _handler(signum, frame):
+        raise SiteCollectionTimeoutError(f"site collection timed out after {seconds}s: {site_name}")
+
+    if hasattr(signal, "SIGALRM"):
+        old_handler = signal.signal(signal.SIGALRM, _handler)
+        signal.alarm(seconds)
+        try:
+            yield
+        finally:
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, old_handler)
+    else:
+        yield
+
 
 def create_provider(provider_name: str, model: str) -> LlmProvider:
     """プロバイダーインスタンスを生成"""
@@ -62,6 +96,9 @@ def run_llm_sites(
         site_start = time.time()
         logger.info(f"=== LLM収集開始: {site.name} ===")
 
+        # サイトの種類に応じたタイムアウト値を選択
+        timeout = SITE_TIMEOUT_JS_SEC if getattr(site, "requires_js", False) else SITE_TIMEOUT_SEC
+
         try:
             # プロバイダー解決
             provider_name, model = SiteConfigLoader.resolve_provider(site, config)
@@ -84,7 +121,9 @@ def run_llm_sites(
                 db_connection=db_connection,
             )
 
-            result = service.run_collection()
+            # SIGALRM タイムアウトでハング対策
+            with site_timeout(timeout, site.name):
+                result = service.run_collection()
 
             elapsed = time.time() - site_start
             adapter.log_stats()
@@ -101,6 +140,14 @@ def run_llm_sites(
                 logger.error(f"[{site.name}] 収集失敗: {', '.join(result.errors)}")
                 all_success = False
 
+        except SiteCollectionTimeoutError as e:
+            elapsed = time.time() - site_start
+            logger.warning(
+                f"[{site.name}] タイムアウト ({elapsed:.1f}秒, limit={timeout}秒): "
+                f"{e}. 次のサイトに進みます。"
+            )
+            all_success = False
+            continue
         except Exception as e:
             elapsed = time.time() - site_start
             logger.error(
