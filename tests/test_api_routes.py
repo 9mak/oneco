@@ -418,9 +418,7 @@ async def test_update_status_requires_auth_token(test_app, animal_for_status_upd
     animal_id = animal_for_status_update.id
 
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
-        response = await client.patch(
-            f"/animals/{animal_id}/status", json={"status": "adopted"}
-        )
+        response = await client.patch(f"/animals/{animal_id}/status", json={"status": "adopted"})
 
     assert response.status_code == 401
 
