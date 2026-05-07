@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ImageGallery } from './ImageGallery';
 
@@ -145,5 +145,40 @@ describe('ImageGallery', () => {
 
     const firstImageButton = screen.getByRole('button', { name: '犬の画像1を拡大表示' });
     expect(firstImageButton).toHaveAttribute('aria-label', '犬の画像1を拡大表示');
+  });
+
+  it('サムネイルが読み込み失敗したらプレースホルダーへ切り替わる', () => {
+    render(<ImageGallery imageUrls={mockImageUrls} alt="犬" />);
+
+    const firstImage = screen.getByAltText('犬の画像1');
+    expect(firstImage).toHaveAttribute('src', expect.stringContaining('image1.jpg'));
+
+    fireEvent.error(firstImage);
+
+    expect(screen.getByAltText('犬の画像1')).toHaveAttribute(
+      'src',
+      '/images/placeholder-animal.svg',
+    );
+    // 他の画像はそのまま
+    expect(screen.getByAltText('犬の画像2')).toHaveAttribute(
+      'src',
+      expect.stringContaining('image2.jpg'),
+    );
+  });
+
+  it('サムネイルが失敗した画像はモーダルでもプレースホルダーになる', async () => {
+    render(<ImageGallery imageUrls={mockImageUrls} alt="犬" />);
+
+    const firstImage = screen.getByAltText('犬の画像1');
+    fireEvent.error(firstImage);
+
+    const firstButton = screen.getByRole('button', { name: '犬の画像1を拡大表示' });
+    await userEvent.click(firstButton);
+
+    const modal = screen.getByTestId('image-modal');
+    expect(within(modal).getByAltText('犬の画像1')).toHaveAttribute(
+      'src',
+      '/images/placeholder-animal.svg',
+    );
   });
 });

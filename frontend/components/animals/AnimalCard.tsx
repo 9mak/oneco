@@ -6,12 +6,11 @@ import { useState } from 'react';
 import { AnimalPublic } from '@/types/animal';
 import { CategoryBadge } from '@/components/ui/CategoryBadge';
 import { FavoriteButton } from '@/components/animals/FavoriteButton';
+import { PLACEHOLDER_IMAGE } from '@/lib/images';
 
 interface AnimalCardProps {
   animal: AnimalPublic;
 }
-
-const PLACEHOLDER_IMAGE = '/images/placeholder-animal.svg';
 
 export function AnimalCard({ animal }: AnimalCardProps) {
   const ageDisplay = animal.age_months
