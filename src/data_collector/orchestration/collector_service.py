@@ -308,6 +308,7 @@ class CollectorService:
     def _save_via_db_connection(self, collected_data: list[AnimalData]) -> None:
         """db_connection からセッションを作成して一括保存"""
         from ..infrastructure.database.repository import AnimalRepository
+        from ..infrastructure.url_hash_recorder import URLHashRecorder
 
         async def _do_save() -> tuple[int, int]:
             saved = 0
@@ -315,6 +316,7 @@ class CollectorService:
             assert self.db_connection is not None
             async with self.db_connection.get_session() as session:
                 repo = AnimalRepository(session)
+                url_recorder = URLHashRecorder(session)
                 for animal in collected_data:
                     try:
                         await repo.save_animal(animal)
@@ -323,6 +325,16 @@ class CollectorService:
                         errors += 1
                         self.logger.warning(
                             f"Failed to save animal to database: {animal.source_url}: {e}",
+                        )
+                        continue
+                    # Phase 1 MVP: 画像URLのSHA-256を image_hashes に記録（重複検出の足場）。
+                    # AnimalData.image_urls は HttpUrl を含むため str に正規化する。
+                    # 失敗してもメイン保存処理は継続する。
+                    try:
+                        await url_recorder.record_urls([str(u) for u in animal.image_urls])
+                    except Exception as e:
+                        self.logger.warning(
+                            f"Failed to record image URL hashes for {animal.source_url}: {e}",
                         )
             return saved, errors
 
