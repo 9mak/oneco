@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { AnimalPublic } from '@/types/animal';
 import { CategoryBadge } from '@/components/ui/CategoryBadge';
 import { ImageGallery } from './ImageGallery';
+import { FavoriteButton } from './FavoriteButton';
 import { ContactInfo } from './ContactInfo';
 import { ExternalLink } from './ExternalLink';
 
@@ -73,9 +74,10 @@ export function AnimalDetailClient({ animal }: AnimalDetailClientProps) {
         一覧に戻る
       </button>
 
-      {/* カテゴリバッジ（目立つ位置） */}
-      <div className="mb-4">
+      {/* カテゴリバッジ + お気に入りボタン */}
+      <div className="mb-4 flex items-center justify-between">
         <CategoryBadge category={animal.category} size="lg" />
+        <FavoriteButton animalId={animal.id} size="lg" />
       </div>
 
       {/* 動物情報ヘッダー */}
