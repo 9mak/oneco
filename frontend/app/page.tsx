@@ -1,8 +1,9 @@
 import { Suspense } from 'react';
-import { fetchAnimals } from '@/lib/animals';
+import { fetchAnimals, fetchPrefectureStats } from '@/lib/animals';
 import { AnimalGrid } from '@/components/animals/AnimalGrid';
 import { AnimalGridSkeleton } from '@/components/animals/AnimalGridSkeleton';
 import { FilterPanel } from '@/components/animals/FilterPanel';
+import { PrefectureMap } from '@/components/animals/PrefectureMap';
 import type { AnimalPublic, FilterState } from '@/types/animal';
 
 export const revalidate = 300;
@@ -87,12 +88,24 @@ function FilterPanelSkeleton({ filters }: { filters: FilterState }) {
   return <FilterPanel filters={filters} resultCount={0} />;
 }
 
+async function PrefectureMapSection() {
+  const counts = await fetchPrefectureStats();
+  return <PrefectureMap countsByPrefecture={counts} />;
+}
+
 export default async function HomePage({ searchParams }: HomePageProps) {
   const params = await searchParams;
   const filters = parseFilters(params);
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
+      {/* 都道府県別マップ（フィルター無し時のみ表示） */}
+      {!filters.prefecture && (
+        <Suspense fallback={<div className="bg-white rounded-lg shadow-md p-6 h-64 animate-pulse" />}>
+          <PrefectureMapSection />
+        </Suspense>
+      )}
+
       <Suspense
         key={JSON.stringify(filters)}
         fallback={
