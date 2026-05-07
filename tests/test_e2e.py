@@ -417,7 +417,9 @@ class TestE2EStatusManagementFlow:
 
             # 3. ステータスを更新
             update_response = await client.patch(
-                f"/animals/{animal_id}/status", json={"status": "adopted"}
+                f"/animals/{animal_id}/status",
+                json={"status": "adopted"},
+                headers={"X-Internal-Token": "test-internal-token"},
             )
 
         # 4. 検証
