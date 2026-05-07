@@ -66,6 +66,11 @@ async def list_animals(
     status: str | None = Query(
         None, description="ステータスフィルタ ('sheltered', 'adopted', 'returned', 'deceased')"
     ),
+    q: str | None = Query(
+        None,
+        description="キーワード検索（species/color/size/location/prefecture を OR 部分一致）",
+        max_length=100,
+    ),
     limit: Annotated[int, Query(le=1000, ge=1)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> PaginatedResponse[AnimalPublic]:
@@ -110,6 +115,7 @@ async def list_animals(
         status=status_enum,
         shelter_date_from=shelter_date_from,
         shelter_date_to=shelter_date_to,
+        q=q,
         limit=limit,
         offset=offset,
     )

@@ -87,4 +87,6 @@ export interface FilterState {
   location?: string;
   /** 都道府県フィルタ (完全一致) */
   prefecture?: string;
+  /** キーワード検索（複数フィールド OR 部分一致） */
+  q?: string;
 }

@@ -66,6 +66,7 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
       filters.sex ||
       filters.location ||
       filters.prefecture ||
+      filters.q ||
       (filters.status && filters.status !== 'sheltered'),
   );
 
@@ -112,6 +113,34 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
           <span className="text-sm text-[var(--color-text-secondary)]">
             {resultCount}件の動物
           </span>
+        </div>
+
+        {/* キーワード検索 */}
+        <div>
+          <label htmlFor="q-search" className="sr-only">
+            キーワード検索
+          </label>
+          <div className="relative">
+            <span
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]"
+              aria-hidden="true"
+            >
+              🔍
+            </span>
+            <input
+              id="q-search"
+              type="search"
+              defaultValue={filters.q || ''}
+              onChange={(e) => {
+                const v = e.target.value.trim();
+                // 簡易デバウンス: 入力ごとに更新（Next.js が自動スロットリングするので問題ない）
+                updateParam('q', v || undefined);
+              }}
+              placeholder="例: 茶白、子犬、四万十町..."
+              maxLength={100}
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] min-h-[44px]"
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
