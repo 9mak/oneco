@@ -213,6 +213,28 @@ async def update_animal_status(
         )
 
 
+@router.get("/animals/stats/by-prefecture")
+async def stats_by_prefecture(session: SessionDep) -> dict[str, int]:
+    """
+    都道府県別の収容中動物数を返す（status='sheltered' のみ集計）
+
+    日本地図ビューや統計ページで使用する。レスポンス例:
+    { "高知県": 65, "徳島県": 0, ... }
+    """
+    from sqlalchemy import func, select
+
+    from src.data_collector.infrastructure.database.models import Animal
+
+    stmt = (
+        select(Animal.prefecture, func.count(Animal.id))
+        .where(Animal.status == "sheltered")
+        .where(Animal.prefecture.isnot(None))
+        .group_by(Animal.prefecture)
+    )
+    result = await session.execute(stmt)
+    return {row[0]: row[1] for row in result.all()}
+
+
 @router.get("/health")
 async def health_check(session: SessionDep) -> dict:
     """
