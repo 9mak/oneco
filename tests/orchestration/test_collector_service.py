@@ -485,6 +485,194 @@ class TestCollectorServiceWithRepository:
         # 注: 現在の実装では個別のエラーはスキップされる
 
 
+class TestCollectorServiceImageURLHashRecording:
+    """画像URLハッシュ記録（Phase 1 MVP）の統合テスト"""
+
+    @pytest.fixture
+    def mock_adapter(self):
+        adapter = Mock()
+        adapter.prefecture_code = "39"
+        adapter.municipality_name = "高知県"
+        return adapter
+
+    @pytest.fixture
+    def mock_diff_detector(self):
+        detector = Mock()
+        detector.detect_diff.return_value = DiffResult(new=[], updated=[], deleted_candidates=[])
+        return detector
+
+    @pytest.fixture
+    def mock_output_writer(self):
+        writer = Mock()
+        writer.write_output.return_value = Path("output/animals.json")
+        return writer
+
+    @pytest.fixture
+    def mock_notification_client(self):
+        return Mock()
+
+    @pytest.fixture
+    def mock_snapshot_store(self):
+        store = Mock()
+        store.load_snapshot.return_value = []
+        return store
+
+    @pytest.fixture
+    def sample_animals(self):
+        return [
+            AnimalData(
+                species="犬",
+                sex="男の子",
+                age_months=24,
+                color="茶色",
+                size="中型",
+                shelter_date=date(2026, 1, 5),
+                location="高知県動物愛護センター",
+                phone="088-123-4567",
+                image_urls=[
+                    "https://example.com/image1.jpg",
+                    "https://example.com/image2.jpg",
+                ],
+                source_url="https://example-kochi.jp/animals/123",
+                category="adoption",
+            )
+        ]
+
+    def test_db_connection_save_records_image_url_hashes(
+        self,
+        tmp_path,
+        mock_adapter,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+        sample_animals,
+    ):
+        """db_connection 経由の保存後、画像URLが image_hashes に記録される"""
+        import asyncio
+
+        from sqlalchemy import select
+
+        from src.data_collector.infrastructure.database.connection import (
+            DatabaseConnection,
+            DatabaseSettings,
+        )
+        from src.data_collector.infrastructure.database.models import Base, ImageHash
+
+        db_path = tmp_path / "test.db"
+        db_settings = DatabaseSettings(database_url=f"sqlite+aiosqlite:///{db_path}")
+        db_connection = DatabaseConnection(db_settings)
+
+        async def _setup():
+            async with db_connection.engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+
+        asyncio.run(_setup())
+
+        try:
+            service = CollectorService(
+                adapter=mock_adapter,
+                diff_detector=mock_diff_detector,
+                output_writer=mock_output_writer,
+                notification_client=mock_notification_client,
+                snapshot_store=mock_snapshot_store,
+                db_connection=db_connection,
+            )
+            service.LOCK_FILE = tmp_path / ".collector.lock"
+
+            mock_adapter.fetch_animal_list.return_value = [
+                ("https://example-kochi.jp/animals/123", "adoption")
+            ]
+            mock_adapter.extract_animal_details.return_value = Mock()
+            mock_adapter.normalize.return_value = sample_animals[0]
+
+            result = service.run_collection()
+            assert result.success
+
+            async def _fetch_hashes():
+                async with db_connection.get_session() as session:
+                    res = await session.execute(select(ImageHash))
+                    return list(res.scalars().all())
+
+            hashes = asyncio.run(_fetch_hashes())
+            paths = sorted(h.local_path for h in hashes)
+            assert paths == [
+                "https://example.com/image1.jpg",
+                "https://example.com/image2.jpg",
+            ]
+            for h in hashes:
+                assert len(h.hash) == 64
+                assert h.file_size == 0
+        finally:
+            asyncio.run(db_connection.close())
+
+    def test_url_hash_recording_failure_does_not_block_save(
+        self,
+        tmp_path,
+        mock_adapter,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+        sample_animals,
+    ):
+        """画像URLハッシュ記録が失敗しても、動物保存自体は成功する"""
+        import asyncio
+
+        from sqlalchemy import select
+
+        from src.data_collector.infrastructure.database.connection import (
+            DatabaseConnection,
+            DatabaseSettings,
+        )
+        from src.data_collector.infrastructure.database.models import Animal, Base
+
+        db_path = tmp_path / "test.db"
+        db_settings = DatabaseSettings(database_url=f"sqlite+aiosqlite:///{db_path}")
+        db_connection = DatabaseConnection(db_settings)
+
+        async def _setup():
+            async with db_connection.engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+
+        asyncio.run(_setup())
+
+        try:
+            service = CollectorService(
+                adapter=mock_adapter,
+                diff_detector=mock_diff_detector,
+                output_writer=mock_output_writer,
+                notification_client=mock_notification_client,
+                snapshot_store=mock_snapshot_store,
+                db_connection=db_connection,
+            )
+            service.LOCK_FILE = tmp_path / ".collector.lock"
+
+            mock_adapter.fetch_animal_list.return_value = [
+                ("https://example-kochi.jp/animals/123", "adoption")
+            ]
+            mock_adapter.extract_animal_details.return_value = Mock()
+            mock_adapter.normalize.return_value = sample_animals[0]
+
+            with patch(
+                "src.data_collector.infrastructure.url_hash_recorder.URLHashRecorder.record_urls",
+                new=AsyncMock(side_effect=RuntimeError("simulated hash recording failure")),
+            ):
+                result = service.run_collection()
+
+            assert result.success
+
+            async def _fetch_animals():
+                async with db_connection.get_session() as session:
+                    res = await session.execute(select(Animal))
+                    return list(res.scalars().all())
+
+            animals = asyncio.run(_fetch_animals())
+            assert len(animals) == 1
+        finally:
+            asyncio.run(db_connection.close())
+
+
 class TestCollectorServiceWithNotificationManager:
     """notification-manager 統合のテストケース"""
 
