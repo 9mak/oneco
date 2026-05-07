@@ -185,6 +185,7 @@ class AnimalRepository:
         shelter_date_from: date | None = None,
         shelter_date_to: date | None = None,
         status: AnimalStatus | None = None,
+        q: str | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> tuple[list[AnimalData], int]:
@@ -226,6 +227,22 @@ class AnimalRepository:
             filters.append(Animal.shelter_date <= shelter_date_to)
         if status:
             filters.append(Animal.status == status.value)
+        if q:
+            # キーワード検索: 複数フィールドを OR で部分一致（ILIKE）
+            # 「茶白」「人懐っこい」「子犬」など自由テキストで
+            # species/color/size/location/prefecture を横断検索
+            from sqlalchemy import or_
+
+            keyword = f"%{q}%"
+            filters.append(
+                or_(
+                    Animal.species.ilike(keyword),
+                    Animal.color.ilike(keyword),
+                    Animal.size.ilike(keyword),
+                    Animal.location.ilike(keyword),
+                    Animal.prefecture.ilike(keyword),
+                )
+            )
 
         if filters:
             stmt = stmt.where(*filters)
@@ -258,6 +275,7 @@ class AnimalRepository:
         shelter_date_from: date | None = None,
         shelter_date_to: date | None = None,
         status: AnimalStatus | None = None,
+        q: str | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> tuple[list[Animal], int]:
@@ -299,6 +317,19 @@ class AnimalRepository:
             filters.append(Animal.shelter_date <= shelter_date_to)
         if status:
             filters.append(Animal.status == status.value)
+        if q:
+            from sqlalchemy import or_
+
+            keyword = f"%{q}%"
+            filters.append(
+                or_(
+                    Animal.species.ilike(keyword),
+                    Animal.color.ilike(keyword),
+                    Animal.size.ilike(keyword),
+                    Animal.location.ilike(keyword),
+                    Animal.prefecture.ilike(keyword),
+                )
+            )
 
         if filters:
             stmt = stmt.where(*filters)
