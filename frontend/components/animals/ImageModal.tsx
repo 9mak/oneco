@@ -7,9 +7,10 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
+import { PLACEHOLDER_IMAGE } from '@/lib/images';
 
 interface ImageModalProps {
   /** 表示する画像URL */
@@ -21,6 +22,13 @@ interface ImageModalProps {
 }
 
 export function ImageModal({ imageUrl, alt, onClose }: ImageModalProps) {
+  const [imgSrc, setImgSrc] = useState(imageUrl);
+
+  // imageUrl が切り替わったら src をリセット
+  useEffect(() => {
+    setImgSrc(imageUrl);
+  }, [imageUrl]);
+
   // Escキーで閉じる
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -79,12 +87,14 @@ export function ImageModal({ imageUrl, alt, onClose }: ImageModalProps) {
         {/* 画像 */}
         <div className="relative w-full h-full">
           <Image
-            src={imageUrl}
+            src={imgSrc}
             alt={alt}
             width={1200}
             height={800}
             className="object-contain max-h-[80vh] w-auto h-auto"
             priority
+            unoptimized={imgSrc === PLACEHOLDER_IMAGE ? true : undefined}
+            onError={() => setImgSrc(PLACEHOLDER_IMAGE)}
           />
         </div>
       </div>
