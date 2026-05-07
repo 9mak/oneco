@@ -1,7 +1,8 @@
 # 画像永続化・重複検出 ロードマップ
 
 **作成日:** 2026-05-07
-**状態:** Phase 1 完了、Phase 2-3 未着手
+**状態:** Phase 1 完了、Phase 2 完了（方針変更あり）、Phase 3-4 未着手
+**最終更新:** 2026-05-07
 
 ---
 
@@ -34,36 +35,34 @@
 - [ ] **未対応**: `_save_via_repository` 経路（テスト用途のためスキップ。Phase 2 で必要なら統一検討）
 - [ ] **未対応**: 同一 URL を持つ動物の発見 API（蓄積データの活用は Phase 3 で）
 
-### Phase 2（次フェーズ）— 画像永続化 + Supabase Storage 連携
+### Phase 2 ✅ 完了（方針変更）— onError プレースホルダーフォールバック
 
-**目的**: 元サイト消失でも画像が見える状態を保つ。
+**当初案**: 全画像を Supabase Storage に永続化 → リンク切れ防止
+**採用案**: フロントの onError でプレースホルダーへフォールバック → ストレージコストゼロ
 
-**設計：**
-1. **Supabase Storage バケット** 作成（公開読み取り）
-   - バケット名: `animal-images`
-   - パス構造: `{hash[:2]}/{hash[2:4]}/{hash}.{ext}` （LocalImageStorage と同形式）
-2. **新規アダプタ** `SupabaseImageStorage`（`LocalImageStorage` のインタフェース互換）
-   - service_role_key で upload
-   - public read URL を返却
-3. **収集パイプラインに組み込み**
-   - LlmAdapter または CollectorService で各 animal の image_urls をダウンロード
-   - SHA-256 ハッシュ計算 → image_hashes テーブル参照
-   - 既存ハッシュ → local_path 再利用
-   - 新規ハッシュ → Supabase Storage アップロード + image_hashes 追加
-   - `animals.local_image_paths` を更新
-4. **フロント対応**
-   - `AnimalCard` / `ImageGallery`: `local_image_paths.length > 0 ? local_image_paths : image_urls`
-   - 元サイト消失でも画像表示が維持される
+**方針変更の理由（2026-05-07）：**
+- 永続化はストレージコストが**累積で線形増加**（1年20GB増、5年100GB超）
+- アクティブ動物の元サイトURLは大半は生きており、表示には十分
+- 「次のクロール実行までに元サイトが画像を消した」窓だけがリンク切れリスク
+  → その窓は**プレースホルダー表示で十分**（数時間〜数日の一時的なUX劣化）
+- アーカイブされた動物は status を見て出し分け or プレースホルダーで足りる
 
-**必要な env:**
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY` (CI と Cloud Run の Secret Manager に設定)
+**実装内容：**
+- `frontend/lib/images.ts`: `PLACEHOLDER_IMAGE` 定数を集約
+- `ImageGallery.tsx`: 各サムネイルの onError → 個別差替（他画像はそのまま）。失敗画像はモーダル拡大時もプレースホルダー
+- `ImageModal.tsx`: imgSrc を state 化し onError でフォールバック、imageUrl 切替時はリセット
+- `AnimalCard.tsx`: 既存のプレースホルダー参照を新定数に統一（既に onError 実装済みだったため挙動は不変）
+- テスト 3件追加（全 78 件 Green）
 
-**容量試算:**
-- 67 動物 × 5 画像 × 平均 200KB ≒ 67MB（現状）
-- 5,000 動物（全国想定）× 5 画像 × 200KB ≒ 5GB
-- Supabase Storage 無料枠: 1GB → Pro プラン（月$25）で 100GB
-- もしくは GCS で従量課金（5GB なら月数十円）
+**結果：**
+- 元サイトが画像を削除してもリンク切れが見えなくなる
+- 追加コスト: $0（Supabase Storage バケット不要、新規 env 不要）
+- スキーマ変更: なし（`animals.local_image_paths` は未使用のまま）
+
+**捨てた設計（参考）：**
+当初は `SupabaseImageStorage` アダプタ → 収集パイプライン組み込み → `local_image_paths` 更新 → フロントで優先表示、という流れを想定していた。
+コスト懸念とアーカイブ動物のUXトレードオフを精査し、永続化なしで成立すると判断。
+画像本体のハッシュベース重複検出が必要になったら Phase 3（pHash）で別途検討する。
 
 ### Phase 3 — 知覚ハッシュ（Perceptual Hash）による真の重複検出
 
@@ -102,12 +101,13 @@ CREATE INDEX idx_image_hashes_phash ON image_hashes(phash);
 
 | Phase | 内容 | 工数 |
 |---|---|---|
-| 1 | URL ハッシュ重複検出 MVP | 半日 |
-| 2 | Supabase Storage 永続化 | 1〜2 日 |
+| 1 | URL ハッシュ重複検出 MVP | 半日（完了） |
+| 2 | onError プレースホルダーフォールバック | 半日（完了 / 方針変更） |
 | 3 | Perceptual hash 重複検出 | 2〜3 日 |
-| 4 | 画像最適化 / CDN | 1 日 |
+| 4 | 画像最適化 / CDN | 1 日（永続化前提なら不要） |
 
-合計 4〜6 日程度。Phase 2 までで実用上の課題は概ね解決。
+合計 1日（Phase 1+2 完了済み）+ Phase 3 を残す。
+画像永続化を見送ったので Phase 4（CDN）はスコープから外す可能性あり。
 
 ---
 
@@ -119,3 +119,16 @@ CREATE INDEX idx_image_hashes_phash ON image_hashes(phash);
 - ドキュメントとして本ファイルを残す
 
 これにより、Phase 2 着手時の足場が整う。
+
+## Phase 2 での方針変更の振り返り（2026-05-07）
+
+Phase 2 着手時にコスト試算を精査した結果、画像永続化は割に合わないと判断：
+
+- 永続化のコストは **「累積動物数 × 平均画像枚数 × 平均サイズ」** で線形増加
+- 5年で100GB超 → Supabase Pro の100GB枠を超えて従量課金へ
+- 一方、リンク切れリスクは「次のクロール実行までの数時間〜数日」のみ
+- そのウィンドウは **プレースホルダー表示で十分許容できる UX 劣化**
+- アーカイブ動物は譲渡完了の記録としては価値があるが、画像が無くても文脈は伝わる
+
+→ Phase 2 は「永続化」ではなく **「onError フォールバック」** で完了。
+Phase 1 で蓄積を始めた `image_hashes` の URL ハッシュは、Phase 3（pHash）の文脈で用途を再定義する想定。
