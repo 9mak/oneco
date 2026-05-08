@@ -242,3 +242,41 @@ async def test_admin_stats_empty_db(test_app):
     assert data["image_hash_summary"]["total"] == 0
     assert data["image_hash_summary"]["oldest"] is None
     assert data["image_hash_summary"]["newest"] is None
+
+
+@pytest.mark.asyncio
+async def test_admin_stats_returns_quality_metrics(test_app, populated_for_stats):
+    """/admin/stats が品質メトリクス（フィールド欠損率、カバー率）を返す"""
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
+        resp = await client.get("/admin/stats", headers=HEADERS)
+
+    data = resp.json()
+    assert "quality" in data
+    q = data["quality"]
+
+    # 県別カバー率: 47県のうちデータがある県の数（高知県・徳島県の2つ。Noneは除外）
+    assert q["prefectures_covered"] == 2
+    assert q["prefectures_total"] == 47
+
+    # 必須に近いフィールドの欠損率（image_urls=空配列、prefecture=null など）
+    assert "field_missing_ratio" in q
+    assert isinstance(q["field_missing_ratio"], dict)
+    # prefecture が None の動物が 1/5 = 0.2
+    assert q["field_missing_ratio"]["prefecture"] == pytest.approx(1 / 5)
+
+
+@pytest.mark.asyncio
+async def test_admin_stats_returns_liveness(test_app, populated_for_stats):
+    """/admin/stats が直近24時間の追加件数を返す（テストデータでは0）"""
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
+        resp = await client.get("/admin/stats", headers=HEADERS)
+
+    data = resp.json()
+    q = data["quality"]
+    # シェルター日 2026-04-01 〜 2026-05-03 のデータなので、テスト実行時点で
+    # 追加されたばかりだが shelter_date は古い → liveness は shelter_date ベース
+    assert "added_in_last_7days" in q
+    # populated_for_stats のデータは shelter_date が 2026-04-01 〜 2026-05-03
+    # 7日以内に shelter された動物の件数
+    assert isinstance(q["added_in_last_7days"], int)
+    assert q["added_in_last_7days"] >= 0

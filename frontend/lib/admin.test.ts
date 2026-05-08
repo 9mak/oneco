@@ -11,6 +11,12 @@ const SAMPLE_STATS = {
   by_species: { 犬: 6, 猫: 4 },
   by_category: { adoption: 9, lost: 1 },
   image_hash_summary: { total: 100, oldest: '2026-01-01T00:00:00Z', newest: '2026-05-01T00:00:00Z' },
+  quality: {
+    prefectures_covered: 1,
+    prefectures_total: 47,
+    field_missing_ratio: { prefecture: 0, image_urls: 0.1 },
+    added_in_last_7days: 3,
+  },
   generated_at: '2026-05-08T00:00:00Z',
 };
 
