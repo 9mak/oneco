@@ -3,6 +3,7 @@ import { fetchAnimals, fetchPrefectureStats } from '@/lib/animals';
 import { AnimalGrid } from '@/components/animals/AnimalGrid';
 import { AnimalGridSkeleton } from '@/components/animals/AnimalGridSkeleton';
 import { FilterPanel } from '@/components/animals/FilterPanel';
+import { JapanMap } from '@/components/animals/JapanMap';
 import { PrefectureMap } from '@/components/animals/PrefectureMap';
 import type { AnimalPublic, FilterState } from '@/types/animal';
 
@@ -90,7 +91,19 @@ function FilterPanelSkeleton({ filters }: { filters: FilterState }) {
 
 async function PrefectureMapSection() {
   const counts = await fetchPrefectureStats();
-  return <PrefectureMap countsByPrefecture={counts} />;
+  return (
+    <div className="space-y-4">
+      <JapanMap countsByPrefecture={counts} />
+      <details className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+        <summary className="cursor-pointer text-sm font-medium text-[var(--color-text-secondary)]">
+          地方別の一覧で見る
+        </summary>
+        <div className="mt-4">
+          <PrefectureMap countsByPrefecture={counts} />
+        </div>
+      </details>
+    </div>
+  );
 }
 
 export default async function HomePage({ searchParams }: HomePageProps) {
