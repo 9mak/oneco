@@ -1,0 +1,11 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - link "Skip to content":
+      - /url: "#geist-skip-nav"
+    - heading "Authenticating" [level=1] [ref=e22]
+  - alert [ref=e23]
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - img
