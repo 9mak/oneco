@@ -7,24 +7,38 @@
 - [x] PostgreSQL + Redis インフラ
 - [x] 60件のリアルデータで動作確認
 
-## Phase 1: 四国完成 + AI抽出導入
-- [ ] LLMベースの汎用データ抽出エンジン構築
-  - ページHTML → Claude API → RawAnimalData（構造化出力）
+## Phase 1: 四国完成 + AI抽出導入（完了）
+- [x] LLMベースの汎用データ抽出エンジン構築
+  - ページHTML → Anthropic / Groq → RawAnimalData（構造化出力）
   - サイトごとのアダプター不要、YAML設定のみで新規サイト追加
-- [ ] 四国4県の新規サイト対応（環境省リンクページより）
-  - 徳島県: https://douai-tokushima.com/
-  - 香川県: https://www.pref.kagawa.lg.jp/eisei/joto/slpup3191026135548.html
-  - 高松市: https://www.city.takamatsu.kagawa.jp/udanimo/ani_top.html
-  - 愛媛県: https://www.pref.ehime.jp/page/16976.html
-  - 松山市: https://www.city.matsuyama.ehime.jp/kurashi/kurashi/aigo/hogoinu/mayoiinuneko.html
-  - 高知県: 既存アダプター稼働中（将来的にAI抽出に移行可能）
-- [ ] 定期実行の仕組み（cron / スケジューラー）
-- [ ] MVP公開（Vercel + 管理画面）
+  - HTML前処理 / Playwright（JS必須サイト）/ PDF抽出 にも対応
+- [x] 四国4県の新規サイト対応（環境省リンクページより）
+  - 徳島県: douai-tokushima.com（収容中・譲渡犬・譲渡猫）
+  - 香川県: 高松市わんにゃん高松、さぬき動物愛護センター、東讃・中讃・西讃・小豆保健所
+  - 愛媛県: 愛媛県動物愛護センター（収容中・譲渡）、松山市はぴまるの丘
+  - 高知県: 既存ルールベースアダプター稼働中
+- [x] 定期実行の仕組み（GitHub Actions cron, 毎日 JST 00:00 自動実行）
+- [x] MVP公開（Cloud Run + Vercel + Supabase 本番稼働中）
+
+### Phase 1 で当初想定を超えた成果
+- 四国 5サイトに留まらず、**全国 209サイト**まで設定駆動で拡張済（`src/data_collector/config/sites.yaml`）
+- `image_hashes` テーブルへの URL ハッシュ蓄積（重複検出基盤）
+- フロント: お気に入り、キーワード検索、都道府県別マップ（地方別グリッド）、画像 onError フォールバック
+
+## Phase 1.5: 運用フェーズ（現在地）
+- [ ] 収集オペレーション可視化ダッシュボード（`/admin` 認証ゲート）
+  - サイト別 直近実行ステータス、県別件数推移、LLMコスト累計、抽出失敗ランキング
+- [ ] トップページ刷新（インタラクティブ日本地図 / ヒートマップ）
+- [ ] 収集成功率の異常検知 + Slack 通知
+- [ ] データ品質チェック（必須フィールド欠損率、画像URL生存率）
+- [ ] サイト別タイムアウト/レートリミット個別調整
+- [ ] robots.txt 遵守の自動チェック
 
 ## Phase 2: 資金調達 + 認知拡大
+- [ ] OSS公開準備（README整備、CONTRIBUTING、ライセンス、セットアップ手順）
 - [ ] クラウドファンディング実施（READYFOR / CAMPFIRE）
   - 「全国の保護動物情報を一つに。殺処分ゼロへ」
-  - デモ可能なMVPが既にある = 説得力
+  - 説得材料: Phase 1.5 のダッシュボード + 全国マップ実績
 - [ ] OSS公開 + コミュニティ形成
   - 動物愛護 × エンジニアの仲間を集める
 - [ ] コンテスト / ハッカソン出展
@@ -70,3 +84,4 @@ sites:
 
 ---
 _created_at: 2026-03-18_
+_last_updated: 2026-05-08 (Phase 1 完了、Phase 1.5 運用フェーズ追記)_
