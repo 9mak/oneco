@@ -9,7 +9,7 @@
 ### 主要機能
 
 - **自動データ収集**: 自治体サイトから保護動物情報を毎日自動収集（GitHub Actions）
-- **LLM 解析**: Gemini 2.5 Flash で各自治体の不定形な HTML・PDF を解析
+- **LLM 解析**: Anthropic Claude / Groq で各自治体の不定形な HTML・PDF を解析
 - **REST API**: FastAPI による動物データ API（フィルタ・ページング対応）
 - **Web ポータル**: Next.js による保護動物の検索・閲覧画面
 
@@ -17,7 +17,7 @@
 
 ```
 自治体サイト
-     │ LLM スクレイピング (Gemini 2.5 Flash)
+     │ LLM スクレイピング (Anthropic Claude / Groq)
      ▼
 GitHub Actions ──▶ Supabase PostgreSQL
 (data-collector)          │
@@ -129,9 +129,13 @@ cd frontend && npm test
 | 変数名 | 説明 | 必須 |
 |--------|------|------|
 | `DATABASE_URL` | Supabase PostgreSQL 接続 URL | ✅ |
-| `GOOGLE_API_KEY` | Gemini 2.5 Flash 用 API キー | ✅ |
-| `ANTHROPIC_API_KEY` | Claude API キー | - |
+| `GROQ_API_KEY` | Groq API キー（デフォルトプロバイダー） | ✅ |
+| `ANTHROPIC_API_KEY` | Claude API キー（オーバーライド指定時） | - |
+| `INTERNAL_API_TOKEN` | 内部 API（PATCH/admin）認証トークン | ✅ |
 | `SLACK_WEBHOOK_URL` | 収集結果通知用 Slack Webhook | - |
+| `AUTH_SECRET` | NextAuth セッション暗号化キー | ✅ (frontend) |
+| `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | GitHub OAuth App | ✅ (frontend) |
+| `ADMIN_GITHUB_LOGIN` | /admin に許可する GitHub username | ✅ (frontend) |
 
 ## CI/CD
 
@@ -143,7 +147,12 @@ cd frontend && npm test
 
 ## ライセンス
 
-MIT License
+[MIT License](LICENSE)
+
+## コントリビュート
+
+[CONTRIBUTING.md](CONTRIBUTING.md) を参照してください。
+セキュリティ問題は [SECURITY.md](SECURITY.md) の連絡先まで非公開で報告してください。
 
 ---
 
