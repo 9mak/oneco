@@ -11,6 +11,12 @@ export interface AdminStats {
     oldest: string | null;
     newest: string | null;
   };
+  quality: {
+    prefectures_covered: number;
+    prefectures_total: number;
+    field_missing_ratio: Record<string, number>;
+    added_in_last_7days: number;
+  };
   generated_at: string;
 }
 

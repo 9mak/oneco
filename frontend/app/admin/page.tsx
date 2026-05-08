@@ -20,6 +20,15 @@ const CATEGORY_LABELS: Record<string, string> = {
   sheltered: '収容のみ',
 };
 
+const FIELD_LABELS: Record<string, string> = {
+  prefecture: '都道府県',
+  image_urls: '画像',
+  color: '毛色',
+  size: 'サイズ',
+  phone: '電話番号',
+  age_months: '年齢',
+};
+
 function formatDate(iso: string | null): string {
   if (!iso) return '—';
   const d = new Date(iso);
@@ -71,6 +80,30 @@ export default async function AdminDashboardPage() {
         <div className="grid gap-6 md:grid-cols-2">
           <SummaryCard title="全件数" value={stats.total_animals} />
           <SummaryCard title="累積画像ハッシュ" value={stats.image_hash_summary.total} />
+          <SummaryCard
+            title="県カバー率"
+            value={`${stats.quality.prefectures_covered} / ${stats.quality.prefectures_total}`}
+          />
+          <SummaryCard
+            title="直近7日の収容"
+            value={stats.quality.added_in_last_7days}
+          />
+
+          <Section title="フィールド欠損率">
+            <DefList
+              entries={Object.entries(stats.quality.field_missing_ratio).map(([k, v]) => [
+                FIELD_LABELS[k] ?? k,
+                `${(v * 100).toFixed(1)}%`,
+              ])}
+            />
+          </Section>
+
+          <Section title="(運用情報)">
+            <p className="text-sm text-gray-600">
+              欠損率が高いフィールドは抽出ロジックの改善対象。直近7日の収容が
+              異常に少ない場合は GitHub Actions の Data Collector ワークフローを確認。
+            </p>
+          </Section>
 
           <Section title="ステータス別">
             <DefList
