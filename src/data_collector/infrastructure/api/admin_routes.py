@@ -89,6 +89,13 @@ async def get_admin_stats(
     # フィールド欠損率
     field_missing_ratio: dict[str, float] = {}
     if total > 0:
+        # JSON配列の長さ取得は dialect 別。Postgres は JSONB, SQLite は JSON。
+        dialect_name = session.bind.dialect.name if session.bind else "sqlite"
+        if dialect_name == "postgresql":
+            json_array_length = func.jsonb_array_length
+        else:
+            json_array_length = func.json_array_length
+
         for field_name in _QUALITY_FIELDS:
             column = getattr(Animal, field_name)
             if field_name == "image_urls":
@@ -96,7 +103,7 @@ async def get_admin_stats(
                 missing = (
                     await session.execute(
                         select(func.count(Animal.id)).where(
-                            (column.is_(None)) | (func.json_array_length(column) == 0)
+                            (column.is_(None)) | (json_array_length(column) == 0)
                         )
                     )
                 ).scalar_one()
