@@ -1,0 +1,383 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content":
+    - /url: "#geist-skip-nav"
+  - main [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e9]:
+            - link "9mak's projects Hobby" [ref=e10] [cursor=pointer]:
+              - /url: /9maks-projects
+              - img [ref=e11]
+              - generic [ref=e12]:
+                - generic [ref=e13]: 9mak's projects
+                - generic [ref=e15]: Hobby
+            - button [ref=e16] [cursor=pointer]:
+              - img [ref=e18]
+          - button "Find… F" [ref=e21]:
+            - generic [ref=e23]:
+              - img [ref=e25]
+              - generic [ref=e27]: Find…
+              - generic [ref=e29]: F
+        - navigation [ref=e31]:
+          - generic [ref=e32]:
+            - generic:
+              - generic:
+                - link "Other Overview":
+                  - /url: /9maks-projects/frontend
+                  - generic:
+                    - img "Other":
+                      - img "Other"
+                  - generic:
+                    - generic: Overview
+                - link "Deployments":
+                  - /url: /9maks-projects/frontend/deployments
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: Deployments
+                - link "Logs":
+                  - /url: /9maks-projects/frontend/logs
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: Logs
+                - link "Analytics":
+                  - /url: /9maks-projects/frontend/analytics
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: Analytics
+                - link "Speed Insights":
+                  - /url: /9maks-projects/frontend/speed-insights
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: Speed Insights
+                - link "Observability":
+                  - /url: /9maks-projects/frontend/observability
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: Observability
+                  - generic:
+                    - img
+                - link "Firewall":
+                  - /url: /9maks-projects/frontend/firewall
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: Firewall
+                  - generic:
+                    - img
+                - link "CDN":
+                  - /url: /9maks-projects/frontend/cdn
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: CDN
+                  - generic:
+                    - img
+                - separator
+                - link "Environment Variables":
+                  - /url: /9maks-projects/frontend/settings/environment-variables
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: Environment Variables
+                - link "Domains":
+                  - /url: /9maks-projects/frontend/settings/domains
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: Domains
+                - link "Integrations":
+                  - /url: /9maks-projects/frontend/settings/integrations
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: Integrations
+                - link "Storage":
+                  - /url: /9maks-projects/frontend/stores
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: Storage
+                - link "Flags":
+                  - /url: /9maks-projects/frontend/flags
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: Flags
+                  - generic:
+                    - img
+                - link "Agent":
+                  - /url: /9maks-projects/frontend/agent
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: Agent
+                  - generic:
+                    - img
+                - link "AI Gateway":
+                  - /url: /9maks-projects/frontend/ai-gateway
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: AI Gateway
+                  - generic:
+                    - img
+                - link "Sandboxes":
+                  - /url: /9maks-projects/frontend/sandboxes
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: Sandboxes
+                - link "Workflows":
+                  - /url: /9maks-projects/frontend/workflows
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: Workflows
+                - separator
+                - link "Usage":
+                  - /url: /9maks-projects/frontend/usage
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: Usage
+                - link "Support":
+                  - /url: /9maks-projects/frontend/support
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: Support
+                - link "Settings":
+                  - /url: /9maks-projects/frontend/settings
+                  - generic:
+                    - img
+                  - generic:
+                    - generic: Settings
+                  - generic:
+                    - img
+            - generic [ref=e33]:
+              - button "Settings" [ref=e35] [cursor=pointer]:
+                - img [ref=e37]
+                - generic [ref=e39]: Settings
+              - generic [ref=e41]:
+                - link "General" [ref=e42] [cursor=pointer]:
+                  - /url: /9maks-projects/frontend/settings/general
+                  - generic [ref=e44]: General
+                - link "Build and Deployment" [ref=e45] [cursor=pointer]:
+                  - /url: /9maks-projects/frontend/settings/build-and-deployment
+                  - generic [ref=e47]: Build and Deployment
+                - link "Environments" [ref=e48] [cursor=pointer]:
+                  - /url: /9maks-projects/frontend/settings/environments
+                  - generic [ref=e50]: Environments
+                - link "Git" [ref=e51] [cursor=pointer]:
+                  - /url: /9maks-projects/frontend/settings/git
+                  - generic [ref=e53]: Git
+                - link "Deployment Protection" [ref=e54] [cursor=pointer]:
+                  - /url: /9maks-projects/frontend/settings/deployment-protection
+                  - generic [ref=e56]: Deployment Protection
+                - link "Functions" [ref=e57] [cursor=pointer]:
+                  - /url: /9maks-projects/frontend/settings/functions
+                  - generic [ref=e59]: Functions
+                - link "Cron Jobs" [ref=e60] [cursor=pointer]:
+                  - /url: /9maks-projects/frontend/settings/cron-jobs
+                  - generic [ref=e62]: Cron Jobs
+                - link "Microfrontends" [ref=e63] [cursor=pointer]:
+                  - /url: /9maks-projects/frontend/settings/microfrontends
+                  - generic [ref=e65]: Microfrontends
+                - link "Project Members" [ref=e66] [cursor=pointer]:
+                  - /url: /9maks-projects/frontend/settings/project-members
+                  - generic [ref=e68]: Project Members
+                - link "Drains" [ref=e69] [cursor=pointer]:
+                  - /url: /9maks-projects/frontend/settings/drains
+                  - generic [ref=e71]: Drains
+                - link "Security" [ref=e72] [cursor=pointer]:
+                  - /url: /9maks-projects/frontend/settings/security
+                  - generic [ref=e74]: Security
+                - link "Connectivity" [ref=e75] [cursor=pointer]:
+                  - /url: /9maks-projects/frontend/settings/connectivity
+                  - generic [ref=e77]: Connectivity
+                - link "Advanced" [ref=e78] [cursor=pointer]:
+                  - /url: /9maks-projects/frontend/settings/advanced
+                  - generic [ref=e80]: Advanced
+        - generic [ref=e83]:
+          - generic [ref=e246]:
+            - generic [ref=e247]:
+              - generic [ref=e250]:
+                - generic [ref=e251]: Ship
+                - generic [ref=e253]: "26"
+              - button "Dismiss" [ref=e254] [cursor=pointer]:
+                - img [ref=e256]
+            - generic [ref=e258]:
+              - generic [ref=e259]: Coming to five cities worldwide.
+              - button "Get your ticket" [ref=e261] [cursor=pointer]:
+                - generic [ref=e262]: Get your ticket
+          - generic [ref=e85]:
+            - button "Avatar for 9mak 9mak" [ref=e86] [cursor=pointer]:
+              - img "Avatar for 9mak" [ref=e87]:
+                - img "Avatar for 9mak" [ref=e88]
+              - generic [ref=e90]: 9mak
+              - img [ref=e92]
+            - button "5 unseen notifications" [ref=e264] [cursor=pointer]:
+              - generic [ref=e265]:
+                - generic [ref=e266]:
+                  - img
+                - img [ref=e267]
+      - button [ref=e99] [cursor=pointer]:
+        - img [ref=e100]
+    - generic [ref=e103]:
+      - generic [ref=e104]:
+        - generic [ref=e107]:
+          - link "Other frontend" [ref=e269] [cursor=pointer]:
+            - /url: /9maks-projects/frontend
+            - img "Other" [ref=e270]:
+              - img "Other" [ref=e271]
+            - generic [ref=e111]: frontend
+          - button [ref=e112] [cursor=pointer]:
+            - img [ref=e114]
+          - link "Back to team view" [ref=e118] [cursor=pointer]:
+            - /url: /9maks-projects/~/settings
+            - img [ref=e120]
+        - generic [ref=e122]:
+          - generic [ref=e123]:
+            - link "Project Settings" [ref=e124] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/settings
+            - img [ref=e125]
+          - generic [ref=e128]: Git
+        - button "Open page actions menu" [ref=e130] [cursor=pointer]:
+          - img [ref=e132]
+      - generic [ref=e142]:
+        - generic [ref=e144]:
+          - generic [ref=e145]:
+            - heading "Connected Git Repository" [level=4] [ref=e147]:
+              - generic [ref=e148]:
+                - link "Connected Git Repository" [ref=e149] [cursor=pointer]:
+                  - /url: "#connected-git-repository"
+                  - generic [ref=e150]: Connected Git Repository
+                - img [ref=e151]
+            - paragraph [ref=e153]: Seamlessly create Deployments for any commits pushed to your Git repository.
+            - generic [ref=e309]:
+              - generic [ref=e311]:
+                - combobox [ref=e314]:
+                  - generic [ref=e315]:
+                    - generic:
+                      - img
+                    - searchbox "Select a Git Namespace" [ref=e316]: 9mak
+                    - button "Open menu" [ref=e317] [cursor=pointer]:
+                      - img [ref=e318]
+                - generic [ref=e323]:
+                  - searchbox "Search" [ref=e324]
+                  - img [ref=e326]
+              - generic [ref=e330]:
+                - generic [ref=e333]:
+                  - generic [ref=e337]:
+                    - generic "9mak" [ref=e339]
+                    - generic [ref=e341]: ·
+                    - generic [ref=e343]: 3h ago
+                  - button "Connect" [ref=e346] [cursor=pointer]:
+                    - generic [ref=e347]: Connect
+                - generic [ref=e350]:
+                  - generic [ref=e354]:
+                    - generic "oneco" [ref=e356]
+                    - generic [ref=e358]: ·
+                    - generic [ref=e360]: 4h ago
+                  - button "Connect" [ref=e363] [cursor=pointer]:
+                    - generic [ref=e364]: Connect
+                - generic [ref=e367]:
+                  - generic [ref=e371]:
+                    - generic "ore" [ref=e373]
+                    - generic "Private Git Repository" [ref=e374]:
+                      - img [ref=e375]
+                    - generic [ref=e378]: ·
+                    - generic [ref=e380]: 4h ago
+                  - button "Connect" [ref=e383] [cursor=pointer]:
+                    - generic [ref=e384]: Connect
+                - generic [ref=e387]:
+                  - generic [ref=e391]:
+                    - generic "pokeca-monitor" [ref=e393]
+                    - generic [ref=e395]: ·
+                    - generic [ref=e397]: 5h ago
+                  - button "Connect" [ref=e400] [cursor=pointer]:
+                    - generic [ref=e401]: Connect
+                - generic [ref=e404]:
+                  - generic [ref=e408]:
+                    - generic "9mak-site" [ref=e410]
+                    - generic [ref=e412]: ·
+                    - generic [ref=e414]: 1d ago
+                  - button "Connect" [ref=e417] [cursor=pointer]:
+                    - generic [ref=e418]: Connect
+            - generic [ref=e165]:
+              - group [ref=e166]:
+                - generic [ref=e167]:
+                  - generic [ref=e168]:
+                    - generic [ref=e169]: Toggle Pull Request Comments
+                    - generic [ref=e170]:
+                      - generic [ref=e171]: Pull Request Comments
+                      - img [ref=e173]
+                  - generic [ref=e175]:
+                    - generic [ref=e176]: Enabled
+                    - checkbox "Enabled" [checked] [disabled] [ref=e177]
+              - separator [ref=e180]
+              - group [ref=e181]:
+                - generic [ref=e182]:
+                  - generic [ref=e183]:
+                    - generic [ref=e184]: Toggle Commit Comments
+                    - generic [ref=e185]:
+                      - generic [ref=e186]: Commit Comments
+                      - img [ref=e188]
+                  - generic [ref=e190]:
+                    - generic [ref=e191]: Disabled
+                    - checkbox "Disabled" [disabled] [ref=e192]
+          - paragraph [ref=e305]:
+            - text: Learn more about
+            - link "Vercel for Git" [ref=e306] [cursor=pointer]:
+              - /url: /docs/git
+              - text: Vercel for Git
+              - img [ref=e307]
+        - generic [ref=e200]:
+          - generic [ref=e201]:
+            - heading "Git Large File Storage (LFS)" [level=4] [ref=e202]:
+              - generic [ref=e203]:
+                - link "Git Large File Storage (LFS)" [ref=e204] [cursor=pointer]:
+                  - /url: "#git-large-file-storage-(lfs)"
+                  - generic [ref=e205]: Git Large File Storage (LFS)
+                - img [ref=e206]
+            - paragraph [ref=e208]: Git LFS replaces large files such as audio samples, videos, datasets, and graphics with text pointers inside Git, while storing the file contents on a remote server like GitHub.com or GitHub Enterprise.
+            - generic [ref=e210] [cursor=pointer]:
+              - checkbox "Disabled" [ref=e212]
+              - text: Disabled
+          - generic [ref=e216]:
+            - paragraph [ref=e218]:
+              - text: Learn more about
+              - link "Git LFS" [ref=e219] [cursor=pointer]:
+                - /url: /docs/projects/overview#git-large-file-storage-lfs
+                - text: Git LFS
+                - img [ref=e220]
+            - button "Save" [disabled] [ref=e225]:
+              - generic [ref=e226]: Save
+        - generic [ref=e228]:
+          - generic [ref=e229]:
+            - heading "Deploy Hooks" [level=4] [ref=e230]:
+              - generic [ref=e231]:
+                - link "Deploy Hooks" [ref=e232] [cursor=pointer]:
+                  - /url: "#deploy-hooks"
+                  - generic [ref=e233]: Deploy Hooks
+                - img [ref=e234]
+            - paragraph [ref=e236]: Deploy hooks are unique URLs that allow you to trigger a deployment of a given branch.
+            - paragraph [ref=e237]: This Project is not connected to a Git repository. To be able to set up a Deploy Hook, you need to set up a new connection in the "Connected Git Repository" section above.
+          - paragraph [ref=e240]:
+            - text: Learn more about
+            - link "Deploy Hooks" [ref=e241] [cursor=pointer]:
+              - /url: /docs/deploy-hooks
+              - text: Deploy Hooks
+              - img [ref=e242]
+  - alert [ref=e245]
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - img

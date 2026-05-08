@@ -1,0 +1,440 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content":
+    - /url: "#geist-skip-nav"
+  - main [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e9]:
+            - link "9mak's projects Hobby" [ref=e10] [cursor=pointer]:
+              - /url: /9maks-projects
+              - img [ref=e11]
+              - generic [ref=e12]:
+                - generic [ref=e13]: 9mak's projects
+                - generic [ref=e15]: Hobby
+            - button [ref=e16] [cursor=pointer]:
+              - img [ref=e18]
+          - button "Find… F" [ref=e21]:
+            - generic [ref=e23]:
+              - img [ref=e25]
+              - generic [ref=e27]: Find…
+              - generic [ref=e29]: F
+        - navigation [ref=e31]:
+          - generic [ref=e34]:
+            - link "Other Overview" [ref=e35] [cursor=pointer]:
+              - /url: /9maks-projects/frontend
+              - img "Other" [ref=e37]:
+                - img "Other" [ref=e38]
+              - generic [ref=e40]: Overview
+            - link "Deployments" [ref=e41] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/deployments
+              - img [ref=e43]
+              - generic [ref=e46]: Deployments
+            - link "Logs" [ref=e47] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/logs
+              - img [ref=e49]
+              - generic [ref=e52]: Logs
+            - link "Analytics" [ref=e53] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/analytics
+              - img [ref=e55]
+              - generic [ref=e58]: Analytics
+            - link "Speed Insights" [ref=e59] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/speed-insights
+              - img [ref=e61]
+              - generic [ref=e64]: Speed Insights
+            - link "Observability" [ref=e65] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/observability
+              - img [ref=e67]
+              - generic [ref=e70]: Observability
+              - img [ref=e72]
+            - link "Firewall" [ref=e74] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/firewall
+              - img [ref=e76]
+              - generic [ref=e80]: Firewall
+              - img [ref=e82]
+            - link "CDN" [ref=e84] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/cdn
+              - img [ref=e86]
+              - generic [ref=e89]: CDN
+              - img [ref=e91]
+            - separator [ref=e93]
+            - link "Environment Variables" [ref=e94] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/settings/environment-variables
+              - img [ref=e96]
+              - generic [ref=e99]: Environment Variables
+            - link "Domains" [ref=e100] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/settings/domains
+              - img [ref=e102]
+              - generic [ref=e105]: Domains
+            - link "Integrations" [ref=e106] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/settings/integrations
+              - img [ref=e108]
+              - generic [ref=e111]: Integrations
+            - link "Storage" [ref=e112] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/stores
+              - img [ref=e114]
+              - generic [ref=e117]: Storage
+            - link "Flags" [ref=e118] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/flags
+              - img [ref=e120]
+              - generic [ref=e123]: Flags
+              - img [ref=e125]
+            - link "Agent" [ref=e127] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/agent
+              - img [ref=e129]
+              - generic [ref=e132]: Agent
+              - img [ref=e134]
+            - link "AI Gateway" [ref=e136] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/ai-gateway
+              - img [ref=e138]
+              - generic [ref=e141]: AI Gateway
+              - img [ref=e143]
+            - link "Sandboxes" [ref=e145] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/sandboxes
+              - img [ref=e147]
+              - generic [ref=e150]: Sandboxes
+            - link "Workflows" [ref=e151] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/workflows
+              - img [ref=e153]
+              - generic [ref=e156]: Workflows
+            - separator [ref=e157]
+            - link "Usage" [ref=e158] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/usage
+              - img [ref=e160]
+              - generic [ref=e163]: Usage
+            - link "Support" [ref=e164] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/support
+              - img [ref=e166]
+              - generic [ref=e169]: Support
+            - link "Settings" [ref=e170] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/settings
+              - img [ref=e172]
+              - generic [ref=e175]: Settings
+              - img [ref=e177]
+        - generic [ref=e181]:
+          - generic [ref=e182]:
+            - generic [ref=e183]:
+              - generic [ref=e186]:
+                - generic [ref=e187]: Ship
+                - generic [ref=e189]: "26"
+              - button "Dismiss" [ref=e190] [cursor=pointer]:
+                - img [ref=e192]
+            - generic [ref=e194]:
+              - generic [ref=e195]: Coming to five cities worldwide.
+              - button "Get your ticket" [ref=e197] [cursor=pointer]:
+                - generic [ref=e198]: Get your ticket
+          - generic [ref=e200]:
+            - button "Avatar for 9mak 9mak" [ref=e201] [cursor=pointer]:
+              - img "Avatar for 9mak" [ref=e202]:
+                - img "Avatar for 9mak" [ref=e203]
+              - generic [ref=e205]: 9mak
+              - img [ref=e207]
+            - button "notifications" [ref=e211] [cursor=pointer]:
+              - generic [ref=e213]:
+                - img
+      - button [ref=e215] [cursor=pointer]:
+        - img [ref=e216]
+    - generic [ref=e219]:
+      - generic [ref=e220]:
+        - generic [ref=e223]:
+          - link "Other frontend" [ref=e224] [cursor=pointer]:
+            - /url: /9maks-projects/frontend
+            - img "Other" [ref=e225]:
+              - img "Other" [ref=e226]
+            - generic [ref=e228]: frontend
+          - button [ref=e229] [cursor=pointer]:
+            - img [ref=e231]
+          - link "Back to team view" [ref=e235] [cursor=pointer]:
+            - /url: /9maks-projects/~/deployments
+            - img [ref=e237]
+        - generic [ref=e241]: Deployments
+        - button "Open page actions menu" [ref=e243] [cursor=pointer]:
+          - img [ref=e245]
+      - generic [ref=e250]:
+        - generic [ref=e251]:
+          - combobox [ref=e253]:
+            - generic [ref=e254]:
+              - generic:
+                - img
+              - searchbox "All Branches…" [ref=e255]
+              - button "Open menu" [ref=e256] [cursor=pointer]:
+                - img [ref=e257]
+          - combobox [ref=e260]:
+            - generic [ref=e261]:
+              - generic:
+                - img
+              - searchbox "All Authors…" [ref=e262]
+              - button "Open menu" [ref=e263] [cursor=pointer]:
+                - img [ref=e264]
+          - button "Menu" [ref=e268] [cursor=pointer]:
+            - generic [ref=e269]:
+              - generic [ref=e271]: All Environments
+              - img [ref=e273]
+          - button "Select Date Range" [ref=e278] [cursor=pointer]:
+            - img [ref=e280]
+            - generic [ref=e282]: Select Date Range
+          - generic [ref=e283]:
+            - button "Filter by deployment status. 5 of 6 statuses selected" [ref=e287] [cursor=pointer]:
+              - generic [ref=e288]:
+                - generic [ref=e296]: Status
+                - generic "5 of 6 statuses selected" [ref=e297]:
+                  - generic [ref=e298]: 5/6
+              - img [ref=e301]
+            - button "Deployments actions" [ref=e304] [cursor=pointer]:
+              - img [ref=e306]
+        - generic [ref=e310]:
+          - generic [ref=e312]:
+            - link [ref=e313] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/FGgGkB4K2aXXVuYfM4RxE4kKEBxx
+            - generic [ref=e315]:
+              - link "FGgGkB4K2" [ref=e318] [cursor=pointer]:
+                - /url: /9maks-projects/frontend/FGgGkB4K2aXXVuYfM4RxE4kKEBxx
+                - paragraph [ref=e319]: FGgGkB4K2
+              - generic [ref=e321]: Production
+            - generic [ref=e323]:
+              - generic "This deployment had an error." [ref=e325]:
+                - generic [ref=e329]: Error
+              - generic [ref=e333]: 6s
+            - generic [ref=e336]:
+              - generic [ref=e337]:
+                - img [ref=e338]
+                - link "main" [ref=e340] [cursor=pointer]:
+                  - /url: https://github.com/9mak/oneco/tree/main
+              - generic [ref=e341]:
+                - img [ref=e342]
+                - 'link "5d3de8e chore: trigger Vercel auto-deploy after Git connect" [ref=e344] [cursor=pointer]':
+                  - /url: https://github.com/9mak/oneco/commit/5d3de8e522c7e0afe7f9c84b71a0f048dc28d732
+                  - generic [ref=e345]: 5d3de8e
+                  - 'generic "chore: trigger Vercel auto-deploy after Git connect" [ref=e346]'
+            - generic [ref=e347]:
+              - generic [ref=e349]:
+                - generic [ref=e351] [cursor=pointer]: 3m ago by 9mak
+                - img "9mak Avatar" [ref=e356] [cursor=pointer]:
+                  - img "9mak Avatar" [ref=e357]
+              - button "Deployment Actions" [ref=e359] [cursor=pointer]:
+                - img [ref=e363]
+          - generic [ref=e366]:
+            - link [ref=e367] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/GcS4CfDZnxCak3HZzntTznh7Gd5F
+            - generic [ref=e369]:
+              - link "GcS4CfDZn" [ref=e372] [cursor=pointer]:
+                - /url: /9maks-projects/frontend/GcS4CfDZnxCak3HZzntTznh7Gd5F
+                - paragraph [ref=e373]: GcS4CfDZn
+              - generic [ref=e375]:
+                - text: Production
+                - generic [ref=e378]:
+                  - img [ref=e380]
+                  - text: Current
+            - generic [ref=e383]:
+              - generic "This deployment is ready." [ref=e385]:
+                - generic [ref=e389]: Ready
+              - generic [ref=e393]: 49s
+            - generic [ref=e397]:
+              - img [ref=e399]
+              - generic [ref=e401]:
+                - text: Redeploy of
+                - link "EPexUCKim" [ref=e402] [cursor=pointer]:
+                  - /url: /9maks-projects/frontend/EPexUCKimsm3xdyyds9rMfm5zySZ
+                  - code [ref=e403]: EPexUCKim
+            - generic [ref=e404]:
+              - generic [ref=e406]:
+                - generic [ref=e408] [cursor=pointer]: 35m ago by 9mak
+                - img "9mak Avatar" [ref=e412] [cursor=pointer]:
+                  - img "9mak Avatar" [ref=e413]
+              - button "Deployment Actions" [ref=e415] [cursor=pointer]:
+                - img [ref=e419]
+          - generic [ref=e422]:
+            - link [ref=e423] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/EPexUCKimsm3xdyyds9rMfm5zySZ
+            - generic [ref=e425]:
+              - link "EPexUCKim" [ref=e428] [cursor=pointer]:
+                - /url: /9maks-projects/frontend/EPexUCKimsm3xdyyds9rMfm5zySZ
+                - paragraph [ref=e429]: EPexUCKim
+              - generic [ref=e431]:
+                - text: Production
+                - img [ref=e433]
+            - generic [ref=e436]:
+              - generic "This deployment is ready." [ref=e438]:
+                - generic [ref=e442]: Ready
+              - generic [ref=e446]: 25s
+            - generic [ref=e449]:
+              - generic [ref=e450]:
+                - img [ref=e451]
+                - link "View code" [ref=e453] [cursor=pointer]:
+                  - /url: /9maks-projects/frontend/EPexUCKimsm3xdyyds9rMfm5zySZ/source
+              - generic [ref=e454]:
+                - img [ref=e455]
+                - link "vercel deploy" [ref=e457] [cursor=pointer]:
+                  - /url: /docs/cli/deploy
+            - generic [ref=e458]:
+              - generic [ref=e460]:
+                - generic [ref=e462] [cursor=pointer]: May 4 by 9mak
+                - img "9mak Avatar" [ref=e466] [cursor=pointer]:
+                  - img "9mak Avatar" [ref=e467]
+              - button "Deployment Actions" [ref=e469] [cursor=pointer]:
+                - img [ref=e473]
+          - generic [ref=e476]:
+            - link [ref=e477] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/GHVmCt1cFivjxpX8bf5CzLRcvyRp
+            - generic [ref=e479]:
+              - link "GHVmCt1cF" [ref=e482] [cursor=pointer]:
+                - /url: /9maks-projects/frontend/GHVmCt1cFivjxpX8bf5CzLRcvyRp
+                - paragraph [ref=e483]: GHVmCt1cF
+              - generic [ref=e485]:
+                - text: Production
+                - img [ref=e487]
+            - generic [ref=e490]:
+              - generic "This deployment is ready." [ref=e492]:
+                - generic [ref=e496]: Ready
+              - generic [ref=e500]: 26s
+            - generic [ref=e503]:
+              - generic [ref=e504]:
+                - img [ref=e505]
+                - link "View code" [ref=e507] [cursor=pointer]:
+                  - /url: /9maks-projects/frontend/GHVmCt1cFivjxpX8bf5CzLRcvyRp/source
+              - generic [ref=e508]:
+                - img [ref=e509]
+                - link "vercel deploy" [ref=e511] [cursor=pointer]:
+                  - /url: /docs/cli/deploy
+            - generic [ref=e512]:
+              - generic [ref=e514]:
+                - generic [ref=e516] [cursor=pointer]: May 4 by 9mak
+                - img "9mak Avatar" [ref=e520] [cursor=pointer]:
+                  - img "9mak Avatar" [ref=e521]
+              - button "Deployment Actions" [ref=e523] [cursor=pointer]:
+                - img [ref=e527]
+          - generic [ref=e530]:
+            - link [ref=e531] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/73JTL6EVAKp6hcPdXTA5zi8o3W94
+            - generic [ref=e533]:
+              - link "73JTL6EVA" [ref=e536] [cursor=pointer]:
+                - /url: /9maks-projects/frontend/73JTL6EVAKp6hcPdXTA5zi8o3W94
+                - paragraph [ref=e537]: 73JTL6EVA
+              - generic [ref=e539]:
+                - text: Production
+                - img [ref=e541]
+            - generic [ref=e544]:
+              - generic "This deployment is ready." [ref=e546]:
+                - generic [ref=e550]: Ready
+              - generic [ref=e554]: 27s
+            - generic [ref=e557]:
+              - generic [ref=e558]:
+                - img [ref=e559]
+                - link "View code" [ref=e561] [cursor=pointer]:
+                  - /url: /9maks-projects/frontend/73JTL6EVAKp6hcPdXTA5zi8o3W94/source
+              - generic [ref=e562]:
+                - img [ref=e563]
+                - link "vercel deploy" [ref=e565] [cursor=pointer]:
+                  - /url: /docs/cli/deploy
+            - generic [ref=e566]:
+              - generic [ref=e568]:
+                - generic [ref=e570] [cursor=pointer]: May 1 by 9mak
+                - img "9mak Avatar" [ref=e574] [cursor=pointer]:
+                  - img "9mak Avatar" [ref=e575]
+              - button "Deployment Actions" [ref=e577] [cursor=pointer]:
+                - img [ref=e581]
+          - generic [ref=e584]:
+            - link [ref=e585] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/3H9eRDPfsEELnsSr2yiAtvmA9RpQ
+            - generic [ref=e587]:
+              - link "3H9eRDPfs" [ref=e590] [cursor=pointer]:
+                - /url: /9maks-projects/frontend/3H9eRDPfsEELnsSr2yiAtvmA9RpQ
+                - paragraph [ref=e591]: 3H9eRDPfs
+              - generic [ref=e593]:
+                - text: Production
+                - img [ref=e595]
+            - generic [ref=e598]:
+              - generic "This deployment is ready." [ref=e600]:
+                - generic [ref=e604]: Ready
+              - generic [ref=e608]: 25s
+            - generic [ref=e611]:
+              - generic [ref=e612]:
+                - img [ref=e613]
+                - link "View code" [ref=e615] [cursor=pointer]:
+                  - /url: /9maks-projects/frontend/3H9eRDPfsEELnsSr2yiAtvmA9RpQ/source
+              - generic [ref=e616]:
+                - img [ref=e617]
+                - link "vercel deploy" [ref=e619] [cursor=pointer]:
+                  - /url: /docs/cli/deploy
+            - generic [ref=e620]:
+              - generic [ref=e622]:
+                - generic [ref=e624] [cursor=pointer]: May 1 by 9mak
+                - img "9mak Avatar" [ref=e628] [cursor=pointer]:
+                  - img "9mak Avatar" [ref=e629]
+              - button "Deployment Actions" [ref=e631] [cursor=pointer]:
+                - img [ref=e635]
+          - generic [ref=e638]:
+            - link [ref=e639] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/3pZ4XeBSZjGFaht9xBVa9d7NZG4C
+            - generic [ref=e641]:
+              - link "3pZ4XeBSZ" [ref=e644] [cursor=pointer]:
+                - /url: /9maks-projects/frontend/3pZ4XeBSZjGFaht9xBVa9d7NZG4C
+                - paragraph [ref=e645]: 3pZ4XeBSZ
+              - generic [ref=e647]:
+                - text: Production
+                - img [ref=e649]
+            - generic [ref=e652]:
+              - generic "This deployment is ready." [ref=e654]:
+                - generic [ref=e658]: Ready
+              - generic [ref=e662]: 30s
+            - generic [ref=e665]:
+              - generic [ref=e666]:
+                - img [ref=e667]
+                - link "View code" [ref=e669] [cursor=pointer]:
+                  - /url: /9maks-projects/frontend/3pZ4XeBSZjGFaht9xBVa9d7NZG4C/source
+              - generic [ref=e670]:
+                - img [ref=e671]
+                - link "vercel deploy" [ref=e673] [cursor=pointer]:
+                  - /url: /docs/cli/deploy
+            - generic [ref=e674]:
+              - generic [ref=e676]:
+                - generic [ref=e678] [cursor=pointer]: May 1 by 9mak
+                - img "9mak Avatar" [ref=e682] [cursor=pointer]:
+                  - img "9mak Avatar" [ref=e683]
+              - button "Deployment Actions" [ref=e685] [cursor=pointer]:
+                - img [ref=e689]
+          - generic [ref=e692]:
+            - link [ref=e693] [cursor=pointer]:
+              - /url: /9maks-projects/frontend/3KdFqu4vuDANXvyoKNoaFjFMnA5X
+            - generic [ref=e695]:
+              - link "3KdFqu4vu" [ref=e698] [cursor=pointer]:
+                - /url: /9maks-projects/frontend/3KdFqu4vuDANXvyoKNoaFjFMnA5X
+                - paragraph [ref=e699]: 3KdFqu4vu
+              - generic [ref=e701]:
+                - text: Production
+                - img [ref=e703]
+            - generic [ref=e706]:
+              - generic "This deployment is ready." [ref=e708]:
+                - generic [ref=e712]: Ready
+              - generic [ref=e716]: 44s
+            - generic [ref=e719]:
+              - generic [ref=e720]:
+                - img [ref=e721]
+                - link "View code" [ref=e723] [cursor=pointer]:
+                  - /url: /9maks-projects/frontend/3KdFqu4vuDANXvyoKNoaFjFMnA5X/source
+              - generic [ref=e724]:
+                - img [ref=e725]
+                - link "vercel deploy" [ref=e727] [cursor=pointer]:
+                  - /url: /docs/cli/deploy
+            - generic [ref=e728]:
+              - generic [ref=e730]:
+                - generic [ref=e732] [cursor=pointer]: May 1 by 9mak
+                - img "9mak Avatar" [ref=e736] [cursor=pointer]:
+                  - img "9mak Avatar" [ref=e737]
+              - button "Deployment Actions" [ref=e739] [cursor=pointer]:
+                - img [ref=e743]
+        - generic [ref=e745]:
+          - paragraph [ref=e746]:
+            - text: Deployment Retention is enabled for this project — some deployments will be deleted after a set time period.
+            - link "Learn more" [ref=e747] [cursor=pointer]:
+              - /url: /docs/security/deployment-retention
+              - text: Learn more
+              - img [ref=e748]
+          - button "View Recently Deleted" [ref=e750] [cursor=pointer]:
+            - generic [ref=e751]: View Recently Deleted
+  - alert [ref=e753]
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - img

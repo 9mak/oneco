@@ -1,0 +1,227 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - link "Skip to content" [ref=e4] [cursor=pointer]:
+      - /url: "#start-of-content"
+    - generic [ref=e7]:
+      - banner "Global Navigation Menu" [ref=e8]:
+        - generic [ref=e9]:
+          - generic [ref=e10]:
+            - button "Open menu" [ref=e12] [cursor=pointer]:
+              - img [ref=e13]
+            - link "Homepage (g then d)" [ref=e15] [cursor=pointer]:
+              - /url: /
+              - img [ref=e16]
+          - generic [ref=e18]:
+            - navigation "Breadcrumbs" [ref=e19]:
+              - list [ref=e20]:
+                - listitem [ref=e21]:
+                  - link "Settings" [ref=e22] [cursor=pointer]:
+                    - /url: /settings/profile
+                    - generic [ref=e23]: Settings
+                - listitem [ref=e24]:
+                  - link "Developer Settings" [ref=e25] [cursor=pointer]:
+                    - /url: /settings/apps
+                    - generic [ref=e26]: Developer Settings
+            - button "Search or jump to…" [ref=e29] [cursor=pointer]:
+              - generic [ref=e30]:
+                - generic:
+                  - img
+                - generic [ref=e31]:
+                  - generic:
+                    - text: Type
+                    - generic: /
+                    - text: to search
+          - generic [ref=e32]:
+            - generic [ref=e33]:
+              - generic [ref=e36]:
+                - link "Chat with Copilot" [ref=e38] [cursor=pointer]:
+                  - /url: /copilot
+                  - img [ref=e39]
+                - button "Open Copilot…" [ref=e43] [cursor=pointer]:
+                  - generic:
+                    - img
+              - button "Create new..." [ref=e45] [cursor=pointer]:
+                - generic [ref=e46]:
+                  - generic:
+                    - img
+                - generic:
+                  - img
+              - generic [ref=e47]:
+                - link "All issues (g then i)" [ref=e48] [cursor=pointer]:
+                  - /url: /issues
+                  - img [ref=e49]
+                - link "All pull requests (g then p)" [ref=e52] [cursor=pointer]:
+                  - /url: /pulls
+                  - img [ref=e53]
+                - link "All repositories" [ref=e55] [cursor=pointer]:
+                  - /url: /repos
+                  - img [ref=e56]
+            - link "You have no unread notifications (g then n)" [ref=e58] [cursor=pointer]:
+              - /url: /notifications
+              - img [ref=e59]
+            - button "Open user navigation menu" [ref=e62] [cursor=pointer]:
+              - img "9mak" [ref=e63]
+      - region "Important update" [ref=e65]:
+        - img [ref=e67]
+        - generic [ref=e70]:
+          - heading "Important update" [level=2] [ref=e72]
+          - generic [ref=e74]:
+            - text: On April 24 we'll start using GitHub Copilot interaction data for AI model training unless you opt out.
+            - link "Review this update" [ref=e75] [cursor=pointer]:
+              - /url: https://gh.io/AAzfaht
+            - text: and manage your preferences in your
+            - link "GitHub account settings" [ref=e76] [cursor=pointer]:
+              - /url: https://github.com/settings/copilot/features
+            - text: .
+        - button "Dismiss banner" [ref=e77] [cursor=pointer]:
+          - img [ref=e78]
+  - generic [ref=e83]:
+    - button "Dismiss this message" [active] [ref=e84] [cursor=pointer]:
+      - img [ref=e85]
+    - alert [ref=e87]: Application created successfully
+  - main [ref=e90]:
+    - navigation "Breadcrumb" [ref=e95]:
+      - list [ref=e96]:
+        - listitem [ref=e97]:
+          - link "Settings" [ref=e98] [cursor=pointer]:
+            - /url: /settings/profile
+        - listitem [ref=e99]:
+          - link "Developer settings" [ref=e100] [cursor=pointer]:
+            - /url: /settings/developers
+        - listitem [ref=e101]:
+          - link "oneco admin" [ref=e102]:
+            - /url: /settings/applications/3583573
+    - generic [ref=e103]:
+      - navigation "OAuth app settings" [ref=e105]:
+        - list [ref=e107]:
+          - listitem [ref=e108]:
+            - link "General" [ref=e109] [cursor=pointer]:
+              - /url: /settings/applications/3583573
+              - generic [ref=e110]: General
+          - listitem [ref=e111]:
+            - link "Optional features" [ref=e112] [cursor=pointer]:
+              - /url: /settings/applications/3583573/beta
+              - generic [ref=e113]: Optional features
+          - listitem [ref=e114]:
+            - link "Advanced" [ref=e115] [cursor=pointer]:
+              - /url: /settings/applications/3583573/advanced
+              - generic [ref=e116]: Advanced
+      - generic [ref=e117]:
+        - heading "oneco admin" [level=2] [ref=e119]
+        - generic [ref=e120]:
+          - img "@9mak" [ref=e121]
+          - paragraph [ref=e122]:
+            - strong [ref=e123]:
+              - link "9mak" [ref=e124] [cursor=pointer]:
+                - /url: /9mak
+            - text: owns this application.
+          - group [ref=e125]:
+            - button "Transfer ownership" [ref=e126] [cursor=pointer]
+        - separator [ref=e127]
+        - generic [ref=e128]:
+          - paragraph [ref=e129]:
+            - text: You can list your application in the
+            - link "GitHub Marketplace" [ref=e130] [cursor=pointer]:
+              - /url: /marketplace
+            - text: so that other users can discover it.
+          - link "List this application in the Marketplace" [ref=e131] [cursor=pointer]:
+            - /url: /marketplace/new/oauth_app/3583573
+        - separator [ref=e132]
+        - generic [ref=e135]:
+          - heading "0 users" [level=2] [ref=e136]
+          - group [ref=e138]:
+            - button "Revoke all user tokens" [ref=e139] [cursor=pointer]
+        - heading "Client ID" [level=2] [ref=e141]
+        - code [ref=e142]: Ov23lil3ufXq5kE9dhF9
+        - generic [ref=e143]:
+          - generic [ref=e144]:
+            - heading "Client secrets" [level=2] [ref=e145]
+            - button "Generate a new client secret" [ref=e148] [cursor=pointer]
+          - paragraph [ref=e150]: You need a client secret to authenticate as the application to the API.
+        - strong [ref=e152]: Application logo
+        - generic [ref=e157]:
+          - generic [ref=e160]:
+            - img [ref=e161]
+            - paragraph [ref=e164]: Drag & drop
+          - generic [ref=e165]:
+            - button "Upload new logo" [ref=e166]
+            - generic [ref=e167] [cursor=pointer]: Upload new logo
+            - paragraph [ref=e169]: You can also drag and drop a picture from your computer.
+          - paragraph
+        - generic [ref=e170]:
+          - generic [ref=e171]:
+            - term [ref=e172]: Application name*
+            - definition [ref=e173]:
+              - textbox "Application name*" [ref=e174]: oneco admin
+              - paragraph [ref=e175]: Something users will recognize and trust.
+          - generic [ref=e176]:
+            - term [ref=e177]: Homepage URL*
+            - definition [ref=e178]:
+              - textbox "Homepage URL*" [ref=e179]: https://frontend-psi-ten-73.vercel.app
+              - paragraph [ref=e180]: The full URL to your application homepage.
+          - generic [ref=e181]:
+            - term [ref=e182]: Application description
+            - definition [ref=e183]:
+              - textbox "Application description" [ref=e184]:
+                - /placeholder: Application description is optional
+                - text: oneco 管理ダッシュボード（運営者専用）
+              - paragraph [ref=e185]: This is displayed to all users of your application.
+          - generic [ref=e186]:
+            - term [ref=e187]: Authorization callback URL*
+            - definition [ref=e188]:
+              - textbox "Authorization callback URL*" [ref=e189]: https://frontend-psi-ten-73.vercel.app/api/auth/callback/github
+              - paragraph [ref=e190]:
+                - text: Your application’s callback URL. Read our
+                - link "OAuth documentation" [ref=e191] [cursor=pointer]:
+                  - /url: https://docs.github.com/v3/oauth/
+                - text: for more information.
+          - generic [ref=e192]:
+            - term [ref=e193]:
+              - generic [ref=e194]:
+                - checkbox [ref=e195]
+                - text: Enable Device Flow
+            - definition [ref=e196]:
+              - paragraph [ref=e197]: Allow this OAuth App to authorize users via the Device Flow.
+              - paragraph [ref=e198]:
+                - text: Read the
+                - link "Device Flow documentation" [ref=e199] [cursor=pointer]:
+                  - /url: https://docs.github.com/apps/building-oauth-apps/authorizing-oauth-apps#device-flow
+                - text: for more information.
+          - separator [ref=e200]
+          - button "Update application" [ref=e201] [cursor=pointer]
+  - contentinfo [ref=e202]:
+    - heading "Footer" [level=2] [ref=e203]
+    - generic [ref=e204]:
+      - generic [ref=e205]:
+        - link "GitHub Homepage" [ref=e206] [cursor=pointer]:
+          - /url: https://github.com
+          - img [ref=e207]
+        - generic [ref=e209]: © 2026 GitHub, Inc.
+      - navigation "Footer" [ref=e210]:
+        - heading "Footer navigation" [level=3] [ref=e211]
+        - list "Footer navigation" [ref=e212]:
+          - listitem [ref=e213]:
+            - link "Terms" [ref=e214] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/github-terms/github-terms-of-service
+          - listitem [ref=e215]:
+            - link "Privacy" [ref=e216] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/privacy-policies/github-privacy-statement
+          - listitem [ref=e217]:
+            - link "Security" [ref=e218] [cursor=pointer]:
+              - /url: https://github.com/security
+          - listitem [ref=e219]:
+            - link "Status" [ref=e220] [cursor=pointer]:
+              - /url: https://www.githubstatus.com/
+          - listitem [ref=e221]:
+            - link "Community" [ref=e222] [cursor=pointer]:
+              - /url: https://github.community/
+          - listitem [ref=e223]:
+            - link "Docs" [ref=e224] [cursor=pointer]:
+              - /url: https://docs.github.com/
+          - listitem [ref=e225]:
+            - link "Contact" [ref=e226] [cursor=pointer]:
+              - /url: https://support.github.com?tags=dotcom-footer
+          - listitem [ref=e227]:
+            - button "Manage cookies" [ref=e229] [cursor=pointer]
+          - listitem [ref=e230]:
+            - button "Do not share my personal information" [ref=e232] [cursor=pointer]
