@@ -63,3 +63,6 @@ output/
 # 移行用 venv（コミット対象外）
 .venv-mig/
 .claude/scheduled_tasks.lock
+
+# Playwright MCP のページスナップショット（自動生成、コミット対象外）
+.playwright-mcp/
