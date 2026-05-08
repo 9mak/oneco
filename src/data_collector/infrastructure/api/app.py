@@ -92,10 +92,12 @@ def create_app() -> FastAPI:
     )
 
     # ルーター登録
+    from src.data_collector.infrastructure.api.admin_routes import admin_router
     from src.data_collector.infrastructure.api.routes import archive_router, router
 
     app.include_router(router)
     app.include_router(archive_router)
+    app.include_router(admin_router)
 
     # Syndication Service ルーター登録
     from slowapi.errors import RateLimitExceeded
