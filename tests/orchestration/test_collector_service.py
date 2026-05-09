@@ -50,6 +50,8 @@ class TestCollectorService:
         """モック SnapshotStore"""
         store = Mock()
         store.load_snapshot.return_value = []
+        # デフォルトでは前回 snapshot 無し → LLM スキップ発動せず
+        store.load_animal_map.return_value = {}
         return store
 
     @pytest.fixture
@@ -373,6 +375,8 @@ class TestCollectorServiceWithRepository:
         """モック SnapshotStore"""
         store = Mock()
         store.load_snapshot.return_value = []
+        # デフォルトでは前回 snapshot 無し → LLM スキップ発動せず
+        store.load_animal_map.return_value = {}
         return store
 
     @pytest.fixture
@@ -515,6 +519,7 @@ class TestCollectorServiceImageURLHashRecording:
     def mock_snapshot_store(self):
         store = Mock()
         store.load_snapshot.return_value = []
+        store.load_animal_map.return_value = {}
         return store
 
     @pytest.fixture
@@ -708,6 +713,8 @@ class TestCollectorServiceWithNotificationManager:
         """モック SnapshotStore"""
         store = Mock()
         store.load_snapshot.return_value = []
+        # デフォルトでは前回 snapshot 無し → LLM スキップ発動せず
+        store.load_animal_map.return_value = {}
         return store
 
     @pytest.fixture
@@ -884,3 +891,166 @@ class TestCollectorServiceWithNotificationManager:
         # 収集自体は成功（best-effort）
         assert result.success
         assert result.new_count == 1
+
+
+class TestCollectorServiceLlmSkip:
+    """SnapshotStore による LLM 抽出スキップのテスト
+
+    既知 source_url については adapter.extract_animal_details を呼ばず、
+    前回の snapshot から AnimalData を再利用する。
+    """
+
+    @pytest.fixture
+    def mock_adapter(self):
+        adapter = Mock()
+        adapter.prefecture_code = "39"
+        adapter.municipality_name = "高知県"
+        return adapter
+
+    @pytest.fixture
+    def mock_diff_detector(self):
+        detector = Mock()
+        detector.detect_diff.return_value = DiffResult(new=[], updated=[], deleted_candidates=[])
+        return detector
+
+    @pytest.fixture
+    def mock_output_writer(self):
+        writer = Mock()
+        writer.write_output.return_value = Path("output/animals.json")
+        return writer
+
+    @pytest.fixture
+    def mock_notification_client(self):
+        return Mock()
+
+    @pytest.fixture
+    def mock_snapshot_store(self):
+        store = Mock()
+        store.load_snapshot.return_value = []
+        store.load_animal_map.return_value = {}
+        return store
+
+    @pytest.fixture
+    def collector_service(
+        self,
+        tmp_path,
+        mock_adapter,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+    ):
+        service = CollectorService(
+            adapter=mock_adapter,
+            diff_detector=mock_diff_detector,
+            output_writer=mock_output_writer,
+            notification_client=mock_notification_client,
+            snapshot_store=mock_snapshot_store,
+        )
+        service.LOCK_FILE = tmp_path / ".collector.lock"
+        return service
+
+    def _animal(self, url: str, location: str = "高知県") -> AnimalData:
+        return AnimalData(
+            species="犬",
+            shelter_date=date(2026, 1, 5),
+            location=location,
+            source_url=url,
+            category="adoption",
+        )
+
+    def test_skips_llm_extraction_for_known_urls(
+        self, collector_service, mock_adapter, mock_snapshot_store
+    ):
+        """既知 URL は LLM を呼ばず、前回 snapshot の AnimalData を再利用する"""
+        known_url = "https://example.com/animal/known"
+        new_url = "https://example.com/animal/new"
+
+        # 一覧ページから 2 件返す（known + new）
+        mock_adapter.fetch_animal_list.return_value = [
+            (known_url, "adoption"),
+            (new_url, "adoption"),
+        ]
+
+        # 既知 URL は前回 snapshot にある
+        mock_snapshot_store.load_animal_map.return_value = {
+            known_url: self._animal(known_url, location="高知県（前回保存）"),
+        }
+
+        # LLM はモックされた raw_data を返す（new_url にだけ呼ばれるはず）
+        mock_adapter.extract_animal_details.return_value = Mock()
+        mock_adapter.normalize.return_value = self._animal(new_url, location="高知県（新規）")
+
+        result = collector_service.run_collection()
+
+        # LLM 抽出は新規 URL に対してのみ呼ばれる（known_url はスキップ）
+        assert mock_adapter.extract_animal_details.call_count == 1
+        called_url = mock_adapter.extract_animal_details.call_args_list[0][0][0]
+        assert called_url == new_url
+
+        # 結果には known + new の 2 件が含まれる
+        assert result.success
+        assert result.total_collected == 2
+
+    def test_no_skip_when_snapshot_empty(
+        self, collector_service, mock_adapter, mock_snapshot_store
+    ):
+        """前回 snapshot が空なら全件 LLM 抽出（既存挙動を維持）"""
+        urls = [f"https://example.com/animal/{i}" for i in range(3)]
+        mock_adapter.fetch_animal_list.return_value = [(u, "adoption") for u in urls]
+
+        mock_snapshot_store.load_animal_map.return_value = {}
+
+        mock_adapter.extract_animal_details.return_value = Mock()
+        mock_adapter.normalize.return_value = self._animal(urls[0])
+
+        collector_service.run_collection()
+
+        assert mock_adapter.extract_animal_details.call_count == 3
+
+    def test_save_snapshot_includes_both_skipped_and_new(
+        self, collector_service, mock_adapter, mock_snapshot_store
+    ):
+        """save_snapshot は skip 対象（既知）+ 新規抽出の両方を保存する"""
+        known_url = "https://example.com/k"
+        new_url = "https://example.com/n"
+        mock_adapter.fetch_animal_list.return_value = [
+            (known_url, "adoption"),
+            (new_url, "adoption"),
+        ]
+        mock_snapshot_store.load_animal_map.return_value = {
+            known_url: self._animal(known_url),
+        }
+        mock_adapter.extract_animal_details.return_value = Mock()
+        mock_adapter.normalize.return_value = self._animal(new_url)
+
+        collector_service.run_collection()
+
+        # save_snapshot に渡された list には 2 件（known + new）含まれる
+        saved_args = mock_snapshot_store.save_snapshot.call_args[0][0]
+        saved_urls = {str(a.source_url) for a in saved_args}
+        assert known_url in saved_urls
+        assert new_url in saved_urls
+
+    def test_skip_logs_count(
+        self, collector_service, mock_adapter, mock_snapshot_store, caplog
+    ):
+        """スキップ件数がログに残る（運用観察用）"""
+        import logging
+
+        urls = [f"https://example.com/k/{i}" for i in range(5)]
+        mock_adapter.fetch_animal_list.return_value = [(u, "adoption") for u in urls]
+        mock_snapshot_store.load_animal_map.return_value = {
+            urls[0]: self._animal(urls[0]),
+            urls[1]: self._animal(urls[1]),
+            urls[2]: self._animal(urls[2]),
+        }
+        mock_adapter.extract_animal_details.return_value = Mock()
+        mock_adapter.normalize.return_value = self._animal(urls[3])
+
+        with caplog.at_level(logging.INFO):
+            collector_service.run_collection()
+
+        # "skipped 3" のような件数情報がログに含まれる
+        log_text = " ".join(r.getMessage() for r in caplog.records)
+        assert "skip" in log_text.lower() or "スキップ" in log_text

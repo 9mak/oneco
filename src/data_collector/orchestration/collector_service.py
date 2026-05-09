@@ -199,6 +199,10 @@ class CollectorService:
         """
         リトライ付き収集
 
+        SnapshotStore に前回の AnimalData が保存されている場合、
+        既知 source_url については LLM 抽出をスキップして前回データを再利用する
+        （Groq の無料枠を 2 日目以降節約するため）。
+
         Args:
             max_retries: 最大リトライ回数
 
@@ -212,6 +216,9 @@ class CollectorService:
         retry_count = 0
         last_error = None
 
+        # 前回 snapshot を読み込み: 既知 URL は LLM スキップ対象
+        known_animals = self.snapshot_store.load_animal_map()
+
         while retry_count < max_retries:
             try:
                 # 一覧ページから個体詳細 URL リストとカテゴリを取得
@@ -219,7 +226,13 @@ class CollectorService:
 
                 # 各個体詳細ページから情報を抽出・正規化
                 collected_data = []
+                skipped = 0
                 for url, category in detail_url_category_pairs:
+                    # 既知 URL は LLM スキップ → 前回 AnimalData を再利用
+                    if url in known_animals:
+                        collected_data.append(known_animals[url])
+                        skipped += 1
+                        continue
                     try:
                         raw_data = self.adapter.extract_animal_details(url, category)
                         normalized_data = self.adapter.normalize(raw_data)
@@ -236,6 +249,14 @@ class CollectorService:
                             f"Failed to process detail page: {url} (category: {category})",
                             extra={"error": str(e)},
                         )
+
+                if skipped > 0:
+                    extracted = len(collected_data) - skipped
+                    self.logger.info(
+                        f"LLM extraction skipped (snapshot reuse): "
+                        f"skipped {skipped}, extracted {extracted}",
+                        extra={"skipped": skipped, "extracted": extracted},
+                    )
 
                 return collected_data
 
