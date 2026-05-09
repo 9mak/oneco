@@ -324,6 +324,7 @@ class TestE2ECollectorServiceFlow:
         """モック SnapshotStore"""
         store = Mock()
         store.load_snapshot.return_value = []
+        store.load_animal_map.return_value = {}
         return store
 
     @pytest.fixture
