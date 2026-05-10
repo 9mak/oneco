@@ -1,0 +1,30 @@
+{
+  "collected_at": "2026-03-23T11:39:00.022204Z",
+  "total_count": 1,
+  "diff": {
+    "new_count": 1,
+    "updated_count": 0,
+    "deleted_count": 0
+  },
+  "animals": [
+    {
+      "species": "犬",
+      "shelter_date": "2025-01-01",
+      "location": "はぴまるの丘（松山市動物愛護センター）",
+      "source_url": "https://www.city.matsuyama.ehime.jp/kurashi/kurashi/aigo/index.html",
+      "category": "lost",
+      "sex": "不明",
+      "age_months": null,
+      "color": null,
+      "size": null,
+      "phone": "089-923-9435",
+      "image_urls": [
+        "https://www.city.matsuyama.ehime.jp/kurashi/kurashi/aigo/index.images/inu.R7No.329-330.jpg"
+      ],
+      "status": null,
+      "status_changed_at": null,
+      "outcome_date": null,
+      "local_image_paths": null
+    }
+  ]
+}

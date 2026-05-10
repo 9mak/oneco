@@ -17,6 +17,12 @@ export interface AdminStats {
     field_missing_ratio: Record<string, number>;
     added_in_last_7days: number;
   };
+  site_coverage: {
+    sites_total: number;
+    sites_with_data: number;
+    sites_without_data: number;
+  };
+  last_shelter_date: string | null;
   generated_at: string;
 }
 
