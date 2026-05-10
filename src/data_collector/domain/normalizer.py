@@ -6,7 +6,7 @@
 """
 
 import re
-from datetime import datetime
+from datetime import date, datetime
 
 from ..utils.prefecture import infer_prefecture_from_url
 from .models import AnimalData, RawAnimalData
@@ -117,14 +117,32 @@ class DataNormalizer:
         return "不明"
 
     @staticmethod
+    def _today() -> date:
+        """テストで時刻固定するためのフック（生年月日からの月数計算用）"""
+        return date.today()
+
+    @staticmethod
+    def _months_between(birth: date, today: date) -> int | None:
+        """birth から today までの経過月数を返す。未来日付なら None。"""
+        if birth > today:
+            return None
+        months = (today.year - birth.year) * 12 + (today.month - birth.month)
+        if today.day < birth.day:
+            months -= 1
+        return max(months, 0)
+
+    @staticmethod
     def _normalize_age(raw_age: str) -> int | None:
         """
         年齢を月単位の数値に変換
 
         対応形式:
+        - "N歳M[ヶか]月" → N * 12 + M
         - "N歳" → N * 12
         - "Nヶ月", "Nか月", "Nカ月", "Nケ月" → N
         - "N年" → N * 12
+        - 生年月日 (YYYY-MM-DD, YYYY/MM/DD, YYYY年M月D日, R{N}.M.D, 令和N年M月D日)
+          → 今日との差分を月単位で返す
         - 不明・無効な値 → None
 
         Args:
@@ -139,25 +157,88 @@ class DataNormalizer:
         if age_str in DataNormalizer._UNKNOWN_PATTERNS:
             return None
 
-        # "N歳" のパターン
+        # 1. 生年月日パターンを最初にチェック（"令和N年M月D日" の "N年" が
+        #    "N年=Nヶ月*12" として誤マッチするのを避けるため）
+        today = DataNormalizer._today()
+        birth = DataNormalizer._parse_birth_date(age_str)
+        if birth is not None:
+            return DataNormalizer._months_between(birth, today)
+
+        # 2. "N歳M[ヶかカケ]月" の組み合わせ（年/月の合計）
+        match = re.search(r"(\d+)\s*歳\s*(\d+)\s*[ヶかカケ]月", age_str)
+        if match:
+            return int(match.group(1)) * 12 + int(match.group(2))
+
+        # 3. "N歳" のパターン
         match = re.search(r"(\d+)\s*歳", age_str)
         if match:
             years = int(match.group(1))
             return years * 12
 
-        # "Nヶ月", "Nか月", "Nカ月", "Nケ月" のパターン
+        # 4. "Nヶ月", "Nか月", "Nカ月", "Nケ月" のパターン
         match = re.search(r"(\d+)\s*[ヶかカケ]月", age_str)
         if match:
             months = int(match.group(1))
             return months
 
-        # "N年" のパターン
-        match = re.search(r"(\d+)\s*年", age_str)
-        if match:
-            years = int(match.group(1))
-            return years * 12
+        # 5. "N年" のパターン (4桁年号 "YYYY年" や "令和N年" を除外)
+        if not re.search(r"\d{4}年|令和\d+年", age_str):
+            match = re.search(r"(\d+)\s*年", age_str)
+            if match:
+                years = int(match.group(1))
+                return years * 12
 
         # マッチしない場合は None
+        return None
+
+    @staticmethod
+    def _parse_birth_date(text: str) -> date | None:
+        """生年月日表記をパースして date を返す。失敗したら None。
+
+        対応形式: YYYY-MM-DD / YYYY/MM/DD / YYYY年M月D日 / R{N}.M.D / 令和N年M月D日
+        """
+        # YYYY-MM-DD
+        match = re.search(r"(\d{4})-(\d{1,2})-(\d{1,2})", text)
+        if match:
+            try:
+                return date(int(match.group(1)), int(match.group(2)), int(match.group(3)))
+            except ValueError:
+                return None
+
+        # YYYY/MM/DD
+        match = re.search(r"(\d{4})/(\d{1,2})/(\d{1,2})", text)
+        if match:
+            try:
+                return date(int(match.group(1)), int(match.group(2)), int(match.group(3)))
+            except ValueError:
+                return None
+
+        # YYYY年M月D日
+        match = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日", text)
+        if match:
+            try:
+                return date(int(match.group(1)), int(match.group(2)), int(match.group(3)))
+            except ValueError:
+                return None
+
+        # 令和N年M月D日
+        match = re.search(r"令和(\d+)年(\d{1,2})月(\d{1,2})日", text)
+        if match:
+            try:
+                year = 2018 + int(match.group(1))
+                return date(year, int(match.group(2)), int(match.group(3)))
+            except ValueError:
+                return None
+
+        # R{N}.M.D（R5.11.30 等）
+        match = re.search(r"R(\d{1,2})[.\s　](\d{1,2})[./](\d{1,2})", text)
+        if match:
+            try:
+                year = 2018 + int(match.group(1))
+                return date(year, int(match.group(2)), int(match.group(3)))
+            except ValueError:
+                return None
+
         return None
 
     @staticmethod
