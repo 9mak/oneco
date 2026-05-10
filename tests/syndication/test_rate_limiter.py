@@ -84,3 +84,22 @@ class TestRateLimiter:
         # Should get either 200 or rate limit headers
         # But service should not fail completely
         assert response.status_code in [200, 429, 500]
+
+
+class TestCreateLimiterPing:
+    """create_limiter() の startup 時 Redis 接続テスト"""
+
+    def test_returns_none_on_unreachable_redis(self):
+        """到達不可能な Redis URL なら None を返す（fail-open）"""
+        from src.syndication_service.middleware.rate_limiter import create_limiter
+
+        # 確実に到達できない URL
+        result = create_limiter("redis://10.255.255.1:6379/0")
+        assert result is None
+
+    def test_returns_limiter_for_memory_backend(self):
+        """memory:// backend は ping せず Limiter を返す（テスト用途）"""
+        from src.syndication_service.middleware.rate_limiter import create_limiter
+
+        limiter = create_limiter("memory://")
+        assert limiter is not None
