@@ -126,6 +126,36 @@ class TestNormalizeAge:
         # assert DataNormalizer._normalize_age("2歳6ヶ月") == 30
         pass
 
+    def test_normalize_age_iso_birth_date(self, monkeypatch):
+        """ISO 形式の生年月日 → 今日との差分を月数で返す"""
+        from datetime import date
+
+        # 2026-05-10 が今日として、2024-05-10 生まれ → 24ヶ月
+        monkeypatch.setattr(DataNormalizer, "_today", staticmethod(lambda: date(2026, 5, 10)))
+
+        assert DataNormalizer._normalize_age("2024-05-10") == 24
+        assert DataNormalizer._normalize_age("2025-11-10") == 6
+        # 端境（月初）
+        assert DataNormalizer._normalize_age("2025-05-09") == 12
+        # 未来日付（生年月日が今日より後）→ None
+        assert DataNormalizer._normalize_age("2027-01-01") is None
+
+    def test_normalize_age_reiwa_birth_date(self, monkeypatch):
+        """令和表記の生年月日 → 月数"""
+        from datetime import date
+
+        monkeypatch.setattr(DataNormalizer, "_today", staticmethod(lambda: date(2026, 5, 10)))
+
+        # R5.11.30 = 2023-11-30 → 5/10 < 11/30 なので 29ヶ月
+        assert DataNormalizer._normalize_age("R5.11.30") == 29
+        # 令和6年9月27日 = 2024-09-27 → 5/10 < 9/27 なので 19ヶ月
+        assert DataNormalizer._normalize_age("令和6年9月27日") == 19
+
+    def test_normalize_age_combined_age_month(self):
+        """'N歳Mヶ月' 形式の合計を返す"""
+        assert DataNormalizer._normalize_age("2歳6ヶ月") == 30
+        assert DataNormalizer._normalize_age("1歳3か月") == 15
+
 
 class TestNormalizeDate:
     """日付正規化のテスト"""
