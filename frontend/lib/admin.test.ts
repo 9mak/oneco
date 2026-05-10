@@ -17,6 +17,12 @@ const SAMPLE_STATS = {
     field_missing_ratio: { prefecture: 0, image_urls: 0.1 },
     added_in_last_7days: 3,
   },
+  site_coverage: {
+    sites_total: 209,
+    sites_with_data: 5,
+    sites_without_data: 204,
+  },
+  last_shelter_date: '2026-05-09',
   generated_at: '2026-05-08T00:00:00Z',
 };
 
