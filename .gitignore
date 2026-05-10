@@ -46,8 +46,10 @@ htmlcov/
 
 # Data Collector Runtime
 .collector.lock
-snapshots/
-output/
+snapshots/*
+!snapshots/latest.json
+output/*
+!output/animals.json
 
 # Environment variables
 .env
