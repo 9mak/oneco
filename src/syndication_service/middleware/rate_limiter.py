@@ -24,6 +24,7 @@ def create_limiter(redis_url: str | None = None) -> Limiter | None:
         redis_url: Redis connection URL for rate limit storage.
                    If None, uses REDIS_URL environment variable.
                    If Redis is unavailable, returns None (graceful degradation).
+                   テスト用 ``memory://`` の場合は ping をスキップして即返す。
 
     Returns:
         Limiter instance or None if Redis is unavailable.
@@ -32,7 +33,27 @@ def create_limiter(redis_url: str | None = None) -> Limiter | None:
         if redis_url is None:
             redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
-        # Create limiter with Redis storage
+        # Memory backend (テスト用) は接続テスト不要
+        is_memory_backend = redis_url.startswith("memory://")
+
+        # 本番では Redis 不到達でも Limiter を生成しておくとリクエスト時に
+        # 内部で connection error を投げて 500 になる。事前 ping でフェイル
+        # オープン化（Limiter なしの no-op 動作）する。
+        if not is_memory_backend:
+            import redis as _redis
+
+            try:
+                client = _redis.Redis.from_url(redis_url, socket_connect_timeout=2)
+                client.ping()
+                client.close()
+            except Exception as ping_error:
+                logger.warning(
+                    f"Redis ping failed ({redis_url}): {ping_error}. "
+                    "Rate limiting will be disabled (graceful degradation)."
+                )
+                return None
+
+        # Create limiter with Redis (or memory) storage
         limiter = Limiter(
             key_func=get_remote_address,
             storage_uri=redis_url,
@@ -40,12 +61,12 @@ def create_limiter(redis_url: str | None = None) -> Limiter | None:
             headers_enabled=True,  # Enable X-RateLimit-* headers
         )
 
-        logger.info(f"Rate limiter initialized with Redis storage: {redis_url}")
+        logger.info(f"Rate limiter initialized: {redis_url}")
         return limiter
 
     except Exception as e:
         logger.warning(
-            f"Failed to initialize rate limiter with Redis: {e}. "
+            f"Failed to initialize rate limiter: {e}. "
             "Rate limiting will be disabled (graceful degradation)."
         )
         return None
