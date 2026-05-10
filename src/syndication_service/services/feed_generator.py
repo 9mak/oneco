@@ -13,8 +13,10 @@ Requirements Coverage:
 """
 
 import hashlib
+import os
 from datetime import UTC, datetime
 from typing import Literal
+from urllib.parse import urlparse
 
 from feedgen.feed import FeedGenerator as PyFeedGenerator
 
@@ -27,10 +29,38 @@ class FeedGenerationError(Exception):
     pass
 
 
+def _resolve_base_url() -> str:
+    """フィードに埋め込む base URL を環境変数から解決。
+
+    優先順: SITE_URL > FRONTEND_URL > NEXT_PUBLIC_SITE_URL > フォールバック
+    """
+    for var in ("SITE_URL", "FRONTEND_URL", "NEXT_PUBLIC_SITE_URL"):
+        value = os.getenv(var, "").strip().rstrip("/")
+        if value:
+            return value
+    return "https://oneco.example"
+
+
+def _domain(url: str) -> str:
+    """tag URI に使うドメイン部を抽出（example.com フォールバック）"""
+    try:
+        host = urlparse(url).netloc or "oneco.example"
+        return host
+    except Exception:
+        return "oneco.example"
+
+
 class FeedGenerator:
     """RSS 2.0 / Atom 1.0 フィードジェネレーター"""
 
-    BASE_URL = "https://example.com"  # TODO: 環境変数から取得
+    @property
+    def BASE_URL(self) -> str:
+        """環境変数から都度解決する。テストや実行時切替を可能に。"""
+        return _resolve_base_url()
+
+    @property
+    def TAG_DOMAIN(self) -> str:
+        return _domain(self.BASE_URL)
 
     def __init__(self):
         """FeedGenerator インスタンスを初期化"""
@@ -133,7 +163,7 @@ class FeedGenerator:
         if format_type == "atom":
             # Atom の id: tag URI スキーム
             now = datetime.now(UTC)
-            feed_id = f"tag:example.com,{now.strftime('%Y-%m-%d')}:/feeds/atom"
+            feed_id = f"tag:{self.TAG_DOMAIN},{now.strftime('%Y-%m-%d')}:/feeds/atom"
             fg.id(feed_id)
             fg.subtitle(description)
             fg.updated(now)
@@ -257,7 +287,7 @@ class FeedGenerator:
         # id: tag URI スキーム
         guid = self._generate_guid(str(animal.source_url))
         now = datetime.now(UTC)
-        entry_id = f"tag:example.com,{now.strftime('%Y-%m-%d')}:/animals/{guid}"
+        entry_id = f"tag:{self.TAG_DOMAIN},{now.strftime('%Y-%m-%d')}:/animals/{guid}"
         fe.id(entry_id)
 
         # published: shelter_date
