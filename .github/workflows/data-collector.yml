@@ -68,3 +68,23 @@ jobs:
 
           Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
           git push || true
+
+      - name: Notify Slack on failure
+        if: failure()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          # SLACK_WEBHOOK_URL secret 未設定時は何もしない（graceful degradation）
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "::notice::SLACK_WEBHOOK_URL secret not configured; skipping Slack notification"
+            exit 0
+          fi
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          PAYLOAD=$(jq -n \
+            --arg text ":warning: oneco data-collector が失敗しました" \
+            --arg run_url "$RUN_URL" \
+            --arg run_no "${{ github.run_number }}" \
+            --arg event "${{ github.event_name }}" \
+            '{text: ($text + "\n<" + $run_url + "|run #" + $run_no + "> (" + $event + ")")}')
+          curl -sS -X POST -H 'Content-Type: application/json' \
+            --data "$PAYLOAD" "$SLACK_WEBHOOK_URL" || echo "::warning::Slack webhook 送信に失敗"
