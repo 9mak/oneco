@@ -88,6 +88,14 @@ export default async function AdminDashboardPage() {
             title="直近7日の収容"
             value={stats.quality.added_in_last_7days}
           />
+          <SummaryCard
+            title="サイトカバー率"
+            value={`${stats.site_coverage.sites_with_data} / ${stats.site_coverage.sites_total}`}
+          />
+          <SummaryCard
+            title="最新の収容日"
+            value={stats.last_shelter_date ?? '—'}
+          />
 
           <Section title="フィールド欠損率">
             <DefList

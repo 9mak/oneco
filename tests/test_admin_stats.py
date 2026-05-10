@@ -266,6 +266,43 @@ async def test_admin_stats_returns_quality_metrics(test_app, populated_for_stats
 
 
 @pytest.mark.asyncio
+async def test_admin_stats_returns_site_coverage(test_app, populated_for_stats):
+    """/admin/stats が sites.yaml に対する DB カバレッジを返す"""
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
+        resp = await client.get("/admin/stats", headers=HEADERS)
+
+    data = resp.json()
+    cov = data["site_coverage"]
+    # sites.yaml には少なくとも 200+ サイトある（拡張済み）
+    assert cov["sites_total"] >= 200
+    # テスト DB の source_url は example.com なので sites.yaml のホストと一致せず 0
+    assert cov["sites_with_data"] == 0
+    # without_data は total - with_data
+    assert cov["sites_without_data"] == cov["sites_total"] - cov["sites_with_data"]
+
+
+@pytest.mark.asyncio
+async def test_admin_stats_returns_last_shelter_date(test_app, populated_for_stats):
+    """/admin/stats が animals.shelter_date の最大値を返す"""
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
+        resp = await client.get("/admin/stats", headers=HEADERS)
+
+    data = resp.json()
+    # populated_for_stats の最大 shelter_date は 2026-05-03
+    assert data["last_shelter_date"] == "2026-05-03"
+
+
+@pytest.mark.asyncio
+async def test_admin_stats_last_shelter_date_null_when_empty(test_app):
+    """/admin/stats は空 DB で last_shelter_date を null にする"""
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
+        resp = await client.get("/admin/stats", headers=HEADERS)
+
+    data = resp.json()
+    assert data["last_shelter_date"] is None
+
+
+@pytest.mark.asyncio
 async def test_admin_stats_returns_liveness(test_app, populated_for_stats):
     """/admin/stats が直近24時間の追加件数を返す（テストデータでは0）"""
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
