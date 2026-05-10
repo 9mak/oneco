@@ -104,9 +104,9 @@ export async function generateMetadata({ params }: AnimalDetailPageProps) {
     const ageText = animal.age_months ? `・推定${animal.age_months}ヶ月` : '';
     const description = `${animal.location}で保護された${animal.species}（${animal.sex}${sizeText}${ageText}）の詳細情報。${categoryLabel}として登録されています。`;
 
-    const ogImage = animal.image_urls?.[0];
     const canonicalPath = `/animals/${animal.id}`;
 
+    // OG 画像は同階層の opengraph-image.tsx で動的生成（元サイトURL依存を解消）
     return {
       title,
       description,
@@ -118,20 +118,11 @@ export async function generateMetadata({ params }: AnimalDetailPageProps) {
         title,
         description,
         url: canonicalPath,
-        ...(ogImage && {
-          images: [
-            {
-              url: ogImage,
-              alt: `${animal.species}（${animal.location}）`,
-            },
-          ],
-        }),
       },
       twitter: {
-        card: ogImage ? 'summary_large_image' : 'summary',
+        card: 'summary_large_image',
         title,
         description,
-        ...(ogImage && { images: [ogImage] }),
       },
     };
   } catch {
