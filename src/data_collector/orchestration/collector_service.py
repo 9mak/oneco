@@ -328,35 +328,48 @@ class CollectorService:
 
     def _save_via_db_connection(self, collected_data: list[AnimalData]) -> None:
         """db_connection からセッションを作成して一括保存"""
+        from ..infrastructure.database.connection import DatabaseConnection
         from ..infrastructure.database.repository import AnimalRepository
         from ..infrastructure.url_hash_recorder import URLHashRecorder
+
+        # サイト毎に _save_via_db_connection が呼ばれ、その度に asyncio.run() が
+        # 新しいイベントループを生成する。SQLAlchemy async engine は最初のループに
+        # 紐付いた接続を保持してしまうため、2 回目以降に asyncpg が
+        # "another operation is in progress" を返してほぼ全件の save が失敗する。
+        # サイト毎にエンジンを使い捨てることで、各 asyncio.run() が独立した接続を
+        # 持つようにする。
+        assert self.db_connection is not None
+        settings = self.db_connection.settings
 
         async def _do_save() -> tuple[int, int]:
             saved = 0
             errors = 0
-            assert self.db_connection is not None
-            async with self.db_connection.get_session() as session:
-                repo = AnimalRepository(session)
-                url_recorder = URLHashRecorder(session)
-                for animal in collected_data:
-                    try:
-                        await repo.save_animal(animal)
-                        saved += 1
-                    except Exception as e:
-                        errors += 1
-                        self.logger.warning(
-                            f"Failed to save animal to database: {animal.source_url}: {e}",
-                        )
-                        continue
-                    # Phase 1 MVP: 画像URLのSHA-256を image_hashes に記録（重複検出の足場）。
-                    # AnimalData.image_urls は HttpUrl を含むため str に正規化する。
-                    # 失敗してもメイン保存処理は継続する。
-                    try:
-                        await url_recorder.record_urls([str(u) for u in animal.image_urls])
-                    except Exception as e:
-                        self.logger.warning(
-                            f"Failed to record image URL hashes for {animal.source_url}: {e}",
-                        )
+            db = DatabaseConnection(settings=settings)
+            try:
+                async with db.get_session() as session:
+                    repo = AnimalRepository(session)
+                    url_recorder = URLHashRecorder(session)
+                    for animal in collected_data:
+                        try:
+                            await repo.save_animal(animal)
+                            saved += 1
+                        except Exception as e:
+                            errors += 1
+                            self.logger.warning(
+                                f"Failed to save animal to database: {animal.source_url}: {e}",
+                            )
+                            continue
+                        # Phase 1 MVP: 画像URLのSHA-256を image_hashes に記録（重複検出の足場）。
+                        # AnimalData.image_urls は HttpUrl を含むため str に正規化する。
+                        # 失敗してもメイン保存処理は継続する。
+                        try:
+                            await url_recorder.record_urls([str(u) for u in animal.image_urls])
+                        except Exception as e:
+                            self.logger.warning(
+                                f"Failed to record image URL hashes for {animal.source_url}: {e}",
+                            )
+            finally:
+                await db.close()
             return saved, errors
 
         saved_count, error_count = asyncio.run(_do_save())
