@@ -233,10 +233,15 @@ test.describe('Accessibility - Color Contrast', () => {
   test('should pass color contrast checks', async ({ page }) => {
     await page.goto('/');
 
+    // WCAG 2.1 AA を要件とする（cat.color だと AAA も含むため、他テストと一貫させる）
     const accessibilityScanResults = await new AxeBuilder({ page })
-      .withTags(['cat.color'])
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .disableRules(['region'])
       .analyze();
 
-    expect(accessibilityScanResults.violations).toEqual([]);
+    const colorViolations = accessibilityScanResults.violations.filter((v) =>
+      v.id.startsWith('color-contrast')
+    );
+    expect(colorViolations).toEqual([]);
   });
 });

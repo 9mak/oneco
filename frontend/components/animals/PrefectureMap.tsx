@@ -88,14 +88,14 @@ function PrefectureCell({ pref, count }: { pref: string; count: number }) {
         'flex flex-col items-center justify-center rounded-md py-2 px-1 text-xs transition-colors min-h-[60px]',
         hasData
           ? 'bg-orange-50 hover:bg-orange-100 text-orange-900 border border-orange-200'
-          : 'bg-gray-50 hover:bg-gray-100 text-gray-400 border border-gray-100',
+          : 'bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-100',
       ].join(' ')}
     >
       <span className="font-medium">{pref}</span>
       <span
         className={[
           'mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold',
-          hasData ? 'bg-orange-500 text-white' : 'bg-gray-300 text-white',
+          hasData ? 'bg-orange-500 text-white' : 'bg-gray-500 text-white',
         ].join(' ')}
       >
         {count}
