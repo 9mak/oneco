@@ -39,13 +39,7 @@ def test_robots_allow_specific_path():
 
 def test_specific_user_agent_overrides_wildcard():
     """専用 user-agent ルールが * を上書き"""
-    robots = (
-        "User-agent: *\n"
-        "Disallow: /\n"
-        "\n"
-        "User-agent: OnecoCollector\n"
-        "Allow: /\n"
-    )
+    robots = "User-agent: *\nDisallow: /\n\nUser-agent: OnecoCollector\nAllow: /\n"
     result = is_allowed_by_robots(
         "https://example.com/animals", robots, user_agent=DEFAULT_USER_AGENT
     )

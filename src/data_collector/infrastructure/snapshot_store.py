@@ -94,8 +94,7 @@ class SnapshotStore:
     def load_url_hash_map(self) -> dict[str, str]:
         """`{source_url: stable_hash}` の dict を返す。"""
         return {
-            url: self.compute_stable_hash(animal)
-            for url, animal in self.load_animal_map().items()
+            url: self.compute_stable_hash(animal) for url, animal in self.load_animal_map().items()
         }
 
     def load_snapshot(self) -> list[AnimalData]:
