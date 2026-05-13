@@ -114,12 +114,17 @@ test.describe('Accessibility - Animal Cards', () => {
   });
 
   test('should have accessible animal cards', async ({ page }) => {
+    const cardCount = await page.locator('[data-testid="animal-card"]').count();
+
+    // CI 環境で API 不在によりカードが描画されない場合は scan 対象が無いため skip。
+    // ローカルで API がある場合のみ検証する。
+    test.skip(cardCount === 0, 'No animal cards rendered (likely API unreachable)');
+
     const accessibilityScanResults = await new AxeBuilder({ page })
       .include('[data-testid="animal-card"]')
       .withTags(['wcag2a', 'wcag2aa'])
       .analyze();
 
-    // カードが存在する場合のみ検証
     if (accessibilityScanResults.violations.length > 0) {
       console.log('Accessibility violations:', accessibilityScanResults.violations);
     }
