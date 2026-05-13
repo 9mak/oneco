@@ -23,6 +23,7 @@ Create Date: 2026-05-07 10:45:00.000000
 from typing import Sequence, Union
 
 from alembic import op
+from sqlalchemy import text
 
 
 revision: str = 'd3e4f5a6b7c8'
@@ -40,10 +41,18 @@ TABLES_PUBLIC_READ = [
 ]
 
 
+def _supabase_roles_exist(bind) -> bool:
+    """anon ロールが存在する場合のみ Supabase 用 migration を実行する"""
+    result = bind.execute(text("SELECT 1 FROM pg_roles WHERE rolname = 'anon'")).first()
+    return result is not None
+
+
 def upgrade() -> None:
     """anon ロールから SELECT を REVOKE、schema USAGE も REVOKE で完全遮断"""
     bind = op.get_bind()
     if bind.dialect.name != "postgresql":
+        return
+    if not _supabase_roles_exist(bind):
         return
 
     # 1. anon の SELECT 権限を全テーブルから剥奪
@@ -62,6 +71,8 @@ def downgrade() -> None:
     """schema USAGE と SELECT を anon に再付与"""
     bind = op.get_bind()
     if bind.dialect.name != "postgresql":
+        return
+    if not _supabase_roles_exist(bind):
         return
 
     op.execute("GRANT USAGE ON SCHEMA public TO anon, authenticated")

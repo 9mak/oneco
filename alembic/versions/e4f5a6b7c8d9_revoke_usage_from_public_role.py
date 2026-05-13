@@ -22,6 +22,7 @@ Create Date: 2026-05-07 10:55:00.000000
 from typing import Sequence, Union
 
 from alembic import op
+from sqlalchemy import text
 
 
 revision: str = 'e4f5a6b7c8d9'
@@ -30,10 +31,21 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _supabase_roles_exist(bind) -> bool:
+    """anon ロールが存在する Supabase 環境でのみ実行する。
+    CI/ローカルの素の PostgreSQL で PUBLIC USAGE を剥がすと
+    アプリ用 role からも public schema にアクセスできなくなって
+    後続のテスト/操作が壊れるため skip する。"""
+    result = bind.execute(text("SELECT 1 FROM pg_roles WHERE rolname = 'anon'")).first()
+    return result is not None
+
+
 def upgrade() -> None:
     """PUBLIC 疑似ロールから schema public への USAGE を REVOKE"""
     bind = op.get_bind()
     if bind.dialect.name != "postgresql":
+        return
+    if not _supabase_roles_exist(bind):
         return
 
     op.execute("REVOKE USAGE ON SCHEMA public FROM PUBLIC")
@@ -43,6 +55,8 @@ def downgrade() -> None:
     """元に戻す（PUBLIC に USAGE を再付与）"""
     bind = op.get_bind()
     if bind.dialect.name != "postgresql":
+        return
+    if not _supabase_roles_exist(bind):
         return
 
     op.execute("GRANT USAGE ON SCHEMA public TO PUBLIC")
