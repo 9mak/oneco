@@ -25,7 +25,7 @@ export default function ErrorBoundary({
           時間をおいて再度お試しください。
         </p>
         {error.digest && (
-          <p className="text-xs text-gray-400 mb-6 font-mono">
+          <p className="text-xs text-gray-600 mb-6 font-mono">
             error id: {error.digest}
           </p>
         )}
