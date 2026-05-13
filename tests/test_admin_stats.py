@@ -5,7 +5,7 @@ GET /admin/stats エンドポイントのテスト
 既存の X-Internal-Token 認証を再利用する。
 """
 
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 import pytest
 import pytest_asyncio
@@ -118,7 +118,7 @@ async def populated_for_stats(async_session):
             hash="a" * 64,
             local_path="cache/aa/aaa.jpg",
             file_size=1024,
-            created_at=datetime(2026, 5, 1, tzinfo=timezone.utc),
+            created_at=datetime(2026, 5, 1, tzinfo=UTC),
         )
     )
     async_session.add(
@@ -126,7 +126,7 @@ async def populated_for_stats(async_session):
             hash="b" * 64,
             local_path="cache/bb/bbb.jpg",
             file_size=2048,
-            created_at=datetime(2026, 5, 7, tzinfo=timezone.utc),
+            created_at=datetime(2026, 5, 7, tzinfo=UTC),
         )
     )
 
