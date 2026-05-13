@@ -10,8 +10,8 @@ robots.txt 遵守チェッカー
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 from urllib.parse import urlparse
 from urllib.robotparser import RobotFileParser
 

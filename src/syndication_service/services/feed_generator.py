@@ -54,12 +54,12 @@ class FeedGenerator:
     """RSS 2.0 / Atom 1.0 フィードジェネレーター"""
 
     @property
-    def BASE_URL(self) -> str:
+    def BASE_URL(self) -> str:  # noqa: N802 -- 定数を返すプロパティとして大文字命名を保持
         """環境変数から都度解決する。テストや実行時切替を可能に。"""
         return _resolve_base_url()
 
     @property
-    def TAG_DOMAIN(self) -> str:
+    def TAG_DOMAIN(self) -> str:  # noqa: N802
         return _domain(self.BASE_URL)
 
     def __init__(self):
