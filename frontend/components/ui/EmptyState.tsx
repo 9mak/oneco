@@ -39,7 +39,7 @@ export function EmptyState({
       {showClearButton && (
         <Link
           href="/"
-          className="px-6 py-3 bg-[var(--color-primary-500)] text-white rounded-lg font-medium hover:bg-[var(--color-primary-700)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 min-h-[44px] min-w-[44px]"
+          className="px-6 py-3 bg-[var(--color-primary-700)] text-white rounded-lg font-medium hover:bg-[var(--color-primary-800)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 min-h-[44px] min-w-[44px]"
           aria-label="フィルタをクリア"
         >
           フィルタをクリア

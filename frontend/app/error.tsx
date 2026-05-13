@@ -33,7 +33,7 @@ export default function ErrorBoundary({
           <button
             type="button"
             onClick={reset}
-            className="inline-flex items-center justify-center px-6 py-3 text-base font-medium text-white bg-[var(--color-primary-500)] hover:bg-[var(--color-primary-700)] rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary-500)] min-h-[44px]"
+            className="inline-flex items-center justify-center px-6 py-3 text-base font-medium text-white bg-[var(--color-primary-700)] hover:bg-[var(--color-primary-800)] rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary-500)] min-h-[44px]"
           >
             再試行
           </button>
