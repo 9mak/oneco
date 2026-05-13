@@ -8,13 +8,13 @@ snapshots/latest.json への永続化を検証。LLM 抽出を 2 日目以降ス
 import json
 from datetime import date
 
-import pytest
-
 from src.data_collector.domain.models import AnimalData
 from src.data_collector.infrastructure.snapshot_store import SnapshotStore
 
 
-def _make_animal(url: str, location: str = "高知県", phone: str = "088-1234", species: str = "犬") -> AnimalData:
+def _make_animal(
+    url: str, location: str = "高知県", phone: str = "088-1234", species: str = "犬"
+) -> AnimalData:
     return AnimalData(
         species=species,
         shelter_date=date(2026, 1, 5),

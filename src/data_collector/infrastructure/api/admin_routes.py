@@ -7,7 +7,7 @@ NextAuth + GitHub OAuth でゲートした上で、サーバーサイドから�
 """
 
 import logging
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Annotated
 from urllib.parse import urlparse
@@ -22,12 +22,7 @@ from src.data_collector.llm.config import SiteConfigLoader
 
 logger = logging.getLogger(__name__)
 
-_SITES_YAML_PATH = (
-    Path(__file__).resolve().parents[3]
-    / "data_collector"
-    / "config"
-    / "sites.yaml"
-)
+_SITES_YAML_PATH = Path(__file__).resolve().parents[3] / "data_collector" / "config" / "sites.yaml"
 
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -60,7 +55,7 @@ async def get_admin_stats(
     rows = await session.execute(
         select(Animal.status, func.count(Animal.id)).group_by(Animal.status)
     )
-    status_counts = {s: 0 for s in _KNOWN_STATUSES}
+    status_counts = dict.fromkeys(_KNOWN_STATUSES, 0)
     for status, cnt in rows.all():
         status_counts[status] = cnt
 
@@ -81,13 +76,13 @@ async def get_admin_stats(
     rows = await session.execute(
         select(Animal.species, func.count(Animal.id)).group_by(Animal.species)
     )
-    by_species = {species: cnt for species, cnt in rows.all()}
+    by_species = dict(rows.all())
 
     # カテゴリ別
     rows = await session.execute(
         select(Animal.category, func.count(Animal.id)).group_by(Animal.category)
     )
-    by_category = {category: cnt for category, cnt in rows.all()}
+    by_category = dict(rows.all())
 
     # 画像ハッシュ
     img_total = (await session.execute(select(func.count(ImageHash.id)))).scalar_one()
@@ -122,9 +117,7 @@ async def get_admin_stats(
                 ).scalar_one()
             else:
                 missing = (
-                    await session.execute(
-                        select(func.count(Animal.id)).where(column.is_(None))
-                    )
+                    await session.execute(select(func.count(Animal.id)).where(column.is_(None)))
                 ).scalar_one()
             field_missing_ratio[field_name] = round(missing / total, 4)
 
@@ -166,7 +159,7 @@ async def get_admin_stats(
         },
         "site_coverage": site_coverage,
         "last_shelter_date": last_shelter_date,
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
     }
 
 

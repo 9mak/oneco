@@ -1032,9 +1032,7 @@ class TestCollectorServiceLlmSkip:
         assert known_url in saved_urls
         assert new_url in saved_urls
 
-    def test_skip_logs_count(
-        self, collector_service, mock_adapter, mock_snapshot_store, caplog
-    ):
+    def test_skip_logs_count(self, collector_service, mock_adapter, mock_snapshot_store, caplog):
         """スキップ件数がログに残る（運用観察用）"""
         import logging
 
