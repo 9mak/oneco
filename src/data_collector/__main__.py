@@ -19,7 +19,7 @@ except ImportError:
 from .adapters.kochi_adapter import KochiAdapter
 from .domain.diff_detector import DiffDetector
 from .infrastructure.database.connection import DatabaseConnection, DatabaseSettings
-from .infrastructure.notification_client import NotificationClient
+from .infrastructure.notification_client import NotificationClient, NotificationLevel
 from .infrastructure.output_writer import OutputWriter
 from .infrastructure.snapshot_store import SnapshotStore
 from .llm.adapter import LlmAdapter
@@ -290,6 +290,23 @@ def main():
             f"=== 収集完了: 対象 {total_sites} サイト中 "
             f"成功 {succeeded_sites} / 失敗 {failed_sites} ==="
         )
+
+        # per-site 失敗があれば Slack 通知（ジョブ自体は成功扱いでも運用者に可視化する）
+        if failed_sites > 0:
+            failure_rate = failed_sites / total_sites if total_sites else 0
+            level = (
+                NotificationLevel.CRITICAL if failure_rate >= 0.5 else NotificationLevel.WARNING
+            )
+            notification_client.send_alert(
+                level,
+                f"data-collector: {failed_sites}/{total_sites} サイトで収集失敗",
+                {
+                    "total_sites": total_sites,
+                    "succeeded": succeeded_sites,
+                    "failed": failed_sites,
+                    "failure_rate": f"{failure_rate:.1%}",
+                },
+            )
 
         # ベストエフォート: 全滅したときのみ exit 1
         sys.exit(1 if total_sites > 0 and succeeded_sites == 0 else 0)
