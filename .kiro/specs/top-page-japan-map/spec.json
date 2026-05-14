@@ -1,12 +1,12 @@
 {
   "feature_name": "top-page-japan-map",
   "created_at": "2026-05-14T06:46:00Z",
-  "updated_at": "2026-05-14T06:46:00Z",
+  "updated_at": "2026-05-14T06:52:00Z",
   "language": "ja",
-  "phase": "initialized",
+  "phase": "requirements-generated",
   "approvals": {
     "requirements": {
-      "generated": false,
+      "generated": true,
       "approved": false
     },
     "design": {
