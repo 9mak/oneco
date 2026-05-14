@@ -197,3 +197,69 @@ def _compute_site_coverage(db_hosts: set[str]) -> dict:
         "sites_with_data": with_data,
         "sites_without_data": sites_total - with_data,
     }
+
+
+@admin_router.get("/sites")
+async def list_admin_sites(
+    session: SessionDep,
+    _: Annotated[None, Depends(require_internal_token)] = None,
+) -> dict:
+    """
+    sites.yaml に登録された全サイトの一覧と、各サイトの DB 上の収集状況を返す。
+
+    collection-ops-dashboard spec Req6 の最小実装。
+    site_run_logs テーブルが未導入のため、最終実行時刻はここでは返さない（次フェーズで追加）。
+    """
+    try:
+        config = SiteConfigLoader.load(_SITES_YAML_PATH)
+    except Exception as e:
+        logger.warning(f"sites.yaml load 失敗: {e}")
+        return {"sites": [], "total": 0, "generated_at": datetime.now(UTC).isoformat()}
+
+    # host → (count, last_shelter_date) を 1 クエリで集計
+    rows = await session.execute(
+        select(
+            Animal.source_url,
+            func.count(Animal.id),
+            func.max(Animal.shelter_date),
+        )
+    )
+    host_stats: dict[str, dict] = {}
+    for source_url, count, last_date in rows.all():
+        host = urlparse(source_url or "").netloc
+        if not host:
+            continue
+        entry = host_stats.setdefault(host, {"count": 0, "last_shelter_date": None})
+        entry["count"] += count
+        if last_date is not None and (
+            entry["last_shelter_date"] is None or last_date > entry["last_shelter_date"]
+        ):
+            entry["last_shelter_date"] = last_date
+
+    sites_out: list[dict] = []
+    for site in config.sites:
+        host = urlparse(str(site.list_url)).netloc
+        stats = host_stats.get(host, {"count": 0, "last_shelter_date": None})
+        last_date = stats["last_shelter_date"]
+        sites_out.append(
+            {
+                "name": site.name,
+                "prefecture": site.prefecture,
+                "prefecture_code": site.prefecture_code,
+                "list_url": str(site.list_url),
+                "extraction": site.extraction,
+                "requires_js": site.requires_js,
+                "category": site.category,
+                "request_interval": site.request_interval,
+                "timeout_sec": getattr(site, "timeout_sec", None),
+                "host": host,
+                "db_count": stats["count"],
+                "last_shelter_date": last_date.isoformat() if last_date else None,
+            }
+        )
+
+    return {
+        "sites": sites_out,
+        "total": len(sites_out),
+        "generated_at": datetime.now(UTC).isoformat(),
+    }
