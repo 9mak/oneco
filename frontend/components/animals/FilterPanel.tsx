@@ -98,7 +98,7 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
               className={[
                 'flex-1 px-6 py-3 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--color-focus-ring)] min-h-[44px]',
                 isActive
-                  ? 'border-b-2 border-[var(--color-primary-500)] text-[var(--color-primary-500)] bg-white'
+                  ? 'border-b-2 border-[var(--color-primary-700)] text-[var(--color-primary-700)] bg-white'
                   : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-gray-50',
               ].join(' ')}
             >

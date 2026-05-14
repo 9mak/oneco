@@ -77,29 +77,42 @@ const REGIONS: { name: string; prefectures: string[] }[] = [
 
 function PrefectureCell({ pref, count }: { pref: string; count: number }) {
   const hasData = count > 0;
-  const href = `/?prefecture=${encodeURIComponent(pref)}`;
-  const label = hasData ? `${pref}: ${count}件` : `${pref}: データなし`;
-
-  return (
-    <Link
-      href={href}
-      aria-label={label}
-      className={[
-        'flex flex-col items-center justify-center rounded-md py-2 px-1 text-xs transition-colors min-h-[60px]',
-        hasData
-          ? 'bg-orange-50 hover:bg-orange-100 text-orange-900 border border-orange-200'
-          : 'bg-gray-50 hover:bg-gray-100 text-gray-400 border border-gray-100',
-      ].join(' ')}
-    >
+  const baseClass =
+    'flex flex-col items-center justify-center rounded-md py-2 px-1 text-xs transition-colors min-h-[60px]';
+  const innerNode = (
+    <>
       <span className="font-medium">{pref}</span>
       <span
         className={[
           'mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold',
-          hasData ? 'bg-orange-500 text-white' : 'bg-gray-300 text-white',
+          hasData ? 'bg-orange-500 text-white' : 'bg-gray-500 text-white',
         ].join(' ')}
       >
         {count}
       </span>
+    </>
+  );
+
+  // データがない県はクリックしても結果が無いため、Link ではなく非インタラクティブな div で
+  // 表示する。axe-core の nested-interactive 検出回避と UX 改善を兼ねる。
+  if (!hasData) {
+    return (
+      <div
+        aria-label={`${pref}: データなし`}
+        className={`${baseClass} bg-gray-50 text-gray-600 border border-gray-100`}
+      >
+        {innerNode}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={`/?prefecture=${encodeURIComponent(pref)}`}
+      aria-label={`${pref}: ${count}件`}
+      className={`${baseClass} bg-orange-50 hover:bg-orange-100 text-orange-900 border border-orange-200`}
+    >
+      {innerNode}
     </Link>
   );
 }
