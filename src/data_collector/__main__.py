@@ -19,7 +19,7 @@ except ImportError:
 from .adapters.kochi_adapter import KochiAdapter
 from .domain.diff_detector import DiffDetector
 from .infrastructure.database.connection import DatabaseConnection, DatabaseSettings
-from .infrastructure.notification_client import NotificationClient
+from .infrastructure.notification_client import NotificationClient, NotificationLevel
 from .infrastructure.output_writer import OutputWriter
 from .infrastructure.snapshot_store import SnapshotStore
 from .llm.adapter import LlmAdapter
@@ -102,14 +102,19 @@ def run_llm_sites(
     notification_client: NotificationClient,
     db_connection: DatabaseConnection | None,
     logger: logging.Logger,
-) -> bool:
-    """LLMベースのサイト群を収集"""
-    all_success = True
+) -> dict[str, int]:
+    """LLMベースのサイト群を収集。
+
+    Returns:
+        {"total": 対象サイト数, "succeeded": 成功サイト数, "failed": 失敗サイト数}
+    """
+    stats = {"total": 0, "succeeded": 0, "failed": 0}
 
     for site in config.sites:
         if site.extraction != "llm":
             continue
 
+        stats["total"] += 1
         site_start = time.time()
         logger.info(f"=== LLM収集開始: {site.name} ===")
 
@@ -146,6 +151,7 @@ def run_llm_sites(
             adapter.log_stats()
 
             if result.success:
+                stats["succeeded"] += 1
                 logger.info(
                     f"[{site.name}] 収集完了: "
                     f"{result.total_collected}件, "
@@ -154,8 +160,8 @@ def run_llm_sites(
                     f"処理時間{elapsed:.1f}秒"
                 )
             else:
+                stats["failed"] += 1
                 logger.error(f"[{site.name}] 収集失敗: {', '.join(result.errors)}")
-                all_success = False
 
         except SiteCollectionTimeoutError as e:
             elapsed = time.time() - site_start
@@ -163,7 +169,7 @@ def run_llm_sites(
                 f"[{site.name}] タイムアウト ({elapsed:.1f}秒, limit={timeout}秒): "
                 f"{e}. 次のサイトに進みます。"
             )
-            all_success = False
+            stats["failed"] += 1
             continue
         except Exception as e:
             elapsed = time.time() - site_start
@@ -171,10 +177,10 @@ def run_llm_sites(
                 f"[{site.name}] エラー発生 ({elapsed:.1f}秒): {e}",
                 exc_info=True,
             )
-            all_success = False
-            continue  # 他のサイトの処理を継続
+            stats["failed"] += 1
+            continue
 
-    return all_success
+    return stats
 
 
 def main():
@@ -223,10 +229,16 @@ def main():
             db_connection = DatabaseConnection(settings=db_settings)
             logger.info("Database connection initialized")
 
-        success = True
+        # 集計: ベストエフォート方針 — 1 サイトでも成功すれば exit 0、
+        # 全滅したときのみ exit 1。これにより部分的な収集結果も
+        # 後段の commit&push に流れる。失敗件数は Slack 通知で可視化する想定。
+        total_sites = 0
+        succeeded_sites = 0
+        failed_sites = 0
 
         # === 高知県（ルールベース） ===
         if not llm_only:
+            total_sites += 1
             logger.info("=== 高知県（ルールベース）収集開始 ===")
             adapter = KochiAdapter()
             service = CollectorService(
@@ -240,13 +252,14 @@ def main():
             result = service.run_collection()
 
             if result.success:
+                succeeded_sites += 1
                 logger.info(
                     f"高知県収集完了: {result.total_collected}件, "
                     f"新規{result.new_count}, 更新{result.updated_count}"
                 )
             else:
+                failed_sites += 1
                 logger.error(f"高知県収集失敗: {', '.join(result.errors)}")
-                success = False
 
         # === LLMサイト群 ===
         if not kochi_only:
@@ -258,7 +271,7 @@ def main():
                     f"(provider={config.extraction.default_provider}, "
                     f"model={config.extraction.default_model})"
                 )
-                llm_success = run_llm_sites(
+                llm_stats = run_llm_sites(
                     config=config,
                     snapshot_store=snapshot_store,
                     diff_detector=diff_detector,
@@ -267,12 +280,34 @@ def main():
                     db_connection=db_connection,
                     logger=logger,
                 )
-                if not llm_success:
-                    success = False
+                total_sites += llm_stats["total"]
+                succeeded_sites += llm_stats["succeeded"]
+                failed_sites += llm_stats["failed"]
             else:
                 logger.info("LLMサイト設定なし（sites.yaml が見つかりません）")
 
-        sys.exit(0 if success else 1)
+        logger.info(
+            f"=== 収集完了: 対象 {total_sites} サイト中 "
+            f"成功 {succeeded_sites} / 失敗 {failed_sites} ==="
+        )
+
+        # per-site 失敗があれば Slack 通知（ジョブ自体は成功扱いでも運用者に可視化する）
+        if failed_sites > 0:
+            failure_rate = failed_sites / total_sites if total_sites else 0
+            level = NotificationLevel.CRITICAL if failure_rate >= 0.5 else NotificationLevel.WARNING
+            notification_client.send_alert(
+                level,
+                f"data-collector: {failed_sites}/{total_sites} サイトで収集失敗",
+                {
+                    "total_sites": total_sites,
+                    "succeeded": succeeded_sites,
+                    "failed": failed_sites,
+                    "failure_rate": f"{failure_rate:.1%}",
+                },
+            )
+
+        # ベストエフォート: 全滅したときのみ exit 1
+        sys.exit(1 if total_sites > 0 and succeeded_sites == 0 else 0)
 
     except Exception as e:
         logger.error(f"Unexpected error: {e!s}", exc_info=True)
