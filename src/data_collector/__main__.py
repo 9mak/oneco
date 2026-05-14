@@ -294,9 +294,7 @@ def main():
         # per-site 失敗があれば Slack 通知（ジョブ自体は成功扱いでも運用者に可視化する）
         if failed_sites > 0:
             failure_rate = failed_sites / total_sites if total_sites else 0
-            level = (
-                NotificationLevel.CRITICAL if failure_rate >= 0.5 else NotificationLevel.WARNING
-            )
+            level = NotificationLevel.CRITICAL if failure_rate >= 0.5 else NotificationLevel.WARNING
             notification_client.send_alert(
                 level,
                 f"data-collector: {failed_sites}/{total_sites} サイトで収集失敗",
