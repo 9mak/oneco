@@ -184,6 +184,25 @@ class TestSiteConfigValidation:
             )
             assert site.provider == provider
 
+    def test_timeout_sec_defaults_to_none(self):
+        site = SiteConfig(
+            name="テスト",
+            prefecture="テスト県",
+            prefecture_code="99",
+            list_url="https://example.com/",
+        )
+        assert site.timeout_sec is None
+
+    def test_timeout_sec_accepts_positive_int(self):
+        site = SiteConfig(
+            name="重いサイト",
+            prefecture="テスト県",
+            prefecture_code="99",
+            list_url="https://example.com/",
+            timeout_sec=300,
+        )
+        assert site.timeout_sec == 300
+
 
 class TestExtractionConfigValidation:
     def test_unsupported_default_provider_raises(self):
