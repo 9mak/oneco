@@ -29,6 +29,7 @@ from .llm.providers.anthropic_provider import AnthropicProvider
 from .llm.providers.base import LlmProvider
 from .llm.providers.fallback_provider import FallbackProvider
 from .llm.providers.groq_provider import GroqProvider
+from .llm.robots_checker import RobotsChecker
 from .orchestration.collector_service import CollectorService
 
 PROVIDER_REGISTRY = {
@@ -105,6 +106,7 @@ def run_llm_sites(
 ) -> bool:
     """LLMベースのサイト群を収集"""
     all_success = True
+    robots = RobotsChecker()
 
     for site in config.sites:
         if site.extraction != "llm":
@@ -112,6 +114,15 @@ def run_llm_sites(
 
         site_start = time.time()
         logger.info(f"=== LLM収集開始: {site.name} ===")
+
+        # robots.txt を尊重: disallow なサイトはスキップ
+        if not robots.is_allowed(site.list_url):
+            logger.warning(
+                f"[{site.name}] robots.txt により disallow されています。スキップします: "
+                f"{site.list_url}"
+            )
+            all_success = False
+            continue
 
         # サイトの種類に応じたタイムアウト値を選択
         timeout = SITE_TIMEOUT_JS_SEC if getattr(site, "requires_js", False) else SITE_TIMEOUT_SEC
