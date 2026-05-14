@@ -34,6 +34,7 @@ class SiteConfig(BaseModel):
         None  # PDFリンクのCSSセレクター（指定時はPDFをダウンロードして抽出）
     )
     pdf_multi_animal: bool = False  # TrueのときPDF1件から複数動物を抽出（一覧表形式PDF用）
+    timeout_sec: int | None = None  # サイト個別タイムアウト秒。未指定時はグローバル値を使用
 
     @field_validator("name", "prefecture", "list_url")
     @classmethod

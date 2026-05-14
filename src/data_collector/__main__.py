@@ -113,8 +113,13 @@ def run_llm_sites(
         site_start = time.time()
         logger.info(f"=== LLM収集開始: {site.name} ===")
 
-        # サイトの種類に応じたタイムアウト値を選択
-        timeout = SITE_TIMEOUT_JS_SEC if getattr(site, "requires_js", False) else SITE_TIMEOUT_SEC
+        # タイムアウト解決優先順位: サイト個別 (sites.yaml の timeout_sec) > requires_js 既定 > 通常既定
+        if site.timeout_sec is not None:
+            timeout = site.timeout_sec
+        elif getattr(site, "requires_js", False):
+            timeout = SITE_TIMEOUT_JS_SEC
+        else:
+            timeout = SITE_TIMEOUT_SEC
 
         try:
             # プロバイダー解決
