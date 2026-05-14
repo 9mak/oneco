@@ -19,6 +19,7 @@ from src.data_collector.infrastructure.api.schemas import (
     ArchivedAnimalPublic,
     PaginatedResponse,
     PaginationMeta,
+    PublicStats,
     StatusUpdateRequest,
     StatusUpdateResponse,
 )
@@ -233,6 +234,57 @@ async def stats_by_prefecture(session: SessionDep) -> dict[str, int]:
     )
     result = await session.execute(stmt)
     return {row[0]: row[1] for row in result.all()}
+
+
+@router.get("/public/stats", response_model=PublicStats)
+async def public_stats(session: SessionDep) -> PublicStats:
+    """公開メトリクス（認証不要、CORS 開放）。
+
+    Phase 2 クラウドファンディング訴求用。SNS シェアの OG 画像生成にも利用する。
+    内部運用情報（コスト・失敗ログ等）は含めない。
+    """
+    from pathlib import Path
+
+    from sqlalchemy import case, func, select
+
+    from src.data_collector.infrastructure.database.models import Animal
+    from src.data_collector.llm.config import SiteConfigLoader
+
+    total_animals = (await session.execute(select(func.count(Animal.id)))).scalar() or 0
+    municipality_count = (
+        await session.execute(
+            select(func.count(func.distinct(Animal.prefecture))).where(
+                Animal.prefecture.isnot(None)
+            )
+        )
+    ).scalar() or 0
+
+    avg_days_stmt = select(
+        func.avg(
+            case(
+                (
+                    Animal.shelter_date.isnot(None),
+                    func.extract("epoch", func.now() - Animal.shelter_date) / 86400.0,
+                ),
+                else_=None,
+            )
+        )
+    ).where(Animal.status == "sheltered")
+    avg_days_raw = (await session.execute(avg_days_stmt)).scalar()
+    avg_waiting_days = float(avg_days_raw) if avg_days_raw is not None else None
+
+    sites_yaml_path = Path(__file__).resolve().parents[2] / "config" / "sites.yaml"
+    site_count = 0
+    if sites_yaml_path.exists():
+        config = SiteConfigLoader.load(sites_yaml_path)
+        site_count = len(config.sites)
+
+    return PublicStats(
+        total_animals=total_animals,
+        municipality_count=municipality_count,
+        site_count=site_count,
+        avg_waiting_days=avg_waiting_days,
+    )
 
 
 @router.get("/health")
