@@ -7,8 +7,9 @@
   /* WCAG 2.1 AA準拠カラーパレット */
   /* Primary colors - コントラスト比検証済み */
   --color-primary-50: #f0f9ff;
-  --color-primary-500: #0ea5e9;  /* 白テキストとのコントラスト比: 4.52:1 */
-  --color-primary-700: #0369a1;  /* 白テキストとのコントラスト比: 7.21:1 */
+  --color-primary-500: #0ea5e9;  /* 白テキストとのコントラスト比: 2.77:1 (AA不適合・装飾/ボーダー用) */
+  --color-primary-700: #0369a1;  /* 白テキストとのコントラスト比: 7.21:1 (AA適合・背景+白文字用) */
+  --color-primary-800: #075985;  /* 白テキストとのコントラスト比: 9.36:1 (hover/active用) */
 
   /* Text colors */
   --color-text-primary: #1f2937;    /* 白背景とのコントラスト比: 16.11:1 */
@@ -32,6 +33,7 @@
   --color-primary-50: var(--color-primary-50);
   --color-primary-500: var(--color-primary-500);
   --color-primary-700: var(--color-primary-700);
+  --color-primary-800: var(--color-primary-800);
   --color-text-primary: var(--color-text-primary);
   --color-text-secondary: var(--color-text-secondary);
   --color-category-adoption: var(--color-category-adoption);

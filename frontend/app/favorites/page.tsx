@@ -64,7 +64,7 @@ export default function FavoritesPage() {
           </p>
           <Link
             href="/"
-            className="inline-block px-4 py-2 rounded-md bg-[var(--color-primary-500)] text-white hover:opacity-90"
+            className="inline-block px-4 py-2 rounded-md bg-[var(--color-primary-700)] text-white hover:bg-[var(--color-primary-800)] transition-colors"
           >
             動物一覧へ戻る
           </Link>
