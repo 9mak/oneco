@@ -1,0 +1,1885 @@
+ï»¿
+<!DOCTYPE html>
+<html lang="ja">
+<head id="ctl00_Head1"><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="format-detection" content="telephone=no" /><meta http-equiv="X-UA-Compatible" content="IE=edge" /><title>
+	è¿·å­ç¬ãä¿è­·ãã¦ãã¾ã / çæ¬å¸åç©æè­·ã»ã³ã¿ã¼TOP / çæ¬å¸å¬å¼ãµã¤ã
+</title><script type='text/javascript'>var glapiky='GOOGLE_MAPS_PUBLIC_KEY_REDACTED';</script>
+<script type="text/javascript" language="JavaScript">
+<!--
+    function enterCancel(event)
+    {
+        if (event.keyCode == 13)
+        {
+            var elem;
+            if(event.srcElement)
+            {
+                elem = event.srcElement;
+            }
+            else
+            {
+                elem = event.target;
+            }
+            if(elem.type!='submit' && elem.type!='textarea' && elem.tagName!='A' && elem.tagName!='a' && elem.tagName!='area' && elem.tagName!='AREA') /* 2011/04/04 a tag OK */
+            {
+                var useMapFlg = false;
+                if (elem.tagName == "img" || elem.tagName == "IMG") {
+                    if (elem.useMap) {
+                        useMapFlg = true;
+                    }
+                }
+                if (!useMapFlg) {
+                    if (event.preventDefault) 
+                    {
+                        event.preventDefault();
+                    } 
+                    else 
+                    {
+                        event.returnValue = false;
+                    }
+                }
+            }
+        }
+    }
+    
+    /* Same Func is available in AjaxCalForIE6*/
+    function ajaxCalOnClientShown(){
+        /*IE6 does not have "maxHeight"*/
+        if (typeof document.documentElement.style.maxHeight == "undefined") {
+            try{
+                $$("select").each(function(_itm){
+                    _itm.style.visibility="hidden";
+                });
+            }catch(err){
+            }
+        }
+    }    
+    /* Same Func is available in AjaxCalForIE6*/
+    function ajaxCalOnClientHidden(){
+        /*IE6 does not have "maxHeight"*/
+        if (typeof document.documentElement.style.maxHeight == "undefined") {
+            try{
+                $$("select").each(function(_itm){
+                    _itm.style.visibility="visible";
+                });
+            }catch(err){
+            }
+        }
+    }
+    
+    function clickButton(id, event) {
+        if (event.keyCode == 13)
+        {
+            document.getElementById(id).click();
+
+            if (event.preventDefault) 
+            {
+                event.preventDefault();
+            } 
+            else 
+            {
+                event.returnValue = false;
+            }
+        }
+    }
+    
+    function checkValue(obj) {
+        var keyword = document.getElementById(obj).value;
+
+        keyword = keyword.replace(/^[\sã]+|[\sã]$/g, "");
+        if (keyword.length == 0) {
+            alert('æ¤ç´¢ã­ã¼ã¯ã¼ããå¥åãã¦ãã ããã');
+            return false;
+        }
+
+        searchResult(keyword);
+        return false;
+    }
+
+    document.addEventListener("focusin", e => {
+        console.log("Focus:", e.target);
+    });
+//-->
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&family=Noto+Sans&family=Noto+Sans+JP:wght@100;400;500;700;900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet"/>
+<!-- cloudDeliverdFont start -->
+<!-- cloudDeliverdFont end -->
+<link href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/css/default.css" rel="stylesheet" type="text/css" /><link href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/css/stylesheet.css" id="css_stylesheet" rel="stylesheet" type="text/css" media="print, screen and (min-width: 481px)" /><link href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/css/stylesheetforsp.css" id="css_stylesheet_sp" rel="stylesheet" type="text/css" media="only screen and (max-width: 480px)" /><link href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/css/migration.css" id="css_Migration" rel="stylesheet" type="text/css" /><link href="//www.city.kumamoto.jp/dynamic/doubutuaigo/hpkiji/designcss/design01.css" rel="stylesheet" type="text/css" /><link href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/css/fontsizen.css" id="css_fontsize" rel="stylesheet" type="text/css" /><link href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/css/uiw_doubutuaigo.css" id="css_color" rel="stylesheet" type="text/css" /><link id="ctl00_minicalendar_css" href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/css/minicalendar.css" rel="stylesheet" type="text/css" /><link href="//www.city.kumamoto.jp/dynamic/doubutuaigo/favicon.ico" rel="icon" type="image/vnd.microsoft.icon" /><link href="//www.city.kumamoto.jp/dynamic/doubutuaigo/favicon.ico" rel="shortcut icon" type="image/vnd.microsoft.icon" /><script id="ctl00_jquery_min_js" type="text/javascript" src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/js/jquery-3.6.0.min.js"></script><script id="ctl00_js_cookie_js" type="text/javascript" src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/js/js.cookie.js"></script><script id="ctl00_setCookie_js" type="text/javascript" src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/js/setcookie.js"></script><script id="ctl00_pubfunc_js" type="text/javascript" src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/js/pubfunc.js"></script><script type="text/javascript">window.setTableScrollDefault = 0;</script><script id="ctl00_pubfunc_settablescroll_js" type="text/javascript" src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/js/pubfunc_settablescroll.js"></script><script id="ctl00_jquery_rwdImageMaps_min_js" type="text/javascript" src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/js/jquery.rwdimagemaps.min.js"></script><script type="text/javascript" src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/js/jquery-ui-1.13.2.min.js"></script><script id="ctl00_jquery_easing_js" type="text/javascript" src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/js/jquery.easing.1.4.1.js"></script><script type="text/javascript" src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/js/jquery.scrollfollow.js"></script><script id="ctl00_floatHeader_js" type="text/javascript" src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/js/floatheader.js"></script><link id="ctl00_floatHeader_css" href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/css/floatheader.css" rel="stylesheet" type="text/css" /><link href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/css/doubutuaigo_body.css" rel="stylesheet" type="text/css" /><script type="text/javascript" src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/js/keepsavepage.js"></script><link href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/css/keepsavepage.css" id="css_keepSavePage" rel="stylesheet" type="text/css" />
+<!--[if lt IE 9]>
+<link href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/css/stylesheet.css" rel="stylesheet" type="text/css" /><link href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/css/fontsizen.css" id="css_fontsize_ie8" rel="stylesheet" type="text/css" /><link href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/css/uiw_doubutuaigo.css" id="css_color_ie8" rel="stylesheet" type="text/css" /><link href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/css/html5_block.css" rel="stylesheet" type="text/css" /><script type="text/javascript" src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/js/html5shiv-printshiv.js"></script>
+<![endif]-->
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-K2ZW8KZM');</script>
+<!-- End Google Tag Manager -->
+<!-- google analytics start --><!-- google analytics end --><script id="ctl00_header__commHeader_js" type="text/javascript" src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/js/header/commheader.js"></script><link id="ctl00_header__commHeader_css" href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/css/header/commheader.css" rel="stylesheet" type="text/css" /><link id="ctl00_siteSearchArea_css" href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/css/area/sitesearcharea.css" rel="stylesheet" type="text/css" /><script id="ctl00_siteSearchVer2_js" type="text/javascript" src="https://www.city.kumamoto.jp/dynamic/common/js/sitesearchver2.js"></script><link rel="stylesheet" type="text/css" href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/css/selectlanguagemenu_opened.css?20250530" /><script>const easyJapaneseSecretKey = 'PUBLIC_KEY_REDACTED';</script><script id="ctl00_tsutaeru_mo_js" src="https://tsutaeru.cloud/assets/snippet/js/tsutaeru_mo.js"></script><script id="ctl00_tsutaeru_js" src="https://tsutaeru.cloud/assets/snippet/js/tsutaeru.js?"></script><script id="ctl00_easyJapanese_js" src="https://www.city.kumamoto.jp/dynamic/common/js/easyjapanese.js"></script><link id="ctl00_easyJapanese_css" href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/css/easyjapanese.css" rel="stylesheet" type="text/css" /><meta property="og:type" content="article" /><meta id="ctl00_MetaOGPTitle" property="og:title" content="è¿·å­ç¬ãä¿è­·ãã¦ãã¾ã" /><meta property="og:image" content="https://www.city.kumamoto.jp/dynamic/doubutuaigo/common/images/ogp/og_image.png" /><meta property="og:url" content="https://www.city.kumamoto.jp/doubutuaigo/list03612.html" /><meta property="og:description" content="è¿·å­ç¬ãä¿è­·ãã¦ãã¾ã / çæ¬å¸åç©æè­·ã»ã³ã¿ã¼TOP / çæ¬å¸å¬å¼ãµã¤ã" /><meta property="og:site_name" content="çæ¬å¸å¬å¼ãµã¤ã" /><meta property="og:locality" content="Kumamoto-Shi" /><meta property="og:region" content="Kumamoto" /><meta property="og:country-name" content="Japan" /><script type='text/javascript'>window.rsDocReaderConf = {lang: 'ja_jp'};</script><script id="ctl00_setDocReader_js" type="text/javascript" src="https://www.city.kumamoto.jp/dynamic/common/js/setdocreader.js?cid=6163"></script><script id="ctl00_ReadSpeaker_js" type="text/javascript" src="https://cdn-eas.readspeaker.com/script/6163/webReader/webReader.js?pids=wr&amp;dload=DocReader.AutoAdd&amp;forceAdapter=ioshtml5&amp;disable=translation,lookup"></script><link id="ctl00_ReadSpeakerButton_css" href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/css/readspeakerbutton.css" rel="stylesheet" type="text/css" /><link id="ctl00_ReadSpeakerArea_css" href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/css/readspeakerarea.css" rel="stylesheet" type="text/css" /></head>
+<body class="haikei_53">
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe title="Google Tag Manager" src="https://www.googletagmanager.com/ns.html?id=GTM-K2ZW8KZM"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+
+<form name="aspnetForm" method="post" action="./list.aspx?c_id=3&amp;class_id=3612&amp;class_set_id=23" id="aspnetForm" enctype="multipart/form-data" tabindex="1" onkeydown="enterCancel(event||window.event);">
+<div>
+
+</div>
+
+<div>
+
+	<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="042BAF61" />
+	<input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="/wEdAAKjgNC9w5xBMrjRtTOHFfP/Mo3sS2QCiT4b17IfhlT4TshH9GTfyyuctrv0LZcNdZ0TGAx0ahGOowRYlQQKOGdY" />
+</div>
+
+
+
+<!-- doubutuaigo allheader start  -->
+
+<!--[if lt IE 9]>
+<link href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/css/header/doubutuaigo.css" rel="stylesheet" type="text/css" />
+<![endif]-->
+<span id="top"></span>
+<link href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/css/header/doubutuaigo.css" rel="stylesheet" type="text/css" /><div id="headerArea">
+	
+<link href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/web-fonts-with-css/css/all.min.css" rel="stylesheet">
+<script type="text/javascript" src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/web-fonts-with-css/js/all.min.js"></script>
+<script type="text/javascript">
+    jQuery.noConflict();
+</script>
+
+<input type="submit" name="Dmy" value="" onclick="return false;" id="Dmy" style="height:0px;width:0px;position: absolute; top: -100px;" tabindex="-1"/>
+
+
+<div class="Navigation"><div><a href="#maincontent" tabindex="1">ãããã¼ãã¹ã­ãã</a></div></div>
+<div class="clear"></div>
+
+<input type="submit" name="headerAreaDefInput" value="" onclick="return false;" id="headerAreaDefInput" style="height:0px;width:0px;position: absolute; top: 0px;" tabindex="-1"/>
+
+<div id="floatmenu">
+    <div class="menuarea">
+        
+        <div class="headerimgarea">
+            <!-- doubutuaigo rect start -->
+            <map id="header_img" name="header_img">
+                <area shape="rect" alt="çæ¬å¸å¬å¼ãµã¤ãçæ¬å¸åç©æè­·ã»ã³ã¿ã¼ããã­ã¼ã¢ããã«ãã¾ãã¨å¸ãµã¤ããããã¸" coords="1,0,560,72" href="https://www.city.kumamoto.jp/doubutuaigo/default.html" tabindex="1" />
+            </map>
+            <!-- doubutuaigo rect end -->
+            
+            <div id="header">
+                <!-- doubutuaigo header start -->
+                <h1 id="hd_header">
+                    <img id="imgHeader" usemap="#header_img" src="//www.city.kumamoto.jp/doubutuaigo/common/upload/common/53_10_header_e24lo8ka.png" alt="çæ¬å¸å¬å¼ãµã¤ããçæ¬å¸åç©æè­·ã»ã³ã¿ã¼TOP" style="border-width:0px;" />
+                </h1>
+                <div id="hd_header_SP"><h1><a href="https://www.city.kumamoto.jp/doubutuaigo/default.html" tabindex="0"><img src="https://www.city.kumamoto.jp/dynamic/common/images/doubutuaigo/doubutuaigo_header.png" alt="çæ¬å¸åç©æè­·ã»ã³ã¿ã¼ããã­ã¼ã¢ããã«ãã¾ãã¨å¸"></a></h1></div>
+                <!-- doubutuaigo header end -->
+            </div>
+        </div>
+        <div class="menuinner">
+            <div id="headerMenu" class="headerMenu">
+
+                
+                    <!-- ã¡ã¤ã³ãµã¤ãã¸ãã¿ã³ -->
+                    <div id="mainTop" class="hover-link sink-simple">
+                        <a href="https://www.city.kumamoto.jp/default.html" tabindex="1">çæ¬å¸ãããã¸</a>
+                    </div>
+                
+
+                <a href="javascript:void(0)" aria-expanded="false" aria-controls="accessibility" class="comm_toggle-button" data-panel="accessibility" data-close="close_accessibility" tabindex="1" id="acc" aria-label="é²è¦§æ¯æ´" data-openfocus="#mainFontSizeSel a">
+                    <figure>
+                        <div class="accessibility_btn">
+                            <div class="hb_icon">
+                                <img src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/images/doubutuaigo/icon material-accessibility.svg" alt="" title="" />
+                            </div>
+                            <div><h2>é²è¦§æ¯æ´</h2></div>
+                        </div>
+                    </figure>
+                </a>
+
+                <a href="javascript:void(0)" aria-expanded="false" aria-controls="area_languages" class="comm_toggle-button" data-panel="area_languages" data-close="close_languages" tabindex="1" aria-label="Language" data-openfocus="#area_languages a.topsub">
+                    <figure>
+                        <div class="Languages_btn">
+                            <div class="hb_icon">
+                                <img src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/images/doubutuaigo/icon material-language.svg" alt="" title="" />
+                            </div>
+                            <div><h2><span lang="en">Language</span></h2></div>
+                        </div>
+                    </figure>
+                </a>
+                
+                <!-- mainSearch start -->
+                <div id="mainSearch">
+                    
+<div class="siteSearchArea">
+    
+            
+            
+<div name="searchver2-input" class="searchver2-input" data-api_url="https://kumamoto.sitesearch2.kumamoto-net.ne.jp/public_api/"><!--ãã©ã¼ã ã®è¡¨ç¤ºç®æ--></div>
+                                                                                           
+</div>
+
+                </div>
+                <!-- mainSearch end -->
+                
+                <a href="javascript:void(0)" class="comm_toggle-button" data-panel="area_sagasu" data-close="close_sagasu" tabindex="1" aria-label="ããã" data-openfocus="#area_sagasu .searchver2-input .input .IZ-select .IZ-select__input input">
+                    <figure>
+                        <div class="sagasu_btn">
+                            <div class="hb_icon">
+                                <img src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/images/doubutuaigo/icon awesome-search.svg" alt="" title="" />
+                            </div>
+                            <span><h2>ããã</h2></span>
+                        </div>
+                    </figure>
+                </a>
+
+                <div class="clear"></div>
+            </div>
+        </div>
+    </div>
+    <div class="clear"></div>
+
+    <div id="headerAreaDef">
+        <!-- ã°ã­ã¼ãã«ããã²ã¼ã·ã§ã³ -->
+        <nav>
+            <div id="GlobalNavigationBlock">
+                <!-- doubutuaigo global navigation start -->
+                
+
+<script type="text/javascript">
+    jQuery.noConflict();
+    jQuery(function () {
+
+        var setPopNaviArea,setHideNaviArea;
+
+        // 2016/09/15 ã¢ã¯ã»ã·ããªãã£å¯¾å¿ <div>â<ul>
+        jQuery("li.navi_tab,ul.g_navi").on({
+            'mouseenter': function () {
+
+                var id = jQuery(this).attr("id");
+
+                if (jQuery(this).hasClass("navi_tab")) {
+                    id = id.replace("navi_tab_", "");
+                } else if (jQuery(this).hasClass("g_navi")) {
+                    id = id.replace("g_navi_", "");
+                }
+
+                clearTimeout(setHideNaviArea);
+
+                setPopNaviArea = setTimeout(function () {
+                    jQuery("li.navi_tab").each(function () {
+                        if (jQuery(this).attr("id") == "navi_tab_" + id) {
+                            jQuery(this).addClass("selected");
+                            jQuery(this).attr("aria-selected", "true");
+                        } else {
+                            jQuery(this).removeClass("selected");
+                            jQuery(this).attr("aria-selected", "false");
+                        }
+                    });
+
+                    jQuery("ul.g_navi").each(function () {
+                        if (jQuery(this).attr("id") == "g_navi_" + id) {
+                            const isOpen = jQuery(this).attr('aria-expanded') === 'true';
+                            jQuery(this).attr('aria-expanded', !isOpen);
+                            jQuery('#g_navi_' + id).addClass('is-open');
+                            jQuery('#g_navi_' + id).prop('hidden', false);
+                        } else {
+                            jQuery(this).attr('aria-expanded', false);
+                            jQuery(this).removeClass('is-open');
+                            jQuery(this).prop('hidden', true);
+                        }
+                        //(jQuery(this).attr("id") == "g_navi_" + id) ? jQuery(this).show() : jQuery(this).hide();
+                    });
+                }, 400);
+            },
+            'mouseleave': function () {
+
+                clearTimeout(setPopNaviArea);
+
+                setHideNaviArea = setTimeout(function () {
+                    jQuery("li.navi_tab").removeClass("selected");
+                    jQuery("li.navi_tab").attr("aria-selected", "false");
+                    jQuery('ul.g_navi').attr('aria-expanded', false);
+                    jQuery('ul.g_navi').removeClass('is-open');
+                    jQuery('ul.g_navi').prop('hidden', true);
+                }, 50);
+            },
+
+            'focusin': function () {
+
+                var id = jQuery(this).attr("id");
+
+                if (jQuery(this).hasClass("navi_tab")) {
+                    id = id.replace("navi_tab_", "");
+                } else if (jQuery(this).hasClass("g_navi")) {
+                    id = id.replace("g_navi_", "");
+                }
+
+                clearTimeout(setHideNaviArea);
+
+                setPopNaviArea = setTimeout(function () {
+                    jQuery("li.navi_tab").each(function () {
+                        if (jQuery(this).attr("id") == "navi_tab_" + id) {
+                            jQuery(this).addClass("selected");
+                            jQuery(this).attr("aria-selected", "true");
+                        } else {
+                            jQuery(this).removeClass("selected");
+                            jQuery(this).attr("aria-selected", "false");
+                        }
+                    });
+
+                    jQuery("ul.g_navi").each(function () {
+                        if (jQuery(this).attr("id") == "g_navi_" + id) {
+                            const isOpen = jQuery(this).attr('aria-expanded') === 'true';
+                            jQuery(this).attr('aria-expanded', !isOpen);
+                            jQuery('#g_navi_' + id).addClass('is-open');
+                            jQuery('#g_navi_' + id).prop('hidden', false);
+                        } else {
+                            jQuery(this).attr('aria-expanded', false);
+                            jQuery(this).removeClass('is-open');
+                            jQuery(this).prop('hidden', true);
+                        }
+                    });
+                }, 1);
+            },
+            'focusout': function () {
+
+                clearTimeout(setPopNaviArea);
+
+                setHideNaviArea = setTimeout(function () {
+                    jQuery("li.navi_tab").removeClass("selected");
+                    jQuery("li.navi_tab").attr("aria-selected", "false");
+                    jQuery('ul.g_navi').attr('aria-expanded', false);
+                    jQuery('ul.g_navi').removeClass('is-open');
+                    jQuery('ul.g_navi').prop('hidden', true);
+                }, 1);
+            }
+        });
+
+        if (jQuery("#globalNavigationData").length) {
+            var classid = jQuery("#globalNavigationData").attr("data-classid");
+            var topid = jQuery("#globalNavigationData").attr("data-topid");
+
+            jQuery('[data-global="' + classid + '"]').addClass("now");
+            if (topid > 0) {
+                jQuery('[data-global="' + topid + '"]').addClass("now");
+            }
+        }
+    });
+</script>
+<style>
+.g_navi {
+  visibility: hidden;
+  opacity: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.g_navi.is-open {
+  visibility: visible;
+  opacity: 1;
+  height: auto;
+}
+
+</style>
+
+
+    <div id="naviContainer" role="navigation" aria-label="ã°ã­ã¼ãã«ããã²ã¼ã·ã§ã³">
+        <div id="naviArea" role="tablist">
+    <ul id="navi_list">
+            <li role="tab" aria-selected="false" aria-controls='g_navi_3580' 
+                class="navi_tab  " id="navi_tab_3580"
+                data-global="3580">
+                <div>
+                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03580.html" tabindex="10" >
+                        <p id="navi_tab_text_3580">çæ¬å¸åç©æè­·ã»ã³ã¿ã¼</p>
+                    </a>
+                </div>
+             </li>
+            <li role="tab" aria-selected="false" aria-controls='g_navi_3582' 
+                class="navi_tab  " id="navi_tab_3582"
+                data-global="3582">
+                <div>
+                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03582.html" tabindex="27" >
+                        <p id="navi_tab_text_3582">è¿·å­åç©æå ±</p>
+                    </a>
+                </div>
+             </li>
+            <li role="tab" aria-selected="false" aria-controls='g_navi_3628' 
+                class="navi_tab  " id="navi_tab_3628"
+                data-global="3628">
+                <div>
+                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03628.html" tabindex="42" >
+                        <p id="navi_tab_text_3628">é£¼ãä¸»ããåé</p>
+                    </a>
+                </div>
+             </li>
+            <li role="tab" aria-selected="false" aria-controls='g_navi_3581' 
+                class="navi_tab  " id="navi_tab_3581"
+                data-global="3581">
+                <div>
+                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03581.html" tabindex="52" >
+                        <p id="navi_tab_text_3581">é£¼ãä¸»ããã¸</p>
+                    </a>
+                </div>
+             </li>
+            <li role="tab" aria-selected="false" aria-controls='g_navi_3583' 
+                class="navi_tab  " id="navi_tab_3583"
+                data-global="3583">
+                <div>
+                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03583.html" tabindex="61" >
+                        <p id="navi_tab_text_3583">åç©åæ±æ¥­ã«ã¤ãã¦</p>
+                    </a>
+                </div>
+             </li>
+            <li role="tab" aria-selected="false" aria-controls='g_navi_3584' 
+                class="navi_tab  navi_tab_last" id="navi_tab_3584"
+                data-global="3584">
+                <div>
+                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03584.html" tabindex="70" >
+                        <p id="navi_tab_text_3584">ãå°ãã®æ¹ã¸</p>
+                    </a>
+                </div>
+             </li></ul>
+        </div>
+    
+        <div id="popNaviArea">
+        
+            <ul class='g_navi ' id='g_navi_3580' role='tabpanel' aria-labelledby='navi_tab_3580' hidden>
+            
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="3585">
+                            
+                            <a href="//www.city.kumamoto.jp/doubutuaigo/list03585.html" tabindex="11" >ãç¥ãã</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="3601">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03601.html" tabindex="12" >å¸æ°ã®æ¹ã¸ã®ãç¥ãã</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3675">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03675.html" tabindex="13" >äºæ¥­èã¸ã®ãç¥ãã</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="3587">
+                            
+                            <a href="//www.city.kumamoto.jp/doubutuaigo/list03587.html" tabindex="14" >çæ¬å¸åç©æè­·ã»ã³ã¿ã¼æ¦è¦</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="3607">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03607.html" tabindex="15" >æ¥­åæ¡å</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3608">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03608.html" tabindex="16" >ã¢ã¯ã»ã¹</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="3586">
+                            
+                            <a href="//www.city.kumamoto.jp/doubutuaigo/list03586.html" tabindex="17" >çæ¬å¸ã®åç©æè­·</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="3605">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03605.html" tabindex="18" >çæ¬å¸åç©æè­·æ¨é²åè­°ä¼ã«ã¤ãã¦</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3606">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03606.html" tabindex="19" >é£¼ãä¸»ã®ããªãç«ã¨ã®åãåãæ¹</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="3588">
+                            
+                            <a href="//www.city.kumamoto.jp/doubutuaigo/list03588.html" tabindex="20" >ãã©ã³ãã£ã¢åéã»å¯ä»ã«ã¤ãã¦</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="3671">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03671.html" tabindex="21" >ãã©ã³ãã£ã¢åé</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3672">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03672.html" tabindex="22" >å¯ä»ã«ã¤ãã¦</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="3589">
+                            
+                            <a href="//www.city.kumamoto.jp/doubutuaigo/list03589.html" tabindex="23" >ãã¦ã³ã­ã¼ãé</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="3645">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03645.html" tabindex="24" >ç³è«æ¸ã»å±åºæ¸</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3646">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03646.html" tabindex="25" >ãã¹ã¿ã¼ã»ãã©ã·</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3647">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03647.html" tabindex="26" >å­¦ã³</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+            </ul>
+        
+            <ul class='g_navi ' id='g_navi_3582' role='tabpanel' aria-labelledby='navi_tab_3582' hidden>
+            
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="3596">
+                            
+                            <a href="//www.city.kumamoto.jp/doubutuaigo/list03596.html" tabindex="28" >è¿·å­ç¬ãä¿è­·ãã¦ãã¾ã</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="3611">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03611.html" tabindex="29" >è¿·å­ç¬ã®è¿éã®æç¶ãã«ã¤ãã¦</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3612">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03612.html" tabindex="30" >è¿·å­ç¬ãä¿è­·ãã¦ãã¾ã</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="3597">
+                            
+                            <a href="//www.city.kumamoto.jp/doubutuaigo/list03597.html" tabindex="31" >è¿·å­ç«ãä¿è­·ãã¦ãã¾ã</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="3614">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03614.html" tabindex="32" >è¿·å­ç«ã®è¿éã®æç¶ãã«ã¤ãã¦</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3615">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03615.html" tabindex="33" >è¿·å­ç«ãä¿è­·ãã¦ãã¾ã</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="3598">
+                            
+                            <a href="//www.city.kumamoto.jp/doubutuaigo/list03598.html" tabindex="34" >ç¬ç«ä»¥å¤ã®è¿·å­åç©ãä¿è­·ãã¦ãã¾ã</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="3631">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03631.html" tabindex="35" >è¿·å­åç©ï¼ç¬ç«ä»¥å¤ï¼ã«ã¤ãã¦</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3632">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03632.html" tabindex="36" >è¿·å­åç©ï¼ç¬ç«ä»¥å¤ï¼ãä¿è­·ãã¦ãã¾ã</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="3634">
+                            
+                            <a href="//www.city.kumamoto.jp/doubutuaigo/list03634.html" tabindex="37" >é£¼ãä¸»ãããæ¢ãã¦ãã¾ã</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="3635">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03635.html" tabindex="38" >ä¸æç¬</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3636">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03636.html" tabindex="39" >ä¸æç«</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3637">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03637.html" tabindex="40" >ä¸æåç©ï¼ç¬ã»ç«ä»¥å¤ï¼</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="3638">
+                            
+                            <a href="//www.city.kumamoto.jp/doubutuaigo/list03638.html" tabindex="41" >è¿·å­åç©æå ±ç»é²</a>
+                        </h3>
+                        
+                        
+                        
+                    </li>
+            </ul>
+        
+            <ul class='g_navi ' id='g_navi_3628' role='tabpanel' aria-labelledby='navi_tab_3628' hidden>
+            
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="3629">
+                            
+                            <a href="//www.city.kumamoto.jp/doubutuaigo/list03629.html" tabindex="43" >æè­·ã»ã³ã¿ã¼ããã®è­²æ¸¡</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="3639">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03639.html" tabindex="44" >è­²æ¸¡ã®åºæº</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3617">
+                                    
+                                    <a href="https://www.city.kumamoto.jp/dynamic/doubutuaigo/hpkiji/pub/search.aspx?c_id=3&kbn=jdog" tabindex="45" >æè­·ã»ã³ã¿ã¼ã®è­²æ¸¡ç¬</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3618">
+                                    
+                                    <a href="https://www.city.kumamoto.jp/dynamic/doubutuaigo/hpkiji/pub/search.aspx?c_id=3&kbn=jcat" tabindex="46" >æè­·ã»ã³ã¿ã¼ã®è­²æ¸¡ç«</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3640">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03640.html" tabindex="47" >è­²æ¸¡å¾ã®ç¬ç«ãã¡âãã®å­ã¯ä»-</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="3630">
+                            
+                            <a href="//www.city.kumamoto.jp/doubutuaigo/list03630.html" tabindex="48" >å¸æ°ããã®è­²æ¸¡</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="3641">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03641.html" tabindex="49" >æ³¨æäºé </a>
+                                </li>
+                            
+                                <li
+                                    data-global="3642">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03642.html" tabindex="50" >å¸æ°ããè­²æ¸¡ããåç©</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3643">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03643.html" tabindex="51" >è­²æ¸¡åç©ç»é²</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+            </ul>
+        
+            <ul class='g_navi ' id='g_navi_3581' role='tabpanel' aria-labelledby='navi_tab_3581' hidden>
+            
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="3590">
+                            
+                            <a href="//www.city.kumamoto.jp/doubutuaigo/list03590.html" tabindex="53" >ããããé£¼ãåã«</a>
+                        </h3>
+                        
+                        
+                        
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="3591">
+                            
+                            <a href="//www.city.kumamoto.jp/doubutuaigo/list03591.html" tabindex="54" >ç¬ã®é£¼ãä¸»ããã¸</a>
+                        </h3>
+                        
+                        
+                        
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="3592">
+                            
+                            <a href="//www.city.kumamoto.jp/doubutuaigo/list03592.html" tabindex="55" >ç«ã®é£¼ãä¸»ããã¸</a>
+                        </h3>
+                        
+                        
+                        
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="3593">
+                            
+                            <a href="//www.city.kumamoto.jp/doubutuaigo/list03593.html" tabindex="56" >å¤é ­é£¼è²ã«ã¤ãã¦</a>
+                        </h3>
+                        
+                        
+                        
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="3594">
+                            
+                            <a href="//www.city.kumamoto.jp/doubutuaigo/list03594.html" tabindex="57" >ãã¤ã¯ã­ãããã«ã¤ãã¦</a>
+                        </h3>
+                        
+                        
+                        
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="3595">
+                            
+                            <a href="//www.city.kumamoto.jp/doubutuaigo/list03595.html" tabindex="58" >é£¼è²è¨±å¯ãå¿è¦ãªå ´å</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="3609">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03609.html" tabindex="59" >ç¹å®åç©</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3610">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03610.html" tabindex="60" >åè£½å ´æ³</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+            </ul>
+        
+            <ul class='g_navi ' id='g_navi_3583' role='tabpanel' aria-labelledby='navi_tab_3583' hidden>
+            
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="3599">
+                            
+                            <a href="//www.city.kumamoto.jp/doubutuaigo/list03599.html" tabindex="62" >ç¬¬ä¸ç¨®åç©åæ±æ¥­</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="3619">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03619.html" tabindex="63" >ç¬¬ä¸ç¨®åç©åæ±æ¥­ã«ã¤ãã¦</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3620">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03620.html" tabindex="64" >åç©åæ±è²¬ä»»èã«ã¤ãã¦</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3621">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03621.html" tabindex="65" >æ°è¦ç»é²</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3622">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03622.html" tabindex="66" >ç»é²æ´æ°</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3623">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03623.html" tabindex="67" >å¤æ´ã»å»æ¥­ãªã©ã®å±åº</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3624">
+                                    
+                                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03624.html" tabindex="68" >ç¬¬ä¸ç¨®åç©åæ±æ¥­èä¸è¦§</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="3600">
+                            
+                            <a href="//www.city.kumamoto.jp/doubutuaigo/list03600.html" tabindex="69" >ç¬¬äºç¨®åç©åæ±æ¥­</a>
+                        </h3>
+                        
+                        
+                        
+                    </li>
+            </ul>
+        
+            <ul class='g_navi ' id='g_navi_3584' role='tabpanel' aria-labelledby='navi_tab_3584' hidden>
+            
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="3602">
+                            
+                            <a href="//www.city.kumamoto.jp/doubutuaigo/list03602.html" tabindex="71" >éè¯ç«ã¸ã®å¯¾å¦æ¹æ³</a>
+                        </h3>
+                        
+                        
+                        
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="3603">
+                            
+                            <a href="//www.city.kumamoto.jp/doubutuaigo/list03603.html" tabindex="72" >å¬å·äºæã®å¯¾å¦æ¹æ³</a>
+                        </h3>
+                        
+                        
+                        
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="3604">
+                            
+                            <a href="//www.city.kumamoto.jp/doubutuaigo/list03604.html" tabindex="73" >åç©ãè¦ã¤ããéã®å¯¾å¦æ¹æ³</a>
+                        </h3>
+                        
+                        
+                        
+                    </li>
+            </ul>
+        
+        </div>
+        
+    </div>
+
+<input type="hidden" name="ctl00$ctl32$GlobalNavigation$HidErrMsg" id="ctl00_ctl32_GlobalNavigation_HidErrMsg" />
+
+                <div id="globalNavigationData" data-classid="3612" data-parentid="3596" data-topid="3582"></div>
+                <div id="ctl00_ctl32_globalNavigationData"></div>
+                <!-- doubutuaigo global navigation end -->
+            </div>
+        </nav>
+        <!-- ç¿»è¨³ã¡ãã¥ã¼ããã« -->
+        <div id="area_languages">
+            <div class="language_wrap">
+                <div class="languages_close">
+                    <a href="javascript:void(0)" id="close_languages" tabindex="1" aria-label="éãã">
+                        <span><i class="fa-regular fa-rectangle-xmark fa-2x my-blue"></i></span>
+                    </a>
+                </div>
+                <div class="lang_title"><span lang="en">Language</span></div>
+                
+    <!-- å¤å½èªç¿»è¨³ã¡ãã¥ã¼ start -->
+    <script type="text/javascript">
+        jQuery.noConflict();
+        jQuery(function () {
+            var wrapid = 'ctl00_ctl32_SelectLanguageMenu_menu';
+            // ã¡ãã¥ã¼ç¨
+            jQuery('#' + wrapid + '.selectLanguageMenu .dropmenu a').focus(function () {
+                jQuery(this).siblings('.sub-menu').addClass('focused');
+            }).blur(function () {
+                jQuery(this).siblings('.sub-menu').removeClass('focused');
+            });
+            // ãµãã¡ãã¥ã¼ç¨
+            jQuery('#' + wrapid + '.selectLanguageMenu a').focus(function () {
+                jQuery(this).parents('.sub-menu').addClass('focused');
+            }).blur(function () {
+                jQuery(this).parents('.sub-menu').removeClass('focused');
+            });
+        }); 
+    </script>
+    <div id="ctl00_ctl32_SelectLanguageMenu_menu" class="selectLanguageMenu opened" tabindex="-1">
+        <ul class="dropmenu" tabindex="-1">
+            <li><a lang="en" href="javascript:void(0);" class="topmenu" tabindex="1"><i class="fas fa-globe"></i> <span lang="en">Language</span></a>
+                <ul class="sub-menu">
+                    <li><a translate="no" lang="en" href="https://www.city.kumamoto.jp.e.fm.hp.transer.com/doubutuaigo/list03612.html" target="_blank" class="topsub" tabindex="1"><span lang="en">English</span>&nbsp;<img src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/images/newwin.gif" alt="Open in a new window" title=""></a></li>
+                    <li><a translate="no" lang="zh-cmn-Hans" href="https://www.city.kumamoto.jp.c.fm.hp.transer.com/doubutuaigo/list03612.html" target="_blank" tabindex="1"><span lang="zh-cmn-Hans">ä¸­æ(ç®ä½å­)</span>&nbsp;<img src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/images/newwin.gif" alt="å¨æ°è§çªä¸­å¼å¯" title=""></a></li>
+                    <li><a translate="no" lang="zh-cmn-Hant" href="https://www.city.kumamoto.jp.t.fm.hp.transer.com/doubutuaigo/list03612.html" target="_blank" tabindex="1"><span lang="zh-cmn-Hant">ä¸­æ(ç¹é«å­)</span>&nbsp;<img src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/images/newwin.gif" alt="å¨æ°è¦çªä¸­éå" title=""></a></li>
+                    <li><a translate="no" lang="ko" href="https://www.city.kumamoto.jp.k.fm.hp.transer.com/doubutuaigo/list03612.html" target="_blank" tabindex="1"><span lang="ko">íêµ­ì´</span>&nbsp;<img src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/images/newwin.gif" alt="ë¤ë¥¸ ì°½ì¼ë¡ ì½ë ë¤" title=""></a></li>
+                    <li><a translate="no" lang="ja" href="https://www.city.kumamoto.jp/doubutuaigo/list03612.html" class="cl-norewrite" tabindex="1">æ¥æ¬èª</a></li>
+                        <li>
+                            <div class="easyJapaneseInLangDispArea">
+                                
+                                <div class="easyJapaneseInLangButtonArea">
+                                    <a href="javascript:void(0);" class="easyJapaneseInLangButton easyJapaneseButton_visible easyJapaneseActionButton" onclick="startEasyJapanese();" tabindex="1">
+                                        ããããæ¥æ¬èª
+                                    </a>
+                                    <a href="javascript:void(0);" class="easyJapaneseInLangResetButton easyJapaneseButton_hidden easyJapaneseActionButton" onclick="resetEasyJapanese();" tabindex="1">
+                                        åã«æ»ã
+                                    </a>
+                                </div>
+
+                                
+                                
+                            </div>
+                        </li>
+                                       
+                </ul>
+            </li>
+        </ul>
+    </div>
+    <!-- å¤å½èªç¿»è¨³ã¡ãã¥ã¼ end -->
+
+            </div>
+            <div class="clear"></div>
+        </div>
+    <!-- é²è¦§è£å©ããã« -->
+        <div id="accessibility">
+            <div class="acce_head_wp">
+                <div class="overlay_acc" id="overlay_acc">
+                    <div class="acc_wp">
+                        <div id="accmenu_close">
+                            <div><a href="javascript:void(0)" id="close_accessibility" tabindex="1" aria-label="éãã"><span><i class="fa-regular fa-rectangle-xmark fa-2x my-blue"></i></span></a></div>
+                        </div>
+
+                        <div id="acc_title"><h2>é²è¦§æ¯æ´</h2></div>
+                            <div class="acc_wrap">
+                                <div class="font-size_wrap">
+                                    <div id="mainFontSizeSel">
+                                        <div class="change_title"> <h3><span>æå­ãµã¤ãºãå¤æ´ãã</span></h3> </div>
+                                            <ul>
+                                                <li>
+                                                    <a href="#top" data-select="æ¡å¤§" onclick="change_size('fontSizeB')" tabindex="1">
+                                                        <img src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/images/top1/white-mozi-l.gif" alt="æ¡å¤§" title="æå­ãµã¤ãºãæ¡å¤§ãã" /></a>
+                                                </li>
+                                                <li>
+                                                    <a href="#top" data-select="æ¨æº" onclick="change_size('fontSizeN')" tabindex="1">
+                                                        <img src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/images/top1/white-mozi-m.gif" alt="æ¨æº" title="æå­ãµã¤ãºãæ¨æºã«ãã" /></a>
+                                                </li>
+                                            </ul>
+                                    </div>
+                                </div>
+                                <div class="haikei_wrap">
+                                    <div id="changeHaikei">
+                                        <div class="change_title"> <h3><span>èæ¯è²ãå¤æ´ãã</span></h3> </div>
+                                        <ul>
+                                            <li>
+                                                <a href="#top" data-select="B" onclick="changeSiteIro('B')" tabindex="1">
+                                                    <img src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/images/top1/udbtn_blue.gif" alt="é" title="èæ¯è²ãéè²ã«ãã" /></a>
+                                            </li>
+                                            <li>
+                                                <a href="#top" data-select="K" onclick="changeSiteIro('K')" tabindex="1">
+                                                    <img src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/images/top1/udbtn_black.gif" alt="é»" title="èæ¯è²ãé»è²ã«ãã" /></a>
+                                            </li>
+                                            <li>
+                                                <a href="#top" data-select="W" onclick="changeSiteIro('W')" tabindex="1">
+                                                    <img src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/images/top1/udbtn_white.gif" alt="ç½" title="èæ¯è²ãç½è²ã«ãã" /></a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="yomiage_wrap">
+                                    <div class="yomiage">
+                                        <div class="onsei_title"><h3><span>é³å£°èª­ã¿ä¸ã</span></h3></div>
+                                        
+<!-- crosslanguage:delete -->
+<!-- ãªã¼ãã¹ãã¼ã«ã¼ é³å£°èª­ã¿ä¸ããã¿ã³ -->
+<div class="readspeakerBtn">
+    <a rel="nofollow" accesskey="L" href="//app-as.readspeaker.com/cgi-bin/rsent?customerid=6163&amp;lang=ja_jp&amp;readid=container_53&amp;url=" target="_blank" onclick="jQuery('#close_accessibility').click();readpage(this.href, 'container_speaker');return false;" tabindex="1" ><i class="fa-solid fa-volume-high my-blue"></i> èª­ã¿ä¸ãã</a>
+</div>
+<!-- /crosslanguage:delete -->
+
+                                    </div>
+                                </div>
+
+                                <div class="easyJapanese_wrap">
+                                    <div class="change_title"><h3><span>ããããæ¥æ¬èª</span></h3></div>
+                                    
+    <div class="easyJapaneseDispArea">
+        <div class="easyJapaneseButtonArea">
+            <a href="javascript:void(0);" class="easyJapaneseButton easyJapaneseButton_visible easyJapaneseActionButton" onclick="startEasyJapanese();" tabindex="1">
+                é©ç¨ãã
+            </a>
+            <a href="javascript:void(0);" class="easyJapaneseResetButton easyJapaneseButton_hidden easyJapaneseActionButton" onclick="resetEasyJapanese();" tabindex="1">
+                åã«æ»ã
+            </a>
+        </div>
+        
+    </div>
+
+
+
+                                </div>
+
+                            </div>
+                        <div class="clear"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="clear"></div>
+        </div>
+
+         <!-- ããã -->
+        <div id="area_sagasu">
+            <div class="sagasu_head_wp">
+                <div class="overlay_sagasu" id="overlay_sagasu">
+                    <div class="sagasu_wp">
+                        <div id="sagasumenu_close">
+                            <div><a href="javascript:void(0)" id="close_sagasu" tabindex="1" aria-label="éãã"><span><i class="far fa-window-close fa-2x my-blue"></i></span></a></div>
+                        </div>
+
+                        <div id="sagasu_title" class="sagasu_title">
+                            <h2><i class="fa-solid fa-flag"></i>&nbsp;&nbsp;MENU</h2>
+                        </div>
+
+                        <div class="sagasumenu">
+                            <div class="back_btn"><a href="https://www.city.kumamoto.jp/default.html"><i class="fa-solid fa-right-long"></i> TOP</a></div>
+                              
+<script type="text/javascript">
+    jQuery.noConflict();
+    jQuery(function () {
+    });
+</script>
+
+
+<div class="sagasulist">
+   
+            <div class="search_item">
+<div class="siteSearchArea">
+    
+            
+            
+<div name="searchver2-input" class="searchver2-input" data-api_url="https://kumamoto.sitesearch2.kumamoto-net.ne.jp/public_api/"><!--ãã©ã¼ã ã®è¡¨ç¤ºç®æ--></div>
+                                                                                           
+</div>
+<a href="https://higomaru-call.jp/faq/CCFaqIndex.asp" tabindex="1"><div class="search_btn"><i class="fa-solid fa-circle-arrow-right"></i> ããããè³ªå</div></a><a href="https://www.city.kumamoto.jp/doubutuaigo/list04035.html" tabindex="1"><div class="search_btn"><i class="fa-solid fa-circle-arrow-right"></i> é»å­ç³è«ã»æ½è¨­äºç´</div></a></div>
+    
+</div>
+    
+                <ul class="sagasulist">
+            
+                <li class="sagasu_li_3580">
+                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03580.html" tabindex="1"><div class="bunrui_btn">çæ¬å¸åç©æè­·ã»ã³ã¿ã¼</div></a>
+                    
+                </li>
+            
+                <li class="sagasu_li_3582">
+                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03582.html" tabindex="1"><div class="bunrui_btn">è¿·å­åç©æå ±</div></a>
+                    
+                </li>
+            
+                <li class="sagasu_li_3628">
+                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03628.html" tabindex="1"><div class="bunrui_btn">é£¼ãä¸»ããåé</div></a>
+                    
+                </li>
+            
+                <li class="sagasu_li_3581">
+                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03581.html" tabindex="1"><div class="bunrui_btn">é£¼ãä¸»ããã¸</div></a>
+                    
+                </li>
+            
+                <li class="sagasu_li_3583">
+                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03583.html" tabindex="1"><div class="bunrui_btn">åç©åæ±æ¥­ã«ã¤ãã¦</div></a>
+                    
+                </li>
+            
+                <li class="sagasu_li_3584">
+                    <a href="//www.city.kumamoto.jp/doubutuaigo/list03584.html" tabindex="1"><div class="bunrui_btn">ãå°ãã®æ¹ã¸</div></a>
+                    
+                </li>
+            
+                </ul>
+            
+                        </div>
+                        <div class="clear"></div>
+                        <div class="bottom_closebtn_wrap"><a href="javascript:void(0)" onclick="jQuery('#close_sagasu').click();return false;" tabindex="1" aria-label="éãã"><span><i class="fa-solid fa-xmark my-blue"></i> éãã</span></a></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- ãªã¼ãã¹ãã¼ã«ã¼ -->
+        <div class="clear"></div>
+        
+<!-- crosslanguage:delete -->
+<!-- ãªã¼ãã¹ãã¼ã«ã¼ è¡¨ç¤ºå -->
+<div id="readspeakerWaku"><div id="container_speaker" class="rs_preserve rs_skip rs_splitbutton rs_addtools rs_exp"></div><div class="clear"></div></div><div class="clear"></div>
+<!-- /crosslanguage:delete -->
+
+        
+        
+        <div id="maincontent" tabindex="-1" aria-label="ãããã¼ãã¹ã­ããããå¾ã®åå®¹"></div>
+    </div>
+</div>
+<div id="headerAreaDef_margin"></div>
+<div class="clear"></div>
+</div><!-- doubutuaigo allheader end  -->
+<div class="Navigation"><div><a href="#mainBlock">æ¬æã¸ã¸ã£ã³ã</a></div></div>
+
+
+<div id="pankuzuBlock">
+    <div id="pankuzu_53"><div class="pankuzu-inner_53"><ul class="pankuzu-item">
+<li><a href="https://www.city.kumamoto.jp/doubutuaigo/default.html" class='sizeA' >çæ¬å¸åç©æè­·ã»ã³ã¿ã¼TOP</a></li>
+<li><a href="//www.city.kumamoto.jp/doubutuaigo/classset023.html" class='sizeA' >åé¡ããæ¢ãï¼çæ¬å¸åç©æè­·ã»ã³ã¿ã¼ï¼</a></li>
+<li><a href="//www.city.kumamoto.jp/doubutuaigo/list03582.html" class='sizeA' >è¿·å­åç©æå ±</a></li>
+<li><a href="//www.city.kumamoto.jp/doubutuaigo/list03596.html" class='sizeA' >è¿·å­ç¬ãä¿è­·ãã¦ãã¾ã</a></li>
+<li>è¿·å­ç¬ãä¿è­·ãã¦ãã¾ã</li>
+</ul>
+</div></div>
+</div>
+
+
+<div id="container_53">
+
+
+
+
+
+<!-- sideArea start -->
+
+<!-- sideArea end -->
+
+
+<div id="mainBlock">
+    <span id="maincont"></span>
+    <div id="cont_body">
+
+        <div class="preview_label"></div>
+        
+<script src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/js/jquery.autopager-1.0.0.js" type="text/javascript"></script>
+<script src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/js/jquery.autopagermulti-1.0.0.js" type="text/javascript"></script>
+
+
+
+<script type="text/javascript">
+    // å®æ°ã®å®ç¾©(IDå)
+    const bunruiPageAnchorButtonElementName = "bunrui_page_anchor_button";
+    const bunruiPageAnchorListElementName = "bunrui_page_anchor_list";
+    const bunruiPageAnchorToggleElementName = "bunrui_page_anchor_toggle_icon";
+
+    // å®æ°ã®å®ç¾©(Classå)
+    const bunruiPageAnchorListHiddenClassName = "bunrui_page_anchor_list_hidden";
+    const bunruiPageAnchorButtonImagePlusClassName = "bunrui_page_anchor_toggle_icon_plus";
+    const bunruiPageAnchorButtonImageMinusClassName = "bunrui_page_anchor_toggle_icon_minus";
+    const bunruiPageAnchorButtonHiddenClassName = "bunrui_page_anchor_button_hidden";
+
+    // DOMã®èª­ã¿è¾¼ã¿æ
+    document.addEventListener("DOMContentLoaded", function () {
+        var screenWidth = window.innerWidth;
+        var bunruiPageAnchorStatus = 0;
+
+        if (screenWidth > 768) {
+            bunruiPageAnchorStatus = parseInt("2", 10);
+        }
+
+        else {
+            bunruiPageAnchorStatus = parseInt("2", 10);
+        }
+
+        if (isNaN(bunruiPageAnchorStatus)) {
+            bunruiPageAnchorStatus = 0;
+        }
+
+        else if (bunruiPageAnchorStatus > 2) {
+            bunruiPageAnchorStatus = 0;
+        }
+
+        var bunruiPageAnchorButtonElement = document.getElementById(bunruiPageAnchorButtonElementName);
+        var bunruiPageAnchorListElement = document.getElementById(bunruiPageAnchorListElementName);
+        var bunruiPageAnchorToggleElement = document.getElementById(bunruiPageAnchorToggleElementName);
+
+        // è¦ç´ ãåå¾ã§ããå ´åã®ã¿å¦çãè¡ã
+        if (bunruiPageAnchorButtonElement && bunruiPageAnchorListElement && bunruiPageAnchorToggleElement) {
+
+            if (bunruiPageAnchorStatus == 0) {
+                bunruiPageAnchorToggleElement.classList.add(bunruiPageAnchorButtonImagePlusClassName);
+            }
+            else if (bunruiPageAnchorStatus == 1) {
+                if (bunruiPageAnchorListElement.classList.contains(bunruiPageAnchorListHiddenClassName)) {
+                    bunruiPageAnchorListElement.classList.remove(bunruiPageAnchorListHiddenClassName);
+                }
+                bunruiPageAnchorToggleElement.classList.add(bunruiPageAnchorButtonImageMinusClassName);
+            }
+            else if (bunruiPageAnchorStatus == 2) {
+                if (bunruiPageAnchorListElement.classList.contains(bunruiPageAnchorListHiddenClassName)) {
+                    bunruiPageAnchorListElement.classList.remove(bunruiPageAnchorListHiddenClassName);
+                }
+                bunruiPageAnchorButtonElement.classList.add(bunruiPageAnchorButtonHiddenClassName);
+            }
+        }
+    });
+
+    // ã¡ãã¥ã¼ãã¿ã³æ¼ä¸æ
+    function toggleCategoryAnchorMenu() {
+        // ãã¼ã¸åç®æ¬¡ã®è¦ç´ ãåå¾ãã
+        var bunruiPageAnchorListElement = document.getElementById(bunruiPageAnchorListElementName);
+        var bunruiPageAnchorToggleElement = document.getElementById(bunruiPageAnchorToggleElementName);
+
+        // è¦ç´ ãåå¾ã§ããå ´åã®ã¿å¦çãè¡ã
+        if (bunruiPageAnchorListElement && bunruiPageAnchorToggleElement) {
+
+            // ãã¼ã¸åç®æ¬¡ã®è¡¨ç¤ºã»éè¡¨ç¤º
+            if (bunruiPageAnchorListElement.classList.contains(bunruiPageAnchorListHiddenClassName)) {
+                bunruiPageAnchorListElement.classList.remove(bunruiPageAnchorListHiddenClassName);
+                bunruiPageAnchorToggleElement.classList.remove(bunruiPageAnchorButtonImagePlusClassName);
+                bunruiPageAnchorToggleElement.classList.add(bunruiPageAnchorButtonImageMinusClassName);
+            }
+            else {
+                bunruiPageAnchorListElement.classList.add(bunruiPageAnchorListHiddenClassName);
+                bunruiPageAnchorToggleElement.classList.remove(bunruiPageAnchorButtonImageMinusClassName);
+                bunruiPageAnchorToggleElement.classList.add(bunruiPageAnchorButtonImagePlusClassName);
+            }
+        }
+    }
+</script>
+
+
+
+
+
+<div style="text-align:center;"></div>
+
+<div class="wideMenu">
+
+<h1 class="classTitle">
+    è¿·å­ç¬ãä¿è­·ãã¦ãã¾ã
+
+    
+</h1>
+
+
+
+
+
+
+
+
+
+
+<div id="rightBanArea" data-topid="53" data-classid="3612" data-dspclass="1" data-preview="OFF"></div>
+<div class="clear"></div>
+
+
+
+
+
+
+
+
+<div class="newArea">
+    
+</div>
+
+
+
+
+ 
+
+
+
+
+
+
+    <div class="kijiArea kanrenKijiArea KijiAreaType">
+        
+       
+                
+        <div class="kensu" style="display:none;">å¨2ä»¶</div>
+        
+        <ul class="kijilist KijiListType fullKijiList">
+            <li class="loadbox">
+    <div class="mainblock">
+        <div class="title">
+<a href="https://www.city.kumamoto.jp/doubutuaigo/kiji00370632/index.html" id="loadboxlisttop1">4æ27æ¥ãè¿·ãç¬ãä¿è­·ãã¾ãã  </a><span class="upddate">2026å¹´4æ27æ¥æ´æ°</span>
+
+<div class="gaiyou">ä¿è­·æ¥ï¼2026å¹´4æ27æ¥<br />å ´æï¼ååºæ¤æ¨çºç³å·<br />ã»ã³ã¿ã¼ã§ä¿è­·ãã¦ãã¾ã</div>
+        </div><div class="clear"></div>
+    </div>
+    <div class="clear"></div>
+</li>
+<li class="loadbox">
+    <div class="mainblock">
+        <div class="title">
+<a href="https://www.city.kumamoto.jp/doubutuaigo/kiji00370538/index.html">4æ21æ¥ãè¿·ãç¬ãä¿è­·ãã¾ãã  </a><span class="upddate">2026å¹´4æ21æ¥æ´æ°</span>
+
+<div class="gaiyou">ä¿è­·æ¥ï¼2026å¹´4æ21æ¥<br />å ´æï¼ååºå¥¥å¤éçº<br />ã»ã³ã¿ã¼ã§ä¿è­·ãã¦ãã¾ã</div>
+        </div><div class="clear"></div>
+    </div>
+    <div class="clear"></div>
+</li>
+
+        </ul>
+        
+        <div class="clear"></div>
+        <div class="more" id="nextload1" style=" display:none;">
+            <a href=""  rel="next1">ãã£ã¨è¦ã</a>
+        </div>
+        <div id="loadmoreajaxloader1" style="display: none;text-align:center;">
+            <img src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/images/loading.gif" alt="ã­ã¼ãä¸­" />
+        </div>
+        <div class="clear"></div>
+    </div>
+
+
+
+
+
+
+
+
+
+</div>
+
+<div class="hideMenu">
+    
+        <ul id="classMenuArea">
+        
+            <li class="">
+                <a href="//www.city.kumamoto.jp/doubutuaigo/list03611.html">è¿·å­ç¬ã®è¿éã®æç¶ãã«ã¤ãã¦</a>
+                
+                <div class="div_arrow" style="visibility:hidden;">
+                    <a name="arrow3611"
+                        href="Javascript:void(0)"
+                        style="border-left:none;"  
+                        onclick="openCloseMenu(3611);">
+                        <img id="arrow3611" class="naviSpreadBtn" src="//www.city.kumamoto.jp/dynamic/doubutuaigo/hpkiji/images/btnplus.png" alt="ãã©ã¹ãã¿ã³" width="25" height="25" />
+                    </a>
+                </div>
+            </li>
+            
+            <li id="classMenuAreaSub3611" style="display:none;">
+                
+            </li>
+        
+            <li class="selected">
+                <span>è¿·å­ç¬ãä¿è­·ãã¦ãã¾ã</span>
+                
+                <div class="div_arrow" style="visibility:hidden;">
+                    <a name="arrow3612"
+                        href="Javascript:void(0)"
+                        style="border-left:none;"  
+                        onclick="openCloseMenu(3612);">
+                        <img id="arrow3612" class="naviSpreadBtn" src="//www.city.kumamoto.jp/dynamic/doubutuaigo/hpkiji/images/btnplus.png" alt="ãã©ã¹ãã¿ã³" width="25" height="25" />
+                    </a>
+                </div>
+            </li>
+            
+            <li id="classMenuAreaSub3612" style="display:none;">
+                
+            </li>
+        
+        </ul>
+        
+
+    
+
+    
+    
+    
+
+    
+    <div id="leftBanArea" data-topid="53" data-classid="3612" data-dspclass="1" data-preview="OFF"></div>
+</div>
+<div class="clear"></div>
+
+<div id="footerSoegakiArea"></div>
+
+<div id="accessCountClassContents"
+    data-classsetid="23"
+    data-classid="3612"
+    data-topid="53"
+    data-preview="OFF"></div>
+
+
+
+
+<script type="text/javascript">
+jQuery(function() {
+
+    //autopagerã®å®è¡é¢æ°
+    jQuery.autopager({
+
+        // ã¹ã¯ã­ã¼ã«ã§èªåèª­è¾¼ãåæ­¢
+        autoLoad: false,
+        
+        // èª­ã¿è¾¼ãã³ã³ãã³ãã®æ 
+        content: '.loadbox',
+        
+        // ãã£ã¨è¦ããªã³ã¯
+    	link: 'a[rel=next1]',
+
+        // èª­ã¿è¾¼ã¿ãéå§ãããæã«çºçããã¤ãã³ã
+        start: function(current, next){
+            jQuery('#loadmoreajaxloader1').css('display', 'block'); // ã­ã¼ãã£ã³ã°ç»åãè¡¨ç¤ºãã
+            jQuery('#nextload1').css('display', 'none'); // æ¬¡ãã¼ã¸ã®ãªã³ã¯ãéè¡¨ç¤ºã«ãã
+        },
+
+        // èª­ã¿è¾¼ã¿å®äºå¾ã«çºçããã¤ãã³ã
+        load: function(current, next){
+            jQuery('#loadmoreajaxloader1').css('display', 'none');   // ã­ã¼ãã£ã³ã°ç»åãéè¡¨ç¤ºãã
+            jQuery('#nextload1').css('display', 'block'); // æ¬¡ãã¼ã¸ã®ãªã³ã¯ãè¡¨ç¤ºãã
+            // 2017/01/24 ã¢ã¯ã»ã·ããªãã£å¯¾å¿ ä¸è¦§åé ­IDä»ä¸ start
+            // èª­ã¿è¾¼ã¿ä¸è¦§ã®åé ­ã«focus
+            // cssName + "listtop" + pageNo
+            var pgNo = 1;
+            if(current.url !==undefined){
+                var arg = new Object;
+                var pair=current.url.split('?')[1].split('&');
+                for(var i=0;pair[i];i++) {
+                    var kv = pair[i].split('=');
+                    if(kv[0]=="pg") pgNo=kv[1];
+                }
+                if(jQuery('#loadboxlisttop' + pgNo)[0]) jQuery('#loadboxlisttop' + pgNo).focus(); // 
+            }else{
+                if(jQuery('#loadboxlisttop1')[0]) jQuery('#loadboxlisttop1').focus(); // 
+            }
+            // 2017/01/24 ã¢ã¯ã»ã·ããªãã£å¯¾å¿ ä¸è¦§åé ­IDä»ä¸ end
+
+
+	        //added feature to disable 'ãã£ã¨è¦ã'
+		    if(next.url ===undefined){
+                jQuery('#nextload1').css('display', 'none'); // æ¬¡ãã¼ã¸ã®ãªã³ã¯ãéè¡¨ç¤ºã«ãã
+                jQuery('#loadmoreajaxloader1').css('display', 'none');   // ã­ã¼ãã£ã³ã°ç»åãéè¡¨ç¤ºãã
+		    }
+
+        }
+    });
+
+    // èª­è¾¼ããã¿ã³ãã¯ãªãã¯ããæã«å®è¡ãããé¢æ°
+    jQuery('a[rel=next1]').click(function(){
+        jQuery.autopager('load'); // æ¬¡ãã¼ã¸ã®ã³ã³ãã³ããèª­ã¿è¾¼ã¿
+        return false;
+    });
+    
+    
+    //autopagerã®å®è¡é¢æ°
+    jQuery.autopager2({
+
+        // ã¹ã¯ã­ã¼ã«ã§èªåèª­è¾¼ãåæ­¢
+        autoLoad: false,
+        
+        // èª­ã¿è¾¼ãã³ã³ãã³ãã®æ 
+        content: '.loadbox2',
+
+        // ãã£ã¨è¦ããªã³ã¯
+    	link: 'a[rel=next2]',
+
+
+        // èª­ã¿è¾¼ã¿ãéå§ãããæã«çºçããã¤ãã³ã
+        start: function(current, next){
+            jQuery('#loadmoreajaxloader2').css('display', 'block'); // ã­ã¼ãã£ã³ã°ç»åãè¡¨ç¤ºãã
+            jQuery('#nextload2').css('display', 'none'); // æ¬¡ãã¼ã¸ã®ãªã³ã¯ãéè¡¨ç¤ºã«ãã
+        },
+
+        // èª­ã¿è¾¼ã¿å®äºå¾ã«çºçããã¤ãã³ã
+        load: function(current, next){
+            jQuery('#loadmoreajaxloader2').css('display', 'none');   // ã­ã¼ãã£ã³ã°ç»åãéè¡¨ç¤ºãã
+            jQuery('#nextload2').css('display', 'block'); // æ¬¡ãã¼ã¸ã®ãªã³ã¯ãè¡¨ç¤ºãã
+            // 2017/01/24 ã¢ã¯ã»ã·ããªãã£å¯¾å¿ ä¸è¦§åé ­IDä»ä¸ start
+            // èª­ã¿è¾¼ã¿ä¸è¦§ã®åé ­ã«focus
+            // cssName + "listtop" + pageNo
+            var pgNo = 1;
+            if(current.url !==undefined){
+                var arg = new Object;
+                var pair=current.url.split('?')[1].split('&');
+                for(var i=0;pair[i];i++) {
+                    var kv = pair[i].split('=');
+                    if(kv[0]=="pg") pgNo=kv[1];
+                }
+                if(jQuery('#loadbox2listtop' + pgNo)[0]) jQuery('#loadbox2listtop' + pgNo).focus(); // 
+            }else{
+                if(jQuery('#loadbox2listtop1')[0]) jQuery('#loadbox2listtop1').focus(); // 
+            }
+            // 2017/01/24 ã¢ã¯ã»ã·ããªãã£å¯¾å¿ ä¸è¦§åé ­IDä»ä¸ end
+
+
+	        //added feature to disable 'ãã£ã¨è¦ã'
+		    if(next.url ===undefined){
+                jQuery('#nextload2').css('display', 'none'); // æ¬¡ãã¼ã¸ã®ãªã³ã¯ãéè¡¨ç¤ºã«ãã
+                jQuery('#loadmoreajaxloader2').css('display', 'none');   // ã­ã¼ãã£ã³ã°ç»åãéè¡¨ç¤ºãã
+		    }
+
+        }
+    });
+
+    // èª­è¾¼ããã¿ã³ãã¯ãªãã¯ããæã«å®è¡ãããé¢æ°
+    jQuery('a[rel=next2]').click(function(){
+        jQuery.autopager2('load'); // æ¬¡ãã¼ã¸ã®ã³ã³ãã³ããèª­ã¿è¾¼ã¿
+        return false;
+    });
+    
+
+    //autopagerã®å®è¡é¢æ°
+    jQuery.autopager3({
+
+        // ã¹ã¯ã­ã¼ã«ã§èªåèª­è¾¼ãåæ­¢
+        autoLoad: false,
+        
+        // èª­ã¿è¾¼ãã³ã³ãã³ãã®æ 
+        content: '.loadbox3',
+
+        // ãã£ã¨è¦ããªã³ã¯
+        link: 'a[rel=next3]',
+
+
+        // èª­ã¿è¾¼ã¿ãéå§ãããæã«çºçããã¤ãã³ã
+        start: function(current, next){
+            jQuery('#loadmoreajaxloader3').css('display', 'block'); // ã­ã¼ãã£ã³ã°ç»åãè¡¨ç¤ºãã
+            jQuery('#nextload3').css('display', 'none'); // æ¬¡ãã¼ã¸ã®ãªã³ã¯ãéè¡¨ç¤ºã«ãã
+        },
+
+        // èª­ã¿è¾¼ã¿å®äºå¾ã«çºçããã¤ãã³ã
+        load: function(current, next){
+            jQuery('#loadmoreajaxloader3').css('display', 'none');   // ã­ã¼ãã£ã³ã°ç»åãéè¡¨ç¤ºãã
+            jQuery('#nextload3').css('display', 'block'); // æ¬¡ãã¼ã¸ã®ãªã³ã¯ãè¡¨ç¤ºãã
+            // 2017/01/24 ã¢ã¯ã»ã·ããªãã£å¯¾å¿ ä¸è¦§åé ­IDä»ä¸ start
+            // èª­ã¿è¾¼ã¿ä¸è¦§ã®åé ­ã«focus
+            // cssName + "listtop" + pageNo
+            var pgNo = 1;
+            if(current.url !==undefined){
+                var arg = new Object;
+                var pair=current.url.split('?')[1].split('&');
+                for(var i=0;pair[i];i++) {
+                    var kv = pair[i].split('=');
+                    if(kv[0]=="pg") pgNo=kv[1];
+                }
+                if(jQuery('#loadbox3listtop' + pgNo)[0]) jQuery('#loadbox3listtop' + pgNo).focus(); // 
+            }else{
+                if(jQuery('#loadbox3listtop1')[0]) jQuery('#loadbox3listtop1').focus(); // 
+            }
+            // 2017/01/24 ã¢ã¯ã»ã·ããªãã£å¯¾å¿ ä¸è¦§åé ­IDä»ä¸ end
+
+
+            //added feature to disable 'ãã£ã¨è¦ã'
+            if(next.url ===undefined){
+                jQuery('#loadmoreajaxloader3').css('display', 'none');   // ã­ã¼ãã£ã³ã°ç»åãéè¡¨ç¤ºãã
+                jQuery('#nextload3').css('display', 'none'); // æ¬¡ãã¼ã¸ã®ãªã³ã¯ãéè¡¨ç¤ºã«ãã
+            }
+
+        }
+    });
+
+    // èª­è¾¼ããã¿ã³ãã¯ãªãã¯ããæã«å®è¡ãããé¢æ°
+    jQuery('a[rel=next3]').click(function(){
+        jQuery.autopager3('load'); // æ¬¡ãã¼ã¸ã®ã³ã³ãã³ããèª­ã¿è¾¼ã¿
+        return false;
+    });
+});
+</script>
+
+<script type="text/javascript" src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/js/setcontents.js"></script>
+<script type="text/javascript" src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/js/layoutadjustment.js"></script>
+<script type="text/javascript" language="javascript">
+    jQuery.noConflict();
+    jQuery(function () {
+        var set = new setContents();
+        set.rootUrl = "https://www.city.kumamoto.jp/dynamic/doubutuaigo/";
+
+        
+        jQuery("#rightMiniCalArea, #leftMiniCalArea").each(function () {
+            var miniCalendarPrm = {
+                "c_id": jQuery(this).attr("data-categoryid"),
+                "class_id": jQuery(this).attr("data-classid")
+            }
+            set.miniCalendar(this, miniCalendarPrm);
+        });
+
+        
+        jQuery(".LeftArea #leftBanArea, .wideMenu #rightBanArea").each(function () {
+            var bannerPrm = {
+                "top_id": jQuery(this).attr("data-topid"),
+                "class_id": jQuery(this).attr("data-classid"),
+                "dspClassFlg": jQuery(this).attr("data-dspclass"),
+                "preview": jQuery(this).attr("data-preview")
+            }
+            set.banner(this, bannerPrm);
+        });
+
+        
+        var footerSoegakiPrm = {
+            "newWinOpnFlg": "True"
+        }
+        set.footerSoegaki("#footerSoegakiArea", footerSoegakiPrm);
+
+        var accessCountPrm = {
+            "class_set_id": jQuery("#accessCountClassContents").attr("data-classsetid"),
+            "class_id": jQuery("#accessCountClassContents").attr("data-classid"),
+            "top_id": jQuery("#accessCountClassContents").attr("data-topid"),
+            "preview": jQuery("#accessCountClassContents").attr("data-preview")
+        }
+        set.accessCountClassContents(accessCountPrm);
+    });
+
+    function checkClassCssType(color){
+        jQuery("#css_class").attr("disabled", (color == "W") ? false : true);
+    }
+
+    /******************************************
+    * ã¡ãã¥ã¼æãç³ã¿
+    *******************************************/
+    function openCloseMenu(mode){
+        if(jQuery('#classMenuAreaSub' + mode).css('display') == 'none'){
+            jQuery('#classMenuAreaSub' + mode).css('display','block');
+            jQuery('#arrow' + mode).attr("src", "http://www.city.kumamoto.jp/dynamic/doubutuaigo/hpkiji/images/btnMinus.png");
+            jQuery('#arrow' + mode).attr("alt", "ãã¤ãã¹ãã¿ã³");  
+        }
+        else{
+            jQuery('#classMenuAreaSub' + mode).css('display','none');
+            jQuery('#arrow' + mode).attr("src", "http://www.city.kumamoto.jp/dynamic/doubutuaigo/hpkiji/images/btnPlus.png"); 
+            jQuery('#arrow' + mode).attr("alt", "ãã©ã¹ãã¿ã³");  
+            //            jQuery('#arrow' + mode).text('â');
+        }
+    }
+</script>
+        
+
+     </div> <!-- cont_body end -->
+</div> <!-- mainBlock end -->
+
+
+<div class="clear"></div>
+</div>
+
+
+<!-- doubutuaigo allfooter start  -->
+
+
+
+
+
+
+
+<div class="indent"></div>
+<div id="pagetop">
+    <a href="#top">ãã¼ã¸ã®åé ­ã¸</a></div>
+
+<div id="footerbtn" style="display:none;">
+    
+    
+</div>
+
+
+    
+
+
+
+<span id="ctl00_LblCopyrights"></span>
+
+
+<!--[if lt IE 9]>
+<link href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/css/footer/doubutuaigo.css" rel="stylesheet" type="text/css" />
+<![endif]-->
+<link href="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/css/footer/doubutuaigo.css" rel="stylesheet" type="text/css" /><div id="footerArea">
+	<!-- doubutuaigo footer menu start -->
+
+
+<!-- doubutuaigo footer menu end -->
+
+<!-- doubutuaigo site info start -->
+
+<!-- ååãå -->
+<div id="siteinfo_area">
+    <div id="siteinfo">
+        <div class="logo">
+            <img src="https://www.city.kumamoto.jp/dynamic/common/images/doubutuaigo/footer_title.png" alt="çæ¬å¸åç©æè­·ã»ã³ã¿ã¼ããã­ã¼ã¢ããã«ãã¾ãã¨å¸" title=""/>
+        </div>
+        <div class="toiawase">
+            <div class="add">ã861-8045ãçæ¬å¸æ±åºå°å±±2ä¸ç®11-1</div>
+            <div class="add">TEL 096-380-2153ããFAX 096-380-2185</div>
+            <div class="mail"><a href="mailto:doubutsuaigo@city.kumamoto.lg.jp">doubutsuaigo@city.kumamoto.lg.jp</a></div>
+            <div class="sitemap"><a href="https://www.city.kumamoto.jp/doubutuaigo/classset023.html">ãµã¤ãããã</a></div>
+        </div>
+        <div class="clear"></div>
+    </div>
+    <div class="area_pagetop">
+
+<script type="text/javascript">
+    function scrollToTop() {
+        document.getElementById("headerAreaDefInput").focus();       
+    }
+</script>
+<div id="topbtn">
+    <a href="javascript:void(0);" onclick="scrollToTop()">
+        <img src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/images/doubutuaigo/top.png" alt="ãã®ãã¼ã¸ã®åé ­ã¸" title="">
+    </a>
+</div>
+
+    </div>
+</div>
+<!-- copyright -->
+<div id="cp" lang="en" xml:lang="en">
+    copyrights(c) 2022 Kumamoto City Allrights Reserved 
+</div>
+
+<!-- doubutuaigo site info end -->
+</div>
+<!-- doubutuaigo allfooter end  -->
+
+<input type="hidden" name="fontResize" id="fontResize" value="" />
+
+
+
+<script type="text/javascript">
+//<![CDATA[
+var sitesearch_config = {
+SEARCH_ROOT: 'https://www.city.kumamoto.jp/dynamic/search/pub/Default.aspx?c_id=2',
+API_ROOT: 'https://kumamoto.sitesearch2.kumamoto-net.ne.jp/public_api/',
+};
+var sitesearch_ssurl = 'https://kumamoto.sitesearch2.kumamoto-net.ne.jp/site_search_input_only/';
+var sitesearch_jsurl = sitesearch_ssurl + 'index-input.0c27b256.js';
+var sitesearch_cssurl = sitesearch_ssurl + 'index-input.dbd7ad3a.css';
+sitesearch_req.open('GET', sitesearch_ssurl, true);
+sitesearch_req.send(null);
+//]]>
+</script>
+</form>
+<noscript>æ¬ãµã¤ãã¯ä¸é¨ã®ãã¼ã¸ã»æ©è½ã«Javascriptãä½¿ç¨ãã¦ããã¾ãã</noscript>
+
+<script type="text/javascript" src="//www.city.kumamoto.jp/dynamic/doubutuaigo/common/js/ajaxcalforie6.js"></script>
+
+
+
+    <script type="text/javascript" language="javascript">
+        jQuery.noConflict();
+
+        // ç»é¢ãªãµã¤ãºæteltoå¤æ´
+        var styleSheetSpWidth = 480;
+        var timer = false;
+        jQuery(window).resize(function () {
+            if (timer !== false) {
+                clearTimeout(timer);
+            }
+            timer = setTimeout(function () {
+                //ç»é¢ãµã¤ãºåãåã
+                if(styleSheetSpWidth > window.innerWidth){
+                    //SP teltoãã
+                    jQuery('.teltoon').css('display', 'inline-block');
+                    jQuery('.teltooff').css('display', 'none');
+                }else{
+                    //PC teltoãªã
+                    jQuery('.teltoon').css('display', 'none');
+                    jQuery('.teltooff').css('display', 'inline-block');
+                }
+            }, 200);
+        });
+
+        function searchResult(keyword) {
+            jQuery.ajax({
+                type: 'POST',
+                cache: false,
+                url: '//www.city.kumamoto.jp/dynamic/doubutuaigo/common/handler/registersearchkeyword.ashx',
+                data: {
+                    "c_id": "2",
+                    "q": keyword,
+                    "nowurl": location.href
+                }
+            }).done(function (response) {
+                eval(response);
+            });
+        }
+
+        var pankuzu_flg = false;
+        function pankuzu_openclose(kbn) {
+            if (!pankuzu_flg) {
+                jQuery("#pankuzu-more, #footerPankuzu-more").hide();
+                jQuery("#pankuzu-close, #footerPankuzu-close").show();
+                jQuery(".pankuzu-toggle").show();
+                pankuzu_flg = true;
+            }
+            else {
+                jQuery("#pankuzu-more, #footerPankuzu-more").show();
+                jQuery("#pankuzu-close, #footerPankuzu-close").hide();
+                jQuery(".pankuzu-toggle").hide();
+                pankuzu_flg = false;
+            }
+        }
+
+        jQuery(function () {
+            jQuery('img[usemap]').rwdImageMaps();
+        });
+    </script>
+    
+    <script type="text/javascript" language="javascript">
+        jQuery(function () {
+            var fn = new setCookie();
+            fn.rootUrl = "https://www.city.kumamoto.jp/dynamic/doubutuaigo/";
+            fn.topFlg = "True";
+            fn.topCategoryRootFolder = "doubutuaigo";
+            fn.fontSizeCookieName = "FONT_SIZE";
+            fn.colorCookieName = "COLOR";
+
+            fn.fontSizeIconArr = setFontSizeIconArr();
+            fn.loadFontSize();
+            fn.loadColor();
+
+            
+            var prm = {
+                "top_id": "53",
+                "dspTopFlg": "OFF"
+            }
+            setFloatHeader(prm, "//www.city.kumamoto.jp/dynamic/doubutuaigo/");
+            
+        });
+
+        function setFontSizeIconArr() {
+            var fontSizeIconArr = {
+                "æ¨æº": { size: "fontSizeN", on: "https://www.city.kumamoto.jp/dynamic/doubutuaigo/common/images/top1/black-mozi-m.gif", off: "https://www.city.kumamoto.jp/dynamic/doubutuaigo/common/images/top1/white-mozi-m.gif" },
+                "æ¡å¤§": { size: "fontSizeB", on: "https://www.city.kumamoto.jp/dynamic/doubutuaigo/common/images/top1/black-mozi-l.gif", off: "https://www.city.kumamoto.jp/dynamic/doubutuaigo/common/images/top1/white-mozi-l.gif" },
+            };
+
+            return fontSizeIconArr;
+        }
+    </script>
+    
+</body>
+</html>
