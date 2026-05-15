@@ -1,0 +1,309 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>「犬・保護しています」一覧</title>
+<link href="common/css/common.css" rel="stylesheet" type="text/css">
+<link href="common/css/navi.css" rel="stylesheet" type="text/css">
+<link href="ani_infolist1/css/ani_infolist1.css" rel="stylesheet" type="text/css">
+<script type="text/javascript" src="./common/js/jquery-1.11.0.min.js"></script>
+<script type="text/javascript" src="./common/js/str_common.js"></script>
+<script type="text/javascript" src="./common/js/common_link.php"></script>
+<script type="text/javascript" src="./ani_infolist1/js/ani_infolist1.php"></script>
+</head>
+
+<body>
+	<div class="scenery">
+	<!-- container -->
+	<div id="container">
+    	<!-- header -->
+		<div id="header">
+        	<div class="header-left">
+            	<a href="http://www.city.takamatsu.kagawa.jp/"><img src="common/image/takamatsu_city.gif" width="95" height="95" alt="もっと高松"/></a>
+            </div>
+            
+            <div class="header-center-s">
+   	    		<a href="ani_top.html"><img src="common/image/wanto_ligo.gif" width="374" height="92" alt="高松動物情報サイト　わんにゃん高松"/></a>
+			</div>
+                
+            <div class="header-right">
+            	<div class="ud">
+<a href="http://www.zoomsight-sv2.jp/TKMT/controller/index.html#http://www.city.takamatsu.kagawa.jp/">音声読み上げ、文字サイズ、色の変更</a>
+                </div>
+                <div class="h-search">
+                    <div class="seachbox">
+                        <div class="seachform">
+                            <form id="form_google" action="http://www.google.com/cse">
+                            <!-- <input type=radio name=sitesearch value=""> インターネットから検索 <br>
+                                <input type=radio name=sitesearch value="template/www.city.takamatsu.kagawa.jp" checked> 高松市のHPから検索 -->
+                            <input type="hidden" value="google-coop-np" name="client" />
+                            <input type="hidden" name="hl" value="ja" />
+                            <input type="hidden" name="ie" value="UTF-8" />
+                            <input type="hidden" name="oe" value="UTF-8" />
+                            <!-- <input type="hidden" value="template/www.city.takamatsu.kagawa.jp" name="as_sitesearch" /> -->
+                            <input type="hidden" value="www.city.takamatsu.kagawa.jp/udanimo/" name="as_sitesearch" />
+                            <input type="text" name="q" size="25" maxlength="255" value="" style="ime-mode: active; margin-top: 0px; padding-top: 3px; padding-bottom: 3px;" class="search-txt" />
+                            <input type="hidden" name="domains" value="http://www.city.takamatsu.kagawa.jp" />
+                            <input type="hidden" name="cx" value="013765142947202576663:rzd1fzv7_is" />
+                            <!-- <input type="submit" name="btnG" value="　検索　"/> -->
+                                            <span id="gsbtn">
+                                <input type="image" src="common/image/seach_bottan.gif" align="top" />
+                                </span>
+                            </form>
+                        </div>
+                        
+                    </div>
+              </div>
+            </div>
+    		<br class="clear">
+            
+            <!-- navir -->
+			<div class="navi">
+                <ul class="info_navi">
+                    <li class="navi01"><div class="navibtn01" id="category1"><a href="ani_top.html">犬･猫等の<br />情報はこちら</a></div></li>
+                    <li class="navi02"><div class="navibtn02" id="category2"><a href="ani_staticpage.html?infopageid=2">飼い主の方へ</a></div></li>
+                    <li class="navi03"><div class="navibtn03" id="category3"><a href="ani_staticpage.html?infopageid=3">動物取扱業<br />について</a></div></li>
+                    <li class="navi04"><div class="navibtn04" id="category4"><a href="ani_staticpage.html?infopageid=4">特定動物の<br />飼育について</a></div></li>
+                    <li class="navi05"><div class="navibtn05" id="category5"><a href="ani_staticpage.html?infopageid=5">動物由来<br />感染症<br />について</a></div></li>
+                    <li class="navi06"><div class="navibtn06" id="category6"><a href="ani_staticpage.html?infopageid=6">イベント・<br />募集情報</a></div></li>
+                    <li class="navi07"><div class="navibtn07" id="category7"><a href="ani_staticpage.html?infopageid=7">よくある質問</a></div></li>
+                    <li class="navi08"><div class="navibtn08" id="category8"><a href="ani_staticpage.html?infopageid=8">アクセス</a></div></li>
+                    <li class="navi09"><div class="navibtn09" id="category9"><a href="ani_staticpage.html?infopageid=9">関連機関等<br />へのリンク</a></div></li>
+                </ul>
+                <br class="clear" />
+            </div>
+            <!-- /navi -->
+        
+		</div><!-- /header -->
+        
+		<!-- contents -->
+        <div id="contents">
+        
+        	<!-- left -->
+			<div id="left">
+            
+				<div class="dog-field">
+                	<div class="s-btn" id="searchdog"><a href="ani_infolist1.html?infotype=2&animaltype=1">探しています</a></div>
+                    <div class="p-btn" id="protectdog"><a href="ani_infolist1.html?infotype=1&animaltype=1">保護しています</a></div>
+                </div>
+                
+          		<div class="cat-field">
+                	<div class="s-btn" id="searchcat"><a href="ani_infolist1.html?infotype=2&animaltype=2">探しています</a></div>
+                    <div class="p-btn" id="protectcat"><a href="ani_infolist1.html?infotype=1&animaltype=2">保護しています</a></div>
+                </div>
+                
+                <div class="other-field">
+                	<div class="s-btn" id="searchother"><a href="ani_infolist1.html?infotype=2&animaltype=3">探しています</a></div>
+                    <div class="p-btn" id="protectother"><a href="ani_infolist1.html?infotype=1&animaltype=3">保護しています</a></div>
+                </div>
+                
+          		<div class="protection-field">
+                	<div class="s-btn"><a href="ani_staticpage.html?infopageid=13"></a></div>
+                </div>
+
+                <div class="sns-field">
+                    <script>
+                        document.writeln("<iframe src='https://www.facebook.com/plugins/share_button.php?href=" + encodeURIComponent(location.href) + "&layout=button&size=large&mobile_iframe=true&width=75&height=28&appId' width='75' height='28' style='border:none;overflow:hidden' scrolling='no' frameborder='0' allowTransparency='true' allow='encrypted-media'></iframe>");
+                    </script>
+                </div>
+
+                <div class="sns-field">
+                    <a id="twitter_share" href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button" data-size="large" data-lang="ja" data-show-count="false">Tweet</a><script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+                </div>
+
+                <div class="sns-field">
+                    <script>
+                        document.writeln("<div class='line-it-button' data-lang='ja' data-type='share-a' data-url=" + location.href + " style='display: none;'></div>");
+                    </script>
+                    <script src="https://d.line-scdn.net/r/web/social-plugin/js/thirdparty/loader.min.js" async="async" defer="defer"></script>
+                </div>
+
+                <!--
+				<div class="other-contents">
+                	<P class="om-1" id=""><a href="#">ペットを飼う前に考えて</a></P>
+				</div>
+                
+                <div class="other-contents">
+                	<P class="om-2" id=""><a href="#">保健所から犬や猫を<br /><span>譲り受けるには</span></a></P>
+                </div>-->
+                
+                
+			</div><!-- /left -->
+            
+		  <!-- right -->
+		  <div id="right">
+          	<div id="pagetitle">
+				<table border="0" cellpadding="0" cellspacing="0">
+					<tbody>
+						<tr>
+							<td class="title-mark"></td>
+							<td><h2></h2></td>
+						</tr>
+					</tbody>
+				</table>
+            </div>
+            
+            <div id="elucidate">
+            </div>
+            
+            <div id="signup"><p id="infoentry"><a href="#"></a></p></div>
+            
+            <div class="list-area">
+                <h3 class="table-title">●保健所からの情報</h3>
+                <table border="0" cellspacing="1" class="centar-table" id="hoken_tbl">
+                    <tbody>
+                        <tr class="ttr">
+                          <td class="tdt01">収容日</td>
+                          <td class="tdt02">No.</td>
+                          <td class="tdt03">写真</td>
+                          <td class="tdt04">収容場所</td>
+                          <td class="tdt05">品種</td>
+                          <td class="tdt06">毛色</td>
+                          <td class="tdt07">性別</td>
+                          <td class="tdt08">詳細</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <h3 class="table-title">●一般からの情報</h3>
+                
+                <table border="0" cellspacing="1" class="centar-table" id="ippan_tbl">
+                    <tbody>
+                        <tr class="ttr">
+                          <td class="tdt01">収容日</td>
+                          <td class="tdt02">No.</td>
+                          <td class="tdt03">写真</td>
+                          <td class="tdt04">収容場所</td>
+                          <td class="tdt05">品種</td>
+                          <td class="tdt06">毛色</td>
+                          <td class="tdt07">性別</td>
+                          <td class="tdt08">詳細</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="backtop"><a href="ani_top.html">トップページに戻る</a></div>
+            
+            
+            </div><!-- /right -->
+		  <!-- footer navi -->
+            <div class="footer-navi">
+           	  <ul>
+                	
+                    <li><div id="iconlink1">
+                    	<a id="iconlink1a" href="#">
+                    	<div class="photoarea">
+                        	<img src="common/image/fotternavi_photo1.png" width="86" height="86" alt="ペット写真1"/>
+						</div>
+						<div class="textarea">
+                        	<img src="common/image/fotternavi_text1.png" width="155" height="37" alt="ペットを飼う前に考えて"/>
+                        </div></a>
+                        </div>
+                    </li>
+                	
+                    
+                    <li><div id="iconlink2">
+                    	<a id="iconlink2a" href="#">
+                    	<div class="photoarea">
+                        	<img src="common/image/fotternavi_photo2.png" width="86" height="86" alt="ペット写真2"/>
+						</div>
+						<div class="textarea">
+                        	<img src="common/image/fotternavi_text2.png" width="155" height="37" alt="動物愛護に関すること"/>
+                        </div></a>
+                        </div>
+                    </li>
+                	
+                   
+                    <li><div id="iconlink3">
+                    	<a id="iconlink3a" href="#">
+                    	<div class="photoarea">
+                        	<img src="common/image/fotternavi_photo3.png" width="86" height="86" alt="ペット写真3"/>
+						</div>
+						<div class="textarea">
+                        	<img src="common/image/fotternavi_text3.png" width="155" height="37" alt="動物による危害・迷惑防止にについて"/>
+                        </div></a>
+                        </div>
+                    </li>
+                	
+                    
+                    <li><div id="iconlink4">
+                    	<a id="iconlink4a" href="#">
+                    	<div class="photoarea">
+                        	<img src="common/image/fotternavi_photo4.png" width="86" height="86" alt="ペット写真4"/>
+						</div>
+						<div class="textarea">
+                        	<img src="common/image/fotternavi_text4.png" width="155" height="37" alt="どうぶつあいごって？"/>
+                        </div></a>
+                        </div>
+                    </li>
+                	
+					
+                    <li><div id="iconlink5">
+                    	<a id="iconlink5a" href="#">
+                    	<div class="photoarea">
+                        	<img src="common/image/fotternavi_photo5.png" width="86" height="86" alt="ペット写真5"/>
+						</div>
+						<div class="textarea">
+                        	<img src="common/image/fotternavi_text5.png" width="155" height="37" alt="今私達ができること"/>
+                        </div></a>
+                        </div>
+                    </li>
+                	
+                    
+                <li class="rline"><div id="iconlink6">
+                		<a id="iconlink6a" href="#">
+                    	<div class="photoarea">
+                        	<img src="common/image/fotternavi_photo6.png" width="86" height="86" alt="チラシ画像"/>
+						</div>
+						<div class="textarea">
+                        	<img src="common/image/fotternavi_text6.png" width="155" height="37" alt="チラシ・リーフレット"/>
+                        </div></a>
+                        </div>
+                  </li>
+                	
+                </ul>
+            	<br class="clear">
+            </div><!-- /footer navi -->
+        
+        
+        </div><!-- /contents -->
+        
+        <!-- footer -->
+        <div class="footer">
+        
+        	<!-- footer link -->
+        	<div class="footer-link">
+           	  <div class="fl-L" id="sitemap"><a id="sitemapa" href="#"><img src="common/image/btn_sitemap.gif" width="107" height="18" alt="サイトマップ"/></a></div>
+                <div class="fl-C" id="aboutus"><a id="aboutusa" href="#"><img src="common/image/btn_privacy.gif" width="240" height="26" alt="このサイトの利用にあたって"/></a></div>
+              <div class="fl-R">
+                	<div class="pagetop"></div>
+                    <div class="contact-link"><a href="ani_mailinput2.html?backid=1"><img src="common/image/btn_contact.gif" width="115" height="21" alt="お問合わせ"/></a></div>
+              </div>
+            	<br class="clear" />
+            </div><!-- /footer link -->
+            
+            <!-- footer adress -->
+            <div class="footerline1"><span class="footer-adress"><img src="common/image/footer_line.gif" width="775" height="5" alt=""/></span></div>
+          <div class="footer-adress">
+            <div class="footer-img">
+               	<img src="common/image/footer_pet.png" width="84" height="79" alt="わんにゃん高松"/>
+              </div>
+                <div class="adress">
+                このページは<span id="kaname"><a href="#">生活衛生課</a></span>が担当しています。 <br>
+                  <span id="kaaddress">〒７６０－００７４　高松市桜町一丁目１０番２７号高松市保健所１階</span>
+                  <br>
+                  電話：<span id="katelno">０８７－８３９－２８６５</span>　　ＦＡＸ：<span id="kafaxno">０８７－８３９－２８７９</span> <br>
+            Ｅメール： <span id="kamail"><a href="#">seikatsueisei@city.takamatsu.lg.jp</a></span></div>
+                <br class="clear">
+          </div><!-- /footer adress -->
+            <div class="footerline2"><img src="common/image/footer_line.gif" width="775" height="5" alt=""/></div>
+            
+            	
+            
+        
+        </div><!-- footer -->
+        
+        
+	</div><!-- /container -->
+	</div><!-- /scenery -->
+<script type="text/javascript" src="/_Incapsula_Resource?SWJIYLWA=719d34d31c8e3a6e6fffd425f7e032f3&ns=1&cb=1497752212" async></script></body>
+</html>

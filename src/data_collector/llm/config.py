@@ -22,7 +22,7 @@ class SiteConfig(BaseModel):
     list_url: str
     list_link_pattern: str | None = None
     category: str = "adoption"
-    extraction: str = "llm"
+    extraction: str | None = None  # None の時は ExtractionConfig.default_extraction が採用される
     single_page: bool = False  # True の場合、list_url 自体が動物情報を含む（detail pageなし）
     max_pages: int | None = None
     provider: str | None = None
@@ -34,6 +34,9 @@ class SiteConfig(BaseModel):
         None  # PDFリンクのCSSセレクター（指定時はPDFをダウンロードして抽出）
     )
     pdf_multi_animal: bool = False  # TrueのときPDF1件から複数動物を抽出（一覧表形式PDF用）
+    fallback_to_llm: bool = (
+        False  # rule-based 抽出失敗時に LLM 抽出で再試行（rule-basedモードのみ意味あり）
+    )
 
     @field_validator("name", "prefecture", "list_url")
     @classmethod
@@ -53,7 +56,9 @@ class SiteConfig(BaseModel):
 
     @field_validator("extraction")
     @classmethod
-    def validate_extraction(cls, v: str) -> str:
+    def validate_extraction(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
         if v not in ("llm", "rule-based"):
             raise ValueError(f"無効な抽出方式: {v}。'llm' または 'rule-based' を指定してください")
         return v
@@ -80,6 +85,9 @@ class ExtractionConfig(BaseModel):
 
     default_provider: str = "groq"
     default_model: str = "llama-3.3-70b-versatile"
+    # default_extraction: 各サイトに extraction フィールドが指定されていない時のデフォルト
+    # "llm": LLM 抽出（default_provider/model を使用） / "rule-based": rule-based 抽出
+    default_extraction: str = "llm"
 
     @field_validator("default_provider")
     @classmethod
@@ -87,6 +95,15 @@ class ExtractionConfig(BaseModel):
         if v not in SUPPORTED_PROVIDERS:
             raise ValueError(
                 f"未対応プロバイダー: {v}。サポート対象: {', '.join(sorted(SUPPORTED_PROVIDERS))}"
+            )
+        return v
+
+    @field_validator("default_extraction")
+    @classmethod
+    def validate_default_extraction(cls, v: str) -> str:
+        if v not in ("llm", "rule-based"):
+            raise ValueError(
+                f"無効な default_extraction: {v}。'llm' または 'rule-based' を指定してください"
             )
         return v
 

@@ -69,7 +69,8 @@ class TestSiteConfigLoader:
         config = SiteConfigLoader.load(minimal_yaml)
         site = config.sites[0]
         assert site.category == "adoption"
-        assert site.extraction == "llm"
+        # extraction default は None（実効値は ExtractionConfig.default_extraction が決定）
+        assert site.extraction is None
         assert site.request_interval == 1.0
         assert site.max_pages is None
         assert site.provider is None

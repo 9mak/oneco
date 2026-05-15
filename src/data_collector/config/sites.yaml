@@ -8,6 +8,9 @@
 extraction:
   default_provider: groq
   default_model: llama-3.3-70b-versatile
+  # Phase A4 完了: 全 209 サイトを rule-based 抽出に切替。
+  # default_provider/default_model はフォールバック用に保持（収益化後に default_extraction を "llm" に戻すだけで完全LLM運用に復帰可能）。
+  default_extraction: rule-based
 
 sites:
   # ===================================================================

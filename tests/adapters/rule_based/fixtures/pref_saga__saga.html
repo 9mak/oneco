@@ -1,0 +1,2617 @@
+ï»¿
+<!DOCTYPE html>
+<html lang="ja">
+<head id="ctl00_Head1"><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="format-detection" content="telephone=no" /><meta http-equiv="X-UA-Compatible" content="IE=edge" /><title>
+	ä¿è­·ç¬ãç«ãªã©ã®æå ±ï¼ä½è³å¸ãå¤ä¹å¸ãå°åå¸ãç¥å¼å¸ãç¥å¼é¡ï¼ / ä½è³ç
+</title>
+<script type="text/javascript">
+<!--
+    function enterCancel(event)
+    {
+        if (event.keyCode == 13)
+        {
+            var elem;
+            if(event.srcElement)
+            {
+                elem = event.srcElement;
+            }
+            else
+            {
+                elem = event.target;
+            }
+            if(elem.type!='submit' && elem.type!='textarea' && elem.tagName!='A' && elem.tagName!='a' && elem.tagName!='area' && elem.tagName!='AREA') /* 2011/04/04 a tag OK */
+            {
+                var useMapFlg = false;
+                if (elem.tagName == "img" || elem.tagName == "IMG") {
+                    if (elem.useMap) {
+                        useMapFlg = true;
+                    }
+                }
+                if (!useMapFlg) {
+                    if (event.preventDefault) {
+                        event.preventDefault();
+                    }
+                    else {
+                        event.returnValue = false;
+                    }
+                }
+            }           
+        }
+    }
+    
+    /* Same Func is available in AjaxCalForIE6*/
+    function ajaxCalOnClientShown(){
+        /*IE6 does not have "maxHeight"*/
+        if (typeof document.documentElement.style.maxHeight == "undefined") {
+            try{
+                $$("select").each(function(_itm){
+                    _itm.style.visibility="hidden";
+                });
+            }catch(err){
+            }
+        }
+    }    
+    /* Same Func is available in AjaxCalForIE6*/
+    function ajaxCalOnClientHidden(){
+        /*IE6 does not have "maxHeight"*/
+        if (typeof document.documentElement.style.maxHeight == "undefined") {
+            try{
+                $$("select").each(function(_itm){
+                    _itm.style.visibility="visible";
+                });
+            }catch(err){
+            }
+        }
+    }
+    
+    function clickButton(id, event){
+        if (event.keyCode == 13)
+        {
+            document.getElementById(id).click();
+
+            if (event.preventDefault) 
+            {
+                event.preventDefault();
+            } 
+            else 
+            {
+                event.returnValue = false;
+            }
+        }
+    }
+    
+    function checkValue(obj) {
+        var keyword = document.getElementById(obj).value;
+        keyword = keyword.replace(/^[\sã]+|[\sã]$/g, "");
+        if (keyword.length == 0) {
+            alert('æ¤ç´¢ã­ã¼ã¯ã¼ããå¥åãã¦ãã ããã');
+            return false;
+        }
+
+        searchResult(keyword);
+        return false;
+    }
+//-->
+</script>
+<link href="../dynamic/common/css/default.css" rel="stylesheet" type="text/css" /><link href="../dynamic/common/css/stylesheet.css" id="css_stylesheet" rel="stylesheet" type="text/css" media="print, screen and (min-width: 481px)" /><link href="../dynamic/common/css/stylesheetforsp.css" id="css_stylesheet_sp" rel="stylesheet" type="text/css" media="only screen and (max-width: 480px)" /><link href="../dynamic/common/css/migration.css" id="css_Migration" rel="stylesheet" type="text/css" /><link href="../dynamic/hpkiji/designcss/design01.css" rel="stylesheet" type="text/css" /><link href="../dynamic/common/css/fontsizen.css" id="css_fontsize" rel="stylesheet" type="text/css" media="print, screen and (min-width: 481px)" /><link href="../dynamic/common/css/fontsizen.css" id="css_fontsize_sp" rel="stylesheet" type="text/css" media="only screen and (max-width: 480px)" /><link href="../dynamic/common/css/uiw.css" id="css_color" rel="stylesheet" type="text/css" media="print, screen and (min-width: 481px)" /><link href="../dynamic/common/css/uiw.css" id="css_color_sp" rel="stylesheet" type="text/css" media="only screen and (max-width: 480px)" /><link id="ctl00_minicalendar_css" href="../dynamic/common/css/minicalendar.css" rel="stylesheet" type="text/css" /><link href="../dynamic/favicon.ico" rel="icon" type="image/vnd.microsoft.icon" /><link href="../dynamic/favicon.ico" rel="shortcut icon" type="image/vnd.microsoft.icon" /><script id="ctl00_jquery_min_js" type="text/javascript" src="../dynamic/common/js/jquery.min.js"></script><script type="text/javascript" src="../dynamic/common/js/js.cookie.js"></script><script type="text/javascript" src="../dynamic/common/js/setcookie.js"></script>
+<!--[if lt IE 9]>
+<link href="../dynamic/common/css/stylesheet.css" rel="stylesheet" type="text/css" /><link href="../dynamic/common/css/fontsizen.css" id="css_fontsize_ie8" rel="stylesheet" type="text/css" /><link href="../dynamic/common/css/uiw.css" id="css_color_ie8" rel="stylesheet" type="text/css" /><link href="../dynamic/common/css/html5_block.css" rel="stylesheet" type="text/css" /><script type="text/javascript" src="../dynamic/common/js/html5shiv-printshiv.js"></script>
+<![endif]-->
+<link href="../dynamic/common/css/default_body.css" rel="stylesheet" type="text/css" /><script>
+(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});
+var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-TV22SFD');
+</script>
+<meta property="og:type" content="article" /><meta id="ctl00_MetaOGPTitle" property="og:title" content="ä¿è­·ç¬ãç«ãªã©ã®æå ±ï¼ä½è³å¸ãå¤ä¹å¸ãå°åå¸ãç¥å¼å¸ãç¥å¼é¡ï¼" /><meta property="og:image" content="http://www.pref.saga.lg.jp/dynamic/common/images/ogp/og_image.gif" /><meta property="og:url" content="https://www.pref.saga.lg.jp/kiji00349237/index.html" /><meta property="og:description" content="ä¿è­·ç¬ãç«ãªã©ã®æå ±ï¼ä½è³å¸ãå¤ä¹å¸ãå°åå¸ãç¥å¼å¸ãç¥å¼é¡ï¼ / ä½è³ç" /><meta property="og:site_name" content="ä½è³ç" /><meta property="og:locality" content="Saga-Ken" /><meta property="og:region" content="Saga" /><meta property="og:country-name" content="Japan" /><meta name="keywords" content="ä¿è­·ç¬ãç«ãªã©ã®æå ±ï¼ä½è³å¸ãå¤ä¹å¸ãå°åå¸ãç¥å¼å¸ãç¥å¼é¡ï¼" /></head>
+<body class="haikei">
+<noscript><iframe title="gtm_if" src="https://www.googletagmanager.com/ns.html?id=GTM-TV22SFD" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<form name="aspnetForm" method="post" action="./detail.aspx?c_id=3&amp;id=49237" id="aspnetForm" enctype="multipart/form-data" tabindex="1" onkeydown="enterCancel(event||window.event);">
+<div>
+
+</div>
+
+<div>
+
+	<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="A5DD862A" />
+	<input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="/wEdAAWQ1hmkuDbiG6FFGsGt5+Tpg56KqOytoLCl6LRjcZaJZo5RwWZR47SYA5rPyWsjTz0GkCA5m0ohfOUU+WiJl+cMpMQC5bGRchMg2Ebz6nIxRGrE1X2pfxUBMwSfwmUnFoi9Pmgs" />
+</div>
+
+
+
+
+
+
+<div id="headerAreaDef">
+    <input type="submit" name="ctl00$Dmy" value="" onclick="return false;" id="ctl00_Dmy" style="height:0px;width:0px;position:absolute;top:-100px;" />
+    <div class="Navigation"><ul><li><a href="#GlobalNavigationBlock" tabindex="1">ãããã¼ãã¹ã­ãã</a></li><li><a href="#mainBlock" tabindex="1">æ¬æã¸ã¸ã£ã³ã</a></li></ul></div>
+    <span id="top" tabindex="-1"></span>
+    <div id="header"><!-- header start --><a href="../default.html" tabindex="1"><img id="imgHeader" src="../common/upload/common/0_1_header_sivusepm.png" alt="ä½è³ç äººãå¤§åã«ãä¸çã«èªããä½è³ã¥ãã" style="border-width:0px;" /><img id="imgHeaderSP" src="../common/upload/common/0_1_headersp_zrdk0zdi.png" alt="ä½è³çï¼ã¹ããçï¼ äººãå¤§åã«ãä¸çã«èªããä½è³ã¥ãã" style="height:60px;width:320px;border-width:0px;" /></a><!-- header end -->
+    <div id="mainHeaderTop">
+        <!-- foreign language menu start -->
+<script type="text/javascript">
+    jQuery.noConflict();
+    jQuery(function () {
+        // ã¡ãã¥ã¼ç¨
+        jQuery('.select-box01 #normal a').focus(function () {
+            jQuery(this).siblings('.sub-menu').addClass('focused');
+        }).blur(function () {
+            jQuery(this).siblings('.sub-menu').removeClass('focused');
+        });
+
+        // ãµãã¡ãã¥ã¼ç¨
+        jQuery('.sub-menu a').focus(function () {
+            jQuery(this).parents('.sub-menu').addClass('focused');
+        }).blur(function () {
+            jQuery(this).parents('.sub-menu').removeClass('focused');
+        });
+    });
+</script>
+
+<!-- ç¿»è¨³ã¡ãã¥ã¼ -->
+<div class="select-box01" tabIndex="-1">
+    <ul id="normal" class="dropmenu" tabIndex="-1">
+        <li><a lang="en" href="#" class="topmenu" tabindex="1">Foreign Language</a>
+            <ul class="sub-menu">
+                <li><a translate="no" lang="en" href="https://www.pref.saga.lg.jp.e.zg.hp.transer.com/kiji00349237/index.html" target="_blank" class="topsub" tabindex="1">English&nbsp;<img src="../dynamic/common/images/newwin.gif" alt="Open in a new window" title=""></a></li>
+                <li><a translate="no" lang="zh-cmn-Hans" href="https://www.pref.saga.lg.jp.c.zg.hp.transer.com/kiji00349237/index.html" target="_blank" tabindex="1">ä¸­æ(ç®åå­)&nbsp;<img src="../dynamic/common/images/newwin.gif" alt="å¨æ°è§çªä¸­å¼å¯" title=""></a></li>
+                <li><a translate="no" lang="zh-cmn-Hant" href="https://www.pref.saga.lg.jp.t.zg.hp.transer.com/kiji00349237/index.html" target="_blank" tabindex="1">ä¸­æ(ç¹é«å­)&nbsp;<img src="../dynamic/common/images/newwin.gif" alt="å¨æ°è¦çªä¸­éå" title=""></a></li>
+                <li><a translate="no" lang="ko" href="https://www.pref.saga.lg.jp.k.zg.hp.transer.com/kiji00349237/index.html" target="_blank" tabindex="1">íêµ­ì´&nbsp;<img src="../dynamic/common/images/newwin.gif" alt="ë¤ë¥¸ ì°½ì¼ë¡ ì½ë ë¤" title=""></a></li>
+                <li><a translate="no" lang="ja" href="index.html" class="cl-norewrite" tabindex="1">æ¥æ¬èª</a></li>
+            </ul>
+        </li>
+    </ul>
+</div>
+<!-- foreign language menu end --><!-- header menu start -->
+        <div id="bousaiTop" class="headMenuTtl"><a href="../bousai/default.html" tabindex="1">é²ç½</a></div>
+        <div id="kyuuTop" class="headMenuTtl"><a href="https://www.qq.pref.saga.jp/" target="_blank" tabindex="1">ææ¥<img src="../dynamic/common/images/top1/new_win.gif" alt="å¥ã¦ã¤ã³ãã¦ã§éãã¾ã" title=""></a></div>
+        <div id="headerMenuR">
+            <div id="homeLink">
+                <a href="../default.html" tabindex="1">ä½è³çTOPã¸æ»ã</a>
+            </div>
+        </div>
+        
+        <div class="clear"></div>
+        
+        <dl id="changeHaikei">
+		    <dt><span>èæ¯è²</span></dt>
+		    <dd><a href="javascript:void(0)" data-select="B" onclick="changeSiteIro('B')" tabindex="1"><img src="../dynamic/common/images/top1/udbtn_blue.gif" alt="é" title="" /></a></dd>
+            <dd><a href="javascript:void(0)" data-select="K" onclick="changeSiteIro('K')" tabindex="1"><img src="../dynamic/common/images/top1/udbtn_black.gif" alt="é»" title="" /></a></dd>
+            <dd><a href="javascript:void(0)" data-select="W" onclick="changeSiteIro('W')" tabindex="1"><img src="../dynamic/common/images/top1/udbtn_white.gif" alt="ç½" title="" /></a></dd>
+	    </dl>
+	    <dl id="mainFontSizeSel">
+		    <dt><span>æå­ãµã¤ãº</span></dt>
+		    <dd><a href="javascript:void(0)" data-select="æ¡å¤§" onclick="change_size('fontSizeB')" tabindex="1"><img src="../dynamic/common/images/top1/white-mozi-l.gif" alt="æ¡å¤§" title="" /></a></dd>
+            <dd><a href="javascript:void(0)" data-select="æ¨æº" onclick="change_size('fontSizeN')" tabindex="1"><img src="../dynamic/common/images/top1/white-mozi-m.gif" alt="æ¨æº" title="" /></a></dd>
+	    </dl>
+        
+            <div id="mainSearch">
+                <input name="ctl00$TxtSearch" type="text" id="ctl00_TxtSearch" tabindex="1" class="searchBox" title="ãµã¤ãåæ¤ç´¢ãæ¤ç´¢ããèªå¥ãå¥åãã¦ãã ããã" onkeydown="clickButton(&#39;ctl00_BtnSearch&#39;, event||window.event);" placeholder="ãµã¤ãåæ¤ç´¢" /><input type="image" name="ctl00$BtnSearch" id="ctl00_BtnSearch" tabindex="1" class="btnSearch" src="../dynamic/common/images/btn_search.png" alt="æ¤ç´¢" onclick="return checkValue(&#39;ctl00_TxtSearch&#39;);" style="border-width:0px;" />
+                <div class="clear"></div>
+                
+            </div>
+        
+        <div class="clear"></div>
+        <!-- header menu end -->
+    </div>
+    </div>
+    <div class="clear"></div>
+    
+
+    <!-- ã°ã­ã¼ãã«ããã²ã¼ã·ã§ã³ -->
+    
+    <div id="GlobalNavigationBlock" tabindex="-1"></div>
+    <div class="Navigation"><ul><li><a id="naviskip-link" href="#mainBlock" tabindex="1">ã°ã­ã¼ãã«ããã²ã¼ã·ã§ã³ãã¹ã­ãã</a></li></ul></div>
+    <!-- global navigation start -->
+
+<script type="text/javascript">
+    jQuery.noConflict();
+    jQuery(function () {
+
+        var setPopNaviArea,setHideNaviArea;
+
+        // 2016/09/15 ã¢ã¯ã»ã·ããªãã£å¯¾å¿ <div>â<ul>
+        jQuery("li.navi_tab,ul.g_navi").on({
+            'mouseenter': function () {
+
+                var id = jQuery(this).attr("id");
+
+                if (jQuery(this).hasClass("navi_tab")) {
+                    id = id.replace("navi_tab_", "");
+                } else if (jQuery(this).hasClass("g_navi")) {
+                    id = id.replace("g_navi_", "");
+                }
+
+                clearTimeout(setHideNaviArea);
+
+                setPopNaviArea = setTimeout(function () {
+                    jQuery("li.navi_tab").each(function () {
+                        if (jQuery(this).attr("id") == "navi_tab_" + id) {
+                            jQuery(this).addClass("selected");
+                            jQuery(this).attr("aria-selected", "true");
+                        } else {
+                            jQuery(this).removeClass("selected");
+                            jQuery(this).attr("aria-selected", "false");
+                        }
+                    });
+
+                    jQuery("ul.g_navi").each(function () {
+                        (jQuery(this).attr("id") == "g_navi_" + id) ? jQuery(this).show() : jQuery(this).hide();
+                    });
+                }, 400);
+            },
+            'mouseleave': function () {
+
+                clearTimeout(setPopNaviArea);
+
+                setHideNaviArea = setTimeout(function () {
+                    jQuery("li.navi_tab").removeClass("selected");
+                    jQuery("li.navi_tab").attr("aria-selected", "false");
+                    jQuery("ul.g_navi").hide();
+                }, 50);
+            },
+
+            'focusin': function () {
+
+                var id = jQuery(this).attr("id");
+
+                if (jQuery(this).hasClass("navi_tab")) {
+                    id = id.replace("navi_tab_", "");
+                } else if (jQuery(this).hasClass("g_navi")) {
+                    id = id.replace("g_navi_", "");
+                }
+
+                clearTimeout(setHideNaviArea);
+
+                setPopNaviArea = setTimeout(function () {
+                    jQuery("li.navi_tab").each(function () {
+                        if (jQuery(this).attr("id") == "navi_tab_" + id) {
+                            jQuery(this).addClass("selected");
+                            jQuery(this).attr("aria-selected", "true");
+                        } else {
+                            jQuery(this).removeClass("selected");
+                            jQuery(this).attr("aria-selected", "false");
+                        }
+                    });
+
+                    jQuery("ul.g_navi").each(function () {
+                        (jQuery(this).attr("id") == "g_navi_" + id) ? jQuery(this).show() : jQuery(this).hide();
+                    });
+                }, 1);
+            },
+            'focusout': function () {
+
+                clearTimeout(setPopNaviArea);
+
+                setHideNaviArea = setTimeout(function () {
+                    jQuery("li.navi_tab").removeClass("selected");
+                    jQuery("li.navi_tab").attr("aria-selected", "false");
+                    jQuery("ul.g_navi").hide();
+                }, 1);
+            }
+        });
+
+        if (jQuery("#globalNavigationData").length) {
+            var classid = jQuery("#globalNavigationData").attr("data-classid");
+            var topid = jQuery("#globalNavigationData").attr("data-topid");
+
+            jQuery('[data-global="' + classid + '"]').addClass("now");
+            if (topid > 0) {
+                jQuery('[data-global="' + topid + '"]').addClass("now");
+            }
+        }
+    });
+</script>
+
+
+    <div id="naviContainer" role="navigation" aria-label="ã°ã­ã¼ãã«ããã²ã¼ã·ã§ã³">
+        <div id="naviArea" role="tablist">
+    <ul id="navi_list"><li role="tab" aria-selected="false" aria-controls='g_navi_500' 
+                class="navi_tab exsistpic " id="navi_tab_500"
+                data-global="500">
+                <div>
+                    <a href="../list00500.html" tabindex="10" >
+                        <img src="../common/upload/hpkiji/500_class_globalnavi_lytjslal0116.png" style="max-width:54px;max-height:40px" alt="" title="" /><p id="navi_tab_text_500">ãããã»å­è²ã¦</p>
+                    </a>
+                </div>
+             </li><li role="tab" aria-selected="false" aria-controls='g_navi_546' 
+                class="navi_tab exsistpic " id="navi_tab_546"
+                data-global="546">
+                <div>
+                    <a href="../list00546.html" tabindex="68" >
+                        <img src="../common/upload/hpkiji/546_class_globalnavi_m6mtn0zi0409.png" style="max-width:54px;max-height:40px" alt="" title="" /><p id="navi_tab_text_546">å¥åº·ã»ç¦ç¥</p>
+                    </a>
+                </div>
+             </li><li role="tab" aria-selected="false" aria-controls='g_navi_585' 
+                class="navi_tab exsistpic " id="navi_tab_585"
+                data-global="585">
+                <div>
+                    <a href="../list00585.html" tabindex="116" >
+                        <img src="../common/upload/hpkiji/585_class_globalnavi_as1y17tdx0116.png" style="max-width:54px;max-height:40px" alt="" title="" /><p id="navi_tab_text_585">ããã¨ã»ç£æ¥­</p>
+                    </a>
+                </div>
+             </li><li role="tab" aria-selected="false" aria-controls='g_navi_636' 
+                class="navi_tab exsistpic " id="navi_tab_636"
+                data-global="636">
+                <div>
+                    <a href="../list00636.html" tabindex="159" >
+                        <img src="../common/upload/hpkiji/636_class_globalnavi_m8vc8xml0409.png" style="max-width:54px;max-height:40px" alt="" title="" /><p id="navi_tab_text_636">è¦³åã»æåã»ã¹ãã¼ã</p>
+                    </a>
+                </div>
+             </li><li role="tab" aria-selected="false" aria-controls='g_navi_656' 
+                class="navi_tab exsistpic " id="navi_tab_656"
+                data-global="656">
+                <div>
+                    <a href="../list00656.html" tabindex="196" >
+                        <img src="../common/upload/hpkiji/656_class_globalnavi_mtksuzoo.png" style="max-width:54px;max-height:40px" alt="" title="" /><p id="navi_tab_text_656">çåã»ã¾ã¡ã¥ãã</p>
+                    </a>
+                </div>
+             </li><li role="tab" aria-selected="false" aria-controls='g_navi_678' 
+                class="navi_tab exsistpic navi_tab_last" id="navi_tab_678"
+                data-global="678">
+                <div>
+                    <a href="../list00678.html" tabindex="231" >
+                        <img src="../common/upload/hpkiji/678_class_globalnavi_zo2gr0o50116.png" style="max-width:54px;max-height:40px" alt="" title="" /><p id="navi_tab_text_678">çæ¿æå ±</p>
+                    </a>
+                </div>
+             </li></ul>
+        </div>
+    
+        <div id="popNaviArea">
+        
+            <ul class='g_navi ' id='g_navi_500' role='tabpanel' aria-labelledby='navi_tab_500' style='display:none;'>
+            
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="501">
+                            
+                            <a href="../list00501.html" tabindex="11" >ããåµçã»ãããã¶ã¤ã³</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="503">
+                                    
+                                    <a href="../kiji00347048/index.html" tabindex="12" >ãããã¶ã¤ã³</a>
+                                </li>
+                            
+                                <li
+                                    data-global="6520">
+                                    
+                                    <a href="../list06520.html" tabindex="13" >MIGAKIãã­ã¸ã§ã¯ã</a>
+                                </li>
+                            
+                                <li
+                                    data-global="502">
+                                    
+                                    <a href="../list00502.html" tabindex="14" >ç·åæ¦ç¥ï¼ä½è³çã¾ã¡ã»ã²ã¨ã»ããã¨åµçç·åæ¦ç¥ï¼</a>
+                                </li>
+                            
+                                <li
+                                    data-global="504">
+                                    
+                                    <a href="../list00504.html" tabindex="15" >ç§»ä½æ¯æ´</a>
+                                </li>
+                            
+                                <li
+                                    data-global="505">
+                                    
+                                    <a href="../list00505.html" tabindex="16" >èªçºã®å°åã¥ãã</a>
+                                </li>
+                            
+                                <li
+                                    data-global="5637">
+                                    
+                                    <a href="../list05637.html" tabindex="17" >ãã¸ã¿ã«ã¤ããã¼ã·ã§ã³</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="506">
+                            
+                            <a href="../list00506.html" tabindex="18" >å­è²ã¦ã»æè²</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="5312">
+                                    
+                                    <a href="../list05312.html" tabindex="19" >å¹¼åæè²ã»ä¿è²</a>
+                                </li>
+                            
+                                <li
+                                    data-global="507">
+                                    
+                                    <a href="../list00507.html" tabindex="20" >å­è²ã¦ãå¤§çãã(çµå©ã»å¦å¨ ã»åºç£ã»å­è²ã¦)</a>
+                                </li>
+                            
+                                <li
+                                    data-global="2529">
+                                    
+                                    <a href="../kyouiku/default.html" tabindex="21" >æè²å§å¡ä¼</a>
+                                </li>
+                            
+                                <li
+                                    data-global="508">
+                                    
+                                    <a href="../list00508.html" tabindex="22" >å­¦æ ¡æè²</a>
+                                </li>
+                            
+                                <li
+                                    data-global="509">
+                                    
+                                    <a href="../list00509.html" tabindex="23" >çæ¶¯å­¦ç¿</a>
+                                </li>
+                            
+                                <li
+                                    data-global="510">
+                                    
+                                    <a href="../list00510.html" tabindex="24" >éå°å¹´å¥å¨è²æ</a>
+                                </li>
+                            
+                                <li
+                                    data-global="511">
+                                    
+                                    <a href="../list00511.html" tabindex="25" >ç·åæè²ä¼è­°</a>
+                                </li>
+                            
+                                <li
+                                    data-global="4496">
+                                    
+                                    <a href="../list04496.html" tabindex="26" >å­ã©ãã»è¥èã®ç¸è«æ©é¢ã»æ¯æ´æ©é¢</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="512">
+                            
+                            <a href="../list00512.html" tabindex="27" >é²ç½ã»å®å¨ã»é²ç¯</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="513">
+                                    
+                                    <a href="../bousai/default.html" tabindex="28" >é²ç½ã»æ¸ç½ã»å½æ°ä¿è­·</a>
+                                </li>
+                            
+                                <li
+                                    data-global="514">
+                                    
+                                    <a href="../list00514.html" tabindex="29" >äº¤éå®å¨ã»é²ç¯ã»ç¯ç½ªè¢«å®³èç­æ¯æ´</a>
+                                </li>
+                            
+                                <li
+                                    data-global="515">
+                                    
+                                    <a href="../list00515.html" tabindex="30" >æ¶é²</a>
+                                </li>
+                            
+                                <li
+                                    data-global="516">
+                                    
+                                    <a href="../list00516.html" tabindex="31" >åå­åå®å¨è¡æ¿</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3413">
+                                    
+                                    <a href="../list03413.html" tabindex="32" >çæµ·åå­åçºé»æåç¨¼åã¸ã®å¯¾å¿</a>
+                                </li>
+                            
+                                <li
+                                    data-global="517">
+                                    
+                                    <a href="../list00517.html" tabindex="33" >ä½è³ç©ºæ¸¯èªè¡éä½¿ç¨è¦è«ã¸ã®å¯¾å¿</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="518">
+                            
+                            <a href="../list00518.html" tabindex="34" >èªç¶ã»ç°å¢ã»ãªãµã¤ã¯ã«</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="6488">
+                                    
+                                    <a href="../list06488.html" tabindex="35" >ç°å¢æ½ç­å¨è¬</a>
+                                </li>
+                            
+                                <li
+                                    data-global="520">
+                                    
+                                    <a href="../list00520.html" tabindex="36" >è±ç­ç´ ç¤¾ä¼æ¨é²</a>
+                                </li>
+                            
+                                <li
+                                    data-global="519">
+                                    
+                                    <a href="../list00519.html" tabindex="37" >çæ´»ç°å¢</a>
+                                </li>
+                            
+                                <li
+                                    data-global="521">
+                                    
+                                    <a href="../list00521.html" tabindex="38" >èªç¶ç°å¢ä¿è­·</a>
+                                </li>
+                            
+                                <li
+                                    data-global="522">
+                                    
+                                    <a href="../list00522.html" tabindex="39" >å»æ£ç©ã»ãªãµã¤ã¯ã«ã»åç ç­</a>
+                                </li>
+                            
+                                <li
+                                    data-global="2735">
+                                    
+                                    <a href="../list02735.html" tabindex="40" >ç°å¢ã»ã³ã¿ã¼</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="523">
+                            
+                            <a href="../list00523.html" tabindex="41" >æ¶è²»çæ´»ã»é£çæ´»</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="524">
+                                    
+                                    <a href="../list00524.html" tabindex="42" >æ¶è²»èãã©ãã«</a>
+                                </li>
+                            
+                                <li
+                                    data-global="525">
+                                    
+                                    <a href="../list00525.html" tabindex="43" >æ¶è²»èæè²ï¼åºåè¬åº§ï¼ããç¥ãã</a>
+                                </li>
+                            
+                                <li
+                                    data-global="526">
+                                    
+                                    <a href="../list00526.html" tabindex="44" >å¬çéå ±èä¿è­·</a>
+                                </li>
+                            
+                                <li
+                                    data-global="527">
+                                    
+                                    <a href="../list00527.html" tabindex="45" >é£ã®å®å¨å®å¿æå ±</a>
+                                </li>
+                            
+                                <li
+                                    data-global="528">
+                                    
+                                    <a href="../list00528.html" tabindex="46" >é£è²ã»é£åã­ã¹åæ¸</a>
+                                </li>
+                            
+                                <li
+                                    data-global="5387">
+                                    
+                                    <a href="../list05387.html" tabindex="47" >åæ²¹ä¾¡æ ¼ç­é«é¨°å¯¾ç­</a>
+                                </li>
+                            
+                                <li
+                                    data-global="5916">
+                                    
+                                    <a href="../list05916.html" tabindex="48" >çæ´»è¡çå¯¾ç­</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="529">
+                            
+                            <a href="../list00529.html" tabindex="49" >ä½ã¾ãã»å»ºç©</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="530">
+                                    
+                                    <a href="../list00530.html" tabindex="50" >èéä¼éå¸«ã»ããï¼ä½å®ã®æ¹ä¿®ã»èéåï¼</a>
+                                </li>
+                            
+                                <li
+                                    data-global="531">
+                                    
+                                    <a href="../list00531.html" tabindex="51" >çå¶ä½å®ã»æ¯æ´ã»è£å©</a>
+                                </li>
+                            
+                                <li
+                                    data-global="532">
+                                    
+                                    <a href="../list00532.html" tabindex="52" >æ³å¾ã»è¨ç»ã»ç©ºãå®¶å¯¾ç­</a>
+                                </li>
+                            
+                                <li
+                                    data-global="2386">
+                                    
+                                    <a href="../list02386.html" tabindex="53" >å±åºã»æç¶ã</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="534">
+                            
+                            <a href="../list00534.html" tabindex="54" >äººæ¨©ã»ç·å¥³å±ååç»ã»å¸æ°æ´»åã»UDï¼ã¦ããã¼ãµã«ãã¶ã¤ã³ï¼</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="535">
+                                    
+                                    <a href="../list00535.html" tabindex="55" >ç·å¥³å±ååç»ã»å¥³æ§ã®æ´»èºæ¨é²</a>
+                                </li>
+                            
+                                <li
+                                    data-global="536">
+                                    
+                                    <a href="../list00536.html" tabindex="56" >çæ°ååï¼NPO/CSOï¼æ´»åæ¯æ´</a>
+                                </li>
+                            
+                                <li
+                                    data-global="537">
+                                    
+                                    <a href="../list00537.html" tabindex="57" >ãã©ã³ãã£ã¢</a>
+                                </li>
+                            
+                                <li
+                                    data-global="538">
+                                    
+                                    <a href="../list00538.html" tabindex="58" >DVå¯¾ç­</a>
+                                </li>
+                            
+                                <li
+                                    data-global="539">
+                                    
+                                    <a href="../list00539.html" tabindex="59" >äººæ¨©ã»ååå¯¾ç­èª²/äººæ¨©åçºã»ã³ã¿ã¼ãã</a>
+                                </li>
+                            
+                                <li
+                                    data-global="533">
+                                    
+                                    <a href="../list00533.html" tabindex="60" >ã¦ããã¼ãµã«ãã¶ã¤ã³</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="540">
+                            
+                            <a href="../list00540.html" tabindex="61" >ç¨éã»ä½æ°æç¶ã»ãããã»ãã®ä»</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="541">
+                                    
+                                    <a href="../list00541.html" tabindex="62" >ç¨éã»ãµããã¨ç´ç¨</a>
+                                </li>
+                            
+                                <li
+                                    data-global="542">
+                                    
+                                    <a href="../list00542.html" tabindex="63" >ICTã»å°åæå ±å</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3674">
+                                    
+                                    <a href="../list03674.html" tabindex="64" >çå¤è¢«ç½å°æ¯æ´æå ±</a>
+                                </li>
+                            
+                                <li
+                                    data-global="543">
+                                    
+                                    <a href="../list00543.html" tabindex="65" >åç©æè­·ï¼ä¿è­·ç¬ã»ç«ãè­²æ¸¡ç¬ã»ç«æå ±ç­ï¼</a>
+                                </li>
+                            
+                                <li
+                                    data-global="544">
+                                    
+                                    <a href="../list00544.html" tabindex="66" >ãã¤ãã³ãã¼</a>
+                                </li>
+                            
+                                <li
+                                    data-global="545">
+                                    
+                                    <a href="../list00545.html" tabindex="67" >å®ãã</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+            </ul>
+        
+            <ul class='g_navi ' id='g_navi_546' role='tabpanel' aria-labelledby='navi_tab_546' style='display:none;'>
+            
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="547">
+                            
+                            <a href="../list00547.html" tabindex="69" >ããå¯¾ç­</a>
+                        </h3>
+                        
+                        
+                        
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="4339">
+                            
+                            <a href="../list04339.html" tabindex="70" >ã¤ãã³ãç­æå ±ï¼çé¢é£ï¼</a>
+                        </h3>
+                        
+                        
+                        
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="554">
+                            
+                            <a href="../list00554.html" tabindex="71" >å¥åº·ã¥ãã</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="555">
+                                    
+                                    <a href="../list00555.html" tabindex="72" >å¥åº·å¿æ´ã²ãã°</a>
+                                </li>
+                            
+                                <li
+                                    data-global="556">
+                                    
+                                    <a href="../list00556.html" tabindex="73" >ææçã»ã¤ã³ãã«ã¨ã³ã¶äºé²</a>
+                                </li>
+                            
+                                <li
+                                    data-global="558">
+                                    
+                                    <a href="../list00558.html" tabindex="74" >ã¡ã³ã¿ã«ãã«ã¹ã»èªæ®ºäºé²</a>
+                                </li>
+                            
+                                <li
+                                    data-global="560">
+                                    
+                                    <a href="../list00560.html" tabindex="75" >æ­¯ç§å£èä¿å¥</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3080">
+                                    
+                                    <a href="../list03080.html" tabindex="76" >ç±ä¸­çæå ±</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="559">
+                            
+                            <a href="../list00559.html" tabindex="77" >å»ç</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="561">
+                                    
+                                    <a href="../list00561.html" tabindex="78" >ææ¥å»çã»99ããããã</a>
+                                </li>
+                            
+                                <li
+                                    data-global="562">
+                                    
+                                    <a href="../list00562.html" tabindex="79" >å»çè²»è£å©</a>
+                                </li>
+                            
+                                <li
+                                    data-global="563">
+                                    
+                                    <a href="../list00563.html" tabindex="80" >å»çäººæï¼å»å¸«ãçè­·å¸«ç­ï¼</a>
+                                </li>
+                            
+                                <li
+                                    data-global="564">
+                                    
+                                    <a href="../list00564.html" tabindex="81" >å»çæå ±</a>
+                                </li>
+                            
+                                <li
+                                    data-global="565">
+                                    
+                                    <a href="../list00565.html" tabindex="82" >å»çä¿éº</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3194">
+                                    
+                                    <a href="../list03194.html" tabindex="83" >ç¾çå¯¾ç­</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="566">
+                            
+                            <a href="../list00566.html" tabindex="84" >ãããã»è¬ç©ã»æ¸©æ³ã®ä¿è­·åã³å©ç¨</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="567">
+                                    
+                                    <a href="../list00567.html" tabindex="85" >è¬å±ã»å»è¬åã»å»çæ©å¨ç­</a>
+                                </li>
+                            
+                                <li
+                                    data-global="568">
+                                    
+                                    <a href="../list00568.html" tabindex="86" >ç®è¡</a>
+                                </li>
+                            
+                                <li
+                                    data-global="569">
+                                    
+                                    <a href="../list00569.html" tabindex="87" >è¬ç©ä¹±ç¨é²æ­¢</a>
+                                </li>
+                            
+                                <li
+                                    data-global="570">
+                                    
+                                    <a href="../list00570.html" tabindex="88" >éº»è¬ã»è¦éå¤åæç­</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3832">
+                                    
+                                    <a href="../list03832.html" tabindex="89" >æ¯ç©åç©</a>
+                                </li>
+                            
+                                <li
+                                    data-global="4371">
+                                    
+                                    <a href="../list04371.html" tabindex="90" >æ¸©æ³ã®ä¿è­·åã³å©ç¨</a>
+                                </li>
+                            
+                                <li
+                                    data-global="5280">
+                                    
+                                    <a href="../list05280.html" tabindex="91" >è¬å±ã»è²©å£²æ¥­ç­é¢ä¿éç¥</a>
+                                </li>
+                            
+                                <li
+                                    data-global="5624">
+                                    
+                                    <a href="../list05624.html" tabindex="92" >è£½é è²©å£²æ¥­ã»è£½é æ¥­é¢ä¿éç¥</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="571">
+                            
+                            <a href="../list00571.html" tabindex="93" >é«é½¢èç¦ç¥ã»ä»è­·ä¿éº</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="572">
+                                    
+                                    <a href="../list00572.html" tabindex="94" >èªç¥ç</a>
+                                </li>
+                            
+                                <li
+                                    data-global="573">
+                                    
+                                    <a href="../list00573.html" tabindex="95" >ä»è­·ä¿éº</a>
+                                </li>
+                            
+                                <li
+                                    data-global="574">
+                                    
+                                    <a href="../list00574.html" tabindex="96" >æ½è¨­ã»å£ä½</a>
+                                </li>
+                            
+                                <li
+                                    data-global="575">
+                                    
+                                    <a href="../list00575.html" tabindex="97" >æ¯æ´ã»è£å©</a>
+                                </li>
+                            
+                                <li
+                                    data-global="576">
+                                    
+                                    <a href="../list00576.html" tabindex="98" >ç ä¿®ã»è¬ç¿ä¼</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="577">
+                            
+                            <a href="../list00577.html" tabindex="99" >éå®³èç¦ç¥</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="3023">
+                                    
+                                    <a href="../list03023.html" tabindex="100" >çæ°ã®çæ§ã¸(ãç¥ããã»ç¸è«çªå£)</a>
+                                </li>
+                            
+                                <li
+                                    data-global="578">
+                                    
+                                    <a href="../list00578.html" tabindex="101" >éå®³ç¦ç¥ãµã¼ãã¹äºæ¥­èã®çæ§ã¸</a>
+                                </li>
+                            
+                                <li
+                                    data-global="581">
+                                    
+                                    <a href="../list00581.html" tabindex="102" >å»çæ©é¢ã»äºæ¥­èã®çæ§ã¸</a>
+                                </li>
+                            
+                                <li
+                                    data-global="580">
+                                    
+                                    <a href="../list00580.html" tabindex="103" >å°±å´æ¯æ´</a>
+                                </li>
+                            
+                                <li
+                                    data-global="579">
+                                    
+                                    <a href="../list00579.html" tabindex="104" >è£å©</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="582">
+                            
+                            <a href="../list00582.html" tabindex="105" >ç¾å°æ©é¢</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="2673">
+                                    
+                                    <a href="../list02673.html" tabindex="106" >æ½è¨­ã»å£ä½</a>
+                                </li>
+                            
+                                <li
+                                    data-global="583">
+                                    
+                                    <a href="../list00583.html" tabindex="107" >ä¿å¥ç¦ç¥äºåæ</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="586">
+                            
+                            <a href="../list00586.html" tabindex="108" >ç¤¾ä¼ç¦ç¥ã»åç«¥ç¦ç¥</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="587">
+                                    
+                                    <a href="../list00587.html" tabindex="109" >åç¨®æ¯æ´</a>
+                                </li>
+                            
+                                <li
+                                    data-global="588">
+                                    
+                                    <a href="../list00588.html" tabindex="110" >ç¦ç¥å£«ç­äººæè²æ</a>
+                                </li>
+                            
+                                <li
+                                    data-global="589">
+                                    
+                                    <a href="../list00589.html" tabindex="111" >è¨ç»ã»æ¹é</a>
+                                </li>
+                            
+                                <li
+                                    data-global="590">
+                                    
+                                    <a href="../list00590.html" tabindex="112" >åç«¥èå¾é²æ­¢</a>
+                                </li>
+                            
+                                <li
+                                    data-global="591">
+                                    
+                                    <a href="../list00591.html" tabindex="113" >æ½è¨­ã»å£ä½</a>
+                                </li>
+                            
+                                <li
+                                    data-global="4462">
+                                    
+                                    <a href="../list04462.html" tabindex="114" >çæ´»ä¿è­·</a>
+                                </li>
+                            
+                                <li
+                                    data-global="5699">
+                                    
+                                    <a href="../list05699.html" tabindex="115" >ã²ã¨ãè¦ªå®¶åº­æ¯æ´</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+            </ul>
+        
+            <ul class='g_navi ' id='g_navi_585' role='tabpanel' aria-labelledby='navi_tab_585' style='display:none;'>
+            
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="592">
+                            
+                            <a href="../list00592.html" tabindex="117" >è¾²ææ°´ç£æ¥­</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="594">
+                                    
+                                    <a href="../list00594.html" tabindex="118" >è¾²æ¥­</a>
+                                </li>
+                            
+                                <li
+                                    data-global="595">
+                                    
+                                    <a href="../list00595.html" tabindex="119" >çç£æ¥­</a>
+                                </li>
+                            
+                                <li
+                                    data-global="596">
+                                    
+                                    <a href="../list00596.html" tabindex="120" >ææ¥­</a>
+                                </li>
+                            
+                                <li
+                                    data-global="597">
+                                    
+                                    <a href="../list00597.html" tabindex="121" >æ°´ç£æ¥­</a>
+                                </li>
+                            
+                                <li
+                                    data-global="627">
+                                    
+                                    <a href="../list00627.html" tabindex="122" >è¾²æãã¸ãã¹ã»6æ¬¡ç£æ¥­å</a>
+                                </li>
+                            
+                                <li
+                                    data-global="598">
+                                    
+                                    <a href="../list00598.html" tabindex="123" >å¶è¾²æ¯æ´æå ±ã»é¢é£æ½è¨­</a>
+                                </li>
+                            
+                                <li
+                                    data-global="593">
+                                    
+                                    <a href="../list00593.html" tabindex="124" >TPPã«é¢ããæå ±</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="599">
+                            
+                            <a href="../list00599.html" tabindex="125" >åå·¥æ¥­</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="5437">
+                                    
+                                    <a href="../list05437.html" tabindex="126" >ä½è³ããããä¼æ¥­è¡¨å½°</a>
+                                </li>
+                            
+                                <li
+                                    data-global="600">
+                                    
+                                    <a href="../list00600.html" tabindex="127" >ä½è³çã®åå·¥æ¥­æ¦æ³ï¼ãä½è³çã®åå·¥æ¥­ãï¼</a>
+                                </li>
+                            
+                                <li
+                                    data-global="601">
+                                    
+                                    <a href="../list00601.html" tabindex="128" >åå·¥æ¥­æ¯è</a>
+                                </li>
+                            
+                                <li
+                                    data-global="603">
+                                    
+                                    <a href="../list00603.html" tabindex="129" >ã³ã¹ã¡ãã£ãã¯æ§æ³</a>
+                                </li>
+                            
+                                <li
+                                    data-global="605">
+                                    
+                                    <a href="../list00605.html" tabindex="130" >å±åºã»éç¥ã»å¦åç­</a>
+                                </li>
+                            
+                                <li
+                                    data-global="2509">
+                                    
+                                    <a href="../list00593.html" tabindex="131" >TPPã«é¢ããæå ±</a>
+                                </li>
+                            
+                                <li
+                                    data-global="4401">
+                                    
+                                    <a href="../list04401.html" tabindex="132" >çª¯æ¥­ã»ãã¶ã¤ã³ã»é£åã»ææã»çç£æè¡ã»ã·ã³ã¯ã­ãã­ã³åç­ã«é¢ããè©¦é¨ç ç©¶</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="602">
+                            
+                            <a href="../list00602.html" tabindex="133" >ä¼çµ±çå°å ´ç£æ¥­</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="3282">
+                                    
+                                    <a href="../list03282.html" tabindex="134" >ä½è³çç±³å½å¸å ´éææ¨é²äºæ¥­</a>
+                                </li>
+                            
+                                <li
+                                    data-global="608">
+                                    
+                                    <a href="../list00608.html" tabindex="135" >ä¼çµ±å·¥è¸ï¼é¶ç£å¨ã»è«¸å¯å®¶å· ä»ï¼</a>
+                                </li>
+                            
+                                <li
+                                    data-global="610">
+                                    
+                                    <a href="../list00610.html" tabindex="136" >ããä¼çµ±ç£æ¥­ç­åµé æ¯æ´äºæ¥­ï¼æ§ï¼ç£å°åçæ¯æ´äºæ¥­ï¼</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="607">
+                            
+                            <a href="../list00607.html" tabindex="137" >å´åã»éç¨ã»å°±æ¥­æ¯æ´</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="2334">
+                                    
+                                    <a href="../list02334.html" tabindex="138" >ä½è³çã®ããã¨ç¸è«å®¤</a>
+                                </li>
+                            
+                                <li
+                                    data-global="611">
+                                    
+                                    <a href="../list00611.html" tabindex="139" >æ±è·æå ±ã»æ±äººæå ±ã»ä¼ç¤¾èª¬æä¼</a>
+                                </li>
+                            
+                                <li
+                                    data-global="612">
+                                    
+                                    <a href="../list00612.html" tabindex="140" >è·æ¥­è½åéçºã»ç£æ¥­äººæè²æ</a>
+                                </li>
+                            
+                                <li
+                                    data-global="613">
+                                    
+                                    <a href="../list00613.html" tabindex="141" >è³æ ¼ã»è©¦é¨</a>
+                                </li>
+                            
+                                <li
+                                    data-global="614">
+                                    
+                                    <a href="../list00614.html" tabindex="142" >å´åç¦ç¥ç¸è«</a>
+                                </li>
+                            
+                                <li
+                                    data-global="615">
+                                    
+                                    <a href="../list00615.html" tabindex="143" >ã¯ã¼ã¯ã»ã©ã¤ãã»ãã©ã³ã¹ã®æ¨é²</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="616">
+                            
+                            <a href="../list00616.html" tabindex="144" >äºæ¥­èæ¯æ´ã»æ´»æ§åã»ä¼æ¥­èªè´</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="3133">
+                                    
+                                    <a href="../list03133.html" tabindex="145" >æµ·å¤å±éæ¯æ´</a>
+                                </li>
+                            
+                                <li
+                                    data-global="617">
+                                    
+                                    <a href="../list00617.html" tabindex="146" >ä¼æ¥­èªè´</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3713">
+                                    
+                                    <a href="../list03713.html" tabindex="147" >æè¡é¢ã®æ¯æ´</a>
+                                </li>
+                            
+                                <li
+                                    data-global="619">
+                                    
+                                    <a href="../list00619.html" tabindex="148" >ä¸­å°ä¼æ¥­ãµãã¼ã</a>
+                                </li>
+                            
+                                <li
+                                    data-global="621">
+                                    
+                                    <a href="../list00621.html" tabindex="149" >ç³è«å±åº</a>
+                                </li>
+                            
+                                <li
+                                    data-global="618">
+                                    
+                                    <a href="../list00618.html" tabindex="150" >DXæ¨é²ã»ã¹ã¿ã¼ãã¢ããæ¯æ´</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="622">
+                            
+                            <a href="../list00622.html" tabindex="151" >ç§å­¦æè¡ã»ç ç©¶éçº</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="624">
+                                    
+                                    <a href="../list00624.html" tabindex="152" >ç£å­¦å®é£æºäºæ¥­</a>
+                                </li>
+                            
+                                <li
+                                    data-global="625">
+                                    
+                                    <a href="../list00625.html" tabindex="153" >æ°ã¨ãã«ã®ã¼</a>
+                                </li>
+                            
+                                <li
+                                    data-global="626">
+                                    
+                                    <a href="http://www.saga-ls.jp/" tabindex="154" target="_blank">ä¹å·ã·ã³ã¯ã­ãã­ã³åç ç©¶ã»ã³ã¿ã¼&nbsp;<img src="../dynamic/common/images/newwin_navi.gif" alt="å¥ã¦ã£ã³ãã¦ã§éãã¾ã" title="" /></a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="631">
+                            
+                            <a href="../list00631.html" tabindex="155" >å¥æ­ã»è£å©éã»å¬åäºæ¥­</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="632">
+                                    
+                                    <a href="../list00632.html" tabindex="156" >å¥æ­</a>
+                                </li>
+                            
+                                <li
+                                    data-global="633">
+                                    
+                                    <a href="../list00633.html" tabindex="157" >éèå¶åº¦ã»è£å©éå¶åº¦ã»ã»ããã¼</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3715">
+                                    
+                                    <a href="../list03715.html" tabindex="158" >å¬åäºæ¥­</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+            </ul>
+        
+            <ul class='g_navi ' id='g_navi_636' role='tabpanel' aria-labelledby='navi_tab_636' style='display:none;'>
+            
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="637">
+                            
+                            <a href="../list00637.html" tabindex="160" >è¦³å</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="639">
+                                    
+                                    <a href="../list00639.html" tabindex="161" >çåã´ã«ãã¹ããã</a>
+                                </li>
+                            
+                                <li
+                                    data-global="640">
+                                    
+                                    <a href="../list02304.html" tabindex="162" >ä½è³çéºç£</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="641">
+                            
+                            <a href="../list00641.html" tabindex="163" >ç¹ç£å</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="642">
+                                    
+                                    <a href="https://sagapin.jp/" tabindex="164" target="_blank">çç£åæå ±ï¼ããçç£åæµéãã¶ã¤ã³å¬ç¤¾HPãSAGAPINãï¼&nbsp;<img src="../dynamic/common/images/newwin_navi.gif" alt="å¥ã¦ã£ã³ãã¦ã§éãã¾ã" title="" /></a>
+                                </li>
+                            
+                                <li
+                                    data-global="2353">
+                                    
+                                    <a href="../list02353.html" tabindex="165" >ã¤ãã³ãã»ã­ã£ã³ãã¼ã³</a>
+                                </li>
+                            
+                                <li
+                                    data-global="2352">
+                                    
+                                    <a href="../list02352.html" tabindex="166" >ä½è³çç£ç±³ãããã³ãããã®æå ±</a>
+                                </li>
+                            
+                                <li
+                                    data-global="643">
+                                    
+                                    <a href="../list00643.html" tabindex="167" >ä¼çµ±å·¥è¸</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="644">
+                            
+                            <a href="../list00644.html" tabindex="168" >æåã»è¸è¡</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="3375">
+                                    
+                                    <a href="../list03375.html" tabindex="169" >ç¶­æ°ã®ãå¿ãã®ç¶æ¿</a>
+                                </li>
+                            
+                                <li
+                                    data-global="5967">
+                                    
+                                    <a href="../list05967.html" tabindex="170" >å¸æè¨å¿µä½è²é¤¨</a>
+                                </li>
+                            
+                                <li
+                                    data-global="645">
+                                    
+                                    <a href="../list00645.html" tabindex="171" >ä½è³ãã¥ã¼ã¸ã¢ã ãºï¼çåã®æåæ½è¨­ï¼</a>
+                                </li>
+                            
+                                <li
+                                    data-global="648">
+                                    
+                                    <a href="http://www.saga-fc.jp/" tabindex="172" target="_blank">ä½è³çãã£ã«ã ã³ããã·ã§ã³&nbsp;<img src="../dynamic/common/images/newwin_navi.gif" alt="å¥ã¦ã£ã³ãã¦ã§éãã¾ã" title="" /></a>
+                                </li>
+                            
+                                <li
+                                    data-global="646">
+                                    
+                                    <a href="../list00646.html" tabindex="173" >å³æ¸é¤¨</a>
+                                </li>
+                            
+                                <li
+                                    data-global="1938">
+                                    
+                                    <a href="../list01938.html" tabindex="174" >å¬ææ¸é¤¨</a>
+                                </li>
+                            
+                                <li
+                                    data-global="647">
+                                    
+                                    <a href="../list00647.html" tabindex="175" >æåè²¡ä¿è­·</a>
+                                </li>
+                            
+                                <li
+                                    data-global="649">
+                                    
+                                    <a href="../list00649.html" tabindex="176" >æåæ¯èã®åãçµã¿</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="650">
+                            
+                            <a href="../list00650.html" tabindex="177" >ã¹ãã¼ã</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="651">
+                                    
+                                    <a href="../list00651.html" tabindex="178" >çåã¹ãã¼ãæ½è¨­</a>
+                                </li>
+                            
+                                <li
+                                    data-global="652">
+                                    
+                                    <a href="../list00652.html" tabindex="179" >ã¹ãã¼ãèª²ã®åãçµã¿</a>
+                                </li>
+                            
+                                <li
+                                    data-global="653">
+                                    
+                                    <a href="../list00653.html" tabindex="180" >å¤§ä¼ã»åå®¿èªè´ï¼ä½è³çã¹ãã¼ãã³ããã·ã§ã³ï¼</a>
+                                </li>
+                            
+                                <li
+                                    data-global="654">
+                                    
+                                    <a href="../list00654.html" tabindex="181" >SAGA2024</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3887">
+                                    
+                                    <a href="../list03887.html" tabindex="182" >SAGAãµã³ã©ã¤ãºãã¼ã¯æ´åäºæ¥­</a>
+                                </li>
+                            
+                                <li
+                                    data-global="4188">
+                                    
+                                    <a href="../list04188.html" tabindex="183" >SAGAã¹ãã¼ããã©ããã(SSP)æ§æ³</a>
+                                </li>
+                            
+                                <li
+                                    data-global="4395">
+                                    
+                                    <a href="../list04395.html" tabindex="184" >ãµããã¨ç´ç¨ï¼ãã­ã¹ãã¼ããã¼ã å¿æ´ï¼</a>
+                                </li>
+                            
+                                <li
+                                    data-global="655">
+                                    
+                                    <a href="../list00655.html" tabindex="185" >çåã®ãããã¬ãã«ã¹ãã¼ãï¼ãªã³ã¯éï¼</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="5285">
+                            
+                            <a href="../list05285.html" tabindex="186" >ã³ã³ãã³ã·ã§ã³ç­èªè´</a>
+                        </h3>
+                        
+                        
+                        
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="657">
+                            
+                            <a href="../list00657.html" tabindex="187" >å½éäº¤æµã»å¤æåå±çã»ãã¹ãã¼ã</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="663">
+                                    
+                                    <a href="../list00663.html" tabindex="188" >ãã¹ãã¼ãç³è«</a>
+                                </li>
+                            
+                                <li
+                                    data-global="5995">
+                                    
+                                    <a href="../list05995.html" tabindex="189" >å¤æåå±çã®åãçµã¿</a>
+                                </li>
+                            
+                                <li
+                                    data-global="6632">
+                                    
+                                    <a href="../list06632.html" tabindex="190" >ããããæ¥æ¬èªã»å°åæ¥æ¬èªæå®¤</a>
+                                </li>
+                            
+                                <li
+                                    data-global="6631">
+                                    
+                                    <a href="../list06631.html" tabindex="191" >å¤å½äººã®æ®ããã®ãµãã¼ã</a>
+                                </li>
+                            
+                                <li
+                                    data-global="662">
+                                    
+                                    <a href="../list00662.html" tabindex="192" >å½éäº¤æµã»å½éåå</a>
+                                </li>
+                            
+                                <li
+                                    data-global="6622">
+                                    
+                                    <a href="../list06622.html" tabindex="193" >å½éäº¤æµå¡ã®æ´»å</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="664">
+                            
+                            <a href="../list00664.html" tabindex="194" >ä¸çéºç£</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="665">
+                                    
+                                    <a href="https://sano-mietsu-historymuseum.city.saga.lg.jp" tabindex="195" >ä¸éæ´¥æµ·è»æè·¡</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+            </ul>
+        
+            <ul class='g_navi ' id='g_navi_656' role='tabpanel' aria-labelledby='navi_tab_656' style='display:none;'>
+            
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="4314">
+                            
+                            <a href="../list04314.html" tabindex="197" >æ­©ãã©ã¤ãã¹ã¿ã¤ã«</a>
+                        </h3>
+                        
+                        
+                        
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="666">
+                            
+                            <a href="../list00666.html" tabindex="198" >äº¤éã»éè·¯æ´å</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="667">
+                                    
+                                    <a href="../list00667.html" tabindex="199" >çåäº¤éæå ±</a>
+                                </li>
+                            
+                                <li
+                                    data-global="668">
+                                    
+                                    <a href="../list00668.html" tabindex="200" >éè·¯æ´å</a>
+                                </li>
+                            
+                                <li
+                                    data-global="669">
+                                    
+                                    <a href="../list00669.html" tabindex="201" >ä¹å·æ°å¹¹ç·è¥¿ä¹å·ã«ã¼ã</a>
+                                </li>
+                            
+                                <li
+                                    data-global="670">
+                                    
+                                    <a href="../list00670.html" tabindex="202" >å°åäº¤é</a>
+                                </li>
+                            
+                                <li
+                                    data-global="671">
+                                    
+                                    <a href="../list00671.html" tabindex="203" >ãã®ä»éè¼¸ç­</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="672">
+                            
+                            <a href="../list00672.html" tabindex="204" >ç©ºæ¸¯ã»æ¸¯æ¹¾</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="673">
+                                    
+                                    <a href="../airport/default.html" tabindex="205" >ä¹å·ä½è³å½éç©ºæ¸¯</a>
+                                </li>
+                            
+                                <li
+                                    data-global="674">
+                                    
+                                    <a href="../list00674.html" tabindex="206" >æ¸¯æ¹¾</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="675">
+                            
+                            <a href="../list00675.html" tabindex="207" >æ²³å·ã»ç é²</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="676">
+                                    
+                                    <a href="../list00676.html" tabindex="208" >æ²³å·æ´å</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3662">
+                                    
+                                    <a href="../list03662.html" tabindex="209" >é²ç½ã»æ¸ç½</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3669">
+                                    
+                                    <a href="../list03669.html" tabindex="210" >åç ç½å®³é²æ­¢æ³</a>
+                                </li>
+                            
+                                <li
+                                    data-global="677">
+                                    
+                                    <a href="../list00677.html" tabindex="211" >ãã </a>
+                                </li>
+                            
+                                <li
+                                    data-global="4441">
+                                    
+                                    <a href="../list04441.html" tabindex="212" >ãã®ä»</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="679">
+                            
+                            <a href="../list00679.html" tabindex="213" >é½å¸ã»ã¾ã¡ã¥ããã»å¬å</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="680">
+                                    
+                                    <a href="../list00680.html" tabindex="214" >çåæ´å</a>
+                                </li>
+                            
+                                <li
+                                    data-global="681">
+                                    
+                                    <a href="../list00681.html" tabindex="215" >é½å¸è¨ç»ã»ã¾ã¡ã¥ãã</a>
+                                </li>
+                            
+                                <li
+                                    data-global="682">
+                                    
+                                    <a href="../list00682.html" tabindex="216" >æ¯è¦³ã»å±å¤åºåç©</a>
+                                </li>
+                            
+                                <li
+                                    data-global="683">
+                                    
+                                    <a href="../list00683.html" tabindex="217" >ä½è³åä¸åçç¾å¹´æ§æ³</a>
+                                </li>
+                            
+                                <li
+                                    data-global="684">
+                                    
+                                    <a href="../list00684.html" tabindex="218" >çç«é½å¸å¬åã»èªç¶å¬å</a>
+                                </li>
+                            
+                                <li
+                                    data-global="685">
+                                    
+                                    <a href="../list00685.html" tabindex="219" >ä¸æ°´éç­ã®æ±æ°´å¦ç</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="686">
+                            
+                            <a href="../list00686.html" tabindex="220" >åå°ã»å»ºè¨­ã»ä¸åç£</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="687">
+                                    
+                                    <a href="../list00687.html" tabindex="221" >åå°æ´åã»å°ä¾¡</a>
+                                </li>
+                            
+                                <li
+                                    data-global="689">
+                                    
+                                    <a href="../list00689.html" tabindex="222" >å»ºè¨­æ¥­è¨±å¯ã»çµå¶äºé å¯©æ»é¢ä¿</a>
+                                </li>
+                            
+                                <li
+                                    data-global="690">
+                                    
+                                    <a href="../list00690.html" tabindex="223" >å»ºè¨­æ¥­åºç¤å¼·åäºæ¥­</a>
+                                </li>
+                            
+                                <li
+                                    data-global="691">
+                                    
+                                    <a href="../list00691.html" tabindex="224" >éç¥</a>
+                                </li>
+                            
+                                <li
+                                    data-global="2045">
+                                    
+                                    <a href="../list02045.html" tabindex="225" >å¦å</a>
+                                </li>
+                            
+                                <li
+                                    data-global="2268">
+                                    
+                                    <a href="../list02268.html" tabindex="226" >ä¸åç£åå¼</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="3295">
+                            
+                            <a href="../list03295.html" tabindex="227" >å¬å±äºæ¥­è©ä¾¡å¶åº¦</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="3297">
+                                    
+                                    <a href="../list03297.html" tabindex="228" >å¶åº¦æ¦è¦</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3296">
+                                    
+                                    <a href="../list03296.html" tabindex="229" >ç£è¦å§å¡ä¼</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3298">
+                                    
+                                    <a href="../list03298.html" tabindex="230" >è©ä¾¡çµæ</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+            </ul>
+        
+            <ul class='g_navi ' id='g_navi_678' role='tabpanel' aria-labelledby='navi_tab_678' style='display:none;'>
+            
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="692">
+                            
+                            <a href="../list00692.html" tabindex="232" >å ±éçºè¡¨ã»åºå ±</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="693">
+                                    
+                                    <a href="../list00693.html" tabindex="233" >è¨èçºè¡¨</a>
+                                </li>
+                            
+                                <li
+                                    data-global="694">
+                                    
+                                    <a href="../list00694.html" tabindex="234" >åºå ±æ´»å</a>
+                                </li>
+                            
+                                <li
+                                    data-global="695">
+                                    
+                                    <a href="../list00695.html" tabindex="235" >ãã¬ãã»éèªç­ã§ã®ä½è³çç´¹ä»</a>
+                                </li>
+                            
+                                <li
+                                    data-global="2271">
+                                    
+                                    <a href="../list02271.html" tabindex="236" >ãã¼ã ãã¼ã¸ã«ã¤ãã¦</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="696">
+                            
+                            <a href="../list00696.html" tabindex="237" >ä½è³çã®æ¦è¦ã»çµ±è¨</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="697">
+                                    
+                                    <a href="../list00697.html" tabindex="238" >ä½è³çã®æ¦è¦</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3435">
+                                    
+                                    <a href="../list03435.html" tabindex="239" >çåå¸çºã®è¡è²¡æ¿ç¶æ³</a>
+                                </li>
+                            
+                                <li
+                                    data-global="698">
+                                    
+                                    <a href="../toukei/default.html" tabindex="240" >çµ±è¨æå ±ï¼ããçµ±è¨æå ±é¤¨ï¼</a>
+                                </li>
+                            
+                                <li
+                                    data-global="699">
+                                    
+                                    <a href="../list00699.html" tabindex="241" >èª¿æ»ï¼ä½è³ççæ°æè­èª¿æ»ãåçµ±è¨èª¿æ»ç­ï¼</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="701">
+                            
+                            <a href="../list00701.html" tabindex="242" >è¨ç»ã»è­°æ¡ã»æ¿ç­ææ¡</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="702">
+                                    
+                                    <a href="../list00702.html" tabindex="243" >æ½ç­æ¹éã»è¡è²¡æ¿è¨ç»ã»çæ°æè­èª¿æ»</a>
+                                </li>
+                            
+                                <li
+                                    data-global="704">
+                                    
+                                    <a href="../list00704.html" tabindex="244" >çè­°ä¼æåºè­°æ¡</a>
+                                </li>
+                            
+                                <li
+                                    data-global="705">
+                                    
+                                    <a href="../list00705.html" tabindex="245" >å½ã¸ã®æ¿ç­ææ¡</a>
+                                </li>
+                            
+                                <li
+                                    data-global="706">
+                                    
+                                    <a href="../list00706.html" tabindex="246" >ãã®ä»åç¨®è¨ç»</a>
+                                </li>
+                            
+                                <li
+                                    data-global="5634">
+                                    
+                                    <a href="../list05634.html" tabindex="247" >ä¼ç»ã»æ¨é²ãã­ã¸ã§ã¯ã</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="707">
+                            
+                            <a href="../list00707.html" tabindex="248" >è²¡æ¿ã»äºç®ã»çåºéå¶</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="708">
+                                    
+                                    <a href="../list00708.html" tabindex="249" >è²¡æ¿ç¶æ³ã»äºç®ã»æ±ºç®</a>
+                                </li>
+                            
+                                <li
+                                    data-global="709">
+                                    
+                                    <a href="../list00709.html" tabindex="250" >è³ééç¨</a>
+                                </li>
+                            
+                                <li
+                                    data-global="710">
+                                    
+                                    <a href="../list00710.html" tabindex="251" >çåµè³¼å¥</a>
+                                </li>
+                            
+                                <li
+                                    data-global="711">
+                                    
+                                    <a href="../list00711.html" tabindex="252" >ææåºåäºæ¥­</a>
+                                </li>
+                            
+                                <li
+                                    data-global="712">
+                                    
+                                    <a href="../list00712.html" tabindex="253" >çåºã®çµç¹ã»å¨ãæ¹</a>
+                                </li>
+                            
+                                <li
+                                    data-global="1944">
+                                    
+                                    <a href="../list01944.html" tabindex="254" >ä½è³çåºã«ã¤ãã¦</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3721">
+                                    
+                                    <a href="../list03721.html" tabindex="255" >èªæ²»ä¿®ç¿æ(ã¬ãã»ã«)</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="713">
+                            
+                            <a href="../list00713.html" tabindex="256" >é¸æ</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="714">
+                                    
+                                    <a href="../list00714.html" tabindex="257" >é¸æåçº</a>
+                                </li>
+                            
+                                <li
+                                    data-global="2689">
+                                    
+                                    <a href="../list02689.html" tabindex="258" >ä¸å¨èæç¥¨é¢ä¿æå ±</a>
+                                </li>
+                            
+                                <li
+                                    data-global="715">
+                                    
+                                    <a href="../list00715.html" tabindex="259" >é¸æé¢ä¿æå ±ï¼éå»åå«ãï¼</a>
+                                </li>
+                            
+                                <li
+                                    data-global="717">
+                                    
+                                    <a href="../list00717.html" tabindex="260" >æ¿æ²»è³éåæ¯å ±åæ¸</a>
+                                </li>
+                            
+                                <li
+                                    data-global="2690">
+                                    
+                                    <a href="../list02690.html" tabindex="261" >ãã®ä»</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="718">
+                            
+                            <a href="../list00718.html" tabindex="262" >æ¡ä¾ã»è¦åã»å¬å ±</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="719">
+                                    
+                                    <a href="https://www1.g-reiki.net/pref.saga/reiki_menu.html" tabindex="263" target="_blank">ä½è³çä¾è¦å¨é&nbsp;<img src="../dynamic/common/images/newwin_navi.gif" alt="å¥ã¦ã£ã³ãã¦ã§éãã¾ã" title="" /></a>
+                                </li>
+                            
+                                <li
+                                    data-global="727">
+                                    
+                                    <a href="../list00727.html" tabindex="264" >ä½è³çå¬å ±ã»å¬ç¤ºã»å¯©è­°ä¼æå ±</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3102">
+                                    
+                                    <a href="../list03102.html" tabindex="265" >è¡æ¿æç¶</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="720">
+                            
+                            <a href="../list00720.html" tabindex="266" >é»å­è¡æ¿ãµã¼ãã¹</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="721">
+                                    
+                                    <a href="../list00721.html" tabindex="267" >ç³è«ã»å±åº</a>
+                                </li>
+                            
+                                <li
+                                    data-global="3161">
+                                    
+                                    <a href="https://denshi-shinsei.pref.saga.lg.jp/" tabindex="268" >é»å­ç³è«ã·ã¹ãã </a>
+                                </li>
+                            
+                                <li
+                                    data-global="3162">
+                                    
+                                    <a href="http://www.denpa.soumu.go.jp/public/index.html" tabindex="269" target="_blank">ç·åç é»æ³¢å©ç¨ é»å­ç³è«ã»å±åºã·ã¹ãã &nbsp;<img src="../dynamic/common/images/newwin_navi.gif" alt="å¥ã¦ã£ã³ãã¦ã§éãã¾ã" title="" /></a>
+                                </li>
+                            
+                                <li
+                                    data-global="722">
+                                    
+                                    <a href="http://nyusatsu-asp.pref.saga.lg.jp/" tabindex="270" target="_blank">é»å­å¥æ­&nbsp;<img src="../dynamic/common/images/newwin_navi.gif" alt="å¥ã¦ã£ã³ãã¦ã§éãã¾ã" title="" /></a>
+                                </li>
+                            
+                                <li
+                                    data-global="6071">
+                                    
+                                    <a href="../list06071.html" tabindex="271" >é»å­å¥ç´</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+                    
+                    <li class="navi_child ">
+                        <h3 class="navi_child_name " data-global="724">
+                            
+                            <a href="../list00724.html" tabindex="272" >ãæè¦ã»æå ±å¬éã»ç¸è«çªå£</a>
+                        </h3>
+                        <ul>
+                        
+                                <li
+                                    data-global="725">
+                                    
+                                    <a href="../kiji003913/index.html" tabindex="273" >æè¦æç¨¿</a>
+                                </li>
+                            
+                                <li
+                                    data-global="726">
+                                    
+                                    <a href="../list00726.html" tabindex="274" >ãããªãã¯ã»ã³ã¡ã³ãï¼è¨ç»ç­ã¸ã®æè¦åéï¼</a>
+                                </li>
+                            
+                                <li
+                                    data-global="6379">
+                                    
+                                    <a href="../list06379.html" tabindex="275" >çåºã«ãããã«ã¹ã¿ãã¼ãã©ã¹ã¡ã³ãå¯¾ç­</a>
+                                </li>
+                            
+                                <li
+                                    data-global="728">
+                                    
+                                    <a href="../list00728.html" tabindex="276" >æå ±å¬éå¶åº¦ã»å¬ææ¸é¤¨</a>
+                                </li>
+                            
+                                <li
+                                    data-global="1939">
+                                    
+                                    <a href="../list01939.html" tabindex="277" >åäººæå ±ä¿è­·</a>
+                                </li>
+                            
+                                <li
+                                    data-global="729">
+                                    
+                                    <a href="../list00729.html" tabindex="278" >ç¸è«çªå£æ¡å</a>
+                                </li>
+                            
+                                <li
+                                    data-global="2306">
+                                    
+                                    <a href="../list02306.html" tabindex="279" >åç¨®åé</a>
+                                </li>
+                            
+                                <li
+                                    data-global="4489">
+                                    
+                                    <a href="../list04489.html" tabindex="280" >å¸çºè­°ä¼ã®æè¦æ¸</a>
+                                </li>
+                            
+                        </ul>
+                    </li>
+            </ul>
+        
+        </div>
+        
+    </div>
+
+<input type="hidden" name="ctl00$GlobalNavigation$HidErrMsg" id="ctl00_GlobalNavigation_HidErrMsg" />
+<!-- global navigation end --><div id="globalNavigationData" data-classid="" data-topid=""></div>
+</div>
+
+
+    <!--div id="headerTabNon">
+    </div-->
+<div id="pankuzu"><div id="pankuzuArea" data-categoryid="3" data-kijiid="49237" data-subid="1213" data-topid="0" data-preview="OFF"></div></div>
+
+<div id="container">
+
+<!-- ã¡ã¤ã³ã¢ã³ã«ã¼ -->
+<div id="mainBlock"></div>
+
+
+
+
+
+
+
+<span id="maincont"></span>
+<div id="cont_body">
+
+    <div class="preview_label"></div>
+    
+<script type="text/javascript" language="javascript">
+<!--
+window.onload = function(){
+
+    
+    
+    
+
+}
+
+function DanrakuKirikae(dspNo, allCnt){
+    if(allCnt>0)
+    {
+        for(var i=1; i <= allCnt; ++i)
+        {
+            if(dspNo == i)
+            {
+                 document.getElementById("danraku" + i).style.display = "block";
+                 document.getElementById("dMenu" + i).className = "selected";
+            }
+            else
+            {
+                 document.getElementById("danraku" + i).style.display = "none";
+                 document.getElementById("dMenu" + i).className = "";
+            }
+       
+        }
+    }
+}
+//-->
+</script>
+
+<div style="margin:0px auto;"></div>
+
+
+
+<article>
+    <div id="mainShosai">
+        
+        
+        
+
+        
+        <div class="BottomArea">
+
+            <table class="containerWidth">
+		        <tr>
+		            <td style="text-align:left;">
+		                <h1 class="title">ä¿è­·ç¬ãç«ãªã©ã®æå ±ï¼ä½è³å¸ãå¤ä¹å¸ãå°åå¸ãç¥å¼å¸ãç¥å¼é¡ï¼</h1>
+                        
+                        <div id="snsButtonArea"></div>
+                        <div class="kijiSubInfo">
+                                
+                            <div class="updDate">æçµæ´æ°æ¥ï¼<time datetime="2026-05-07T15:30:50+09:00"  pubdate="pubdate" >2026å¹´5æ7æ¥</time></div>
+                            
+                            <div id="kijiKengenArea"></div>
+                            <div class="clear"></div>
+                        </div>
+                        <div class="clear"></div>
+		                		            
+		                
+    		        
+		                <div class="danraku" id="danraku1" style="display:block;"><p><br><br>ä½è³ä¸­é¨ä¿å¥ç¦ç¥äºåæç®¡åã§ä¿è­·ããåå®¹ãã¦ããç¬ãç«ç­ã®æå ±ã§ãã</p><ul><li>ãå¿å½ããã®ããæ¹ã¯ããã¿ããã«ä½è³ä¸­é¨ä¿å¥ç¦ç¥äºåæï¼é»è©± 0952-30-1350ï¼ã¾ã§å¾¡é£çµ¡ãã ããããªããåç©ã®è­²åãå¸æãããæ¹ã¯ã<a href="../kiji00314888/index.html">ãè­²æ¸¡ç¬ã»ç«æå ±ã</a>ããè¦§ãã ããã</li></ul><div>&nbsp;</div><div><h3 class="title">ä¿è­·ç¬æå ±</h3><div><div><table class="__wys_table"><tbody><tr><td style=" vertical-align: middle;"><p style=" text-align: center;">ä¿è­·ç¬ï¼26âï¼&nbsp;</p></td><td colspan="2" style=" vertical-align: middle;"><p style=" text-align: center;">&nbsp; &nbsp; ä¿è­·ããå ´æãã</p></td><td style=" text-align: center;">ã</td></tr><tr><td rowspan="8"><p>&nbsp;</p><p>&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;</p><ul><li>ããããããã</li><li>ãããã</li><br><li>ããã&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; ããã</li></ul><ul><li>ãããããããããããã</li><li>ã&nbsp; &nbsp;ãããããã&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;ãããã&nbsp;</li></ul></td><td rowspan="6"><p style=" text-align: center;">ç¬ã®ç¹&nbsp;&nbsp;</p></td><td><p style=" text-align: center;">ç¨®é¡&nbsp;&nbsp;</p></td><td style=" text-align: center;"><br></td></tr><tr><td><p style=" text-align: center;">æ¯è²</p></td><td style=" text-align: center;"><br></td></tr><tr><td><p style=" text-align: center;">æ§å¥&nbsp;</p></td><td style=" text-align: center;"><br></td></tr><tr><td><p style=" text-align: center;">ä½æ ¼&nbsp;</p></td><td style=" text-align: center;"><br></td></tr><tr><td><p style=" text-align: center;">æ¨å®å¹´é½¢</p></td><td style=" text-align: center;"><br></td></tr><tr><td><p style=" text-align: center;">ãã®ä»&nbsp;&nbsp;</p></td><td><p style=" text-align: center;"><br></p></td></tr><tr><td colspan="2" style=" text-align: center;">åå®¹æ¥&nbsp; &nbsp;&nbsp;</td><td><p>ä»¤å 8 å¹´(2026å¹´ï¼ã æ&nbsp; &nbsp; &nbsp; æ¥&nbsp; (&nbsp; &nbsp; ææ¥ï¼ãã</p></td></tr><tr><td colspan="2" style=" text-align: center;">ããããã¼ã ãã¼ã¸æ²è¼æéã&nbsp; &nbsp; &nbsp;&nbsp;</td><td style=" vertical-align: middle;"><p>ä»¤å 8 å¹´(2026å¹´ï¼ã æ&nbsp; ã æ¥&nbsp; (&nbsp; &nbsp; ææ¥ï¼</p></td></tr></tbody></table></div><br><ul><li><ul><li><div></div></li></ul></li></ul></div><br><h3 class="title">ä¿è­·ç«æå ±</h3></div><div><div><div><div><p class="title">&nbsp;</p><table class="__wys_table"><tbody><tr><td style=" vertical-align: middle;"><p style=" text-align: center;">ä¿è­·ç«ï¼- ï¼&nbsp;</p></td><td colspan="2" style=" vertical-align: middle;"><p style=" text-align: center;">&nbsp; &nbsp; ä¿è­·ããå ´æããã</p></td><td style="text-align: center;"><br></td></tr><tr><td rowspan="8"><p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;ç¾å¨ä¿è­·ä¸­ã®ç«ã¯ãã¾ãã&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</p><ul><li>ããã</li></ul></td><td rowspan="6"><p style=" text-align: center;">ç«ã®ç¹å¾´&nbsp;&nbsp;</p></td><td><p style=" text-align: center;">ç¨®é¡&nbsp;&nbsp;</p></td><td style="text-align: center;"><br></td></tr><tr><td><p style=" text-align: center;">æ¯è²</p></td><td style="text-align: center;"><br></td></tr><tr><td><p style=" text-align: center;">æ§å¥&nbsp;</p></td><td style="text-align: center;"><br></td></tr><tr><td><p style=" text-align: center;">ä½æ ¼</p></td><td style="text-align: center;"><br></td></tr><tr><td><p style=" text-align: center;">æ¨å®å¹´é½¢</p></td><td style="text-align: center;"><br></td></tr><tr><td><p style=" text-align: center;">ãã®ä»&nbsp;&nbsp;</p></td><td><p style="text-align: center;"><br></p></td></tr><tr><td colspan="2">åå®¹æ¥&nbsp; &nbsp;&nbsp;</td><td><p>ä»¤å8å¹´(2026å¹´ï¼ æ æ¥ï¼ææ¥ï¼&nbsp; ãã</p></td></tr><tr><td colspan="2">ãã¼ã ãã¼ã¸æ²è¼æé&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</td><td style=" vertical-align: middle;"><p>ä»¤å8å¹´(2026å¹´ï¼ æ&nbsp; æ¥ï¼ææ¥ï¼</p></td></tr></tbody></table></div><div><br><div style=" clear: both;"><br></div></div></div><h3 class="title">ãã®ä»ã®ä¿è­·åç©æå ±</h3><p class="title">&nbsp;&nbsp;</p></div><table class="__wys_table" style="text-align: center;"><tbody><tr><td style=" text-align: left; vertical-align: middle;"><p style=" text-align: center;">ä¿è­·åç©ï¼ - ï¼</p></td><td colspan="2" style=" text-align: left; vertical-align: middle;"><p style=" text-align: center;">ä¿è­·ããå ´æ</p></td><td>ããããããããã&nbsp; ããã</td></tr><tr><td rowspan="8"><div>ç¾å¨ä¿è­·ä¸­ã®åç©ã¯ãã¾ãã</div><ul><li>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<br><br></li></ul></td><td rowspan="6"><p>åç©ã®ç¹å¾´ ã</p></td><td><p>&nbsp;ç¨®é¡ããã</p></td><td><br></td></tr><tr><td><p>&nbsp;æ¯è²</p></td><td><br></td></tr><tr><td><p>æ§å¥ããã</p></td><td>ãããããããããããããã</td></tr><tr><td><p>ä½æ ¼</p></td><td><br></td></tr><tr><td><p>æ¨å®å¹´é½¢</p></td><td><br></td></tr><tr><td><p>ãã®ä»</p></td><td><p>ã&nbsp; &nbsp; &nbsp;</p></td></tr><tr><td colspan="2" style=" text-align: left;">åå®¹æ¥&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;ãããã</td><td><p style=" text-align: left;">ä»¤å8å¹´ï¼2026å¹´ï¼ã&nbsp; æ ãã&nbsp; æ¥ ( ã ææ¥ ï¼</p></td></tr><tr><td colspan="2" style=" text-align: left;">ãã¼ã ãã¼ã¸æ²è¼æéãããã</td><td style=" text-align: left; vertical-align: middle;"><p>ä»¤å8å¹´ï¼2026å¹´ï¼ã&nbsp; æ ãã&nbsp; æ¥ (&nbsp; &nbsp; &nbsp;ææ¥ï¼&nbsp;&nbsp;</p></td></tr></tbody></table><div style="clear: both;">&nbsp;</div><h3 class="title"><br></h3><ul><li><strong>ãã®ä»ã®å°åºã®ä¿è­·æå ±</strong></li><li>ãæ¢ãã®åç©ã®æå ±ãæ²è¼ããã¦ããªãå ´åã¯ãä¸è¨ã®ä¿å¥ç¦ç¥äºåæã®æå ±ããç¢ºèªãã ããã</li></ul></div><div><div>
+<a href="../kiji00334357/index.html" target="_self">é³¥æ å¸ãä¸é¤åºé¡ï¼é³¥æ ä¿å¥ç¦ç¥äºåæï¼</a></div><p><a href="../kiji00365042/index.html" target="_self">åæ´¥å¸ãæ±æ¾æµ¦é¡ï¼åæ´¥ä¿å¥ç¦ç¥äºåæï¼</a></p><p><a href="../kiji00334505/index.html" target="_self">ä¼ä¸éå¸ãè¥¿æ¾æµ¦é¡ï¼ä¼ä¸éä¿å¥ç¦ç¥äºåæï¼</a></p><p><a href="../kiji00334341/index.html" target="_self">æ­¦éå¸ãé¹¿å³¶å¸ãå¬éå¸ãæµå³¶é¡ãè¤æ´¥é¡ ï¼æµè¤ä¿å¥ç¦ç¥äºåæï¼</a></p><div><strong></strong>&nbsp;</div><div><strong>æ³¨æäºé </strong></div></div><div><div>
+ç¬ã®è¿éã«ã¯ãçç¬çäºé²æ³ä»¤ã«åºã¥ãäºåçãªæç¶ãã¨è«¸è²»ç¨ããããã¾ãã</div><div>ãã»è¿éäºåè²»ç¨ï¼1é ­4,200åï¼ï¼é£¼é¤ç®¡çè²»ç¨ï¼1é ­1æ¥ãã¨ã«420åï¼</div><div>åä¿å¥ç¦ç¥äºåæã¸ã®ãåãåããåã³è¿éæç¶ãã¯ãéåºæ¥ã®åå8æ30åããåå¾5æ15åã¾ã§ã§ãã</div><div>ãã»éåºæ¥ï¼åææ¥ãæ¥ææ¥ãç¥ç¥­æ¥ï¼åã³å¹´æ«å¹´å§ï¼12æ29æ¥ãã1æ3æ¥ï¼ã¯è¿éæ¥­åãè¡ã£ã¦ãã¾ããã</div><div>åçæ®å½±ãåç©ã«è² æãããããããªå ´åï¼è² å·ãèå¥®ç¶æã«ããåç©ç­ï¼ã«ã¯ãç»åæå ±ãæ²è¼ãããªããã¨ãããã¾ãã®ã§ããäºæ¿ãã ããã</div><div>æå ±ã®æ´æ°ã¯éæè¡ã£ã¦ãã¾ãããä¿è­·ããæå»ã«ããæ²è¼ãéããå ´åãããã¾ãã</div><div>&nbsp; ã»åææ¥ãæ¥ææ¥ãç¥æ¥ãå¹´æ«å¹´å§ã¯æå ±æ´æ°ãã¾ããã</div><div>åç©ã®ç»åã¯ãæ®å½±æ¡ä»¶ç­ã«ãã£ã¦ã¯ä¸é®®æãªå ´åãããã¾ãã®ã§ãå¿ãé£¼ãä¸»ã®æ¹ãä¸è¨ã®ããåãåããåãã«ç¢ºèªãã¦ãã ããã</div><div>åå®¹æéã¾ã§ã«é£¼ãä¸»ãå¤æããªãåç©ã¯ãè­²æ¸¡ãå¦åã®å¯¾è±¡ã¨ãªãã¾ãã</div><div>ãã»è­²æ¸¡ãå¸æãããæ¹ã¸ã¯ãæ¡ä»¶ï¼ç¬ã®æ°è³ªãå¥åº·ç¶æãé£¼é¤ãããç°å¢ãªã©ï¼ãåãã°è­²æ¸¡ã§ãã¾ãã</div><div>ãã»è­²æ¸¡ã«ã¤ãã¦ã¯<a href="../kiji00314888/index.html" target="_self">ãè­²æ¸¡ç¬ã»ç«æå ±ã</a>ããè¦§ãã ããã</div><div>&nbsp;</div><div><strong><g>&nbsp;</g>ãåãåããå</strong></div><div>ä½è³ä¸­é¨ä¿å¥ç¦ç¥äºåæãè¡çå¯¾ç­èª²ç°å¢è¡çæå½ããé»è©±ã0952-30-1350<br>ãåãåããã¯ãéåºæ¥ã®åå8æ30åããåå¾5æ15åã¾ã§ã§ãã</div><div><strong>&nbsp;</strong></div></div><div><strong></strong><div><strong></strong><strong>é¢é£ãªã³ã¯</strong>
+<p>ã<a href="../kiji00314829/index.html" target="_blank">ããããè¿·å­ã«ãããªãã§</a></p>
+<p>ã<a href="../kiji00314888/index.html" target="_self">è­²æ¸¡ç¬ã»ç«æå ±</a></p></div></div><div class="clear"></div></div>
+		            </td>
+	            </tr>
+            </table>      
+            
+        </div>
+        <div class="clear"></div>
+    </div>
+</article>
+
+
+
+<div id="weblioLinkJsArea"></div>
+
+
+<div id="toiawaseInfo">
+    <dl>
+        <dt class="toiText toiSpt"><strong>ãã®ãã¼ã¸ã«é¢ãã<br />ãåãåããã¯</strong></dt>
+        <dd class="toiData"></dd>
+    </dl>
+</div>
+
+
+<div style="text-align:right;font-size:0.7em;margin-top:10px;">
+    ï¼ID:49237ï¼
+</div>
+
+
+
+<div id="footerSoegakiArea"></div>
+
+
+<div id="shosaiBanArea" data-topid="0" data-dspshosai="1" data-preview="OFF"></div>
+
+
+<div id="recommendArea"></div>
+
+
+<div id="browsingHistoryArea"></div>
+
+<div id="accessCountHpKiji"
+    data-categoryid="3"
+    data-kijiid="49237"
+    data-subid="1213"
+    data-topid="0"
+    data-preview="OFF"></div>
+
+<script type="text/javascript" language="javascript">
+    jQuery(function () {
+        jQuery.ajax({
+            type: 'POST',
+            cache: false,
+            url: '//www.pref.saga.lg.jp/dynamic/hpkiji/saverecommend.ashx',
+            data: {
+                "id": 49237,
+                "preview": "OFF"
+            }
+        }).done(function (response) {
+        }).fail(function (response) {
+        });
+    });
+</script>
+
+<script type="text/javascript" src="../dynamic/common/js/browsinghistory.js"></script>
+<script type="text/javascript" src="../dynamic/common/js/setcontents.js"></script>
+<script type="text/javascript" src="../dynamic/common/js/layoutadjustment.js"></script>
+<script type="text/javascript" language="javascript">
+    jQuery(function () {
+        var set = new setContents();
+        set.rootUrl = "https://www.pref.saga.lg.jp/dynamic/";
+
+        
+        var bannerPrm = {
+            "top_id": jQuery("#shosaiBanArea").attr("data-topid"),
+            "dspShosaiFlg": jQuery("#shosaiBanArea").attr("data-dspshosai"),
+            "preview": jQuery("#shosaiBanArea").attr("data-preview")
+        }
+        set.banner("#shosaiBanArea", bannerPrm);
+
+        
+        var footerSoegakiPrm = {
+            "newWinOpnFlg": "False",
+            "pdfSetsumeiFlg": "ON",
+            "pdfDownloadFlg": "ON"
+        }
+        set.footerSoegaki("#footerSoegakiArea", footerSoegakiPrm);
+
+        
+        jQuery(".toiData").each(function () {
+
+            var toiawasePrm = {
+                "mdl": "85",
+                "c_id": "3",
+                "id": "49237",
+                "sub_id": "1213",
+                "top_id": "0",
+                "preview": "OFF"
+            }
+
+            set.toiawase(this, toiawasePrm);
+        });
+
+        
+        var kijiKengenPrm = {
+            "mdl": "85",
+            "grp_id": "1241",
+            "ka_no_disp": "0",
+            "top_id": "0",
+            "preview": "OFF"
+        }
+        set.kijiKengen("#kijiKengenArea", kijiKengenPrm);
+
+        
+        var snsButtonPrm = {
+            "c_id": "3",
+            "id": "49237",
+            "sub_id": "1213",
+            "ttl": "",
+            "top_id": "0",
+            "preview": "OFF"
+        }
+        set.snsButton("#snsButtonArea", snsButtonPrm);
+
+        
+        var weblioLinkJsPrm = {
+            "c_id": "3"
+        }
+        set.weblioLinkJs("#weblioLinkJsArea", weblioLinkJsPrm);
+
+        
+        var recommendPrm = {
+            "c_id": "3",
+            "id": "49237",
+            "top_id": "0",
+            "preview": "OFF"
+        }
+        set.recommend("#recommendArea", recommendPrm);
+
+        
+        var pankuzuParam = {
+            "c_id": jQuery("#pankuzuArea").attr("data-categoryid"),
+            "id": jQuery("#pankuzuArea").attr("data-kijiid"),
+            "sub_id": jQuery("#pankuzuArea").attr("data-subid"),
+            "top_id": jQuery("#pankuzuArea").attr("data-topid"),
+            "preview": jQuery("#pankuzuArea").attr("data-preview")
+        }
+        set.pankuzu("#pankuzuArea", "#footerPankuzuArea", pankuzuParam);
+
+        var accessCountPrm = {
+            "c_id": jQuery("#accessCountHpKiji").attr("data-categoryid"),
+            "id": jQuery("#accessCountHpKiji").attr("data-kijiid"),
+            "sub_id": jQuery("#accessCountHpKiji").attr("data-subid"),
+            "top_id": jQuery("#accessCountHpKiji").attr("data-topid"),
+            "preview": jQuery("#accessCountHpKiji").attr("data-preview")
+        }
+        set.accessCountHpKiji(accessCountPrm);
+    });
+
+    
+    jQuery(function(){
+        var fn_bh = new setBrowsingHistory();
+        fn_bh.rootUrl = "https://www.pref.saga.lg.jp/dynamic/";
+        fn_bh.page_type = "detail";
+        fn_bh.top_id = "0";
+        fn_bh.kiji_id = "49237";
+        fn_bh.preview_type = "OFF";
+        fn_bh.loadBrowsingHistory();
+    });
+</script>
+
+    
+
+
+    
+
+ </div>
+ 
+ 
+
+
+
+
+
+
+
+<div class="indent"></div>
+<div id="pagetop">
+    <a href="#top">ãã¼ã¸ã®åé ­ã¸</a></div>
+
+
+<div id="footerbtnBR" style="display:none;">
+    <img id="ctl00_ImgSpacer2" alt="" src="../dynamic/common/images/spacer.gif" style="height:25px;border-width:0px;" />
+    
+</div>
+
+</div>
+
+<div id="footerPankuzu">
+    <div id="footerPankuzuArea"></div>
+</div>
+
+
+<span id="ctl00_LblCopyrights"></span>
+
+
+<!--[if lt IE 9]>
+<link href="../dynamic/common/css/footer/top1.css" rel="stylesheet" type="text/css" />
+<![endif]-->
+<link href="../dynamic/common/css/footer/top1.css" rel="stylesheet" type="text/css" media="print, screen and (min-width: 481px)" /><link href="../dynamic/common/css/footer/top1forsp.css" rel="stylesheet" type="text/css" media="only screen and (max-width: 480px)" /><div id="footerArea">
+	<!-- footer menu start -->
+<!-- ããã¿ã¼ã¡ãã¥ã¼ -->
+<div id="footerMenu">
+    
+    <ul>
+        <li><a href="../list02271.html">ãã¼ã ãã¼ã¸ã«ã¤ãã¦</a></li>
+        <li><a href="../kiji00348009/index.html">æºå¸¯ï¼ã¬ã©ã±ã¼ï¼ãµã¤ã</a></li>
+        <li><a href="../kiji0034844/index.html">ãªã³ã¯é</a></li>
+        <li><a href="../sitemap.html">ãµã¤ãããã</a></li>
+    </ul>
+</div>
+<!-- footer menu end -->
+
+<!-- site info start -->
+<!-- ååãå -->
+<div id="siteinfo">
+    <div id="toiawase">
+        
+                ä½è³çåº(æ³äººçªå· 1000020410004ï¼ 
+                ã840-8570&nbsp;
+                ä½è³å¸åå1ä¸ç®1-59&nbsp;&nbsp;
+                Tel:0952-24-2111ï¼ä»£è¡¨ï¼&nbsp;&nbsp;
+                &nbsp;&nbsp;
+                
+            
+        
+    </div>
+    <div class="clear"></div>
+    
+    
+    <div id="footerBtnAndLogo">
+    <!-- ããã¿ã¼ãã¿ã³ --> 
+        
+        <ul id="footerBtn">
+            <li id="footerBtn1"><a href="../kiji00347052/index.html">äº¤éã¢ã¯ã»ã¹</a></li>
+            <li id="footerBtn2"><a href="../list01944.html">åºèæ¡å</a></li>
+            <li id="footerBtn3"><a href="../kiji00336883/index.html">åèª²ã¸ã®ãååã</a></li>
+            <li class="denwa-relay-making-calls"><a href="https://denwa-relay-service.jp/web_inquiry/?token=REDACTED" target="_blank" rel="opener">æè©±ã§é»è©±ãã<img src="../dynamic/common/images/top1/new_win.gif" alt="å¥ã¦ã¤ã³ãã¦ã§éãã¾ã" title=""></a></li>
+            <li class="denwa-relay-about"><a href="https://www.nftrs.or.jp/about" target="_blank">é»è©±ãªã¬ã¼ãµã¼ãã¹ã«ã¤ãã¦<img src="../dynamic/common/images/top1/new_win.gif" alt="å¥ã¦ã¤ã³ãã¦ã§éãã¾ã" title=""></a></li>
+        </ul>
+        <div class="logo"><img src="../dynamic/common/images/top1/rogo_footer_big01.png" alt="ä½è³ç" title=""></div>
+        <div class="clear"></div>
+    </div>   
+
+    <!-- copyright -->
+    <div id="cp" lang="en">
+        CopyrightÂ© 2016 Saga Prefecture.All Rights Reserved.
+    </div>   
+</div>
+<!-- site info end -->
+
+</div><div id="footerAreaSP">
+	<!-- site info sp start -->
+<!-- ååãå -->
+<div id="siteinfoSP">
+    <dl>
+        
+                <dt>
+                    <p>ä½è³çåº(æ³äººçªå· 1000020410004ï¼</p>
+                    <div class="clear"></div>
+                </dt>
+                <dd>
+                    ã840-8570<br />
+                    ä½è³å¸åå1ä¸ç®1-59<br />
+                    Tel:<a href="tel:0952242111">0952-24-2111</a>ï¼ä»£è¡¨ï¼
+                </dd>
+            
+    </dl>
+    <div class="clear"></div>
+</div>
+
+
+<div id="footerBtnSP">
+    
+    
+
+</div>
+<!-- copyright -->
+<div id="cpSP" lang="en">
+    CopyrightÂ© 2016 Saga Prefecture.All Rights Reserved.
+</div>
+<!-- site info sp end -->
+</div>
+
+<input type="hidden" name="fontResize" id="fontResize" value="" />
+
+</form>
+<noscript>æ¬ãµã¤ãã¯ä¸é¨ã®ãã¼ã¸ã»æ©è½ã«Javascriptãä½¿ç¨ãã¦ããã¾ãã</noscript>
+
+<script type="text/javascript" src="../dynamic/common/js/ajaxcalforie6.js"></script>
+<!-- google analytics start -->
+<!-- Google tag (gtag.js) --><script async src="https://www.googletagmanager.com/gtag/js?id=G-6X8CLXQLYW"></script><script>  window.dataLayer = window.dataLayer || [];  function gtag(){dataLayer.push(arguments);}  gtag('js', new Date());  gtag('config', 'G-6X8CLXQLYW');  gtag('config', 'UA-79911862-1');</script>
+<!-- google analytics end -->
+
+
+    <script type="text/javascript" language="javascript">
+        jQuery.noConflict();
+
+        function searchResult(keyword) {
+            jQuery.ajax({
+                type: 'POST',
+                cache: false,
+                url: '//www.pref.saga.lg.jp/dynamic/common/handler/registersearchkeyword.ashx',
+                data: {
+                    "c_id": "2",
+                    "q": keyword,
+                    "nowurl": location.href
+                }
+            }).done(function (response) {
+                eval(response);
+            });
+        }
+
+        var pankuzu_flg = false;
+        function pankuzu_openclose(kbn) {
+            if (!pankuzu_flg) {
+                jQuery("#pankuzu-more, #footerPankuzu-more").hide();
+                jQuery("#pankuzu-close, #footerPankuzu-close").show();
+                jQuery(".pankuzu-toggle").show();
+                pankuzu_flg = true;
+            }
+            else {
+                jQuery("#pankuzu-more, #footerPankuzu-more").show();
+                jQuery("#pankuzu-close, #footerPankuzu-close").hide();
+                jQuery(".pankuzu-toggle").hide();
+                pankuzu_flg = false;
+            }
+        }
+    </script>
+    
+    <script type="text/javascript" language="javascript">
+        jQuery(function () {
+            var fn = new setCookie();
+            fn.rootUrl = "https://www.pref.saga.lg.jp/dynamic/";
+            fn.topFlg = "False";
+            fn.topCategoryRootFolder = "";
+            fn.fontSizeCookieName = "FONT_SIZE";
+            fn.colorCookieName = "COLOR";
+            fn.fontSizeIconArr = setFontSizeIconArr();
+            fn.loadFontSize();
+            fn.loadColor();
+        });
+
+        function setFontSizeIconArr() {
+            var fontSizeIconArr = {
+                "æ¨æº": { size: "fontSizeN", on: "https://www.pref.saga.lg.jp/dynamic/common/images/top1/black-mozi-m.gif", off: "https://www.pref.saga.lg.jp/dynamic/common/images/top1/white-mozi-m.gif" },
+                "æ¡å¤§": { size: "fontSizeB", on: "https://www.pref.saga.lg.jp/dynamic/common/images/top1/black-mozi-l.gif", off: "https://www.pref.saga.lg.jp/dynamic/common/images/top1/white-mozi-l.gif" },
+            };
+
+            return fontSizeIconArr;
+        }
+    </script>
+    
+</body>
+</html>
