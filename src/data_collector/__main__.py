@@ -22,6 +22,8 @@ from .infrastructure.database.connection import DatabaseConnection, DatabaseSett
 from .infrastructure.notification_client import NotificationClient
 from .infrastructure.output_writer import OutputWriter
 from .infrastructure.snapshot_store import SnapshotStore
+from .adapters.rule_based.broken_tracker import BrokenSitesTracker
+from .adapters.rule_based.registry import SiteAdapterRegistry
 from .llm.adapter import LlmAdapter
 from .llm.config import SiteConfigLoader, SitesConfig
 from .llm.html_preprocessor import HtmlPreprocessor
@@ -94,6 +96,17 @@ def create_provider(provider_name: str, model: str) -> LlmProvider:
     return primary
 
 
+def _effective_extraction(site, config: SitesConfig) -> str:
+    """サイトの effective な extraction 値を返す
+
+    site.extraction が明示的に設定されていればそれを使い、
+    None ならグローバル default_extraction を採用する。
+    """
+    if site.extraction is not None:
+        return site.extraction
+    return config.extraction.default_extraction
+
+
 def run_llm_sites(
     config: SitesConfig,
     snapshot_store: SnapshotStore,
@@ -107,7 +120,7 @@ def run_llm_sites(
     all_success = True
 
     for site in config.sites:
-        if site.extraction != "llm":
+        if _effective_extraction(site, config) != "llm":
             continue
 
         site_start = time.time()
@@ -173,6 +186,135 @@ def run_llm_sites(
             )
             all_success = False
             continue  # 他のサイトの処理を継続
+
+    return all_success
+
+
+def run_rule_based_sites(
+    config: SitesConfig,
+    snapshot_store: SnapshotStore,
+    diff_detector: DiffDetector,
+    output_writer: OutputWriter,
+    notification_client: NotificationClient,
+    db_connection: DatabaseConnection | None,
+    logger: logging.Logger,
+    broken_tracker: BrokenSitesTracker | None = None,
+) -> bool:
+    """rule-based 抽出方式でサイト群を収集
+
+    SiteAdapterRegistry に登録された adapter のみ rule-based 経路で実行。
+    未登録サイトは run_llm_sites 側で拾われる（混在運用を前提）。
+    rule 失敗 + fallback_to_llm=True のサイトは LLM 抽出で再試行する。
+    """
+    all_success = True
+
+    for site in config.sites:
+        if _effective_extraction(site, config) != "rule-based":
+            continue
+
+        adapter_cls = SiteAdapterRegistry.get(site.name)
+        if adapter_cls is None:
+            logger.warning(
+                f"[{site.name}] rule-based 指定だが adapter 未登録 — スキップ "
+                f"(run_llm_sites 側で fallback)"
+            )
+            continue
+
+        site_start = time.time()
+        logger.info(f"=== rule-based 収集開始: {site.name} ===")
+        timeout = (
+            SITE_TIMEOUT_JS_SEC
+            if getattr(site, "requires_js", False)
+            else SITE_TIMEOUT_SEC
+        )
+
+        try:
+            adapter = adapter_cls(site)
+            service = CollectorService(
+                adapter=adapter,
+                diff_detector=diff_detector,
+                output_writer=output_writer,
+                notification_client=notification_client,
+                snapshot_store=snapshot_store,
+                db_connection=db_connection,
+            )
+
+            with site_timeout(timeout, site.name):
+                result = service.run_collection()
+
+            elapsed = time.time() - site_start
+
+            if result.success:
+                logger.info(
+                    f"[{site.name}] rule-based 収集完了: "
+                    f"{result.total_collected}件, "
+                    f"新規{result.new_count}, "
+                    f"更新{result.updated_count}, "
+                    f"処理時間{elapsed:.1f}秒"
+                )
+                if broken_tracker:
+                    broken_tracker.record_success(site.name)
+            else:
+                logger.error(
+                    f"[{site.name}] rule-based 収集失敗: {', '.join(result.errors)}"
+                )
+                if broken_tracker:
+                    broken_tracker.record_failure(site.name, "; ".join(result.errors))
+                # fallback_to_llm: True ならLLM経路で再試行
+                if getattr(site, "fallback_to_llm", False):
+                    logger.info(
+                        f"[{site.name}] fallback_to_llm 有効 — LLM 抽出で再試行"
+                    )
+                    try:
+                        provider_name, model = SiteConfigLoader.resolve_provider(
+                            site, config
+                        )
+                        provider = create_provider(provider_name, model)
+                        llm_adapter = LlmAdapter(
+                            site_config=site,
+                            provider=provider,
+                            preprocessor=HtmlPreprocessor(),
+                        )
+                        llm_service = CollectorService(
+                            adapter=llm_adapter,
+                            diff_detector=diff_detector,
+                            output_writer=output_writer,
+                            notification_client=notification_client,
+                            snapshot_store=snapshot_store,
+                            db_connection=db_connection,
+                        )
+                        with site_timeout(timeout, site.name):
+                            llm_result = llm_service.run_collection()
+                        if llm_result.success:
+                            logger.info(
+                                f"[{site.name}] LLM フォールバック成功: "
+                                f"{llm_result.total_collected}件"
+                            )
+                            continue  # success via fallback, don't mark all_success=False
+                    except Exception as fb_e:  # noqa: BLE001
+                        logger.error(
+                            f"[{site.name}] LLM フォールバックも失敗: {fb_e}"
+                        )
+                all_success = False
+
+        except SiteCollectionTimeoutError as e:
+            elapsed = time.time() - site_start
+            logger.warning(
+                f"[{site.name}] タイムアウト ({elapsed:.1f}秒, limit={timeout}秒): {e}"
+            )
+            if broken_tracker:
+                broken_tracker.record_failure(site.name, f"timeout: {e}")
+            all_success = False
+            continue
+        except Exception as e:  # noqa: BLE001
+            elapsed = time.time() - site_start
+            logger.error(
+                f"[{site.name}] エラー発生 ({elapsed:.1f}秒): {e}", exc_info=True
+            )
+            if broken_tracker:
+                broken_tracker.record_failure(site.name, str(e))
+            all_success = False
+            continue
 
     return all_success
 
@@ -248,16 +390,34 @@ def main():
                 logger.error(f"高知県収集失敗: {', '.join(result.errors)}")
                 success = False
 
-        # === LLMサイト群 ===
+        # === sites.yaml に基づく実行 (rule-based + LLM 混在) ===
         if not kochi_only:
             config_path = Path(__file__).parent / "config" / "sites.yaml"
             if config_path.exists():
                 config = SiteConfigLoader.load(config_path)
                 logger.info(
-                    f"LLMサイト設定読込: {len(config.sites)}サイト "
-                    f"(provider={config.extraction.default_provider}, "
-                    f"model={config.extraction.default_model})"
+                    f"サイト設定読込: {len(config.sites)}サイト "
+                    f"(default_provider={config.extraction.default_provider}, "
+                    f"default_extraction={config.extraction.default_extraction})"
                 )
+
+                # rule-based サイト群 (Registry 登録済み adapter を使用)
+                broken_tracker_path = Path("data/broken_sites.yaml")
+                broken_tracker = BrokenSitesTracker(broken_tracker_path)
+                rule_success = run_rule_based_sites(
+                    config=config,
+                    snapshot_store=snapshot_store,
+                    diff_detector=diff_detector,
+                    output_writer=output_writer,
+                    notification_client=notification_client,
+                    db_connection=db_connection,
+                    logger=logger,
+                    broken_tracker=broken_tracker,
+                )
+                if not rule_success:
+                    success = False
+
+                # LLM サイト群（rule-based 化されてないサイト）
                 llm_success = run_llm_sites(
                     config=config,
                     snapshot_store=snapshot_store,
@@ -269,8 +429,17 @@ def main():
                 )
                 if not llm_success:
                     success = False
+
+                # 進捗ログ
+                stats = SiteAdapterRegistry.coverage_stats(
+                    [s.name for s in config.sites]
+                )
+                logger.info(
+                    f"rule-based 進捗: {stats['rule_based']}/{stats['total']} "
+                    f"(LLM 残り {stats['llm_only']})"
+                )
             else:
-                logger.info("LLMサイト設定なし（sites.yaml が見つかりません）")
+                logger.info("サイト設定なし（sites.yaml が見つかりません）")
 
         sys.exit(0 if success else 1)
 
