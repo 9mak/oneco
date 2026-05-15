@@ -23,10 +23,7 @@ from data_collector.adapters.rule_based.sites.city_matsuyama import (
 from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
 
-
-_LIST_URL = (
-    "https://www.city.matsuyama.ehime.jp/kurashi/kurashi/aigo/index.html"
-)
+_LIST_URL = "https://www.city.matsuyama.ehime.jp/kurashi/kurashi/aigo/index.html"
 
 
 def _site() -> SiteConfig:
@@ -162,9 +159,7 @@ class TestCityMatsuyamaAdapterFixture:
         html = _load_matsuyama_html(fixture_html)
         adapter = CityMatsuyamaAdapter(_site())
 
-        with patch.object(
-            adapter, "_http_get", return_value=html
-        ) as mock_get:
+        with patch.object(adapter, "_http_get", return_value=html) as mock_get:
             urls = adapter.fetch_animal_list()
             for url, cat in urls:
                 adapter.extract_animal_details(url, category=cat)
@@ -191,10 +186,7 @@ class TestCityMatsuyamaAdapterSynthetic:
 
         with patch.object(adapter, "_http_get", return_value=html):
             urls = adapter.fetch_animal_list()
-            raws = [
-                adapter.extract_animal_details(u, category=c)
-                for (u, c) in urls
-            ]
+            raws = [adapter.extract_animal_details(u, category=c) for (u, c) in urls]
 
         assert [r.species for r in raws] == ["犬", "猫"]
 
@@ -219,8 +211,7 @@ class TestCityMatsuyamaAdapterSynthetic:
         assert raw.phone == "089-923-9435"
         # 画像 URL は list_url を base に絶対化される
         assert raw.image_urls == [
-            "https://www.city.matsuyama.ehime.jp/kurashi/kurashi/aigo/"
-            "index.images/inu.R7No.999.jpg"
+            "https://www.city.matsuyama.ehime.jp/kurashi/kurashi/aigo/index.images/inu.R7No.999.jpg"
         ]
 
     def test_extract_synthetic_cat_species_inferred_by_section(self):
@@ -236,9 +227,7 @@ class TestCityMatsuyamaAdapterSynthetic:
         assert raw.species == "猫"
         assert "R8.No.01" in raw.location
         assert "マッチング予約不可" in raw.location
-        assert raw.image_urls and raw.image_urls[0].endswith(
-            "/index.images/neko.R8No.01.jpg"
-        )
+        assert raw.image_urls and raw.image_urls[0].endswith("/index.images/neko.R8No.01.jpg")
 
     def test_invalid_row_index_raises_parsing_error(self):
         """range 外の row index は ParsingError"""
@@ -250,9 +239,7 @@ class TestCityMatsuyamaAdapterSynthetic:
         with patch.object(adapter, "_http_get", return_value=html):
             adapter.fetch_animal_list()  # キャッシュ
             with pytest.raises(ParsingError):
-                adapter.extract_animal_details(
-                    f"{_LIST_URL}#row=99", category="lost"
-                )
+                adapter.extract_animal_details(f"{_LIST_URL}#row=99", category="lost")
 
 
 class TestCityMatsuyamaAdapterRegistry:
@@ -260,10 +247,5 @@ class TestCityMatsuyamaAdapterRegistry:
         """sites.yaml の name で adapter が引ける"""
         # 他テストが registry を clear する場合に備えて冪等に再登録
         if SiteAdapterRegistry.get("松山市 はぴまるの丘（収容中）") is None:
-            SiteAdapterRegistry.register(
-                "松山市 はぴまるの丘（収容中）", CityMatsuyamaAdapter
-            )
-        assert (
-            SiteAdapterRegistry.get("松山市 はぴまるの丘（収容中）")
-            is CityMatsuyamaAdapter
-        )
+            SiteAdapterRegistry.register("松山市 はぴまるの丘（収容中）", CityMatsuyamaAdapter)
+        assert SiteAdapterRegistry.get("松山市 はぴまるの丘（収容中）") is CityMatsuyamaAdapter

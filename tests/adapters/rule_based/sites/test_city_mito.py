@@ -26,9 +26,7 @@ from data_collector.llm.config import SiteConfig
 
 def _site(
     name: str = "水戸市（迷子ペット情報）",
-    list_url: str = (
-        "https://www.city.mito.lg.jp/site/doubutsuaigo/list358.html"
-    ),
+    list_url: str = ("https://www.city.mito.lg.jp/site/doubutsuaigo/list358.html"),
     category: str = "lost",
 ) -> SiteConfig:
     return SiteConfig(
@@ -61,9 +59,7 @@ def _load_mito_html(fixture_html) -> str:
 
 
 class TestCityMitoAdapter:
-    def test_fetch_animal_list_returns_empty_for_index_page(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_returns_empty_for_index_page(self, fixture_html):
         """サブカテゴリ案内のみのインデックスページでは空リストが返る
 
         フィクスチャは `div.info_list` のサブ記事リンクのみが本文に並ぶ
@@ -76,9 +72,7 @@ class TestCityMitoAdapter:
         with patch.object(adapter, "_http_get", return_value=html):
             result = adapter.fetch_animal_list()
 
-        assert result == [], (
-            f"empty state ページでは空配列が返るはず: got {result!r}"
-        )
+        assert result == [], f"empty state ページでは空配列が返るはず: got {result!r}"
 
     def test_fetch_animal_list_caches_html(self, fixture_html):
         """同一インスタンスでの繰り返し呼び出しは HTTP を 1 回しか実行しない"""
@@ -119,8 +113,7 @@ class TestCityMitoAdapter:
             adapter,
             "_http_get",
             return_value=(
-                "<html><body><div id=\"main_body\">"
-                "<p>無関係な本文</p></div></body></html>"
+                '<html><body><div id="main_body"><p>無関係な本文</p></div></body></html>'
             ),
         ):
             with pytest.raises(Exception):
@@ -187,10 +180,7 @@ class TestCityMitoAdapter:
         with patch.object(adapter, "_http_get", return_value=synthetic_html):
             urls = adapter.fetch_animal_list()
             assert len(urls) == 2
-            raws = [
-                adapter.extract_animal_details(u, category=c)
-                for u, c in urls
-            ]
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
 
         assert raws[0].species == "三毛猫"
         assert raws[0].sex == "メス"
@@ -205,23 +195,15 @@ class TestCityMitoAdapter:
             "水戸市（迷子ペット情報）",
             "水戸市（愛護センター収容中の動物たち）",
         ):
-            assert (
-                CityMitoAdapter._infer_species_from_site_name(name) == ""
-            )
+            assert CityMitoAdapter._infer_species_from_site_name(name) == ""
 
     def test_infer_species_from_site_name_with_dog_keyword(self):
         """サイト名に "犬" を含む場合は "犬" を返す (汎用ロジック)"""
-        assert (
-            CityMitoAdapter._infer_species_from_site_name("水戸市（迷子犬）")
-            == "犬"
-        )
+        assert CityMitoAdapter._infer_species_from_site_name("水戸市（迷子犬）") == "犬"
 
     def test_infer_species_from_site_name_with_cat_keyword(self):
         """サイト名に "猫" を含む場合は "猫" を返す (汎用ロジック)"""
-        assert (
-            CityMitoAdapter._infer_species_from_site_name("水戸市（保護猫）")
-            == "猫"
-        )
+        assert CityMitoAdapter._infer_species_from_site_name("水戸市（保護猫）") == "猫"
 
     def test_all_two_sites_registered(self):
         """2 つの水戸市サイト名すべてが Registry に登録されている

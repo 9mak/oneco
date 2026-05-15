@@ -44,10 +44,7 @@ class DouaiPrefTochigiAdapter(WordPressListAdapter):
     #     カテゴリ親ページ等のカード (`/work/...` 系)。
     #     `/news/` 投稿が無い期間でも一覧ページとして空にならない。
     # 同じ URL は WordPressListAdapter 側の seen 集合で重複除去される。
-    LIST_LINK_SELECTOR: ClassVar[str] = (
-        "a[href*='/news/'],"
-        " #treatment_list .post_list .item a"
-    )
+    LIST_LINK_SELECTOR: ClassVar[str] = "a[href*='/news/'], #treatment_list .post_list .item a"
 
     # detail ページの定義リスト/テーブル見出しに対応するラベル。
     # 同種のラベルが複数候補ある場合は、`_extract_by_label` で

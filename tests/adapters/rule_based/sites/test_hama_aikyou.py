@@ -80,15 +80,9 @@ def _animal_table(rows_html: str) -> str:
 
 
 def _build_html(
-    chuo_section: str = (
-        '<span class="color-01">現在、中央区で保護された犬はいません。</span>'
-    ),
-    hamana_section: str = (
-        '<span class="color-01">現在、浜名区で保護された犬はいません。</span>'
-    ),
-    tenryu_section: str = (
-        '<span class="color-01">現在、天竜区で保護された犬はいません。</span>'
-    ),
+    chuo_section: str = ('<span class="color-01">現在、中央区で保護された犬はいません。</span>'),
+    hamana_section: str = ('<span class="color-01">現在、浜名区で保護された犬はいません。</span>'),
+    tenryu_section: str = ('<span class="color-01">現在、天竜区で保護された犬はいません。</span>'),
 ) -> str:
     """3 区セクションと「引き取るには」セクションを含む HTML を生成する"""
     return f"""
@@ -117,9 +111,7 @@ def _build_html(
 
 
 class TestHamaAikyouAdapter:
-    def test_fetch_animal_list_returns_empty_for_real_fixture(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_returns_empty_for_real_fixture(self, fixture_html):
         """実フィクスチャ（3区とも在庫 0 件）では空リストを返す"""
         html = _load_hama_html(fixture_html)
         adapter = HamaAikyouAdapter(_site())
@@ -304,8 +296,8 @@ class TestHamaAikyouAdapter:
     def test_image_urls_resolved_to_absolute(self):
         """行内 img の src が絶対 URL として解決される"""
         rows = (
-            '<tr><td>1</td><td>雑種</td><td>オス</td><td>黒</td>'
-            '<td>令和8年5月1日</td>'
+            "<tr><td>1</td><td>雑種</td><td>オス</td><td>黒</td>"
+            "<td>令和8年5月1日</td>"
             '<td><img src="/media/dog001.jpg" alt="">A町</td></tr>'
         )
         html = _build_html(chuo_section=_animal_table(rows))

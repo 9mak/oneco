@@ -50,7 +50,6 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # 「電話 (XXXX)YY-ZZZZ」「電話XXX-YYY-ZZZZ」等から番号部分を抽出する正規表現。
 # 半角/全角括弧、半角/全角ハイフン、空白を許容する。
 _PHONE_RE = re.compile(
@@ -77,13 +76,13 @@ class PrefTottoriAdapter(SinglePageTableAdapter):
     #         推定年齢, 体格その他特徴, 詳細情報, 備考]
     COLUMN_FIELDS: ClassVar[dict[int, str]] = {
         0: "shelter_date",  # 収容日時
-        1: "location",      # 収容場所
-        2: "species",       # 種類 (犬/猫等)
-        3: "breed",         # 品種
-        4: "color",         # 毛色
-        5: "sex",           # 性別
-        6: "age",           # 推定年齢
-        7: "size",          # 体格、その他特徴
+        1: "location",  # 収容場所
+        2: "species",  # 種類 (犬/猫等)
+        3: "breed",  # 品種
+        4: "color",  # 毛色
+        5: "sex",  # 性別
+        6: "age",  # 推定年齢
+        7: "size",  # 体格、その他特徴
     }
     LOCATION_COLUMN: ClassVar[int | None] = 1
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
@@ -131,8 +130,7 @@ class PrefTottoriAdapter(SinglePageTableAdapter):
                 if not isinstance(tr, Tag):
                     continue
                 cells = [
-                    c for c in tr.find_all(["td", "th"], recursive=False)
-                    if isinstance(c, Tag)
+                    c for c in tr.find_all(["td", "th"], recursive=False) if isinstance(c, Tag)
                 ]
                 if not cells:
                     continue
@@ -141,10 +139,7 @@ class PrefTottoriAdapter(SinglePageTableAdapter):
                 if "収容日時" in first_text:
                     continue
                 # 全セルが空白なら除外 (在庫 0 件のプレースホルダ行)
-                joined = "".join(
-                    c.get_text(strip=True).replace("\xa0", "")
-                    for c in cells
-                )
+                joined = "".join(c.get_text(strip=True).replace("\xa0", "") for c in cells)
                 if not joined.strip():
                     continue
                 rows.append(tr)
@@ -160,14 +155,9 @@ class PrefTottoriAdapter(SinglePageTableAdapter):
         """
         rows = self._load_rows()
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "lost"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "lost") -> RawAnimalData:
         """tr 1 件から RawAnimalData を構築する
 
         - tr の親 `<table>` の直前にある `<h2 class="Title"> <span>` から
@@ -191,16 +181,11 @@ class PrefTottoriAdapter(SinglePageTableAdapter):
         )
 
         # 2) 各セルから値を取得
-        cells = [
-            c for c in tr.find_all(["td", "th"], recursive=False)
-            if isinstance(c, Tag)
-        ]
+        cells = [c for c in tr.find_all(["td", "th"], recursive=False) if isinstance(c, Tag)]
         fields: dict[str, str] = {}
         for col_idx, field_name in self.COLUMN_FIELDS.items():
             if col_idx < len(cells):
-                fields[field_name] = cells[col_idx].get_text(
-                    separator=" ", strip=True
-                )
+                fields[field_name] = cells[col_idx].get_text(separator=" ", strip=True)
 
         # 3) 場所: テーブル内の「収容場所」を優先し、空なら所管保健所名で補完
         location = fields.get("location", "").strip()
@@ -222,9 +207,7 @@ class PrefTottoriAdapter(SinglePageTableAdapter):
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),
                 size=fields.get("size", ""),
-                shelter_date=fields.get(
-                    "shelter_date", self.SHELTER_DATE_DEFAULT
-                ),
+                shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
                 location=location,
                 phone=self._normalize_phone(phone_raw),
                 image_urls=image_urls,
@@ -232,9 +215,7 @@ class PrefTottoriAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 
@@ -281,11 +262,7 @@ class PrefTottoriAdapter(SinglePageTableAdapter):
             phone_match = _PHONE_RE.search(text)
             phone_raw = ""
             if phone_match:
-                phone_raw = (
-                    f"{phone_match.group(1)}-"
-                    f"{phone_match.group(2)}-"
-                    f"{phone_match.group(3)}"
-                )
+                phone_raw = f"{phone_match.group(1)}-{phone_match.group(2)}-{phone_match.group(3)}"
             return office_label, phone_raw
         return "", ""
 

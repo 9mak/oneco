@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup
 
 from ....domain.models import RawAnimalData
 from ...municipality_adapter import ParsingError
@@ -88,14 +88,9 @@ class CityAkashiAdapter(SinglePageTableAdapter):
 
         rows = self._load_rows()
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "lost"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "lost") -> RawAnimalData:
         """テーブル行から RawAnimalData を構築する
 
         基底のセルベース既定実装に対し、species のサイト名推定を加える。
@@ -113,18 +108,11 @@ class CityAkashiAdapter(SinglePageTableAdapter):
         fields: dict[str, str] = {}
         for col_idx, field_name in self.COLUMN_FIELDS.items():
             if col_idx < len(cells):
-                fields[field_name] = cells[col_idx].get_text(
-                    separator=" ", strip=True
-                )
+                fields[field_name] = cells[col_idx].get_text(separator=" ", strip=True)
 
         location = ""
-        if (
-            self.LOCATION_COLUMN is not None
-            and self.LOCATION_COLUMN < len(cells)
-        ):
-            location = cells[self.LOCATION_COLUMN].get_text(
-                separator=" ", strip=True
-            )
+        if self.LOCATION_COLUMN is not None and self.LOCATION_COLUMN < len(cells):
+            location = cells[self.LOCATION_COLUMN].get_text(separator=" ", strip=True)
 
         # 動物種別 (犬/猫) はサイト名から推定 (HTML の「種類」は犬種名等)
         species = self._infer_species_from_site_name(self.site_config.name)
@@ -136,9 +124,7 @@ class CityAkashiAdapter(SinglePageTableAdapter):
                 age="",
                 color=fields.get("color", ""),
                 size=fields.get("size", ""),
-                shelter_date=fields.get(
-                    "shelter_date", self.SHELTER_DATE_DEFAULT
-                ),
+                shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
                 location=location,
                 phone="",
                 image_urls=self._extract_row_images(row, virtual_url),
@@ -146,9 +132,7 @@ class CityAkashiAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 

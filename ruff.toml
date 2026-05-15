@@ -83,6 +83,8 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 "src/syndication_service/api/routes.py" = ["N812"]
 # for ループ変数のシャドウは既存コード
 "src/notification_manager/domain/conversation.py" = ["PLW2901"]
+# rule-based サイトadapter群: テキスト解析で line/chunk の正規化用に同名再代入は妥当
+"src/data_collector/adapters/rule_based/sites/*.py" = ["PLW2901", "N806", "N802"]
 # 前方参照 (TYPE_CHECKING 未使用) は既存コード負債
 "src/data_collector/services/*.py" = ["F821"]
 "src/data_collector/adapters/kochi_adapter.py" = ["F821"]

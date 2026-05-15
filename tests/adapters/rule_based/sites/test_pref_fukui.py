@@ -28,8 +28,7 @@ from data_collector.llm.config import SiteConfig
 def _site(
     name: str = "福井県（動物保護センター）",
     list_url: str = (
-        "https://www.pref.fukui.lg.jp/doc/doukansi/"
-        "doubutukanrisidou/doukansi-c-4.html"
+        "https://www.pref.fukui.lg.jp/doc/doukansi/doubutukanrisidou/doukansi-c-4.html"
     ),
     category: str = "adoption",
 ) -> SiteConfig:
@@ -44,9 +43,7 @@ def _site(
 
 
 class TestPrefFukuiAdapter:
-    def test_fetch_animal_list_returns_empty_for_index_page(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_returns_empty_for_index_page(self, fixture_html):
         """外部リンク + センター連絡先のみの本文では空リストが返る
 
         fixture `pref_fukui_lg_jp.html` は実サイトと同じく本文中に
@@ -61,9 +58,7 @@ class TestPrefFukuiAdapter:
         with patch.object(adapter, "_http_get", return_value=html):
             result = adapter.fetch_animal_list()
 
-        assert result == [], (
-            f"インデックスページでは空配列が返るはず: got {result!r}"
-        )
+        assert result == [], f"インデックスページでは空配列が返るはず: got {result!r}"
 
     def test_fetch_animal_list_caches_html(self, fixture_html):
         """同一インスタンスでの繰り返し呼び出しは HTTP を 1 回しか実行しない"""
@@ -122,9 +117,7 @@ class TestPrefFukuiAdapter:
         with patch.object(adapter, "_http_get", return_value=html):
             urls = adapter.fetch_animal_list()
             assert len(urls) == 1
-            raw = adapter.extract_animal_details(
-                urls[0][0], category="adoption"
-            )
+            raw = adapter.extract_animal_details(urls[0][0], category="adoption")
 
         assert isinstance(raw, RawAnimalData)
         # ラベル → フィールドのマップが効いていることを確認
@@ -137,9 +130,7 @@ class TestPrefFukuiAdapter:
         assert raw.category == "adoption"
         assert raw.source_url.endswith("#row=0")
 
-    def test_sidebar_and_index_links_are_not_extracted_as_rows(
-        self, fixture_html
-    ):
+    def test_sidebar_and_index_links_are_not_extracted_as_rows(self, fixture_html):
         """サイドバー (`#sidebar-right`) や本文中の連絡先パラグラフは
         ROW として誤検出されない
 
@@ -180,9 +171,7 @@ class TestPrefFukuiAdapter:
 
         with patch.object(adapter, "_http_get", return_value=html):
             urls = adapter.fetch_animal_list()
-            raw = adapter.extract_animal_details(
-                urls[0][0], category="adoption"
-            )
+            raw = adapter.extract_animal_details(urls[0][0], category="adoption")
             normalized = adapter.normalize(raw)
 
         # AnimalData に変換できれば OK (詳細属性は normalizer 側で検証済み)

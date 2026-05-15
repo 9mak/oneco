@@ -60,11 +60,11 @@ class CityChibaAdapter(SinglePageTableAdapter):
     # 基底の cells ベース既定実装は使わないが、契約として明示する。
     COLUMN_FIELDS: ClassVar[dict[int, str]] = {
         0: "shelter_date",  # 収容日
-        1: "location",      # 収容場所
-        2: "species",       # 種類
-        3: "color",         # 毛色
-        4: "sex",           # 性別
-        5: "size",          # 体格
+        1: "location",  # 収容場所
+        2: "species",  # 種類
+        3: "color",  # 毛色
+        4: "sex",  # 性別
+        5: "size",  # 体格
     }
     LOCATION_COLUMN: ClassVar[int | None] = 1
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
@@ -82,9 +82,7 @@ class CityChibaAdapter(SinglePageTableAdapter):
 
     # ─────────────────── オーバーライド ───────────────────
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """`<h4>` を起点とした動物ブロックから RawAnimalData を構築する
 
         基底の `td/th` ベース実装ではなく、`<h4>` の次に続く同階層の
@@ -167,9 +165,7 @@ class CityChibaAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 

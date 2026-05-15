@@ -24,9 +24,7 @@ from data_collector.llm.config import SiteConfig
 
 def _site(
     name: str = "町田市（収容動物のお知らせ）",
-    list_url: str = (
-        "https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/syuyou.html"
-    ),
+    list_url: str = ("https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/syuyou.html"),
     category: str = "sheltered",
 ) -> SiteConfig:
     return SiteConfig(
@@ -59,9 +57,7 @@ def _load_machida_html(fixture_html) -> str:
 
 
 class TestCityMachidaAdapter:
-    def test_fetch_animal_list_returns_empty_for_no_animals_page(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_returns_empty_for_no_animals_page(self, fixture_html):
         """「現在、収容動物はありません。」告知ページでは空リストが返る
 
         フィクスチャは「現在、収容動物はありません。」の告知のみが本文に
@@ -74,9 +70,7 @@ class TestCityMachidaAdapter:
         with patch.object(adapter, "_http_get", return_value=html):
             result = adapter.fetch_animal_list()
 
-        assert result == [], (
-            f"empty state ページでは空配列が返るはず: got {result!r}"
-        )
+        assert result == [], f"empty state ページでは空配列が返るはず: got {result!r}"
 
     def test_fetch_animal_list_caches_html(self, fixture_html):
         """同一インスタンスでの繰り返し呼び出しは HTTP を 1 回しか実行しない"""
@@ -146,16 +140,11 @@ class TestCityMachidaAdapter:
             "町田市（保護情報）",
             "町田市（捜索：飼い主が探している）",
         ):
-            assert (
-                CityMachidaAdapter._infer_species_from_site_name(name) == ""
-            )
+            assert CityMachidaAdapter._infer_species_from_site_name(name) == ""
 
     def test_infer_species_from_site_name_with_dog_keyword(self):
         """サイト名に "犬" を含む場合は "犬" を返す (汎用ロジック)"""
-        assert (
-            CityMachidaAdapter._infer_species_from_site_name("町田市（迷子犬）")
-            == "犬"
-        )
+        assert CityMachidaAdapter._infer_species_from_site_name("町田市（迷子犬）") == "犬"
 
     def test_all_three_sites_registered(self):
         """3 つの町田市サイト名すべてが Registry に登録されている

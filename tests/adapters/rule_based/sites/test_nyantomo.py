@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.nyantomo import NyantomoAdapter
 from data_collector.llm.config import SiteConfig
@@ -67,9 +65,7 @@ def test_extract_returns_raw_data():
     adapter = NyantomoAdapter(_site())
     with patch.object(adapter, "_http_get", return_value=SAMPLE_HTML):
         adapter.fetch_animal_list()
-        raw = adapter.extract_animal_details(
-            f"{adapter.site_config.list_url}#row=0"
-        )
+        raw = adapter.extract_animal_details(f"{adapter.site_config.list_url}#row=0")
     assert raw.species == "猫"  # サイト名から推定 or 固定
     assert raw.sex == "メス"
     assert raw.age == "約6歳3ヵ月"

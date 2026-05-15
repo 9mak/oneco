@@ -38,7 +38,7 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup
 
 from ....domain.models import RawAnimalData
 from ...municipality_adapter import ParsingError
@@ -63,11 +63,11 @@ class CityFunabashiAdapter(SinglePageTableAdapter):
     # RawAnimalData に対応するフィールドが無いため除外する。
     COLUMN_FIELDS: ClassVar[dict[int, str]] = {
         1: "shelter_date",  # 収容年月日
-        3: "location",      # 収容場所
-        4: "species",       # 動物種 (犬 / 猫)
-        6: "color",         # 毛色
-        7: "sex",           # 性別
-        8: "size",          # 体格
+        3: "location",  # 収容場所
+        4: "species",  # 動物種 (犬 / 猫)
+        6: "color",  # 毛色
+        7: "sex",  # 性別
+        8: "size",  # 体格
     }
     LOCATION_COLUMN: ClassVar[int | None] = 3
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
@@ -87,7 +87,7 @@ class CityFunabashiAdapter(SinglePageTableAdapter):
         soup = BeautifulSoup(self._html_cache, "html.parser")
         if soup.select_one("div.boxEntryFreeform table") is None:
             raise ParsingError(
-                f"テーブルが見つかりません",
+                "テーブルが見つかりません",
                 selector="div.boxEntryFreeform table",
                 url=self.site_config.list_url,
             )
@@ -98,14 +98,9 @@ class CityFunabashiAdapter(SinglePageTableAdapter):
         if not rows:
             return []
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """テーブル行から RawAnimalData を構築する
 
         基底のセルベース既定実装に加え、画像列 (列 10) の絶対 URL 化と、
@@ -124,9 +119,7 @@ class CityFunabashiAdapter(SinglePageTableAdapter):
         fields: dict[str, str] = {}
         for col_idx, field_name in self.COLUMN_FIELDS.items():
             if col_idx < len(cells):
-                fields[field_name] = cells[col_idx].get_text(
-                    separator=" ", strip=True
-                )
+                fields[field_name] = cells[col_idx].get_text(separator=" ", strip=True)
 
         location = fields.get("location", "")
         # 「動物種」列はサイトによっては空欄や記号があり得るので、
@@ -150,9 +143,7 @@ class CityFunabashiAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 

@@ -40,7 +40,6 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # 「No.XXXXXX」を含む h2 のみを動物ブロックの先頭とみなすパターン。
 # 「お問い合わせ」等のセクション見出しを誤検出しないためのガード。
 _ANIMAL_H2_RE = re.compile(r"No\.?\s*\d+", re.IGNORECASE)
@@ -131,10 +130,7 @@ class CityKagoshimaAdapter(SinglePageTableAdapter):
         """
         rows = self._load_rows()
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
     def extract_animal_details(
         self, virtual_url: str, category: str = "sheltered"
@@ -180,9 +176,7 @@ class CityKagoshimaAdapter(SinglePageTableAdapter):
                 age=fields.get("age", ""),
                 color="",  # 鹿児島市の HTML には毛色項目が無い
                 size=fields.get("size", ""),
-                shelter_date=fields.get(
-                    "shelter_date", self.SHELTER_DATE_DEFAULT
-                ),
+                shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
                 location=fields.get("location", ""),
                 phone="",
                 image_urls=self._filter_image_urls(image_urls, virtual_url),
@@ -190,9 +184,7 @@ class CityKagoshimaAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 

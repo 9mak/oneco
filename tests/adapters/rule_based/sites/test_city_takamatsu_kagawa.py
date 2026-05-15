@@ -113,9 +113,7 @@ def _site_cat() -> SiteConfig:
 class TestCityTakamatsuKagawaAdapterListExtraction:
     """list ページからの detail URL 抽出"""
 
-    def test_fetch_animal_list_returns_empty_for_zero_stock_fixture(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_returns_empty_for_zero_stock_fixture(self, fixture_html):
         """在庫 0 件の fixture (テーブルが見出し行のみ) では空リストを返す
 
         高松市の一覧 HTML は JS でデータ行を動的に追加する仕組みのため、
@@ -203,19 +201,12 @@ class TestCityTakamatsuKagawaAdapterListExtraction:
 class TestCityTakamatsuKagawaAdapterDetailExtraction:
     """detail ページからの RawAnimalData 構築"""
 
-    def test_extract_animal_details_returns_raw_data_dog(
-        self, assert_raw_animal
-    ):
+    def test_extract_animal_details_returns_raw_data_dog(self, assert_raw_animal):
         """`<th>/<td>` テーブルの詳細ページから各フィールドが抽出できる"""
         adapter = CityTakamatsuKagawaAdapter(_site_dog())
-        detail_url = (
-            "https://www.city.takamatsu.kagawa.jp/udanimo/"
-            "ani_infodetail1.html?infoid=1234"
-        )
+        detail_url = "https://www.city.takamatsu.kagawa.jp/udanimo/ani_infodetail1.html?infoid=1234"
         with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_DOG):
-            raw = adapter.extract_animal_details(
-                detail_url, category="lost"
-            )
+            raw = adapter.extract_animal_details(detail_url, category="lost")
 
         assert isinstance(raw, RawAnimalData)
         assert_raw_animal(
@@ -237,19 +228,12 @@ class TestCityTakamatsuKagawaAdapterDetailExtraction:
         assert all("/common/image/" not in u for u in raw.image_urls)
         assert all("/animal/" in u for u in raw.image_urls)
 
-    def test_extract_animal_details_supports_two_column_table(
-        self, assert_raw_animal
-    ):
+    def test_extract_animal_details_supports_two_column_table(self, assert_raw_animal):
         """`<th>` を持たない 2 列テーブルからも値を抽出できる"""
         adapter = CityTakamatsuKagawaAdapter(_site_cat())
-        detail_url = (
-            "https://www.city.takamatsu.kagawa.jp/udanimo/"
-            "ani_infodetail1.html?infoid=5678"
-        )
+        detail_url = "https://www.city.takamatsu.kagawa.jp/udanimo/ani_infodetail1.html?infoid=5678"
         with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_2COL):
-            raw = adapter.extract_animal_details(
-                detail_url, category="lost"
-            )
+            raw = adapter.extract_animal_details(detail_url, category="lost")
 
         assert isinstance(raw, RawAnimalData)
         assert_raw_animal(
@@ -282,9 +266,7 @@ class TestCityTakamatsuKagawaAdapterDetailExtraction:
             "ani_infodetail1.html?infoid=1&animaltype=1"
         )
         with patch.object(adapter, "_http_get", return_value=detail_html):
-            raw = adapter.extract_animal_details(
-                detail_url, category="lost"
-            )
+            raw = adapter.extract_animal_details(detail_url, category="lost")
         assert raw.species == "犬"
 
     def test_extract_animal_details_infers_species_from_site_list_url(self):
@@ -298,14 +280,9 @@ class TestCityTakamatsuKagawaAdapterDetailExtraction:
         """
         # site_config の list_url は animaltype=2 (猫)
         adapter = CityTakamatsuKagawaAdapter(_site_cat())
-        detail_url = (
-            "https://www.city.takamatsu.kagawa.jp/udanimo/"
-            "ani_infodetail1.html?infoid=999"
-        )
+        detail_url = "https://www.city.takamatsu.kagawa.jp/udanimo/ani_infodetail1.html?infoid=999"
         with patch.object(adapter, "_http_get", return_value=detail_html):
-            raw = adapter.extract_animal_details(
-                detail_url, category="lost"
-            )
+            raw = adapter.extract_animal_details(detail_url, category="lost")
         assert raw.species == "猫"
 
     def test_extract_raises_on_empty_html(self):
@@ -318,8 +295,7 @@ class TestCityTakamatsuKagawaAdapterDetailExtraction:
         ):
             with pytest.raises(Exception):
                 adapter.extract_animal_details(
-                    "https://www.city.takamatsu.kagawa.jp/udanimo/"
-                    "ani_infodetail1.html?infoid=99999"
+                    "https://www.city.takamatsu.kagawa.jp/udanimo/ani_infodetail1.html?infoid=99999"
                 )
 
 
@@ -338,9 +314,7 @@ class TestCityTakamatsuKagawaAdapterSpeciesInference:
         ],
     )
     def test_infer_species_from_url(self, url, expected):
-        assert (
-            CityTakamatsuKagawaAdapter._infer_species_from_url(url) == expected
-        )
+        assert CityTakamatsuKagawaAdapter._infer_species_from_url(url) == expected
 
     @pytest.mark.parametrize(
         "name,expected",
@@ -352,10 +326,7 @@ class TestCityTakamatsuKagawaAdapterSpeciesInference:
         ],
     )
     def test_infer_species_from_site_name(self, name, expected):
-        assert (
-            CityTakamatsuKagawaAdapter._infer_species_from_site_name(name)
-            == expected
-        )
+        assert CityTakamatsuKagawaAdapter._infer_species_from_site_name(name) == expected
 
 
 class TestCityTakamatsuKagawaAdapterRegistry:
@@ -371,9 +342,7 @@ class TestCityTakamatsuKagawaAdapterRegistry:
         # 他テストが registry を clear する場合の冪等性のため、
         # 未登録なら再登録してから確認する。
         if SiteAdapterRegistry.get(site_name) is None:
-            SiteAdapterRegistry.register(
-                site_name, CityTakamatsuKagawaAdapter
-            )
+            SiteAdapterRegistry.register(site_name, CityTakamatsuKagawaAdapter)
         cls = SiteAdapterRegistry.get(site_name)
         assert cls is CityTakamatsuKagawaAdapter, (
             f"{site_name} が CityTakamatsuKagawaAdapter に紐付いていません: {cls}"

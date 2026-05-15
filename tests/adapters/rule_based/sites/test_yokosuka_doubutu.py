@@ -106,9 +106,7 @@ class TestYokosukaDoubutuAdapter:
         list_html = fixture_html("yokosuka_doubutu__dog")
         adapter = YokosukaDoubutuAdapter(_site())
 
-        with patch.object(
-            adapter, "_http_get", side_effect=[list_html, DETAIL_HTML]
-        ):
+        with patch.object(adapter, "_http_get", side_effect=[list_html, DETAIL_HTML]):
             urls = adapter.fetch_animal_list()
             assert urls, "fixture から詳細 URL を 1 件も抽出できなかった"
             detail_url, category = urls[0]
@@ -163,9 +161,7 @@ class TestYokosukaDoubutuAdapter:
     def test_extract_raises_on_empty_html(self):
         """テーブルが見当たらない HTML では ParsingError 系例外を出す"""
         adapter = YokosukaDoubutuAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.extract_animal_details(
                     "https://www.yokosuka-doubutu.com/protected-animals/00-00/"

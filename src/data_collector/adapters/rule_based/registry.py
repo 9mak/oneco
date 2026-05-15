@@ -18,12 +18,10 @@ if TYPE_CHECKING:
 class SiteAdapterRegistry:
     """サイト名 → rule-based adapter class の静的レジストリ"""
 
-    _registry: dict[str, type["RuleBasedAdapter"]] = {}
+    _registry: dict[str, type[RuleBasedAdapter]] = {}
 
     @classmethod
-    def register(
-        cls, site_name: str, adapter_cls: type["RuleBasedAdapter"]
-    ) -> None:
+    def register(cls, site_name: str, adapter_cls: type[RuleBasedAdapter]) -> None:
         """site_name と adapter_cls を関連付ける
 
         Args:
@@ -35,14 +33,11 @@ class SiteAdapterRegistry:
         """
         if site_name in cls._registry:
             existing = cls._registry[site_name].__name__
-            raise ValueError(
-                f"site '{site_name}' is already registered "
-                f"by {existing}"
-            )
+            raise ValueError(f"site '{site_name}' is already registered by {existing}")
         cls._registry[site_name] = adapter_cls
 
     @classmethod
-    def get(cls, site_name: str) -> type["RuleBasedAdapter"] | None:
+    def get(cls, site_name: str) -> type[RuleBasedAdapter] | None:
         """site_name に対応する adapter class を返す（未登録時は None）"""
         return cls._registry.get(site_name)
 

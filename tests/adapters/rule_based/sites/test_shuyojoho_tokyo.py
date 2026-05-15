@@ -227,9 +227,7 @@ class TestShuyojohoTokyoAdapterInheritance:
 
         assert result == "<html>JS-rendered</html>"
         kwargs = mock_cls.call_args.kwargs
-        assert (
-            kwargs.get("wait_selector") == ShuyojohoTokyoAdapter.WAIT_SELECTOR
-        )
+        assert kwargs.get("wait_selector") == ShuyojohoTokyoAdapter.WAIT_SELECTOR
 
 
 class TestShuyojohoTokyoAdapterListExtraction:
@@ -246,9 +244,7 @@ class TestShuyojohoTokyoAdapterListExtraction:
         assert any(u.endswith("/animals/detail/8700") for u in urls)
         assert any(u.endswith("/animals/detail/8701") for u in urls)
         # 全 URL が絶対 URL
-        assert all(
-            u.startswith("https://shuyojoho.metro.tokyo.lg.jp/") for u in urls
-        )
+        assert all(u.startswith("https://shuyojoho.metro.tokyo.lg.jp/") for u in urls)
         # category は site_config 由来
         assert all(cat == "sheltered" for _u, cat in result)
         # 関係ない絞り込み / ヘルプリンクは混入しない
@@ -282,9 +278,7 @@ class TestShuyojohoTokyoAdapterDetailExtraction:
         adapter = ShuyojohoTokyoAdapter(_site_cat())
         detail_url = "https://shuyojoho.metro.tokyo.lg.jp/animals/detail/8700"
         with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_CAT):
-            raw = adapter.extract_animal_details(
-                detail_url, category="sheltered"
-            )
+            raw = adapter.extract_animal_details(detail_url, category="sheltered")
 
         assert isinstance(raw, RawAnimalData)
         assert_raw_animal(
@@ -310,9 +304,7 @@ class TestShuyojohoTokyoAdapterDetailExtraction:
         adapter = ShuyojohoTokyoAdapter(_site_dog())
         detail_url = "https://shuyojoho.metro.tokyo.lg.jp/animals/detail/8701"
         with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_DOG):
-            raw = adapter.extract_animal_details(
-                detail_url, category="sheltered"
-            )
+            raw = adapter.extract_animal_details(detail_url, category="sheltered")
 
         assert_raw_animal(
             raw,
@@ -330,12 +322,8 @@ class TestShuyojohoTokyoAdapterDetailExtraction:
         """species ラベルが空でも 動物名「ネコ」から "猫" が推定される"""
         adapter = ShuyojohoTokyoAdapter(_site_cat())
         detail_url = "https://shuyojoho.metro.tokyo.lg.jp/animals/detail/9001"
-        with patch.object(
-            adapter, "_http_get", return_value=DETAIL_HTML_NO_SPECIES_LABEL_CAT
-        ):
-            raw = adapter.extract_animal_details(
-                detail_url, category="sheltered"
-            )
+        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_NO_SPECIES_LABEL_CAT):
+            raw = adapter.extract_animal_details(detail_url, category="sheltered")
         assert raw.species == "猫"
 
     def test_extract_animal_details_infers_species_from_list_url_cat(self):
@@ -347,9 +335,7 @@ class TestShuyojohoTokyoAdapterDetailExtraction:
             "_http_get",
             return_value=DETAIL_HTML_NO_SPECIES_NO_ANIMAL_NAME,
         ):
-            raw = adapter.extract_animal_details(
-                detail_url, category="sheltered"
-            )
+            raw = adapter.extract_animal_details(detail_url, category="sheltered")
         assert raw.species == "猫"
 
     def test_extract_animal_details_infers_species_from_site_name_dog(self):
@@ -361,17 +347,13 @@ class TestShuyojohoTokyoAdapterDetailExtraction:
             "_http_get",
             return_value=DETAIL_HTML_NO_SPECIES_NO_ANIMAL_NAME,
         ):
-            raw = adapter.extract_animal_details(
-                detail_url, category="sheltered"
-            )
+            raw = adapter.extract_animal_details(detail_url, category="sheltered")
         assert raw.species == "犬"
 
     def test_extract_raises_on_empty_html(self):
         """1 フィールドも抽出できない HTML では ParsingError"""
         adapter = ShuyojohoTokyoAdapter(_site_dog())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(ParsingError):
                 adapter.extract_animal_details(
                     "https://shuyojoho.metro.tokyo.lg.jp/animals/detail/x"
@@ -409,10 +391,7 @@ class TestShuyojohoTokyoAdapterSpeciesInference:
     )
     def test_infer_species_from_animal_name(self, html, expected):
         soup = BeautifulSoup(html, "html.parser")
-        assert (
-            ShuyojohoTokyoAdapter._infer_species_from_animal_name(soup)
-            == expected
-        )
+        assert ShuyojohoTokyoAdapter._infer_species_from_animal_name(soup) == expected
 
     @pytest.mark.parametrize(
         "url,expected",
@@ -426,9 +405,7 @@ class TestShuyojohoTokyoAdapterSpeciesInference:
         ],
     )
     def test_infer_species_from_list_url(self, url, expected):
-        assert (
-            ShuyojohoTokyoAdapter._infer_species_from_list_url(url) == expected
-        )
+        assert ShuyojohoTokyoAdapter._infer_species_from_list_url(url) == expected
 
     @pytest.mark.parametrize(
         "name,expected",
@@ -440,10 +417,7 @@ class TestShuyojohoTokyoAdapterSpeciesInference:
         ],
     )
     def test_infer_species_from_site_name(self, name, expected):
-        assert (
-            ShuyojohoTokyoAdapter._infer_species_from_site_name(name)
-            == expected
-        )
+        assert ShuyojohoTokyoAdapter._infer_species_from_site_name(name) == expected
 
 
 class TestShuyojohoTokyoAdapterRegistry:
@@ -469,7 +443,8 @@ class TestShuyojohoTokyoAdapterRegistry:
             if SiteAdapterRegistry.get(name) is None:
                 SiteAdapterRegistry.register(name, ShuyojohoTokyoAdapter)
         registered = [
-            n for n in self.EXPECTED_SITE_NAMES
+            n
+            for n in self.EXPECTED_SITE_NAMES
             if SiteAdapterRegistry.get(n) is ShuyojohoTokyoAdapter
         ]
         assert len(registered) == 2

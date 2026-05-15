@@ -35,7 +35,6 @@
 
 from __future__ import annotations
 
-import re
 from typing import ClassVar
 
 from bs4 import BeautifulSoup, Tag
@@ -114,10 +113,7 @@ class AomoriAnimalAdapter(SinglePageTableAdapter):
         """動物リスト取得 (在庫 0 件でも ParsingError を出さない)"""
         rows = self._load_rows()
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
     def extract_animal_details(
         self, virtual_url: str, category: str = "sheltered"
@@ -134,9 +130,7 @@ class AomoriAnimalAdapter(SinglePageTableAdapter):
                 url=virtual_url,
             )
         row = rows[idx]
-        cells = [
-            c for c in row.find_all(["td", "th"]) if isinstance(c, Tag)
-        ]
+        cells = [c for c in row.find_all(["td", "th"]) if isinstance(c, Tag)]
 
         species = self._extract_species(cells)
         shelter_date = self._cell_text(cells, 1)
@@ -163,9 +157,7 @@ class AomoriAnimalAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     def _filter_image_urls(self, urls: list[str], base_url: str) -> list[str]:
         """`Shuyoimg/` 配下の画像のみを残す (基底の uploads 規約は使わない)"""
@@ -264,6 +256,4 @@ class AomoriAnimalAdapter(SinglePageTableAdapter):
 
 
 # ─────────────────── サイト登録 ───────────────────
-SiteAdapterRegistry.register(
-    "青森県動物愛護センター（収容情報）", AomoriAnimalAdapter
-)
+SiteAdapterRegistry.register("青森県動物愛護センター（収容情報）", AomoriAnimalAdapter)

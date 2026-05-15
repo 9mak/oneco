@@ -81,9 +81,7 @@ class CityOkayamaAdapter(WordPressListAdapter):
 
     # 詳細記事 URL の典型パターン: 10 桁数字 + `.html`
     # 例: "/kurashi/0000067714.html", "./../0000067714.html"
-    _ARTICLE_HREF_RE: ClassVar[re.Pattern[str]] = re.compile(
-        r"/?\d{10}\.html$"
-    )
+    _ARTICLE_HREF_RE: ClassVar[re.Pattern[str]] = re.compile(r"/?\d{10}\.html$")
 
     # ─────────────────── オーバーライド ───────────────────
 
@@ -120,9 +118,7 @@ class CityOkayamaAdapter(WordPressListAdapter):
             urls.append((absolute, category))
         return urls
 
-    def extract_animal_details(
-        self, detail_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, detail_url: str, category: str = "adoption") -> RawAnimalData:
         """detail ページから RawAnimalData を構築する
 
         基底実装に加え、以下の岡山市固有処理を行う:
@@ -177,9 +173,7 @@ class CityOkayamaAdapter(WordPressListAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=detail_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=detail_url) from e
 
     # ─────────────────── 抽出ヘルパー拡張 ───────────────────
 
@@ -211,9 +205,7 @@ class CityOkayamaAdapter(WordPressListAdapter):
                 return sibling_text
         return ""
 
-    def _filter_image_urls(
-        self, urls: list[str], base_url: str
-    ) -> list[str]:
+    def _filter_image_urls(self, urls: list[str], base_url: str) -> list[str]:
         """テンプレート (/css/, /design_img/, /images/) の装飾画像を除外する
 
         岡山市 CMS は `/css/img/`, `/design_img/`, `/images/` 配下に
@@ -221,7 +213,8 @@ class CityOkayamaAdapter(WordPressListAdapter):
         除外後に 0 件になった場合は元リストを返す (フェイルセーフ)。
         """
         filtered = [
-            u for u in urls
+            u
+            for u in urls
             if "/css/img/" not in u
             and "/css/" not in u
             and "/design_img/" not in u

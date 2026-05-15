@@ -29,10 +29,7 @@ def _site(*, cat: bool = False) -> SiteConfig:
             name="佐世保市（保護猫）",
             prefecture="長崎県",
             prefecture_code="42",
-            list_url=(
-                "https://www.city.sasebo.lg.jp/hokenhukusi/seikat/"
-                "mayoinekohogo.html"
-            ),
+            list_url=("https://www.city.sasebo.lg.jp/hokenhukusi/seikat/mayoinekohogo.html"),
             category="sheltered",
             list_link_pattern="a[href*='_cat']",
         )
@@ -40,10 +37,7 @@ def _site(*, cat: bool = False) -> SiteConfig:
         name="佐世保市（保護犬）",
         prefecture="長崎県",
         prefecture_code="42",
-        list_url=(
-            "https://www.city.sasebo.lg.jp/hokenhukusi/seikat/"
-            "hogodoubutsu.html"
-        ),
+        list_url=("https://www.city.sasebo.lg.jp/hokenhukusi/seikat/hogodoubutsu.html"),
         category="sheltered",
         list_link_pattern="a[href*='_dog']",
     )
@@ -79,10 +73,7 @@ class TestCitySaseboAdapter:
 
         assert len(result) == 1, "フィクスチャには保護犬 1 件のみ存在する"
         url, cat = result[0]
-        assert url == (
-            "https://www.city.sasebo.lg.jp/hokenhukusi/seikat/"
-            "20260313_dog01.html"
-        )
+        assert url == ("https://www.city.sasebo.lg.jp/hokenhukusi/seikat/20260313_dog01.html")
         assert "_dog" in url
         assert cat == "sheltered"
 
@@ -154,9 +145,7 @@ class TestCitySaseboAdapter:
     def test_raises_parsing_error_when_no_container(self):
         """`#tmp_contents` が無い HTML では例外を出す"""
         adapter = CitySaseboAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()
 

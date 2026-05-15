@@ -104,9 +104,7 @@ class CitySaseboAdapter(SinglePageTableAdapter):
             result.append((absolute, category))
         return result
 
-    def extract_animal_details(
-        self, detail_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, detail_url: str, category: str = "adoption") -> RawAnimalData:
         """`detail_url` に対応する `<a>` 要素から RawAnimalData を構築する
 
         detail ページへの追加 HTTP は行わず、一覧 HTML キャッシュ内の
@@ -118,9 +116,7 @@ class CitySaseboAdapter(SinglePageTableAdapter):
             for i, link in enumerate(rows):
                 href = link.get("href")
                 if isinstance(href, str):
-                    self._detail_url_to_index.setdefault(
-                        self._absolute_url(href), i
-                    )
+                    self._detail_url_to_index.setdefault(self._absolute_url(href), i)
 
         # 仮想 URL (`<list_url>#row=N`) で渡された場合のフォールバック
         idx: int | None = None
@@ -167,9 +163,7 @@ class CitySaseboAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=detail_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=detail_url) from e
 
     # ─────────────────── 行ロード ───────────────────
 
@@ -237,9 +231,7 @@ class CitySaseboAdapter(SinglePageTableAdapter):
     # 例: "令和8年3月13日（金曜日）山祇町（雑種、オス）"
     # 解析戦略: 末尾の括弧 `（雑種、オス）` から犬種と性別を取り出し、
     # それより前の "曜日)" 以降の文字列から場所、先頭の和暦から日付を取る。
-    _PAREN_RE: ClassVar[re.Pattern[str]] = re.compile(
-        r"[（(]([^（）()]+)[）)]\s*$"
-    )
+    _PAREN_RE: ClassVar[re.Pattern[str]] = re.compile(r"[（(]([^（）()]+)[）)]\s*$")
     # 元号の文字間にも空白が混ざりうる (例: `<span>令</span>和8年` を
     # get_text(separator=" ") で取り出すと "令 和8年..." になる)
     _DATE_RE: ClassVar[re.Pattern[str]] = re.compile(
@@ -265,12 +257,11 @@ class CitySaseboAdapter(SinglePageTableAdapter):
             if any(k in p for k in ("オス", "メス", "雄", "雌")):
                 # 性別単独 or "オス・メス" 等の混合表記
                 sex = cls._normalize_sex(p)
+            # 性別キーワードを含まない部分は犬種/猫種扱い
+            elif not species:
+                species = p
             else:
-                # 性別キーワードを含まない部分は犬種/猫種扱い
-                if not species:
-                    species = p
-                else:
-                    species = f"{species}、{p}"
+                species = f"{species}、{p}"
         # 性別単独で species が空の場合はそのまま (species は空)
         return species, sex
 
@@ -299,7 +290,7 @@ class CitySaseboAdapter(SinglePageTableAdapter):
         # まず日付パターンを検出
         m = cls._DATE_RE.search(body)
         if m:
-            after = body[m.end():]
+            after = body[m.end() :]
             # 曜日括弧 (`（金曜日）` / `(金)` 等) を先頭から剥がす
             after = re.sub(r"^[（(][^）)]*[）)]", "", after).strip()
             return after

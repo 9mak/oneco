@@ -28,9 +28,7 @@ class KochiApcAdapter(RuleBasedAdapter):
     def fetch_animal_list(self) -> list[tuple[str, str]]:
         return self._kochi.fetch_animal_list()
 
-    def extract_animal_details(
-        self, detail_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, detail_url: str, category: str = "adoption") -> RawAnimalData:
         return self._kochi.extract_animal_details(detail_url, category)
 
     def normalize(self, raw_data: RawAnimalData) -> AnimalData:

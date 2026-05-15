@@ -35,7 +35,6 @@ from ..playwright import PlaywrightFetchMixin
 from ..registry import SiteAdapterRegistry
 from ..wordpress_list import FieldSpec, WordPressListAdapter
 
-
 # 施設情報 (sites.yaml に記載が無い固定値。香川県公式サイトより)
 _CENTER_NAME = "さぬき動物愛護センター"
 _CENTER_PHONE = "087-815-2255"
@@ -57,9 +56,7 @@ class SanukiKagawaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
 
     # ─────────────────── WordPressList 設定 ───────────────────
     # PDF へのリンクのみを拾う (sites.yaml の pdf_link_pattern と同一)。
-    LIST_LINK_SELECTOR: ClassVar[str] = (
-        "a[href*='/documents/6103/'][href$='.pdf']"
-    )
+    LIST_LINK_SELECTOR: ClassVar[str] = "a[href*='/documents/6103/'][href$='.pdf']"
 
     # detail HTML を持たないため FieldSpec は使用しないが、
     # 基底クラスのインタフェース上は宣言しておく。
@@ -96,9 +93,7 @@ class SanukiKagawaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
             urls.append((absolute, category))
         return urls
 
-    def extract_animal_details(
-        self, detail_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, detail_url: str, category: str = "adoption") -> RawAnimalData:
         """PDF URL から最小 RawAnimalData を構築する
 
         PDF はバイナリで HTML として fetch できないため、ネットワーク
@@ -140,9 +135,7 @@ class SanukiKagawaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=detail_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=detail_url) from e
 
     # ─────────────────── 種別推定 ───────────────────
 

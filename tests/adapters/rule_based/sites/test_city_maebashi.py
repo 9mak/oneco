@@ -26,8 +26,7 @@ def _site() -> SiteConfig:
         prefecture="群馬県",
         prefecture_code="10",
         list_url=(
-            "https://www.city.maebashi.gunma.jp/"
-            "soshiki/kenko/eiseikensa/gyomu/1/1/1/9484.html"
+            "https://www.city.maebashi.gunma.jp/soshiki/kenko/eiseikensa/gyomu/1/1/1/9484.html"
         ),
         category="sheltered",
     )
@@ -51,8 +50,7 @@ class TestCityMaebashiAdapter:
         url, cat = result[0]
         assert "#row=0" in url
         assert url.startswith(
-            "https://www.city.maebashi.gunma.jp/"
-            "soshiki/kenko/eiseikensa/gyomu/1/1/1/9484.html"
+            "https://www.city.maebashi.gunma.jp/soshiki/kenko/eiseikensa/gyomu/1/1/1/9484.html"
         )
         assert cat == "sheltered"
 
@@ -95,9 +93,7 @@ class TestCityMaebashiAdapter:
 
         with patch.object(adapter, "_http_get", return_value=html):
             urls = adapter.fetch_animal_list()
-            results = [
-                adapter.extract_animal_details(u, category=c) for u, c in urls
-            ]
+            results = [adapter.extract_animal_details(u, category=c) for u, c in urls]
 
         for raw in results:
             assert "円" not in raw.location
@@ -158,21 +154,9 @@ class TestCityMaebashiAdapter:
 
     def test_species_inferred_from_site_name(self):
         """site name から species を正しく推定する"""
-        assert (
-            CityMaebashiAdapter._infer_species_from_site_name(
-                "前橋市（保護犬）"
-            )
-            == "犬"
-        )
-        assert (
-            CityMaebashiAdapter._infer_species_from_site_name(
-                "前橋市（保護猫）"
-            )
-            == "猫"
-        )
-        assert (
-            CityMaebashiAdapter._infer_species_from_site_name("前橋市") == ""
-        )
+        assert CityMaebashiAdapter._infer_species_from_site_name("前橋市（保護犬）") == "犬"
+        assert CityMaebashiAdapter._infer_species_from_site_name("前橋市（保護猫）") == "猫"
+        assert CityMaebashiAdapter._infer_species_from_site_name("前橋市") == ""
 
     def test_iso_date_parser(self):
         """管理番号セルのリンクテキストから ISO 日付を取り出す"""
@@ -180,10 +164,7 @@ class TestCityMaebashiAdapter:
         # zero-padding を保証
         assert CityMaebashiAdapter._parse_iso_date("2026-5-2") == "2026-05-02"
         # 周辺文字列があっても抽出される
-        assert (
-            CityMaebashiAdapter._parse_iso_date("管理番号 2026-05-02 詳細")
-            == "2026-05-02"
-        )
+        assert CityMaebashiAdapter._parse_iso_date("管理番号 2026-05-02 詳細") == "2026-05-02"
         # マッチしない場合は空文字
         assert CityMaebashiAdapter._parse_iso_date("no date here") == ""
 
@@ -191,12 +172,8 @@ class TestCityMaebashiAdapter:
         """「前橋市（保護犬）」が Registry に登録されている"""
         # 他テストが registry を clear する場合に備えて冪等に再登録
         if SiteAdapterRegistry.get("前橋市（保護犬）") is None:
-            SiteAdapterRegistry.register(
-                "前橋市（保護犬）", CityMaebashiAdapter
-            )
-        assert (
-            SiteAdapterRegistry.get("前橋市（保護犬）") is CityMaebashiAdapter
-        )
+            SiteAdapterRegistry.register("前橋市（保護犬）", CityMaebashiAdapter)
+        assert SiteAdapterRegistry.get("前橋市（保護犬）") is CityMaebashiAdapter
 
     def test_normalize_returns_animal_data(self, fixture_html):
         """RawAnimalData を normalize して AnimalData に変換できる"""

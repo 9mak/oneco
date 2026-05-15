@@ -199,9 +199,7 @@ class TestKumamotoDoubutuAigoAdapterListExtraction:
     def test_fetch_animal_list_extracts_post_animals_detail_urls(self):
         """`/post_animals/detail/...` の URL も抽出できる"""
         adapter = KumamotoDoubutuAigoAdapter(_site_post_dog())
-        with patch.object(
-            adapter, "_http_get", return_value=LIST_HTML_POST_ANIMALS
-        ):
+        with patch.object(adapter, "_http_get", return_value=LIST_HTML_POST_ANIMALS):
             result = adapter.fetch_animal_list()
 
         urls = [u for u, _cat in result]
@@ -224,9 +222,7 @@ class TestKumamotoDoubutuAigoAdapterDetailExtraction:
     def test_extract_animal_details_from_definition_list(self, assert_raw_animal):
         """`<dt>/<dd>` 定義リストから各フィールドが抽出できる"""
         adapter = KumamotoDoubutuAigoAdapter(_site_center_dog())
-        detail_url = (
-            "https://www.kumamoto-doubutuaigo.jp/animals/detail/animal_id:101"
-        )
+        detail_url = "https://www.kumamoto-doubutuaigo.jp/animals/detail/animal_id:101"
         with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_DOG):
             raw = adapter.extract_animal_details(detail_url, category="adoption")
 
@@ -251,12 +247,8 @@ class TestKumamotoDoubutuAigoAdapterDetailExtraction:
     def test_extract_animal_details_from_th_td_table(self, assert_raw_animal):
         """`<th>/<td>` テーブルからも値を抽出できる"""
         adapter = KumamotoDoubutuAigoAdapter(_site_center_cat())
-        detail_url = (
-            "https://www.kumamoto-doubutuaigo.jp/animals/detail/animal_id:202"
-        )
-        with patch.object(
-            adapter, "_http_get", return_value=DETAIL_HTML_CAT_TABLE
-        ):
+        detail_url = "https://www.kumamoto-doubutuaigo.jp/animals/detail/animal_id:202"
+        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_CAT_TABLE):
             raw = adapter.extract_animal_details(detail_url, category="adoption")
 
         assert_raw_animal(
@@ -280,9 +272,7 @@ class TestKumamotoDoubutuAigoAdapterDetailExtraction:
         </body></html>
         """
         adapter = KumamotoDoubutuAigoAdapter(_site_center_dog())  # animal_id:1
-        detail_url = (
-            "https://www.kumamoto-doubutuaigo.jp/animals/detail/foo"
-        )
+        detail_url = "https://www.kumamoto-doubutuaigo.jp/animals/detail/foo"
         with patch.object(adapter, "_http_get", return_value=detail_html):
             raw = adapter.extract_animal_details(detail_url, category="adoption")
         assert raw.species == "犬"
@@ -304,9 +294,7 @@ class TestKumamotoDoubutuAigoAdapterDetailExtraction:
     def test_extract_raises_on_empty_html(self):
         """1 フィールドも抽出できない HTML では ParsingError"""
         adapter = KumamotoDoubutuAigoAdapter(_site_center_dog())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(ParsingError):
                 adapter.extract_animal_details(
                     "https://www.kumamoto-doubutuaigo.jp/animals/detail/x"
@@ -335,9 +323,7 @@ class TestKumamotoDoubutuAigoAdapterSpeciesInference:
         ],
     )
     def test_infer_species_from_url(self, url, expected):
-        assert (
-            KumamotoDoubutuAigoAdapter._infer_species_from_url(url) == expected
-        )
+        assert KumamotoDoubutuAigoAdapter._infer_species_from_url(url) == expected
 
     @pytest.mark.parametrize(
         "name,expected",
@@ -354,10 +340,7 @@ class TestKumamotoDoubutuAigoAdapterSpeciesInference:
         ],
     )
     def test_infer_species_from_site_name(self, name, expected):
-        assert (
-            KumamotoDoubutuAigoAdapter._infer_species_from_site_name(name)
-            == expected
-        )
+        assert KumamotoDoubutuAigoAdapter._infer_species_from_site_name(name) == expected
 
 
 class TestKumamotoDoubutuAigoAdapterRegistry:
@@ -387,11 +370,10 @@ class TestKumamotoDoubutuAigoAdapterRegistry:
     def test_all_eight_sites_registered(self):
         for name in self.EXPECTED_SITE_NAMES:
             if SiteAdapterRegistry.get(name) is None:
-                SiteAdapterRegistry.register(
-                    name, KumamotoDoubutuAigoAdapter
-                )
+                SiteAdapterRegistry.register(name, KumamotoDoubutuAigoAdapter)
         registered = [
-            n for n in self.EXPECTED_SITE_NAMES
+            n
+            for n in self.EXPECTED_SITE_NAMES
             if SiteAdapterRegistry.get(n) is KumamotoDoubutuAigoAdapter
         ]
         assert len(registered) == 8

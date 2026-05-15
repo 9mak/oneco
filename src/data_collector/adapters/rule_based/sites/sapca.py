@@ -49,6 +49,4 @@ class SapcaAdapter(WordPressListAdapter):
 
 
 # ─────────────────── サイト登録 ───────────────────
-SiteAdapterRegistry.register(
-    "滋賀県動物保護管理センター（迷い犬猫）", SapcaAdapter
-)
+SiteAdapterRegistry.register("滋賀県動物保護管理センター（迷い犬猫）", SapcaAdapter)

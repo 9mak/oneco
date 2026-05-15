@@ -57,9 +57,7 @@ class PrefHiroshimaAdapter(SinglePageTableAdapter):
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
 
     # 「管理番号：」の見出しを判定する regex (全角/半角コロン両対応)
-    _MGMT_HEAD_RE: ClassVar[re.Pattern[str]] = re.compile(
-        r"管理番号\s*[：:]"
-    )
+    _MGMT_HEAD_RE: ClassVar[re.Pattern[str]] = re.compile(r"管理番号\s*[：:]")
 
     def __init__(self, site_config) -> None:
         super().__init__(site_config)
@@ -114,9 +112,8 @@ class PrefHiroshimaAdapter(SinglePageTableAdapter):
                     headers.append(current_header)
                 current_header = child
                 current_body = []
-            else:
-                if current_header is not None:
-                    current_body.append(child)
+            elif current_header is not None:
+                current_body.append(child)
         if current_header is not None:
             blocks.append((current_header, current_body))
             headers.append(current_header)
@@ -133,14 +130,9 @@ class PrefHiroshimaAdapter(SinglePageTableAdapter):
         """
         rows = self._load_rows()
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "lost"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "lost") -> RawAnimalData:
         """管理番号ブロック (h2 + 後続 p 群) から RawAnimalData を構築する"""
         rows = self._load_rows()
         idx = self._parse_row_index(virtual_url)
@@ -150,7 +142,7 @@ class PrefHiroshimaAdapter(SinglePageTableAdapter):
                 url=virtual_url,
             )
         assert self._blocks_cache is not None  # _load_rows で必ずセットされる
-        header, body_tags = self._blocks_cache[idx]
+        _header, body_tags = self._blocks_cache[idx]
 
         # 属性テキストは body_tags 内の <p> を結合して扱う
         # (<br> は改行に置換することで「収容された日：…」等の行頭ラベルを保つ)
@@ -223,9 +215,7 @@ class PrefHiroshimaAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 
@@ -265,9 +255,7 @@ class PrefHiroshimaAdapter(SinglePageTableAdapter):
     @staticmethod
     def _looks_like_sex(token: str) -> bool:
         return token in ("雄", "雌", "オス", "メス", "おす", "めす", "♂", "♀") or (
-            "性" not in token and (
-                "雄" == token or "雌" == token
-            )
+            "性" not in token and (token in {"雄", "雌"})
         )
 
     @staticmethod
@@ -302,7 +290,10 @@ class PrefHiroshimaAdapter(SinglePageTableAdapter):
         if "（" in token or "(" in token:
             # 種別補足 ("雑種（柴犬風）" 等) は色ではない
             return False
-        return any(c in token for c in ("茶", "黒", "白", "灰", "赤", "黄", "クリーム", "三毛", "ブチ", "キジ", "縞"))
+        return any(
+            c in token
+            for c in ("茶", "黒", "白", "灰", "赤", "黄", "クリーム", "三毛", "ブチ", "キジ", "縞")
+        )
 
     @staticmethod
     def _extract_labeled(full_text: str, labels: tuple[str, ...]) -> str:
@@ -314,7 +305,7 @@ class PrefHiroshimaAdapter(SinglePageTableAdapter):
                 for sep in ("：", ":"):
                     prefix = f"{label}{sep}"
                     if line.startswith(prefix):
-                        return line[len(prefix):].strip()
+                        return line[len(prefix) :].strip()
         return ""
 
     @staticmethod
@@ -333,7 +324,7 @@ class PrefHiroshimaAdapter(SinglePageTableAdapter):
                 for sep in ("：", ":"):
                     prefix = f"{label}{sep}"
                     if line.startswith(prefix):
-                        raw = line[len(prefix):].strip()
+                        raw = line[len(prefix) :].strip()
                         break
                 if raw:
                     break
@@ -343,9 +334,7 @@ class PrefHiroshimaAdapter(SinglePageTableAdapter):
             return ""
 
         # 「令和N年M月D日に / YYYY年M月D日に / N月D日に」までを除去
-        date_re = re.compile(
-            r"^(令和|平成|昭和)?\s*\d+\s*年\s*\d+\s*月\s*\d+\s*日\s*に"
-        )
+        date_re = re.compile(r"^(令和|平成|昭和)?\s*\d+\s*年\s*\d+\s*月\s*\d+\s*日\s*に")
         without_date = date_re.sub("", raw, count=1).strip()
 
         # 「で保護されました」「で発見されました」より前を場所候補とする

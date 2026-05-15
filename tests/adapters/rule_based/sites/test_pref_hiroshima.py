@@ -12,8 +12,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.pref_hiroshima import (
     PrefHiroshimaAdapter,
@@ -24,9 +22,7 @@ from data_collector.llm.config import SiteConfig
 
 def _site(
     name: str = "広島県動物愛護センター（迷い犬）",
-    list_url: str = (
-        "https://www.pref.hiroshima.lg.jp/site/apc/jouto-stray-dog-list.html"
-    ),
+    list_url: str = ("https://www.pref.hiroshima.lg.jp/site/apc/jouto-stray-dog-list.html"),
     category: str = "lost",
 ) -> SiteConfig:
     return SiteConfig(
@@ -133,9 +129,7 @@ class TestPrefHiroshimaAdapter:
         with patch.object(adapter, "_http_get", return_value=html):
             result = adapter.fetch_animal_list()
 
-        assert result == [], (
-            f"在庫 0 件ページは空リストが返るはず: got {result!r}"
-        )
+        assert result == [], f"在庫 0 件ページは空リストが返るはず: got {result!r}"
 
     def test_inline_inline_block_is_extracted(self):
         """h2 ブロックを直接組み立てた HTML から RawAnimalData が抽出できる"""
@@ -188,9 +182,7 @@ class TestPrefHiroshimaAdapter:
         adapter = PrefHiroshimaAdapter(_site())
         with patch.object(adapter, "_http_get", return_value=html):
             urls = adapter.fetch_animal_list()
-            raws = [
-                adapter.extract_animal_details(u, category=c) for u, c in urls
-            ]
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
 
         assert len(raws) == 2
         assert raws[0].sex == "オス"
@@ -203,10 +195,7 @@ class TestPrefHiroshimaAdapter:
         adapter = PrefHiroshimaAdapter(
             _site(
                 name="広島県動物愛護センター（迷い猫）",
-                list_url=(
-                    "https://www.pref.hiroshima.lg.jp/site/apc/"
-                    "jouto-stray-cat-list.html"
-                ),
+                list_url=("https://www.pref.hiroshima.lg.jp/site/apc/jouto-stray-cat-list.html"),
             )
         )
         html = (
@@ -226,15 +215,11 @@ class TestPrefHiroshimaAdapter:
     def test_infer_species_from_site_name(self):
         """ヘルパー: サイト名から動物種別を推定する規則を直接テストする"""
         assert (
-            PrefHiroshimaAdapter._infer_species_from_site_name(
-                "広島県動物愛護センター（迷い犬）"
-            )
+            PrefHiroshimaAdapter._infer_species_from_site_name("広島県動物愛護センター（迷い犬）")
             == "犬"
         )
         assert (
-            PrefHiroshimaAdapter._infer_species_from_site_name(
-                "広島県動物愛護センター（迷い猫）"
-            )
+            PrefHiroshimaAdapter._infer_species_from_site_name("広島県動物愛護センター（迷い猫）")
             == "猫"
         )
 

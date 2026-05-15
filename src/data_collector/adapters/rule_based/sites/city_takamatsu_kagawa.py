@@ -120,9 +120,7 @@ class CityTakamatsuKagawaAdapter(WordPressListAdapter):
             urls.append((absolute, category))
         return urls
 
-    def extract_animal_details(
-        self, detail_url: str, category: str = "sheltered"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, detail_url: str, category: str = "sheltered") -> RawAnimalData:
         """detail ページから RawAnimalData を構築する
 
         基底実装に加え、以下の高松市固有処理を行う:
@@ -150,17 +148,15 @@ class CityTakamatsuKagawaAdapter(WordPressListAdapter):
         if not fields.get("phone"):
             footer = soup.select_one(self._FOOTER_PHONE_SELECTOR)
             if footer is not None:
-                fields["phone"] = self._zenkaku_to_hankaku(
-                    footer.get_text(strip=True)
-                )
+                fields["phone"] = self._zenkaku_to_hankaku(footer.get_text(strip=True))
 
         # species 補完: 抽出値が空の場合は URL クエリ → サイト名の順で推定
         if not fields.get("species"):
-            inferred = self._infer_species_from_url(
-                detail_url
-            ) or self._infer_species_from_url(
-                self.site_config.list_url
-            ) or self._infer_species_from_site_name(self.site_config.name)
+            inferred = (
+                self._infer_species_from_url(detail_url)
+                or self._infer_species_from_url(self.site_config.list_url)
+                or self._infer_species_from_site_name(self.site_config.name)
+            )
             if inferred:
                 fields["species"] = inferred
 
@@ -181,9 +177,7 @@ class CityTakamatsuKagawaAdapter(WordPressListAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=detail_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=detail_url) from e
 
     # ─────────────────── 拡張: 抽出ヘルパー ───────────────────
 
@@ -215,9 +209,7 @@ class CityTakamatsuKagawaAdapter(WordPressListAdapter):
                 return sibling_text
         return ""
 
-    def _filter_image_urls(
-        self, urls: list[str], base_url: str
-    ) -> list[str]:
+    def _filter_image_urls(self, urls: list[str], base_url: str) -> list[str]:
         """高松市テンプレート (common/image/) の装飾画像を除外する
 
         高松市の HTML はロゴ・ナビゲーション画像を `common/image/` 配下に

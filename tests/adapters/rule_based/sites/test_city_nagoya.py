@@ -12,8 +12,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.city_nagoya import (
     CityNagoyaAdapter,
@@ -24,9 +22,7 @@ from data_collector.llm.config import SiteConfig
 
 def _site(
     name: str = "名古屋市（譲渡犬）",
-    list_url: str = (
-        "https://www.city.nagoya.jp/kurashi/pet/1015473/1015483/1015484.html"
-    ),
+    list_url: str = ("https://www.city.nagoya.jp/kurashi/pet/1015473/1015483/1015484.html"),
     category: str = "adoption",
 ) -> SiteConfig:
     return SiteConfig(
@@ -123,10 +119,7 @@ class TestCityNagoyaAdapter:
         adapter = CityNagoyaAdapter(
             _site(
                 name="名古屋市（飼主不明動物）",
-                list_url=(
-                    "https://www.city.nagoya.jp/"
-                    "kurashi/pet/1015473/1015489/1015493.html"
-                ),
+                list_url=("https://www.city.nagoya.jp/kurashi/pet/1015473/1015489/1015493.html"),
                 category="lost",
             )
         )
@@ -184,10 +177,7 @@ class TestCityNagoyaAdapter:
         html = _build_html_with_combined_date_location()
         cat_site = _site(
             name="名古屋市（譲渡猫）",
-            list_url=(
-                "https://www.city.nagoya.jp/"
-                "kurashi/pet/1015473/1015483/1015488.html"
-            ),
+            list_url=("https://www.city.nagoya.jp/kurashi/pet/1015473/1015483/1015488.html"),
         )
         adapter = CityNagoyaAdapter(cat_site)
 
@@ -208,10 +198,7 @@ class TestCityNagoyaAdapter:
         html = _build_html_with_one_row()
         lost_site = _site(
             name="名古屋市（飼主不明動物）",
-            list_url=(
-                "https://www.city.nagoya.jp/"
-                "kurashi/pet/1015473/1015489/1015493.html"
-            ),
+            list_url=("https://www.city.nagoya.jp/kurashi/pet/1015473/1015489/1015493.html"),
             category="lost",
         )
         adapter = CityNagoyaAdapter(lost_site)

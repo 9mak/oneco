@@ -24,9 +24,7 @@ from data_collector.llm.config import SiteConfig
 
 def _site(
     name: str = "あかし動物センター（迷子犬）",
-    list_url: str = (
-        "https://www.city.akashi.lg.jp/kankyou/dobutsu/info/maigo/dog.html"
-    ),
+    list_url: str = ("https://www.city.akashi.lg.jp/kankyou/dobutsu/info/maigo/dog.html"),
 ) -> SiteConfig:
     return SiteConfig(
         name=name,
@@ -174,9 +172,7 @@ class TestCityAkashiAdapter:
         """
         cat_site = _site(
             name="あかし動物センター（迷子猫）",
-            list_url=(
-                "https://www.city.akashi.lg.jp/kankyou/dobutsu/info/maigo/cat.html"
-            ),
+            list_url=("https://www.city.akashi.lg.jp/kankyou/dobutsu/info/maigo/cat.html"),
         )
         adapter = CityAkashiAdapter(cat_site)
 
@@ -226,9 +222,7 @@ class TestCityAkashiAdapter:
     def test_raises_parsing_error_when_no_main_container(self):
         """`#tmp_contents` 自体が無い (テンプレート崩壊) 場合は例外を出す"""
         adapter = CityAkashiAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()
 

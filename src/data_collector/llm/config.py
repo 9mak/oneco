@@ -34,7 +34,9 @@ class SiteConfig(BaseModel):
         None  # PDFリンクのCSSセレクター（指定時はPDFをダウンロードして抽出）
     )
     pdf_multi_animal: bool = False  # TrueのときPDF1件から複数動物を抽出（一覧表形式PDF用）
-    fallback_to_llm: bool = False  # rule-based 抽出失敗時に LLM 抽出で再試行（rule-basedモードのみ意味あり）
+    fallback_to_llm: bool = (
+        False  # rule-based 抽出失敗時に LLM 抽出で再試行（rule-basedモードのみ意味あり）
+    )
 
     @field_validator("name", "prefecture", "list_url")
     @classmethod

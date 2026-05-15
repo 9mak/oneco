@@ -77,9 +77,7 @@ class TestCityKoshigayaAdapter:
 
         assert result == []
 
-    def test_fetch_animal_list_empty_state_preprocessed_html(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_empty_state_preprocessed_html(self, fixture_html):
         """mojibake 補正済みの HTML を渡しても 0 件として扱える"""
         html = _load_koshigaya_html(fixture_html)
         adapter = CityKoshigayaAdapter(_site())
@@ -160,9 +158,7 @@ class TestCityKoshigayaAdapter:
 
         with patch.object(adapter, "_http_get", return_value=synthetic_html) as mock_get:
             urls = adapter.fetch_animal_list()
-            raws = [
-                adapter.extract_animal_details(u, category=c) for u, c in urls
-            ]
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
 
         # 同一ページから複数取得しても HTTP は 1 回だけ (キャッシュ確認)
         assert mock_get.call_count == 1
@@ -198,18 +194,10 @@ class TestCityKoshigayaAdapter:
         adapter_dog = CityKoshigayaAdapter(_site(name="越谷市（保護犬）"))
         assert adapter_dog._infer_species_from_site_name("越谷市（保護犬）") == "犬"
         # 保護猫
-        assert (
-            CityKoshigayaAdapter._infer_species_from_site_name(
-                "越谷市（保護猫）"
-            )
-            == "猫"
-        )
+        assert CityKoshigayaAdapter._infer_species_from_site_name("越谷市（保護猫）") == "猫"
         # 個人保護犬猫 (犬猫いずれもありうるため "その他")
         assert (
-            CityKoshigayaAdapter._infer_species_from_site_name(
-                "越谷市（個人保護犬猫）"
-            )
-            == "その他"
+            CityKoshigayaAdapter._infer_species_from_site_name("越谷市（個人保護犬猫）") == "その他"
         )
 
     def test_all_three_sites_registered(self):
@@ -228,8 +216,6 @@ class TestCityKoshigayaAdapter:
     def test_raises_parsing_error_when_no_animal_table(self):
         """動物テーブルも告知文も無い HTML では ParsingError 系例外を出す"""
         adapter = CityKoshigayaAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()

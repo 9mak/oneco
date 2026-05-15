@@ -90,9 +90,7 @@ class CityFukuyamaAdapter(SinglePageTableAdapter):
         if isinstance(tbody, Tag):
             rows = [r for r in tbody.find_all("tr") if isinstance(r, Tag)]
         else:
-            all_rows = [
-                r for r in target_table.find_all("tr") if isinstance(r, Tag)
-            ]
+            all_rows = [r for r in target_table.find_all("tr") if isinstance(r, Tag)]
             thead = target_table.find("thead")
             if isinstance(thead, Tag):
                 head_rows = {id(r) for r in thead.find_all("tr")}
@@ -115,14 +113,9 @@ class CityFukuyamaAdapter(SinglePageTableAdapter):
         """
         rows = self._load_rows()
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """テーブル行から RawAnimalData を構築する
 
         species をサイト名 (犬/猫) で上書きし、shelter_date / location は
@@ -141,9 +134,7 @@ class CityFukuyamaAdapter(SinglePageTableAdapter):
         fields: dict[str, str] = {}
         for col_idx, field_name in self.COLUMN_FIELDS.items():
             if col_idx < len(cells):
-                fields[field_name] = cells[col_idx].get_text(
-                    separator=" ", strip=True
-                )
+                fields[field_name] = cells[col_idx].get_text(separator=" ", strip=True)
 
         # 動物種別はサイト名から推定 (福山市は犬/猫の 2 サイト運用)。
         # HTML の「種類」列 (例: 柴, 雑) は犬種/猫種詳細のため species
@@ -159,9 +150,7 @@ class CityFukuyamaAdapter(SinglePageTableAdapter):
                 age="",
                 color=fields.get("color", ""),
                 size="",
-                shelter_date=fields.get(
-                    "shelter_date", self.SHELTER_DATE_DEFAULT
-                ),
+                shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
                 location=fields.get("location", ""),
                 phone="",
                 image_urls=self._extract_row_images(row, virtual_url),
@@ -169,9 +158,7 @@ class CityFukuyamaAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 
@@ -185,9 +172,7 @@ class CityFukuyamaAdapter(SinglePageTableAdapter):
         for table in soup.find_all("table"):
             if not isinstance(table, Tag):
                 continue
-            header_text = " ".join(
-                th.get_text(strip=True) for th in table.find_all("th")
-            )
+            header_text = " ".join(th.get_text(strip=True) for th in table.find_all("th"))
             if all(kw in header_text for kw in _REQUIRED_HEADER_KEYWORDS):
                 return table
         return None

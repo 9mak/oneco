@@ -64,9 +64,7 @@ class OitaAigoAdapter(SinglePageTableAdapter):
 
     # ─────────────────── オーバーライド ───────────────────
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """`<div class="information_box">` カードから RawAnimalData を構築する
 
         基底の `td/th` ベース実装ではなく、`<dl><dt>label</dt><dd>value</dd></dl>`
@@ -93,9 +91,7 @@ class OitaAigoAdapter(SinglePageTableAdapter):
             shelter_date = self.SHELTER_DATE_DEFAULT
 
         # 動物種別はサイト名/URL から推定 (HTML には明示されない)。
-        species = self._infer_species(
-            self.site_config.name, self.site_config.list_url
-        )
+        species = self._infer_species(self.site_config.name, self.site_config.list_url)
 
         try:
             return RawAnimalData(
@@ -112,9 +108,7 @@ class OitaAigoAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 

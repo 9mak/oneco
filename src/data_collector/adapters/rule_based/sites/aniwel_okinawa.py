@@ -27,7 +27,6 @@ from __future__ import annotations
 from typing import ClassVar
 
 from ....domain.models import AnimalData, RawAnimalData
-from ...municipality_adapter import ParsingError
 from ..playwright import PlaywrightFetchMixin
 from ..registry import SiteAdapterRegistry
 from ..wordpress_list import FieldSpec, WordPressListAdapter
@@ -71,9 +70,7 @@ class AniwelOkinawaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
 
     # ─────────────────── オーバーライド ───────────────────
 
-    def extract_animal_details(
-        self, detail_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, detail_url: str, category: str = "adoption") -> RawAnimalData:
         """詳細ページ抽出。species が空ならサイト名から補完する。"""
         raw = super().extract_animal_details(detail_url, category=category)
         if not raw.species:

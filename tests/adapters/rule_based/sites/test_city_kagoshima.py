@@ -11,8 +11,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.city_kagoshima import (
     CityKagoshimaAdapter,
@@ -69,14 +67,10 @@ class TestCityKagoshimaAdapter:
         with patch.object(adapter, "_http_get", return_value=html):
             result = adapter.fetch_animal_list()
 
-        assert len(result) == 1, (
-            "現役 1 件のみが対象 (返還済 2 件は除外されるはず)"
-        )
+        assert len(result) == 1, "現役 1 件のみが対象 (返還済 2 件は除外されるはず)"
         url, cat = result[0]
         assert url.endswith("#row=0")
-        assert url.startswith(
-            "https://www.city.kagoshima.lg.jp/"
-        )
+        assert url.startswith("https://www.city.kagoshima.lg.jp/")
         assert cat == "sheltered"
 
     def test_extract_animal_details_first_row(self, fixture_html):
@@ -120,9 +114,7 @@ class TestCityKagoshimaAdapter:
 
         with patch.object(adapter, "_http_get", return_value=html):
             urls = adapter.fetch_animal_list()
-            details = [
-                adapter.extract_animal_details(u, category=c) for u, c in urls
-            ]
+            details = [adapter.extract_animal_details(u, category=c) for u, c in urls]
 
         # 返還済みの場所 (錦江台 / 平川町) は結果に含まれない
         locations = [d.location for d in details]

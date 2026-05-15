@@ -47,9 +47,7 @@ class PdfTableAdapter(RuleBasedAdapter):
         super().__init_subclass__(**kwargs)
         abstracts = getattr(cls, "__abstractmethods__", frozenset())
         if not abstracts and not cls.PDF_LINK_SELECTOR:
-            raise TypeError(
-                f"{cls.__name__} must define PDF_LINK_SELECTOR class variable"
-            )
+            raise TypeError(f"{cls.__name__} must define PDF_LINK_SELECTOR class variable")
 
     # ─────────────────── MunicipalityAdapter 実装 ───────────────────
 
@@ -59,7 +57,7 @@ class PdfTableAdapter(RuleBasedAdapter):
         pdf_links = soup.select(self.PDF_LINK_SELECTOR)
         if not pdf_links:
             raise ParsingError(
-                f"PDF リンクが見つかりません",
+                "PDF リンクが見つかりません",
                 selector=self.PDF_LINK_SELECTOR,
                 url=self.site_config.list_url,
             )
@@ -76,14 +74,10 @@ class PdfTableAdapter(RuleBasedAdapter):
                 urls.append((f"{pdf_url}#row={i}", category))
         return urls
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         # virtual_url: "https://.../foo.pdf#row=N"
         if "#row=" not in virtual_url:
-            raise ParsingError(
-                f"無効な仮想 URL: {virtual_url}", url=virtual_url
-            )
+            raise ParsingError(f"無効な仮想 URL: {virtual_url}", url=virtual_url)
         pdf_url, row_part = virtual_url.split("#row=", 1)
         idx = int(row_part)
 
@@ -110,9 +104,7 @@ class PdfTableAdapter(RuleBasedAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     def normalize(self, raw_data: RawAnimalData) -> AnimalData:
         return self._default_normalize(raw_data)

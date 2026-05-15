@@ -62,8 +62,8 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
     # 既定実装は本サイトでは使わないが、契約として明示的に宣言する)。
     COLUMN_FIELDS: ClassVar[dict[int, str]] = {
         0: "location",  # <p class="txt"><a>{市町村名}</a></p>
-        1: "sex",       # <p>{オス|メス|不明}</p>
-        2: "color",     # <p>{毛色}</p>
+        1: "sex",  # <p>{オス|メス|不明}</p>
+        2: "color",  # <p>{毛色}</p>
     }
     # location 列のインデックス (上の COLUMN_FIELDS と整合)
     LOCATION_COLUMN: ClassVar[int | None] = 0
@@ -72,9 +72,7 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
 
     # ─────────────────── オーバーライド ───────────────────
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """`<div class="menu_item">` カードから RawAnimalData を構築する
 
         基底の `td/th` ベース実装ではなく、`.item_link_ttl > p` の並びを
@@ -94,8 +92,7 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
         paragraphs: list[Tag] = []
         if isinstance(title_block, Tag):
             paragraphs = [
-                p for p in title_block.find_all("p", recursive=False)
-                if isinstance(p, Tag)
+                p for p in title_block.find_all("p", recursive=False) if isinstance(p, Tag)
             ]
 
         fields: dict[str, str] = {}
@@ -125,9 +122,7 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 

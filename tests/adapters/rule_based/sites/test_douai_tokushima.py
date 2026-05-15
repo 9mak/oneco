@@ -32,7 +32,6 @@ from data_collector.adapters.rule_based.sites.douai_tokushima import (
 from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
 
-
 # ─────────────────── SiteConfig helpers ───────────────────
 
 
@@ -228,9 +227,7 @@ class TestIframeUrlMapping:
 
     def test_stray_uses_list1_iframe(self):
         adapter = DouaiTokushimaAdapter(_stray_site())
-        with patch.object(
-            adapter, "_http_get", return_value=STRAY_HTML
-        ) as mock_get:
+        with patch.object(adapter, "_http_get", return_value=STRAY_HTML) as mock_get:
             adapter.fetch_animal_list()
         # ラッパ /stray/ ではなく iframe URL を fetch する
         assert mock_get.called
@@ -239,18 +236,14 @@ class TestIframeUrlMapping:
 
     def test_dog_transfer_uses_list4_1_iframe(self):
         adapter = DouaiTokushimaAdapter(_dog_site())
-        with patch.object(
-            adapter, "_http_get", return_value=DOG_TRANSFER_HTML
-        ) as mock_get:
+        with patch.object(adapter, "_http_get", return_value=DOG_TRANSFER_HTML) as mock_get:
             adapter.fetch_animal_list()
         called_url = mock_get.call_args.args[0]
         assert called_url == "https://douai-tokushima.com/animalinfo/list4_1"
 
     def test_cat_transfer_uses_list4_2_iframe(self):
         adapter = DouaiTokushimaAdapter(_cat_site())
-        with patch.object(
-            adapter, "_http_get", return_value=CAT_TRANSFER_HTML
-        ) as mock_get:
+        with patch.object(adapter, "_http_get", return_value=CAT_TRANSFER_HTML) as mock_get:
             adapter.fetch_animal_list()
         called_url = mock_get.call_args.args[0]
         assert called_url == "https://douai-tokushima.com/animalinfo/list4_2"
@@ -335,9 +328,7 @@ class TestDouaiTokushimaDetailExtraction:
             shelter_date="2026/5/14",
         )
 
-    def test_dog_transfer_uses_species_hint_when_table_lacks_kind(
-        self, assert_raw_animal
-    ):
+    def test_dog_transfer_uses_species_hint_when_table_lacks_kind(self, assert_raw_animal):
         """譲渡犬テーブルには `<td aria-label="種類">` が無いが、
         サイト名から species を「犬」に補完できる"""
         adapter = DouaiTokushimaAdapter(_dog_site())
@@ -381,9 +372,7 @@ class TestDouaiTokushimaDetailExtraction:
     def test_http_get_cached_across_list_and_detail(self):
         """fetch + N件 extract で _http_get は 1 回しか呼ばれない"""
         adapter = DouaiTokushimaAdapter(_stray_site())
-        with patch.object(
-            adapter, "_http_get", return_value=STRAY_HTML
-        ) as mock_get:
+        with patch.object(adapter, "_http_get", return_value=STRAY_HTML) as mock_get:
             urls = adapter.fetch_animal_list()
             for url, cat in urls:
                 adapter.extract_animal_details(url, category=cat)
@@ -430,16 +419,12 @@ class TestDouaiTokushimaPlaywrightIntegration:
             "data_collector.adapters.rule_based.playwright.PlaywrightFetcher",
             return_value=mock_fetcher,
         ) as mock_cls:
-            adapter._http_get(
-                "https://douai-tokushima.com/animalinfo/list1/"
-            )
+            adapter._http_get("https://douai-tokushima.com/animalinfo/list1/")
 
         mock_cls.assert_called_once()
         kwargs = mock_cls.call_args.kwargs
         assert kwargs.get("wait_selector") == "ul.news"
-        mock_fetcher.fetch.assert_called_once_with(
-            "https://douai-tokushima.com/animalinfo/list1/"
-        )
+        mock_fetcher.fetch.assert_called_once_with("https://douai-tokushima.com/animalinfo/list1/")
 
 
 # ─────────────────── registry ───────────────────

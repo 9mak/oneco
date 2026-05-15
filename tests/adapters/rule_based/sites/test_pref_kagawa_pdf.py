@@ -21,7 +21,6 @@ from data_collector.adapters.rule_based.sites.pref_kagawa_pdf import (
 from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
 
-
 # ─────────────────── テスト用データ ───────────────────
 
 _LIST_HTML = """
@@ -75,8 +74,7 @@ def _site(name: str = "東讃保健福祉事務所（収容動物）") -> SiteCo
         prefecture="香川県",
         prefecture_code="37",
         list_url=(
-            "https://www.pref.kagawa.lg.jp/tosanhoken/tosanhoken/animal/"
-            "sjiaen191105113550.html"
+            "https://www.pref.kagawa.lg.jp/tosanhoken/tosanhoken/animal/sjiaen191105113550.html"
         ),
         category="lost",
     )
@@ -154,9 +152,11 @@ class TestFetchAndExtract:
                 return _PDF_TEXT_TWO_ANIMALS
             return _PDF_TEXT_ONE_ANIMAL
 
-        with patch.object(adapter, "_http_get", return_value=_LIST_HTML), \
-             patch.object(adapter, "_download_pdf", side_effect=fake_download), \
-             patch.object(adapter, "_extract_pdf_text", side_effect=fake_extract):
+        with (
+            patch.object(adapter, "_http_get", return_value=_LIST_HTML),
+            patch.object(adapter, "_download_pdf", side_effect=fake_download),
+            patch.object(adapter, "_extract_pdf_text", side_effect=fake_extract),
+        ):
             result = adapter.fetch_animal_list()
 
         assert len(result) == 3
@@ -170,11 +170,11 @@ class TestFetchAndExtract:
         """仮想 URL から RawAnimalData が構築できる"""
         adapter = PrefKagawaPdfAdapter(_site())
 
-        with patch.object(adapter, "_http_get", return_value=_LIST_HTML), \
-             patch.object(adapter, "_download_pdf", return_value=b"PDF"), \
-             patch.object(
-                 adapter, "_extract_pdf_text", return_value=_PDF_TEXT_TWO_ANIMALS
-             ):
+        with (
+            patch.object(adapter, "_http_get", return_value=_LIST_HTML),
+            patch.object(adapter, "_download_pdf", return_value=b"PDF"),
+            patch.object(adapter, "_extract_pdf_text", return_value=_PDF_TEXT_TWO_ANIMALS),
+        ):
             urls = adapter.fetch_animal_list()
             first_url, category = urls[0]
             raw = adapter.extract_animal_details(first_url, category=category)
@@ -194,13 +194,11 @@ class TestFetchAndExtract:
         """同一 PDF URL に対する複数 row 取得で download は 1 回のみ"""
         adapter = PrefKagawaPdfAdapter(_site())
 
-        with patch.object(adapter, "_http_get", return_value=_LIST_HTML), \
-             patch.object(
-                 adapter, "_download_pdf", return_value=b"PDF"
-             ) as mock_dl, \
-             patch.object(
-                 adapter, "_extract_pdf_text", return_value=_PDF_TEXT_TWO_ANIMALS
-             ):
+        with (
+            patch.object(adapter, "_http_get", return_value=_LIST_HTML),
+            patch.object(adapter, "_download_pdf", return_value=b"PDF") as mock_dl,
+            patch.object(adapter, "_extract_pdf_text", return_value=_PDF_TEXT_TWO_ANIMALS),
+        ):
             urls = adapter.fetch_animal_list()
             # 2 PDF だが片方は 2 頭, もう片方は 2 頭 (extract が常に同一テキストを返すため)
             # → fetch 段階で各 PDF 1 回ずつ download される (合計 2 回)
@@ -252,11 +250,11 @@ class TestNormalize:
         """RawAnimalData を normalize して AnimalData に変換できる"""
         adapter = PrefKagawaPdfAdapter(_site())
 
-        with patch.object(adapter, "_http_get", return_value=_LIST_HTML), \
-             patch.object(adapter, "_download_pdf", return_value=b"PDF"), \
-             patch.object(
-                 adapter, "_extract_pdf_text", return_value=_PDF_TEXT_TWO_ANIMALS
-             ):
+        with (
+            patch.object(adapter, "_http_get", return_value=_LIST_HTML),
+            patch.object(adapter, "_download_pdf", return_value=b"PDF"),
+            patch.object(adapter, "_extract_pdf_text", return_value=_PDF_TEXT_TWO_ANIMALS),
+        ):
             urls = adapter.fetch_animal_list()
             raw = adapter.extract_animal_details(urls[0][0], category="lost")
             normalized = adapter.normalize(raw)

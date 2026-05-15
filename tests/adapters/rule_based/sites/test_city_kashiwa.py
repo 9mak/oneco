@@ -136,9 +136,7 @@ class TestCityKashiwaAdapter:
         assert isinstance(raw, RawAnimalData)
         assert raw.species == "猫"
         # 「写真なし」のカードでは image_urls は空でも例外にならない
-        assert raw.image_urls == [] or all(
-            isinstance(u, str) for u in raw.image_urls
-        )
+        assert raw.image_urls == [] or all(isinstance(u, str) for u in raw.image_urls)
 
     def test_all_rows_extractable(self, fixture_html):
         """フィクスチャ内全カードが ParsingError なく抽出できる"""
@@ -166,7 +164,7 @@ class TestCityKashiwaAdapter:
         with patch.object(adapter, "_http_get", return_value=html):
             urls = adapter.fetch_animal_list()
             assert len(urls) >= 1
-            for url, category in urls:
+            for _url, category in urls:
                 assert category == "adoption"
             raw = adapter.extract_animal_details(urls[0][0], category="adoption")
 
@@ -188,9 +186,7 @@ class TestCityKashiwaAdapter:
     def test_raises_parsing_error_when_no_blocks_and_no_empty_state(self):
         """0 件告知すら無い空 HTML では ParsingError 系例外を出す"""
         adapter = CityKashiwaAdapter(_site_hogo())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()
 

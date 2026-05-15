@@ -26,8 +26,7 @@ def _site_dog() -> SiteConfig:
         prefecture="広島県",
         prefecture_code="34",
         list_url=(
-            "https://www.city.hiroshima.lg.jp/"
-            "living/pet-doubutsu/1021301/1026245/1037461.html"
+            "https://www.city.hiroshima.lg.jp/living/pet-doubutsu/1021301/1026245/1037461.html"
         ),
         category="lost",
         single_page=True,
@@ -40,8 +39,7 @@ def _site_cat() -> SiteConfig:
         prefecture="広島県",
         prefecture_code="34",
         list_url=(
-            "https://www.city.hiroshima.lg.jp/"
-            "living/pet-doubutsu/1021301/1026245/1039097.html"
+            "https://www.city.hiroshima.lg.jp/living/pet-doubutsu/1021301/1026245/1039097.html"
         ),
         category="lost",
         single_page=True,
@@ -112,9 +110,7 @@ class TestCityHiroshimaAdapter:
         assert raw.image_urls
         assert all(u.startswith("http") for u in raw.image_urls)
         # 動物写真のみで、SNS / 装飾アイコンは含まれない
-        assert all(
-            "/sns/" not in u and "/parts/" not in u for u in raw.image_urls
-        )
+        assert all("/sns/" not in u and "/parts/" not in u for u in raw.image_urls)
 
     def test_species_inferred_for_cat_site(self, fixture_html):
         """猫サイトでは species='猫' と推定される (フィクスチャは犬ページだが
@@ -144,9 +140,7 @@ class TestCityHiroshimaAdapter:
     def test_raises_parsing_error_when_no_dl(self):
         """`<dl>` が存在しない HTML では ParsingError 系例外を出す"""
         adapter = CityHiroshimaAdapter(_site_dog())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()
 
@@ -157,10 +151,7 @@ class TestCityHiroshimaAdapter:
         その場合 `<dl>` 自体が無くなることが多いが、テンプレート上だけ
         残るケースに備えて防御的に動作することを確認する。
         """
-        empty_html = (
-            '<html><body><div id="voice"><h2>該当なし</h2>'
-            "<dl></dl></div></body></html>"
-        )
+        empty_html = '<html><body><div id="voice"><h2>該当なし</h2><dl></dl></div></body></html>'
         adapter = CityHiroshimaAdapter(_site_dog())
         with patch.object(adapter, "_http_get", return_value=empty_html):
             urls = adapter.fetch_animal_list()

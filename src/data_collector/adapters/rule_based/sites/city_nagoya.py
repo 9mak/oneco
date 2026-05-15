@@ -36,7 +36,6 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # ヘッダラベル → RawAnimalData フィールド名 のマッピング。
 # ラベルは部分一致で判定する (例: "収容日・収容場所" は "収容日" でヒット)。
 _LABEL_TO_FIELD: dict[str, str] = {
@@ -89,14 +88,9 @@ class CityNagoyaAdapter(SinglePageTableAdapter):
         """
         rows = self._load_data_rows()
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """テーブル行 + ヘッダラベルから RawAnimalData を構築する
 
         ヘッダ行 (`<th>` を含む行) があれば列ラベル → field マップを学習し、
@@ -151,9 +145,7 @@ class CityNagoyaAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 
@@ -173,9 +165,7 @@ class CityNagoyaAdapter(SinglePageTableAdapter):
             ヘッダ行が見つからない場合は空辞書 (= 抽出フィールド無し)。
         """
         all_rows = self._load_rows()
-        header = next(
-            (r for r in all_rows if self._is_header_row(r)), None
-        )
+        header = next((r for r in all_rows if self._is_header_row(r)), None)
         if header is None:
             return {}
 
@@ -221,9 +211,7 @@ class CityNagoyaAdapter(SinglePageTableAdapter):
         if m:
             return m.group(1), m.group(2).strip()
         # 西暦 yyyy/M/d または yyyy-M-d
-        m = re.match(
-            r"\s*(\d{4}[/\-]\d{1,2}[/\-]\d{1,2})\s*(.*)$", text
-        )
+        m = re.match(r"\s*(\d{4}[/\-]\d{1,2}[/\-]\d{1,2})\s*(.*)$", text)
         if m:
             return m.group(1), m.group(2).strip()
         return text, ""

@@ -244,9 +244,7 @@ class TestCityKitakyushuAdapter:
         with patch.object(adapter, "_http_get", return_value=html):
             urls = adapter.fetch_animal_list()
             assert len(urls) == 3
-            raws = [
-                adapter.extract_animal_details(u, category=c) for u, c in urls
-            ]
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
 
         assert raws[0].location == "小倉南区"
         assert raws[1].location == "門司区"
@@ -283,9 +281,7 @@ class TestCityKitakyushuAdapter:
     def test_returns_empty_list_when_no_table_at_all(self):
         """テーブルが完全に存在しない HTML では空リスト (在庫 0 件)"""
         adapter = CityKitakyushuAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             result = adapter.fetch_animal_list()
         assert result == []
 

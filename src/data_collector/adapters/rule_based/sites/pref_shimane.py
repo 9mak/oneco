@@ -30,11 +30,8 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # 「YYYY年M月D日」「YYYY/M/D」「YYYY-M-D」を ISO に揃えるための正規表現
-_DATE_RE = re.compile(
-    r"(\d{4})\s*[年/\-.]\s*(\d{1,2})\s*[月/\-.]\s*(\d{1,2})"
-)
+_DATE_RE = re.compile(r"(\d{4})\s*[年/\-.]\s*(\d{1,2})\s*[月/\-.]\s*(\d{1,2})")
 # 月日のみ (年は別途補完): 「M月D日」「M/D」
 _MONTH_DAY_RE = re.compile(r"(\d{1,2})\s*[月/]\s*(\d{1,2})")
 
@@ -56,8 +53,8 @@ class PrefShimaneAdapter(SinglePageTableAdapter):
     # COLUMN_FIELDS で拾い、それ以外は extract_animal_details で個別処理する。
     COLUMN_FIELDS: ClassVar[dict[int, str]] = {
         3: "location",  # 収容場所
-        5: "breed",     # 種類 (品種名)
-        6: "sex",       # 性別
+        5: "breed",  # 種類 (品種名)
+        6: "sex",  # 性別
     }
     LOCATION_COLUMN: ClassVar[int | None] = 3
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
@@ -111,10 +108,7 @@ class PrefShimaneAdapter(SinglePageTableAdapter):
         """
         rows = self._load_rows()
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
     def extract_animal_details(
         self, virtual_url: str, category: str = "sheltered"
@@ -133,10 +127,7 @@ class PrefShimaneAdapter(SinglePageTableAdapter):
                 url=virtual_url,
             )
         tr = rows[idx]
-        cells = [
-            c for c in tr.find_all(["td", "th"], recursive=False)
-            if isinstance(c, Tag)
-        ]
+        cells = [c for c in tr.find_all(["td", "th"], recursive=False) if isinstance(c, Tag)]
 
         def cell_text(i: int) -> str:
             if i >= len(cells):
@@ -146,7 +137,7 @@ class PrefShimaneAdapter(SinglePageTableAdapter):
         shelter_date = self._parse_shelter_date(cell_text(2))
         location = cell_text(3)
         species_cell = cell_text(4)
-        breed = cell_text(5)
+        cell_text(5)
         sex = cell_text(6)
 
         # species 推定: caption -> 動物種別列 -> サイト名 の順
@@ -179,9 +170,7 @@ class PrefShimaneAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 
@@ -240,6 +229,4 @@ class PrefShimaneAdapter(SinglePageTableAdapter):
 
 
 # ─────────────────── サイト登録 ───────────────────
-SiteAdapterRegistry.register(
-    "島根県 松江保健所（収容動物）", PrefShimaneAdapter
-)
+SiteAdapterRegistry.register("島根県 松江保健所（収容動物）", PrefShimaneAdapter)

@@ -80,9 +80,7 @@ def _site_centers_dog() -> SiteConfig:
 class TestZaidanFukuokaDouaiAdapterListExtraction:
     """list ページからの detail URL 抽出"""
 
-    def test_fetch_animal_list_extracts_detail_urls_from_fixture(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_extracts_detail_urls_from_fixture(self, fixture_html):
         """一覧ページから 1 件以上の詳細 URL が抽出できる"""
         html = fixture_html("zaidan_fukuoka_douai__dog")
         adapter = ZaidanFukuokaDouaiAdapter(_site_protections_dog())
@@ -94,9 +92,7 @@ class TestZaidanFukuokaDouaiAdapterListExtraction:
         urls = [u for u, _cat in result]
         # フィクスチャに含まれる既知の詳細 URL (uuid 形式)
         assert any(
-            "/animals/protection-detail/329e7da2-a4b5-4aad-896e-3a15acc1bfa0"
-            in u
-            for u in urls
+            "/animals/protection-detail/329e7da2-a4b5-4aad-896e-3a15acc1bfa0" in u for u in urls
         )
         # 全 URL が `-detail/` を含む詳細ページである
         for u in urls:
@@ -137,21 +133,14 @@ class TestZaidanFukuokaDouaiAdapterDetailExtraction:
         )
         # `<figure>` 配下の動物写真 2 枚が拾えている
         assert len(raw.image_urls) == 2
-        assert all(
-            "/files/download/Animals/" in u for u in raw.image_urls
-        )
+        assert all("/files/download/Animals/" in u for u in raw.image_urls)
         # 相対 URL が絶対 URL に変換されている
-        assert all(
-            u.startswith("https://www.zaidan-fukuoka-douai.or.jp/")
-            for u in raw.image_urls
-        )
+        assert all(u.startswith("https://www.zaidan-fukuoka-douai.or.jp/") for u in raw.image_urls)
 
     def test_extract_raises_on_empty_html(self):
         """定義リストが見当たらない HTML では例外を出す"""
         adapter = ZaidanFukuokaDouaiAdapter(_site_protections_dog())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.extract_animal_details(
                     "https://www.zaidan-fukuoka-douai.or.jp/animals/protection-detail/zzz"
@@ -212,8 +201,5 @@ class TestZaidanFukuokaDouaiAdapterCenterCategory:
         with patch.object(adapter, "_http_get", return_value=html):
             result = adapter.fetch_animal_list()
         urls = [u for u, _cat in result]
-        assert (
-            "https://www.zaidan-fukuoka-douai.or.jp/animals/center-detail/abc-123"
-            in urls
-        )
+        assert "https://www.zaidan-fukuoka-douai.or.jp/animals/center-detail/abc-123" in urls
         assert all(cat == "adoption" for _u, cat in result)

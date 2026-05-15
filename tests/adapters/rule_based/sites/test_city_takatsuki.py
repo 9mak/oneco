@@ -59,9 +59,7 @@ def _load_takatsuki_html(fixture_html) -> str:
 
 
 class TestCityTakatsukiAdapter:
-    def test_fetch_animal_list_returns_empty_for_no_animals_page(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_returns_empty_for_no_animals_page(self, fixture_html):
         """「現在、掲載する情報はありません。」告知ページでは空リストが返る
 
         本フィクスチャは「現在、掲載する情報はありません。」の告知のみが
@@ -74,9 +72,7 @@ class TestCityTakatsukiAdapter:
         with patch.object(adapter, "_http_get", return_value=html):
             result = adapter.fetch_animal_list()
 
-        assert result == [], (
-            f"empty state ページでは空配列が返るはず: got {result!r}"
-        )
+        assert result == [], f"empty state ページでは空配列が返るはず: got {result!r}"
 
     def test_template_tables_are_excluded(self, fixture_html):
         """お問い合わせ先 / 返還手数料 等のテンプレート table は除外される
@@ -93,8 +89,7 @@ class TestCityTakatsukiAdapter:
             rows = adapter._load_rows()
 
         assert rows == [], (
-            f"テンプレート table は除外され動物テーブルは 0 件のはず: "
-            f"got {len(rows)} rows"
+            f"テンプレート table は除外され動物テーブルは 0 件のはず: got {len(rows)} rows"
         )
 
     def test_fetch_animal_list_caches_html(self, fixture_html):
@@ -108,8 +103,7 @@ class TestCityTakatsukiAdapter:
             adapter.fetch_animal_list()
 
         assert mock_get.call_count == 1, (
-            f"HTML はキャッシュされ HTTP は 1 回のみ: "
-            f"got {mock_get.call_count}"
+            f"HTML はキャッシュされ HTTP は 1 回のみ: got {mock_get.call_count}"
         )
 
     def test_raises_parsing_error_for_unrelated_html(self):
@@ -191,9 +185,7 @@ class TestCityTakatsukiAdapter:
         adapter = CityTakatsukiAdapter(_site())
         with patch.object(adapter, "_http_get", return_value=synthetic_html):
             urls = adapter.fetch_animal_list()
-            assert len(urls) == 1, (
-                f"動物テーブル 1 件のみ抽出されるはず: got {len(urls)}"
-            )
+            assert len(urls) == 1, f"動物テーブル 1 件のみ抽出されるはず: got {len(urls)}"
             url, category = urls[0]
             raw = adapter.extract_animal_details(url, category=category)
 
@@ -204,21 +196,11 @@ class TestCityTakatsukiAdapter:
 
     def test_infer_species_from_site_name_returns_empty_for_dog_and_cat(self):
         """サイト名「迷子犬猫」は犬・猫の両方を含むため空文字"""
-        assert (
-            CityTakatsukiAdapter._infer_species_from_site_name(
-                "高槻市（迷子犬猫）"
-            )
-            == ""
-        )
+        assert CityTakatsukiAdapter._infer_species_from_site_name("高槻市（迷子犬猫）") == ""
 
     def test_infer_species_from_site_name_with_only_dog(self):
         """サイト名に「犬」のみ含む場合は「犬」を返す (汎用ロジック)"""
-        assert (
-            CityTakatsukiAdapter._infer_species_from_site_name(
-                "高槻市（迷子犬）"
-            )
-            == "犬"
-        )
+        assert CityTakatsukiAdapter._infer_species_from_site_name("高槻市（迷子犬）") == "犬"
 
     def test_infer_species_from_breed(self):
         """「種類」値からの species 推定 (柴犬→犬, 三毛猫→猫, 雑種→空)"""

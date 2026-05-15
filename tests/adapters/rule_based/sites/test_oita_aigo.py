@@ -67,9 +67,7 @@ class TestOitaAigoAdapter:
             assert url.startswith("https://oita-aigo.com/")
             assert cat == "sheltered"
 
-    def test_extract_animal_details_first_row(
-        self, fixture_html, assert_raw_animal
-    ):
+    def test_extract_animal_details_first_row(self, fixture_html, assert_raw_animal):
         """1 件目のカードから RawAnimalData を構築できる
 
         フィクスチャの 1 件目:
@@ -157,8 +155,6 @@ class TestOitaAigoAdapter:
     def test_raises_parsing_error_when_no_cards(self):
         """カード要素が見当たらない HTML では ParsingError 系例外を出す"""
         adapter = OitaAigoAdapter(_lostchild_site())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()

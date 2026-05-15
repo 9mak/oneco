@@ -95,9 +95,7 @@ def _site_jyouto() -> SiteConfig:
 class TestAnimalNetNagasakiAdapterListExtraction:
     """list ページからの detail URL 抽出"""
 
-    def test_fetch_animal_list_extracts_detail_urls_from_fixture(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_extracts_detail_urls_from_fixture(self, fixture_html):
         """一覧 fixture から 1 件以上の `/animal/no-XXXXX/` URL が抽出できる"""
         html = fixture_html("animal_net_pref_nagasaki__syuuyou")
         adapter = AnimalNetNagasakiAdapter(_site_syuuyou())
@@ -108,10 +106,7 @@ class TestAnimalNetNagasakiAdapterListExtraction:
         assert len(result) >= 1
         urls = [u for u, _cat in result]
         # フィクスチャに含まれる既知の詳細 URL
-        assert any(
-            "https://animal-net.pref.nagasaki.jp/animal/no-19602/" in u
-            for u in urls
-        )
+        assert any("https://animal-net.pref.nagasaki.jp/animal/no-19602/" in u for u in urls)
         # 全 URL が `/animal/no-` を含む詳細ページである
         for u in urls:
             assert "/animal/no-" in u
@@ -167,19 +162,13 @@ class TestAnimalNetNagasakiAdapterDetailExtraction:
         # `/wp-content/uploads/` 配下の動物写真 2 枚が拾えており、
         # ヘッダのロゴ (themes 配下) は除外される
         assert len(raw.image_urls) == 2
-        assert all(
-            "/wp-content/uploads/" in u for u in raw.image_urls
-        )
-        assert all(
-            "/wp-content/themes/" not in u for u in raw.image_urls
-        )
+        assert all("/wp-content/uploads/" in u for u in raw.image_urls)
+        assert all("/wp-content/themes/" not in u for u in raw.image_urls)
 
     def test_extract_raises_on_empty_html(self):
         """定義リストが見当たらない HTML では例外を出す"""
         adapter = AnimalNetNagasakiAdapter(_site_syuuyou())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.extract_animal_details(
                     "https://animal-net.pref.nagasaki.jp/animal/no-99999/"
@@ -212,9 +201,7 @@ class TestAnimalNetNagasakiAdapterRegistry:
         # 他テストが registry を clear する場合の冪等性のため、
         # 未登録なら再登録してから確認する。
         if SiteAdapterRegistry.get(site_name) is None:
-            SiteAdapterRegistry.register(
-                site_name, AnimalNetNagasakiAdapter
-            )
+            SiteAdapterRegistry.register(site_name, AnimalNetNagasakiAdapter)
         cls = SiteAdapterRegistry.get(site_name)
         assert cls is AnimalNetNagasakiAdapter, (
             f"{site_name} が AnimalNetNagasakiAdapter に紐付いていません: {cls}"

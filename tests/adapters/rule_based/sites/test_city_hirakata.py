@@ -89,9 +89,7 @@ class TestCityHirakataAdapter:
     def test_raises_parsing_error_when_no_blocks_and_no_empty_state(self):
         """0 件告知すら無い空 HTML では ParsingError 系例外を出す"""
         adapter = CityHirakataAdapter(_site_hirakata())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()
 
@@ -195,10 +193,5 @@ class TestCityHirakataAdapter:
         """枚方市（収容動物）が Registry に登録されている"""
         # 他テストが registry を clear する場合に備えて冪等に再登録
         if SiteAdapterRegistry.get("枚方市（収容動物）") is None:
-            SiteAdapterRegistry.register(
-                "枚方市（収容動物）", CityHirakataAdapter
-            )
-        assert (
-            SiteAdapterRegistry.get("枚方市（収容動物）")
-            is CityHirakataAdapter
-        )
+            SiteAdapterRegistry.register("枚方市（収容動物）", CityHirakataAdapter)
+        assert SiteAdapterRegistry.get("枚方市（収容動物）") is CityHirakataAdapter

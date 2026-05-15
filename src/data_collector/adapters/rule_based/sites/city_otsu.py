@@ -46,12 +46,9 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # 「現在収容している犬猫の情報はありません。」等の 0 件告知パターン。
 # 「現在」+ 「(収容|情報)」+ 「ありません」程度の表記揺れを緩く吸収する。
-_EMPTY_STATE_PATTERN = re.compile(
-    r"現在[^。]*?(?:収容|情報)[^。]*?ありません"
-)
+_EMPTY_STATE_PATTERN = re.compile(r"現在[^。]*?(?:収容|情報)[^。]*?ありません")
 
 # プレースホルダ行の保護日時列に残る固定文言 (本フィクスチャでは
 # "月　日" / "時　分" のように数字が空の状態で出る)
@@ -76,12 +73,12 @@ class CityOtsuAdapter(SinglePageTableAdapter):
     # 契約として明示する。
     COLUMN_FIELDS: ClassVar[dict[int, str]] = {
         0: "species_detail",  # 種類 (柴犬等の具体名 / サイト名から推定するため未使用)
-        1: "color",           # 毛色
-        2: "size",            # 体格
-        3: "sex",             # 性別
-        4: "location",        # 保護場所
-        5: "shelter_date",    # 保護日時
-        6: "features",        # 備考
+        1: "color",  # 毛色
+        2: "size",  # 体格
+        3: "sex",  # 性別
+        4: "location",  # 保護場所
+        5: "shelter_date",  # 保護日時
+        6: "features",  # 備考
     }
     LOCATION_COLUMN: ClassVar[int | None] = 4
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
@@ -142,22 +139,15 @@ class CityOtsuAdapter(SinglePageTableAdapter):
         # プレースホルダ行を除外したものが実データ行
         data_rows = [r for r in rows if not self._is_empty_placeholder(r)]
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(data_rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(data_rows))]
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "lost"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "lost") -> RawAnimalData:
         """テーブル行から RawAnimalData を構築する
 
         基底のセルベース既定実装に対し、`<p>` で複数行に分かれている
         セル (保護日時等) のテキスト整形と species のサイト名推定を加える。
         """
-        rows = [
-            r for r in self._load_rows() if not self._is_empty_placeholder(r)
-        ]
+        rows = [r for r in self._load_rows() if not self._is_empty_placeholder(r)]
         idx = self._parse_row_index(virtual_url)
         if idx >= len(rows):
             raise ParsingError(
@@ -203,9 +193,7 @@ class CityOtsuAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 
@@ -226,9 +214,7 @@ class CityOtsuAdapter(SinglePageTableAdapter):
                 continue
             # 日時列のテンプレ文字 ("月　日" 等) は空扱い
             normalized = text.replace("　", "").replace(" ", "")
-            placeholder_only = all(
-                ch in "月日時分" for ch in normalized
-            ) and normalized != ""
+            placeholder_only = all(ch in "月日時分" for ch in normalized) and normalized != ""
             if placeholder_only:
                 continue
             # ここに到達した = 実データを含むセルがある
@@ -256,6 +242,4 @@ class CityOtsuAdapter(SinglePageTableAdapter):
 # ─────────────────── サイト登録 ───────────────────
 # sites.yaml で定義される 1 サイトを登録する。
 if SiteAdapterRegistry.get("大津市動物愛護センター（迷い犬猫）") is None:
-    SiteAdapterRegistry.register(
-        "大津市動物愛護センター（迷い犬猫）", CityOtsuAdapter
-    )
+    SiteAdapterRegistry.register("大津市動物愛護センター（迷い犬猫）", CityOtsuAdapter)

@@ -44,7 +44,6 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # 全角/半角コロン
 _COLON = r"[:：]"
 
@@ -110,10 +109,7 @@ class CityWakayamaAdapter(SinglePageTableAdapter):
             self._html_cache = self._http_get(self.site_config.list_url)
 
         soup = BeautifulSoup(self._html_cache, "html.parser")
-        if (
-            soup.select_one("article#content") is None
-            and soup.select_one("div#voice") is None
-        ):
+        if soup.select_one("article#content") is None and soup.select_one("div#voice") is None:
             raise ParsingError(
                 "本文コンテナ (article#content / div#voice) が見つかりません",
                 selector="article#content",
@@ -123,19 +119,13 @@ class CityWakayamaAdapter(SinglePageTableAdapter):
         rows = self._load_rows()
         # 各カードの species を所属 <h3> から推定して格納
         self._species_by_index = {
-            i: self._infer_species_from_section(card)
-            for i, card in enumerate(rows)
+            i: self._infer_species_from_section(card) for i, card in enumerate(rows)
         }
 
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """`<div class="imglows">` カードから RawAnimalData を構築する"""
         rows = self._load_rows()
         idx = self._parse_row_index(virtual_url)
@@ -160,17 +150,13 @@ class CityWakayamaAdapter(SinglePageTableAdapter):
 
         # species は事前にセクション見出しから推定済 (キャッシュ)。
         # 未登録のときは本文テキストから推定。
-        species = self._species_by_index.get(idx) or self._infer_species_from_text(
-            full_text
-        )
+        species = self._species_by_index.get(idx) or self._infer_species_from_text(full_text)
 
         sex = _strip_paren_suffix(_extract_field(full_text, "性別"))
         # 種類カラム (例: 雑種) は AnimalData の color/size とは別概念のため、
         # ドメイン側で扱える値だけマッピングする。
         breed = _extract_field(full_text, "種類")
-        age = _extract_field(full_text, "年齢（推定）") or _extract_field(
-            full_text, "年齢"
-        )
+        age = _extract_field(full_text, "年齢（推定）") or _extract_field(full_text, "年齢")
 
         try:
             return RawAnimalData(

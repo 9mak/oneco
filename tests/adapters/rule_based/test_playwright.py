@@ -7,8 +7,6 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from data_collector.adapters.rule_based.playwright import PlaywrightFetchMixin
 from data_collector.adapters.rule_based.wordpress_list import (
     FieldSpec,
@@ -61,9 +59,7 @@ class TestPlaywrightFetchMixin:
     def test_works_with_wordpress_list_adapter(self):
         """WordPressListAdapter と組み合わせて fetch_animal_list が動くこと"""
         adapter = _SamplePlaywrightAdapter(_site())
-        list_html = (
-            '<html><body><a class="detail" href="/animals/1">a1</a></body></html>'
-        )
+        list_html = '<html><body><a class="detail" href="/animals/1">a1</a></body></html>'
         with patch.object(adapter, "_http_get", return_value=list_html):
             result = adapter.fetch_animal_list()
         assert len(result) == 1

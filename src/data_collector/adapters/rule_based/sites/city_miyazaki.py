@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from bs4 import BeautifulSoup, Tag
+from bs4 import Tag
 
 from ....domain.models import RawAnimalData
 from ...municipality_adapter import ParsingError
@@ -59,9 +59,7 @@ class CityMiyazakiAdapter(SinglePageTableAdapter):
 
     # ─────────────────── オーバーライド ───────────────────
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """`<article class="body">` から RawAnimalData を構築する
 
         基底の `td/th` ベース実装ではなく、`<h3>{ラベル}</h3><p>{値}</p>` の
@@ -110,9 +108,7 @@ class CityMiyazakiAdapter(SinglePageTableAdapter):
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),
                 size=fields.get("size", ""),
-                shelter_date=fields.get(
-                    "shelter_date", self.SHELTER_DATE_DEFAULT
-                ),
+                shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
                 location=fields.get("location", ""),
                 phone=phone,
                 image_urls=self._extract_row_images(article, virtual_url),
@@ -120,9 +116,7 @@ class CityMiyazakiAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── 画像 URL フィルタ ───────────────────
 

@@ -23,12 +23,8 @@ from data_collector.adapters.rule_based.sites.city_otsu import (
 from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
 
-
 SITE_NAME = "大津市動物愛護センター（迷い犬猫）"
-LIST_URL = (
-    "https://www.city.otsu.lg.jp/soshiki/021/1442/g/pet/mayoi/"
-    "1387775941679.html"
-)
+LIST_URL = "https://www.city.otsu.lg.jp/soshiki/021/1442/g/pet/mayoi/1387775941679.html"
 
 
 def _site() -> SiteConfig:
@@ -87,9 +83,7 @@ def _build_html_with_one_row() -> str:
 
 
 class TestCityOtsuAdapter:
-    def test_fetch_animal_list_returns_empty_on_real_fixture(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_returns_empty_on_real_fixture(self, fixture_html):
         """0 件状態 (告知 + 空プレースホルダ行) の実フィクスチャでは空リストを返す"""
         # 実フィクスチャは _load_rows 内の mojibake 補正に任せる
         raw = fixture_html("city_otsu_lg_jp")
@@ -181,8 +175,6 @@ class TestCityOtsuAdapter:
     def test_raises_parsing_error_when_no_table(self):
         """テーブルも告知も見当たらない HTML では例外を出す"""
         adapter = CityOtsuAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()

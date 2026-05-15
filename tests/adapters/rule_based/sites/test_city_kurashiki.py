@@ -23,11 +23,8 @@ from data_collector.adapters.rule_based.sites.city_kurashiki import (
 from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
 
-
 SITE_NAME = "倉敷市（保護動物）"
-LIST_URL = (
-    "https://www.city.kurashiki.okayama.jp/kurashi/pet/1013042/index.html"
-)
+LIST_URL = "https://www.city.kurashiki.okayama.jp/kurashi/pet/1013042/index.html"
 
 
 def _site() -> SiteConfig:
@@ -124,9 +121,7 @@ class TestCityKurashikiAdapter:
         with patch.object(adapter, "_http_get", return_value=_populated_html()):
             urls = adapter.fetch_animal_list()
             assert len(urls) == 3
-            raws = [
-                adapter.extract_animal_details(u, category=c) for u, c in urls
-            ]
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
 
         # 1 件目: 猫メス
         assert raws[0].species == "猫"
@@ -142,9 +137,7 @@ class TestCityKurashikiAdapter:
         """_load_rows のキャッシュにより HTTP は 1 回しか呼ばれない"""
         adapter = CityKurashikiAdapter(_site())
 
-        with patch.object(
-            adapter, "_http_get", return_value=_populated_html()
-        ) as mock_get:
+        with patch.object(adapter, "_http_get", return_value=_populated_html()) as mock_get:
             urls = adapter.fetch_animal_list()
             for url, cat in urls:
                 adapter.extract_animal_details(url, category=cat)

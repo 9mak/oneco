@@ -21,11 +21,8 @@ from __future__ import annotations
 import re
 from typing import ClassVar
 
-from ....domain.models import RawAnimalData
-from ...municipality_adapter import ParsingError
 from ..pdf_table import PdfTableAdapter
 from ..registry import SiteAdapterRegistry
-
 
 # ─────────────────── パース用パターン ───────────────────
 
@@ -45,9 +42,7 @@ _COLOR_RE = re.compile(r"(?:毛色|色)\s*[:：]?\s*([^\s　]+)")
 # 「体格: 中」「大きさ: 中型」「体重: 5kg」
 _SIZE_RE = re.compile(r"(?:体格|大きさ|体重)\s*[:：]?\s*([^\s　]+)")
 # 「収容場所: ○○市△△町」「発見場所: ○○市」
-_LOCATION_RE = re.compile(
-    r"(?:収容場所|発見場所|保護場所)\s*[:：]?\s*([^\n]+?)(?:\s{2,}|$)"
-)
+_LOCATION_RE = re.compile(r"(?:収容場所|発見場所|保護場所)\s*[:：]?\s*([^\n]+?)(?:\s{2,}|$)")
 
 
 class PrefIbarakiPdfAdapter(PdfTableAdapter):
@@ -135,10 +130,7 @@ class PrefIbarakiPdfAdapter(PdfTableAdapter):
         """少なくとも収容日と他 1 つ以上のフィールドが埋まっていれば有効"""
         if not record.get("shelter_date"):
             return False
-        return any(
-            record.get(k)
-            for k in ("species", "sex", "age", "color", "size", "location")
-        )
+        return any(record.get(k) for k in ("species", "sex", "age", "color", "size", "location"))
 
 
 # ─────────────────── サイト登録 ───────────────────

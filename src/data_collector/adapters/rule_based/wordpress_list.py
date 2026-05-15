@@ -58,9 +58,7 @@ class WordPressListAdapter(RuleBasedAdapter):
         # 抽象メソッドが残っていない最終派生のみ厳格チェック
         abstracts = getattr(cls, "__abstractmethods__", frozenset())
         if not abstracts and not cls.LIST_LINK_SELECTOR:
-            raise TypeError(
-                f"{cls.__name__} must define LIST_LINK_SELECTOR class variable"
-            )
+            raise TypeError(f"{cls.__name__} must define LIST_LINK_SELECTOR class variable")
 
     # ─────────────────── MunicipalityAdapter 実装 ───────────────────
 
@@ -71,7 +69,7 @@ class WordPressListAdapter(RuleBasedAdapter):
         links = soup.select(self.LIST_LINK_SELECTOR)
         if not links:
             raise ParsingError(
-                f"detail link が見つかりません",
+                "detail link が見つかりません",
                 selector=self.LIST_LINK_SELECTOR,
                 url=self.site_config.list_url,
             )
@@ -90,9 +88,7 @@ class WordPressListAdapter(RuleBasedAdapter):
             urls.append((absolute, category))
         return urls
 
-    def extract_animal_details(
-        self, detail_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, detail_url: str, category: str = "adoption") -> RawAnimalData:
         html = self._http_get(detail_url)
         soup = BeautifulSoup(html, "html.parser")
 
@@ -104,7 +100,7 @@ class WordPressListAdapter(RuleBasedAdapter):
         # 全フィールドが空文字 = HTML 構造がそもそも見当たらない
         if not any(fields.values()):
             raise ParsingError(
-                f"detail ページから 1 フィールドも抽出できませんでした",
+                "detail ページから 1 フィールドも抽出できませんでした",
                 url=detail_url,
             )
 
@@ -125,9 +121,7 @@ class WordPressListAdapter(RuleBasedAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=detail_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=detail_url) from e
 
     def normalize(self, raw_data: RawAnimalData) -> AnimalData:
         return self._default_normalize(raw_data)

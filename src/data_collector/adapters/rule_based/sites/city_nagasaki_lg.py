@@ -43,17 +43,12 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # 「現在...ありません」「現在...いません」「現在...おりません」等の
 # 0 件告知パターン (川崎市 adapter と同じ表記揺れを許容)
-_EMPTY_STATE_PATTERN = re.compile(
-    r"(?:現在|現時点)[^。]*?(?:ありません|いません|おりません)"
-)
+_EMPTY_STATE_PATTERN = re.compile(r"(?:現在|現時点)[^。]*?(?:ありません|いません|おりません)")
 
 # 「YYYY年M月D日」「YYYY年M月D日更新」「YYYY/M/D」等を緩く拾う
-_DATE_RE = re.compile(
-    r"(\d{4})\s*[年/\-\.]\s*(\d{1,2})\s*[月/\-\.]\s*(\d{1,2})"
-)
+_DATE_RE = re.compile(r"(\d{4})\s*[年/\-\.]\s*(\d{1,2})\s*[月/\-\.]\s*(\d{1,2})")
 
 
 class CityNagasakiLgAdapter(SinglePageTableAdapter):
@@ -142,14 +137,9 @@ class CityNagasakiLgAdapter(SinglePageTableAdapter):
                 url=self.site_config.list_url,
             )
 
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """`div.list_pack` から RawAnimalData を構築する
 
         - 動物種別はサイト名から推定 (犬/猫)
@@ -173,9 +163,7 @@ class CityNagasakiLgAdapter(SinglePageTableAdapter):
         title_el = pack.select_one("span.article_title")
         date_text = date_el.get_text(strip=True) if isinstance(date_el, Tag) else ""
         title_text = (
-            title_el.get_text(separator=" ", strip=True)
-            if isinstance(title_el, Tag)
-            else ""
+            title_el.get_text(separator=" ", strip=True) if isinstance(title_el, Tag) else ""
         )
 
         shelter_date = self._parse_iso_date(date_text)
@@ -196,9 +184,7 @@ class CityNagasakiLgAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 

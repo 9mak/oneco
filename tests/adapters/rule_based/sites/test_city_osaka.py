@@ -14,8 +14,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.city_osaka import (
     CityOsakaAdapter,
@@ -115,18 +113,14 @@ class TestCityOsakaAdapter:
         assert len(result) == 2
         for url, cat in result:
             assert "#row=" in url
-            assert url.startswith(
-                "https://www.city.osaka.lg.jp/kenko/page/0000110901.html"
-            )
+            assert url.startswith("https://www.city.osaka.lg.jp/kenko/page/0000110901.html")
             assert cat == "lost"
 
     def test_extract_first_animal_from_synthetic_html(self):
         """1 件目から RawAnimalData を構築できる"""
         adapter = CityOsakaAdapter(_site())
 
-        with patch.object(
-            adapter, "_http_get", return_value=_populated_html()
-        ) as mock_get:
+        with patch.object(adapter, "_http_get", return_value=_populated_html()) as mock_get:
             urls = adapter.fetch_animal_list()
             first_url, category = urls[0]
             raw = adapter.extract_animal_details(first_url, category=category)
@@ -230,9 +224,9 @@ class TestCityOsakaAdapter:
             ("大阪市（譲渡犬）", "犬"),
             ("大阪市（譲渡猫）", "猫"),
         ]:
-            assert (
-                CityOsakaAdapter._infer_species_from_site_name(name) == expected
-            ), f"{name} -> expected {expected}"
+            assert CityOsakaAdapter._infer_species_from_site_name(name) == expected, (
+                f"{name} -> expected {expected}"
+            )
 
     def test_all_four_sites_registered(self):
         """4 つの大阪市サイト名すべてが Registry に登録されている"""
@@ -263,8 +257,7 @@ class TestCityOsakaAdapter:
     def test_empty_page_returns_empty_list(self):
         """h3 が無いページ (壊れた HTML) でも例外を出さず空を返す"""
         empty_html = (
-            "<html><head><title>大阪市</title></head>"
-            "<body><div>no animals</div></body></html>"
+            "<html><head><title>大阪市</title></head><body><div>no animals</div></body></html>"
         )
         adapter = CityOsakaAdapter(_site())
         with patch.object(adapter, "_http_get", return_value=empty_html):

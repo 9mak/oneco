@@ -58,9 +58,7 @@ def _load_kawasaki_html(fixture_html) -> str:
 
 
 class TestCityKawasakiAdapter:
-    def test_fetch_animal_list_empty_state_returns_empty_raw_fixture(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_empty_state_returns_empty_raw_fixture(self, fixture_html):
         """在庫 0 件 (mojibake 状態の生 fixture) で空リストを返す
 
         adapter は mojibake 補正を自前で行うため、生 HTML をそのまま
@@ -136,13 +134,9 @@ class TestCityKawasakiAdapter:
         synthetic_html = str(soup)
         adapter = CityKawasakiAdapter(_site())
 
-        with patch.object(
-            adapter, "_http_get", return_value=synthetic_html
-        ) as mock_get:
+        with patch.object(adapter, "_http_get", return_value=synthetic_html) as mock_get:
             urls = adapter.fetch_animal_list()
-            raws = [
-                adapter.extract_animal_details(u, category=c) for u, c in urls
-            ]
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
 
         # 同一ページから複数取得しても HTTP は 1 回だけ (キャッシュ確認)
         assert mock_get.call_count == 1
@@ -164,9 +158,9 @@ class TestCityKawasakiAdapter:
         assert first.shelter_date == "2026-05-07"
         assert first.source_url == urls[0][0]
         assert first.category == "sheltered"
-        assert any(
-            "dog1.jpg" in u for u in first.image_urls
-        ), f"画像 URL が抽出されていない: {first.image_urls}"
+        assert any("dog1.jpg" in u for u in first.image_urls), (
+            f"画像 URL が抽出されていない: {first.image_urls}"
+        )
 
         # 2 件目: メス 白黒 小, 場所 幸区
         second = raws[1]
@@ -178,18 +172,10 @@ class TestCityKawasakiAdapter:
 
     def test_species_inference_from_site_name(self):
         """サイト名で species が決まる (収容犬→犬 / 収容猫→猫 / その他→その他)"""
+        assert CityKawasakiAdapter._infer_species_from_site_name("川崎市（収容犬）") == "犬"
+        assert CityKawasakiAdapter._infer_species_from_site_name("川崎市（収容猫）") == "猫"
         assert (
-            CityKawasakiAdapter._infer_species_from_site_name("川崎市（収容犬）")
-            == "犬"
-        )
-        assert (
-            CityKawasakiAdapter._infer_species_from_site_name("川崎市（収容猫）")
-            == "猫"
-        )
-        assert (
-            CityKawasakiAdapter._infer_species_from_site_name(
-                "川崎市（収容その他動物）"
-            )
+            CityKawasakiAdapter._infer_species_from_site_name("川崎市（収容その他動物）")
             == "その他"
         )
 
@@ -209,9 +195,7 @@ class TestCityKawasakiAdapter:
     def test_raises_parsing_error_when_no_main_block_and_no_empty_marker(self):
         """本文ブロックも告知文も無い HTML では ParsingError 系例外を出す"""
         adapter = CityKawasakiAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()
 
@@ -239,9 +223,7 @@ class TestCityKawasakiAdapter:
             contents.append(el)
 
         adapter = CityKawasakiAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value=str(soup)
-        ) as mock_get:
+        with patch.object(adapter, "_http_get", return_value=str(soup)) as mock_get:
             urls = adapter.fetch_animal_list()
             assert len(urls) == 1
             for _ in range(3):

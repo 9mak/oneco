@@ -48,7 +48,6 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # 松山市動物愛護センター（はぴまるの丘）共通の問い合わせ先
 _MATSUYAMA_CENTER_PHONE: str = "089-923-9435"
 
@@ -62,10 +61,7 @@ class CityMatsuyamaAdapter(SinglePageTableAdapter):
 
     # 犬と猫の両セクションのスライダー <li> を順に拾う。
     # CSS セレクタの並び (犬→猫) が ``fetch_animal_list`` の出力順序になる。
-    ROW_SELECTOR: ClassVar[str] = (
-        "div.aigo_sec05 ul#slick02 > li, "
-        "div.aigo_sec06 ul#slick03 > li"
-    )
+    ROW_SELECTOR: ClassVar[str] = "div.aigo_sec05 ul#slick02 > li, div.aigo_sec06 ul#slick03 > li"
     # スライダー <li> はヘッダ行を含まないので除外しない
     SKIP_FIRST_ROW: ClassVar[bool] = False
     # td/th ベースの既定実装は使わない (extract_animal_details で完全 override)
@@ -86,14 +82,9 @@ class CityMatsuyamaAdapter(SinglePageTableAdapter):
         """
         rows = self._load_rows()
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """スライダー <li> から RawAnimalData を構築する
 
         - species: 祖先 ``div.aigo_sec05`` (犬) / ``div.aigo_sec06`` (猫) で判別
@@ -122,10 +113,7 @@ class CityMatsuyamaAdapter(SinglePageTableAdapter):
 
         # ステータス (例: "新しい飼い主募集中" / "マッチング予約不可")
         status_span = item.select_one("span.movie_slider_text")
-        status = (
-            status_span.get_text(strip=True)
-            if isinstance(status_span, Tag) else ""
-        )
+        status = status_span.get_text(strip=True) if isinstance(status_span, Tag) else ""
 
         # location 列に相当する情報が無いため、収容番号 + 状態を埋める。
         # どちらも空ならカード由来のテキスト全体を fallback として使う。
@@ -150,9 +138,7 @@ class CityMatsuyamaAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 
@@ -175,6 +161,4 @@ class CityMatsuyamaAdapter(SinglePageTableAdapter):
 
 # ─────────────────── サイト登録 ───────────────────
 # sites.yaml の name と一致させる必要がある (1 サイトのみ)。
-SiteAdapterRegistry.register(
-    "松山市 はぴまるの丘（収容中）", CityMatsuyamaAdapter
-)
+SiteAdapterRegistry.register("松山市 はぴまるの丘（収容中）", CityMatsuyamaAdapter)

@@ -5,8 +5,6 @@ Phase A2 Task 2.2: run_rule_based_sites と main() の振り分け。
 
 from __future__ import annotations
 
-import pytest
-
 from data_collector.__main__ import (
     PROVIDER_REGISTRY,
     _effective_extraction,

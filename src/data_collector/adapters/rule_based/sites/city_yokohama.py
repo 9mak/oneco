@@ -43,7 +43,6 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # 0 件プレースホルダ行を検出するパターン。
 # 例: 「現在、犬の収容情報はありません。」「現在、猫の収容情報はありません」
 _EMPTY_PLACEHOLDER_RE = re.compile(r"現在.*収容情報.*ありません")
@@ -85,29 +84,22 @@ class CityYokohamaAdapter(SinglePageTableAdapter):
         if not rows:
             # 行 (ヘッダ含む) が一切無い = テーブル不在。基底実装に合わせて例外。
             raise ParsingError(
-                f"行要素が見つかりません",
+                "行要素が見つかりません",
                 selector=self.ROW_SELECTOR,
                 url=self.site_config.list_url,
             )
         # 0 件プレースホルダのみの場合は空リスト (= 在庫 0 件) を返す
         data_rows = [r for r in rows if not self._is_empty_placeholder(r)]
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(data_rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(data_rows))]
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """テーブル行から RawAnimalData を構築する
 
         基底のセルベース既定実装に対し、列 0 (収容日・収容場所) の分割と
         species のサイト名推定を加える。
         """
-        rows = [
-            r for r in self._load_rows() if not self._is_empty_placeholder(r)
-        ]
+        rows = [r for r in self._load_rows() if not self._is_empty_placeholder(r)]
         idx = self._parse_row_index(virtual_url)
         if idx >= len(rows):
             raise ParsingError(
@@ -120,9 +112,7 @@ class CityYokohamaAdapter(SinglePageTableAdapter):
         fields: dict[str, str] = {}
         for col_idx, field_name in self.COLUMN_FIELDS.items():
             if col_idx < len(cells):
-                fields[field_name] = cells[col_idx].get_text(
-                    separator=" ", strip=True
-                )
+                fields[field_name] = cells[col_idx].get_text(separator=" ", strip=True)
 
         # 列 0: 「収容日・収容場所」を分割
         shelter_date, location = "", ""
@@ -147,9 +137,7 @@ class CityYokohamaAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 
@@ -192,9 +180,7 @@ class CityYokohamaAdapter(SinglePageTableAdapter):
                 date = first
                 if len(lines) >= 2 and not loc:
                     loc = lines[1]
-        if not loc and len(lines) >= 2 and not any(
-            (("：" in ln) or (":" in ln)) for ln in lines
-        ):
+        if not loc and len(lines) >= 2 and not any((("：" in ln) or (":" in ln)) for ln in lines):
             loc = lines[1]
         return date, loc
 

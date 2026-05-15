@@ -40,7 +40,6 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # 「迷い犬情報　2605GD001」のような見出し+管理番号からの抽出
 # 管理番号は半角英数字のみ (例: 2605GD001 / 2605CD001)
 _MGMT_NUMBER_RE = re.compile(r"([A-Z0-9]{6,})")
@@ -136,9 +135,7 @@ class PrefShizuokaAdapter(SinglePageTableAdapter):
             urls.append((absolute, category))
         return urls
 
-    def extract_animal_details(
-        self, detail_url: str, category: str = "sheltered"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, detail_url: str, category: str = "sheltered") -> RawAnimalData:
         """インデックスページ上のリンク行から RawAnimalData を構築する
 
         detail ページは fetch せず、インデックス側で得られる情報
@@ -173,15 +170,11 @@ class PrefShizuokaAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=detail_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=detail_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 
-    def _find_row_anchor(
-        self, rows: list[Tag], detail_url: str
-    ) -> Tag | None:
+    def _find_row_anchor(self, rows: list[Tag], detail_url: str) -> Tag | None:
         """detail_url に一致する row 内の `<a>` を返す
 
         href は相対形式で格納されているので絶対 URL に変換した上で照合する。

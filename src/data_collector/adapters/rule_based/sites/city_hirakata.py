@@ -79,9 +79,7 @@ class CityHirakataAdapter(SinglePageTableAdapter):
     # 「掲載情報が無い場合でも、犬が行方不明になったら…」等の 0 件告知。
     # 枚方市テンプレートでは「掲載情報が無い」フレーズが必ず本文中に
     # 含まれるためこれを empty-state の signal とする。
-    _EMPTY_STATE_PATTERN: ClassVar[re.Pattern[str]] = re.compile(
-        r"掲載情報[がは]?(?:無|な)い"
-    )
+    _EMPTY_STATE_PATTERN: ClassVar[re.Pattern[str]] = re.compile(r"掲載情報[がは]?(?:無|な)い")
 
     # ─────────────────── オーバーライド ───────────────────
 
@@ -96,9 +94,7 @@ class CityHirakataAdapter(SinglePageTableAdapter):
         """
         rows = self._load_rows()
         if not rows:
-            if self._html_cache and self._EMPTY_STATE_PATTERN.search(
-                self._html_cache
-            ):
+            if self._html_cache and self._EMPTY_STATE_PATTERN.search(self._html_cache):
                 return []
             raise ParsingError(
                 "行要素が見つかりません",
@@ -106,10 +102,7 @@ class CityHirakataAdapter(SinglePageTableAdapter):
                 url=self.site_config.list_url,
             )
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
     def extract_animal_details(
         self, virtual_url: str, category: str = "sheltered"
@@ -159,9 +152,7 @@ class CityHirakataAdapter(SinglePageTableAdapter):
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),
                 size=fields.get("size", ""),
-                shelter_date=fields.get(
-                    "shelter_date", self.SHELTER_DATE_DEFAULT
-                ),
+                shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
                 location=fields.get("location", ""),
                 phone="",
                 image_urls=self._extract_row_images(card, virtual_url),
@@ -169,9 +160,7 @@ class CityHirakataAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 

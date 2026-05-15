@@ -68,10 +68,7 @@ def _build_html_with_animals(
                 "<td>体格、その他特徴</td><td>詳細情報</td><td>備考</td>"
                 "</tr>"
             )
-        body_rows = "".join(
-            "<tr>" + "".join(f"<td>{c}</td>" for c in r) + "</tr>"
-            for r in rows
-        )
+        body_rows = "".join("<tr>" + "".join(f"<td>{c}</td>" for c in r) + "</tr>" for r in rows)
         return f"<table><tbody>{header}{body_rows}</tbody></table>"
 
     chubu_table = _render_table(chubu_rows, use_th_header=True)
@@ -123,21 +120,42 @@ class TestPrefTottoriAdapter:
         html = _build_html_with_animals(
             chubu_rows=[
                 [
-                    "5月10日", "倉吉市", "犬", "雑種",
-                    "茶白", "オス", "成犬", "中型",
-                    "", "<img src='/uploaded/c1.jpg' />",
+                    "5月10日",
+                    "倉吉市",
+                    "犬",
+                    "雑種",
+                    "茶白",
+                    "オス",
+                    "成犬",
+                    "中型",
+                    "",
+                    "<img src='/uploaded/c1.jpg' />",
                 ],
             ],
             seibu_rows=[
                 [
-                    "5月12日", "米子市", "猫", "雑種",
-                    "黒", "メス", "成猫", "小型",
-                    "", "",
+                    "5月12日",
+                    "米子市",
+                    "猫",
+                    "雑種",
+                    "黒",
+                    "メス",
+                    "成猫",
+                    "小型",
+                    "",
+                    "",
                 ],
                 [
-                    "5月13日", "境港市", "犬", "ラブラドール",
-                    "黄", "オス", "成犬", "大型",
-                    "", "",
+                    "5月13日",
+                    "境港市",
+                    "犬",
+                    "ラブラドール",
+                    "黄",
+                    "オス",
+                    "成犬",
+                    "大型",
+                    "",
+                    "",
                 ],
             ],
         )
@@ -164,9 +182,16 @@ class TestPrefTottoriAdapter:
         html = _build_html_with_animals(
             chubu_rows=[
                 [
-                    "5月10日", "倉吉市", "犬", "雑種",
-                    "茶白", "オス", "成犬", "中型",
-                    "", "<img src='/uploaded/c1.jpg' />",
+                    "5月10日",
+                    "倉吉市",
+                    "犬",
+                    "雑種",
+                    "茶白",
+                    "オス",
+                    "成犬",
+                    "中型",
+                    "",
+                    "<img src='/uploaded/c1.jpg' />",
                 ],
             ],
         )
@@ -203,9 +228,16 @@ class TestPrefTottoriAdapter:
         html = _build_html_with_animals(
             seibu_rows=[
                 [
-                    "5月12日", "米子市", "猫", "雑種",
-                    "黒", "メス", "成猫", "小型",
-                    "", "",
+                    "5月12日",
+                    "米子市",
+                    "猫",
+                    "雑種",
+                    "黒",
+                    "メス",
+                    "成猫",
+                    "小型",
+                    "",
+                    "",
                 ],
             ],
         )
@@ -233,8 +265,16 @@ class TestPrefTottoriAdapter:
         html = _build_html_with_animals(
             chubu_rows=[
                 [
-                    "5月10日", "倉吉市", "犬", "雑種",
-                    "茶白", "オス", "成犬", "中型", "", "",
+                    "5月10日",
+                    "倉吉市",
+                    "犬",
+                    "雑種",
+                    "茶白",
+                    "オス",
+                    "成犬",
+                    "中型",
+                    "",
+                    "",
                 ],
             ],
         )
@@ -254,8 +294,16 @@ class TestPrefTottoriAdapter:
             chubu_rows=[
                 ["", "", "", "", "", "", "", "", "", ""],
                 [
-                    "5月10日", "倉吉市", "犬", "雑種",
-                    "茶白", "オス", "成犬", "中型", "", "",
+                    "5月10日",
+                    "倉吉市",
+                    "犬",
+                    "雑種",
+                    "茶白",
+                    "オス",
+                    "成犬",
+                    "中型",
+                    "",
+                    "",
                 ],
             ],
         )
@@ -273,8 +321,16 @@ class TestPrefTottoriAdapter:
         html = _build_html_with_animals(
             chubu_rows=[
                 [
-                    "5月10日", "倉吉市", "うさぎ", "ネザーランドドワーフ",
-                    "白", "不明", "成体", "小型", "", "",
+                    "5月10日",
+                    "倉吉市",
+                    "うさぎ",
+                    "ネザーランドドワーフ",
+                    "白",
+                    "不明",
+                    "成体",
+                    "小型",
+                    "",
+                    "",
                 ],
             ],
         )
@@ -297,8 +353,16 @@ class TestPrefTottoriAdapter:
         html = _build_html_with_animals(
             chubu_rows=[
                 [
-                    "2026年5月10日", "倉吉市", "犬", "雑種",
-                    "茶白", "オス", "成犬", "中型", "", "",
+                    "2026年5月10日",
+                    "倉吉市",
+                    "犬",
+                    "雑種",
+                    "茶白",
+                    "オス",
+                    "成犬",
+                    "中型",
+                    "",
+                    "",
                 ],
             ],
         )
@@ -316,21 +380,24 @@ class TestPrefTottoriAdapter:
         """鳥取県サイト名が Registry に登録されている"""
         # 他テストが registry を clear する場合に備えて冪等に再登録
         if SiteAdapterRegistry.get("鳥取県（迷子動物情報）") is None:
-            SiteAdapterRegistry.register(
-                "鳥取県（迷子動物情報）", PrefTottoriAdapter
-            )
-        assert (
-            SiteAdapterRegistry.get("鳥取県（迷子動物情報）")
-            is PrefTottoriAdapter
-        )
+            SiteAdapterRegistry.register("鳥取県（迷子動物情報）", PrefTottoriAdapter)
+        assert SiteAdapterRegistry.get("鳥取県（迷子動物情報）") is PrefTottoriAdapter
 
     def test_raises_parsing_error_on_bad_virtual_url(self):
         """無効な virtual URL では ParsingError を出す"""
         html = _build_html_with_animals(
             chubu_rows=[
                 [
-                    "5月10日", "倉吉市", "犬", "雑種",
-                    "茶白", "オス", "成犬", "中型", "", "",
+                    "5月10日",
+                    "倉吉市",
+                    "犬",
+                    "雑種",
+                    "茶白",
+                    "オス",
+                    "成犬",
+                    "中型",
+                    "",
+                    "",
                 ],
             ],
         )

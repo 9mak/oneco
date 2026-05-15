@@ -36,9 +36,7 @@ class AnimalNetNagasakiAdapter(WordPressListAdapter):
     # `list-area` (一覧ブロック) 配下の `/animal/no-...` 形式の `<a>` のみを
     # 対象にする。これによりヘッダ/フッタの `/syuuyou` 等のカテゴリ遷移リンクや、
     # 検索パネル内のリンク等の混入を防ぐ。
-    LIST_LINK_SELECTOR: ClassVar[str] = (
-        "div.list-area a[href*='/animal/no-']"
-    )
+    LIST_LINK_SELECTOR: ClassVar[str] = "div.list-area a[href*='/animal/no-']"
 
     # detail ページの定義リスト見出しに対応するラベル。
     # 一覧時の inline data (品種 / 性別 / 年齢 / 公開日) 相当に加え、

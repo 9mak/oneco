@@ -14,13 +14,10 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.mie_dakc import MieDakcAdapter
 from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
-
 
 _FIXTURE_SLUG = "mie-dakc_server-shared_com"
 
@@ -126,9 +123,7 @@ class TestMieDakcAdapter:
         """動物テーブルが 1 つも無いページでは空リストを返す (在庫 0 件可)"""
         adapter = MieDakcAdapter(_site())
         # 動物テーブル (「保護年月日」を含む XLS_1_ テーブル) を含まない HTML
-        empty_html = (
-            "<html><body><p>現在、迷い犬の公示はありません。</p></body></html>"
-        )
+        empty_html = "<html><body><p>現在、迷い犬の公示はありません。</p></body></html>"
         with patch.object(adapter, "_http_get", return_value=empty_html):
             result = adapter.fetch_animal_list()
         assert result == []

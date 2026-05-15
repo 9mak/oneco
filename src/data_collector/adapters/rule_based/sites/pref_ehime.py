@@ -66,7 +66,6 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # 「{月}月{日}日　{市町村}　{犬|猫|...}」を抽出する正規表現。
 # 全角/半角空白の両方を許容する。
 _HEADER_LINE_RE = re.compile(
@@ -94,10 +93,10 @@ class PrefEhimeAdapter(SinglePageTableAdapter):
     # 明示的に扱う。契約として COLUMN_FIELDS は宣言する。
     COLUMN_FIELDS: ClassVar[dict[int, str]] = {
         1: "location",  # 拾得捕獲場所
-        2: "breed",     # 種類 (species ではなく品種)
-        3: "color",     # 毛色
-        4: "sex",       # 性別
-        5: "size",      # 体格
+        2: "breed",  # 種類 (species ではなく品種)
+        3: "color",  # 毛色
+        4: "sex",  # 性別
+        5: "size",  # 体格
     }
     LOCATION_COLUMN: ClassVar[int | None] = 1
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
@@ -137,7 +136,8 @@ class PrefEhimeAdapter(SinglePageTableAdapter):
             if not isinstance(tbody, Tag):
                 continue
             data_trs = [
-                tr for tr in tbody.find_all("tr", recursive=False)
+                tr
+                for tr in tbody.find_all("tr", recursive=False)
                 if isinstance(tr, Tag) and tr.find("td")
             ]
             if not data_trs:
@@ -155,14 +155,9 @@ class PrefEhimeAdapter(SinglePageTableAdapter):
         """
         rows = self._load_rows()
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "lost"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "lost") -> RawAnimalData:
         """テーブルブロックから RawAnimalData を構築する
 
         - テーブル直前の `<p><strong>{月日} {市町村} {犬|猫|...}</strong></p>`
@@ -180,9 +175,7 @@ class PrefEhimeAdapter(SinglePageTableAdapter):
         table = rows[idx]
 
         # 1) 直前の見出し段落から月日・場所ヒント・species ヒントを取得
-        header_month_day, header_location, header_species = (
-            self._parse_header_paragraph(table)
-        )
+        header_month_day, header_location, header_species = self._parse_header_paragraph(table)
 
         # 2) ページの「更新日：YYYY年M月D日」から年を推定し、
         #    月日と組み合わせて ISO 形式の収容日を作る
@@ -205,7 +198,8 @@ class PrefEhimeAdapter(SinglePageTableAdapter):
 
         if first_row is not None:
             cells = [
-                td for td in first_row.find_all(["td", "th"], recursive=False)
+                td
+                for td in first_row.find_all(["td", "th"], recursive=False)
                 if isinstance(td, Tag)
             ]
             # cells: [No., 場所, 種類, 毛色, 性別, 体格, 備考(画像)]
@@ -231,9 +225,7 @@ class PrefEhimeAdapter(SinglePageTableAdapter):
             location = header_location
 
         # species: 見出し段落のヒント -> サイト名 -> "その他" の優先順
-        species = header_species or self._infer_species_from_site_name(
-            self.site_config.name
-        )
+        species = header_species or self._infer_species_from_site_name(self.site_config.name)
 
         try:
             return RawAnimalData(
@@ -250,9 +242,7 @@ class PrefEhimeAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 

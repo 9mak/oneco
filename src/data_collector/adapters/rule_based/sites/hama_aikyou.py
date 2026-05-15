@@ -153,27 +153,19 @@ class HamaAikyouAdapter(SinglePageTableAdapter):
             if self._EMPTY_STATE_PATTERN.search(html):
                 return []
             soup = BeautifulSoup(html, "html.parser")
-            if any(
-                True for _ in self._iter_animal_section_headings(soup)
-            ):
+            if any(True for _ in self._iter_animal_section_headings(soup)):
                 # 区見出しはあるがテーブルも告知も無い → 念のため空扱い
                 return []
             raise ParsingError(
-                f"区見出し ({'/'.join(self._ANIMAL_SECTION_HEADINGS)}) が"
-                f"見つかりません",
+                f"区見出し ({'/'.join(self._ANIMAL_SECTION_HEADINGS)}) が見つかりません",
                 selector="h2",
                 url=self.site_config.list_url,
             )
 
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "lost"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "lost") -> RawAnimalData:
         """1 行から RawAnimalData を構築する
 
         所属区はその行が属する `<h2>区名</h2>` から復元し、location 列が
@@ -207,9 +199,7 @@ class HamaAikyouAdapter(SinglePageTableAdapter):
 
         # 行テキスト全体から species 推定
         row_text = row.get_text(separator=" ", strip=True)
-        species = self._infer_species(
-            row_text, fields.get("species", ""), self.site_config.name
-        )
+        species = self._infer_species(row_text, fields.get("species", ""), self.site_config.name)
 
         location = fields.get("location", "")
         if region and region not in location:
@@ -225,9 +215,7 @@ class HamaAikyouAdapter(SinglePageTableAdapter):
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),
                 size=fields.get("size", ""),
-                shelter_date=fields.get(
-                    "shelter_date", self.SHELTER_DATE_DEFAULT
-                ),
+                shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
                 location=location,
                 phone=phone,
                 image_urls=self._extract_row_images(row, virtual_url),
@@ -235,16 +223,12 @@ class HamaAikyouAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 
     @classmethod
-    def _iter_animal_section_headings(
-        cls, soup: BeautifulSoup
-    ) -> list[Tag]:
+    def _iter_animal_section_headings(cls, soup: BeautifulSoup) -> list[Tag]:
         """動物データセクションを示す `<h2>` を順に列挙する
 
         - `_ANIMAL_SECTION_HEADINGS` のいずれかを含むテキストを持つ `<h2>`
@@ -301,9 +285,7 @@ class HamaAikyouAdapter(SinglePageTableAdapter):
             return {}
 
         col_map: dict[int, str] = {}
-        cells = [
-            c for c in header_row.find_all(["th", "td"]) if isinstance(c, Tag)
-        ]
+        cells = [c for c in header_row.find_all(["th", "td"]) if isinstance(c, Tag)]
         for idx, cell in enumerate(cells):
             label = cell.get_text(strip=True)
             field = self._LABEL_TO_FIELD.get(label)
@@ -337,9 +319,7 @@ class HamaAikyouAdapter(SinglePageTableAdapter):
         return all(c.name == "th" for c in cells)
 
     @staticmethod
-    def _infer_species(
-        row_text: str, species_value: str, site_name: str
-    ) -> str:
+    def _infer_species(row_text: str, species_value: str, site_name: str) -> str:
         """species を推定する
 
         優先順: 「種類/犬種」列値 → 行全体テキスト → サイト名 → "犬" 既定

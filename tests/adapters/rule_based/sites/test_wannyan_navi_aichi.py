@@ -233,9 +233,7 @@ class TestWannyanNaviAichiAdapterListExtraction:
     def test_fetch_animal_list_returns_empty_for_no_links_at_all(self):
         """そもそも `<a>` が無い HTML でも空リスト"""
         adapter = WannyanNaviAichiAdapter(_site_aichi())
-        with patch.object(
-            adapter, "_http_get", return_value=LIST_HTML_NO_LINKS
-        ):
+        with patch.object(adapter, "_http_get", return_value=LIST_HTML_NO_LINKS):
             result = adapter.fetch_animal_list()
         assert result == []
 
@@ -243,16 +241,12 @@ class TestWannyanNaviAichiAdapterListExtraction:
 class TestWannyanNaviAichiAdapterDetailExtraction:
     """detail ページからの RawAnimalData 構築"""
 
-    def test_extract_animal_details_returns_raw_data_dog(
-        self, assert_raw_animal
-    ):
+    def test_extract_animal_details_returns_raw_data_dog(self, assert_raw_animal):
         """`<th>/<td>` テーブルの詳細ページから各フィールドが抽出できる"""
         adapter = WannyanNaviAichiAdapter(_site_aichi())
         detail_url = "https://wannyan-navi.pref.aichi.jp/dog/abc123"
         with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_DOG):
-            raw = adapter.extract_animal_details(
-                detail_url, category="adoption"
-            )
+            raw = adapter.extract_animal_details(detail_url, category="adoption")
 
         assert isinstance(raw, RawAnimalData)
         assert_raw_animal(
@@ -272,18 +266,12 @@ class TestWannyanNaviAichiAdapterDetailExtraction:
         assert all("logo" not in u.lower() for u in raw.image_urls)
         assert all("/animal/abc123" in u for u in raw.image_urls)
 
-    def test_extract_animal_details_supports_two_column_table(
-        self, assert_raw_animal
-    ):
+    def test_extract_animal_details_supports_two_column_table(self, assert_raw_animal):
         """`<th>` を持たない 2 列テーブルからも値を抽出できる"""
         adapter = WannyanNaviAichiAdapter(_site_aichi())
         detail_url = "https://wannyan-navi.pref.aichi.jp/cat/ghi789"
-        with patch.object(
-            adapter, "_http_get", return_value=DETAIL_HTML_CAT_2COL
-        ):
-            raw = adapter.extract_animal_details(
-                detail_url, category="adoption"
-            )
+        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_CAT_2COL):
+            raw = adapter.extract_animal_details(detail_url, category="adoption")
 
         assert isinstance(raw, RawAnimalData)
         assert_raw_animal(
@@ -301,9 +289,7 @@ class TestWannyanNaviAichiAdapterDetailExtraction:
         adapter = WannyanNaviAichiAdapter(_site_aichi())
         detail_url = "https://wannyan-navi.pref.aichi.jp/dog/dl-style"
         with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_DL):
-            raw = adapter.extract_animal_details(
-                detail_url, category="adoption"
-            )
+            raw = adapter.extract_animal_details(detail_url, category="adoption")
         assert raw.sex == "オス"
         assert raw.age == "5歳"
         assert raw.color == "白"
@@ -322,12 +308,8 @@ class TestWannyanNaviAichiAdapterDetailExtraction:
         """
         adapter = WannyanNaviAichiAdapter(_site_aichi())
         detail_url = "https://wannyan-navi.pref.aichi.jp/dog/55555"
-        with patch.object(
-            adapter, "_http_get", return_value=detail_html_no_species
-        ):
-            raw = adapter.extract_animal_details(
-                detail_url, category="adoption"
-            )
+        with patch.object(adapter, "_http_get", return_value=detail_html_no_species):
+            raw = adapter.extract_animal_details(detail_url, category="adoption")
         assert raw.species == "犬"
 
     def test_extract_animal_details_infers_species_from_url_cat(self):
@@ -341,12 +323,8 @@ class TestWannyanNaviAichiAdapterDetailExtraction:
         """
         adapter = WannyanNaviAichiAdapter(_site_aichi())
         detail_url = "https://wannyan-navi.pref.aichi.jp/cat/66666"
-        with patch.object(
-            adapter, "_http_get", return_value=detail_html_no_species
-        ):
-            raw = adapter.extract_animal_details(
-                detail_url, category="adoption"
-            )
+        with patch.object(adapter, "_http_get", return_value=detail_html_no_species):
+            raw = adapter.extract_animal_details(detail_url, category="adoption")
         assert raw.species == "猫"
 
     def test_extract_raises_on_empty_html(self):
@@ -358,9 +336,7 @@ class TestWannyanNaviAichiAdapterDetailExtraction:
             return_value="<html><body></body></html>",
         ):
             with pytest.raises(Exception):
-                adapter.extract_animal_details(
-                    "https://wannyan-navi.pref.aichi.jp/dog/0"
-                )
+                adapter.extract_animal_details("https://wannyan-navi.pref.aichi.jp/dog/0")
 
 
 class TestWannyanNaviAichiAdapterUrlHelpers:
@@ -400,9 +376,7 @@ class TestWannyanNaviAichiAdapterUrlHelpers:
         ],
     )
     def test_infer_species_from_url(self, url, expected):
-        assert (
-            WannyanNaviAichiAdapter._infer_species_from_url(url) == expected
-        )
+        assert WannyanNaviAichiAdapter._infer_species_from_url(url) == expected
 
 
 class TestWannyanNaviAichiAdapterRegistry:
@@ -414,11 +388,8 @@ class TestWannyanNaviAichiAdapterRegistry:
         # 他テストが registry を clear する場合の冪等性のため、
         # 未登録なら再登録してから確認する。
         if SiteAdapterRegistry.get(self.SITE_NAME) is None:
-            SiteAdapterRegistry.register(
-                self.SITE_NAME, WannyanNaviAichiAdapter
-            )
+            SiteAdapterRegistry.register(self.SITE_NAME, WannyanNaviAichiAdapter)
         cls = SiteAdapterRegistry.get(self.SITE_NAME)
         assert cls is WannyanNaviAichiAdapter, (
-            f"{self.SITE_NAME} が WannyanNaviAichiAdapter に "
-            f"紐付いていません: {cls}"
+            f"{self.SITE_NAME} が WannyanNaviAichiAdapter に 紐付いていません: {cls}"
         )

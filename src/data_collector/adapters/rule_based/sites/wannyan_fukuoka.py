@@ -120,9 +120,7 @@ class WannyanFukuokaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
             urls.append((absolute, category))
         return urls
 
-    def extract_animal_details(
-        self, detail_url: str, category: str = "sheltered"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, detail_url: str, category: str = "sheltered") -> RawAnimalData:
         """detail ページから RawAnimalData を構築する
 
         基底実装に加え、以下の福岡市固有処理を行う:
@@ -172,9 +170,7 @@ class WannyanFukuokaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=detail_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=detail_url) from e
 
     # ─────────────────── 抽出ヘルパー拡張 ───────────────────
 
@@ -205,15 +201,14 @@ class WannyanFukuokaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
                 return sibling_text
         return ""
 
-    def _filter_image_urls(
-        self, urls: list[str], base_url: str
-    ) -> list[str]:
+    def _filter_image_urls(self, urls: list[str], base_url: str) -> list[str]:
         """テンプレート由来 (header/footer/logo/common) の装飾画像を除外する
 
         除外後に 0 件になった場合は元リストを返す (フェイルセーフ)。
         """
         filtered = [
-            u for u in urls
+            u
+            for u in urls
             if "/common/" not in u
             and "/header/" not in u
             and "/footer/" not in u

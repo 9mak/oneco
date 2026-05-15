@@ -66,9 +66,7 @@ def _archive_body_html(cards_html: str = "") -> str:
 
 
 def _card(name: str, sex: str, age: str, image_url: str = "") -> str:
-    img_html = (
-        f'<img src="{image_url}" alt="x" />' if image_url else ""
-    )
+    img_html = f'<img src="{image_url}" alt="x" />' if image_url else ""
     return f"""
     <div class="flexitem2 width160 base">
       <div class="full">
@@ -180,9 +178,7 @@ class TestAniwelAdapter:
             name="テスト",
             sex="オス",
             age="約2歳",
-            image_url=(
-                "https://aniwel.jp/wp-content/uploads/2025/01/test-150x150.jpg"
-            ),
+            image_url=("https://aniwel.jp/wp-content/uploads/2025/01/test-150x150.jpg"),
         )
         html = _archive_body_html(cards_html=cards)
         adapter = AniwelAdapter(_site())
@@ -195,9 +191,7 @@ class TestAniwelAdapter:
         assert raw.species == "猫"
         assert raw.sex == "オス"
         assert "約2歳" in raw.age
-        assert raw.image_urls == [
-            "https://aniwel.jp/wp-content/uploads/2025/01/test-150x150.jpg"
-        ]
+        assert raw.image_urls == ["https://aniwel.jp/wp-content/uploads/2025/01/test-150x150.jpg"]
 
     def test_empty_archive_returns_empty_list(self):
         """カードが 0 件の archive ページでは空リストを返す (例外を投げない)"""

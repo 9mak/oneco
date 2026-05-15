@@ -50,22 +50,26 @@ class _SamplePdfAdapter(PdfTableAdapter):
         for line in pdf_text.splitlines()[1:]:  # ヘッダ行スキップ
             parts = line.split()
             if len(parts) >= 5:
-                records.append({
-                    "species": parts[1],
-                    "sex": parts[2],
-                    "age": parts[3],
-                    "location": parts[4],
-                    "shelter_date": "2026-05-01",
-                })
+                records.append(
+                    {
+                        "species": parts[1],
+                        "sex": parts[2],
+                        "age": parts[3],
+                        "location": parts[4],
+                        "shelter_date": "2026-05-01",
+                    }
+                )
         return records
 
 
 class TestPdfTableAdapter:
     def test_fetch_animal_list_extracts_pdf_links(self):
         adapter = _SamplePdfAdapter(_site())
-        with patch.object(adapter, "_http_get", return_value=LIST_HTML), \
-             patch.object(adapter, "_download_pdf", return_value=b"fake-pdf"), \
-             patch.object(adapter, "_extract_pdf_text", return_value=SAMPLE_PDF_TEXT):
+        with (
+            patch.object(adapter, "_http_get", return_value=LIST_HTML),
+            patch.object(adapter, "_download_pdf", return_value=b"fake-pdf"),
+            patch.object(adapter, "_extract_pdf_text", return_value=SAMPLE_PDF_TEXT),
+        ):
             result = adapter.fetch_animal_list()
         # 2 PDF × 2 動物 = 4 仮想 URL
         assert len(result) == 4
@@ -74,9 +78,11 @@ class TestPdfTableAdapter:
 
     def test_extract_animal_details_returns_raw_data(self):
         adapter = _SamplePdfAdapter(_site())
-        with patch.object(adapter, "_http_get", return_value=LIST_HTML), \
-             patch.object(adapter, "_download_pdf", return_value=b"fake-pdf"), \
-             patch.object(adapter, "_extract_pdf_text", return_value=SAMPLE_PDF_TEXT):
+        with (
+            patch.object(adapter, "_http_get", return_value=LIST_HTML),
+            patch.object(adapter, "_download_pdf", return_value=b"fake-pdf"),
+            patch.object(adapter, "_extract_pdf_text", return_value=SAMPLE_PDF_TEXT),
+        ):
             adapter.fetch_animal_list()
             raw = adapter.extract_animal_details(
                 "https://example.com/files/animals_2026_05.pdf#row=0",
@@ -91,8 +97,6 @@ class TestPdfTableAdapter:
 
     def test_raises_when_no_pdf_links(self):
         adapter = _SamplePdfAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()

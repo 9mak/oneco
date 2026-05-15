@@ -20,7 +20,6 @@ from data_collector.adapters.rule_based.sites.douai_pref_tochigi import (
 from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
 
-
 # ─────────────────── SiteConfig helpers ───────────────────
 
 
@@ -104,21 +103,13 @@ class TestDouaiPrefTochigiListExtraction:
 
         urls = [u for u, _cat in result]
         # post_list 配下の 3 リンクが抽出される
-        assert (
-            "https://www.douai.pref.tochigi.lg.jp/work/custody-lostanimal/"
-            in urls
-        )
+        assert "https://www.douai.pref.tochigi.lg.jp/work/custody-lostanimal/" in urls
         assert "https://www.douai.pref.tochigi.lg.jp/work/return/" in urls
-        assert (
-            "https://www.douai.pref.tochigi.lg.jp/work/avoid_getting_lost/"
-            in urls
-        )
+        assert "https://www.douai.pref.tochigi.lg.jp/work/avoid_getting_lost/" in urls
         # category は site_config 由来
         assert all(cat == "sheltered" for _u, cat in result)
 
-    def test_fetch_animal_list_filters_to_treatment_list_or_news(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_filters_to_treatment_list_or_news(self, fixture_html):
         """ヘッダ/フッタ/サイドのナビゲーションリンクは混入しない
 
         fixture の同階層リンクのうち `#treatment_list .post_list` 配下の
@@ -173,13 +164,9 @@ class TestDouaiPrefTochigiListExtraction:
         with patch.object(adapter, "_http_get", return_value=list_html):
             result = adapter.fetch_animal_list()
         urls = [u for u, _cat in result]
-        assert (
-            "https://www.douai.pref.tochigi.lg.jp/news/maigo-dog-001/" in urls
-        )
+        assert "https://www.douai.pref.tochigi.lg.jp/news/maigo-dog-001/" in urls
         # 相対 URL が絶対化される
-        assert (
-            "https://www.douai.pref.tochigi.lg.jp/news/jouto-cat-002/" in urls
-        )
+        assert "https://www.douai.pref.tochigi.lg.jp/news/jouto-cat-002/" in urls
         assert all(cat == "adoption" for _u, cat in result)
 
 

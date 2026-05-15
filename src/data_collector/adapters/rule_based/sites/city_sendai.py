@@ -48,7 +48,6 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # 「管理番号 D24018（愛称：平助）」のような h3 内テキストを判定するパターン。
 # 全角/半角スペース・括弧揺れを許容する。
 _KANRI_BANGO_RE = re.compile(r"管理番号")
@@ -101,10 +100,7 @@ class CitySendaiAdapter(SinglePageTableAdapter):
         """
         rows = self._load_rows()
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
     # ─────────────────── _load_rows オーバーライド ───────────────────
 
@@ -142,9 +138,7 @@ class CitySendaiAdapter(SinglePageTableAdapter):
 
     # ─────────────────── extract_animal_details オーバーライド ───────────────────
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """1 頭分の `<table>` から RawAnimalData を構築する"""
         rows = self._load_rows()
         idx = self._parse_row_index(virtual_url)
@@ -189,9 +183,7 @@ class CitySendaiAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 

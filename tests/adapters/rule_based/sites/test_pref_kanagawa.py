@@ -12,8 +12,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.pref_kanagawa import (
     PrefKanagawaAdapter,
@@ -38,9 +36,7 @@ def _site(
 
 
 class TestPrefKanagawaAdapter:
-    def test_fetch_animal_list_returns_empty_for_pdf_only_page(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_returns_empty_for_pdf_only_page(self, fixture_html):
         """PDF のみで動物詳細を配布する 0 件 HTML では空リストが返る
 
         フィクスチャ pref_kanagawa__lostdog.html は実サイトと同じく
@@ -54,9 +50,7 @@ class TestPrefKanagawaAdapter:
         with patch.object(adapter, "_http_get", return_value=html):
             result = adapter.fetch_animal_list()
 
-        assert result == [], (
-            f"PDF 配布 (HTML 0 件) ページでは空配列が返るはず: got {result!r}"
-        )
+        assert result == [], f"PDF 配布 (HTML 0 件) ページでは空配列が返るはず: got {result!r}"
 
     def test_fetch_animal_list_caches_html(self, fixture_html):
         """同一インスタンスでの繰り返し呼び出しは HTTP を 1 回しか実行しない"""
@@ -130,18 +124,14 @@ class TestPrefKanagawaAdapter:
     def test_infer_species_from_site_name_dog(self):
         """サイト名に "犬" を含むと species 推定が "犬" になる"""
         assert (
-            PrefKanagawaAdapter._infer_species_from_site_name(
-                "神奈川県動物愛護センター（保護犬）"
-            )
+            PrefKanagawaAdapter._infer_species_from_site_name("神奈川県動物愛護センター（保護犬）")
             == "犬"
         )
 
     def test_infer_species_from_site_name_cat(self):
         """サイト名に "猫" を含むと species 推定が "猫" になる"""
         assert (
-            PrefKanagawaAdapter._infer_species_from_site_name(
-                "神奈川県動物愛護センター（保護猫）"
-            )
+            PrefKanagawaAdapter._infer_species_from_site_name("神奈川県動物愛護センター（保護猫）")
             == "猫"
         )
 

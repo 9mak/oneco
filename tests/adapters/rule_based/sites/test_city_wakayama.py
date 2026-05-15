@@ -23,10 +23,7 @@ from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
 
 _SITE_NAME = "和歌山市動物愛護管理センター（譲渡候補）"
-_LIST_URL = (
-    "https://www.city.wakayama.wakayama.jp/"
-    "kurashi/kenko_iryo/1009125/1035775/1002096.html"
-)
+_LIST_URL = "https://www.city.wakayama.wakayama.jp/kurashi/kenko_iryo/1009125/1035775/1002096.html"
 
 
 def _site(
@@ -152,10 +149,7 @@ class TestCityWakayamaAdapter:
 
         with patch.object(adapter, "_http_get", return_value=html):
             urls = adapter.fetch_animal_list()
-            species_seq = [
-                adapter.extract_animal_details(u, category=c).species
-                for u, c in urls
-            ]
+            species_seq = [adapter.extract_animal_details(u, category=c).species for u, c in urls]
 
         # フィクスチャ上は猫セクションが先 → 11 件、続いて犬 → 8 件
         assert species_seq[:11] == ["猫"] * 11
@@ -239,9 +233,7 @@ class TestCityWakayamaAdapter:
     def test_raises_parsing_error_when_no_main_container(self):
         """`article#content` (本文) が無い場合はテンプレート崩壊として例外"""
         adapter = CityWakayamaAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()
 

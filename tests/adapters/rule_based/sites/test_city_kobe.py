@@ -25,12 +25,8 @@ from data_collector.adapters.rule_based.sites.city_kobe import (
 from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
 
-
 SITE_NAME = "神戸市動物管理センター（収容動物）"
-LIST_URL = (
-    "https://www.city.kobe.lg.jp/a84140/kenko/health/hygiene/animal/zmenu/"
-    "index.html"
-)
+LIST_URL = "https://www.city.kobe.lg.jp/a84140/kenko/health/hygiene/animal/zmenu/index.html"
 
 
 def _site() -> SiteConfig:
@@ -105,9 +101,7 @@ def _build_html_with_dog_and_cat() -> str:
 
 
 class TestCityKobeAdapter:
-    def test_fetch_animal_list_returns_empty_on_real_fixture(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_returns_empty_on_real_fixture(self, fixture_html):
         """0 件状態 (告知文のみ / テーブル不在) の実フィクスチャでは空リストを返す"""
         # 実フィクスチャは _load_rows 内の mojibake 補正に任せる
         raw = fixture_html("city_kobe_lg_jp")
@@ -208,9 +202,7 @@ class TestCityKobeAdapter:
     def test_raises_parsing_error_when_no_main_container(self):
         """`#tmp_contents` 自体が無い (テンプレート崩壊) 場合は例外を出す"""
         adapter = CityKobeAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()
 

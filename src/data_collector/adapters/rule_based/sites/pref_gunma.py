@@ -42,7 +42,6 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # 「現在、保管期間中の犬はおりません」「保護している猫はおりません」など
 # 0 件告知パターン。表記揺れ (おりません/ありません/いません、犬/猫) を吸収。
 _EMPTY_STATE_PATTERN = re.compile(
@@ -131,10 +130,7 @@ class PrefGunmaAdapter(SinglePageTableAdapter):
                 url=self.site_config.list_url,
             )
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
     def extract_animal_details(
         self, virtual_url: str, category: str = "sheltered"
@@ -226,9 +222,7 @@ class PrefGunmaAdapter(SinglePageTableAdapter):
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),
                 size=fields.get("size", ""),
-                shelter_date=fields.get(
-                    "shelter_date", self.SHELTER_DATE_DEFAULT
-                ),
+                shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
                 location=fields.get("location", ""),
                 phone="",
                 image_urls=self._extract_row_images(table, virtual_url),
@@ -236,9 +230,7 @@ class PrefGunmaAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 
@@ -259,11 +251,7 @@ class PrefGunmaAdapter(SinglePageTableAdapter):
 
         thead = table.find("thead")
         if isinstance(thead, Tag):
-            ths = [
-                th.get_text(strip=True)
-                for th in thead.find_all("th")
-                if isinstance(th, Tag)
-            ]
+            ths = [th.get_text(strip=True) for th in thead.find_all("th") if isinstance(th, Tag)]
             joined = "".join(ths)
             if "電話番号" in joined and ("所在地" in joined or "名称" in joined):
                 return True

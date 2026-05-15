@@ -7,13 +7,11 @@ from __future__ import annotations
 
 import pytest
 
-from data_collector.adapters.rule_based.base import RuleBasedAdapter
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.wordpress_list import (
     FieldSpec,
     WordPressListAdapter,
 )
-from data_collector.domain.models import AnimalData, RawAnimalData
 
 
 class _DummyAdapter(WordPressListAdapter):
