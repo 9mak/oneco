@@ -1,0 +1,202 @@
+# Implementation Plan
+
+## Phase A2: アダプター基盤の整備
+
+- [ ] 1. rule-based 共通基底クラスとサイト振り分け基盤を構築する
+- [ ] 1.1 (P) `RuleBasedAdapter` 共通基底を実装する
+  - 既存 `MunicipalityAdapter` ABC を継承する rule-based 共通基底クラスを構築
+  - HTTP 取得（リトライ付き）、URL 絶対化、電話番号正規化、画像URLフィルタの protected ヘルパーを提供
+  - サイト固有派生から `super().__init__(site_config)` で初期化される共通インターフェースを定義
+  - 既存 `KochiAdapter` から汎用ヘルパーを抽出して移植
+  - _Requirements: 1.1, 1.2, 1.3_
+- [ ] 1.2 (P) `WordPressListAdapter` 基底を実装する
+  - list ページから detail URL を抽出し詳細ページから RawAnimalData を作る共通フロー
+  - 派生は `LIST_LINK_SELECTOR` と `FIELD_SELECTORS` クラス変数のみで動く構造
+  - ページネーション巡回のヘルパーを共通化
+  - 既存 `KochiAdapter._extract_from_definition_list` / `_extract_from_table` を共通化して移植
+  - _Requirements: 1.1, 2.4_
+- [ ] 1.3 (P) `SinglePageTableAdapter` 基底を実装する
+  - 1 ページに複数動物が並ぶサイト（detail ページなし）用の共通基底
+  - 派生は `ROW_SELECTOR` と `FIELD_SELECTORS` を定義するだけで動作
+  - `<list_url>#row=N` 形式の仮想 detail URL 生成と HTTP 重複回避キャッシュを実装
+  - ヘッダ行除外オプション（`SKIP_FIRST_ROW` / `HEADER_FILTER`）を提供
+  - _Requirements: 1.1, 2.4_
+- [ ] 1.4 (P) `PlaywrightAdapter` 基底を実装する
+  - JS 描画必須サイト用の共通基底（既存 `LlmAdapter` の Playwright 呼出ロジックを移植）
+  - 描画完了待ち（`WAIT_SELECTOR` または networkidle）と既存 `SITE_TIMEOUT_JS_SEC` 仕様の継承
+  - WordPressList / SinglePageTable と組み合わせ可能な mixin 的構造
+  - _Requirements: 1.1, 2.4_
+- [ ] 1.5 (P) `PdfTableAdapter` 基底を実装する
+  - 一覧ページから PDF リンク取得、PDF ダウンロード、テキスト抽出、複数動物分割の共通フロー
+  - 既存 `PdfFetcher` 取得ロジックを流用、解析戦略は派生で差し替え可能に
+  - pdf_multi_animal フラグ対応（1 PDF から複数動物）
+  - _Requirements: 1.1, 2.4_
+- [ ] 1.6 `SiteAdapterRegistry` でサイト名と派生クラスを紐付ける機構を実装する
+  - サイト名 → adapter_class のマッピング、`__init_subclass__` または decorator による自動登録
+  - 未登録サイトは None を返し、呼出側で LLM フォールバック判定可能に
+  - 進捗ステータス取得（実装済み数 / 総サイト数）API を提供
+  - _Requirements: 2.2, 2.5, 7.3_
+
+- [ ] 2. エントリ振り分けと運用追跡を整備する
+- [ ] 2.1 `sites.yaml` スキーマを拡張する
+  - `extraction` フィールドに `"rule-based"` を許容値として追加
+  - `fallback_to_llm` フィールド（bool, default false）を追加
+  - `default_provider` に `"rule-based"` を許容値として追加
+  - `SitesConfig` / `SiteConfig` の Pydantic バリデータ更新
+  - _Requirements: 3.1, 3.4, 4.4_
+- [ ] 2.2 `run_rule_based_sites` 関数を `__main__.py` に追加する
+  - 既存 `run_llm_sites` と同シグネチャ／戻り値の rule-based 版エントリ
+  - サイトごとに `SiteAdapterRegistry` から adapter を取得し、未登録サイトは LLM 経路に委譲
+  - 部分失敗で exit 0 維持（既存仕様継承）、per-site タイムアウト適用（既存 `site_timeout` 流用）
+  - 実行サマリ JSON を stdout に出力（成功/失敗サイト数、抽出動物総数）
+  - `main()` 関数の振り分けロジックを更新し、`extraction == "rule-based"` のサイト群を新関数に流す
+  - _Requirements: 3.4, 3.5, 6.3, 6.5, 7.1, 7.2, 8.4_
+- [ ] 2.3 (P) `BrokenSitesTracker` で連続失敗サイトを追跡する
+  - `data/broken_sites.yaml` への永続化（連続失敗回数、最終エラー、最終失敗時刻）
+  - 1 回でも成功したらカウンタリセット
+  - 既存 Slack 通知と連携（連続 3 回で Critical 通知発火）
+  - _Requirements: 6.1, 6.4_
+- [ ] 2.4 rule失敗時の LLM フォールバック経路を実装する
+  - 個別サイトで `fallback_to_llm: true` かつ rule 抽出失敗時に `LlmAdapter` で再試行
+  - フォールバック発動回数を実行サマリに記録
+  - 既存 `PROVIDER_REGISTRY` / `create_provider` を再利用（LLM プロバイダコードは削除しない）
+  - _Requirements: 4.1, 4.2, 4.4_
+
+## Phase A3a: 各種別 Top 5 サイトの実装と TDD パターン確立
+
+- [ ] 3. テスト基盤と各種別 Top 5 サイト分のアダプターを実装する
+- [ ] 3.1 HTML スナップショットテストの基盤を整備する
+  - `tests/adapters/fixtures/{site_slug}/` ディレクトリ構造の規約を確立
+  - `responses` ライブラリで HTTP/HTTPS をスタブする共通フィクスチャを `conftest.py` に追加
+  - 期待 RawAnimalData を `expected.json` で表現する規約を確立
+  - 各 adapter テストで全フィールド（species, sex, age, color, size, shelter_date, location, phone, image_urls）を検証
+  - サイトの実 HTML を 1 回取得して fixture にコミットする運用ルールを確立
+  - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
+- [ ] 3.2 (P) standard 種別 Top 5 サイトのアダプターを実装する
+  - zaidan-fukuoka-douai (8 サイト共通テンプレ) 1 アダプター
+  - douaicenter (8 サイト共通テンプレ) 1 アダプター
+  - yokosuka-doubutu (6 サイト共通テンプレ) 1 アダプター
+  - animal-net.pref.nagasaki (4 サイト共通) 1 アダプター
+  - douai.pref.tochigi (3 サイト共通) 1 アダプター
+  - 各アダプターは `WordPressListAdapter` を継承、selector 定数のみ定義
+  - 各アダプターに対する HTML fixture と expected.json + ユニットテスト
+  - 各派生クラスに対象サイト名・テンプレート種別を docstring で明記
+  - _Requirements: 2.1, 2.2, 2.3, 5.1, 5.2, 9.5_
+- [ ] 3.3 (P) single_page 種別 Top 5 サイトのアダプターを実装する
+  - pref.saga (6 サイト共通テンプレ) 1 アダプター
+  - city.chiba (6 サイト共通テンプレ) 1 アダプター
+  - pref.yamanashi (6 サイト共通テンプレ) 1 アダプター
+  - pref.fukushima (6 サイト共通テンプレ) 1 アダプター
+  - pref.chiba (5 サイト共通テンプレ) 1 アダプター
+  - 各アダプターは `SinglePageTableAdapter` を継承
+  - 各アダプターに HTML fixture + テスト + docstring
+  - _Requirements: 2.1, 2.2, 2.3, 5.1, 5.2, 9.5_
+- [ ] 3.4 (P) requires_js 種別 Top 5 サイトのアダプターを実装する
+  - kumamoto-doubutuaigo (8 サイト共通) 1 アダプター
+  - aniwel-pref.okinawa (6 サイト共通) 1 アダプター
+  - wannyan.city.fukuoka (4 サイト共通) 1 アダプター
+  - douai-tokushima (3 サイト共通) 1 アダプター
+  - shuyojoho.metro.tokyo (2 サイト共通) 1 アダプター
+  - 各アダプターは `PlaywrightAdapter` を継承
+  - 各アダプターに HTML fixture（描画後 HTML）+ テスト + docstring
+  - _Requirements: 2.1, 2.2, 2.3, 5.1, 5.2, 9.5_
+- [ ] 3.5 (P) pdf 種別 Top 3 サイトのアダプターを実装する
+  - pref.kagawa (4 サイト共通テンプレ) 1 アダプター
+  - pref.ibaraki (2 サイト共通) 1 アダプター
+  - pdf 種別の残り 5 サイト分の独立アダプター（長尾はここで吸収）
+  - 各アダプターは `PdfTableAdapter` を継承
+  - 各アダプターに PDF fixture（バイナリ）+ expected.json + テスト
+  - _Requirements: 2.1, 2.2, 2.3, 2.4, 5.1, 5.2, 9.5_
+
+## Phase A3b: 残り 72 テンプレートを高ボリューム順に実装
+
+- [ ] 4. 中ボリュームと長尾サイトのアダプターを実装する
+- [ ] 4.1 (P) Top 11-30 ランク（中ボリューム）のテンプレートを実装する
+  - city.miyazaki / pref.kanagawa / city.osaka / oita-aigo / pref.gunma 等
+  - 各種別の基底クラスから派生、selector 定数定義 + fixture + テスト
+  - 累積カバレッジ目標: 約 62%（130 サイト）
+  - 各派生は対象サイト名・テンプレ種別を docstring 明記
+  - _Requirements: 2.1, 2.2, 2.3, 5.1, 5.2, 9.5_
+- [ ] 4.2 (P) Top 31-60 ランク（中尾）のテンプレートを実装する
+  - city.koshigaya / city.machida / city.yokohama / city.kawasaki / city.nagoya / city.sendai 等
+  - 累積カバレッジ目標: 約 85%（177 サイト）
+  - 共通パターン抽出のリファクタリング機会を Phase A3 中盤チェックポイントで実施
+  - _Requirements: 2.1, 2.2, 2.3, 5.1, 5.2, 9.5_
+- [ ] 4.3 長尾 1 サイトテンプレート群を実装する
+  - 残り 45 個のドメイン別アダプター（各 1 サイト）
+  - 累積カバレッジ目標: 100%（209 サイト）
+  - 既存基底クラスで吸収しきれない構造があればその時点で基底拡張を検討
+  - 共通化困難なサイトは個別アダプターで対応
+  - _Requirements: 2.1, 2.2, 2.3, 5.1, 5.2, 9.5_
+- [ ] 4.4 (P) サイト別 `extraction` 切替の段階的ロールアウト
+  - 各テンプレ実装完了サイトの `sites.yaml` を `extraction: "rule-based"` に切替する PR を発行
+  - 未実装サイトは既存 LLM 抽出のまま運用継続（混在運用）
+  - サイト切替後の 24 時間モニタリングで異常がないことを確認
+  - _Requirements: 7.1, 7.2, 7.4_
+
+## Phase A3 横断: 進捗追跡と運用ドキュメント
+
+- [ ] 5. 進捗追跡と開発者向けガイドを整備する
+- [ ] 5.1 (P) マイグレーション進捗追跡 CLI を実装する
+  - `scripts/migration_progress.py` で実装済み adapter 数 / 92 を表示
+  - 種別ごとの進捗（standard / single_page / requires_js / pdf）も内訳表示
+  - 各サイトの現在 extraction 設定（rule-based / llm / 未対応）を一覧出力
+  - _Requirements: 7.3_
+- [ ] 5.2 (P) 新規サイト追加手順の開発者ガイドを整備する
+  - 既存テンプレートに合致するサイトの追加手順（`sites.yaml` 1 行 + Registry 登録）
+  - 新テンプレート発生時のアダプター追加手順（基底選定、selector 定義、fixture 作成）
+  - HTML drift 発生時のアダプター修正手順
+  - 各基底クラスの使い方を docstring で網羅
+  - _Requirements: 9.1, 9.2_
+- [ ] 5.3 (P) LLM プロバイダ復帰手順を整備する
+  - `default_provider` を `anthropic` 等に戻す手順
+  - `ANTHROPIC_API_KEY` の Keychain 登録 + `.envrc` + GitHub Actions Secrets 設定手順
+  - per-site `fallback_to_llm: true` の使い方
+  - 1 PR で完結する変更箇所のチェックリスト
+  - _Requirements: 4.5, 9.3_
+- [ ] 5.4 テンプレート集約解析を最新化する
+  - 209 サイトに変動があった場合 `scripts/template_analysis_*.md` を更新
+  - 新テンプレート発生時に集約数の再計算
+  - _Requirements: 9.4_
+
+## Phase A4: 最終統合とリリース可能状態への移行
+
+- [ ] 6. 完全 rule-based 化の最終 PR とリリース確認
+- [ ] 6.1 `default_provider` を `rule-based` に切替える最終 PR を発行する
+  - `sites.yaml` の `extraction.default_provider` を `rule-based` に変更
+  - per-site `extraction` フィールドが指定されていないサイトは全て rule-based 経路で実行
+  - LLM プロバイダコードはそのまま温存（削除しない）
+  - 切替後の動作確認: LLM API 呼出回数が 0 件（fallback 発動時を除く）になることを確認
+  - _Requirements: 3.4, 4.1, 4.3, 7.5, 8.5_
+- [ ] 6.2 209 サイト全件で 6 時間以内完了することを CI で確認する
+  - GitHub Actions の 6 時間ジョブ上限内での完走確認
+  - サイトあたり処理時間: standard / single_page 60 秒以内、requires_js 180 秒以内
+  - 実行サマリ JSON を CI ログに出力して確認
+  - _Requirements: 8.1, 8.2, 8.3, 8.4_
+- [ ] 6.3 1 週間連続クリーンランを観察する
+  - 連続失敗サイト 0 件、抽出件数の急減なし、Critical 通知 0 件を確認
+  - 異常があれば該当サイトを `extraction: "llm"` に戻す PR で即時救済
+  - 1 週間達成後にリリース可能状態として認定
+  - _Requirements: 6.2, 6.4, 7.1_
+
+## Phase 横断: 統合テスト
+
+- [ ] 7. 統合テストで境界をまたいだ動作を保証する
+- [ ] 7.1 (P) `extraction: "llm"` と `"rule-based"` 混在時の振り分けを検証する
+  - sites.yaml に両方の設定が混在する状態で `__main__.py` を実行
+  - 各サイトが適切な経路（rule または LLM）で処理されることを確認
+  - 戻り値の集計が両経路を合算していることを確認
+  - _Requirements: 3.4, 3.5, 7.1, 7.2_
+- [ ] 7.2 (P) `fallback_to_llm: true` の経路を検証する
+  - rule 抽出が `ParsingError` を投げた時に `LlmAdapter` で再試行されることを確認
+  - フォールバック成功/失敗の集計が実行サマリに記録されることを確認
+  - _Requirements: 4.4_
+- [ ] 7.3 (P) 後段処理（`DataNormalizer` → `AnimalRepository` → 通知）と互換であることを確認する
+  - rule-based 抽出の出力が既存 `RawAnimalData` モデルに準拠
+  - 既存スナップショット差分検知と完全互換
+  - 既存 Slack 通知（per-site Warning/Critical）が正しく発火
+  - _Requirements: 3.2, 3.3, 3.6, 6.2_
+- [ ] 7.4 (P) 性能テスト
+  - 抽選した 5 サイト（kochi、takamatsu、ehime、kumamoto、kagawa-pdf）で rule vs LLM 処理時間比較
+  - 処理時間が LLM 比 50% 以下であることを確認
+  - _Requirements: 8.1_
