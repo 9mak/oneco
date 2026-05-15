@@ -38,13 +38,10 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # 「★現在、情報はありません。」「現在、保護・収容中の犬はおりません。」
 # 等の 0 件告知パターン。表記揺れ (です/ません/おりません/いません/ありません)
 # を緩く吸収する。
-_EMPTY_STATE_PATTERN = re.compile(
-    r"(?:現在|現時点)[^。]*?(?:ありません|いません|おりません)"
-)
+_EMPTY_STATE_PATTERN = re.compile(r"(?:現在|現時点)[^。]*?(?:ありません|いません|おりません)")
 
 # 6 カラム動物テーブルのヘッダ判定用ラベル (種類は他テーブルに含まれない)
 _ANIMAL_TABLE_HEADER_KEYWORDS = ("種類", "性別", "年齢", "毛色", "体格")
@@ -71,11 +68,11 @@ class CityKoshigayaAdapter(SinglePageTableAdapter):
     # 契約として明示する。
     COLUMN_FIELDS: ClassVar[dict[int, str]] = {
         0: "species_detail",  # 種類 (柴犬等の具体名 / 在庫 0 件では空)
-        1: "sex",             # 性別
-        2: "age",             # 年齢
-        3: "color",           # 毛色
-        4: "size",            # 体格
-        5: "features",        # 備考
+        1: "sex",  # 性別
+        2: "age",  # 年齢
+        3: "color",  # 毛色
+        4: "size",  # 体格
+        5: "features",  # 備考
     }
     # 動物テーブル自体には「場所」列はない (別テーブル)
     LOCATION_COLUMN: ClassVar[int | None] = None
@@ -163,10 +160,7 @@ class CityKoshigayaAdapter(SinglePageTableAdapter):
                 url=self.site_config.list_url,
             )
 
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
     def extract_animal_details(
         self, virtual_url: str, category: str = "sheltered"
@@ -206,10 +200,7 @@ class CityKoshigayaAdapter(SinglePageTableAdapter):
         shelter_date = self.SHELTER_DATE_DEFAULT
         loc_rows = getattr(self, "_location_rows_cache", [])
         if idx < len(loc_rows):
-            loc_cells = [
-                c for c in loc_rows[idx].find_all(["td", "th"])
-                if isinstance(c, Tag)
-            ]
+            loc_cells = [c for c in loc_rows[idx].find_all(["td", "th"]) if isinstance(c, Tag)]
             if len(loc_cells) >= 1:
                 t = loc_cells[0].get_text(separator=" ", strip=True)
                 if t.replace(" ", "").strip():
@@ -237,9 +228,7 @@ class CityKoshigayaAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 
@@ -254,9 +243,7 @@ class CityKoshigayaAdapter(SinglePageTableAdapter):
         if isinstance(first_tr, Tag):
             ths = first_tr.find_all("th")
             if ths:
-                return " ".join(
-                    th.get_text(separator=" ", strip=True) for th in ths
-                )
+                return " ".join(th.get_text(separator=" ", strip=True) for th in ths)
         return ""
 
     @staticmethod
@@ -268,7 +255,8 @@ class CityKoshigayaAdapter(SinglePageTableAdapter):
         else:
             # `<tbody>` 省略時は `<tr>` 全件から `<th>` のみの行を除外
             trs = [
-                tr for tr in table.find_all("tr")
+                tr
+                for tr in table.find_all("tr")
                 if isinstance(tr, Tag) and tr.find("td") is not None
             ]
         result: list[Tag] = []
@@ -294,9 +282,7 @@ class CityKoshigayaAdapter(SinglePageTableAdapter):
         """ヘッダ文字列が動物テーブル (種類/性別/年齢/毛色/体格 を含む) か判定"""
         # 主要 5 ラベルのうち 3 つ以上含まれていれば動物テーブルとみなす
         # (テンプレートの細かい揺れに対する保険)
-        hits = sum(
-            1 for kw in _ANIMAL_TABLE_HEADER_KEYWORDS if kw in header_text
-        )
+        hits = sum(1 for kw in _ANIMAL_TABLE_HEADER_KEYWORDS if kw in header_text)
         return hits >= 3
 
     @staticmethod

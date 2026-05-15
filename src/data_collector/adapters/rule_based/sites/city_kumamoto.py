@@ -107,9 +107,7 @@ class CityKumamotoAdapter(WordPressListAdapter):
             urls.append((absolute, category))
         return urls
 
-    def extract_animal_details(
-        self, detail_url: str, category: str = "lost"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, detail_url: str, category: str = "lost") -> RawAnimalData:
         """detail ページから RawAnimalData を構築する
 
         基底実装に加え、以下の熊本市固有処理を行う:
@@ -159,9 +157,7 @@ class CityKumamotoAdapter(WordPressListAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=detail_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=detail_url) from e
 
     # ─────────────────── 抽出ヘルパー拡張 ───────────────────
 
@@ -193,9 +189,7 @@ class CityKumamotoAdapter(WordPressListAdapter):
                 return sibling_text
         return ""
 
-    def _filter_image_urls(
-        self, urls: list[str], base_url: str
-    ) -> list[str]:
+    def _filter_image_urls(self, urls: list[str], base_url: str) -> list[str]:
         """テンプレート (common/images/) の装飾画像を除外する
 
         熊本市 CMS は `/dynamic/doubutuaigo/common/images/` や
@@ -204,7 +198,8 @@ class CityKumamotoAdapter(WordPressListAdapter):
         なった場合は元リストを返す (フェイルセーフ)。
         """
         filtered = [
-            u for u in urls
+            u
+            for u in urls
             if "/common/images/" not in u
             and "/common/upload/common/" not in u
             and "loading.gif" not in u

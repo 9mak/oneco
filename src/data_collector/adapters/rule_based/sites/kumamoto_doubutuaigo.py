@@ -114,9 +114,7 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
             urls.append((absolute, category))
         return urls
 
-    def extract_animal_details(
-        self, detail_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, detail_url: str, category: str = "adoption") -> RawAnimalData:
         """detail ページから RawAnimalData を構築する
 
         基底実装に加え、以下の固有処理を行う:
@@ -166,9 +164,7 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=detail_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=detail_url) from e
 
     # ─────────────────── 抽出ヘルパー拡張 ───────────────────
 

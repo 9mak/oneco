@@ -17,13 +17,13 @@ except ImportError:
     pass
 
 from .adapters.kochi_adapter import KochiAdapter
+from .adapters.rule_based.broken_tracker import BrokenSitesTracker
+from .adapters.rule_based.registry import SiteAdapterRegistry
 from .domain.diff_detector import DiffDetector
 from .infrastructure.database.connection import DatabaseConnection, DatabaseSettings
 from .infrastructure.notification_client import NotificationClient
 from .infrastructure.output_writer import OutputWriter
 from .infrastructure.snapshot_store import SnapshotStore
-from .adapters.rule_based.broken_tracker import BrokenSitesTracker
-from .adapters.rule_based.registry import SiteAdapterRegistry
 from .llm.adapter import LlmAdapter
 from .llm.config import SiteConfigLoader, SitesConfig
 from .llm.html_preprocessor import HtmlPreprocessor
@@ -222,11 +222,7 @@ def run_rule_based_sites(
 
         site_start = time.time()
         logger.info(f"=== rule-based 収集開始: {site.name} ===")
-        timeout = (
-            SITE_TIMEOUT_JS_SEC
-            if getattr(site, "requires_js", False)
-            else SITE_TIMEOUT_SEC
-        )
+        timeout = SITE_TIMEOUT_JS_SEC if getattr(site, "requires_js", False) else SITE_TIMEOUT_SEC
 
         try:
             adapter = adapter_cls(site)
@@ -255,20 +251,14 @@ def run_rule_based_sites(
                 if broken_tracker:
                     broken_tracker.record_success(site.name)
             else:
-                logger.error(
-                    f"[{site.name}] rule-based 収集失敗: {', '.join(result.errors)}"
-                )
+                logger.error(f"[{site.name}] rule-based 収集失敗: {', '.join(result.errors)}")
                 if broken_tracker:
                     broken_tracker.record_failure(site.name, "; ".join(result.errors))
                 # fallback_to_llm: True ならLLM経路で再試行
                 if getattr(site, "fallback_to_llm", False):
-                    logger.info(
-                        f"[{site.name}] fallback_to_llm 有効 — LLM 抽出で再試行"
-                    )
+                    logger.info(f"[{site.name}] fallback_to_llm 有効 — LLM 抽出で再試行")
                     try:
-                        provider_name, model = SiteConfigLoader.resolve_provider(
-                            site, config
-                        )
+                        provider_name, model = SiteConfigLoader.resolve_provider(site, config)
                         provider = create_provider(provider_name, model)
                         llm_adapter = LlmAdapter(
                             site_config=site,
@@ -291,26 +281,20 @@ def run_rule_based_sites(
                                 f"{llm_result.total_collected}件"
                             )
                             continue  # success via fallback, don't mark all_success=False
-                    except Exception as fb_e:  # noqa: BLE001
-                        logger.error(
-                            f"[{site.name}] LLM フォールバックも失敗: {fb_e}"
-                        )
+                    except Exception as fb_e:
+                        logger.error(f"[{site.name}] LLM フォールバックも失敗: {fb_e}")
                 all_success = False
 
         except SiteCollectionTimeoutError as e:
             elapsed = time.time() - site_start
-            logger.warning(
-                f"[{site.name}] タイムアウト ({elapsed:.1f}秒, limit={timeout}秒): {e}"
-            )
+            logger.warning(f"[{site.name}] タイムアウト ({elapsed:.1f}秒, limit={timeout}秒): {e}")
             if broken_tracker:
                 broken_tracker.record_failure(site.name, f"timeout: {e}")
             all_success = False
             continue
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             elapsed = time.time() - site_start
-            logger.error(
-                f"[{site.name}] エラー発生 ({elapsed:.1f}秒): {e}", exc_info=True
-            )
+            logger.error(f"[{site.name}] エラー発生 ({elapsed:.1f}秒): {e}", exc_info=True)
             if broken_tracker:
                 broken_tracker.record_failure(site.name, str(e))
             all_success = False
@@ -431,9 +415,7 @@ def main():
                     success = False
 
                 # 進捗ログ
-                stats = SiteAdapterRegistry.coverage_stats(
-                    [s.name for s in config.sites]
-                )
+                stats = SiteAdapterRegistry.coverage_stats([s.name for s in config.sites])
                 logger.info(
                     f"rule-based 進捗: {stats['rule_based']}/{stats['total']} "
                     f"(LLM 残り {stats['llm_only']})"

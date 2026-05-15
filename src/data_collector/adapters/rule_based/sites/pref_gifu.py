@@ -32,15 +32,12 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # ハブテーブルの見出しに必ず含まれる文字列。
 # 「保健所名」+「区域」で 2 列ペア × 2 セットの計 4 列ヘッダ構造。
 _HUB_HEADER_PATTERN = re.compile(r"保健所名.*?区域", re.DOTALL)
 # ページタイトル / 案内文に登場する迷い犬情報ハブを示す代表的フレーズ。
 # 表記揺れ吸収のため複数候補を OR で許容する。
-_HUB_BODY_PATTERN = re.compile(
-    r"(?:迷い犬情報|保健所では[^。]*?保護|保健所をクリック)"
-)
+_HUB_BODY_PATTERN = re.compile(r"(?:迷い犬情報|保健所では[^。]*?保護|保健所をクリック)")
 
 
 class PrefGifuAdapter(SinglePageTableAdapter):
@@ -82,9 +79,7 @@ class PrefGifuAdapter(SinglePageTableAdapter):
             url=self.site_config.list_url,
         )
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "lost"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "lost") -> RawAnimalData:
         """ハブページからは動物が取れないため呼ばれた時点で異常
 
         `fetch_animal_list` が常に空リストを返すため、通常の収集

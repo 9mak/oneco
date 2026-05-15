@@ -97,9 +97,7 @@ def _site() -> SiteConfig:
         name="大分市（保護犬）",
         prefecture="大分県",
         prefecture_code="44",
-        list_url=(
-            "https://www.city.oita.oita.jp/kurashi/pet/inunohogo/index.html"
-        ),
+        list_url=("https://www.city.oita.oita.jp/kurashi/pet/inunohogo/index.html"),
         category="sheltered",
         single_page=True,
     )
@@ -108,9 +106,7 @@ def _site() -> SiteConfig:
 class TestCityOitaAdapterListExtraction:
     """list ページからの detail URL 抽出"""
 
-    def test_fetch_animal_list_extracts_detail_urls_from_fixture(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_extracts_detail_urls_from_fixture(self, fixture_html):
         """一覧 fixture から `/oNNN/kurashi/pet/...` の記事 URL が抽出できる"""
         html = fixture_html("city_oita_oita_jp")
         adapter = CityOitaAdapter(_site())
@@ -121,9 +117,7 @@ class TestCityOitaAdapterListExtraction:
         assert len(result) >= 1
         urls = [u for u, _cat in result]
         # フィクスチャに含まれる既知の detail URL
-        assert any(
-            "/o245/kurashi/pet/1338766046231.html" in u for u in urls
-        )
+        assert any("/o245/kurashi/pet/1338766046231.html" in u for u in urls)
         # 全 URL が `/oNNN/kurashi/pet/NNNNNNNNNNNNN.html` 形式の記事リンク
         for u in urls:
             assert "/kurashi/pet/" in u
@@ -172,19 +166,12 @@ class TestCityOitaAdapterListExtraction:
 class TestCityOitaAdapterDetailExtraction:
     """detail ページからの RawAnimalData 構築"""
 
-    def test_extract_animal_details_returns_raw_data_dog(
-        self, assert_raw_animal
-    ):
+    def test_extract_animal_details_returns_raw_data_dog(self, assert_raw_animal):
         """`<th>/<td>` テーブルの詳細ページから各フィールドが抽出できる"""
         adapter = CityOitaAdapter(_site())
-        detail_url = (
-            "https://www.city.oita.oita.jp/o245/kurashi/pet/"
-            "1338766046231.html"
-        )
+        detail_url = "https://www.city.oita.oita.jp/o245/kurashi/pet/1338766046231.html"
         with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_DOG):
-            raw = adapter.extract_animal_details(
-                detail_url, category="sheltered"
-            )
+            raw = adapter.extract_animal_details(detail_url, category="sheltered")
 
         assert isinstance(raw, RawAnimalData)
         assert_raw_animal(
@@ -206,21 +193,12 @@ class TestCityOitaAdapterDetailExtraction:
         assert all(not u.endswith(".ico") for u in raw.image_urls)
         assert all("/o245/kurashi/pet/upload/" in u for u in raw.image_urls)
 
-    def test_extract_animal_details_supports_two_column_table(
-        self, assert_raw_animal
-    ):
+    def test_extract_animal_details_supports_two_column_table(self, assert_raw_animal):
         """`<th>` を持たない 2 列テーブルからも値を抽出できる"""
         adapter = CityOitaAdapter(_site())
-        detail_url = (
-            "https://www.city.oita.oita.jp/o245/kurashi/pet/"
-            "1338766046231.html"
-        )
-        with patch.object(
-            adapter, "_http_get", return_value=DETAIL_HTML_2COL
-        ):
-            raw = adapter.extract_animal_details(
-                detail_url, category="sheltered"
-            )
+        detail_url = "https://www.city.oita.oita.jp/o245/kurashi/pet/1338766046231.html"
+        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_2COL):
+            raw = adapter.extract_animal_details(detail_url, category="sheltered")
 
         assert isinstance(raw, RawAnimalData)
         assert_raw_animal(
@@ -247,14 +225,9 @@ class TestCityOitaAdapterDetailExtraction:
         </body></html>
         """
         adapter = CityOitaAdapter(_site())  # name: "大分市（保護犬）"
-        detail_url = (
-            "https://www.city.oita.oita.jp/o245/kurashi/pet/"
-            "1338766046231.html"
-        )
+        detail_url = "https://www.city.oita.oita.jp/o245/kurashi/pet/1338766046231.html"
         with patch.object(adapter, "_http_get", return_value=detail_html):
-            raw = adapter.extract_animal_details(
-                detail_url, category="sheltered"
-            )
+            raw = adapter.extract_animal_details(detail_url, category="sheltered")
         assert raw.species == "犬"
 
     def test_extract_raises_on_empty_html(self):
@@ -267,8 +240,7 @@ class TestCityOitaAdapterDetailExtraction:
         ):
             with pytest.raises(Exception):
                 adapter.extract_animal_details(
-                    "https://www.city.oita.oita.jp/o245/kurashi/pet/"
-                    "1338766046231.html"
+                    "https://www.city.oita.oita.jp/o245/kurashi/pet/1338766046231.html"
                 )
 
 
@@ -285,9 +257,7 @@ class TestCityOitaAdapterSpeciesInference:
         ],
     )
     def test_infer_species_from_site_name(self, name, expected):
-        assert (
-            CityOitaAdapter._infer_species_from_site_name(name) == expected
-        )
+        assert CityOitaAdapter._infer_species_from_site_name(name) == expected
 
 
 class TestCityOitaAdapterRegistry:
@@ -305,6 +275,4 @@ class TestCityOitaAdapterRegistry:
         if SiteAdapterRegistry.get(site_name) is None:
             SiteAdapterRegistry.register(site_name, CityOitaAdapter)
         cls = SiteAdapterRegistry.get(site_name)
-        assert cls is CityOitaAdapter, (
-            f"{site_name} が CityOitaAdapter に紐付いていません: {cls}"
-        )
+        assert cls is CityOitaAdapter, f"{site_name} が CityOitaAdapter に紐付いていません: {cls}"

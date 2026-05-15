@@ -56,9 +56,7 @@ def _load_kyoto_html(fixture_html) -> str:
 
 
 class TestPrefKyotoAdapter:
-    def test_fetch_animal_list_returns_empty_for_no_animals_page(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_returns_empty_for_no_animals_page(self, fixture_html):
         """「保護している犬はありません」告知ページでは空リストが返る
 
         フィクスチャは「現在、当所で保護している犬はありません。」の
@@ -71,9 +69,7 @@ class TestPrefKyotoAdapter:
         with patch.object(adapter, "_http_get", return_value=html):
             result = adapter.fetch_animal_list()
 
-        assert result == [], (
-            f"empty state ページでは空配列が返るはず: got {result!r}"
-        )
+        assert result == [], f"empty state ページでは空配列が返るはず: got {result!r}"
 
     def test_fetch_animal_list_caches_html(self, fixture_html):
         """同一インスタンスでの繰り返し呼び出しは HTTP を 1 回しか実行しない"""
@@ -103,39 +99,21 @@ class TestPrefKyotoAdapter:
     def test_infer_species_from_site_name_dog(self):
         """サイト名に "犬" を含むと species 推定が "犬" になる"""
         assert (
-            PrefKyotoAdapter._infer_species_from_site_name(
-                "京都府 山城北保健所（迷子犬）"
-            )
-            == "犬"
+            PrefKyotoAdapter._infer_species_from_site_name("京都府 山城北保健所（迷子犬）") == "犬"
         )
-        assert (
-            PrefKyotoAdapter._infer_species_from_site_name(
-                "京都府 南丹保健所（迷子犬）"
-            )
-            == "犬"
-        )
+        assert PrefKyotoAdapter._infer_species_from_site_name("京都府 南丹保健所（迷子犬）") == "犬"
 
     def test_infer_species_from_site_name_cat(self):
         """サイト名に "猫" を含むと species 推定が "猫" になる"""
         assert (
-            PrefKyotoAdapter._infer_species_from_site_name(
-                "京都府 山城北保健所（迷子猫）"
-            )
-            == "猫"
+            PrefKyotoAdapter._infer_species_from_site_name("京都府 山城北保健所（迷子猫）") == "猫"
         )
-        assert (
-            PrefKyotoAdapter._infer_species_from_site_name(
-                "京都府 南丹保健所（迷子猫）"
-            )
-            == "猫"
-        )
+        assert PrefKyotoAdapter._infer_species_from_site_name("京都府 南丹保健所（迷子猫）") == "猫"
 
     def test_infer_species_from_site_name_unknown(self):
         """犬/猫 を含まないサイト名 (飼い主不明動物) は空文字"""
         assert (
-            PrefKyotoAdapter._infer_species_from_site_name(
-                "京都府 山城南保健所（飼い主不明動物）"
-            )
+            PrefKyotoAdapter._infer_species_from_site_name("京都府 山城南保健所（飼い主不明動物）")
             == ""
         )
 

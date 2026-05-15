@@ -57,9 +57,7 @@ def _load_gunma_html(fixture_html) -> str:
 
 
 class TestPrefGunmaAdapter:
-    def test_fetch_animal_list_returns_empty_for_no_animals_page(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_returns_empty_for_no_animals_page(self, fixture_html):
         """「現在、保管期間中の犬はおりません」告知ページでは空リストが返る
 
         フィクスチャは中毛/北毛/西毛 各地区とも全て
@@ -73,9 +71,7 @@ class TestPrefGunmaAdapter:
         with patch.object(adapter, "_http_get", return_value=html):
             result = adapter.fetch_animal_list()
 
-        assert result == [], (
-            f"empty state ページでは空配列が返るはず: got {result!r}"
-        )
+        assert result == [], f"empty state ページでは空配列が返るはず: got {result!r}"
 
     def test_contact_table_is_excluded(self, fixture_html):
         """お問い合わせ先テーブルは動物データとして拾わない
@@ -90,10 +86,7 @@ class TestPrefGunmaAdapter:
         with patch.object(adapter, "_http_get", return_value=html):
             rows = adapter._load_rows()
 
-        assert rows == [], (
-            f"連絡先テーブルは動物データとして残してはいけない: "
-            f"got {len(rows)} rows"
-        )
+        assert rows == [], f"連絡先テーブルは動物データとして残してはいけない: got {len(rows)} rows"
 
     def test_fetch_animal_list_caches_html(self, fixture_html):
         """同一インスタンスでの繰り返し呼び出しは HTTP を 1 回しか実行しない"""
@@ -106,8 +99,7 @@ class TestPrefGunmaAdapter:
             adapter.fetch_animal_list()
 
         assert mock_get.call_count == 1, (
-            f"HTML はキャッシュされ HTTP は 1 回のみ: "
-            f"got {mock_get.call_count}"
+            f"HTML はキャッシュされ HTTP は 1 回のみ: got {mock_get.call_count}"
         )
 
     def test_raises_parsing_error_for_unrelated_html(self):
@@ -124,9 +116,7 @@ class TestPrefGunmaAdapter:
     def test_infer_species_from_site_name_dog(self):
         """サイト名に "犬" を含むと species 推定が "犬" になる"""
         assert (
-            PrefGunmaAdapter._infer_species_from_site_name(
-                "群馬県動物愛護センター（保護犬）"
-            )
+            PrefGunmaAdapter._infer_species_from_site_name("群馬県動物愛護センター（保護犬）")
             == "犬"
         )
         assert (
@@ -139,19 +129,14 @@ class TestPrefGunmaAdapter:
     def test_infer_species_from_site_name_cat(self):
         """サイト名に "猫" を含むと species 推定が "猫" になる"""
         assert (
-            PrefGunmaAdapter._infer_species_from_site_name(
-                "群馬県動物愛護センター（保護猫）"
-            )
+            PrefGunmaAdapter._infer_species_from_site_name("群馬県動物愛護センター（保護猫）")
             == "猫"
         )
 
     def test_infer_species_from_site_name_unknown(self):
         """犬/猫 を含まないサイト名は空文字 (テーブル値フォールバック)"""
         assert (
-            PrefGunmaAdapter._infer_species_from_site_name(
-                "群馬県動物愛護センター（その他）"
-            )
-            == ""
+            PrefGunmaAdapter._infer_species_from_site_name("群馬県動物愛護センター（その他）") == ""
         )
 
     def test_all_three_sites_registered(self):

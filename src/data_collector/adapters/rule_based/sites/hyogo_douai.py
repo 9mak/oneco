@@ -125,9 +125,7 @@ class HyogoDouaiAdapter(WordPressListAdapter):
             urls.append((absolute, category))
         return urls
 
-    def extract_animal_details(
-        self, detail_url: str, category: str = "sheltered"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, detail_url: str, category: str = "sheltered") -> RawAnimalData:
         """detail ページから RawAnimalData を構築する
 
         基底実装に対し以下の兵庫県動物愛護センター固有処理を加える:
@@ -175,9 +173,7 @@ class HyogoDouaiAdapter(WordPressListAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=detail_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=detail_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 

@@ -38,13 +38,10 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # 「現在、…の収容情報はありません」「現在、収容（保護）されている犬はいません。」
 # 等の 0 件告知パターン。表記揺れ (です/ません/おりません/いません/ありません)
 # を緩く吸収する。
-_EMPTY_STATE_PATTERN = re.compile(
-    r"(?:現在|現時点)[^。]*?(?:ありません|いません|おりません)"
-)
+_EMPTY_STATE_PATTERN = re.compile(r"(?:現在|現時点)[^。]*?(?:ありません|いません|おりません)")
 
 # 「収容日：YYYY年MM月DD日」「収容日 2026/05/12」等を緩く拾う
 _SHELTER_DATE_RE = re.compile(
@@ -156,9 +153,7 @@ class CityKawasakiAdapter(SinglePageTableAdapter):
                     # 全セル空 (`&nbsp;` のみ等) は除外
                     cells = tr.find_all(["td", "th"])
                     if not any(
-                        c.get_text(separator="", strip=True)
-                         .replace("\xa0", "")
-                         .strip()
+                        c.get_text(separator="", strip=True).replace("\xa0", "").strip()
                         for c in cells
                     ):
                         continue
@@ -196,10 +191,7 @@ class CityKawasakiAdapter(SinglePageTableAdapter):
                 url=self.site_config.list_url,
             )
 
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
     def extract_animal_details(
         self, virtual_url: str, category: str = "sheltered"
@@ -220,13 +212,9 @@ class CityKawasakiAdapter(SinglePageTableAdapter):
         anchor = rows[idx]
 
         if anchor.name == "tr":
-            fields, image_urls = self._extract_from_table_row(
-                anchor, virtual_url
-            )
+            fields, image_urls = self._extract_from_table_row(anchor, virtual_url)
         else:
-            fields, image_urls = self._extract_from_h3_block(
-                anchor, virtual_url
-            )
+            fields, image_urls = self._extract_from_h3_block(anchor, virtual_url)
 
         # 動物種別はサイト名から推定 (HTML 上の「種類」は犬種名等のことがある)
         species = self._infer_species_from_site_name(self.site_config.name)
@@ -238,9 +226,7 @@ class CityKawasakiAdapter(SinglePageTableAdapter):
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),
                 size=fields.get("size", ""),
-                shelter_date=fields.get(
-                    "shelter_date", self.SHELTER_DATE_DEFAULT
-                ),
+                shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
                 location=fields.get("location", ""),
                 phone="",
                 image_urls=image_urls,
@@ -248,15 +234,11 @@ class CityKawasakiAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 
-    def _extract_from_h3_block(
-        self, h3: Tag, base_url: str
-    ) -> tuple[dict[str, str], list[str]]:
+    def _extract_from_h3_block(self, h3: Tag, base_url: str) -> tuple[dict[str, str], list[str]]:
         """`<h3>` 起点の動物ブロックから (fields, image_urls) を抽出
 
         h3 の次以降の兄弟を「次の <h3> / <h2>」が現れるまで走査し、
@@ -297,9 +279,7 @@ class CityKawasakiAdapter(SinglePageTableAdapter):
         image_urls = self._filter_image_urls(image_urls, base_url)
         return fields, image_urls
 
-    def _extract_from_table_row(
-        self, tr: Tag, base_url: str
-    ) -> tuple[dict[str, str], list[str]]:
+    def _extract_from_table_row(self, tr: Tag, base_url: str) -> tuple[dict[str, str], list[str]]:
         """`<tr>` 起点の行から (fields, image_urls) を抽出
 
         テーブル行は次の 2 形式を想定:
@@ -329,7 +309,7 @@ class CityKawasakiAdapter(SinglePageTableAdapter):
             # b 型: 列ヘッダと対応付け
             headers = self._table_headers_for_row(tr)
             if headers and len(headers) == len(cells):
-                for h, c in zip(headers, cells):
+                for h, c in zip(headers, cells, strict=False):
                     text = c.get_text(separator=" ", strip=True)
                     self._set_field_by_label(h, text, fields)
             # ヘッダが取れない場合でも各セルから「ラベル：値」を拾う
@@ -379,9 +359,7 @@ class CityKawasakiAdapter(SinglePageTableAdapter):
             m = _SHELTER_DATE_RE.search(text)
             if m:
                 y, mo, d = m.group(1), m.group(2), m.group(3)
-                fields["shelter_date"] = (
-                    f"{int(y):04d}-{int(mo):02d}-{int(d):02d}"
-                )
+                fields["shelter_date"] = f"{int(y):04d}-{int(mo):02d}-{int(d):02d}"
 
         # 「ラベル：値」を行ごとに探す (全角/半角コロン)
         for chunk in re.split(r"[\n\r]+|(?<=[。])", text):
@@ -395,9 +373,7 @@ class CityKawasakiAdapter(SinglePageTableAdapter):
                 cls._set_field_by_label(label, value, fields)
 
     @staticmethod
-    def _set_field_by_label(
-        label: str, value: str, fields: dict[str, str]
-    ) -> None:
+    def _set_field_by_label(label: str, value: str, fields: dict[str, str]) -> None:
         """ラベル文字列を `_LABEL_TO_FIELD` で正規化し、空でなければ格納"""
         if not value:
             return

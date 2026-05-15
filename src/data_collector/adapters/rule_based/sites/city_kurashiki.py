@@ -31,12 +31,9 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # 「令和YY年MM月DD日」「YYYY年M月D日」「YYYY/M/D」「YYYY-M-D」を ISO に揃える
 _REIWA_RE = re.compile(r"令和\s*(\d{1,2})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日")
-_GREG_DATE_RE = re.compile(
-    r"(\d{4})\s*[年/\-.]\s*(\d{1,2})\s*[月/\-.]\s*(\d{1,2})"
-)
+_GREG_DATE_RE = re.compile(r"(\d{4})\s*[年/\-.]\s*(\d{1,2})\s*[月/\-.]\s*(\d{1,2})")
 # 動物種別フィールド: 「猫（雑種）」「犬（トイプードル）」など
 _SPECIES_BREED_RE = re.compile(r"^\s*([^（(\s]+)\s*(?:[（(]([^）)]*)[）)])?\s*$")
 # 性別記号 → 文字列マッピング
@@ -109,10 +106,7 @@ class CityKurashikiAdapter(SinglePageTableAdapter):
         """
         rows = self._load_rows()
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
     def extract_animal_details(
         self, virtual_url: str, category: str = "sheltered"
@@ -135,9 +129,7 @@ class CityKurashikiAdapter(SinglePageTableAdapter):
         li = rows[idx]
         a = li.find("a")
         if not isinstance(a, Tag):
-            raise ParsingError(
-                "li 内に <a> が見つかりません", url=virtual_url
-            )
+            raise ParsingError("li 内に <a> が見つかりません", url=virtual_url)
 
         text = a.get_text(separator=" ", strip=True)
         # 全角スペース・半角スペース・タブいずれでも分割対象とするが、
@@ -180,9 +172,7 @@ class CityKurashikiAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 

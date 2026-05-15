@@ -26,9 +26,7 @@ from data_collector.llm.config import SiteConfig
 
 def _site(
     name: str = "山口県動物愛護センター（収容動物）",
-    list_url: str = (
-        "https://www.pref.yamaguchi.lg.jp/site/doubutuaigo/list25-151.html"
-    ),
+    list_url: str = ("https://www.pref.yamaguchi.lg.jp/site/doubutuaigo/list25-151.html"),
     category: str = "sheltered",
 ) -> SiteConfig:
     return SiteConfig(
@@ -42,9 +40,7 @@ def _site(
 
 
 class TestPrefYamaguchiAdapter:
-    def test_fetch_animal_list_returns_empty_for_index_page(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_returns_empty_for_index_page(self, fixture_html):
         """8 健康福祉センターのリンク集 (本文 0 件) ページでは空リストが返る
 
         fixture `pref_yamaguchi_lg_jp.html` は実サイトと同じく本文中に
@@ -59,9 +55,7 @@ class TestPrefYamaguchiAdapter:
         with patch.object(adapter, "_http_get", return_value=html):
             result = adapter.fetch_animal_list()
 
-        assert result == [], (
-            f"インデックスページでは空配列が返るはず: got {result!r}"
-        )
+        assert result == [], f"インデックスページでは空配列が返るはず: got {result!r}"
 
     def test_fetch_animal_list_caches_html(self, fixture_html):
         """同一インスタンスでの繰り返し呼び出しは HTTP を 1 回しか実行しない"""
@@ -119,9 +113,7 @@ class TestPrefYamaguchiAdapter:
         with patch.object(adapter, "_http_get", return_value=html):
             urls = adapter.fetch_animal_list()
             assert len(urls) == 1
-            raw = adapter.extract_animal_details(
-                urls[0][0], category="sheltered"
-            )
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
 
         assert isinstance(raw, RawAnimalData)
         # ラベル → フィールドのマップが効いていることを確認
@@ -134,9 +126,7 @@ class TestPrefYamaguchiAdapter:
         assert raw.category == "sheltered"
         assert raw.source_url.endswith("#row=0")
 
-    def test_sidebar_and_index_links_are_not_extracted_as_rows(
-        self, fixture_html
-    ):
+    def test_sidebar_and_index_links_are_not_extracted_as_rows(self, fixture_html):
         """サイドバー (#sidebar2) や `div.list_pack` のインデックスリンクは
         ROW として誤検出されない
 
@@ -177,9 +167,7 @@ class TestPrefYamaguchiAdapter:
 
         with patch.object(adapter, "_http_get", return_value=html):
             urls = adapter.fetch_animal_list()
-            raw = adapter.extract_animal_details(
-                urls[0][0], category="sheltered"
-            )
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
             normalized = adapter.normalize(raw)
 
         # AnimalData に変換できれば OK (詳細属性は normalizer 側で検証済み)

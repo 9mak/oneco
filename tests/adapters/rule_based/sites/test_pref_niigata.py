@@ -26,9 +26,7 @@ def _site() -> SiteConfig:
         name="新潟県動物愛護センター（保護動物）",
         prefecture="新潟県",
         prefecture_code="15",
-        list_url=(
-            "https://www.pref.niigata.lg.jp/sec/seikatueisei/1333314133188.html"
-        ),
+        list_url=("https://www.pref.niigata.lg.jp/sec/seikatueisei/1333314133188.html"),
         category="sheltered",
         single_page=True,
     )
@@ -50,9 +48,7 @@ class TestPrefNiigataAdapter:
         assert len(result) == 1
         url, cat = result[0]
         assert "#row=0" in url
-        assert url.startswith(
-            "https://www.pref.niigata.lg.jp/sec/seikatueisei/1333314133188.html"
-        )
+        assert url.startswith("https://www.pref.niigata.lg.jp/sec/seikatueisei/1333314133188.html")
         assert cat == "sheltered"
 
     def test_extract_first_animal(self, fixture_html):

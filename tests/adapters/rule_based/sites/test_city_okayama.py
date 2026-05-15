@@ -99,10 +99,7 @@ def _site() -> SiteConfig:
         name="岡山市（保護動物情報）",
         prefecture="岡山県",
         prefecture_code="33",
-        list_url=(
-            "https://www.city.okayama.jp/kurashi/category/"
-            "1-15-1-0-0-0-0-0-0-0.html"
-        ),
+        list_url=("https://www.city.okayama.jp/kurashi/category/1-15-1-0-0-0-0-0-0-0.html"),
         list_link_pattern="a[href*='/kurashi/']",
         category="sheltered",
     )
@@ -111,9 +108,7 @@ def _site() -> SiteConfig:
 class TestCityOkayamaAdapterListExtraction:
     """list ページからの detail URL 抽出"""
 
-    def test_fetch_animal_list_extracts_detail_urls_from_fixture(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_extracts_detail_urls_from_fixture(self, fixture_html):
         """一覧 fixture から `/kurashi/0000NNNNNN.html` の記事 URL が抽出できる"""
         html = fixture_html("city_okayama_jp")
         adapter = CityOkayamaAdapter(_site())
@@ -125,9 +120,7 @@ class TestCityOkayamaAdapterListExtraction:
         urls = [u for u, _cat in result]
         # フィクスチャに含まれる既知の detail URL (`./../0000067714.html` →
         # 絶対 URL `https://www.city.okayama.jp/kurashi/0000067714.html`)
-        assert any(
-            "/kurashi/0000067714.html" in u for u in urls
-        )
+        assert any("/kurashi/0000067714.html" in u for u in urls)
         # 全 URL が 10 桁数字 + .html 形式の記事リンク (category/index.html ではない)
         for u in urls:
             assert "/kurashi/" in u
@@ -155,9 +148,7 @@ class TestCityOkayamaAdapterListExtraction:
         # (例: 0000021839.html〜0000021779.html) は ul.category_end 配下では
         # ないため、本文の記事 URL とは別に並ぶ。本文セレクタ ul.category_end
         # で絞り込んでいるので混入しないはず。
-        assert not any(
-            "/kurashi/0000021839.html" in u for u in urls
-        )
+        assert not any("/kurashi/0000021839.html" in u for u in urls)
 
     def test_fetch_animal_list_dedupes_urls(self, fixture_html):
         """同一 URL が重複して並んでいても 1 件に集約される"""
@@ -181,18 +172,12 @@ class TestCityOkayamaAdapterListExtraction:
 class TestCityOkayamaAdapterDetailExtraction:
     """detail ページからの RawAnimalData 構築"""
 
-    def test_extract_animal_details_returns_raw_data_dog(
-        self, assert_raw_animal
-    ):
+    def test_extract_animal_details_returns_raw_data_dog(self, assert_raw_animal):
         """`<th>/<td>` テーブルの詳細ページから各フィールドが抽出できる"""
         adapter = CityOkayamaAdapter(_site())
-        detail_url = (
-            "https://www.city.okayama.jp/kurashi/0000067714.html"
-        )
+        detail_url = "https://www.city.okayama.jp/kurashi/0000067714.html"
         with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_DOG):
-            raw = adapter.extract_animal_details(
-                detail_url, category="sheltered"
-            )
+            raw = adapter.extract_animal_details(detail_url, category="sheltered")
 
         assert isinstance(raw, RawAnimalData)
         assert_raw_animal(
@@ -217,20 +202,12 @@ class TestCityOkayamaAdapterDetailExtraction:
         assert all(not u.endswith(".gif") for u in raw.image_urls)
         assert all("/uploaded/image/" in u for u in raw.image_urls)
 
-    def test_extract_animal_details_supports_two_column_table(
-        self, assert_raw_animal
-    ):
+    def test_extract_animal_details_supports_two_column_table(self, assert_raw_animal):
         """`<th>` を持たない 2 列テーブルからも値を抽出できる"""
         adapter = CityOkayamaAdapter(_site())
-        detail_url = (
-            "https://www.city.okayama.jp/kurashi/0000082050.html"
-        )
-        with patch.object(
-            adapter, "_http_get", return_value=DETAIL_HTML_2COL
-        ):
-            raw = adapter.extract_animal_details(
-                detail_url, category="sheltered"
-            )
+        detail_url = "https://www.city.okayama.jp/kurashi/0000082050.html"
+        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_2COL):
+            raw = adapter.extract_animal_details(detail_url, category="sheltered")
 
         assert isinstance(raw, RawAnimalData)
         assert_raw_animal(
@@ -259,13 +236,9 @@ class TestCityOkayamaAdapterDetailExtraction:
         </body></html>
         """
         adapter = CityOkayamaAdapter(_site())
-        detail_url = (
-            "https://www.city.okayama.jp/kurashi/0000067714.html"
-        )
+        detail_url = "https://www.city.okayama.jp/kurashi/0000067714.html"
         with patch.object(adapter, "_http_get", return_value=detail_html):
-            raw = adapter.extract_animal_details(
-                detail_url, category="sheltered"
-            )
+            raw = adapter.extract_animal_details(detail_url, category="sheltered")
         assert raw.species == "犬"
 
     def test_extract_animal_details_infers_species_cat_from_title(self):
@@ -280,13 +253,9 @@ class TestCityOkayamaAdapterDetailExtraction:
         </body></html>
         """
         adapter = CityOkayamaAdapter(_site())
-        detail_url = (
-            "https://www.city.okayama.jp/kurashi/0000016469.html"
-        )
+        detail_url = "https://www.city.okayama.jp/kurashi/0000016469.html"
         with patch.object(adapter, "_http_get", return_value=detail_html):
-            raw = adapter.extract_animal_details(
-                detail_url, category="sheltered"
-            )
+            raw = adapter.extract_animal_details(detail_url, category="sheltered")
         assert raw.species == "猫"
 
     def test_extract_raises_on_empty_html(self):
@@ -317,9 +286,7 @@ class TestCityOkayamaAdapterSpeciesInference:
         ],
     )
     def test_infer_species_from_text(self, text, expected):
-        assert (
-            CityOkayamaAdapter._infer_species_from_text(text) == expected
-        )
+        assert CityOkayamaAdapter._infer_species_from_text(text) == expected
 
 
 class TestCityOkayamaAdapterRegistry:

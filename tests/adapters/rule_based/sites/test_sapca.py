@@ -53,9 +53,7 @@ DETAIL_HTML = """
 class TestSapcaAdapterListExtraction:
     """list ページからの detail URL 抽出"""
 
-    def test_fetch_animal_list_extracts_detail_urls_from_fixture(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_extracts_detail_urls_from_fixture(self, fixture_html):
         adapter = SapcaAdapter(_site())
         html = fixture_html("sapca_jp")
         with patch.object(adapter, "_http_get", return_value=html):
@@ -110,9 +108,7 @@ class TestSapcaAdapterDetailExtraction:
     def test_extract_filters_template_images_and_keeps_uploads(self):
         adapter = SapcaAdapter(_site())
         with patch.object(adapter, "_http_get", return_value=DETAIL_HTML):
-            raw = adapter.extract_animal_details(
-                "https://www.sapca.jp/lost/21056.html"
-            )
+            raw = adapter.extract_animal_details("https://www.sapca.jp/lost/21056.html")
         # uploads 配下の写真のみ残り、themes 配下の装飾バナーは弾かれる
         assert len(raw.image_urls) == 1
         assert all("/wp-content/uploads/" in u for u in raw.image_urls)
@@ -122,17 +118,11 @@ class TestSapcaAdapterRegistry:
     """registry 登録"""
 
     def test_site_registered(self):
-        cls = SiteAdapterRegistry.get(
-            "滋賀県動物保護管理センター（迷い犬猫）"
-        )
+        cls = SiteAdapterRegistry.get("滋賀県動物保護管理センター（迷い犬猫）")
         # 他テストが registry を clear する場合に備えて冪等に再登録
         if cls is None:
-            SiteAdapterRegistry.register(
-                "滋賀県動物保護管理センター（迷い犬猫）", SapcaAdapter
-            )
-            cls = SiteAdapterRegistry.get(
-                "滋賀県動物保護管理センター（迷い犬猫）"
-            )
+            SiteAdapterRegistry.register("滋賀県動物保護管理センター（迷い犬猫）", SapcaAdapter)
+            cls = SiteAdapterRegistry.get("滋賀県動物保護管理センター（迷い犬猫）")
         assert cls is SapcaAdapter
 
 

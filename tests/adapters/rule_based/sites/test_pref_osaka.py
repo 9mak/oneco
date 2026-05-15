@@ -13,8 +13,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.pref_osaka import (
     PrefOsakaAdapter,
@@ -28,10 +26,7 @@ def _site() -> SiteConfig:
         name="大阪府動物愛護管理センター（迷い犬猫）",
         prefecture="大阪府",
         prefecture_code="27",
-        list_url=(
-            "https://www.pref.osaka.lg.jp/o120200/doaicenter/doaicenter/"
-            "maigoken.html"
-        ),
+        list_url=("https://www.pref.osaka.lg.jp/o120200/doaicenter/doaicenter/maigoken.html"),
         category="lost",
         single_page=True,
     )
@@ -136,8 +131,7 @@ class TestPrefOsakaAdapter:
         url, cat = result[0]
         assert "#row=0" in url
         assert url.startswith(
-            "https://www.pref.osaka.lg.jp/o120200/doaicenter/doaicenter/"
-            "maigoken.html"
+            "https://www.pref.osaka.lg.jp/o120200/doaicenter/doaicenter/maigoken.html"
         )
         assert cat == "lost"
 

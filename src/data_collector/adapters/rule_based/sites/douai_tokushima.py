@@ -38,13 +38,10 @@ from ..playwright import PlaywrightFetchMixin
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # ラッパページ URL → 実データ iframe URL のマッピング。
 # 各サイトの list_url (sites.yaml) と対応する iframe ソースの組。
 _IFRAME_URL_MAP: dict[str, str] = {
-    "https://douai-tokushima.com/stray/": (
-        "https://douai-tokushima.com/animalinfo/list1/"
-    ),
+    "https://douai-tokushima.com/stray/": ("https://douai-tokushima.com/animalinfo/list1/"),
     "https://douai-tokushima.com/transfer/doglist": (
         "https://douai-tokushima.com/animalinfo/list4_1"
     ),
@@ -133,9 +130,7 @@ class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
         base = self._iframe_url()
         return [(f"{base}#row={i}", category) for i in range(len(rows))]
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """`#row=N` に対応する `<li>` から aria-label でフィールドを抽出"""
         rows = self._load_rows()
         idx = self._parse_row_index(virtual_url)
@@ -164,7 +159,7 @@ class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
         # 全フィールド空 = HTML 構造が想定外
         if not any(fields.values()):
             raise ParsingError(
-                f"detail 行から 1 フィールドも抽出できませんでした",
+                "detail 行から 1 フィールドも抽出できませんでした",
                 url=virtual_url,
             )
 
@@ -183,9 +178,7 @@ class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 

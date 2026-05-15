@@ -7,8 +7,6 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.kochi_apc import KochiApcAdapter
 from data_collector.llm.config import SiteConfig
@@ -40,9 +38,7 @@ def test_fetch_delegates_to_kochi_adapter():
 def test_extract_delegates_to_kochi_adapter():
     adapter = KochiApcAdapter(_site())
     mock_raw = MagicMock()
-    with patch.object(
-        adapter._kochi, "extract_animal_details", return_value=mock_raw
-    ) as m:
+    with patch.object(adapter._kochi, "extract_animal_details", return_value=mock_raw) as m:
         result = adapter.extract_animal_details(
             "https://kochi-apc.com/center-data/abc/", category="adoption"
         )

@@ -101,9 +101,7 @@ def _site_cat() -> SiteConfig:
 class TestCityKumamotoAdapterListExtraction:
     """list ページからの detail URL 抽出"""
 
-    def test_fetch_animal_list_extracts_detail_urls_from_fixture(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_extracts_detail_urls_from_fixture(self, fixture_html):
         """一覧 fixture から `/doubutuaigo/kijiNNNNNNNN/index.html` URL が抽出できる"""
         html = fixture_html("city_kumamoto")
         adapter = CityKumamotoAdapter(_site_dog())
@@ -114,12 +112,8 @@ class TestCityKumamotoAdapterListExtraction:
         assert len(result) >= 1
         urls = [u for u, _cat in result]
         # フィクスチャに含まれる既知の detail URL
-        assert any(
-            "/doubutuaigo/kiji00370632/index.html" in u for u in urls
-        )
-        assert any(
-            "/doubutuaigo/kiji00370538/index.html" in u for u in urls
-        )
+        assert any("/doubutuaigo/kiji00370632/index.html" in u for u in urls)
+        assert any("/doubutuaigo/kiji00370538/index.html" in u for u in urls)
         # 全 URL が `/doubutuaigo/kiji` を含む詳細ページである
         for u in urls:
             assert "/doubutuaigo/kiji" in u
@@ -160,15 +154,10 @@ class TestCityKumamotoAdapterListExtraction:
 class TestCityKumamotoAdapterDetailExtraction:
     """detail ページからの RawAnimalData 構築"""
 
-    def test_extract_animal_details_returns_raw_data_dog(
-        self, assert_raw_animal
-    ):
+    def test_extract_animal_details_returns_raw_data_dog(self, assert_raw_animal):
         """`<th>/<td>` テーブルの詳細ページから各フィールドが抽出できる"""
         adapter = CityKumamotoAdapter(_site_dog())
-        detail_url = (
-            "https://www.city.kumamoto.jp/doubutuaigo/"
-            "kiji00370632/index.html"
-        )
+        detail_url = "https://www.city.kumamoto.jp/doubutuaigo/kiji00370632/index.html"
         with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_DOG):
             raw = adapter.extract_animal_details(detail_url, category="lost")
 
@@ -193,18 +182,11 @@ class TestCityKumamotoAdapterDetailExtraction:
         assert all("/common/upload/common/" not in u for u in raw.image_urls)
         assert all("/upload/kiji/" in u for u in raw.image_urls)
 
-    def test_extract_animal_details_supports_two_column_table(
-        self, assert_raw_animal
-    ):
+    def test_extract_animal_details_supports_two_column_table(self, assert_raw_animal):
         """`<th>` を持たない 2 列テーブルからも値を抽出できる"""
         adapter = CityKumamotoAdapter(_site_cat())
-        detail_url = (
-            "https://www.city.kumamoto.jp/doubutuaigo/"
-            "kiji00370538/index.html"
-        )
-        with patch.object(
-            adapter, "_http_get", return_value=DETAIL_HTML_CAT_2COL
-        ):
+        detail_url = "https://www.city.kumamoto.jp/doubutuaigo/kiji00370538/index.html"
+        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_CAT_2COL):
             raw = adapter.extract_animal_details(detail_url, category="lost")
 
         assert isinstance(raw, RawAnimalData)
@@ -237,10 +219,7 @@ class TestCityKumamotoAdapterDetailExtraction:
         </body></html>
         """
         adapter = CityKumamotoAdapter(_site_dog())  # list_url: list03612
-        detail_url = (
-            "https://www.city.kumamoto.jp/doubutuaigo/"
-            "kiji00370632/index.html"
-        )
+        detail_url = "https://www.city.kumamoto.jp/doubutuaigo/kiji00370632/index.html"
         with patch.object(adapter, "_http_get", return_value=detail_html):
             raw = adapter.extract_animal_details(detail_url, category="lost")
         assert raw.species == "犬"
@@ -255,10 +234,7 @@ class TestCityKumamotoAdapterDetailExtraction:
         </body></html>
         """
         adapter = CityKumamotoAdapter(_site_cat())  # list_url: list03615
-        detail_url = (
-            "https://www.city.kumamoto.jp/doubutuaigo/"
-            "kiji00370538/index.html"
-        )
+        detail_url = "https://www.city.kumamoto.jp/doubutuaigo/kiji00370538/index.html"
         with patch.object(adapter, "_http_get", return_value=detail_html):
             raw = adapter.extract_animal_details(detail_url, category="lost")
         assert raw.species == "猫"
@@ -273,8 +249,7 @@ class TestCityKumamotoAdapterDetailExtraction:
         ):
             with pytest.raises(Exception):
                 adapter.extract_animal_details(
-                    "https://www.city.kumamoto.jp/doubutuaigo/"
-                    "kiji00000000/index.html"
+                    "https://www.city.kumamoto.jp/doubutuaigo/kiji00000000/index.html"
                 )
 
 
@@ -300,9 +275,7 @@ class TestCityKumamotoAdapterSpeciesInference:
         ],
     )
     def test_infer_species_from_url(self, url, expected):
-        assert (
-            CityKumamotoAdapter._infer_species_from_url(url) == expected
-        )
+        assert CityKumamotoAdapter._infer_species_from_url(url) == expected
 
     @pytest.mark.parametrize(
         "name,expected",
@@ -314,9 +287,7 @@ class TestCityKumamotoAdapterSpeciesInference:
         ],
     )
     def test_infer_species_from_site_name(self, name, expected):
-        assert (
-            CityKumamotoAdapter._infer_species_from_site_name(name) == expected
-        )
+        assert CityKumamotoAdapter._infer_species_from_site_name(name) == expected
 
 
 class TestCityKumamotoAdapterRegistry:

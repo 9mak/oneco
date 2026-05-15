@@ -23,7 +23,6 @@ from data_collector.adapters.rule_based.sites.pref_shimane import (
 from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
 
-
 SITE_NAME = "島根県 松江保健所（収容動物）"
 LIST_URL = (
     "https://www.pref.shimane.lg.jp/infra/nature/animal/matsue_hoken/"
@@ -169,9 +168,7 @@ class TestPrefShimaneAdapter:
         """_load_rows のキャッシュにより HTTP は 1 回しか呼ばれない"""
         adapter = PrefShimaneAdapter(_site())
 
-        with patch.object(
-            adapter, "_http_get", return_value=_populated_html()
-        ) as mock_get:
+        with patch.object(adapter, "_http_get", return_value=_populated_html()) as mock_get:
             urls = adapter.fetch_animal_list()
             for url, cat in urls:
                 adapter.extract_animal_details(url, category=cat)

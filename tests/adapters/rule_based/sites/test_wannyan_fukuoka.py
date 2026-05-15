@@ -272,9 +272,7 @@ class TestWannyanFukuokaAdapterListExtraction:
 
     def test_fetch_animal_list_returns_empty_for_no_table(self):
         """そもそも table が無い HTML (リダイレクト等) でも空リスト"""
-        no_table_html = (
-            "<html><body><p>外部サイトに移動します</p></body></html>"
-        )
+        no_table_html = "<html><body><p>外部サイトに移動します</p></body></html>"
         adapter = WannyanFukuokaAdapter(_site_dog_adoption())
         with patch.object(adapter, "_http_get", return_value=no_table_html):
             result = adapter.fetch_animal_list()
@@ -292,19 +290,12 @@ class TestWannyanFukuokaAdapterListExtraction:
 class TestWannyanFukuokaAdapterDetailExtraction:
     """detail ページからの RawAnimalData 構築"""
 
-    def test_extract_animal_details_returns_raw_data_dog(
-        self, assert_raw_animal
-    ):
+    def test_extract_animal_details_returns_raw_data_dog(self, assert_raw_animal):
         """`<th>/<td>` テーブルの詳細ページから各フィールドが抽出できる"""
         adapter = WannyanFukuokaAdapter(_site_dog_sheltered())
-        detail_url = (
-            "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/"
-            "animal_posts/view/12345"
-        )
+        detail_url = "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/view/12345"
         with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_DOG):
-            raw = adapter.extract_animal_details(
-                detail_url, category="sheltered"
-            )
+            raw = adapter.extract_animal_details(detail_url, category="sheltered")
 
         assert isinstance(raw, RawAnimalData)
         assert_raw_animal(
@@ -326,21 +317,12 @@ class TestWannyanFukuokaAdapterDetailExtraction:
         assert all("logo" not in u.lower() for u in raw.image_urls)
         assert all("/files/animal/" in u for u in raw.image_urls)
 
-    def test_extract_animal_details_supports_two_column_table(
-        self, assert_raw_animal
-    ):
+    def test_extract_animal_details_supports_two_column_table(self, assert_raw_animal):
         """`<th>` を持たない 2 列テーブルからも値を抽出できる"""
         adapter = WannyanFukuokaAdapter(_site_cat_sheltered())
-        detail_url = (
-            "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/"
-            "animal_posts/view/22222"
-        )
-        with patch.object(
-            adapter, "_http_get", return_value=DETAIL_HTML_CAT_2COL
-        ):
-            raw = adapter.extract_animal_details(
-                detail_url, category="sheltered"
-            )
+        detail_url = "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/view/22222"
+        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_CAT_2COL):
+            raw = adapter.extract_animal_details(detail_url, category="sheltered")
 
         assert isinstance(raw, RawAnimalData)
         assert_raw_animal(
@@ -364,16 +346,9 @@ class TestWannyanFukuokaAdapterDetailExtraction:
         </body></html>
         """
         adapter = WannyanFukuokaAdapter(_site_dog_sheltered())  # type_id=1
-        detail_url = (
-            "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/"
-            "animal_posts/view/55555"
-        )
-        with patch.object(
-            adapter, "_http_get", return_value=detail_html_no_species
-        ):
-            raw = adapter.extract_animal_details(
-                detail_url, category="sheltered"
-            )
+        detail_url = "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/view/55555"
+        with patch.object(adapter, "_http_get", return_value=detail_html_no_species):
+            raw = adapter.extract_animal_details(detail_url, category="sheltered")
         assert raw.species == "犬"
 
     def test_extract_animal_details_infers_species_from_list_url_cat(self):
@@ -386,16 +361,9 @@ class TestWannyanFukuokaAdapterDetailExtraction:
         </body></html>
         """
         adapter = WannyanFukuokaAdapter(_site_cat_sheltered())  # type_id=2
-        detail_url = (
-            "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/"
-            "animal_posts/view/66666"
-        )
-        with patch.object(
-            adapter, "_http_get", return_value=detail_html_no_species
-        ):
-            raw = adapter.extract_animal_details(
-                detail_url, category="sheltered"
-            )
+        detail_url = "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/view/66666"
+        with patch.object(adapter, "_http_get", return_value=detail_html_no_species):
+            raw = adapter.extract_animal_details(detail_url, category="sheltered")
         assert raw.species == "猫"
 
     def test_extract_raises_on_empty_html(self):
@@ -408,8 +376,7 @@ class TestWannyanFukuokaAdapterDetailExtraction:
         ):
             with pytest.raises(Exception):
                 adapter.extract_animal_details(
-                    "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/"
-                    "animal_posts/view/0"
+                    "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/view/0"
                 )
 
 
@@ -430,17 +397,14 @@ class TestWannyanFukuokaAdapterSpeciesInference:
                 "猫",
             ),
             (
-                "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/"
-                "animal_posts/view/12345",
+                "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/view/12345",
                 "",
             ),
             ("", ""),
         ],
     )
     def test_infer_species_from_url(self, url, expected):
-        assert (
-            WannyanFukuokaAdapter._infer_species_from_url(url) == expected
-        )
+        assert WannyanFukuokaAdapter._infer_species_from_url(url) == expected
 
     @pytest.mark.parametrize(
         "name,expected",
@@ -454,10 +418,7 @@ class TestWannyanFukuokaAdapterSpeciesInference:
         ],
     )
     def test_infer_species_from_site_name(self, name, expected):
-        assert (
-            WannyanFukuokaAdapter._infer_species_from_site_name(name)
-            == expected
-        )
+        assert WannyanFukuokaAdapter._infer_species_from_site_name(name) == expected
 
 
 class TestWannyanFukuokaAdapterRegistry:

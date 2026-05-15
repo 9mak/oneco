@@ -24,7 +24,6 @@ from data_collector.adapters.rule_based.sites.aomori_animal import (
 from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
 
-
 SITE_NAME = "青森県動物愛護センター（収容情報）"
 LIST_URL = "http://www.aomori-animal.jp/01_MAIGO/Shuyo.html"
 
@@ -93,9 +92,7 @@ class TestAomoriAnimalAdapter:
         assert raw.phone == "0176-23-9511"
         # 画像 URL: 相対パスが list_url 起点で絶対化される
         assert raw.image_urls
-        assert raw.image_urls[0].startswith(
-            "http://www.aomori-animal.jp/01_MAIGO/Shuyoimg/"
-        )
+        assert raw.image_urls[0].startswith("http://www.aomori-animal.jp/01_MAIGO/Shuyoimg/")
         assert raw.image_urls[0].endswith("20260515_001.jpg")
 
     def test_extract_second_animal(self, fixture_html):
@@ -138,9 +135,7 @@ class TestAomoriAnimalAdapter:
             "http://www.aomori-animal.jp/logo.png",
         ]
         filtered = adapter._filter_image_urls(urls, LIST_URL)
-        assert filtered == [
-            "http://www.aomori-animal.jp/01_MAIGO/Shuyoimg/x.jpg"
-        ]
+        assert filtered == ["http://www.aomori-animal.jp/01_MAIGO/Shuyoimg/x.jpg"]
 
     def test_image_urls_filter_failsafe_when_no_shuyoimg(self):
         """`Shuyoimg/` を含む URL が一つもない場合は元リストを返す (フェイルセーフ)"""
@@ -191,16 +186,12 @@ class TestAomoriAnimalAdapter:
         adapter = AomoriAnimalAdapter(_site())
         with patch.object(adapter, "_http_get", return_value=html):
             with pytest.raises(ParsingError):
-                adapter.extract_animal_details(
-                    f"{LIST_URL}#row=99", category="sheltered"
-                )
+                adapter.extract_animal_details(f"{LIST_URL}#row=99", category="sheltered")
 
     def test_extract_invalid_virtual_url_raises(self):
         """`#row=N` 形式でない URL は ParsingError"""
         adapter = AomoriAnimalAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             # rows は空、parse_row_index で fragment 不正
             with pytest.raises(ParsingError):
                 adapter.extract_animal_details(LIST_URL, category="sheltered")
@@ -210,24 +201,19 @@ class TestAomoriAnimalAdapter:
         from bs4 import BeautifulSoup
 
         def cells_for(content_html: str):
-            soup = BeautifulSoup(
-                f"<table><tr>{content_html}</tr></table>", "html.parser"
-            )
+            soup = BeautifulSoup(f"<table><tr>{content_html}</tr></table>", "html.parser")
             tr = soup.find("tr")
-            return [c for c in tr.find_all(["td", "th"])]
+            return list(tr.find_all(["td", "th"]))
 
-        assert AomoriAnimalAdapter._extract_species(
-            cells_for("<td><p>1</p><p>犬</p></td>")
-        ) == "犬"
-        assert AomoriAnimalAdapter._extract_species(
-            cells_for("<td><p>1</p><p>ねこ</p></td>")
-        ) == "猫"
-        assert AomoriAnimalAdapter._extract_species(
-            cells_for("<td><p>1</p><p>猫</p></td>")
-        ) == "猫"
-        assert AomoriAnimalAdapter._extract_species(
-            cells_for("<td><p>1</p><p>うさぎ</p></td>")
-        ) == "その他"
+        assert AomoriAnimalAdapter._extract_species(cells_for("<td><p>1</p><p>犬</p></td>")) == "犬"
+        assert (
+            AomoriAnimalAdapter._extract_species(cells_for("<td><p>1</p><p>ねこ</p></td>")) == "猫"
+        )
+        assert AomoriAnimalAdapter._extract_species(cells_for("<td><p>1</p><p>猫</p></td>")) == "猫"
+        assert (
+            AomoriAnimalAdapter._extract_species(cells_for("<td><p>1</p><p>うさぎ</p></td>"))
+            == "その他"
+        )
         assert AomoriAnimalAdapter._extract_species([]) == "その他"
 
     def test_normalize_returns_animal_data(self, fixture_html):

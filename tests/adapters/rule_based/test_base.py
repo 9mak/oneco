@@ -19,7 +19,6 @@ from data_collector.adapters.rule_based.base import RuleBasedAdapter
 from data_collector.domain.models import AnimalData, RawAnimalData
 from data_collector.llm.config import SiteConfig
 
-
 # ─────────────────────────── Test fixtures ───────────────────────────
 
 

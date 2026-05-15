@@ -47,7 +47,6 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # 「令和N年M月D日」を ISO 形式に変換するための正規表現
 _REIWA_DATE_RE = re.compile(r"令和\s*(\d{1,2})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日")
 # 「YYYY年MM月DD日」(西暦) も念のため受け付ける
@@ -133,14 +132,9 @@ class PrefOsakaAdapter(SinglePageTableAdapter):
         """
         rows = self._load_rows()
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """1 つの `<table>` から RawAnimalData を構築する
 
         - 第 1 列 th から「受付番号 / 収容日 / 収容場所」を取得
@@ -213,9 +207,7 @@ class PrefOsakaAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 
@@ -348,6 +340,4 @@ class PrefOsakaAdapter(SinglePageTableAdapter):
 
 # ─────────────────── サイト登録 ───────────────────
 # sites.yaml では 1 サイトのみ登録されている。
-SiteAdapterRegistry.register(
-    "大阪府動物愛護管理センター（迷い犬猫）", PrefOsakaAdapter
-)
+SiteAdapterRegistry.register("大阪府動物愛護管理センター（迷い犬猫）", PrefOsakaAdapter)

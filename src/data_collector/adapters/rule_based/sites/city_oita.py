@@ -46,9 +46,7 @@ class CityOitaAdapter(WordPressListAdapter):
     # 一覧ページ本文 (`#tmp_contents`) 内の `/kurashi/pet/` 配下リンクを抽出。
     # サイドメニュー (`#tmp_lnavi`) やパンくず・グローバルナビの同種リンクは
     # `#tmp_contents` 配下ではないため自然に除外される。
-    LIST_LINK_SELECTOR: ClassVar[str] = (
-        "#tmp_contents a[href*='/kurashi/pet/']"
-    )
+    LIST_LINK_SELECTOR: ClassVar[str] = "#tmp_contents a[href*='/kurashi/pet/']"
 
     # detail ページの想定ラベル。実 HTML が入手できていないため、自治体 CMS
     # 共通で見られる一般的な見出し ("品種"/"性別"/"毛色"/"収容日"/
@@ -78,9 +76,7 @@ class CityOitaAdapter(WordPressListAdapter):
 
     # 詳細記事 URL の典型パターン: `/oNNN/kurashi/pet/NNNNNNNNNNNNN.html`
     # サイドメニュー等の `/kurashi/pet/{slug}/index.html` を二重に弾くために用いる。
-    _ARTICLE_HREF_RE: ClassVar[re.Pattern[str]] = re.compile(
-        r"/o\d+/kurashi/pet/\d+\.html$"
-    )
+    _ARTICLE_HREF_RE: ClassVar[re.Pattern[str]] = re.compile(r"/o\d+/kurashi/pet/\d+\.html$")
 
     # ─────────────────── オーバーライド ───────────────────
 
@@ -118,9 +114,7 @@ class CityOitaAdapter(WordPressListAdapter):
             urls.append((absolute, category))
         return urls
 
-    def extract_animal_details(
-        self, detail_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, detail_url: str, category: str = "adoption") -> RawAnimalData:
         """detail ページから RawAnimalData を構築する
 
         基底実装に加え、以下の大分市固有処理を行う:
@@ -165,9 +159,7 @@ class CityOitaAdapter(WordPressListAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=detail_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=detail_url) from e
 
     # ─────────────────── 抽出ヘルパー拡張 ───────────────────
 
@@ -199,9 +191,7 @@ class CityOitaAdapter(WordPressListAdapter):
                 return sibling_text
         return ""
 
-    def _filter_image_urls(
-        self, urls: list[str], base_url: str
-    ) -> list[str]:
+    def _filter_image_urls(self, urls: list[str], base_url: str) -> list[str]:
         """テンプレート (/shared/) の装飾画像を除外する
 
         大分市 CMS は `/shared/images/` 配下にロゴ・装飾画像を置いているため、
@@ -209,10 +199,9 @@ class CityOitaAdapter(WordPressListAdapter):
         返す (フェイルセーフ)。
         """
         filtered = [
-            u for u in urls
-            if "/shared/images/" not in u
-            and "/shared/style/" not in u
-            and not u.endswith(".ico")
+            u
+            for u in urls
+            if "/shared/images/" not in u and "/shared/style/" not in u and not u.endswith(".ico")
         ]
         return filtered if filtered else urls
 

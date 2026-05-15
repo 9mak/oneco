@@ -86,8 +86,7 @@ class WannyanNaviAichiAdapter(PlaywrightFetchMixin, WordPressListAdapter):
     # 詳細リンクとして解釈される `<a>` または、Bubble がレンダー後に
     # body 配下に挿入する任意要素のいずれかが存在すれば良い。
     WAIT_SELECTOR: ClassVar[str | None] = (
-        "a[href*='/dog'], a[href*='/cat'], a[href*='/animal'], "
-        ".bubble-element, main"
+        "a[href*='/dog'], a[href*='/cat'], a[href*='/animal'], .bubble-element, main"
     )
 
     # 一覧ページの動物カード `<a>` を緩めに拾う。
@@ -147,9 +146,7 @@ class WannyanNaviAichiAdapter(PlaywrightFetchMixin, WordPressListAdapter):
             urls.append((absolute, category))
         return urls
 
-    def extract_animal_details(
-        self, detail_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, detail_url: str, category: str = "adoption") -> RawAnimalData:
         """detail ページから RawAnimalData を構築する
 
         - 標準 `WordPressListAdapter` のフィールド抽出に加え、
@@ -172,9 +169,8 @@ class WannyanNaviAichiAdapter(PlaywrightFetchMixin, WordPressListAdapter):
             )
 
         if not fields.get("species"):
-            inferred = (
-                self._infer_species_from_url(detail_url)
-                or self._infer_species_from_url(self.site_config.list_url)
+            inferred = self._infer_species_from_url(detail_url) or self._infer_species_from_url(
+                self.site_config.list_url
             )
             if inferred:
                 fields["species"] = inferred
@@ -196,9 +192,7 @@ class WannyanNaviAichiAdapter(PlaywrightFetchMixin, WordPressListAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=detail_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=detail_url) from e
 
     # ─────────────────── 抽出ヘルパー拡張 ───────────────────
 
@@ -222,12 +216,11 @@ class WannyanNaviAichiAdapter(PlaywrightFetchMixin, WordPressListAdapter):
                 return sibling_text
         return ""
 
-    def _filter_image_urls(
-        self, urls: list[str], base_url: str
-    ) -> list[str]:
+    def _filter_image_urls(self, urls: list[str], base_url: str) -> list[str]:
         """テンプレート由来の装飾画像を除外する (フェイルセーフ付き)"""
         filtered = [
-            u for u in urls
+            u
+            for u in urls
             if "logo" not in u.lower()
             and "icon" not in u.lower()
             and "header" not in u.lower()

@@ -11,7 +11,7 @@ WordPress 系の動物個別投稿型サイト。一覧ページ
 
 from __future__ import annotations
 
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import parse_qs, urlparse
 
 from bs4 import BeautifulSoup
 
@@ -57,9 +57,7 @@ class ToyohashiAikuruAdapter(WordPressListAdapter):
             urls.append((absolute, category))
         return urls
 
-    def extract_animal_details(
-        self, detail_url: str, category: str = "lost"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, detail_url: str, category: str = "lost") -> RawAnimalData:
         html = self._http_get(detail_url)
         soup = BeautifulSoup(html, "html.parser")
 

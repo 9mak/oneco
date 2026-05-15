@@ -68,9 +68,7 @@ DETAIL_HTML = """
 class TestDouaicenterAdapterListExtraction:
     """list ページからの detail URL 抽出"""
 
-    def test_fetch_animal_list_extracts_detail_urls_from_fixture(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_extracts_detail_urls_from_fixture(self, fixture_html):
         adapter = DouaicenterAdapter(_adoption_dog_site())
         html = fixture_html("douaicenter__dog")
         with patch.object(adapter, "_http_get", return_value=html):
@@ -116,9 +114,7 @@ class TestDouaicenterAdapterDetailExtraction:
     def test_extract_filters_template_images_and_keeps_uploads(self):
         adapter = DouaicenterAdapter(_adoption_dog_site())
         with patch.object(adapter, "_http_get", return_value=DETAIL_HTML):
-            raw = adapter.extract_animal_details(
-                "https://www.douaicenter.jp/animal/14691"
-            )
+            raw = adapter.extract_animal_details("https://www.douaicenter.jp/animal/14691")
         # uploads 配下の 2 枚のみ残り、themes 配下のロゴは弾かれる
         assert len(raw.image_urls) == 2
         assert all("/wp-content/uploads/" in u for u in raw.image_urls)

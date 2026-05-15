@@ -88,14 +88,9 @@ class AniwelAdapter(SinglePageTableAdapter):
                 url=self.site_config.list_url,
             )
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """1 個の `div.flexitem2.base` カードから RawAnimalData を構築する
 
         基底の `td/th` ベース実装は使わず、カード内の
@@ -136,9 +131,7 @@ class AniwelAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 

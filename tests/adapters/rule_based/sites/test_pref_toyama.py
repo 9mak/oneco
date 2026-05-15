@@ -28,8 +28,7 @@ from data_collector.llm.config import SiteConfig
 def _site(
     name: str = "富山県（迷い犬猫情報）",
     list_url: str = (
-        "https://www.pref.toyama.jp/1207/kurashi/seikatsu/seikatsu/"
-        "doubutsuaigo/syuyou/index.html"
+        "https://www.pref.toyama.jp/1207/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/index.html"
     ),
     category: str = "lost",
 ) -> SiteConfig:
@@ -62,9 +61,7 @@ def _load_toyama_html(fixture_html) -> str:
 
 
 class TestPrefToyamaAdapter:
-    def test_fetch_animal_list_returns_empty_for_index_page(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_returns_empty_for_index_page(self, fixture_html):
         """各厚生センターへの窓口リンクのみのインデックスページでは空リスト
 
         本フィクスチャは `table.datatable` の中に各厚生センター・支所への
@@ -77,9 +74,7 @@ class TestPrefToyamaAdapter:
         with patch.object(adapter, "_http_get", return_value=html):
             result = adapter.fetch_animal_list()
 
-        assert result == [], (
-            f"インデックスページでは空配列が返るはず: got {result!r}"
-        )
+        assert result == [], f"インデックスページでは空配列が返るはず: got {result!r}"
 
     def test_fetch_animal_list_caches_html(self, fixture_html):
         """同一インスタンスでの繰り返し呼び出しは HTTP を 1 回しか実行しない"""
@@ -116,10 +111,7 @@ class TestPrefToyamaAdapter:
         with patch.object(
             adapter,
             "_http_get",
-            return_value=(
-                "<html><body><div id=\"tmp_main\">"
-                "<p>無関係な本文</p></div></body></html>"
-            ),
+            return_value=('<html><body><div id="tmp_main"><p>無関係な本文</p></div></body></html>'),
         ):
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()
@@ -187,13 +179,8 @@ class TestPrefToyamaAdapter:
         adapter = PrefToyamaAdapter(_site())
         with patch.object(adapter, "_http_get", return_value=synthetic_html):
             urls = adapter.fetch_animal_list()
-            assert len(urls) == 2, (
-                f"datatable は除外され動物テーブル 2 個が残るはず: got {urls!r}"
-            )
-            raws = [
-                adapter.extract_animal_details(u, category=c)
-                for u, c in urls
-            ]
+            assert len(urls) == 2, f"datatable は除外され動物テーブル 2 個が残るはず: got {urls!r}"
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
 
         assert raws[0].species == "三毛猫"
         assert raws[0].sex == "メス"
@@ -208,23 +195,15 @@ class TestPrefToyamaAdapter:
             "富山県（迷い犬猫情報）",
             "富山県（迷い犬・ねこ情報）",
         ):
-            assert (
-                PrefToyamaAdapter._infer_species_from_site_name(name) == ""
-            )
+            assert PrefToyamaAdapter._infer_species_from_site_name(name) == ""
 
     def test_infer_species_from_site_name_with_dog_keyword(self):
         """サイト名に "犬" のみを含む場合は "犬" を返す (汎用ロジック)"""
-        assert (
-            PrefToyamaAdapter._infer_species_from_site_name("富山県（迷い犬）")
-            == "犬"
-        )
+        assert PrefToyamaAdapter._infer_species_from_site_name("富山県（迷い犬）") == "犬"
 
     def test_infer_species_from_site_name_with_cat_keyword(self):
         """サイト名に "猫" のみを含む場合は "猫" を返す (汎用ロジック)"""
-        assert (
-            PrefToyamaAdapter._infer_species_from_site_name("富山県（保護猫）")
-            == "猫"
-        )
+        assert PrefToyamaAdapter._infer_species_from_site_name("富山県（保護猫）") == "猫"
 
     def test_site_registered(self):
         """sites.yaml で定義された富山県サイトが Registry に登録されている

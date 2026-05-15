@@ -49,7 +49,6 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # 「【収容日】YYYY年MM月DD日」を抽出する正規表現 (全角/半角数字どちらでも)
 _SHELTER_DATE_RE = re.compile(
     r"【\s*収容日\s*】\s*"
@@ -131,10 +130,7 @@ class PrefChibaAdapter(SinglePageTableAdapter):
         """
         rows = self._load_rows()
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
     def extract_animal_details(
         self, virtual_url: str, category: str = "sheltered"
@@ -159,8 +155,7 @@ class PrefChibaAdapter(SinglePageTableAdapter):
         col2L = self._find_col2L_after(h2)
 
         location = ""
-        management_number = ""
-        breed = ""        # 「種類」(雑種/柴犬 等) ※species 判定は site 名で行う
+        breed = ""  # 「種類」(雑種/柴犬 等) ※species 判定は site 名で行う
         color = ""
         sex = ""
         size = ""
@@ -169,10 +164,7 @@ class PrefChibaAdapter(SinglePageTableAdapter):
 
         if col2L is not None:
             # 直下 <p> を順に処理
-            paragraphs = [
-                p for p in col2L.find_all("p", recursive=False)
-                if isinstance(p, Tag)
-            ]
+            paragraphs = [p for p in col2L.find_all("p", recursive=False) if isinstance(p, Tag)]
             for p in paragraphs:
                 # 画像段落
                 imgs = p.find_all("img")
@@ -180,9 +172,7 @@ class PrefChibaAdapter(SinglePageTableAdapter):
                     for img in imgs:
                         src = img.get("src")
                         if src and isinstance(src, str):
-                            image_urls.append(
-                                self._absolute_url(src, base=virtual_url)
-                            )
+                            image_urls.append(self._absolute_url(src, base=virtual_url))
                     continue
 
                 text = p.get_text(separator="", strip=True)
@@ -195,7 +185,7 @@ class PrefChibaAdapter(SinglePageTableAdapter):
                     label = label_match.group(1)
                     value = label_match.group(2).strip()
                     if label == "管理番号":
-                        management_number = value
+                        pass
                     elif label == "収容場所":
                         location = value
                     elif label == "掲載期限":
@@ -229,9 +219,7 @@ class PrefChibaAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 

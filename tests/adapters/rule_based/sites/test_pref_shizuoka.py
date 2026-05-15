@@ -32,8 +32,7 @@ def _site() -> SiteConfig:
         prefecture="静岡県",
         prefecture_code="22",
         list_url=(
-            "https://www.pref.shizuoka.jp/kenkofukushi/eiseiyakuji/"
-            "dobutsuaigo/1066835/index.html"
+            "https://www.pref.shizuoka.jp/kenkofukushi/eiseiyakuji/dobutsuaigo/1066835/index.html"
         ),
         category="sheltered",
         single_page=True,
@@ -52,17 +51,15 @@ class TestPrefShizuokaAdapter:
         assert len(result) == 2, "fixture には 2 件の迷い犬情報リンクが含まれる"
         for url, cat in result:
             # 絶対 URL に変換され、かつ静岡県のドメインを指している
-            assert url.startswith(
-                "https://www.pref.shizuoka.jp/"
-            ), f"detail URL が絶対化されていない: {url}"
+            assert url.startswith("https://www.pref.shizuoka.jp/"), (
+                f"detail URL が絶対化されていない: {url}"
+            )
             # detail ページの URL パターン (1066835/<page_id>.html)
             assert "/dobutsuaigo/1066835/" in url
             assert url.endswith(".html")
             assert cat == "sheltered"
 
-    def test_fetch_animal_list_excludes_sidebar_and_external_links(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_excludes_sidebar_and_external_links(self, fixture_html):
         """サイドバー / 外部参照リンクは動物データとして拾われない
 
         `ul.objectlink` (外部リンク: 静岡市, 浜松市, 伊豆市 …) は 12 件以上
@@ -180,46 +177,26 @@ class TestPrefShizuokaAdapter:
     def test_extract_management_number_from_text(self):
         """リンクテキストから管理番号を抽出するヘルパーの動作"""
         assert (
-            PrefShizuokaAdapter._extract_management_number(
-                "迷い犬情報　2605GD001"
-            )
-            == "2605GD001"
+            PrefShizuokaAdapter._extract_management_number("迷い犬情報　2605GD001") == "2605GD001"
         )
-        assert (
-            PrefShizuokaAdapter._extract_management_number(
-                "迷い犬情報 2605CD001"
-            )
-            == "2605CD001"
-        )
+        assert PrefShizuokaAdapter._extract_management_number("迷い犬情報 2605CD001") == "2605CD001"
         # 管理番号が無いテキスト
-        assert (
-            PrefShizuokaAdapter._extract_management_number("迷い犬情報")
-            == ""
-        )
+        assert PrefShizuokaAdapter._extract_management_number("迷い犬情報") == ""
 
     def test_infer_species_from_link_text(self):
         """species 推定: リンクテキスト > サイト名 の優先順"""
         # リンクテキストに「猫」を含む場合
         assert (
-            PrefShizuokaAdapter._infer_species(
-                "迷い猫情報　2605CD001", "静岡県（保護犬猫情報）"
-            )
+            PrefShizuokaAdapter._infer_species("迷い猫情報　2605CD001", "静岡県（保護犬猫情報）")
             == "猫"
         )
         # リンクテキストに「犬」を含む場合
         assert (
-            PrefShizuokaAdapter._infer_species(
-                "迷い犬情報　2605GD001", "静岡県（保護犬猫情報）"
-            )
+            PrefShizuokaAdapter._infer_species("迷い犬情報　2605GD001", "静岡県（保護犬猫情報）")
             == "犬"
         )
         # リンクテキストに種別キーワードが無い → サイト名フォールバック
-        assert (
-            PrefShizuokaAdapter._infer_species(
-                "詳細情報", "静岡県（保護犬情報）"
-            )
-            == "犬"
-        )
+        assert PrefShizuokaAdapter._infer_species("詳細情報", "静岡県（保護犬情報）") == "犬"
         # リンクテキストもサイト名も種別キーワード無し → 既定 (本ページは犬扱い)
         assert PrefShizuokaAdapter._infer_species("", "") == "犬"
 

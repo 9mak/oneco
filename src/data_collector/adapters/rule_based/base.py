@@ -87,9 +87,7 @@ class RuleBasedAdapter(MunicipalityAdapter):
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
             status = getattr(e.response, "status_code", None) if e.response is not None else None
-            raise NetworkError(
-                f"HTTP エラー: {e}", url=url, status_code=status
-            ) from e
+            raise NetworkError(f"HTTP エラー: {e}", url=url, status_code=status) from e
         except requests.exceptions.RequestException as e:
             raise NetworkError(f"ネットワークエラー: {e}", url=url) from e
 

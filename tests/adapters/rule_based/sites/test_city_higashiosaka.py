@@ -192,9 +192,7 @@ class TestCityHigashiosakaAdapter:
     def test_raises_parsing_error_when_no_main_container(self):
         """`div.mol_contents` が無い (テンプレート崩壊) 場合は例外を出す"""
         adapter = CityHigashiosakaAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()
 

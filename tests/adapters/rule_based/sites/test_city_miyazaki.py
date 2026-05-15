@@ -27,9 +27,7 @@ def _site() -> SiteConfig:
         name="宮崎市（直近保護犬）",
         prefecture="宮崎県",
         prefecture_code="45",
-        list_url=(
-            "https://www.city.miyazaki.miyazaki.jp/life/pet/protection/411118.html"
-        ),
+        list_url=("https://www.city.miyazaki.miyazaki.jp/life/pet/protection/411118.html"),
         category="sheltered",
         single_page=True,
     )
@@ -117,8 +115,6 @@ class TestCityMiyazakiAdapter:
     def test_raises_parsing_error_when_no_article(self):
         """`article.body` 要素が無い HTML では例外を出す"""
         adapter = CityMiyazakiAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()

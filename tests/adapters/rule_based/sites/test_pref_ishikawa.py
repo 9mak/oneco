@@ -27,9 +27,7 @@ from data_collector.llm.config import SiteConfig
 
 def _site(
     name: str = "石川県（保護犬・猫情報）",
-    list_url: str = (
-        "https://www.pref.ishikawa.lg.jp/yakuji/doubutsu/hogoinuneko.html"
-    ),
+    list_url: str = ("https://www.pref.ishikawa.lg.jp/yakuji/doubutsu/hogoinuneko.html"),
     category: str = "sheltered",
 ) -> SiteConfig:
     return SiteConfig(
@@ -43,9 +41,7 @@ def _site(
 
 
 class TestPrefIshikawaAdapter:
-    def test_fetch_animal_list_returns_empty_for_index_page(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_returns_empty_for_index_page(self, fixture_html):
         """外部リンク + 各センター連絡先のみの本文では空リストが返る
 
         fixture `pref_ishikawa_lg_jp.html` は実サイトと同じく本文中に
@@ -60,9 +56,7 @@ class TestPrefIshikawaAdapter:
         with patch.object(adapter, "_http_get", return_value=html):
             result = adapter.fetch_animal_list()
 
-        assert result == [], (
-            f"インデックスページでは空配列が返るはず: got {result!r}"
-        )
+        assert result == [], f"インデックスページでは空配列が返るはず: got {result!r}"
 
     def test_fetch_animal_list_caches_html(self, fixture_html):
         """同一インスタンスでの繰り返し呼び出しは HTTP を 1 回しか実行しない"""
@@ -120,9 +114,7 @@ class TestPrefIshikawaAdapter:
         with patch.object(adapter, "_http_get", return_value=html):
             urls = adapter.fetch_animal_list()
             assert len(urls) == 1
-            raw = adapter.extract_animal_details(
-                urls[0][0], category="sheltered"
-            )
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
 
         assert isinstance(raw, RawAnimalData)
         # ラベル → フィールドのマップが効いていることを確認
@@ -135,9 +127,7 @@ class TestPrefIshikawaAdapter:
         assert raw.category == "sheltered"
         assert raw.source_url.endswith("#row=0")
 
-    def test_sidebar_and_index_links_are_not_extracted_as_rows(
-        self, fixture_html
-    ):
+    def test_sidebar_and_index_links_are_not_extracted_as_rows(self, fixture_html):
         """サイドバー (`.col_rgt_navi`) や本文中の連絡先パラグラフは
         ROW として誤検出されない
 
@@ -178,9 +168,7 @@ class TestPrefIshikawaAdapter:
 
         with patch.object(adapter, "_http_get", return_value=html):
             urls = adapter.fetch_animal_list()
-            raw = adapter.extract_animal_details(
-                urls[0][0], category="sheltered"
-            )
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
             normalized = adapter.normalize(raw)
 
         # AnimalData に変換できれば OK (詳細属性は normalizer 側で検証済み)

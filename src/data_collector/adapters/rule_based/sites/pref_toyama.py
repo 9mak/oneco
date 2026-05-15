@@ -37,7 +37,6 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # 0 件状態の検出用テキストパターン
 # 富山県のインデックスページには「各厚生センター・支所で保護している
 # 迷い犬・ねこの情報を掲載しています」等の案内文があり、本文に動物テーブルが
@@ -110,14 +109,9 @@ class PrefToyamaAdapter(SinglePageTableAdapter):
                 url=self.site_config.list_url,
             )
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "lost"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "lost") -> RawAnimalData:
         """1 個の `<table>` から RawAnimalData を構築する
 
         富山県 CMS の動物テーブルは「項目名 / 値」が左右に並ぶ縦並び構造を
@@ -195,9 +189,7 @@ class PrefToyamaAdapter(SinglePageTableAdapter):
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),
                 size=fields.get("size", ""),
-                shelter_date=fields.get(
-                    "shelter_date", self.SHELTER_DATE_DEFAULT
-                ),
+                shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
                 location=fields.get("location", ""),
                 phone="",
                 image_urls=self._extract_row_images(table, virtual_url),
@@ -205,9 +197,7 @@ class PrefToyamaAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 
@@ -268,9 +258,7 @@ class PrefToyamaAdapter(SinglePageTableAdapter):
             1
             for td in tds
             if td.find("a") is not None
-            and not td.get_text(strip=True).replace(
-                td.find("a").get_text(strip=True), ""
-            ).strip()
+            and not td.get_text(strip=True).replace(td.find("a").get_text(strip=True), "").strip()
         )
         # 全 td がリンクのみで構成されていれば窓口テーブルとみなす
         return link_only == len(tds)
@@ -335,9 +323,7 @@ class PrefToyamaAdapter(SinglePageTableAdapter):
             return True
         # 本文に動物テーブルが無く、窓口リンク一覧 (datatable) のみが並ぶ
         # インデックスページ
-        has_office_table = (
-            main_body.select_one("table.datatable") is not None
-        )
+        has_office_table = main_body.select_one("table.datatable") is not None
         if has_office_table:
             return True
         return False

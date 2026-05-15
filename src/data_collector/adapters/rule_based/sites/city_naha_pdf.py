@@ -22,7 +22,6 @@ from ...municipality_adapter import ParsingError  # noqa: F401  (例外参照用
 from ..pdf_table import PdfTableAdapter
 from ..registry import SiteAdapterRegistry
 
-
 # ─────────────────── パース用パターン ───────────────────
 
 # 「収容日: 2026年5月12日」「収容日 2026/5/12」など
@@ -127,10 +126,7 @@ class CityNahaPdfAdapter(PdfTableAdapter):
         """少なくとも収容日と他 1 つ以上のフィールドが埋まっていれば有効"""
         if not record.get("shelter_date"):
             return False
-        return any(
-            record.get(k)
-            for k in ("species", "sex", "age", "color", "size", "location")
-        )
+        return any(record.get(k) for k in ("species", "sex", "age", "color", "size", "location"))
 
 
 # ─────────────────── サイト登録 ───────────────────

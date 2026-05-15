@@ -18,14 +18,13 @@ from unittest.mock import patch
 
 import pytest
 
+from data_collector.adapters.municipality_adapter import ParsingError
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.hyogo_douai import (
     HyogoDouaiAdapter,
 )
-from data_collector.adapters.municipality_adapter import ParsingError
 from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
-
 
 SITE_NAME = "兵庫県動物愛護センター（収容動物）"
 LIST_URL = "https://hyogo-douai.sakura.ne.jp/shuuyou.html"
@@ -138,9 +137,7 @@ def _build_detail_html_dog() -> str:
 
 
 class TestHyogoDouaiAdapter:
-    def test_fetch_animal_list_returns_detail_links_from_fixture(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_returns_detail_links_from_fixture(self, fixture_html):
         """実フィクスチャから detail link (hogo*.html) を重複排除して収集できる
 
         fixture では `<a href="hogo3.html">` × 3, `<a href="hogo5.html">` × 1 が
@@ -170,9 +167,7 @@ class TestHyogoDouaiAdapter:
         在庫 0 件状態は ParsingError ではなく空リスト扱いとする。
         """
         adapter = HyogoDouaiAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value=_build_empty_summary_html()
-        ):
+        with patch.object(adapter, "_http_get", return_value=_build_empty_summary_html()):
             result = adapter.fetch_animal_list()
         assert result == []
 
@@ -192,12 +187,8 @@ class TestHyogoDouaiAdapter:
         adapter = HyogoDouaiAdapter(_site())
         detail_url = "https://hyogo-douai.sakura.ne.jp/hogo3.html"
 
-        with patch.object(
-            adapter, "_http_get", return_value=_build_detail_html_dog()
-        ):
-            raw = adapter.extract_animal_details(
-                detail_url, category="sheltered"
-            )
+        with patch.object(adapter, "_http_get", return_value=_build_detail_html_dog()):
+            raw = adapter.extract_animal_details(detail_url, category="sheltered")
 
         assert isinstance(raw, RawAnimalData)
         # species はラベル抽出では無いので、サイト名/URL から推定 → サイト名
@@ -236,12 +227,8 @@ class TestHyogoDouaiAdapter:
         adapter = HyogoDouaiAdapter(_site())
         detail_url = "https://hyogo-douai.sakura.ne.jp/hogo3_dog.html"
 
-        with patch.object(
-            adapter, "_http_get", return_value=_build_detail_html_dog()
-        ):
-            raw = adapter.extract_animal_details(
-                detail_url, category="sheltered"
-            )
+        with patch.object(adapter, "_http_get", return_value=_build_detail_html_dog()):
+            raw = adapter.extract_animal_details(detail_url, category="sheltered")
 
         # ラベル抽出に「種類」が無くても URL の "dog" から「犬」と推定される
         assert raw.species == "犬"

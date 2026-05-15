@@ -47,9 +47,7 @@ class SinglePageTableAdapter(RuleBasedAdapter):
         super().__init_subclass__(**kwargs)
         abstracts = getattr(cls, "__abstractmethods__", frozenset())
         if not abstracts and not cls.ROW_SELECTOR:
-            raise TypeError(
-                f"{cls.__name__} must define ROW_SELECTOR class variable"
-            )
+            raise TypeError(f"{cls.__name__} must define ROW_SELECTOR class variable")
 
     # ─────────────────── MunicipalityAdapter 実装 ───────────────────
 
@@ -57,19 +55,14 @@ class SinglePageTableAdapter(RuleBasedAdapter):
         rows = self._load_rows()
         if not rows:
             raise ParsingError(
-                f"行要素が見つかりません",
+                "行要素が見つかりません",
                 selector=self.ROW_SELECTOR,
                 url=self.site_config.list_url,
             )
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         rows = self._load_rows()
         idx = self._parse_row_index(virtual_url)
         if idx >= len(rows):
@@ -104,9 +97,7 @@ class SinglePageTableAdapter(RuleBasedAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     def normalize(self, raw_data: RawAnimalData) -> AnimalData:
         return self._default_normalize(raw_data)
@@ -133,9 +124,7 @@ class SinglePageTableAdapter(RuleBasedAdapter):
         """`<list_url>#row=N` から N を取り出す"""
         fragment = urlparse(virtual_url).fragment
         if not fragment.startswith("row="):
-            raise ParsingError(
-                f"無効な仮想 URL: {virtual_url} (#row=N 形式が必要)"
-            )
+            raise ParsingError(f"無効な仮想 URL: {virtual_url} (#row=N 形式が必要)")
         return int(fragment.split("=", 1)[1])
 
     def _extract_row_images(self, row: Tag, base_url: str) -> list[str]:

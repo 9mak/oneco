@@ -107,9 +107,7 @@ class CityAmagasakiAdapter(SinglePageTableAdapter):
 
         body = table.find("tbody")
         body_tag = body if isinstance(body, Tag) else table
-        rows = [
-            tr for tr in body_tag.find_all("tr") if isinstance(tr, Tag)
-        ]
+        rows = [tr for tr in body_tag.find_all("tr") if isinstance(tr, Tag)]
         # `<thead><tr>` が `find_all("tr")` に含まれる場合は除外
         rows = [tr for tr in rows if not self._is_header_row(tr)]
         self._rows_cache = rows
@@ -124,9 +122,7 @@ class CityAmagasakiAdapter(SinglePageTableAdapter):
         """
         rows = self._load_rows()
         if not rows:
-            if self._html_cache and self._EMPTY_STATE_PATTERN.search(
-                self._html_cache
-            ):
+            if self._html_cache and self._EMPTY_STATE_PATTERN.search(self._html_cache):
                 return []
             # 見出し自体が無い → テンプレート崩壊として例外化
             soup = BeautifulSoup(self._html_cache or "", "html.parser")
@@ -140,10 +136,7 @@ class CityAmagasakiAdapter(SinglePageTableAdapter):
             return []
 
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
     def extract_animal_details(
         self, virtual_url: str, category: str = "sheltered"
@@ -185,9 +178,7 @@ class CityAmagasakiAdapter(SinglePageTableAdapter):
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),
                 size=fields.get("size", ""),
-                shelter_date=fields.get(
-                    "shelter_date", self.SHELTER_DATE_DEFAULT
-                ),
+                shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
                 location=fields.get("location", ""),
                 phone="",
                 image_urls=self._extract_row_images(row, virtual_url),
@@ -195,9 +186,7 @@ class CityAmagasakiAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 
@@ -205,9 +194,7 @@ class CityAmagasakiAdapter(SinglePageTableAdapter):
     def _find_animal_heading(cls, soup: BeautifulSoup) -> Tag | None:
         """`返還対象動物一覧` を含む見出しタグを返す"""
         for h in soup.find_all(["h2", "h3"]):
-            if isinstance(h, Tag) and cls._ANIMAL_HEADING_TEXT in h.get_text(
-                strip=True
-            ):
+            if isinstance(h, Tag) and cls._ANIMAL_HEADING_TEXT in h.get_text(strip=True):
                 return h
         return None
 
@@ -253,9 +240,7 @@ class CityAmagasakiAdapter(SinglePageTableAdapter):
             return {}
 
         col_map: dict[int, str] = {}
-        cells = [
-            c for c in header_row.find_all(["th", "td"]) if isinstance(c, Tag)
-        ]
+        cells = [c for c in header_row.find_all(["th", "td"]) if isinstance(c, Tag)]
         for idx, cell in enumerate(cells):
             label = cell.get_text(strip=True)
             field = self._LABEL_TO_FIELD.get(label)

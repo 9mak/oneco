@@ -16,8 +16,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.city_utsunomiya import (
     CityUtsunomiyaAdapter,
@@ -31,9 +29,7 @@ def _site() -> SiteConfig:
         name="宇都宮市（迷子犬・負傷猫）",
         prefecture="栃木県",
         prefecture_code="09",
-        list_url=(
-            "https://www.city.utsunomiya.lg.jp/kurashi/pet/pet/1005584.html"
-        ),
+        list_url=("https://www.city.utsunomiya.lg.jp/kurashi/pet/pet/1005584.html"),
         category="lost",
         single_page=True,
     )
@@ -71,14 +67,10 @@ class TestCityUtsunomiyaAdapter:
         with patch.object(adapter, "_http_get", return_value=html):
             result = adapter.fetch_animal_list()
 
-        assert len(result) == 2, (
-            f"迷子犬 + 負傷猫 の 2 件が抽出されるはず: got {len(result)}"
-        )
+        assert len(result) == 2, f"迷子犬 + 負傷猫 の 2 件が抽出されるはず: got {len(result)}"
         for url, cat in result:
             assert "#row=" in url
-            assert url.startswith(
-                "https://www.city.utsunomiya.lg.jp/kurashi/pet/pet/1005584.html"
-            )
+            assert url.startswith("https://www.city.utsunomiya.lg.jp/kurashi/pet/pet/1005584.html")
             assert cat == "lost"
 
     def test_fetch_animal_list_caches_html(self, fixture_html):
@@ -165,9 +157,7 @@ class TestCityUtsunomiyaAdapter:
             for url, cat in urls:
                 raw = adapter.extract_animal_details(url, category=cat)
                 # 動物カードは「迷子犬」「負傷猫」由来なので必ず犬/猫のどちらか
-                assert raw.species in ("犬", "猫"), (
-                    f"案内 h2 が混入: species={raw.species!r}"
-                )
+                assert raw.species in ("犬", "猫"), f"案内 h2 が混入: species={raw.species!r}"
 
     def test_fetch_animal_list_returns_empty_when_no_animal_heading(self):
         """動物 `<h2>` が一件も無い HTML では空リストを返す
@@ -190,21 +180,14 @@ class TestCityUtsunomiyaAdapter:
         with patch.object(adapter, "_http_get", return_value=html_no_animals):
             result = adapter.fetch_animal_list()
 
-        assert result == [], (
-            f"在庫 0 件では空配列が返るはず: got {result!r}"
-        )
+        assert result == [], f"在庫 0 件では空配列が返るはず: got {result!r}"
 
     def test_site_registered(self):
         """サイト名 `宇都宮市（迷子犬・負傷猫）` が Registry に登録されている"""
         # 他テストが registry を clear する場合に備えて冪等に再登録
         if SiteAdapterRegistry.get("宇都宮市（迷子犬・負傷猫）") is None:
-            SiteAdapterRegistry.register(
-                "宇都宮市（迷子犬・負傷猫）", CityUtsunomiyaAdapter
-            )
-        assert (
-            SiteAdapterRegistry.get("宇都宮市（迷子犬・負傷猫）")
-            is CityUtsunomiyaAdapter
-        )
+            SiteAdapterRegistry.register("宇都宮市（迷子犬・負傷猫）", CityUtsunomiyaAdapter)
+        assert SiteAdapterRegistry.get("宇都宮市（迷子犬・負傷猫）") is CityUtsunomiyaAdapter
 
     def test_normalize_returns_animal_data(self, fixture_html):
         """normalize() で AnimalData を生成できる (基底のデフォルト実装利用)"""

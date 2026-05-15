@@ -19,7 +19,6 @@ from data_collector.adapters.rule_based.sites.city_toyota_pdf import (
 from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
 
-
 # ─────────────────── テスト用データ ───────────────────
 
 _LIST_HTML = """
@@ -139,9 +138,11 @@ class TestFetchAndExtract:
                 return _PDF_TEXT_TWO_ANIMALS
             return _PDF_TEXT_ONE_ANIMAL
 
-        with patch.object(adapter, "_http_get", return_value=_LIST_HTML), \
-             patch.object(adapter, "_download_pdf", side_effect=fake_download), \
-             patch.object(adapter, "_extract_pdf_text", side_effect=fake_extract):
+        with (
+            patch.object(adapter, "_http_get", return_value=_LIST_HTML),
+            patch.object(adapter, "_download_pdf", side_effect=fake_download),
+            patch.object(adapter, "_extract_pdf_text", side_effect=fake_extract),
+        ):
             result = adapter.fetch_animal_list()
 
         assert len(result) == 3
@@ -154,11 +155,11 @@ class TestFetchAndExtract:
     def test_extract_animal_details_returns_raw_animal_data(self):
         adapter = CityToyotaPdfAdapter(_site())
 
-        with patch.object(adapter, "_http_get", return_value=_LIST_HTML), \
-             patch.object(adapter, "_download_pdf", return_value=b"PDF"), \
-             patch.object(
-                 adapter, "_extract_pdf_text", return_value=_PDF_TEXT_TWO_ANIMALS
-             ):
+        with (
+            patch.object(adapter, "_http_get", return_value=_LIST_HTML),
+            patch.object(adapter, "_download_pdf", return_value=b"PDF"),
+            patch.object(adapter, "_extract_pdf_text", return_value=_PDF_TEXT_TWO_ANIMALS),
+        ):
             urls = adapter.fetch_animal_list()
             first_url, category = urls[0]
             raw = adapter.extract_animal_details(first_url, category=category)
@@ -177,13 +178,11 @@ class TestFetchAndExtract:
     def test_pdf_cache_avoids_re_download(self):
         adapter = CityToyotaPdfAdapter(_site())
 
-        with patch.object(adapter, "_http_get", return_value=_LIST_HTML), \
-             patch.object(
-                 adapter, "_download_pdf", return_value=b"PDF"
-             ) as mock_dl, \
-             patch.object(
-                 adapter, "_extract_pdf_text", return_value=_PDF_TEXT_TWO_ANIMALS
-             ):
+        with (
+            patch.object(adapter, "_http_get", return_value=_LIST_HTML),
+            patch.object(adapter, "_download_pdf", return_value=b"PDF") as mock_dl,
+            patch.object(adapter, "_extract_pdf_text", return_value=_PDF_TEXT_TWO_ANIMALS),
+        ):
             urls = adapter.fetch_animal_list()
             initial_calls = mock_dl.call_count
 
@@ -221,11 +220,11 @@ class TestNormalize:
     def test_normalize_returns_animal_data(self):
         adapter = CityToyotaPdfAdapter(_site())
 
-        with patch.object(adapter, "_http_get", return_value=_LIST_HTML), \
-             patch.object(adapter, "_download_pdf", return_value=b"PDF"), \
-             patch.object(
-                 adapter, "_extract_pdf_text", return_value=_PDF_TEXT_TWO_ANIMALS
-             ):
+        with (
+            patch.object(adapter, "_http_get", return_value=_LIST_HTML),
+            patch.object(adapter, "_download_pdf", return_value=b"PDF"),
+            patch.object(adapter, "_extract_pdf_text", return_value=_PDF_TEXT_TWO_ANIMALS),
+        ):
             urls = adapter.fetch_animal_list()
             raw = adapter.extract_animal_details(urls[0][0], category="lost")
             normalized = adapter.normalize(raw)

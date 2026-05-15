@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.city_sapporo import CitySapporoAdapter
 from data_collector.llm.config import SiteConfig
@@ -74,9 +72,7 @@ def test_extract_returns_raw_data():
     adapter = CitySapporoAdapter(_site("犬"))
     with patch.object(adapter, "_http_get", return_value=SAMPLE_HTML):
         adapter.fetch_animal_list()
-        raw = adapter.extract_animal_details(
-            f"{adapter.site_config.list_url}#row=0"
-        )
+        raw = adapter.extract_animal_details(f"{adapter.site_config.list_url}#row=0")
     assert raw.species == "雑種"
     assert raw.sex == "オス"
     assert raw.color == "茶"
@@ -90,9 +86,7 @@ def test_species_fallback_from_site_name():
     adapter = CitySapporoAdapter(_site("猫"))
     with patch.object(adapter, "_http_get", return_value=no_species_html):
         adapter.fetch_animal_list()
-        raw = adapter.extract_animal_details(
-            f"{adapter.site_config.list_url}#row=0"
-        )
+        raw = adapter.extract_animal_details(f"{adapter.site_config.list_url}#row=0")
     assert raw.species == "猫"
 
 

@@ -14,8 +14,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.pref_ehime import (
     PrefEhimeAdapter,
@@ -243,9 +241,9 @@ class TestPrefEhimeAdapter:
             ("愛媛県動物愛護センター（収容犬猫以外）", "その他"),
         ]
         for name, expected in cases:
-            assert (
-                PrefEhimeAdapter._infer_species_from_site_name(name) == expected
-            ), f"{name} -> expected {expected}"
+            assert PrefEhimeAdapter._infer_species_from_site_name(name) == expected, (
+                f"{name} -> expected {expected}"
+            )
 
     def test_all_two_sites_registered(self):
         """2 つの愛媛県サイト名すべてが Registry に登録されている"""

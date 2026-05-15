@@ -52,8 +52,7 @@ class PrefKanagawaAdapter(SinglePageTableAdapter):
     # (個別動物カード) と `table` (属性テーブル) の両方を候補とする。
     # 0 件状態のページではこれらは出現せず、_load_rows は空配列を返す。
     ROW_SELECTOR: ClassVar[str] = (
-        "main div.p-card-detail, main div.p-animal-detail, "
-        "main section table"
+        "main div.p-card-detail, main div.p-animal-detail, main section table"
     )
     SKIP_FIRST_ROW: ClassVar[bool] = False
     # 値の取り出しは `extract_animal_details` のオーバーライドが
@@ -109,10 +108,7 @@ class PrefKanagawaAdapter(SinglePageTableAdapter):
         """
         rows = self._load_rows()
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
     def extract_animal_details(
         self, virtual_url: str, category: str = "sheltered"
@@ -160,9 +156,7 @@ class PrefKanagawaAdapter(SinglePageTableAdapter):
             for tr in block.find_all("tr"):
                 if not isinstance(tr, Tag):
                     continue
-                cells = [
-                    c for c in tr.find_all(["td", "th"]) if isinstance(c, Tag)
-                ]
+                cells = [c for c in tr.find_all(["td", "th"]) if isinstance(c, Tag)]
                 if len(cells) < 2:
                     continue
                 value_text = cells[-1].get_text(separator=" ", strip=True)
@@ -212,9 +206,7 @@ class PrefKanagawaAdapter(SinglePageTableAdapter):
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),
                 size=fields.get("size", ""),
-                shelter_date=fields.get(
-                    "shelter_date", self.SHELTER_DATE_DEFAULT
-                ),
+                shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
                 location=fields.get("location", ""),
                 phone="",
                 image_urls=self._extract_row_images(block, virtual_url),
@@ -222,9 +214,7 @@ class PrefKanagawaAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 
@@ -238,11 +228,7 @@ class PrefKanagawaAdapter(SinglePageTableAdapter):
         - "猫" を含む → "猫"
         - いずれにも該当しない → "" (空文字)
         """
-        if (
-            "犬猫以外" in name
-            or "その他" in name
-            or "センター外" in name
-        ):
+        if "犬猫以外" in name or "その他" in name or "センター外" in name:
             return "その他"
         if "犬" in name:
             return "犬"

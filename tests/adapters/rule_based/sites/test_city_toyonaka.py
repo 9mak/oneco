@@ -27,10 +27,7 @@ def _site() -> SiteConfig:
         name="豊中市（迷子犬猫）",
         prefecture="大阪府",
         prefecture_code="27",
-        list_url=(
-            "https://www.city.toyonaka.osaka.jp/"
-            "kurashi/pettp-inuneko/maigo.html"
-        ),
+        list_url=("https://www.city.toyonaka.osaka.jp/kurashi/pettp-inuneko/maigo.html"),
         category="lost",
         single_page=True,
     )
@@ -55,9 +52,7 @@ def _load_toyonaka_html(fixture_html) -> str:
 
 
 class TestCityToyonakaAdapter:
-    def test_fetch_animal_list_returns_empty_for_announcement_page(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_returns_empty_for_announcement_page(self, fixture_html):
         """案内ページなので空リストが返る (ParsingError は発生しない)"""
         html = _load_toyonaka_html(fixture_html)
         adapter = CityToyonakaAdapter(_site())
@@ -77,8 +72,7 @@ class TestCityToyonakaAdapter:
         adapter = CityToyonakaAdapter(_site())
         # 案内パターンに一致しないが、データ行も持たない HTML
         unknown_html = (
-            "<html><head><title>豊中市</title></head>"
-            "<body><h1>その他のページ</h1></body></html>"
+            "<html><head><title>豊中市</title></head><body><h1>その他のページ</h1></body></html>"
         )
         with patch.object(adapter, "_http_get", return_value=unknown_html):
             with pytest.raises(Exception):
@@ -89,9 +83,7 @@ class TestCityToyonakaAdapter:
         html = _load_toyonaka_html(fixture_html)
         adapter = CityToyonakaAdapter(_site())
 
-        with patch.object(
-            adapter, "_http_get", return_value=html
-        ) as mock_get:
+        with patch.object(adapter, "_http_get", return_value=html) as mock_get:
             adapter.fetch_animal_list()
             # 案内ページ判定で空が返ったあと、再度呼んでもキャッシュ利用
             adapter.fetch_animal_list()

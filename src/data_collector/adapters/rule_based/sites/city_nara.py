@@ -198,10 +198,7 @@ class CityNaraAdapter(SinglePageTableAdapter):
                 url=self.site_config.list_url,
             )
 
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
     def extract_animal_details(
         self, virtual_url: str, category: str = "sheltered"
@@ -258,9 +255,7 @@ class CityNaraAdapter(SinglePageTableAdapter):
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),
                 size=fields.get("size", ""),
-                shelter_date=fields.get(
-                    "shelter_date", self.SHELTER_DATE_DEFAULT
-                ),
+                shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
                 location=fields.get("location", ""),
                 phone="",
                 image_urls=self._extract_row_images(table, virtual_url),
@@ -268,9 +263,7 @@ class CityNaraAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 

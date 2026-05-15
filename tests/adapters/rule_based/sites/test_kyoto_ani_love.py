@@ -12,8 +12,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.kyoto_ani_love import (
     KyotoAniLoveAdapter,
@@ -60,9 +58,7 @@ class TestKyotoAniLoveAdapter:
             assert url.startswith("https://kyoto-ani-love.com/lost-animal/dog/")
             assert cat == "lost"
 
-    def test_extract_animal_details_first_row(
-        self, fixture_html, assert_raw_animal
-    ):
+    def test_extract_animal_details_first_row(self, fixture_html, assert_raw_animal):
         """1 件目のカードから RawAnimalData を構築できる
 
         フィクスチャの 1 件目:
@@ -103,9 +99,7 @@ class TestKyotoAniLoveAdapter:
         # age (推定年齢) は "成犬"
         assert raw.age == "成犬"
 
-    def test_extract_animal_details_second_row(
-        self, fixture_html, assert_raw_animal
-    ):
+    def test_extract_animal_details_second_row(self, fixture_html, assert_raw_animal):
         """2 件目のカードから RawAnimalData を構築できる
 
         フィクスチャの 2 件目:

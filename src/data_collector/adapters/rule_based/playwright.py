@@ -45,6 +45,4 @@ class PlaywrightFetchMixin:
         except NetworkError:
             raise
         except Exception as e:
-            raise NetworkError(
-                f"Playwright fetch 失敗: {e}", url=url
-            ) from e
+            raise NetworkError(f"Playwright fetch 失敗: {e}", url=url) from e

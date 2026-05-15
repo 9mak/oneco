@@ -49,7 +49,6 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # 一覧テーブル本文の各セル位置 (1 行 = 1 動物) を表す列定義。
 # 0: 管理番号 (リンクテキストが収容日 "YYYY-MM-DD" になっている)
 # 1: 写真
@@ -76,9 +75,7 @@ class CityMaebashiAdapter(SinglePageTableAdapter):
 
     # 「前橋市保健所における…」の summary を持つテーブル本文の各行。
     # ページ上の他テーブル (手数料一覧) を確実に除外する。
-    ROW_SELECTOR: ClassVar[str] = (
-        "table[summary*='前橋市'] tbody tr"
-    )
+    ROW_SELECTOR: ClassVar[str] = "table[summary*='前橋市'] tbody tr"
     # `<thead>` の `<tr>` は CSS 上 `tbody tr` の対象外となるため
     # SKIP_FIRST_ROW は不要 (False)。
     SKIP_FIRST_ROW: ClassVar[bool] = False
@@ -87,7 +84,7 @@ class CityMaebashiAdapter(SinglePageTableAdapter):
     COLUMN_FIELDS: ClassVar[dict[int, str]] = {
         _COL_MANAGEMENT: "shelter_date",  # リンクテキストが ISO 日付
         _COL_LOCATION: "location",
-        _COL_BREED: "species",            # 「犬種」(品種名)
+        _COL_BREED: "species",  # 「犬種」(品種名)
         _COL_SEX: "sex",
     }
     LOCATION_COLUMN: ClassVar[int | None] = _COL_LOCATION
@@ -140,10 +137,7 @@ class CityMaebashiAdapter(SinglePageTableAdapter):
         """
         rows = self._load_rows()
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
     def extract_animal_details(
         self, virtual_url: str, category: str = "sheltered"
@@ -202,9 +196,7 @@ class CityMaebashiAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 

@@ -60,12 +60,12 @@ class CitySaitamaAdapter(SinglePageTableAdapter):
     # 基底の cells ベース既定実装は使わないが、契約として明示する。
     COLUMN_FIELDS: ClassVar[dict[int, str]] = {
         0: "shelter_date",  # 収容日
-        1: "location",      # 収容場所 (公示期限を挟むため位置は参考値)
-        2: "species",       # 種類
-        3: "color",          # 毛色
-        4: "sex",            # 性別
-        5: "size",           # 体格
-        6: "age",            # 推定年齢
+        1: "location",  # 収容場所 (公示期限を挟むため位置は参考値)
+        2: "species",  # 種類
+        3: "color",  # 毛色
+        4: "sex",  # 性別
+        5: "size",  # 体格
+        6: "age",  # 推定年齢
     }
     LOCATION_COLUMN: ClassVar[int | None] = 1
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
@@ -123,9 +123,7 @@ class CitySaitamaAdapter(SinglePageTableAdapter):
             for i in range(len(self._load_rows()))
         ]
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """動物カード `<div>` から RawAnimalData を構築する
 
         基底の `td/th` ベース実装ではなく、内部 `<ul>` の各 `<li>` を
@@ -160,9 +158,7 @@ class CitySaitamaAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 
@@ -220,13 +216,13 @@ class CitySaitamaAdapter(SinglePageTableAdapter):
         strong = li.find("strong")
         label_text = strong.get_text(strip=True) if isinstance(strong, Tag) else ""
         if label_text and full_text.startswith(label_text):
-            value = full_text[len(label_text):].strip()
+            value = full_text[len(label_text) :].strip()
         else:
             value = full_text
         # ラベル末尾の「：」「:」が値の先頭に残った場合を除去
         for sep in ("：", ":"):
             if value.startswith(sep):
-                value = value[len(sep):].strip()
+                value = value[len(sep) :].strip()
         return value
 
     @classmethod

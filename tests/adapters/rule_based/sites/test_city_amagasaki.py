@@ -22,9 +22,7 @@ from data_collector.adapters.rule_based.sites.city_amagasaki import (
 from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
 
-_LIST_URL = (
-    "https://www.city.amagasaki.hyogo.jp/kurashi/iryou/pet/051syuuyoudoubutu.html"
-)
+_LIST_URL = "https://www.city.amagasaki.hyogo.jp/kurashi/iryou/pet/051syuuyoudoubutu.html"
 
 
 def _site(
@@ -106,9 +104,7 @@ def _animal_table(rows_html: str) -> str:
 
 
 class TestCityAmagasakiAdapter:
-    def test_fetch_animal_list_returns_empty_for_real_fixture(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_returns_empty_for_real_fixture(self, fixture_html):
         """実フィクスチャ (在庫 0 件、boxnotice 告知のみ) では空リストを返す"""
         html = _load_amagasaki_html(fixture_html)
         adapter = CityAmagasakiAdapter(_site())
@@ -121,9 +117,7 @@ class TestCityAmagasakiAdapter:
     def test_fetch_animal_list_returns_empty_for_boxnotice_only(self):
         """boxnotice 告知のみの synthetic HTML でも空リストを返す"""
         html = _build_html_with_animal_table(
-            notice_html=(
-                '<div class="boxnotice">現在、返還対象動物はいません。</div>'
-            ),
+            notice_html=('<div class="boxnotice">現在、返還対象動物はいません。</div>'),
         )
         adapter = CityAmagasakiAdapter(_site())
 
@@ -278,8 +272,8 @@ class TestCityAmagasakiAdapter:
     def test_image_urls_resolved_to_absolute(self):
         """行内 img の src が絶対 URL として解決される"""
         rows = (
-            '<tr><td>犬</td><td>オス</td><td>黒</td>'
-            '<td>令和8年5月1日</td>'
+            "<tr><td>犬</td><td>オス</td><td>黒</td>"
+            "<td>令和8年5月1日</td>"
             '<td><img src="/_res/contents/dog001.jpg" alt="">A地区</td></tr>'
         )
         html = _build_html_with_animal_table(rows_html=_animal_table(rows))

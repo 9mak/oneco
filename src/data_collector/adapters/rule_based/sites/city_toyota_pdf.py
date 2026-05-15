@@ -21,7 +21,6 @@ from ...municipality_adapter import ParsingError  # noqa: F401  (型参照用)
 from ..pdf_table import PdfTableAdapter
 from ..registry import SiteAdapterRegistry
 
-
 # ─────────────────── パース用パターン ───────────────────
 
 _SHELTER_DATE_RE = re.compile(
@@ -33,9 +32,7 @@ _SEX_RE = re.compile(r"性別\s*[:：]?\s*([^\s　]+)")
 _AGE_RE = re.compile(r"年齢\s*[:：]?\s*([^\s　]+)")
 _COLOR_RE = re.compile(r"(?:毛色|色)\s*[:：]?\s*([^\s　]+)")
 _SIZE_RE = re.compile(r"(?:体格|大きさ|体重)\s*[:：]?\s*([^\s　]+)")
-_LOCATION_RE = re.compile(
-    r"(?:収容場所|発見場所|保護場所)\s*[:：]?\s*([^\n]+?)(?:\s{2,}|$)"
-)
+_LOCATION_RE = re.compile(r"(?:収容場所|発見場所|保護場所)\s*[:：]?\s*([^\n]+?)(?:\s{2,}|$)")
 
 
 class CityToyotaPdfAdapter(PdfTableAdapter):
@@ -107,14 +104,9 @@ class CityToyotaPdfAdapter(PdfTableAdapter):
     def _is_record_valid(record: dict) -> bool:
         if not record.get("shelter_date"):
             return False
-        return any(
-            record.get(k)
-            for k in ("species", "sex", "age", "color", "size", "location")
-        )
+        return any(record.get(k) for k in ("species", "sex", "age", "color", "size", "location"))
 
 
 # ─────────────────── サイト登録 ───────────────────
 
-SiteAdapterRegistry.register(
-    "豊田市動物愛護センター（迷子動物）", CityToyotaPdfAdapter
-)
+SiteAdapterRegistry.register("豊田市動物愛護センター（迷子動物）", CityToyotaPdfAdapter)

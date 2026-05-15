@@ -160,9 +160,7 @@ def _build_html_placeholder_only() -> str:
 
 
 class TestCityFukuyamaAdapter:
-    def test_fetch_animal_list_from_real_fixture_returns_empty(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_from_real_fixture_returns_empty(self, fixture_html):
         """実フィクスチャは在庫 0 件 (プレースホルダ行のみ) のため空リスト"""
         html = _load_fukuyama_html(fixture_html)
         adapter = CityFukuyamaAdapter(_site_dog())
@@ -185,9 +183,7 @@ class TestCityFukuyamaAdapter:
         assert len(result) == 1
         url, cat = result[0]
         assert url.endswith("#row=0")
-        assert url.startswith(
-            "https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/"
-        )
+        assert url.startswith("https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/")
         assert cat == "sheltered"
 
     def test_extract_animal_details_first_row(self):
@@ -268,9 +264,7 @@ class TestCityFukuyamaAdapter:
         with patch.object(adapter, "_http_get", return_value=html):
             urls = adapter.fetch_animal_list()
             assert len(urls) == 3
-            raws = [
-                adapter.extract_animal_details(u, category=c) for u, c in urls
-            ]
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
 
         assert raws[0].location == "福山市駅家町"
         assert raws[1].location == "福山市東桜町"
@@ -304,9 +298,7 @@ class TestCityFukuyamaAdapter:
     def test_returns_empty_list_when_no_table_at_all(self):
         """テーブルが完全に存在しない HTML では空リスト (在庫 0 件)"""
         adapter = CityFukuyamaAdapter(_site_dog())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             result = adapter.fetch_animal_list()
         assert result == []
 

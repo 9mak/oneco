@@ -74,9 +74,7 @@ class TestCityNagasakiLgAdapter:
         assert len(result) == 1
         url, cat = result[0]
         assert "#row=0" in url
-        assert url.startswith(
-            "https://www.city.nagasaki.lg.jp/site/doubutsuaigo/"
-        )
+        assert url.startswith("https://www.city.nagasaki.lg.jp/site/doubutsuaigo/")
         assert cat == "adoption"
 
     def test_fetch_animal_list_preprocessed_html(self, fixture_html):
@@ -122,10 +120,7 @@ class TestCityNagasakiLgAdapter:
         adapter = CityNagasakiLgAdapter(
             _site(
                 name="長崎市動物愛護管理センター（猫里親募集）",
-                list_url=(
-                    "https://www.city.nagasaki.lg.jp/site/doubutsuaigo/"
-                    "list7-18.html"
-                ),
+                list_url=("https://www.city.nagasaki.lg.jp/site/doubutsuaigo/list7-18.html"),
             )
         )
 
@@ -194,13 +189,9 @@ class TestCityNagasakiLgAdapter:
 
         synthetic_html = str(soup)
         adapter = CityNagasakiLgAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value=synthetic_html
-        ) as mock_get:
+        with patch.object(adapter, "_http_get", return_value=synthetic_html) as mock_get:
             urls = adapter.fetch_animal_list()
-            raws = [
-                adapter.extract_animal_details(u, category=c) for u, c in urls
-            ]
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
 
         # 同一ページから複数取得しても HTTP は 1 回だけ
         assert mock_get.call_count == 1
@@ -260,14 +251,8 @@ class TestCityNagasakiLgAdapter:
 
     def test_parse_iso_date_helper(self):
         """日付パーサが 「YYYY年M月D日更新」を ISO 8601 に変換する"""
-        assert (
-            CityNagasakiLgAdapter._parse_iso_date("2026年4月21日更新")
-            == "2026-04-21"
-        )
-        assert (
-            CityNagasakiLgAdapter._parse_iso_date("2026/5/3")
-            == "2026-05-03"
-        )
+        assert CityNagasakiLgAdapter._parse_iso_date("2026年4月21日更新") == "2026-04-21"
+        assert CityNagasakiLgAdapter._parse_iso_date("2026/5/3") == "2026-05-03"
         # 該当パターンが無ければ空文字
         assert CityNagasakiLgAdapter._parse_iso_date("") == ""
         assert CityNagasakiLgAdapter._parse_iso_date("更新情報なし") == ""
@@ -287,8 +272,6 @@ class TestCityNagasakiLgAdapter:
     def test_raises_parsing_error_when_no_main_block(self):
         """本文ブロックも告知も無い HTML では ParsingError 系例外を出す"""
         adapter = CityNagasakiLgAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()

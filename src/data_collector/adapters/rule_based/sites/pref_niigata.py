@@ -41,7 +41,6 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # 「M月D日」(全角/半角どちらでも) を抽出する正規表現
 _DATE_RE = re.compile(r"(\d{1,2})\s*月\s*(\d{1,2})\s*日")
 # 「で保護」「で収容」「を保護」等の場所抽出用
@@ -119,10 +118,7 @@ class PrefNiigataAdapter(SinglePageTableAdapter):
         """
         rows = self._load_rows()
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
     def extract_animal_details(
         self, virtual_url: str, category: str = "sheltered"
@@ -145,10 +141,7 @@ class PrefNiigataAdapter(SinglePageTableAdapter):
         species = _SPECIES_HEADINGS.get(heading, "その他")
 
         # ブロック内の <p> を順に処理
-        paragraphs = [
-            p for p in block.find_all("p", recursive=False)
-            if isinstance(p, Tag)
-        ]
+        paragraphs = [p for p in block.find_all("p", recursive=False) if isinstance(p, Tag)]
 
         image_urls: list[str] = []
         management_number = ""
@@ -166,9 +159,7 @@ class PrefNiigataAdapter(SinglePageTableAdapter):
                 for img in imgs:
                     src = img.get("src")
                     if src and isinstance(src, str):
-                        image_urls.append(
-                            self._absolute_url(src, base=virtual_url)
-                        )
+                        image_urls.append(self._absolute_url(src, base=virtual_url))
                 continue
 
             text = p.get_text(separator="", strip=True)
@@ -183,9 +174,7 @@ class PrefNiigataAdapter(SinglePageTableAdapter):
                 continue
 
             # (3) 日付 + 場所段落: "5月13日 長岡市乙吉地内で保護"
-            if not shelter_date and _DATE_RE.search(text) and (
-                "保護" in text or "収容" in text
-            ):
+            if not shelter_date and _DATE_RE.search(text) and ("保護" in text or "収容" in text):
                 shelter_date = self._parse_shelter_date(text)
                 loc_match = _LOCATION_RE.search(text)
                 if loc_match:
@@ -226,9 +215,7 @@ class PrefNiigataAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 
@@ -267,8 +254,22 @@ class PrefNiigataAdapter(SinglePageTableAdapter):
         """
         if "保護" in text or "収容" in text:
             return False
-        for kw in ("オス", "メス", "雄", "雌", "性別", "体重", "Kg", "kg",
-                  "キロ", "MIX", "雑種", "毛色", "首輪", "装着"):
+        for kw in (
+            "オス",
+            "メス",
+            "雄",
+            "雌",
+            "性別",
+            "体重",
+            "Kg",
+            "kg",
+            "キロ",
+            "MIX",
+            "雑種",
+            "毛色",
+            "首輪",
+            "装着",
+        ):
             if kw in text:
                 return True
         return False
@@ -315,6 +316,4 @@ class PrefNiigataAdapter(SinglePageTableAdapter):
 
 
 # ─────────────────── サイト登録 ───────────────────
-SiteAdapterRegistry.register(
-    "新潟県動物愛護センター（保護動物）", PrefNiigataAdapter
-)
+SiteAdapterRegistry.register("新潟県動物愛護センター（保護動物）", PrefNiigataAdapter)

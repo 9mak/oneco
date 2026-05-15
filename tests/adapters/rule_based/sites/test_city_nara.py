@@ -61,9 +61,7 @@ def _load_nara_html(fixture_html) -> str:
 
 
 class TestCityNaraAdapter:
-    def test_fetch_animal_list_returns_empty_for_info_list_only_page(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_returns_empty_for_info_list_only_page(self, fixture_html):
         """案内記事一覧 (info_list_date) のみのページでは空リストが返る
 
         本フィクスチャは「ペットの飼養・届出」一覧ページで、本文に
@@ -78,9 +76,7 @@ class TestCityNaraAdapter:
         with patch.object(adapter, "_http_get", return_value=html):
             result = adapter.fetch_animal_list()
 
-        assert result == [], (
-            f"案内記事のみのページでは空配列が返るはず: got {result!r}"
-        )
+        assert result == [], f"案内記事のみのページでは空配列が返るはず: got {result!r}"
 
     def test_template_tables_are_excluded(self):
         """お問い合わせ先 / 関連リンク 等のテンプレート table は除外される
@@ -106,8 +102,7 @@ class TestCityNaraAdapter:
             rows = adapter._load_rows()
 
         assert rows == [], (
-            f"テンプレート table は除外され動物テーブルは 0 件のはず: "
-            f"got {len(rows)} rows"
+            f"テンプレート table は除外され動物テーブルは 0 件のはず: got {len(rows)} rows"
         )
 
     def test_fetch_animal_list_caches_html(self, fixture_html):
@@ -121,8 +116,7 @@ class TestCityNaraAdapter:
             adapter.fetch_animal_list()
 
         assert mock_get.call_count == 1, (
-            f"HTML はキャッシュされ HTTP は 1 回のみ: "
-            f"got {mock_get.call_count}"
+            f"HTML はキャッシュされ HTTP は 1 回のみ: got {mock_get.call_count}"
         )
 
     def test_raises_parsing_error_for_unrelated_html(self):
@@ -200,9 +194,7 @@ class TestCityNaraAdapter:
         adapter = CityNaraAdapter(_site())
         with patch.object(adapter, "_http_get", return_value=synthetic_html):
             urls = adapter.fetch_animal_list()
-            assert len(urls) == 1, (
-                f"動物テーブル 1 件のみ抽出されるはず: got {len(urls)}"
-            )
+            assert len(urls) == 1, f"動物テーブル 1 件のみ抽出されるはず: got {len(urls)}"
             url, category = urls[0]
             raw = adapter.extract_animal_details(url, category=category)
 
@@ -227,19 +219,11 @@ class TestCityNaraAdapter:
 
     def test_infer_species_from_site_name_returns_empty_for_dog_and_cat(self):
         """サイト名に犬・猫の両方を含む場合は空文字"""
-        assert (
-            CityNaraAdapter._infer_species_from_site_name(
-                "奈良市（保護犬猫）"
-            )
-            == ""
-        )
+        assert CityNaraAdapter._infer_species_from_site_name("奈良市（保護犬猫）") == ""
 
     def test_infer_species_from_site_name_with_only_dog(self):
         """サイト名に「犬」のみ含む場合は「犬」を返す (汎用ロジック)"""
-        assert (
-            CityNaraAdapter._infer_species_from_site_name("奈良市（保護犬）")
-            == "犬"
-        )
+        assert CityNaraAdapter._infer_species_from_site_name("奈良市（保護犬）") == "犬"
 
     def test_infer_species_from_breed(self):
         """「種類」値からの species 推定 (柴犬→犬, 三毛猫→猫, 雑種→空)"""

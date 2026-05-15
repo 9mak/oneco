@@ -25,8 +25,7 @@ from data_collector.llm.config import SiteConfig
 def _site(
     name: str = "仙台市アニパル（譲渡犬）",
     list_url: str = (
-        "https://www.city.sendai.jp/dobutsu/kurashi/shizen/petto/"
-        "hogodobutsu/joho/inu.html"
+        "https://www.city.sendai.jp/dobutsu/kurashi/shizen/petto/hogodobutsu/joho/inu.html"
     ),
 ) -> SiteConfig:
     return SiteConfig(
@@ -99,9 +98,7 @@ def _build_html_with_one_animal() -> str:
 
 
 class TestCitySendaiAdapter:
-    def test_fetch_animal_list_returns_three_rows_from_fixture(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_returns_three_rows_from_fixture(self, fixture_html):
         """実フィクスチャからは 3 件のデータが抽出される"""
         html = _load_sendai_html(fixture_html)
         adapter = CitySendaiAdapter(_site())
@@ -186,8 +183,7 @@ class TestCitySendaiAdapter:
         cat_site = _site(
             name="仙台市アニパル（譲渡猫）",
             list_url=(
-                "https://www.city.sendai.jp/dobutsu/kurashi/shizen/petto/"
-                "hogodobutsu/joho/neko.html"
+                "https://www.city.sendai.jp/dobutsu/kurashi/shizen/petto/hogodobutsu/joho/neko.html"
             ),
         )
         adapter = CitySendaiAdapter(cat_site)
@@ -250,9 +246,7 @@ class TestCitySendaiAdapter:
 
         with patch.object(adapter, "_http_get", return_value=html) as mock_get:
             urls = adapter.fetch_animal_list()
-            raws = [
-                adapter.extract_animal_details(u, category=c) for u, c in urls
-            ]
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
 
         # 3 件取得できても HTTP 呼び出しは 1 回に抑えられている (キャッシュ)
         assert mock_get.call_count == 1

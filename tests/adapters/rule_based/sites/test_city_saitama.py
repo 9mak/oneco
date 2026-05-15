@@ -12,8 +12,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.city_saitama import (
     CitySaitamaAdapter,
@@ -133,9 +131,7 @@ def _build_html_with_two_cards() -> str:
 
 
 class TestCitySaitamaAdapter:
-    def test_fetch_animal_list_returns_empty_when_template_only(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_returns_empty_when_template_only(self, fixture_html):
         """空欄テンプレートのみの実フィクスチャでは空リストを返す"""
         html = _load_saitama_html(fixture_html)
         adapter = CitySaitamaAdapter(_site())
@@ -207,9 +203,7 @@ class TestCitySaitamaAdapter:
         html = _build_html_with_one_card()
         cat_site = _site(
             name="さいたま市（保護猫・その他）",
-            list_url=(
-                "https://www.city.saitama.lg.jp/008/004/003/004/p019971.html"
-            ),
+            list_url=("https://www.city.saitama.lg.jp/008/004/003/004/p019971.html"),
         )
         adapter = CitySaitamaAdapter(cat_site)
 
@@ -235,8 +229,6 @@ class TestCitySaitamaAdapter:
     def test_returns_empty_when_no_wysiwyg_area(self):
         """`div.wysiwyg_area` が存在しない HTML では空リストを返す"""
         adapter = CitySaitamaAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             result = adapter.fetch_animal_list()
         assert result == []

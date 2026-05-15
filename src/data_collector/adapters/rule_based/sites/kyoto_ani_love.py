@@ -56,9 +56,7 @@ class KyotoAniLoveAdapter(SinglePageTableAdapter):
 
     # 本文配下の各カード内 `<table class="info">` 1 個 = 1 動物。
     # 本文 div に絞ることで、ヘッダ/サイドバー等の他 table を巻き込まない。
-    ROW_SELECTOR: ClassVar[str] = (
-        "div.information-care-lost-content div.content table.info"
-    )
+    ROW_SELECTOR: ClassVar[str] = "div.information-care-lost-content div.content table.info"
     # 各テーブルが 1 件分のためヘッダ行除外は不要
     SKIP_FIRST_ROW: ClassVar[bool] = False
     # 値の取り出しはオーバーライドした `extract_animal_details` が
@@ -109,14 +107,9 @@ class KyotoAniLoveAdapter(SinglePageTableAdapter):
         """
         rows = self._load_rows()
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "lost"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "lost") -> RawAnimalData:
         """1 個の `<table class="info">` から RawAnimalData を構築する
 
         基底の `td/th` 列インデックスベース実装ではなく、
@@ -165,9 +158,7 @@ class KyotoAniLoveAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 

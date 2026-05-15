@@ -148,8 +148,6 @@ class TestCityChibaAdapter:
     def test_raises_parsing_error_when_no_blocks(self):
         """動物ブロックが見当たらない HTML では ParsingError 系例外を出す"""
         adapter = CityChibaAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()

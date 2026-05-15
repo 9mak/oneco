@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.toyohashi_aikuru import (
     ToyohashiAikuruAdapter,
@@ -66,9 +64,7 @@ def test_fetch_returns_empty_on_failure():
 def test_extract_detail_returns_raw_data():
     adapter = ToyohashiAikuruAdapter(_site("dog"))
     with patch.object(adapter, "_http_get", return_value=SAMPLE_DETAIL):
-        raw = adapter.extract_animal_details(
-            "https://toyohashi-aikuru.jp/animal/abc123"
-        )
+        raw = adapter.extract_animal_details("https://toyohashi-aikuru.jp/animal/abc123")
     assert raw.species == "犬"
     assert raw.sex == "オス"
     assert raw.age == "3歳"
@@ -82,9 +78,7 @@ def test_species_inferred_from_animal_type_query():
     adapter = ToyohashiAikuruAdapter(_site("cat"))
     detail_no_species = SAMPLE_DETAIL.replace("<dt>種別</dt><dd>犬</dd>", "")
     with patch.object(adapter, "_http_get", return_value=detail_no_species):
-        raw = adapter.extract_animal_details(
-            "https://toyohashi-aikuru.jp/animal/x"
-        )
+        raw = adapter.extract_animal_details("https://toyohashi-aikuru.jp/animal/x")
     assert raw.species == "猫"
 
 

@@ -117,10 +117,7 @@ class PrefYamaguchiAdapter(SinglePageTableAdapter):
         """
         rows = self._load_rows()
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
     def extract_animal_details(
         self, virtual_url: str, category: str = "sheltered"
@@ -168,9 +165,7 @@ class PrefYamaguchiAdapter(SinglePageTableAdapter):
             for tr in block.find_all("tr"):
                 if not isinstance(tr, Tag):
                     continue
-                cells = [
-                    c for c in tr.find_all(["td", "th"]) if isinstance(c, Tag)
-                ]
+                cells = [c for c in tr.find_all(["td", "th"]) if isinstance(c, Tag)]
                 if len(cells) < 2:
                     continue
                 value_text = cells[-1].get_text(separator=" ", strip=True)
@@ -215,9 +210,7 @@ class PrefYamaguchiAdapter(SinglePageTableAdapter):
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),
                 size=fields.get("size", ""),
-                shelter_date=fields.get(
-                    "shelter_date", self.SHELTER_DATE_DEFAULT
-                ),
+                shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
                 location=fields.get("location", ""),
                 phone="",
                 image_urls=self._extract_row_images(block, virtual_url),
@@ -225,9 +218,7 @@ class PrefYamaguchiAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
 
 # ─────────────────── サイト登録 ───────────────────

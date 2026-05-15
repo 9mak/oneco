@@ -13,8 +13,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.pref_chiba import (
     PrefChibaAdapter,
@@ -28,9 +26,7 @@ def _site() -> SiteConfig:
         name="千葉県動愛センター本所（収容犬）",
         prefecture="千葉県",
         prefecture_code="12",
-        list_url=(
-            "https://www.pref.chiba.lg.jp/aigo/pet/inu-neko/shuuyou/shuu-inu.html"
-        ),
+        list_url=("https://www.pref.chiba.lg.jp/aigo/pet/inu-neko/shuuyou/shuu-inu.html"),
         category="sheltered",
         single_page=True,
     )
@@ -104,7 +100,7 @@ class TestPrefChibaAdapter:
         assert raw.age == "成犬"
 
     def test_template_row_excluded(self, fixture_html):
-        """"テンプレート【収容日】" 行はデータとして拾われない
+        """ "テンプレート【収容日】" 行はデータとして拾われない
 
         テンプレート行の場所が "市町" / 性別が "オスメス" 等の
         サイト編集者向けプレースホルダ文字列なので、それらが
@@ -115,9 +111,7 @@ class TestPrefChibaAdapter:
 
         with patch.object(adapter, "_http_get", return_value=html):
             urls = adapter.fetch_animal_list()
-            results = [
-                adapter.extract_animal_details(u, category=c) for u, c in urls
-            ]
+            results = [adapter.extract_animal_details(u, category=c) for u, c in urls]
 
         for raw in results:
             assert raw.location != "市町"
@@ -183,9 +177,9 @@ class TestPrefChibaAdapter:
             ("千葉県動愛センター東葛飾支所（収容犬）", "犬"),
             ("千葉県動愛センター東葛飾支所（収容猫）", "猫"),
         ]:
-            assert (
-                PrefChibaAdapter._infer_species_from_site_name(name) == expected
-            ), f"{name} -> expected {expected}"
+            assert PrefChibaAdapter._infer_species_from_site_name(name) == expected, (
+                f"{name} -> expected {expected}"
+            )
 
     def test_all_five_sites_registered(self):
         """5 つの千葉県サイト名すべてが Registry に登録されている"""

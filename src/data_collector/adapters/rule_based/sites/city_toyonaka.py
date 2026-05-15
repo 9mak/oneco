@@ -82,14 +82,9 @@ class CityToyonakaAdapter(SinglePageTableAdapter):
                 url=self.site_config.list_url,
             )
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "lost"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "lost") -> RawAnimalData:
         """仮想 URL から RawAnimalData を構築する
 
         現状の豊中市サイトでは `fetch_animal_list` が常に空を返すため、
@@ -113,9 +108,7 @@ class CityToyonakaAdapter(SinglePageTableAdapter):
         soup = BeautifulSoup(html, "html.parser")
         # title タグ
         title = soup.find("title")
-        if title and cls._ANNOUNCEMENT_PATTERN.search(
-            title.get_text(strip=True)
-        ):
+        if title and cls._ANNOUNCEMENT_PATTERN.search(title.get_text(strip=True)):
             return True
         # h1 / h2 見出し
         for tag in soup.find_all(["h1", "h2"]):

@@ -92,8 +92,7 @@ def _list_html(view_prefix: str, ids: list[int]) -> str:
         ids: 出力する詳細 ID のリスト
     """
     cards = "\n".join(
-        f'<li><a href="/animals/{view_prefix}_view/{i}">詳細 {i}</a></li>'
-        for i in ids
+        f'<li><a href="/animals/{view_prefix}_view/{i}">詳細 {i}</a></li>' for i in ids
     )
     return f"""
     <html><body><main>
@@ -189,7 +188,7 @@ class TestAniwelOkinawaAdapter:
             result = adapter.fetch_animal_list()
 
         assert len(result) == 3
-        for (url, cat), expected_id in zip(result, [101, 102, 103]):
+        for (url, cat), expected_id in zip(result, [101, 102, 103], strict=False):
             assert url == f"{_BASE}/animals/accommodate_view/{expected_id}"
             assert cat == "sheltered"
 

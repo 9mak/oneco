@@ -67,18 +67,14 @@ class TestPrefSagaAdapter:
         )
         for url, cat in result:
             assert "#row=" in url
-            assert url.startswith(
-                "https://www.pref.saga.lg.jp/kiji00349237/"
-            )
+            assert url.startswith("https://www.pref.saga.lg.jp/kiji00349237/")
             assert cat == "adoption"
 
         # 各セクションのインデックスが 0..N-1 で連番になっている
         indices = [int(u.rsplit("=", 1)[1]) for u, _ in result]
         assert indices == list(range(len(result)))
 
-    def test_extract_animal_details_infers_species_from_heading(
-        self, fixture_html
-    ):
+    def test_extract_animal_details_infers_species_from_heading(self, fixture_html):
         """先行する `<h3 class="title">` から動物種別が決定される
 
         テーブル順は h3 順序と一致する想定:
@@ -152,8 +148,6 @@ class TestPrefSagaAdapter:
     def test_raises_parsing_error_when_no_tables(self):
         """`table.__wys_table` が存在しない HTML では ParsingError を出す"""
         adapter = PrefSagaAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()

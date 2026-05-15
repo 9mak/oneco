@@ -26,10 +26,7 @@ def _site() -> SiteConfig:
         name="福島県（中通り 迷子犬）",
         prefecture="福島県",
         prefecture_code="07",
-        list_url=(
-            "https://www.pref.fukushima.lg.jp/sec/21620a/"
-            "honshomaigoinu.html"
-        ),
+        list_url=("https://www.pref.fukushima.lg.jp/sec/21620a/honshomaigoinu.html"),
         category="lost",
         single_page=True,
     )
@@ -72,9 +69,7 @@ class TestPrefFukushimaAdapter:
             assert url.startswith("https://www.pref.fukushima.lg.jp/")
             assert cat == "lost"
 
-    def test_extract_animal_details_first_row(
-        self, fixture_html, assert_raw_animal
-    ):
+    def test_extract_animal_details_first_row(self, fixture_html, assert_raw_animal):
         """1 件目のテーブルから RawAnimalData が構築できる
 
         フィクスチャ 1 件目:
@@ -166,10 +161,7 @@ class TestPrefFukushimaAdapter:
             name="福島県（会津 迷子猫）",
             prefecture="福島県",
             prefecture_code="07",
-            list_url=(
-                "https://www.pref.fukushima.lg.jp/sec/21620a/"
-                "aizumaigoneko.html"
-            ),
+            list_url=("https://www.pref.fukushima.lg.jp/sec/21620a/aizumaigoneko.html"),
             category="lost",
             single_page=True,
         )
@@ -182,8 +174,6 @@ class TestPrefFukushimaAdapter:
     def test_raises_parsing_error_when_no_tables(self):
         """テーブルが見当たらない HTML では ParsingError 系例外を出す"""
         adapter = PrefFukushimaAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()

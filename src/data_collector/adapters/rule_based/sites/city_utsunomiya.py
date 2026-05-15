@@ -38,7 +38,6 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # 動物カード `<h2>` の見分けキー (掲載期限の表記)
 _ANIMAL_HEADING_RE = re.compile(r"（掲載期限")
 # 連続する空白 (全角 　 / 半角) を区切りとして使うパターン
@@ -62,11 +61,11 @@ class CityUtsunomiyaAdapter(SinglePageTableAdapter):
     # `COLUMN_FIELDS` は宣言のみ (基底契約の充足)。
     COLUMN_FIELDS: ClassVar[dict[int, str]] = {
         0: "shelter_date",  # 収容日
-        1: "location",      # 収容場所
-        2: "species",       # 種類 (HTML 上の値、実際の出力には使わない)
-        3: "color",         # 毛色
-        4: "sex",           # 性別
-        5: "size",          # 体格
+        1: "location",  # 収容場所
+        2: "species",  # 種類 (HTML 上の値、実際の出力には使わない)
+        3: "color",  # 毛色
+        4: "sex",  # 性別
+        5: "size",  # 体格
     }
     LOCATION_COLUMN: ClassVar[int | None] = 1
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
@@ -102,9 +101,9 @@ class CityUtsunomiyaAdapter(SinglePageTableAdapter):
         soup = BeautifulSoup(self._html_cache, "html.parser")
         candidates = soup.select(self.ROW_SELECTOR)
         rows = [
-            r for r in candidates
-            if isinstance(r, Tag)
-            and _ANIMAL_HEADING_RE.search(r.get_text(strip=False))
+            r
+            for r in candidates
+            if isinstance(r, Tag) and _ANIMAL_HEADING_RE.search(r.get_text(strip=False))
         ]
         if self.SKIP_FIRST_ROW and rows:
             rows = rows[1:]
@@ -123,14 +122,9 @@ class CityUtsunomiyaAdapter(SinglePageTableAdapter):
         if not rows:
             return []
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """`<h2>` を起点とした動物ブロックから RawAnimalData を構築する"""
         rows = self._load_rows()
         idx = self._parse_row_index(virtual_url)
@@ -170,7 +164,7 @@ class CityUtsunomiyaAdapter(SinglePageTableAdapter):
                     # 区切りが無い行は単独ラベル ("その他" 等) として無視
                     continue
                 label = line[: m.start()].strip()
-                value = line[m.end():].strip()
+                value = line[m.end() :].strip()
                 field = self._LABEL_TO_FIELD.get(label)
                 if field and value and field not in fields:
                     fields[field] = value
@@ -203,9 +197,7 @@ class CityUtsunomiyaAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 

@@ -94,9 +94,7 @@ class TestPrefOkayamaAdapter:
 
         with patch.object(adapter, "_http_get", return_value=html):
             urls = adapter.fetch_animal_list()
-            raws = [
-                adapter.extract_animal_details(u, category=c) for u, c in urls
-            ]
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
 
         cats = [r for r in raws if r.species == "猫"]
         assert cats, "猫テーブルから少なくとも 1 件抽出されるはず"
@@ -172,9 +170,7 @@ class TestPrefOkayamaAdapter:
         with patch.object(adapter, "_http_get", return_value=html):
             result = adapter.fetch_animal_list()
 
-        assert result == [], (
-            f"在庫 0 件ページは空リストが返るはず: got {result!r}"
-        )
+        assert result == [], f"在庫 0 件ページは空リストが返るはず: got {result!r}"
 
     def test_inline_dog_row_is_extracted(self):
         """直接組み立てた HTML から犬の RawAnimalData が抽出できる"""
@@ -259,9 +255,7 @@ class TestPrefOkayamaAdapter:
         adapter = PrefOkayamaAdapter(_site())
         with patch.object(adapter, "_http_get", return_value=html):
             urls = adapter.fetch_animal_list()
-            raws = [
-                adapter.extract_animal_details(u, category=c) for u, c in urls
-            ]
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
 
         assert len(raws) == 2
         # 並びは犬 → 猫
@@ -321,29 +315,13 @@ class TestPrefOkayamaAdapter:
         from bs4 import BeautifulSoup
 
         def _table(caption_text: str):
-            html = (
-                f"<table><caption>{caption_text}</caption>"
-                "<tr><td>x</td></tr></table>"
-            )
+            html = f"<table><caption>{caption_text}</caption><tr><td>x</td></tr></table>"
             return BeautifulSoup(html, "html.parser").find("table")
 
-        assert (
-            PrefOkayamaAdapter._infer_species_from_caption(
-                _table("保護収容情報（犬）")
-            )
-            == "犬"
-        )
-        assert (
-            PrefOkayamaAdapter._infer_species_from_caption(
-                _table("保護収容情報（猫）")
-            )
-            == "猫"
-        )
+        assert PrefOkayamaAdapter._infer_species_from_caption(_table("保護収容情報（犬）")) == "犬"
+        assert PrefOkayamaAdapter._infer_species_from_caption(_table("保護収容情報（猫）")) == "猫"
         # 判定不能 caption は空文字 (上流 normalizer に委譲)
-        assert (
-            PrefOkayamaAdapter._infer_species_from_caption(_table("&nbsp;"))
-            == ""
-        )
+        assert PrefOkayamaAdapter._infer_species_from_caption(_table("&nbsp;")) == ""
 
     def test_pref_okayama_site_registered(self):
         """岡山県動物愛護センターが Registry に登録されている

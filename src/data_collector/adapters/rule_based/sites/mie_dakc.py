@@ -44,7 +44,6 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # 「保護年月日」「種類」「性別」「その他特徴」等のラベル → 値の取り出しに
 # 使うラベル集合 (ヘッダ行判定 / ラベルセルスキップ用)
 _HEADER_LABELS: frozenset[str] = frozenset(
@@ -128,14 +127,9 @@ class MieDakcAdapter(SinglePageTableAdapter):
         """
         rows = self._load_rows()
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "lost"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "lost") -> RawAnimalData:
         """1 動物テーブルから RawAnimalData を構築する
 
         ヘッダ行 (「保護年月日 / 保護場所」「種類 / 毛色」等) と値行が
@@ -183,9 +177,7 @@ class MieDakcAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 
@@ -279,6 +271,4 @@ class MieDakcAdapter(SinglePageTableAdapter):
 
 
 # ─────────────────── サイト登録 ───────────────────
-SiteAdapterRegistry.register(
-    "三重県動物愛護管理センター（迷い犬情報）", MieDakcAdapter
-)
+SiteAdapterRegistry.register("三重県動物愛護管理センター（迷い犬情報）", MieDakcAdapter)

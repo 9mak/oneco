@@ -96,9 +96,7 @@ def _build_html_with_one_row() -> str:
 
 
 class TestCityYokohamaAdapter:
-    def test_fetch_animal_list_returns_empty_when_placeholder_only(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_returns_empty_when_placeholder_only(self, fixture_html):
         """0 件プレースホルダ行のみの実フィクスチャでは空リストを返す"""
         html = _load_yokohama_html(fixture_html)
         adapter = CityYokohamaAdapter(_site())
@@ -120,9 +118,7 @@ class TestCityYokohamaAdapter:
         assert len(result) == 1
         url, cat = result[0]
         assert url.endswith("#row=0")
-        assert url.startswith(
-            "https://www.city.yokohama.lg.jp/"
-        )
+        assert url.startswith("https://www.city.yokohama.lg.jp/")
         assert cat == "sheltered"
 
     def test_extract_animal_details_first_row(self):
@@ -205,8 +201,6 @@ class TestCityYokohamaAdapter:
     def test_raises_parsing_error_when_no_table(self):
         """テーブルが見当たらない HTML では例外を出す"""
         adapter = CityYokohamaAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()

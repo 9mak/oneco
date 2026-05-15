@@ -67,9 +67,7 @@ class CityHiroshimaAdapter(SinglePageTableAdapter):
 
     # ─────────────────── オーバーライド ───────────────────
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "lost"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "lost") -> RawAnimalData:
         """`<dl>` (= 動物 1 件) から RawAnimalData を構築する"""
         rows = self._load_rows()
         idx = self._parse_row_index(virtual_url)
@@ -88,7 +86,7 @@ class CityHiroshimaAdapter(SinglePageTableAdapter):
         if not dts:
             dts = dl.find_all("dt")
             dds = dl.find_all("dd")
-        for dt, dd in zip(dts, dds):
+        for dt, dd in zip(dts, dds, strict=False):
             label = dt.get_text(strip=True)
             value = dd.get_text(separator=" ", strip=True)
             key = self._DT_LABEL_MAP.get(label)
@@ -113,9 +111,7 @@ class CityHiroshimaAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 

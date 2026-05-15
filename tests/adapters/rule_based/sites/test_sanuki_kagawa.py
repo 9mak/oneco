@@ -30,7 +30,6 @@ from data_collector.adapters.rule_based.wordpress_list import (
 from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
 
-
 # ─────────────────── SiteConfig ───────────────────
 
 
@@ -109,14 +108,8 @@ class TestSanukiKagawaListExtraction:
 
         assert len(result) == 2
         urls = [u for u, _ in result]
-        assert (
-            "https://www.pref.kagawa.lg.jp/documents/6103/0318dog.pdf"
-            in urls
-        )
-        assert (
-            "https://www.pref.kagawa.lg.jp/documents/6103/0321cat.pdf"
-            in urls
-        )
+        assert "https://www.pref.kagawa.lg.jp/documents/6103/0318dog.pdf" in urls
+        assert "https://www.pref.kagawa.lg.jp/documents/6103/0321cat.pdf" in urls
 
     def test_fetch_urls_are_absolute(self):
         adapter = SanukiKagawaAdapter(_site())
@@ -143,9 +136,7 @@ class TestSanukiKagawaListExtraction:
 
     def test_fetch_dedupes_duplicate_pdf_urls(self):
         adapter = SanukiKagawaAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value=LIST_HTML_DUPLICATE
-        ):
+        with patch.object(adapter, "_http_get", return_value=LIST_HTML_DUPLICATE):
             result = adapter.fetch_animal_list()
         urls = [u for u, _ in result]
         assert len(urls) == 2
@@ -160,9 +151,7 @@ class TestSanukiKagawaListExtraction:
 
     def test_fetch_uses_list_url_from_config(self):
         adapter = SanukiKagawaAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value=LIST_HTML
-        ) as mock_get:
+        with patch.object(adapter, "_http_get", return_value=LIST_HTML) as mock_get:
             adapter.fetch_animal_list()
         assert mock_get.called
         called_url = mock_get.call_args.args[0]
@@ -232,9 +221,7 @@ class TestSanukiKagawaDetailExtraction:
     def test_non_pdf_url_raises_parsing_error(self):
         adapter = SanukiKagawaAdapter(_site())
         with pytest.raises(ParsingError):
-            adapter.extract_animal_details(
-                "https://www.pref.kagawa.lg.jp/index.html"
-            )
+            adapter.extract_animal_details("https://www.pref.kagawa.lg.jp/index.html")
 
 
 # ─────────────────── normalize ───────────────────

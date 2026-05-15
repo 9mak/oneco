@@ -34,7 +34,6 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # 対象テーブルを `<caption>` で識別するためのキーワード
 _TARGET_CAPTION_KEYWORDS = ("収容表", "譲渡")
 
@@ -96,7 +95,7 @@ class CityKitakyushuAdapter(SinglePageTableAdapter):
             # thead 内の行を除外
             thead = target_table.find("thead")
             if isinstance(thead, Tag):
-                head_rows = set(id(r) for r in thead.find_all("tr"))
+                head_rows = {id(r) for r in thead.find_all("tr")}
                 rows = [r for r in all_rows if id(r) not in head_rows]
             else:
                 # thead が無い場合は最初の行 (ヘッダ相当) を捨てる
@@ -115,14 +114,9 @@ class CityKitakyushuAdapter(SinglePageTableAdapter):
         """
         rows = self._load_rows()
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """テーブル行から RawAnimalData を構築する
 
         基底のセルベース既定実装に対し、species をサイト名 (犬固定) で
@@ -141,9 +135,7 @@ class CityKitakyushuAdapter(SinglePageTableAdapter):
         fields: dict[str, str] = {}
         for col_idx, field_name in self.COLUMN_FIELDS.items():
             if col_idx < len(cells):
-                fields[field_name] = cells[col_idx].get_text(
-                    separator=" ", strip=True
-                )
+                fields[field_name] = cells[col_idx].get_text(separator=" ", strip=True)
 
         # 動物種別はサイト名から推定 (北九州市は犬のみ運用だが将来拡張に備える)
         species = self._infer_species_from_site_name(self.site_config.name)
@@ -167,9 +159,7 @@ class CityKitakyushuAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 
@@ -193,9 +183,7 @@ class CityKitakyushuAdapter(SinglePageTableAdapter):
         for table in soup.find_all("table"):
             if not isinstance(table, Tag):
                 continue
-            header_text = " ".join(
-                th.get_text(strip=True) for th in table.find_all("th")
-            )
+            header_text = " ".join(th.get_text(strip=True) for th in table.find_all("th"))
             if "収容日" in header_text and ("種類" in header_text or "毛色" in header_text):
                 return table
         return None

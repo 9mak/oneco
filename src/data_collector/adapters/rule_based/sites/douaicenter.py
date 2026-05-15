@@ -33,8 +33,7 @@ class DouaicenterAdapter(WordPressListAdapter):
     # animal-list-img-box 内のリンクのみ対象にすることで、ヘッダ/メニュー側の
     # `/animal/list/...` のような一覧ページ自体へのリンクを排除する。
     LIST_LINK_SELECTOR = (
-        ".animal-list-img-box a[href*='/animal/'],"
-        " .animal-list-img-box a[href*='/other-animal/']"
+        ".animal-list-img-box a[href*='/animal/'], .animal-list-img-box a[href*='/other-animal/']"
     )
 
     # detail ページの定義リスト/テーブル見出しに対応するラベル

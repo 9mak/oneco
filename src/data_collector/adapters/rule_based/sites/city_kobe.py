@@ -43,13 +43,10 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-
 # 「現在、収容した犬はいません。」「現在、収容している猫はいません。」等の
 # 0 件告知パターン。「現在」+「(収容|保護)」+「いません」程度の表記揺れを
 # 緩く吸収する。
-_EMPTY_STATE_PATTERN = re.compile(
-    r"現在[^。]*?(?:収容|保護)[^。]*?いません"
-)
+_EMPTY_STATE_PATTERN = re.compile(r"現在[^。]*?(?:収容|保護)[^。]*?いません")
 
 # 「収容犬一覧」「収容猫一覧」等の犬/猫セクション見出し検出パターン。
 _DOG_SECTION_RE = re.compile(r"犬")
@@ -110,11 +107,7 @@ class CityKobeAdapter(SinglePageTableAdapter):
         soup = BeautifulSoup(html, "html.parser")
         rows = soup.select(self.ROW_SELECTOR)
         # データ行のみを残す (全セルが `<th>` のヘッダ行を除外)
-        rows = [
-            r
-            for r in rows
-            if isinstance(r, Tag) and r.find("td") is not None
-        ]
+        rows = [r for r in rows if isinstance(r, Tag) and r.find("td") is not None]
         self._rows_cache = rows
         return rows
 
@@ -144,10 +137,7 @@ class CityKobeAdapter(SinglePageTableAdapter):
             return []
 
         category = self.site_config.category
-        return [
-            (f"{self.site_config.list_url}#row={i}", category)
-            for i in range(len(rows))
-        ]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 
     def extract_animal_details(
         self, virtual_url: str, category: str = "sheltered"
@@ -176,11 +166,7 @@ class CityKobeAdapter(SinglePageTableAdapter):
         sex = _cell_text(3)
         color = _cell_text(4)
         size = _cell_text(5)
-        location = (
-            _cell_text(self.LOCATION_COLUMN)
-            if self.LOCATION_COLUMN is not None
-            else ""
-        )
+        location = _cell_text(self.LOCATION_COLUMN) if self.LOCATION_COLUMN is not None else ""
 
         # 動物種別: 行が属するセクション見出し (h2) から推定する。
         # 「収容犬一覧」配下 → "犬"、「収容猫一覧」配下 → "猫"。
@@ -202,9 +188,7 @@ class CityKobeAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 
@@ -276,6 +260,4 @@ class CityKobeAdapter(SinglePageTableAdapter):
 # ─────────────────── サイト登録 ───────────────────
 # sites.yaml で定義される 1 サイトを登録する。
 if SiteAdapterRegistry.get("神戸市動物管理センター（収容動物）") is None:
-    SiteAdapterRegistry.register(
-        "神戸市動物管理センター（収容動物）", CityKobeAdapter
-    )
+    SiteAdapterRegistry.register("神戸市動物管理センター（収容動物）", CityKobeAdapter)

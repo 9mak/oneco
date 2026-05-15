@@ -16,11 +16,11 @@ from unittest.mock import patch
 
 import pytest
 
+from data_collector.adapters.municipality_adapter import ParsingError
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.pref_gifu import (
     PrefGifuAdapter,
 )
-from data_collector.adapters.municipality_adapter import ParsingError
 from data_collector.llm.config import SiteConfig
 
 
@@ -71,9 +71,7 @@ class TestPrefGifuAdapter:
         with patch.object(adapter, "_http_get", return_value=html):
             result = adapter.fetch_animal_list()
 
-        assert result == [], (
-            f"ハブページでは空配列が返るはず: got {result!r}"
-        )
+        assert result == [], f"ハブページでは空配列が返るはず: got {result!r}"
 
     def test_fetch_animal_list_caches_html(self, fixture_html):
         """同一インスタンスでの繰り返し呼び出しは HTTP を 1 回しか実行しない"""
@@ -113,9 +111,5 @@ class TestPrefGifuAdapter:
         """sites.yaml の name と完全一致でレジストリへ登録されている"""
         # 他テストが registry を clear する場合に備えて冪等に再登録
         if SiteAdapterRegistry.get("岐阜県（迷い犬情報）") is None:
-            SiteAdapterRegistry.register(
-                "岐阜県（迷い犬情報）", PrefGifuAdapter
-            )
-        assert (
-            SiteAdapterRegistry.get("岐阜県（迷い犬情報）") is PrefGifuAdapter
-        )
+            SiteAdapterRegistry.register("岐阜県（迷い犬情報）", PrefGifuAdapter)
+        assert SiteAdapterRegistry.get("岐阜県（迷い犬情報）") is PrefGifuAdapter

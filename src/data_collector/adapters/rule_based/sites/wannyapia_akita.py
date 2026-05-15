@@ -13,10 +13,6 @@
 
 from __future__ import annotations
 
-from typing import ClassVar
-
-from bs4 import BeautifulSoup
-
 from ....domain.models import AnimalData, RawAnimalData
 from ...municipality_adapter import ParsingError
 from ..base import RuleBasedAdapter
@@ -32,19 +28,16 @@ class WannyapiaAkitaAdapter(RuleBasedAdapter):
 
     def fetch_animal_list(self) -> list[tuple[str, str]]:
         try:
-            html = self._http_get(self.site_config.list_url)
+            self._http_get(self.site_config.list_url)
         except Exception:
             return []
         # JS必須サイト: 静的 HTML に動物データなし → 空リスト
         # 将来 PlaywrightFetchMixin で置き換える際は selector を追加実装する
         return []
 
-    def extract_animal_details(
-        self, detail_url: str, category: str = "adoption"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, detail_url: str, category: str = "adoption") -> RawAnimalData:
         raise ParsingError(
-            "wannyapia.akita.jp は JS 必須のため詳細抽出未対応 "
-            "(requires_js: true への切替が必要)",
+            "wannyapia.akita.jp は JS 必須のため詳細抽出未対応 (requires_js: true への切替が必要)",
             url=detail_url,
         )
 

@@ -59,10 +59,10 @@ _LABEL_FIELD_MAP: dict[str, str] = {
     "保護日(管理番号)": "shelter_date",
     "保護場所": "location",
     "種類/体格": "species_size",  # "雑／中" のような複合値、後でパース
-    "毛の色/長さ": "color",       # "茶白／中" の前半を毛色として採用
+    "毛の色/長さ": "color",  # "茶白／中" の前半を毛色として採用
     "性別": "sex",
     "推定年月齢": "age",
-    "装着品": "equipment",        # 直接マップ先は無いが取り出しておく
+    "装着品": "equipment",  # 直接マップ先は無いが取り出しておく
     "その他の特徴等": "note",
     "その他特徴等": "note",
 }
@@ -87,9 +87,7 @@ class PrefFukushimaAdapter(SinglePageTableAdapter):
 
     # ─────────────────── オーバーライド ───────────────────
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "lost"
-    ) -> RawAnimalData:
+    def extract_animal_details(self, virtual_url: str, category: str = "lost") -> RawAnimalData:
         """1 個の `<table>` から RawAnimalData を構築する
 
         各 `<tr>` の最初の `<td>` をラベル、2 番目の `<td>` を値として読み出し、
@@ -151,9 +149,7 @@ class PrefFukushimaAdapter(SinglePageTableAdapter):
                 category=category,
             )
         except Exception as e:
-            raise ParsingError(
-                f"RawAnimalData バリデーション失敗: {e}", url=virtual_url
-            ) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
 

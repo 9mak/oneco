@@ -24,9 +24,7 @@ from data_collector.llm.config import SiteConfig
 
 def _site(
     name: str = "船橋市（収容犬猫）",
-    list_url: str = (
-        "https://www.city.funabashi.lg.jp/kurashi/doubutsu/003/p013242.html"
-    ),
+    list_url: str = ("https://www.city.funabashi.lg.jp/kurashi/doubutsu/003/p013242.html"),
     category: str = "sheltered",
 ) -> SiteConfig:
     return SiteConfig(
@@ -140,9 +138,7 @@ def _build_html_with_two_rows() -> str:
 
 
 class TestCityFunabashiAdapter:
-    def test_fetch_animal_list_returns_empty_when_header_only(
-        self, fixture_html
-    ):
+    def test_fetch_animal_list_returns_empty_when_header_only(self, fixture_html):
         """0 件状態 (ヘッダ行のみ) の実フィクスチャでは空リストを返す"""
         html = _load_funabashi_html(fixture_html)
         adapter = CityFunabashiAdapter(_site())
@@ -216,10 +212,7 @@ class TestCityFunabashiAdapter:
         html = _build_html_with_one_row()
         adoption_site = _site(
             name="船橋市（譲渡可能犬猫）",
-            list_url=(
-                "https://www.city.funabashi.lg.jp/kurashi/doubutsu/003/"
-                "joutoindex.html"
-            ),
+            list_url=("https://www.city.funabashi.lg.jp/kurashi/doubutsu/003/joutoindex.html"),
             category="adoption",
         )
         adapter = CityFunabashiAdapter(adoption_site)
@@ -246,8 +239,6 @@ class TestCityFunabashiAdapter:
     def test_raises_parsing_error_when_no_table(self):
         """テーブルが見当たらない HTML では例外を出す"""
         adapter = CityFunabashiAdapter(_site())
-        with patch.object(
-            adapter, "_http_get", return_value="<html><body></body></html>"
-        ):
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()
