@@ -68,3 +68,8 @@ output/*
 
 # Playwright MCP のページスナップショット（自動生成、コミット対象外）
 .playwright-mcp/
+
+# rule-based migration: local secrets loader & PoC artifacts
+.envrc
+scripts/poc_kochi_selectors.yaml
+scripts/poc_selectors/
