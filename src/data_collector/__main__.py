@@ -17,7 +17,9 @@ except ImportError:
     pass
 
 from .adapters.kochi_adapter import KochiAdapter
-from .adapters.rule_based import sites as _rule_based_sites  # noqa: F401  全 adapter を Registry に登録
+from .adapters.rule_based import (
+    sites as _rule_based_sites,  # noqa: F401  全 adapter を Registry に登録
+)
 from .adapters.rule_based.broken_tracker import BrokenSitesTracker
 from .adapters.rule_based.registry import SiteAdapterRegistry
 from .domain.diff_detector import DiffDetector
