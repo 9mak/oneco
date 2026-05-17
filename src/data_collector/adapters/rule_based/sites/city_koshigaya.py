@@ -44,7 +44,7 @@ from ..single_page_table import SinglePageTableAdapter
 _EMPTY_STATE_PATTERN = re.compile(r"(?:現在|現時点)[^。]*?(?:ありません|いません|おりません)")
 
 # 6 カラム動物テーブルのヘッダ判定用ラベル (種類は他テーブルに含まれない)
-_ANIMAL_TABLE_HEADER_KEYWORDS = ("種類", "性別", "年齢", "毛色", "体格")
+_ANIMAL_TABLE_HEADER_KEYWORDS = ("種類", "品種", "性別", "年齢", "毛色", "体格")
 
 # 場所テーブルのヘッダ判定用ラベル
 _LOCATION_TABLE_HEADER_KEYWORDS = ("収容場所", "収容日")
@@ -234,16 +234,23 @@ class CityKoshigayaAdapter(SinglePageTableAdapter):
 
     @staticmethod
     def _collect_header_text(table: Tag) -> str:
-        """テーブルのヘッダ (`<thead>` 優先、無ければ最初の行) のテキストを連結"""
+        """テーブルのヘッダ (`<thead>` 優先、無ければ最初の行) のテキストを連結
+
+        越谷市 CMS は 2026-05 頃に `<th>` セルを背景色付き `<td>` に変更
+        したため、`<th>` だけを見ているとヘッダが取れない。`<th>` 不在の
+        場合は最初の `<tr>` の `<td>` テキストもヘッダとして扱う。
+        """
         thead = table.find("thead")
         if isinstance(thead, Tag):
             return thead.get_text(separator=" ", strip=True)
-        # `<thead>` が無い場合は最初の `<tr>` を見出し相当として扱う
         first_tr = table.find("tr")
         if isinstance(first_tr, Tag):
             ths = first_tr.find_all("th")
             if ths:
                 return " ".join(th.get_text(separator=" ", strip=True) for th in ths)
+            tds = first_tr.find_all("td")
+            if tds:
+                return " ".join(td.get_text(separator=" ", strip=True) for td in tds)
         return ""
 
     @staticmethod
@@ -259,12 +266,18 @@ class CityKoshigayaAdapter(SinglePageTableAdapter):
                 for tr in table.find_all("tr")
                 if isinstance(tr, Tag) and tr.find("td") is not None
             ]
+        header_labels = (
+            set(_ANIMAL_TABLE_HEADER_KEYWORDS) | set(_LOCATION_TABLE_HEADER_KEYWORDS) | {"備考"}
+        )
         result: list[Tag] = []
         for tr in trs:
             if not isinstance(tr, Tag):
                 continue
             cells = tr.find_all(["td", "th"])
             if not cells:
+                continue
+            cell_texts = [c.get_text(separator="", strip=True) for c in cells]
+            if all((not t) or (t in header_labels) for t in cell_texts):
                 continue
             # 全セルが空白 (`&nbsp;` ` ` `<br>` 含む) なら在庫無し行として除外
             non_empty = False
