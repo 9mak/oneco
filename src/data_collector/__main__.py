@@ -52,6 +52,12 @@ ANTHROPIC_FALLBACK_MODEL = os.getenv("ANTHROPIC_FALLBACK_MODEL", "claude-haiku-4
 SITE_TIMEOUT_SEC = int(os.getenv("SITE_TIMEOUT_SEC", "120"))
 SITE_TIMEOUT_JS_SEC = int(os.getenv("SITE_TIMEOUT_JS_SEC", "180"))
 
+# 連続失敗回数の自動スキップ閾値（Requirement 6.4 系）
+# broken_sites.yaml の consecutive_failures がこの値以上のサイトは、毎回の収集で
+# スキップする（人手で adapter を修正したら broken_sites.yaml の当該エントリを
+# 削除 or consecutive_failures をリセットすれば再開する）。
+BROKEN_SITE_SKIP_THRESHOLD = int(os.getenv("BROKEN_SITE_SKIP_THRESHOLD", "3"))
+
 
 class SiteCollectionTimeoutError(Exception):
     """1 サイトの収集処理がタイムアウトした"""
@@ -118,12 +124,31 @@ def run_llm_sites(
     notification_client: NotificationClient,
     db_connection: DatabaseConnection | None,
     logger: logging.Logger,
-) -> bool:
-    """LLMベースのサイト群を収集"""
-    all_success = True
+    broken_tracker: BrokenSitesTracker | None = None,
+) -> tuple[int, int, list[str]]:
+    """LLMベースのサイト群を収集
+
+    Returns:
+        (成功サイト数, 失敗サイト数, 0件で完了したサイト名一覧)。
+        0 件サイトは success 扱いだが、HTML 構造変化で行抽出が空配列に
+        なっている可能性があるため、ログ上で別途可視化する。
+    """
+    succeeded = 0
+    failed = 0
+    zero_count_sites: list[str] = []
 
     for site in config.sites:
         if _effective_extraction(site, config) != "llm":
+            continue
+
+        if broken_tracker and (
+            broken_tracker.consecutive_failures(site.name) >= BROKEN_SITE_SKIP_THRESHOLD
+        ):
+            logger.warning(
+                f"[{site.name}] 連続失敗 "
+                f"{broken_tracker.consecutive_failures(site.name)}回 — "
+                f"自動スキップ (閾値={BROKEN_SITE_SKIP_THRESHOLD})"
+            )
             continue
 
         site_start = time.time()
@@ -169,9 +194,12 @@ def run_llm_sites(
                     f"更新{result.updated_count}, "
                     f"処理時間{elapsed:.1f}秒"
                 )
+                succeeded += 1
+                if result.total_collected == 0:
+                    zero_count_sites.append(site.name)
             else:
                 logger.error(f"[{site.name}] 収集失敗: {', '.join(result.errors)}")
-                all_success = False
+                failed += 1
 
         except SiteCollectionTimeoutError as e:
             elapsed = time.time() - site_start
@@ -179,7 +207,7 @@ def run_llm_sites(
                 f"[{site.name}] タイムアウト ({elapsed:.1f}秒, limit={timeout}秒): "
                 f"{e}. 次のサイトに進みます。"
             )
-            all_success = False
+            failed += 1
             continue
         except Exception as e:
             elapsed = time.time() - site_start
@@ -187,10 +215,10 @@ def run_llm_sites(
                 f"[{site.name}] エラー発生 ({elapsed:.1f}秒): {e}",
                 exc_info=True,
             )
-            all_success = False
+            failed += 1
             continue  # 他のサイトの処理を継続
 
-    return all_success
+    return succeeded, failed, zero_count_sites
 
 
 def run_rule_based_sites(
@@ -202,14 +230,19 @@ def run_rule_based_sites(
     db_connection: DatabaseConnection | None,
     logger: logging.Logger,
     broken_tracker: BrokenSitesTracker | None = None,
-) -> bool:
+) -> tuple[int, int, list[str]]:
     """rule-based 抽出方式でサイト群を収集
 
     SiteAdapterRegistry に登録された adapter のみ rule-based 経路で実行。
     未登録サイトは run_llm_sites 側で拾われる（混在運用を前提）。
     rule 失敗 + fallback_to_llm=True のサイトは LLM 抽出で再試行する。
+
+    Returns:
+        (成功サイト数, 失敗サイト数, 0件で完了したサイト名一覧)。
     """
-    all_success = True
+    succeeded = 0
+    failed = 0
+    zero_count_sites: list[str] = []
 
     for site in config.sites:
         if _effective_extraction(site, config) != "rule-based":
@@ -220,6 +253,16 @@ def run_rule_based_sites(
             logger.warning(
                 f"[{site.name}] rule-based 指定だが adapter 未登録 — スキップ "
                 f"(run_llm_sites 側で fallback)"
+            )
+            continue
+
+        if broken_tracker and (
+            broken_tracker.consecutive_failures(site.name) >= BROKEN_SITE_SKIP_THRESHOLD
+        ):
+            logger.warning(
+                f"[{site.name}] 連続失敗 "
+                f"{broken_tracker.consecutive_failures(site.name)}回 — "
+                f"自動スキップ (閾値={BROKEN_SITE_SKIP_THRESHOLD})"
             )
             continue
 
@@ -253,6 +296,9 @@ def run_rule_based_sites(
                 )
                 if broken_tracker:
                     broken_tracker.record_success(site.name)
+                succeeded += 1
+                if result.total_collected == 0:
+                    zero_count_sites.append(site.name)
             else:
                 logger.error(f"[{site.name}] rule-based 収集失敗: {', '.join(result.errors)}")
                 if broken_tracker:
@@ -283,27 +329,30 @@ def run_rule_based_sites(
                                 f"[{site.name}] LLM フォールバック成功: "
                                 f"{llm_result.total_collected}件"
                             )
-                            continue  # success via fallback, don't mark all_success=False
+                            succeeded += 1
+                            if llm_result.total_collected == 0:
+                                zero_count_sites.append(site.name)
+                            continue
                     except Exception as fb_e:
                         logger.error(f"[{site.name}] LLM フォールバックも失敗: {fb_e}")
-                all_success = False
+                failed += 1
 
         except SiteCollectionTimeoutError as e:
             elapsed = time.time() - site_start
             logger.warning(f"[{site.name}] タイムアウト ({elapsed:.1f}秒, limit={timeout}秒): {e}")
             if broken_tracker:
                 broken_tracker.record_failure(site.name, f"timeout: {e}")
-            all_success = False
+            failed += 1
             continue
         except Exception as e:
             elapsed = time.time() - site_start
             logger.error(f"[{site.name}] エラー発生 ({elapsed:.1f}秒): {e}", exc_info=True)
             if broken_tracker:
                 broken_tracker.record_failure(site.name, str(e))
-            all_success = False
+            failed += 1
             continue
 
-    return all_success
+    return succeeded, failed, zero_count_sites
 
 
 def main():
@@ -391,7 +440,7 @@ def main():
                 # rule-based サイト群 (Registry 登録済み adapter を使用)
                 broken_tracker_path = Path("data/broken_sites.yaml")
                 broken_tracker = BrokenSitesTracker(broken_tracker_path)
-                rule_success = run_rule_based_sites(
+                rule_succeeded, rule_failed, rule_zero = run_rule_based_sites(
                     config=config,
                     snapshot_store=snapshot_store,
                     diff_detector=diff_detector,
@@ -401,11 +450,9 @@ def main():
                     logger=logger,
                     broken_tracker=broken_tracker,
                 )
-                if not rule_success:
-                    success = False
 
                 # LLM サイト群（rule-based 化されてないサイト）
-                llm_success = run_llm_sites(
+                llm_succeeded, llm_failed, llm_zero = run_llm_sites(
                     config=config,
                     snapshot_store=snapshot_store,
                     diff_detector=diff_detector,
@@ -413,8 +460,30 @@ def main():
                     notification_client=notification_client,
                     db_connection=db_connection,
                     logger=logger,
+                    broken_tracker=broken_tracker,
                 )
-                if not llm_success:
+
+                total_succeeded = rule_succeeded + llm_succeeded
+                total_failed = rule_failed + llm_failed
+                zero_count_sites = rule_zero + llm_zero
+                logger.info(
+                    f"収集サマリ: 成功 {total_succeeded}サイト "
+                    f"(うち 0 件 {len(zero_count_sites)}サイト), "
+                    f"失敗 {total_failed}サイト "
+                    f"(rule-based: {rule_succeeded}/{rule_succeeded + rule_failed}, "
+                    f"LLM: {llm_succeeded}/{llm_succeeded + llm_failed})"
+                )
+                if zero_count_sites:
+                    logger.warning(
+                        f"抽出 0 件のサイト {len(zero_count_sites)}件: "
+                        + ", ".join(zero_count_sites[:20])
+                        + ("..." if len(zero_count_sites) > 20 else "")
+                    )
+
+                # 部分失敗は exit 0 で許容（commit & push を進めるため）。
+                # 全件失敗（成功 0 かつ失敗 > 0）の場合のみ pipeline failure 扱い。
+                if total_succeeded == 0 and total_failed > 0:
+                    logger.error("全サイトで収集に失敗しました")
                     success = False
 
                 # 進捗ログ
