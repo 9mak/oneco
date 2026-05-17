@@ -219,3 +219,39 @@ class TestCityKoshigayaAdapter:
         with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()
+
+    def test_td_only_header_row_is_excluded_from_data(self):
+        """`<th>` 不在で `<td>` だけのヘッダ行をデータとして取り込まない
+
+        越谷市 CMS は 2026-05 頃から見出しを `<th>` ではなく背景色付き
+        `<td>` で記述するように変更。ヘッダ行（全セルが既知ラベル）は
+        データ行から除外し、ヘッダ文言「品種」もテーブル検出キーワード
+        として認識する必要がある。
+        """
+        html = """
+        <html><body>
+        <div id="tmp_honbun">
+        <table>
+          <tbody>
+            <tr><td>収容場所</td><td>収容期日</td><td>収容期限</td></tr>
+            <tr><td>越谷市某所</td><td>2026年5月10日</td><td>2026年5月17日</td></tr>
+          </tbody>
+        </table>
+        <table>
+          <tbody>
+            <tr><td>品種</td><td>性別</td><td>年齢</td><td>毛色</td><td>体格</td><td>備考</td></tr>
+            <tr><td>雑種</td><td>オス</td><td>成犬</td><td>茶白</td><td>中</td><td>大人しい</td></tr>
+          </tbody>
+        </table>
+        </div>
+        </body></html>
+        """
+        adapter = CityKoshigayaAdapter(_site(name="越谷市（保護猫）"))
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            assert len(urls) == 1, f"ヘッダ行を除いた 1 件のみ抽出されるはず: {urls!r}"
+            raw = adapter.extract_animal_details(urls[0][0], category=urls[0][1])
+
+        assert raw.sex == "オス"
+        assert "茶白" in raw.color
+        assert raw.size == "中"
