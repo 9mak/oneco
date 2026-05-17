@@ -157,8 +157,7 @@ class TestBrokenSiteSkipThreshold:
         for _ in range(5):
             tracker.record_failure("テスト_スキップ対象", "permanent failure")
 
-        site = _site(extraction="rule-based")
-        site = type(site)(**{**site.model_dump(), "name": "テスト_スキップ対象"})
+        site = _site(extraction="rule-based").model_copy(update={"name": "テスト_スキップ対象"})
         config = SitesConfig(
             extraction=ExtractionConfig(
                 default_provider="groq",
