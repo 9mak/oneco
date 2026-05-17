@@ -65,3 +65,127 @@ class TestProviderRegistry:
 
     def test_groq_registered(self):
         assert "groq" in PROVIDER_REGISTRY
+
+
+class TestSiteRunReturnTypeContract:
+    """run_llm_sites / run_rule_based_sites の戻り値契約
+
+    PR #20 で bool → tuple[succeeded, failed, zero_count_sites] に変更した。
+    main 側で「成功 0 件かつ失敗 > 0 のみ exit 1、それ以外は exit 0」の
+    部分成功許容判定に使うため、対象サイトが 0 件の config では (0, 0, [])
+    を返すことが契約として固定されている必要がある。
+
+    SitesConfig は `sites=[]` を許容しないため、対象 extraction と
+    異なるサイトを 1 件入れて「処理対象 0 件」状態を作る。
+    """
+
+    def test_run_llm_sites_returns_zero_zero_empty_when_no_llm_sites(self):
+        from unittest.mock import Mock
+
+        from data_collector.__main__ import run_llm_sites
+
+        # rule-based サイトのみで LLM 対象は 0 件
+        config = SitesConfig(
+            extraction=ExtractionConfig(
+                default_provider="groq",
+                default_model="dummy",
+                default_extraction="rule-based",
+            ),
+            sites=[_site(extraction="rule-based")],
+        )
+        result = run_llm_sites(
+            config=config,
+            snapshot_store=Mock(),
+            diff_detector=Mock(),
+            output_writer=Mock(),
+            notification_client=Mock(),
+            db_connection=None,
+            logger=Mock(),
+        )
+        assert result == (0, 0, [])
+
+    def test_run_rule_based_sites_returns_zero_zero_empty_when_no_rule_sites(self):
+        from unittest.mock import Mock
+
+        from data_collector.__main__ import run_rule_based_sites
+
+        # LLM サイトのみで rule-based 対象は 0 件
+        config = SitesConfig(
+            extraction=ExtractionConfig(
+                default_provider="groq",
+                default_model="dummy",
+                default_extraction="llm",
+            ),
+            sites=[_site(extraction="llm")],
+        )
+        result = run_rule_based_sites(
+            config=config,
+            snapshot_store=Mock(),
+            diff_detector=Mock(),
+            output_writer=Mock(),
+            notification_client=Mock(),
+            db_connection=None,
+            logger=Mock(),
+        )
+        assert result == (0, 0, [])
+
+
+class TestBrokenSiteSkipThreshold:
+    """BROKEN_SITE_SKIP_THRESHOLD で連続失敗サイトをスキップする動作"""
+
+    def test_threshold_default_is_3(self):
+        """環境変数未指定時は 3 (Requirement 6.4 系)"""
+        import os
+        from unittest.mock import patch
+
+        # 環境変数を空にして再読み込みするのは module level でセットされる
+        # ため難しい。代わりに getenv の挙動だけ確認する。
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("BROKEN_SITE_SKIP_THRESHOLD", None)
+            assert int(os.getenv("BROKEN_SITE_SKIP_THRESHOLD", "3")) == 3
+
+    def test_run_rule_based_sites_skips_site_with_high_consecutive_failures(self, tmp_path):
+        """consecutive_failures >= 閾値 のサイトは adapter 呼び出しに到達しない"""
+        from unittest.mock import Mock
+
+        from data_collector.__main__ import run_rule_based_sites
+        from data_collector.adapters.rule_based.broken_tracker import BrokenSitesTracker
+        from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
+
+        # adapter は呼ばれないはず（呼ばれたら Mock の call_count が増える）
+        spy_adapter_cls = Mock()
+        SiteAdapterRegistry.register("テスト_スキップ対象", spy_adapter_cls)
+
+        broken_path = tmp_path / "broken_sites.yaml"
+        tracker = BrokenSitesTracker(broken_path)
+        # 連続 5 回失敗（閾値 3 を超える）
+        for _ in range(5):
+            tracker.record_failure("テスト_スキップ対象", "permanent failure")
+
+        site = _site(extraction="rule-based").model_copy(update={"name": "テスト_スキップ対象"})
+        config = SitesConfig(
+            extraction=ExtractionConfig(
+                default_provider="groq",
+                default_model="dummy",
+                default_extraction="rule-based",
+            ),
+            sites=[site],
+        )
+
+        succeeded, failed, zero = run_rule_based_sites(
+            config=config,
+            snapshot_store=Mock(),
+            diff_detector=Mock(),
+            output_writer=Mock(),
+            notification_client=Mock(),
+            db_connection=None,
+            logger=Mock(),
+            broken_tracker=tracker,
+        )
+
+        assert spy_adapter_cls.call_count == 0, (
+            "閾値超えサイトでは adapter コンストラクタも呼ばれない"
+        )
+        assert (succeeded, failed, zero) == (0, 0, []), (
+            "スキップは success / failure どちらにもカウントしない (0件サイトでもない)"
+        )

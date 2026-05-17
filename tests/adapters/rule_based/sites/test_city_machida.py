@@ -13,8 +13,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.city_machida import (
     CityMachidaAdapter,
@@ -86,16 +84,23 @@ class TestCityMachidaAdapter:
             f"HTML はキャッシュされ HTTP は 1 回のみ: got {mock_get.call_count}"
         )
 
-    def test_raises_parsing_error_for_unrelated_html(self):
-        """テーブルも empty state テキストも無い HTML では ParsingError"""
+    def test_returns_empty_for_html_without_table(self):
+        """`article table` が 0 件の HTML は 0 件状態として空リストを返す
+
+        町田市の同テンプレ 3 サイトでは「動物がいない」状態の文言が
+        サイト改修で「収容動物はありません」「該当する情報はありません」
+        「現在、迷子情報はありません」等と揺れるため、文言マッチ無しでも
+        テーブルが無ければ 0 件扱いに統一する。構造変化（adapter 破損）
+        の検知は broken_tracker と 0 件サイトログに任せる。
+        """
         adapter = CityMachidaAdapter(_site())
         with patch.object(
             adapter,
             "_http_get",
             return_value="<html><body><p>無関係なページ</p></body></html>",
         ):
-            with pytest.raises(Exception):
-                adapter.fetch_animal_list()
+            result = adapter.fetch_animal_list()
+        assert result == []
 
     def test_extract_animal_details_from_synthetic_table(self):
         """合成 HTML (table 1 個) から RawAnimalData を構築できる
