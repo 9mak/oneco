@@ -36,12 +36,6 @@ from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
-# 「現在、収容動物はありません。」「保護動物はおりません」等の 0 件告知パターン。
-# 表記揺れ (おりません/ありません/いません) と「収容/保護」両方を吸収する。
-_EMPTY_STATE_PATTERN = re.compile(
-    r"(?:収容|保護)(?:動物|犬|猫)[^。]*?(?:おりません|ありません|いません)"
-)
-
 
 class CityMachidaAdapter(SinglePageTableAdapter):
     """町田市保健所用 rule-based adapter
@@ -74,17 +68,19 @@ class CityMachidaAdapter(SinglePageTableAdapter):
     def fetch_animal_list(self) -> list[tuple[str, str]]:
         """一覧ページから動物の仮想 URL を返す
 
-        基底 `SinglePageTableAdapter.fetch_animal_list` は行が 0 件のとき
-        `ParsingError` を投げるが、町田市サイトでは「現在、収容動物は
-        ありません。」という告知ページが正常状態として頻繁に発生する
-        (フィクスチャもこのケース)。
-        empty state テキストを検出した場合は空リストを返し、
-        それ以外で行が見つからなかった場合のみ ParsingError を伝播する。
+        町田市の同テンプレ 3 サイトは、動物 0 件のときテーブルが完全に
+        消え、告知 `<p>` のみが本文に並ぶ正常運用状態がある。文言は
+        「現在、収容動物はありません」だけでなく「該当する情報は
+        ありません」「現在、迷子情報はありません」等の表記揺れが
+        サイト改修で発生するため、HTML が正常取得できているのに
+        `article table` が 0 件のケースは「empty state（0 件で正常）」
+        として扱う。HTTP 取得自体が失敗していれば `_http_get` 側で
+        例外が伝播してくるので、ここに到達した時点で HTML は取得済み。
         """
         rows = self._load_rows()
         if not rows:
-            if self._html_cache and _EMPTY_STATE_PATTERN.search(self._html_cache):
-                # 「現在、収容動物はありません」等の正常な 0 件状態
+            if self._html_cache:
+                # テーブル無し ＝ 0 件で正常。文言は問わず empty 扱い。
                 return []
             raise ParsingError(
                 "行要素が見つかりません",
