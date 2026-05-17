@@ -420,12 +420,8 @@ sites:
     category: "sheltered"
     single_page: true
 
-  - name: "宮崎市（直近保護猫）"
-    prefecture: "宮崎県"
-    prefecture_code: "45"
-    list_url: "https://www.city.miyazaki.miyazaki.jp/life/pet/protection/411116.html"
-    category: "sheltered"
-    single_page: true
+  # 「宮崎市（直近保護猫）」は 2026-05-16 時点で URL が 404
+  # （/life/pet/protection/411116.html）。新 URL 確認次第再追加する。
 
   - name: "宮崎市（センター保護犬・飼い主募集）"
     prefecture: "宮崎県"
@@ -1577,12 +1573,8 @@ sites:
     category: "lost"
     single_page: true
 
-  - name: "福島県（会津 迷子猫）"
-    prefecture: "福島県"
-    prefecture_code: "07"
-    list_url: "https://www.pref.fukushima.lg.jp/sec/21621a/maigo-cat-aizu.html"
-    category: "lost"
-    single_page: true
+  # 「福島県（会津 迷子猫）」は 2026-05-16 時点で URL が 404
+  # （/sec/21621a/maigo-cat-aizu.html）。新 URL 確認次第再追加する。
 
   - name: "福島県（相双 迷子犬）"
     prefecture: "福島県"
