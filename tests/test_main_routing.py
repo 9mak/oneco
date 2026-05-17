@@ -72,22 +72,26 @@ class TestSiteRunReturnTypeContract:
 
     PR #20 で bool → tuple[succeeded, failed, zero_count_sites] に変更した。
     main 側で「成功 0 件かつ失敗 > 0 のみ exit 1、それ以外は exit 0」の
-    部分成功許容判定に使うため、空 config では (0, 0, []) を返すことが
-    契約として固定されている必要がある。
+    部分成功許容判定に使うため、対象サイトが 0 件の config では (0, 0, [])
+    を返すことが契約として固定されている必要がある。
+
+    SitesConfig は `sites=[]` を許容しないため、対象 extraction と
+    異なるサイトを 1 件入れて「処理対象 0 件」状態を作る。
     """
 
-    def test_run_llm_sites_returns_zero_zero_empty_for_empty_config(self):
+    def test_run_llm_sites_returns_zero_zero_empty_when_no_llm_sites(self):
         from unittest.mock import Mock
 
         from data_collector.__main__ import run_llm_sites
 
+        # rule-based サイトのみで LLM 対象は 0 件
         config = SitesConfig(
             extraction=ExtractionConfig(
                 default_provider="groq",
                 default_model="dummy",
-                default_extraction="llm",
+                default_extraction="rule-based",
             ),
-            sites=[],
+            sites=[_site(extraction="rule-based")],
         )
         result = run_llm_sites(
             config=config,
@@ -100,18 +104,19 @@ class TestSiteRunReturnTypeContract:
         )
         assert result == (0, 0, [])
 
-    def test_run_rule_based_sites_returns_zero_zero_empty_for_empty_config(self):
+    def test_run_rule_based_sites_returns_zero_zero_empty_when_no_rule_sites(self):
         from unittest.mock import Mock
 
         from data_collector.__main__ import run_rule_based_sites
 
+        # LLM サイトのみで rule-based 対象は 0 件
         config = SitesConfig(
             extraction=ExtractionConfig(
                 default_provider="groq",
                 default_model="dummy",
-                default_extraction="rule-based",
+                default_extraction="llm",
             ),
-            sites=[],
+            sites=[_site(extraction="llm")],
         )
         result = run_rule_based_sites(
             config=config,
