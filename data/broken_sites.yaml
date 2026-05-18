@@ -1,80 +1,93 @@
 京都府 南丹保健所（迷子犬）:
-  consecutive_failures: 1
+  consecutive_failures: 2
   last_error: 行要素が見つかりません
-  last_failed_at: '2026-05-17T16:21:20+00:00'
+  last_failed_at: '2026-05-18T17:53:58+00:00'
 京都府 南丹保健所（迷子猫）:
-  consecutive_failures: 1
+  consecutive_failures: 2
   last_error: 行要素が見つかりません
-  last_failed_at: '2026-05-17T16:21:20+00:00'
+  last_failed_at: '2026-05-18T17:53:59+00:00'
 京都府 山城北保健所（迷子犬）:
-  consecutive_failures: 1
+  consecutive_failures: 2
   last_error: 行要素が見つかりません
-  last_failed_at: '2026-05-17T16:21:18+00:00'
+  last_failed_at: '2026-05-18T17:53:56+00:00'
 京都府 山城北保健所（迷子猫）:
-  consecutive_failures: 1
+  consecutive_failures: 2
   last_error: 行要素が見つかりません
-  last_failed_at: '2026-05-17T16:21:19+00:00'
+  last_failed_at: '2026-05-18T17:53:57+00:00'
 京都府 山城南保健所（飼い主不明動物）:
-  consecutive_failures: 1
+  consecutive_failures: 2
   last_error: 行要素が見つかりません
-  last_failed_at: '2026-05-17T16:21:19+00:00'
+  last_failed_at: '2026-05-18T17:53:57+00:00'
 佐賀県（全県）譲渡犬猫:
+  consecutive_failures: 2
+  last_error: 行要素が見つかりません
+  last_failed_at: '2026-05-18T17:35:35+00:00'
+千葉市（迷子犬）:
   consecutive_failures: 1
   last_error: 行要素が見つかりません
-  last_failed_at: '2026-05-17T16:03:02+00:00'
+  last_failed_at: '2026-05-18T17:53:25+00:00'
 小豆保健所（収容動物）:
-  consecutive_failures: 1
+  consecutive_failures: 2
   last_error: PDF リンクが見つかりません
-  last_failed_at: '2026-05-17T16:01:49+00:00'
+  last_failed_at: '2026-05-18T17:34:16+00:00'
 尼崎市動物愛護センター（収容動物）:
-  consecutive_failures: 1
+  consecutive_failures: 2
   last_error: 見出し『返還対象動物一覧』が見つかりません
-  last_failed_at: '2026-05-17T16:21:48+00:00'
+  last_failed_at: '2026-05-18T17:54:32+00:00'
 岐阜県（迷い犬情報）:
-  consecutive_failures: 1
+  consecutive_failures: 2
   last_error: 岐阜県迷い犬情報ハブページの目印が見つかりません
-  last_failed_at: '2026-05-17T16:22:46+00:00'
+  last_failed_at: '2026-05-18T17:55:33+00:00'
+愛媛県動物愛護センター（収容中）:
+  consecutive_failures: 1
+  last_error: 'HTTP エラー: 404 Client Error: Not Found for url: https://www.pref.ehime.jp/page/16976.html'
+  last_failed_at: '2026-05-18T17:34:25+00:00'
 旭川市あにまある（収容その他）:
-  consecutive_failures: 1
+  consecutive_failures: 2
   last_error: detail link が見つかりません
-  last_failed_at: '2026-05-17T16:23:24+00:00'
+  last_failed_at: '2026-05-18T17:56:12+00:00'
 旭川市あにまある（収容犬）:
-  consecutive_failures: 1
+  consecutive_failures: 2
   last_error: detail link が見つかりません
-  last_failed_at: '2026-05-17T16:23:21+00:00'
+  last_failed_at: '2026-05-18T17:56:09+00:00'
 旭川市あにまある（市民保護犬）:
-  consecutive_failures: 1
+  consecutive_failures: 2
   last_error: detail link が見つかりません
-  last_failed_at: '2026-05-17T16:23:25+00:00'
+  last_failed_at: '2026-05-18T17:56:13+00:00'
 枚方市（収容動物）:
-  consecutive_failures: 1
+  consecutive_failures: 2
   last_error: 行要素が見つかりません
-  last_failed_at: '2026-05-17T16:21:43+00:00'
+  last_failed_at: '2026-05-18T17:54:25+00:00'
 横須賀市（保護その他）:
-  consecutive_failures: 1
+  consecutive_failures: 2
   last_error: detail link が見つかりません
-  last_failed_at: '2026-05-17T16:20:14+00:00'
+  last_failed_at: '2026-05-18T17:52:54+00:00'
 横須賀市（保護犬）:
-  consecutive_failures: 1
+  consecutive_failures: 2
   last_error: detail link が見つかりません
-  last_failed_at: '2026-05-17T16:20:08+00:00'
+  last_failed_at: '2026-05-18T17:52:49+00:00'
 横須賀市（譲渡その他）:
-  consecutive_failures: 1
+  consecutive_failures: 2
   last_error: detail link が見つかりません
-  last_failed_at: '2026-05-17T16:20:28+00:00'
+  last_failed_at: '2026-05-18T17:53:08+00:00'
 福岡県動物愛護協会（保健所収容猫）:
-  consecutive_failures: 1
+  consecutive_failures: 2
   last_error: detail link が見つかりません
-  last_failed_at: '2026-05-17T16:02:13+00:00'
+  last_failed_at: '2026-05-18T17:34:42+00:00'
 茨城県（収容中の動物たち）:
-  consecutive_failures: 1
+  consecutive_failures: 2
   last_error: PDF リンクが見つかりません
-  last_failed_at: '2026-05-17T16:18:56+00:00'
+  last_failed_at: '2026-05-18T17:51:37+00:00'
 茨城県（迷い犬・猫情報）:
-  consecutive_failures: 1
+  consecutive_failures: 2
   last_error: PDF リンクが見つかりません
-  last_failed_at: '2026-05-17T16:18:56+00:00'
-高知県動物愛護センター:
+  last_failed_at: '2026-05-18T17:51:38+00:00'
+高松市 わんにゃん高松（収容中犬）:
   consecutive_failures: 1
+  last_error: 'ネットワークエラー: (''Connection aborted.'', RemoteDisconnected(''Remote end
+    closed connection without response''))'
+  last_failed_at: '2026-05-18T17:33:52+00:00'
+高知県動物愛護センター:
+  consecutive_failures: 2
   last_error: 'site collection timed out after 120s: 高知県動物愛護センター'
-  last_failed_at: '2026-05-17T16:26:04+00:00'
+  last_failed_at: '2026-05-18T17:58:55+00:00'
