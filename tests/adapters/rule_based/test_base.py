@@ -164,6 +164,45 @@ class TestHttpGet:
             assert "headers" in kwargs
             assert "User-Agent" in kwargs["headers"]
 
+    def test_warns_when_html_size_below_min_threshold(self, caplog):
+        """HTTP 200 でも本文が極端に短ければ構造崩壊警告を出す (Task #13)"""
+        import logging
+
+        adapter = _ConcreteAdapter(_site())
+
+        class _MockResp:
+            text = "x"  # 1 byte
+            status_code = 200
+
+            def raise_for_status(self):
+                pass
+
+        with patch("requests.get", return_value=_MockResp()):
+            with caplog.at_level(logging.WARNING, logger="data_collector.adapters.rule_based.base"):
+                adapter._http_get("https://example.com/")
+        # 警告ログに "HTML 取得サイズが小さい" が含まれること
+        assert any("HTML 取得サイズが小さい" in r.message for r in caplog.records), (
+            f"短い HTML で構造崩壊警告が出るべき: {[r.message for r in caplog.records]}"
+        )
+
+    def test_no_warning_for_normal_sized_html(self, caplog):
+        """通常サイズの HTML では警告が出ない"""
+        import logging
+
+        adapter = _ConcreteAdapter(_site())
+
+        class _MockResp:
+            text = "<html>" + "x" * 1000 + "</html>"
+            status_code = 200
+
+            def raise_for_status(self):
+                pass
+
+        with patch("requests.get", return_value=_MockResp()):
+            with caplog.at_level(logging.WARNING, logger="data_collector.adapters.rule_based.base"):
+                adapter._http_get("https://example.com/")
+        assert not any("HTML 取得サイズが小さい" in r.message for r in caplog.records)
+
 
 class TestDefaultNormalize:
     def test_delegates_to_data_normalizer(self):
