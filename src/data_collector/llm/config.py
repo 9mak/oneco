@@ -37,6 +37,7 @@ class SiteConfig(BaseModel):
     fallback_to_llm: bool = (
         False  # rule-based 抽出失敗時に LLM 抽出で再試行（rule-basedモードのみ意味あり）
     )
+    timeout_sec: int | None = None  # サイト個別タイムアウト秒。未指定時はグローバル値を使用
 
     @field_validator("name", "prefecture", "list_url")
     @classmethod
