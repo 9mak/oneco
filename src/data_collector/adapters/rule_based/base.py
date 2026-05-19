@@ -31,6 +31,11 @@ _DEFAULT_USER_AGENT = (
 _DEFAULT_HEADERS = {"User-Agent": _DEFAULT_USER_AGENT}
 _DEFAULT_TIMEOUT_SEC = 30
 
+# HTML 取得結果がこれより短ければ「構造崩壊 or 空ページ」の警告を出す。
+# 正常なサイトは少なくとも数 KB のテンプレ HTML が返るため 500B は十分余裕がある。
+# (Task #9 の snapshot 件数比較と併用される adapter 破損補助検出)
+_MIN_HTML_SIZE_BYTES = 500
+
 # 電話番号抽出パターン
 # (a) ハイフン/スペース区切り: "088-826-2364", "088 826 2364"
 _PHONE_HYPHEN_RE = re.compile(r"\b(\d{2,4})[-\s](\d{1,4})[-\s](\d{4})\b")
@@ -91,7 +96,17 @@ class RuleBasedAdapter(MunicipalityAdapter):
         except requests.exceptions.RequestException as e:
             raise NetworkError(f"ネットワークエラー: {e}", url=url) from e
 
-        return response.text
+        text = response.text
+        # 構造崩壊 / 空ページ検出: HTTP 200 でも本文が極端に短いケースを警告ログに出す。
+        # adapter 個別の ParsingError と snapshot 件数比較 (Task #9) のバックアップとして、
+        # サイト側のメンテナンス画面や reverse-proxy エラー画面を可視化する。
+        if len(text) < _MIN_HTML_SIZE_BYTES:
+            site_name = getattr(getattr(self, "site_config", None), "name", "?")
+            logger.warning(
+                f"[{site_name}] HTML 取得サイズが小さい ({len(text)}B < {_MIN_HTML_SIZE_BYTES}B): "
+                f"構造崩壊 or 空ページの可能性 (url={url})"
+            )
+        return text
 
     # ─────────────────── URL ヘルパー ───────────────────
 
