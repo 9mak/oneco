@@ -62,12 +62,41 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add output/animals.json snapshots/latest.json data/broken_sites.yaml || true
-          git diff --staged --quiet || git commit -m "Update collection data [automated]
+
+          # 変更が無ければ何もしない (exit 0)
+          if git diff --staged --quiet; then
+            echo "::notice::No changes to commit"
+            exit 0
+          fi
+
+          git commit -m "Update collection data [automated]
 
           🤖 Generated with Claude Code (https://claude.com/claude-code)
 
           Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
-          git push || true
+
+          # push retry: 手動 trigger と定期 trigger が衝突して reject される
+          # ケース (run #25977312469 で実際に発生) があるため、最大 3 回まで
+          # `git pull --rebase` してから push をやり直す。
+          push_attempts=3
+          for attempt in $(seq 1 $push_attempts); do
+            if git push; then
+              echo "::notice::Push successful on attempt $attempt"
+              exit 0
+            fi
+            echo "::warning::Push attempt $attempt failed (likely upstream changed)"
+            if [ "$attempt" -lt "$push_attempts" ]; then
+              echo "Pulling latest main with rebase and retrying..."
+              if ! git pull --rebase origin main; then
+                echo "::error::git pull --rebase failed at attempt $attempt; aborting retry"
+                exit 0
+              fi
+              sleep $((attempt * 3))
+            fi
+          done
+          echo "::error::Push failed after $push_attempts attempts; data commit will be retried in the next run"
+          # exit 0 で workflow 自体は成功扱い (best-effort)。次回 run で再試行される。
+          exit 0
 
       - name: Notify Slack on failure
         if: failure()
