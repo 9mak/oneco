@@ -23,6 +23,8 @@ from __future__ import annotations
 
 from typing import ClassVar
 
+from bs4 import BeautifulSoup
+
 from ..registry import SiteAdapterRegistry
 from ..wordpress_list import FieldSpec, WordPressListAdapter
 
@@ -40,27 +42,26 @@ class ZaidanFukuokaDouaiAdapter(WordPressListAdapter):
     # (`.transfer-menu` 内) を確実に排除できる。
     LIST_LINK_SELECTOR: ClassVar[str] = "div.animals-list a[href*='-detail/']"
 
-    # detail ページの定義リスト見出しに対応するラベル。
-    # 一覧時の inline data (個体管理ナンバー / 収容日 / 保護した場所 / 収容先)
-    # 相当のフィールドに加え、詳細ページにある品種・性別・毛色・特徴等を
-    # ラベル一致で拾う。同じセマンティクスの label 候補が複数ある場合は
-    # `_extract_by_label` の最初にヒットしたものが採用される。
+    # detail ページのテーブル見出しに対応するラベル。
+    # `<table><tr><th>項目名</th><td>値</td></tr>` 形式で、`_extract_by_label`
+    # が th も対応する。同じセマンティクスの label 候補が複数ある場合は
+    # 最初にヒットしたものが採用される。
     FIELD_SELECTORS: ClassVar[dict[str, FieldSpec]] = {
-        # 種類/品種 (例: "雑種", "ミックス")
+        # 種類/品種 (実 HTML には項目なし。URL から _postprocess_fields で補完)
         "species": FieldSpec(label="品種"),
         # 性別 (例: "オス", "メス", "不明")
         "sex": FieldSpec(label="性別"),
-        # 年齢 (推定年齢として記載されることが多い)
+        # 年齢 ("推定年齢（推定生年月日）" にもラベル部分一致でマッチ)
         "age": FieldSpec(label="年齢"),
         # 毛色
         "color": FieldSpec(label="毛色"),
         # 大きさ (体格)
         "size": FieldSpec(label="大きさ"),
-        # 収容日
-        "shelter_date": FieldSpec(label="収容日"),
-        # 収容先 (保健福祉環境事務所など)
-        "location": FieldSpec(label="収容先"),
-        # 連絡先 (電話番号)
+        # 保護した日 (=収容日相当)
+        "shelter_date": FieldSpec(label="保護した日"),
+        # 保護した場所 (=収容先相当)
+        "location": FieldSpec(label="保護した場所"),
+        # 連絡先 (実 HTML に該当 th なし。_postprocess_fields で別 selector を試す)
         "phone": FieldSpec(label="連絡先"),
     }
 
@@ -71,6 +72,27 @@ class ZaidanFukuokaDouaiAdapter(WordPressListAdapter):
     # するため、`<figure class="list-pht">` や本文 `figure` 配下の `img` のみを
     # 拾うセレクタにしぼる。
     IMAGE_SELECTOR: ClassVar[str] = "figure img"
+
+    def _postprocess_fields(
+        self, fields: dict[str, str], detail_url: str, soup: BeautifulSoup
+    ) -> None:
+        """detail HTML に「品種」「連絡先」 列が無いため、URL とフォールバックで補う。
+
+        - species: list_url の `/dog` `/cat` から推測
+        - phone: 動物情報 table の外にある問い合わせ先 box から拾えれば拾う
+        """
+        species = fields.get("species", "")
+        if not any(kw in species for kw in ("犬", "猫", "いぬ", "ねこ", "イヌ", "ネコ")):
+            hint = self._infer_species_from_url()
+            if hint:
+                fields["species"] = hint
+        if not fields.get("phone"):
+            # ページ末尾の「お問い合わせ」block に電話番号がある場合、最初の TEL: パターンを採用
+            import re
+            text = soup.get_text(" ", strip=True)
+            m = re.search(r"(\d{2,4}-\d{2,4}-\d{3,4})", text)
+            if m:
+                fields["phone"] = m.group(1)
 
 
 # ─────────────────── サイト登録 ───────────────────

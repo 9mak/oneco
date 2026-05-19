@@ -22,32 +22,31 @@ from data_collector.adapters.rule_based.sites.zaidan_fukuoka_douai import (
 from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
 
-# 詳細ページを模した最小 HTML (実サイトの構造想定)
+# 詳細ページを模した最小 HTML (2026 年現行サイト構造)
 # - 写真は `<figure>` 配下の `<img>` で `/files/download/Animals/...`
-# - 各情報は `<dl><dt>label</dt><dd>value</dd></dl>` の定義リスト
+# - 各情報は `<table><tr><th>label</th><td>value</td></tr></table>` のテーブル
+# - HTML に「品種」項目はなく、species は list_url の dog/cat から adapter が補う
 DETAIL_HTML = """
 <html><body>
 <div class="main">
   <div class="inner">
     <div class="detail-wrap">
-      <h2>収容犬詳細</h2>
+      <h2>動物情報</h2>
       <figure class="detail-pht">
         <img src="/files/download/Animals/329e7da2-a4b5-4aad-896e-3a15acc1bfa0/image_01/main/l">
       </figure>
       <figure class="detail-pht">
         <img src="/files/download/Animals/329e7da2-a4b5-4aad-896e-3a15acc1bfa0/image_02/sub/l">
       </figure>
-      <div class="animals-data">
-        <dl><dt>個体管理ナンバー</dt><dd>D2137</dd></dl>
-        <dl><dt>収容日</dt><dd>2026年5月14日</dd></dl>
-        <dl><dt>品種</dt><dd>雑種</dd></dl>
-        <dl><dt>性別</dt><dd>オス</dd></dl>
-        <dl><dt>年齢</dt><dd>推定3歳</dd></dl>
-        <dl><dt>毛色</dt><dd>茶白</dd></dl>
-        <dl><dt>大きさ</dt><dd>中型</dd></dl>
-        <dl><dt>収容先</dt><dd>京築保健福祉環境事務所</dd></dl>
-        <dl><dt>連絡先</dt><dd>0930-23-2380</dd></dl>
-      </div>
+      <table class="animals-data">
+        <tr><th>保護した日</th><td>2026年5月14日</td></tr>
+        <tr><th>保護した場所</th><td>京築保健福祉環境事務所</td></tr>
+        <tr><th>性別</th><td>オス</td></tr>
+        <tr><th>毛色</th><td>茶白</td></tr>
+        <tr><th>推定年齢（推定生年月日）</th><td>推定3歳</td></tr>
+        <tr><th>大きさ</th><td>中型</td></tr>
+      </table>
+      <p>お問い合わせ TEL: 0930-23-2380</p>
     </div>
   </div>
 </div>
@@ -120,14 +119,16 @@ class TestZaidanFukuokaDouaiAdapterDetailExtraction:
         assert isinstance(raw, RawAnimalData)
         assert_raw_animal(
             raw,
-            species="雑種",
+            # 「品種」項目は detail HTML に無く、list_url `/animals/protections/dog`
+            # から adapter が species を「犬」と補完する
+            species="犬",
             sex="オス",
             age="推定3歳",
             color="茶白",
             size="中型",
             shelter_date="2026年5月14日",
             location="京築保健福祉環境事務所",
-            # 連絡先 "0930-23-2380" がそのまま正規化される
+            # ページ本文内の TEL: パターンから adapter が電話番号を補う
             phone="0930-23-2380",
             category="sheltered",
         )
@@ -138,8 +139,20 @@ class TestZaidanFukuokaDouaiAdapterDetailExtraction:
         assert all(u.startswith("https://www.zaidan-fukuoka-douai.or.jp/") for u in raw.image_urls)
 
     def test_extract_raises_on_empty_html(self):
-        """定義リストが見当たらない HTML では例外を出す"""
-        adapter = ZaidanFukuokaDouaiAdapter(_site_protections_dog())
+        """テーブルが見当たらない HTML では例外を出す
+
+        list_url が無い SiteConfig を渡すと species 補完も発動しないため、
+        全フィールド空になり ParsingError が投げられることを確認する。
+        """
+        adapter = ZaidanFukuokaDouaiAdapter(
+            SiteConfig(
+                name="福岡県動物愛護協会（保健所収容犬）",
+                prefecture="福岡県",
+                prefecture_code="40",
+                list_url="https://www.zaidan-fukuoka-douai.or.jp/animals/protections/x",
+                category="sheltered",
+            )
+        )
         with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.extract_animal_details(

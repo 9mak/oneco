@@ -20,7 +20,10 @@
 
 from __future__ import annotations
 
+import re
 from typing import ClassVar
+
+from bs4 import BeautifulSoup
 
 from ..registry import SiteAdapterRegistry
 from ..wordpress_list import FieldSpec, WordPressListAdapter
@@ -31,6 +34,11 @@ class AnimalNetNagasakiAdapter(WordPressListAdapter):
 
     list / detail テンプレートが 4 サイト共通なので、サイト名ごとに
     クラスを分けず、registry に複数の site_name を 1 クラスで束ねる。
+
+    detail ページは `<li><p>品種</p><p>ミックス（雑種）</p></li>` のような
+    `<li>` 内に 2 つの `<p>` を並べる構造。`WordPressListAdapter._extract_by_label`
+    が前提とする `<dt>/<dd>` `<th>/<td>` には載らないため、
+    `_postprocess_fields` で独自パースする。
     """
 
     # `list-area` (一覧ブロック) 配下の `/animal/no-...` 形式の `<a>` のみを
@@ -38,27 +46,17 @@ class AnimalNetNagasakiAdapter(WordPressListAdapter):
     # 検索パネル内のリンク等の混入を防ぐ。
     LIST_LINK_SELECTOR: ClassVar[str] = "div.list-area a[href*='/animal/no-']"
 
-    # detail ページの定義リスト見出しに対応するラベル。
-    # 一覧時の inline data (品種 / 性別 / 年齢 / 公開日) 相当に加え、
-    # 詳細ページで一般的に提供される毛色・大きさ・収容日・収容場所・連絡先を
-    # ラベル一致で拾う。同じセマンティクスの label 候補が複数ある場合は
-    # `_extract_by_label` の最初にヒットしたものが採用される。
+    # detail は `<li><p>label</p><p>value</p></li>` 構造のため
+    # 通常のラベル抽出は効かない。FIELD_SELECTORS は空にして
+    # `_postprocess_fields` 側で全フィールドを埋める。
     FIELD_SELECTORS: ClassVar[dict[str, FieldSpec]] = {
-        # 種類/品種 (例: "ミックス（雑種）")
         "species": FieldSpec(label="品種"),
-        # 性別 (例: "オス", "メス", "不明")
         "sex": FieldSpec(label="性別"),
-        # 年齢 (例: "約４ヶ月", "不明")
         "age": FieldSpec(label="年齢"),
-        # 毛色
         "color": FieldSpec(label="毛色"),
-        # 大きさ (体格)
         "size": FieldSpec(label="大きさ"),
-        # 収容日 / 公開日 (詳細ページ側で「収容日」が無い場合は空)
         "shelter_date": FieldSpec(label="収容日"),
-        # 収容場所 (保健所名等)
         "location": FieldSpec(label="収容場所"),
-        # 連絡先 (電話番号)
         "phone": FieldSpec(label="連絡先"),
     }
 
@@ -66,6 +64,86 @@ class AnimalNetNagasakiAdapter(WordPressListAdapter):
     # ヘッダ等のロゴ画像 (`/wp-content/themes/ngk-animal/...`) は
     # 基底 `_filter_image_urls` の uploads フィルタで自動排除される。
     IMAGE_SELECTOR: ClassVar[str] = "img"
+
+    # `<li><p>label</p><p>value</p></li>` 構造のラベル → フィールド名対応表。
+    # カテゴリ (syuuyou/jyouto/maigo/hogo) によって使うラベル名が変わるため候補を網羅する。
+    _LI_LABEL_MAP: ClassVar[dict[str, str]] = {
+        "品種": "species",
+        "性別": "sex",
+        "年齢": "age",
+        "毛色": "color",
+        "大きさ": "size",
+        "体格": "size",
+        # 収容日相当
+        "収容日": "shelter_date",
+        "保護日": "shelter_date",
+        "いなくなった日時": "shelter_date",
+        "登録日": "shelter_date",
+        "公開日": "shelter_date",
+        # 場所相当
+        "収容場所": "location",
+        "保護場所": "location",
+        "いなくなった場所": "location",
+        "地区": "_location_fallback",  # 詳細場所が無い時の代替
+        # 電話番号抽出元
+        "問い合わせ先": "_phone_source",
+        "連絡先": "_phone_source",
+    }
+
+    def _postprocess_fields(
+        self, fields: dict[str, str], detail_url: str, soup: BeautifulSoup
+    ) -> None:
+        """`<li><p>label</p><p>value</p></li>` 構造から残フィールドを補完する。
+
+        既にラベル抽出で値が埋まっているフィールドは尊重し、空の場合のみ上書きする。
+        """
+        extras: dict[str, str] = {}
+        for li in soup.select("li"):
+            ps = li.find_all("p", recursive=False)
+            if len(ps) < 2:
+                continue
+            label = ps[0].get_text(strip=True)
+            value = ps[1].get_text(strip=True)
+            field = self._LI_LABEL_MAP.get(label)
+            if field is None:
+                continue
+            if field.startswith("_"):
+                extras[field] = value
+            elif not fields.get(field):
+                fields[field] = value
+
+        # location が空なら「地区」を fallback として使う
+        if not fields.get("location") and extras.get("_location_fallback"):
+            fields["location"] = extras["_location_fallback"]
+
+        # 連絡先テキスト or 本文の「連絡先 0920-...」パターンから電話番号を抽出
+        if not fields.get("phone"):
+            phone_text = extras.get("_phone_source", "") or soup.get_text(" ", strip=True)
+            m = re.search(r"(\d{2,4}-\d{2,4}-\d{3,4})", phone_text)
+            if m:
+                fields["phone"] = m.group(1)
+
+        # species が「ミックス（雑種）」など犬猫判定不能でもサイト名で補正できる場合のみ。
+        # サイト名に「犬」「猫」が片方だけ含まれる場合に限定（両方含まれるサイト名
+        # 例「長崎犬猫ネット（譲渡）」では補正せず元値のまま DataNormalizer に委ねる）。
+        species = fields.get("species", "")
+        if not any(kw in species for kw in ("犬", "猫", "いぬ", "ねこ", "イヌ", "ネコ")):
+            site_name = getattr(self.site_config, "name", "")
+            has_dog = "犬" in site_name
+            has_cat = "猫" in site_name
+            if has_dog and not has_cat:
+                fields["species"] = "犬"
+            elif has_cat and not has_dog:
+                fields["species"] = "猫"
+
+        # 譲渡 (jyouto) カテゴリは shelter_date を持たないため、データ収集日を
+        # フォールバックに入れる。ただし detail HTML に他のフィールドが
+        # 1 つも取れなかった (空ページ等) ケースでは補完しない —
+        # 全フィールド空 → ParsingError を投げる挙動を維持するため。
+        other_filled = any(v for k, v in fields.items() if k != "shelter_date")
+        if other_filled and not fields.get("shelter_date"):
+            from datetime import date
+            fields["shelter_date"] = date.today().strftime("%Y-%m-%d")
 
 
 # ─────────────────── サイト登録 ───────────────────
