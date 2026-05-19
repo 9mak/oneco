@@ -812,16 +812,12 @@ sites:
     category: "sheltered"
     single_page: true
 
-  # 「越谷市（個人保護犬猫）」は HTML が h2「猫の情報」配下の h3 (R8-001 等)
-  # ＋ p「ラベル：値」形式で書かれているが、既存の CityKoshigayaAdapter は
-  # `<table>` ベースなので猫が存在しても 0 件として誤記録してしまう。
-  # 専用 adapter (CityKoshigayaKojinAdapter) を別 PR で実装するまで disable する。
-  # - name: "越谷市（個人保護犬猫）"
-  #   prefecture: "埼玉県"
-  #   prefecture_code: "11"
-  #   list_url: "https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/hogo/hogo_kojin.html"
-  #   category: "sheltered"
-  #   single_page: true
+  - name: "越谷市（個人保護犬猫）"
+    prefecture: "埼玉県"
+    prefecture_code: "11"
+    list_url: "https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/hogo/hogo_kojin.html"
+    category: "sheltered"
+    single_page: true
 
   # 【千葉市】静的 HTML、6 URL
   - name: "千葉市（迷子犬）"
@@ -904,27 +900,36 @@ sites:
     category: "sheltered"
     single_page: true
 
-  # 「町田市（保護情報）」hogo.html は実際に動物が `<h3>` ＋ `<ul><li>ラベル：値`
-  # 形式で複数頭記載されているが、既存 CityMachidaAdapter は `<article> <table>`
-  # 前提で書かれているため、PR #21 後は「table 不在 = 0 件正常」と扱い実在する
-  # 動物を空配列として記録してしまう。adapter を h3+ul li 形式に再設計する別 PR
-  # までこの URL を一時 disable する。
-  # - name: "町田市（保護情報）"
-  #   prefecture: "東京都"
-  #   prefecture_code: "13"
-  #   list_url: "https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/hogo.html"
-  #   category: "sheltered"
-  #   single_page: true
+  - name: "町田市（保護情報）"
+    prefecture: "東京都"
+    prefecture_code: "13"
+    list_url: "https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/hogo.html"
+    category: "sheltered"
+    single_page: true
 
-  # 「町田市（捜索：飼い主が探している）」の旧 URL pet_fumei/index.html はハブ
-  # ページで、実データは子ページ (search_dog.html / search_cat.html /
-  # search_sonota.html) にある。adapter 再設計 PR で 3 件に分割する。
-  # - name: "町田市（捜索：飼い主が探している）"
-  #   prefecture: "東京都"
-  #   prefecture_code: "13"
-  #   list_url: "https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/pet_fumei/index.html"
-  #   category: "lost"
-  #   single_page: true
+  # 旧「町田市（捜索：飼い主が探している）」は pet_fumei/index.html を指していた
+  # がそれはハブページで実データは子ページ。adapter 再設計 PR で 3 件に分割。
+
+  - name: "町田市（迷子犬・捜索）"
+    prefecture: "東京都"
+    prefecture_code: "13"
+    list_url: "https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/pet_fumei/search_dog.html"
+    category: "lost"
+    single_page: true
+
+  - name: "町田市（迷子猫・捜索）"
+    prefecture: "東京都"
+    prefecture_code: "13"
+    list_url: "https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/pet_fumei/search_cat.html"
+    category: "lost"
+    single_page: true
+
+  - name: "町田市（迷子その他・捜索）"
+    prefecture: "東京都"
+    prefecture_code: "13"
+    list_url: "https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/pet_fumei/search_sonota.html"
+    category: "lost"
+    single_page: true
 
   # 【横浜市】静的 HTML、3 URL
   - name: "横浜市（収容犬）"

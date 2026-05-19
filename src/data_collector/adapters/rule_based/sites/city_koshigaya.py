@@ -322,13 +322,12 @@ class CityKoshigayaAdapter(SinglePageTableAdapter):
 
 
 # ─────────────────── サイト登録 ───────────────────
-# 同一テンプレート上で運用される 3 サイトを同一 adapter にマップする。
-# `sites.yaml` の `prefecture: 埼玉県` かつ `city.koshigaya.saitama.jp`
-# ドメインのもの。
+# 保護犬 / 保護猫 の 2 サイトを同一 adapter にマップする。
+# 個人保護犬猫 (hogo_kojin.html) は構造が全く異なるため CityKoshigayaKojinAdapter
+# として別ファイル (city_koshigaya_kojin.py) で実装されている。
 for _site_name in (
     "越谷市（保護犬）",
     "越谷市（保護猫）",
-    "越谷市（個人保護犬猫）",
 ):
     if SiteAdapterRegistry.get(_site_name) is None:
         SiteAdapterRegistry.register(_site_name, CityKoshigayaAdapter)
