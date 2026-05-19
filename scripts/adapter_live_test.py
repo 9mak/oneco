@@ -18,7 +18,6 @@ import importlib
 import json
 import pkgutil
 import sys
-import traceback
 from pathlib import Path
 from typing import Any
 
@@ -64,7 +63,7 @@ def build_site_config(raw: dict[str, Any]) -> SiteConfig:
     )
 
 
-def test_site(name: str, raw_cfg: dict[str, Any]) -> dict[str, Any]:
+def test_site(name: str, raw_cfg: dict[str, Any], include_js: bool = False) -> dict[str, Any]:
     result: dict[str, Any] = {"name": name, "list_url": raw_cfg.get("list_url")}
     adapter_cls = SiteAdapterRegistry.get(name)
     if adapter_cls is None:
@@ -80,8 +79,8 @@ def test_site(name: str, raw_cfg: dict[str, Any]) -> dict[str, Any]:
         result["error"] = f"{type(e).__name__}: {e}"
         return result
 
-    # Playwright が必要なサイトはスキップ
-    if raw_cfg.get("requires_js"):
+    # Playwright が必要なサイトは include_js=False ならスキップ
+    if raw_cfg.get("requires_js") and not include_js:
         result["status"] = "skipped_js"
         return result
 
@@ -122,6 +121,8 @@ def main() -> int:
     parser.add_argument("--from-json", help="audit JSON path")
     parser.add_argument("--category", default="suspicious", help="filter audit JSON by category")
     parser.add_argument("--out-json", default="")
+    parser.add_argument("--include-js", action="store_true",
+                        help="requires_js: true のサイトも Playwright 経由で実行する")
     args = parser.parse_args()
 
     sites_map = load_sites_yaml()
@@ -142,7 +143,7 @@ def main() -> int:
             results.append({"name": name, "status": "not_in_yaml"})
             print(f"  [{i}/{len(target_names)}] ⚠ not_in_yaml: {name}", file=sys.stderr)
             continue
-        r = test_site(name, raw)
+        r = test_site(name, raw, include_js=args.include_js)
         results.append(r)
         marker = {
             "ok": "✓", "list_empty": "○", "skipped_js": "⏭",
