@@ -136,14 +136,8 @@ class AnimalNetNagasakiAdapter(WordPressListAdapter):
             elif has_cat and not has_dog:
                 fields["species"] = "猫"
 
-        # 譲渡 (jyouto) カテゴリは shelter_date を持たないため、データ収集日を
-        # フォールバックに入れる。ただし detail HTML に他のフィールドが
-        # 1 つも取れなかった (空ページ等) ケースでは補完しない —
-        # 全フィールド空 → ParsingError を投げる挙動を維持するため。
-        other_filled = any(v for k, v in fields.items() if k != "shelter_date")
-        if other_filled and not fields.get("shelter_date"):
-            from datetime import date
-            fields["shelter_date"] = date.today().strftime("%Y-%m-%d")
+        # 譲渡カテゴリ等で shelter_date が取れない場合は DataNormalizer 側で
+        # 「データ取得日」にフォールバックされる（全 adapter 共通のセーフネット）。
 
 
 # ─────────────────── サイト登録 ───────────────────

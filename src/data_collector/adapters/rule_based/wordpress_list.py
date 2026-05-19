@@ -107,6 +107,8 @@ class WordPressListAdapter(RuleBasedAdapter):
                 "detail ページから 1 フィールドも抽出できませんでした",
                 url=detail_url,
             )
+        # shelter_date が空 or 解析不能の場合は DataNormalizer 側で「データ取得日」
+        # にフォールバックされる（全 adapter 共通のセーフネット）。
 
         image_urls = self._extract_images(soup, detail_url)
 
