@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { computeQuantileBins, getBinIndex } from '@/lib/heatmap-bins';
+
 interface PrefectureMapProps {
   /** 都道府県名 → 件数 */
   countsByPrefecture: Record<string, number>;
@@ -75,18 +77,61 @@ const REGIONS: { name: string; prefectures: string[] }[] = [
   },
 ];
 
-function PrefectureCell({ pref, count }: { pref: string; count: number }) {
+// ヒートマップ濃度: bin 0 = データなし, 1〜5 = quantile bin (薄い → 濃い)
+// 各 class は WCAG AA (4.5:1) を満たすため orange-X 系の濃淡と text の組合せを慎重に選定。
+const BIN_CLASSES: { card: string; badge: string }[] = [
+  // 0 = データなし
+  {
+    card: 'bg-gray-50 text-gray-700 border-gray-100',
+    badge: 'bg-gray-500 text-white',
+  },
+  // 1 = 最も少ない bin
+  {
+    card: 'bg-orange-50 hover:bg-orange-100 text-orange-900 border-orange-200',
+    badge: 'bg-orange-500 text-white',
+  },
+  // 2
+  {
+    card: 'bg-orange-100 hover:bg-orange-200 text-orange-900 border-orange-300',
+    badge: 'bg-orange-600 text-white',
+  },
+  // 3
+  {
+    card: 'bg-orange-200 hover:bg-orange-300 text-orange-950 border-orange-400',
+    badge: 'bg-orange-700 text-white',
+  },
+  // 4
+  {
+    card: 'bg-orange-300 hover:bg-orange-400 text-orange-950 border-orange-500',
+    badge: 'bg-orange-800 text-white',
+  },
+  // 5 = 最も多い bin
+  {
+    card: 'bg-orange-400 hover:bg-orange-500 text-orange-950 border-orange-600',
+    badge: 'bg-orange-900 text-white',
+  },
+];
+
+const BIN_COUNT = 5;
+
+function PrefectureCell({
+  pref,
+  count,
+  bin,
+}: {
+  pref: string;
+  count: number;
+  bin: number;
+}) {
   const hasData = count > 0;
+  const classes = BIN_CLASSES[bin] ?? BIN_CLASSES[0];
   const baseClass =
     'flex flex-col items-center justify-center rounded-md py-2 px-1 text-xs transition-colors min-h-[60px]';
   const innerNode = (
     <>
       <span className="font-medium">{pref}</span>
       <span
-        className={[
-          'mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold',
-          hasData ? 'bg-orange-500 text-white' : 'bg-gray-500 text-white',
-        ].join(' ')}
+        className={`mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${classes.badge}`}
       >
         {count}
       </span>
@@ -99,7 +144,7 @@ function PrefectureCell({ pref, count }: { pref: string; count: number }) {
     return (
       <div
         aria-label={`${pref}: データなし`}
-        className={`${baseClass} bg-gray-50 text-gray-600 border border-gray-100`}
+        className={`${baseClass} border ${classes.card}`}
       >
         {innerNode}
       </div>
@@ -109,11 +154,50 @@ function PrefectureCell({ pref, count }: { pref: string; count: number }) {
   return (
     <Link
       href={`/?prefecture=${encodeURIComponent(pref)}`}
-      aria-label={`${pref}: ${count}件`}
-      className={`${baseClass} bg-orange-50 hover:bg-orange-100 text-orange-900 border border-orange-200`}
+      aria-label={`${pref}: ${count}件 (ヒートマップ濃度 ${bin}/${BIN_COUNT})`}
+      className={`${baseClass} border ${classes.card}`}
     >
       {innerNode}
     </Link>
+  );
+}
+
+function MapLegend({ bins }: { bins: number[] }) {
+  // bins[i] は bin i+1 の上限値。bin 1 = (0, bins[0]], bin 2 = (bins[0], bins[1]], ...
+  const ranges: { label: string; bin: number }[] = [{ label: '0', bin: 0 }];
+  if (bins.length === 0) {
+    // データが薄い場合: 1 件以上は全て同じ bin として扱う
+    ranges.push({ label: '1+', bin: 1 });
+  } else {
+    ranges.push({ label: `1–${bins[0]}`, bin: 1 });
+    for (let i = 0; i < bins.length - 1; i++) {
+      ranges.push({
+        label: `${bins[i] + 1}–${bins[i + 1]}`,
+        bin: i + 2,
+      });
+    }
+    ranges.push({ label: `${bins[bins.length - 1] + 1}+`, bin: bins.length + 1 });
+  }
+  return (
+    <div
+      className="flex flex-wrap items-center gap-2 text-xs"
+      role="group"
+      aria-label="件数ヒートマップ凡例"
+    >
+      <span className="font-medium text-[var(--color-text-secondary)]">凡例:</span>
+      {ranges.map((r) => {
+        const c = BIN_CLASSES[r.bin] ?? BIN_CLASSES[0];
+        return (
+          <span
+            key={`${r.bin}-${r.label}`}
+            className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 ${c.card}`}
+          >
+            <span className={`inline-block h-2 w-2 rounded-full ${c.badge}`} aria-hidden />
+            {r.label}
+          </span>
+        );
+      })}
+    </div>
   );
 }
 
@@ -125,6 +209,7 @@ export function PrefectureMap({ countsByPrefecture }: PrefectureMapProps) {
   const totalPrefectures = Object.values(countsByPrefecture).filter(
     (n) => n > 0,
   ).length;
+  const bins = computeQuantileBins(Object.values(countsByPrefecture), BIN_COUNT);
 
   return (
     <section
@@ -145,6 +230,8 @@ export function PrefectureMap({ countsByPrefecture }: PrefectureMapProps) {
         </p>
       </div>
 
+      <MapLegend bins={bins} />
+
       <div className="space-y-4">
         {REGIONS.map((region) => {
           const regionTotal = region.prefectures.reduce(
@@ -158,13 +245,17 @@ export function PrefectureMap({ countsByPrefecture }: PrefectureMapProps) {
                 <span className="text-xs font-normal">({regionTotal}件)</span>
               </h3>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
-                {region.prefectures.map((pref) => (
-                  <PrefectureCell
-                    key={pref}
-                    pref={pref}
-                    count={countsByPrefecture[pref] || 0}
-                  />
-                ))}
+                {region.prefectures.map((pref) => {
+                  const count = countsByPrefecture[pref] || 0;
+                  return (
+                    <PrefectureCell
+                      key={pref}
+                      pref={pref}
+                      count={count}
+                      bin={getBinIndex(count, bins)}
+                    />
+                  );
+                })}
               </div>
             </div>
           );
