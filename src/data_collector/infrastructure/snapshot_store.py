@@ -112,7 +112,7 @@ class SnapshotStore:
         生成するため、`list_url` を prefix にしてサイトを識別できる。
         """
         animals = self.load_animal_map()
-        result: dict[str, int] = {name: 0 for name in site_list_urls}
+        result: dict[str, int] = dict.fromkeys(site_list_urls, 0)
         for url in animals:
             for name, list_url in site_list_urls.items():
                 if url.startswith(list_url):
