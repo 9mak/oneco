@@ -34,6 +34,7 @@ from .llm.providers.anthropic_provider import AnthropicProvider
 from .llm.providers.base import LlmProvider
 from .llm.providers.fallback_provider import FallbackProvider
 from .llm.providers.groq_provider import GroqProvider
+from .llm.robots_checker import RobotsChecker
 from .orchestration.collector_service import CollectorService
 
 PROVIDER_REGISTRY = {
@@ -143,6 +144,7 @@ def run_llm_sites(
     succeeded = 0
     failed = 0
     zero_count_sites: list[str] = []
+    robots = RobotsChecker()
 
     for site in config.sites:
         if _effective_extraction(site, config) != "llm":
@@ -163,6 +165,14 @@ def run_llm_sites(
 
         site_start = time.time()
         logger.info(f"=== LLM収集開始: {site.name} ===")
+
+        # robots.txt を尊重: disallow なサイトはスキップ（成功・失敗どちらにもカウントしない）
+        if not robots.is_allowed(site.list_url):
+            logger.warning(
+                f"[{site.name}] robots.txt により disallow されています。スキップします: "
+                f"{site.list_url}"
+            )
+            continue
 
         # タイムアウト解決優先順位: サイト個別 (sites.yaml の timeout_sec) > requires_js 既定 > 通常既定
         if site.timeout_sec is not None:
