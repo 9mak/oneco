@@ -97,6 +97,29 @@ class SnapshotStore:
             url: self.compute_stable_hash(animal) for url, animal in self.load_animal_map().items()
         }
 
+    def load_counts_by_site_url_prefix(self, site_list_urls: dict[str, str]) -> dict[str, int]:
+        """サイト別の前回件数を返す。
+
+        Args:
+            site_list_urls: `{site_name: list_url}` の dict (sites.yaml 由来)
+
+        Returns:
+            `{site_name: count}` の dict。snapshot に存在しないサイトは 0。
+
+        判定ロジック: snapshot 内の `source_url` が `site.list_url` で前方一致
+        するものをカウントする。各 adapter は detail URL を `{list_url}#row=N`
+        や `{list_url}#h3=N`、または `{list_url}.../detail/{id}.html` 形式で
+        生成するため、`list_url` を prefix にしてサイトを識別できる。
+        """
+        animals = self.load_animal_map()
+        result: dict[str, int] = dict.fromkeys(site_list_urls, 0)
+        for url in animals:
+            for name, list_url in site_list_urls.items():
+                if url.startswith(list_url):
+                    result[name] += 1
+                    break  # 1 URL は 1 site にしか紐付かない
+        return result
+
     def load_snapshot(self) -> list[AnimalData]:
         """後方互換: DiffDetector が呼ぶ。
 

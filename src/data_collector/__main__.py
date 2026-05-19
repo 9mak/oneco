@@ -230,6 +230,7 @@ def run_rule_based_sites(
     db_connection: DatabaseConnection | None,
     logger: logging.Logger,
     broken_tracker: BrokenSitesTracker | None = None,
+    previous_site_counts: dict[str, int] | None = None,
 ) -> tuple[int, int, list[str]]:
     """rule-based 抽出方式でサイト群を収集
 
@@ -237,12 +238,20 @@ def run_rule_based_sites(
     未登録サイトは run_llm_sites 側で拾われる（混在運用を前提）。
     rule 失敗 + fallback_to_llm=True のサイトは LLM 抽出で再試行する。
 
+    Args:
+        previous_site_counts: `{site_name: 前回件数}` の dict。snapshot_store
+            から計算される。「前回 ≥ 1 件 → 今回 0 件」を adapter 破損の異常
+            として検出し、broken_tracker に failure 記録する (動物いるのに
+            adapter が読めなくなった疑いを次回 run で自動スキップに乗せる)。
+
     Returns:
         (成功サイト数, 失敗サイト数, 0件で完了したサイト名一覧)。
     """
     succeeded = 0
     failed = 0
     zero_count_sites: list[str] = []
+    if previous_site_counts is None:
+        previous_site_counts = {}
 
     for site in config.sites:
         if _effective_extraction(site, config) != "rule-based":
@@ -286,7 +295,14 @@ def run_rule_based_sites(
 
             elapsed = time.time() - site_start
 
-            if result.success:
+            # 件数低下異常検出: result.success かつ 今回 0 件 かつ 前回 ≥ 1 件
+            # 「動物いるはずなのに adapter が拾えていない」典型パターン
+            prev_count = previous_site_counts.get(site.name, 0)
+            is_zero_count_anomaly = (
+                result.success and result.total_collected == 0 and prev_count >= 1
+            )
+
+            if result.success and not is_zero_count_anomaly:
                 logger.info(
                     f"[{site.name}] rule-based 収集完了: "
                     f"{result.total_collected}件, "
@@ -300,9 +316,18 @@ def run_rule_based_sites(
                 if result.total_collected == 0:
                     zero_count_sites.append(site.name)
             else:
-                logger.error(f"[{site.name}] rule-based 収集失敗: {', '.join(result.errors)}")
+                if is_zero_count_anomaly:
+                    err_msg = (
+                        f"件数低下異常: 前回 {prev_count} 件 → 今回 0 件 "
+                        f"(adapter 破損 or サイト構造変更の可能性)"
+                    )
+                    logger.error(f"[{site.name}] {err_msg}")
+                    zero_count_sites.append(site.name)
+                else:
+                    err_msg = "; ".join(result.errors)
+                    logger.error(f"[{site.name}] rule-based 収集失敗: {err_msg}")
                 if broken_tracker:
-                    broken_tracker.record_failure(site.name, "; ".join(result.errors))
+                    broken_tracker.record_failure(site.name, err_msg)
                 # fallback_to_llm: True ならLLM経路で再試行
                 if getattr(site, "fallback_to_llm", False):
                     logger.info(f"[{site.name}] fallback_to_llm 有効 — LLM 抽出で再試行")
@@ -437,6 +462,17 @@ def main():
                     f"default_extraction={config.extraction.default_extraction})"
                 )
 
+                # 前回スナップショットから各サイトの件数を集計する。
+                # 「前回 ≥ 1 件 → 今回 0 件」のサイトを adapter 破損として
+                # broken_tracker に記録するために使う (Task #9)。
+                site_list_urls = {s.name: s.list_url for s in config.sites}
+                previous_site_counts = snapshot_store.load_counts_by_site_url_prefix(site_list_urls)
+                anomaly_eligible = [n for n, c in previous_site_counts.items() if c >= 1]
+                logger.info(
+                    f"前回スナップショット: {sum(previous_site_counts.values())} 件, "
+                    f"件数低下異常検出対象 {len(anomaly_eligible)} サイト"
+                )
+
                 # rule-based サイト群 (Registry 登録済み adapter を使用)
                 broken_tracker_path = Path("data/broken_sites.yaml")
                 broken_tracker = BrokenSitesTracker(broken_tracker_path)
@@ -449,6 +485,7 @@ def main():
                     db_connection=db_connection,
                     logger=logger,
                     broken_tracker=broken_tracker,
+                    previous_site_counts=previous_site_counts,
                 )
 
                 # LLM サイト群（rule-based 化されてないサイト）
