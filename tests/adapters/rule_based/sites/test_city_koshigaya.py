@@ -200,15 +200,18 @@ class TestCityKoshigayaAdapter:
             CityKoshigayaAdapter._infer_species_from_site_name("越谷市（個人保護犬猫）") == "その他"
         )
 
-    def test_all_three_sites_registered(self):
-        """3 つの越谷市サイト名すべてが Registry に登録されている"""
+    def test_dog_and_cat_sites_registered(self):
+        """保護犬・保護猫の 2 サイトが CityKoshigayaAdapter に登録されている
+
+        個人保護犬猫 (hogo_kojin.html) は HTML 構造が全く異なるため
+        専用 adapter (CityKoshigayaKojinAdapter) に分離されている
+        (test_city_koshigaya_kojin.py で検証)。
+        """
         expected = [
             "越谷市（保護犬）",
             "越谷市（保護猫）",
-            "越谷市（個人保護犬猫）",
         ]
         for name in expected:
-            # 他テストが registry を clear する場合に備えて冪等に再登録
             if SiteAdapterRegistry.get(name) is None:
                 SiteAdapterRegistry.register(name, CityKoshigayaAdapter)
             assert SiteAdapterRegistry.get(name) is CityKoshigayaAdapter

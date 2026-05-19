@@ -1,17 +1,31 @@
-"""CityMachidaAdapter のテスト
+"""CityMachidaAdapter のテスト (h3+ul li 形式)
 
 町田市保健所サイト (city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/) 用
 rule-based adapter の動作を検証する。
 
-- 同一テンプレート上の 3 サイト (収容/保護/捜索) の登録確認
-- 0 件告知ページ (本フィクスチャ) では fetch_animal_list が空配列を返す
-- ページ全体に table が無く empty state でもないケースは ParsingError
-- HTML キャッシュ (HTTP は 1 回のみ実行)
+旧 fixture (`city_machida.html`) は table 形式前提の古い HTML スナップショット
+だったが、町田市は CMS が h3+ul li 形式に切り替わったため、ここでは合成 HTML
+ベースで仕様を検証する。実 URL の構造は 2026-05-18 時点で:
+
+- syuyou.html       : 0 件正常 (article > h2「現在の収容状況」のみ、h3 無し)
+- hogo.html         : 複数頭 (article > h2「現在のペットの保護情報」+ h3+ul li)
+- search_*.html     : 複数頭 (article > h2「現在の迷子のX情報」+ h3+ul li)
+
+検証観点:
+- 6 サイト全部が同じ adapter に Registry されている
+- セクションアンカー h2 がある + h3 無し → 0 件正常終了
+- セクションアンカー h2 が無い → ParsingError (adapter 破損検出)
+- h3+ul li から RawAnimalData が正しく構築される
+- h3 のテキスト「猫（おす）」から species/sex が推定される
+- 失踪場所/失踪日時 ラベル (捜索系) も location/shelter_date にマップされる
+- HTTP は 1 回のみ実行（キャッシュ）
 """
 
 from __future__ import annotations
 
 from unittest.mock import patch
+
+import pytest
 
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.city_machida import (
@@ -21,8 +35,8 @@ from data_collector.llm.config import SiteConfig
 
 
 def _site(
-    name: str = "町田市（収容動物のお知らせ）",
-    list_url: str = ("https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/syuyou.html"),
+    name: str = "町田市（保護情報）",
+    list_url: str = "https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/hogo.html",
     category: str = "sheltered",
 ) -> SiteConfig:
     return SiteConfig(
@@ -35,135 +49,212 @@ def _site(
     )
 
 
-def _load_machida_html(fixture_html) -> str:
-    """フィクスチャを読み込み、必要であれば mojibake (二重 UTF-8) を補正する
-
-    リポジトリに保存されている `city_machida.html` は、本来 UTF-8 のバイト
-    列を Latin-1 として解釈してから再度 UTF-8 として保存し直された
-    二重エンコーディング状態になっているため、実サイト相当のテキストを
-    得るには逆変換が必要。実運用 (`_http_get`) では requests が正しい
-    UTF-8 として受け取る。
+def _build_html(anchor_h2: str, animals_html: str = "") -> str:
+    """セクションアンカー h2 を含む合成 HTML を構築する"""
+    return f"""
+    <html><body>
+    <article>
+      <h1>ページタイトル</h1>
+      <h2>{anchor_h2}</h2>
+      {animals_html}
+      <h2>関連リンク</h2>
+      <p>その他...</p>
+    </article>
+    </body></html>
     """
-    raw = fixture_html("city_machida")
-    # 復号後に「町田市」または「収容動物」が出現するかで判定
-    if "町田市" in raw or "収容動物" in raw:
-        return raw
-    try:
-        return raw.encode("latin-1").decode("utf-8")
-    except (UnicodeEncodeError, UnicodeDecodeError):
-        return raw
 
 
-class TestCityMachidaAdapter:
-    def test_fetch_animal_list_returns_empty_for_no_animals_page(self, fixture_html):
-        """「現在、収容動物はありません。」告知ページでは空リストが返る
+class TestCityMachidaAdapterEmptyState:
+    def test_section_anchor_present_but_no_h3_returns_empty(self):
+        """セクションアンカー h2 はあるが h3 が無い → 0 件で正常終了
 
-        フィクスチャは「現在、収容動物はありません。」の告知のみが本文に
-        並ぶ 0 件状態のページ。基底の単純実装は ParsingError を投げるが、
-        本 adapter ではこれを正常な 0 件として扱う。
+        syuyou.html のように「現在の収容状況」見出しはあるが動物が
+        いない状態を再現する。
         """
-        html = _load_machida_html(fixture_html)
-        adapter = CityMachidaAdapter(_site())
-
+        html = _build_html("現在の収容状況")
+        adapter = CityMachidaAdapter(_site(name="町田市（収容動物のお知らせ）"))
         with patch.object(adapter, "_http_get", return_value=html):
             result = adapter.fetch_animal_list()
+        assert result == []
 
-        assert result == [], f"empty state ページでは空配列が返るはず: got {result!r}"
+    def test_no_section_anchor_raises_parsing_error(self):
+        """アンカー h2 自体が無い HTML は ParsingError（adapter 破損検出）
 
-    def test_fetch_animal_list_caches_html(self, fixture_html):
-        """同一インスタンスでの繰り返し呼び出しは HTTP を 1 回しか実行しない"""
-        html = _load_machida_html(fixture_html)
-        adapter = CityMachidaAdapter(_site())
-
-        with patch.object(adapter, "_http_get", return_value=html) as mock_get:
-            adapter.fetch_animal_list()
-            adapter.fetch_animal_list()
-            adapter.fetch_animal_list()
-
-        assert mock_get.call_count == 1, (
-            f"HTML はキャッシュされ HTTP は 1 回のみ: got {mock_get.call_count}"
-        )
-
-    def test_returns_empty_for_html_without_table(self):
-        """`article table` が 0 件の HTML は 0 件状態として空リストを返す
-
-        町田市の同テンプレ 3 サイトでは「動物がいない」状態の文言が
-        サイト改修で「収容動物はありません」「該当する情報はありません」
-        「現在、迷子情報はありません」等と揺れるため、文言マッチ無しでも
-        テーブルが無ければ 0 件扱いに統一する。構造変化（adapter 破損）
-        の検知は broken_tracker と 0 件サイトログに任せる。
+        サイトの構造が変わってセクション h2 が消えたケースを 0 件と
+        誤判定しないために、ここは必ず例外を投げる必要がある。
         """
         adapter = CityMachidaAdapter(_site())
         with patch.object(
             adapter,
             "_http_get",
-            return_value="<html><body><p>無関係なページ</p></body></html>",
+            return_value="<html><body><article><h1>x</h1></article></body></html>",
         ):
-            result = adapter.fetch_animal_list()
-        assert result == []
+            with pytest.raises(Exception):
+                adapter.fetch_animal_list()
 
-    def test_extract_animal_details_from_synthetic_table(self):
-        """合成 HTML (table 1 個) から RawAnimalData を構築できる
+    def test_no_article_falls_back_to_body(self):
+        """`<article>` 不在でも body 内にセクション h2 があれば動作する
 
-        実フィクスチャは 0 件状態のため、抽出ロジックの検証用に
-        典型的な「ラベル/値」の 2 列テーブルを合成して使う。
+        pet_fumei/index.html のように article がない派生テンプレートに
+        将来該当する場合の保険。
         """
-        synthetic_html = """
+        html = """
         <html><body>
-        <article>
-        <table>
-            <tr><th>種類</th><td>柴犬</td></tr>
-            <tr><th>毛色</th><td>茶</td></tr>
-            <tr><th>性別</th><td>メス</td></tr>
-            <tr><th>体格</th><td>中</td></tr>
-            <tr><th>収容日</th><td>2026年5月10日</td></tr>
-            <tr><th>収容場所</th><td>町田市原町田</td></tr>
-        </table>
-        </article>
+        <main>
+          <h2>現在の迷子の猫情報</h2>
+          <div class="h3bg"><h3>猫（おす）</h3></div>
+          <div class="img-area-r">
+            <ul>
+              <li>種類：雑種</li>
+              <li>性別：おす</li>
+              <li>毛色：キジトラ</li>
+              <li>失踪場所：町田市忠生</li>
+              <li>失踪日時：2025年12月1日</li>
+            </ul>
+          </div>
+        </main>
         </body></html>
         """
-        adapter = CityMachidaAdapter(_site())
-        with patch.object(adapter, "_http_get", return_value=synthetic_html):
+        adapter = CityMachidaAdapter(
+            _site(
+                name="町田市（迷子猫・捜索）",
+                list_url=(
+                    "https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/pet_fumei/search_cat.html"
+                ),
+                category="lost",
+            )
+        )
+        with patch.object(adapter, "_http_get", return_value=html):
             urls = adapter.fetch_animal_list()
-            assert len(urls) == 1
-            url, category = urls[0]
-            raw = adapter.extract_animal_details(url, category=category)
+            raw = adapter.extract_animal_details(urls[0][0], category=urls[0][1])
+        assert len(urls) == 1
+        assert raw.species == "猫"
+        assert raw.sex == "オス"
+        assert "町田市忠生" in raw.location
 
-        assert raw.species == "柴犬"
-        assert raw.color == "茶"
-        assert raw.sex == "メス"
-        assert raw.size == "中"
-        assert raw.shelter_date == "2026年5月10日"
-        assert raw.location == "町田市原町田"
-        assert raw.source_url == url
-        assert raw.category == "sheltered"
 
-    def test_infer_species_from_site_name_default_empty(self):
-        """町田市 3 サイトの実名は犬/猫を含まないため空文字を返す"""
-        for name in (
-            "町田市（収容動物のお知らせ）",
-            "町田市（保護情報）",
-            "町田市（捜索：飼い主が探している）",
-        ):
-            assert CityMachidaAdapter._infer_species_from_site_name(name) == ""
-
-    def test_infer_species_from_site_name_with_dog_keyword(self):
-        """サイト名に "犬" を含む場合は "犬" を返す (汎用ロジック)"""
-        assert CityMachidaAdapter._infer_species_from_site_name("町田市（迷子犬）") == "犬"
-
-    def test_all_three_sites_registered(self):
-        """3 つの町田市サイト名すべてが Registry に登録されている
-
-        sites.yaml で `prefecture: 東京都` かつ
-        `city.machida.tokyo.jp` ドメインの全サイトを列挙する。
+class TestCityMachidaAdapterExtractFields:
+    def test_hogo_two_animals_extracted(self):
+        """hogo.html 相当の合成 HTML から 2 頭分を抽出できる"""
+        animals_html = """
+        <div class="h3bg"><h3>猫（おす）</h3></div>
+        <div class="img-area-r">
+          <p>猫</p>
+          <ul>
+            <li>種類：雑種</li>
+            <li>性別：おす</li>
+            <li>毛色：キジトラ ハチワレ 白ベース</li>
+            <li>首輪：なし</li>
+            <li>特徴：右耳桜耳、左耳が切れている</li>
+            <li>保護場所：町田市忠生一丁目</li>
+            <li>保護日：2025年11月21日</li>
+          </ul>
+        </div>
+        <div class="h3bg"><h3>猫(おす)</h3></div>
+        <div class="img-area-r">
+          <p>猫</p>
+          <ul>
+            <li>種類：雑種</li>
+            <li>性別：おす（去勢済みを確認）</li>
+            <li>毛色：キジトラ</li>
+            <li>保護場所：町田市図師</li>
+            <li>保護日：2025年11月15日</li>
+          </ul>
+        </div>
         """
+        html = _build_html("現在のペットの保護情報", animals_html)
+        adapter = CityMachidaAdapter(_site(name="町田市（保護情報）"))
+        with patch.object(adapter, "_http_get", return_value=html) as mock_get:
+            urls = adapter.fetch_animal_list()
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
+
+        assert mock_get.call_count == 1, "HTML はキャッシュされる"
+        assert len(urls) == 2
+
+        # 1 件目
+        first = raws[0]
+        assert first.species == "猫"
+        assert first.sex == "オス"
+        assert "キジトラ" in first.color
+        assert "町田市忠生一丁目" in first.location
+        assert "2025年11月21日" in first.shelter_date
+        assert first.source_url == urls[0][0]
+        assert first.category == "sheltered"
+
+        # 2 件目
+        second = raws[1]
+        assert second.species == "猫"
+        assert second.sex == "オス"
+        assert "町田市図師" in second.location
+
+    def test_search_dog_with_shisso_fields(self):
+        """search_dog.html 相当: 「失踪場所」「失踪日時」が location/shelter_date に入る"""
+        animals_html = """
+        <div class="h3bg"><h3>犬（めす）</h3></div>
+        <div class="img-area-r">
+          <ul>
+            <li>種類：柴犬</li>
+            <li>性別：めす</li>
+            <li>毛色：茶</li>
+            <li>失踪場所：町田市本町田</li>
+            <li>失踪日時：2025年10月1日午後</li>
+          </ul>
+        </div>
+        """
+        html = _build_html("現在の迷子の犬情報", animals_html)
+        adapter = CityMachidaAdapter(
+            _site(
+                name="町田市（迷子犬・捜索）",
+                list_url=(
+                    "https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/pet_fumei/search_dog.html"
+                ),
+                category="lost",
+            )
+        )
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category=urls[0][1])
+
+        assert raw.species == "犬"
+        assert raw.sex == "メス"
+        assert "町田市本町田" in raw.location
+        assert "2025年10月1日" in raw.shelter_date
+        assert raw.category == "lost"
+
+    def test_species_from_h3_when_label_missing(self):
+        """li に「種類」ラベルが無いケースは h3 から species を推定する"""
+        animals_html = """
+        <div class="h3bg"><h3>猫（めす）</h3></div>
+        <div class="img-area-r">
+          <ul>
+            <li>性別：めす</li>
+            <li>毛色：黒</li>
+            <li>保護場所：町田市</li>
+            <li>保護日：2025年12月1日</li>
+          </ul>
+        </div>
+        """
+        html = _build_html("現在のペットの保護情報", animals_html)
+        adapter = CityMachidaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0])
+        assert raw.species == "猫"
+        assert raw.sex == "メス"
+
+
+class TestCityMachidaAdapterRegistry:
+    def test_all_six_sites_registered(self):
+        """6 サイト全名称が同じ adapter にマップされている"""
         expected = [
             "町田市（収容動物のお知らせ）",
             "町田市（保護情報）",
             "町田市（捜索：飼い主が探している）",
+            "町田市（迷子犬・捜索）",
+            "町田市（迷子猫・捜索）",
+            "町田市（迷子その他・捜索）",
         ]
         for name in expected:
-            # 他テストが registry を clear する場合に備えて冪等に再登録
             if SiteAdapterRegistry.get(name) is None:
                 SiteAdapterRegistry.register(name, CityMachidaAdapter)
             assert SiteAdapterRegistry.get(name) is CityMachidaAdapter
