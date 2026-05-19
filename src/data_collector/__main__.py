@@ -58,6 +58,13 @@ SITE_TIMEOUT_JS_SEC = int(os.getenv("SITE_TIMEOUT_JS_SEC", "180"))
 # 削除 or consecutive_failures をリセットすれば再開する）。
 BROKEN_SITE_SKIP_THRESHOLD = int(os.getenv("BROKEN_SITE_SKIP_THRESHOLD", "3"))
 
+# スキップ対象サイトの再チェック猶予日数。
+# consecutive_failures が閾値以上でも、最終失敗から この日数 経過していれば
+# 再試行する。サイト側 / adapter が修正された場合に自動復活させるための仕組み。
+# 0 以下を指定するとスキップは恒久的になり、手動で broken_sites.yaml を編集
+# しない限り復活しない（旧挙動互換）。
+BROKEN_SITE_RECHECK_DAYS = int(os.getenv("BROKEN_SITE_RECHECK_DAYS", "7"))
+
 
 class SiteCollectionTimeoutError(Exception):
     """1 サイトの収集処理がタイムアウトした"""
@@ -141,13 +148,16 @@ def run_llm_sites(
         if _effective_extraction(site, config) != "llm":
             continue
 
-        if broken_tracker and (
-            broken_tracker.consecutive_failures(site.name) >= BROKEN_SITE_SKIP_THRESHOLD
+        if broken_tracker and broken_tracker.should_skip(
+            site.name,
+            threshold=BROKEN_SITE_SKIP_THRESHOLD,
+            grace_days=BROKEN_SITE_RECHECK_DAYS if BROKEN_SITE_RECHECK_DAYS > 0 else None,
         ):
             logger.warning(
                 f"[{site.name}] 連続失敗 "
                 f"{broken_tracker.consecutive_failures(site.name)}回 — "
-                f"自動スキップ (閾値={BROKEN_SITE_SKIP_THRESHOLD})"
+                f"自動スキップ (閾値={BROKEN_SITE_SKIP_THRESHOLD}, "
+                f"再チェック猶予={BROKEN_SITE_RECHECK_DAYS}日)"
             )
             continue
 
@@ -265,13 +275,16 @@ def run_rule_based_sites(
             )
             continue
 
-        if broken_tracker and (
-            broken_tracker.consecutive_failures(site.name) >= BROKEN_SITE_SKIP_THRESHOLD
+        if broken_tracker and broken_tracker.should_skip(
+            site.name,
+            threshold=BROKEN_SITE_SKIP_THRESHOLD,
+            grace_days=BROKEN_SITE_RECHECK_DAYS if BROKEN_SITE_RECHECK_DAYS > 0 else None,
         ):
             logger.warning(
                 f"[{site.name}] 連続失敗 "
                 f"{broken_tracker.consecutive_failures(site.name)}回 — "
-                f"自動スキップ (閾値={BROKEN_SITE_SKIP_THRESHOLD})"
+                f"自動スキップ (閾値={BROKEN_SITE_SKIP_THRESHOLD}, "
+                f"再チェック猶予={BROKEN_SITE_RECHECK_DAYS}日)"
             )
             continue
 
