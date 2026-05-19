@@ -502,7 +502,10 @@ def main():
                 )
 
                 # rule-based サイト群 (Registry 登録済み adapter を使用)
-                broken_tracker_path = Path("data/broken_sites.yaml")
+                # BROKEN_SITES_PATH env でパス差し替え可能（テスト分離のため）。
+                broken_tracker_path = Path(
+                    os.environ.get("BROKEN_SITES_PATH", "data/broken_sites.yaml")
+                )
                 broken_tracker = BrokenSitesTracker(broken_tracker_path)
                 rule_succeeded, rule_failed, rule_zero = run_rule_based_sites(
                     config=config,

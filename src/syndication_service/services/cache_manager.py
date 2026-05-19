@@ -142,8 +142,8 @@ class CacheManager:
         filtered_params = {k: v for k, v in filter_params.items() if v is not None}
         param_str = json.dumps(filtered_params, sort_keys=True, ensure_ascii=False)
 
-        # MD5 ハッシュを生成
-        hash_value = hashlib.md5(param_str.encode()).hexdigest()
+        # キャッシュキー用ハッシュ（暗号用途ではないため MD5 で十分）
+        hash_value = hashlib.md5(param_str.encode(), usedforsecurity=False).hexdigest()
 
         return f"feed:{format}:{hash_value}"
 
@@ -157,5 +157,6 @@ class CacheManager:
         Returns:
             ETag（例: "abc123"）
         """
-        hash_value = hashlib.md5(cache_key.encode()).hexdigest()
+        # ETag 用ハッシュ（暗号用途ではない）
+        hash_value = hashlib.md5(cache_key.encode(), usedforsecurity=False).hexdigest()
         return f'"{hash_value}"'

@@ -44,7 +44,14 @@ async def test_app(async_session):
     return app
 
 
+_animal_counter = {"n": 0}
+
+
 def _make_animal(*, prefecture: str | None, status: str = "sheltered", days_ago: int = 0) -> Animal:
+    # source_url は UNIQUE 制約があるため、同一 prefecture/days_ago の重複に備えて
+    # モジュール内カウンタでサフィックスを uniq 化する。
+    _animal_counter["n"] += 1
+    suffix = _animal_counter["n"]
     return Animal(
         species="犬",
         sex="男の子",
@@ -56,7 +63,7 @@ def _make_animal(*, prefecture: str | None, status: str = "sheltered", days_ago:
         prefecture=prefecture,
         phone="088-000-0000",
         image_urls=[],
-        source_url=f"https://example.com/{prefecture}-{days_ago}",
+        source_url=f"https://example.com/{prefecture}-{days_ago}-{suffix}",
         category="adoption",
         status=status,
     )
