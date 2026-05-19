@@ -97,6 +97,20 @@ class StatusUpdateResponse(BaseModel):
     animal: AnimalPublic
 
 
+class PublicStats(BaseModel):
+    """公開メトリクス（認証不要、CORS open）。
+
+    Phase 2 クラウドファンディング訴求用。OG 画像生成のソースにもなる。
+    """
+
+    total_animals: int
+    municipality_count: int
+    site_count: int
+    avg_waiting_days: float | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ArchivedAnimalPublic(BaseModel):
     """
     公開用アーカイブ動物データスキーマ
