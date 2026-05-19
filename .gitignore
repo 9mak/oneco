@@ -56,6 +56,7 @@ output/*
 .env
 .env.local
 .env.*.local
+.envrc
 
 # macOS
 .DS_Store
