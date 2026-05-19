@@ -153,3 +153,68 @@ class TestBackwardCompatLoadSnapshot:
         store.save_snapshot([_make_animal("https://example.com/a/1")])
         # DiffDetector はこのメソッドを使い続けるので空 → 全件を「新規扱い」のまま
         assert store.load_snapshot() == []
+
+
+class TestLoadCountsBySiteUrlPrefix:
+    """サイト別の前回件数集計
+
+    Task #9 (snapshot 件数比較ベースの異常検出) の基盤メソッド。
+    `{site_name: list_url}` から前回 snapshot の AnimalData を site 別に
+    集計する。
+    """
+
+    def test_empty_snapshot_returns_zero_for_all_sites(self, tmp_path):
+        """snapshot が空なら全サイト 0 件"""
+        store = SnapshotStore(snapshot_dir=tmp_path / "snapshots")
+        site_urls = {
+            "サイトA": "https://example.com/a/",
+            "サイトB": "https://example.com/b/",
+        }
+        counts = store.load_counts_by_site_url_prefix(site_urls)
+        assert counts == {"サイトA": 0, "サイトB": 0}
+
+    def test_groups_animals_by_site_url_prefix(self, tmp_path):
+        """source_url の前方一致でサイト別件数が集計される"""
+        store = SnapshotStore(snapshot_dir=tmp_path / "snapshots")
+        store.save_snapshot(
+            [
+                _make_animal("https://example.com/a/page#row=0"),
+                _make_animal("https://example.com/a/page#row=1"),
+                _make_animal("https://example.com/a/page#row=2"),
+                _make_animal("https://example.com/b/page#h3=0"),
+            ]
+        )
+        site_urls = {
+            "サイトA": "https://example.com/a/page",
+            "サイトB": "https://example.com/b/page",
+            "サイトC": "https://example.com/c/page",
+        }
+        counts = store.load_counts_by_site_url_prefix(site_urls)
+        assert counts == {"サイトA": 3, "サイトB": 1, "サイトC": 0}
+
+    def test_url_not_matching_any_site_is_ignored(self, tmp_path):
+        """どの site にも一致しない source_url は無視される"""
+        store = SnapshotStore(snapshot_dir=tmp_path / "snapshots")
+        store.save_snapshot(
+            [
+                _make_animal("https://example.com/a/page#row=0"),
+                _make_animal("https://other.example.com/x/1"),
+            ]
+        )
+        counts = store.load_counts_by_site_url_prefix({"サイトA": "https://example.com/a/page"})
+        assert counts == {"サイトA": 1}
+
+    def test_one_url_counted_only_once(self, tmp_path):
+        """1 動物の URL は最初にマッチしたサイトに 1 回だけカウント
+
+        URL prefix が重複する設計はしないが、念のため辞書順 first-match の
+        挙動を固定しておく (break による早期離脱)。
+        """
+        store = SnapshotStore(snapshot_dir=tmp_path / "snapshots")
+        store.save_snapshot([_make_animal("https://example.com/a/page#row=0")])
+        # 「サイトA」「サイトA子」の両方が prefix match する作為的なケース
+        counts = store.load_counts_by_site_url_prefix(
+            {"サイトA": "https://example.com/a/page", "サイトA子": "https://example.com/a/"}
+        )
+        # dict 反復順は挿入順なので最初の "サイトA" が 1、"サイトA子" は 0
+        assert sum(counts.values()) == 1

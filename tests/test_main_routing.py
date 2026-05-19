@@ -189,3 +189,151 @@ class TestBrokenSiteSkipThreshold:
         assert (succeeded, failed, zero) == (0, 0, []), (
             "スキップは success / failure どちらにもカウントしない (0件サイトでもない)"
         )
+
+
+class TestZeroCountAnomalyDetection:
+    """件数低下異常検出 (Task #9)
+
+    snapshot 比較で「前回 ≥ 1 件 → 今回 0 件」のサイトを adapter 破損疑い
+    として broken_tracker に failure 記録し、failed カウントに含める。
+    これにより「動物いるはずなのに adapter が拾えていない」ケースを
+    次回 run の自動スキップに乗せる。
+    """
+
+    def _make_stub_adapter(self, total_collected: int):
+        """指定件数を返すスタブ adapter クラスを返す"""
+        from unittest.mock import Mock
+
+        result = Mock()
+        result.success = True
+        result.total_collected = total_collected
+        result.new_count = total_collected
+        result.updated_count = 0
+        result.errors = []
+
+        # CollectorService.run_collection() の戻り値を mock
+        # adapter_cls(site) で生成される adapter インスタンスは
+        # collector_service 内で生成されるため、CollectorService 経由を mock 化
+        adapter_cls = Mock()
+        adapter_cls.return_value = Mock()
+        return adapter_cls, result
+
+    def _run_with_stub(self, site_name: str, total_collected: int, previous_counts: dict, tracker):
+        """1 サイトを stub adapter で run_rule_based_sites に通す"""
+        from unittest.mock import Mock, patch
+
+        from data_collector.__main__ import run_rule_based_sites
+        from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
+
+        adapter_cls, mock_result = self._make_stub_adapter(total_collected)
+        SiteAdapterRegistry.register(site_name, adapter_cls)
+
+        site = _site(extraction="rule-based").model_copy(update={"name": site_name})
+        config = SitesConfig(
+            extraction=ExtractionConfig(
+                default_provider="groq",
+                default_model="dummy",
+                default_extraction="rule-based",
+            ),
+            sites=[site],
+        )
+
+        # CollectorService.run_collection() が常に上記 mock_result を返すように差し替える
+        with patch("data_collector.__main__.CollectorService") as mock_service_cls:
+            mock_service = Mock()
+            mock_service.run_collection.return_value = mock_result
+            mock_service_cls.return_value = mock_service
+            return run_rule_based_sites(
+                config=config,
+                snapshot_store=Mock(),
+                diff_detector=Mock(),
+                output_writer=Mock(),
+                notification_client=Mock(),
+                db_connection=None,
+                logger=Mock(),
+                broken_tracker=tracker,
+                previous_site_counts=previous_counts,
+            )
+
+    def test_prev_zero_current_zero_treated_as_normal_zero(self, tmp_path):
+        """前回 0 件 → 今回 0 件 = 正常運用、succeeded カウント"""
+        from data_collector.adapters.rule_based.broken_tracker import BrokenSitesTracker
+
+        tracker = BrokenSitesTracker(tmp_path / "broken_sites.yaml")
+        succeeded, failed, zero = self._run_with_stub(
+            "テスト_正常0件",
+            total_collected=0,
+            previous_counts={"テスト_正常0件": 0},
+            tracker=tracker,
+        )
+        assert (succeeded, failed) == (1, 0)
+        assert "テスト_正常0件" in zero
+        # broken_tracker に failure 記録されないこと
+        assert tracker.consecutive_failures("テスト_正常0件") == 0
+
+    def test_prev_zero_current_positive_treated_as_normal(self, tmp_path):
+        """前回 0 件 → 今回 N 件 = 正常運用、succeeded カウント"""
+        from data_collector.adapters.rule_based.broken_tracker import BrokenSitesTracker
+
+        tracker = BrokenSitesTracker(tmp_path / "broken_sites.yaml")
+        succeeded, failed, zero = self._run_with_stub(
+            "テスト_新規取得",
+            total_collected=5,
+            previous_counts={"テスト_新規取得": 0},
+            tracker=tracker,
+        )
+        assert (succeeded, failed, zero) == (1, 0, [])
+        assert tracker.consecutive_failures("テスト_新規取得") == 0
+
+    def test_prev_positive_current_positive_treated_as_normal(self, tmp_path):
+        """前回 N 件 → 今回 M 件 = 正常運用、succeeded カウント"""
+        from data_collector.adapters.rule_based.broken_tracker import BrokenSitesTracker
+
+        tracker = BrokenSitesTracker(tmp_path / "broken_sites.yaml")
+        succeeded, failed, zero = self._run_with_stub(
+            "テスト_継続取得",
+            total_collected=3,
+            previous_counts={"テスト_継続取得": 5},
+            tracker=tracker,
+        )
+        assert (succeeded, failed, zero) == (1, 0, [])
+        assert tracker.consecutive_failures("テスト_継続取得") == 0
+
+    def test_prev_positive_current_zero_detected_as_anomaly(self, tmp_path):
+        """前回 ≥ 1 件 → 今回 0 件 = adapter 破損疑い、failed カウント + broken_tracker 記録"""
+        from data_collector.adapters.rule_based.broken_tracker import BrokenSitesTracker
+
+        tracker = BrokenSitesTracker(tmp_path / "broken_sites.yaml")
+        succeeded, failed, zero = self._run_with_stub(
+            "テスト_件数低下異常",
+            total_collected=0,
+            previous_counts={"テスト_件数低下異常": 4},
+            tracker=tracker,
+        )
+        assert (succeeded, failed) == (0, 1), "件数低下異常は failed としてカウント"
+        assert "テスト_件数低下異常" in zero
+        # broken_tracker に failure 記録され consecutive_failures が増えること
+        assert tracker.consecutive_failures("テスト_件数低下異常") == 1
+        # last_error に異常の理由が記録される
+        # (tracker の内部表現にアクセスして文言を確認)
+        entry = tracker._state.get("テスト_件数低下異常", {})
+        assert "件数低下" in entry.get("last_error", ""), "異常理由が記録される"
+
+    def test_no_previous_counts_treated_as_zero(self, tmp_path):
+        """previous_site_counts が None / 空 dict なら全サイト前回 0 件扱い
+
+        マイグレーション直後で snapshot がまだ無いケースの後方互換。
+        adapter が 0 件返しても異常検出しない (正常 0 件扱い)。
+        """
+        from data_collector.adapters.rule_based.broken_tracker import BrokenSitesTracker
+
+        tracker = BrokenSitesTracker(tmp_path / "broken_sites.yaml")
+        succeeded, failed, zero = self._run_with_stub(
+            "テスト_前回情報なし",
+            total_collected=0,
+            previous_counts={},  # 前回情報無し
+            tracker=tracker,
+        )
+        assert (succeeded, failed) == (1, 0)
+        assert "テスト_前回情報なし" in zero
+        assert tracker.consecutive_failures("テスト_前回情報なし") == 0
