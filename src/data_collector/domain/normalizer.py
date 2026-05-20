@@ -313,7 +313,6 @@ class DataNormalizer:
             date_obj = datetime(year, month, day).date()
             return date_obj.strftime("%Y-%m-%d")
 
-
         # RN.M.D のパターン (例: R8.5.14（木曜日）, R6.10.21)
         # 横須賀市 doubutu サイト等で使われる
         match = re.search(r"R(\d{1,2})\.(\d{1,2})\.(\d{1,2})", date_str)

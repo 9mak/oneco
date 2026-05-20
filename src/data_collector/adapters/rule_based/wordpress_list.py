@@ -173,9 +173,7 @@ class WordPressListAdapter(RuleBasedAdapter):
             return value
         return ""
 
-    def _extract_by_label(
-        self, soup: BeautifulSoup, label: str | tuple[str, ...]
-    ) -> str:
+    def _extract_by_label(self, soup: BeautifulSoup, label: str | tuple[str, ...]) -> str:
         """定義リスト (<dt><dd>) またはテーブル (<th><td>) で label を探す。
 
         label に tuple/list を渡すと OR 検索になり、最初にヒットしたラベルの

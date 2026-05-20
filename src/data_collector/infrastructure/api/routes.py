@@ -266,10 +266,7 @@ async def public_stats(session: SessionDep) -> PublicStats:
         Animal.status == "sheltered", Animal.shelter_date.isnot(None)
     )
     today = datetime.now().date()
-    deltas = [
-        (today - d).days
-        for d in (await session.execute(shelter_dates_stmt)).scalars().all()
-    ]
+    deltas = [(today - d).days for d in (await session.execute(shelter_dates_stmt)).scalars().all()]
     avg_waiting_days = (sum(deltas) / len(deltas)) if deltas else None
 
     sites_yaml_path = Path(__file__).resolve().parents[2] / "config" / "sites.yaml"

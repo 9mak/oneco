@@ -89,6 +89,7 @@ class ZaidanFukuokaDouaiAdapter(WordPressListAdapter):
         if not fields.get("phone"):
             # ページ末尾の「お問い合わせ」block に電話番号がある場合、最初の TEL: パターンを採用
             import re
+
             text = soup.get_text(" ", strip=True)
             m = re.search(r"(\d{2,4}-\d{2,4}-\d{3,4})", text)
             if m:
