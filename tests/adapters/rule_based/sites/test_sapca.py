@@ -9,8 +9,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.sapca import SapcaAdapter
 from data_collector.domain.models import RawAnimalData
@@ -127,14 +125,14 @@ class TestSapcaAdapterRegistry:
 
 
 class TestSapcaAdapterEmptyList:
-    """カードが 1 件もない場合の挙動 (在庫 0 件可)"""
+    """カードが 1 件もない場合の挙動 (在庫 0 件 = 真ゼロ)"""
 
-    def test_raises_parsing_error_when_no_links(self):
+    def test_returns_empty_when_no_links(self):
         adapter = SapcaAdapter(_site())
         with patch.object(
             adapter,
             "_http_get",
             return_value="<html><body><ul class='list'></ul></body></html>",
         ):
-            with pytest.raises(Exception):
-                adapter.fetch_animal_list()
+            result = adapter.fetch_animal_list()
+        assert result == []
