@@ -102,6 +102,15 @@ class TestWordPressListAdapter:
             with pytest.raises(Exception):  # ParsingError or ValidationError
                 adapter.extract_animal_details("https://example.com/animals/1")
 
+    def test_fetch_animal_list_returns_empty_when_no_links(self):
+        # list ページが取得できても detail link が 1 つも無い (=現在その種別の
+        # 収容動物がいない真ゼロ) ケースを error にせず空リストで返す。
+        adapter = _SampleWPAdapter(_site())
+        empty_html = "<html><body><div class='card'>該当する動物はいません</div></body></html>"
+        with patch.object(adapter, "_http_get", return_value=empty_html):
+            result = adapter.fetch_animal_list()
+        assert result == []
+
     def test_normalize_delegates_to_data_normalizer(self):
         adapter = _SampleWPAdapter(_site())
         raw = RawAnimalData(
