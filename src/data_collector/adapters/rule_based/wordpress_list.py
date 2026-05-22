@@ -68,12 +68,13 @@ class WordPressListAdapter(RuleBasedAdapter):
         soup = BeautifulSoup(html, "html.parser")
 
         links = soup.select(self.LIST_LINK_SELECTOR)
+        # detail link 0 件は「現在その種別の収容動物がいない」真ゼロとして扱う。
+        # _http_get が成功し HTML パースまで通っているのにリンクだけ無い状態は、
+        # 例えば douaicenter.jp/animal/list/protect/dog のように動物がいない
+        # カテゴリでよく発生する。サイト DOM 構造変化による偽陰性は
+        # scripts/adapter_live_test.py / zero_count_audit で別途検出する運用。
         if not links:
-            raise ParsingError(
-                "detail link が見つかりません",
-                selector=self.LIST_LINK_SELECTOR,
-                url=self.site_config.list_url,
-            )
+            return []
 
         urls: list[tuple[str, str]] = []
         seen: set[str] = set()
