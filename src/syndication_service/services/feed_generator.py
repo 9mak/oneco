@@ -350,4 +350,5 @@ class FeedGenerator:
         Returns:
             MD5 ハッシュ値（32文字の16進数文字列）
         """
-        return hashlib.md5(source_url.encode()).hexdigest()
+        # ID 安定生成用ハッシュ（暗号用途ではない）
+        return hashlib.md5(source_url.encode(), usedforsecurity=False).hexdigest()

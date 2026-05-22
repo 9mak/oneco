@@ -181,6 +181,10 @@ class RuleBasedAdapter(MunicipalityAdapter):
         本メソッドを呼ぶだけで済む。特殊処理が必要なら、サブクラスで
         normalize をオーバーライドして本メソッドの前後にロジックを足す。
 
+        prefecture は DataNormalizer 内で source_url から推定される。URL の
+        ドメインで判別できないサイト（自治体共通基盤系等）では `prefecture=None`
+        になるため、site_config.prefecture をフォールバックとして上書きする。
+
         Args:
             raw_data: 抽出した生データ
 
@@ -190,4 +194,7 @@ class RuleBasedAdapter(MunicipalityAdapter):
         Raises:
             ValidationError: DataNormalizer のバリデーション失敗時
         """
-        return DataNormalizer.normalize(raw_data)
+        an = DataNormalizer.normalize(raw_data)
+        if an.prefecture is None and self.site_config.prefecture:
+            return an.model_copy(update={"prefecture": self.site_config.prefecture})
+        return an

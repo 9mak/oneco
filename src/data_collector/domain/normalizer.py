@@ -46,6 +46,19 @@ class DataNormalizer:
         # AnimalData の image_urls は HttpUrl のリストなので、Pydantic が自動変換する
         image_urls_raw = raw_data.image_urls if raw_data.image_urls else []
 
+        # shelter_date は不明 / 解析不能な場合「データ取得日」をフォールバックに使う。
+        # 譲渡カテゴリページや未対応フォーマットの日付表記でも AnimalData 化失敗で
+        # 全件落ちることを防ぐためのセーフネット。
+        raw_shelter = (raw_data.shelter_date or "").strip()
+        shelter_date_str = ""
+        if raw_shelter:
+            try:
+                shelter_date_str = DataNormalizer._normalize_date(raw_shelter)
+            except ValueError:
+                shelter_date_str = ""
+        if not shelter_date_str:
+            shelter_date_str = date.today().strftime("%Y-%m-%d")
+
         # 正規化処理
         return AnimalData(
             species=DataNormalizer._normalize_species(raw_data.species),
@@ -53,9 +66,7 @@ class DataNormalizer:
             age_months=DataNormalizer._normalize_age(raw_data.age),
             color=raw_data.color if raw_data.color else None,
             size=raw_data.size if raw_data.size else None,
-            shelter_date=datetime.strptime(
-                DataNormalizer._normalize_date(raw_data.shelter_date), "%Y-%m-%d"
-            ).date(),
+            shelter_date=datetime.strptime(shelter_date_str, "%Y-%m-%d").date(),
             location=raw_data.location if raw_data.location else "不明",
             prefecture=infer_prefecture_from_url(raw_data.source_url),
             phone=DataNormalizer._normalize_phone(raw_data.phone),
@@ -301,6 +312,31 @@ class DataNormalizer:
             # 日付の妥当性チェック
             date_obj = datetime(year, month, day).date()
             return date_obj.strftime("%Y-%m-%d")
+
+        # RN.M.D のパターン (例: R8.5.14（木曜日）, R6.10.21)
+        # 横須賀市 doubutu サイト等で使われる
+        match = re.search(r"R(\d{1,2})\.(\d{1,2})\.(\d{1,2})", date_str)
+        if match:
+            reiwa_year = int(match.group(1))
+            month = int(match.group(2))
+            day = int(match.group(3))
+            year = 2018 + reiwa_year
+            date_obj = datetime(year, month, day).date()
+            return date_obj.strftime("%Y-%m-%d")
+
+        # M月D日 のパターン（年なし、当年を補完）。京都市ペットラブ等で使われる。
+        # 全角数字を含む場合は半角に正規化してから判定する。
+        normalized = date_str.translate(str.maketrans("０１２３４５６７８９", "0123456789"))
+        match = re.search(r"^(\d{1,2})月(\d{1,2})日", normalized)
+        if match:
+            month = int(match.group(1))
+            day = int(match.group(2))
+            year = datetime.now().year
+            try:
+                date_obj = datetime(year, month, day).date()
+                return date_obj.strftime("%Y-%m-%d")
+            except ValueError:
+                pass
 
         # YYYY/MM/DD のパターン
         match = re.search(r"(\d{4})/(\d{1,2})/(\d{1,2})", date_str)

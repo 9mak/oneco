@@ -89,6 +89,8 @@ class CitySendaiAdapter(SinglePageTableAdapter):
         super().__init__(site_config)
         # ページ全体で共通の問い合わせ電話番号 (1 ページに 1 度だけパース)。
         self._page_phone_cache: str | None = None
+        # ページ全体の「（令和X年Y月Z日更新）」を shelter_date フォールバックに使う。
+        self._page_update_date_cache: str = ""
 
     # ─────────────────── fetch_animal_list オーバーライド ───────────────────
 
@@ -130,8 +132,12 @@ class CitySendaiAdapter(SinglePageTableAdapter):
             if isinstance(table, Tag):
                 rows.append(table)
 
-        # ページ全体から問い合わせ電話番号を 1 度だけ抽出してキャッシュ。
-        self._page_phone_cache = self._normalize_phone(soup.get_text(" ", strip=True))
+        # ページ全体から問い合わせ電話番号と「更新日」を 1 度だけ抽出してキャッシュ。
+        page_text = soup.get_text(" ", strip=True)
+        self._page_phone_cache = self._normalize_phone(page_text)
+        # 「（令和8年5月15日更新）」の更新日を shelter_date のフォールバックに使う
+        m = re.search(r"(令和\d+年\d+月\d+日|\d{4}年\d+月\d+日)", page_text)
+        self._page_update_date_cache = m.group(1) if m else ""
 
         self._rows_cache = rows
         return rows
@@ -168,6 +174,9 @@ class CitySendaiAdapter(SinglePageTableAdapter):
         # (HTML の「種類」列は犬種名など具体名のため、犬/猫/その他の判別には不向き。)
         species = self._infer_species_from_site_name(self.site_config.name)
 
+        # 仙台市のページには動物個別の収容日表記が無いため、ページの「更新日」を
+        # shelter_date のフォールバックに使う (掲載が始まった日として最も近い情報)。
+        shelter_date = self._page_update_date_cache or self.SHELTER_DATE_DEFAULT
         try:
             return RawAnimalData(
                 species=species,
@@ -175,8 +184,8 @@ class CitySendaiAdapter(SinglePageTableAdapter):
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),
                 size=fields.get("size", ""),
-                shelter_date=self.SHELTER_DATE_DEFAULT,
-                location="",
+                shelter_date=shelter_date,
+                location="仙台市動物管理センター（アニパル仙台）",
                 phone=self._page_phone_cache or "",
                 image_urls=self._extract_row_images(table, virtual_url),
                 source_url=virtual_url,
