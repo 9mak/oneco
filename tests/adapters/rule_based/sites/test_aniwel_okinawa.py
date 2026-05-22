@@ -228,14 +228,14 @@ class TestAniwelOkinawaAdapter:
         urls = [u for u, _ in result]
         assert len(set(urls)) == 3
 
-    def test_fetch_animal_list_raises_when_no_links(self) -> None:
-        """detail link が 1 つも見つからない場合は ParsingError"""
+    def test_fetch_animal_list_returns_empty_when_no_links(self) -> None:
+        """detail link が 1 つも見つからない = 現在その種別の収容動物がいない真ゼロ"""
         adapter = AniwelOkinawaAdapter(_site(0))
         html = "<html><body><main>準備中</main></body></html>"
 
         with patch.object(adapter, "_http_get", return_value=html):
-            with pytest.raises(ParsingError):
-                adapter.fetch_animal_list()
+            result = adapter.fetch_animal_list()
+        assert result == []
 
     def test_extract_animal_details_dl_format(self) -> None:
         """`<dl>` 形式の詳細ページから RawAnimalData を構築できる"""
