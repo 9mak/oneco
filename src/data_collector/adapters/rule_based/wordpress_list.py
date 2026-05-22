@@ -28,13 +28,14 @@ class FieldSpec:
 
     Attributes:
         label: 定義リスト/テーブルの見出しテキスト（例: "性別"）。
-            完全一致または in による部分一致でマッチさせる。
+            str を渡せば単一ラベル、tuple/list を渡せば複数候補の OR 検索になり、
+            最初に値を取れたラベルを採用する。
         selector: 直接 CSS セレクタで取得する場合のセレクタ。
             label と排他的（両方指定された場合は selector 優先）。
         attr: 取得する属性名（"text" の場合は要素テキスト、それ以外は要素属性）。
     """
 
-    label: str | None = None
+    label: str | tuple[str, ...] | None = None
     selector: str | None = None
     attr: str = "text"
 
@@ -97,12 +98,17 @@ class WordPressListAdapter(RuleBasedAdapter):
             value = self._extract_field(soup, spec)
             fields[name] = value
 
+        # 派生クラスがあれば URL や他フィールドからの補完を実施
+        self._postprocess_fields(fields, detail_url, soup)
+
         # 全フィールドが空文字 = HTML 構造がそもそも見当たらない
         if not any(fields.values()):
             raise ParsingError(
                 "detail ページから 1 フィールドも抽出できませんでした",
                 url=detail_url,
             )
+        # shelter_date が空 or 解析不能の場合は DataNormalizer 側で「データ取得日」
+        # にフォールバックされる（全 adapter 共通のセーフネット）。
 
         image_urls = self._extract_images(soup, detail_url)
 
@@ -126,6 +132,30 @@ class WordPressListAdapter(RuleBasedAdapter):
     def normalize(self, raw_data: RawAnimalData) -> AnimalData:
         return self._default_normalize(raw_data)
 
+    def _postprocess_fields(
+        self, fields: dict[str, str], detail_url: str, soup: BeautifulSoup
+    ) -> None:
+        """抽出後のフィールドを派生クラスで補完するためのフック (in-place 変更)。
+
+        例: URL から species を推測したり、別 selector で電話番号を補ったりする。
+        デフォルトは何もしない。
+        """
+        return None
+
+    def _infer_species_from_url(self) -> str:
+        """site_config.list_url に `/dog` / `/cat` が含まれていれば対応する種別を返す。
+
+        派生クラスで species 補完したいとき (`_postprocess_fields` 内) に呼ぶ
+        共通ヘルパー。判定不能なら空文字を返す。
+        """
+        url = getattr(getattr(self, "site_config", None), "list_url", "") or ""
+        url_lower = url.lower()
+        if "/dog" in url_lower or "/inu" in url_lower:
+            return "犬"
+        if "/cat" in url_lower or "/neko" in url_lower:
+            return "猫"
+        return ""
+
     # ─────────────────── ヘルパー ───────────────────
 
     def _extract_field(self, soup: BeautifulSoup, spec: FieldSpec) -> str:
@@ -143,24 +173,34 @@ class WordPressListAdapter(RuleBasedAdapter):
             return value
         return ""
 
-    def _extract_by_label(self, soup: BeautifulSoup, label: str) -> str:
-        """定義リスト (<dt><dd>) またはテーブル (<th><td>) で label を探す"""
-        # 定義リスト
-        for dt in soup.find_all("dt"):
-            if not isinstance(dt, Tag):
-                continue
-            if label in dt.get_text(strip=True):
-                dd = dt.find_next_sibling("dd")
-                if dd:
-                    return dd.get_text(strip=True)
-        # テーブル
-        for th in soup.find_all("th"):
-            if not isinstance(th, Tag):
-                continue
-            if label in th.get_text(strip=True):
-                td = th.find_next_sibling("td")
-                if td:
-                    return td.get_text(strip=True)
+    def _extract_by_label(self, soup: BeautifulSoup, label: str | tuple[str, ...]) -> str:
+        """定義リスト (<dt><dd>) またはテーブル (<th><td>) で label を探す。
+
+        label に tuple/list を渡すと OR 検索になり、最初にヒットしたラベルの
+        値を返す（複数表記が並ぶサイト構造に対応するため）。
+        """
+        labels = (label,) if isinstance(label, str) else tuple(label)
+        for lbl in labels:
+            # 定義リスト
+            for dt in soup.find_all("dt"):
+                if not isinstance(dt, Tag):
+                    continue
+                if lbl in dt.get_text(strip=True):
+                    dd = dt.find_next_sibling("dd")
+                    if dd:
+                        text = dd.get_text(strip=True)
+                        if text:
+                            return text
+            # テーブル
+            for th in soup.find_all("th"):
+                if not isinstance(th, Tag):
+                    continue
+                if lbl in th.get_text(strip=True):
+                    td = th.find_next_sibling("td")
+                    if td:
+                        text = td.get_text(strip=True)
+                        if text:
+                            return text
         return ""
 
     def _extract_images(self, soup: BeautifulSoup, base_url: str) -> list[str]:

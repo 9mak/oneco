@@ -24,7 +24,7 @@ import sys
 import time
 from pathlib import Path
 from typing import Any
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 
 import requests
 import yaml
@@ -274,7 +274,7 @@ def run_one(preset_key: str) -> dict[str, Any]:
     }
 
     # ── Step 1: List page ──
-    print(f"\n[1] Fetching list page...")
+    print("\n[1] Fetching list page...")
     t0 = time.time()
     try:
         list_html = fetch(list_url)

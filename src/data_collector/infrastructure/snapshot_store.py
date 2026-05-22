@@ -49,7 +49,8 @@ class SnapshotStore:
         ここに置いておく。
         """
         key = f"{animal.location}|{animal.phone or ''}|{animal.species}"
-        return hashlib.sha1(key.encode("utf-8")).hexdigest()
+        # 内容ベース ID 生成用ハッシュ（暗号用途ではない）
+        return hashlib.sha1(key.encode("utf-8"), usedforsecurity=False).hexdigest()
 
     def save_snapshot(self, items: list[AnimalData]) -> None:
         """全 AnimalData を `snapshots/latest.json` に JSON dump する。"""

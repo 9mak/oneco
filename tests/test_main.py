@@ -8,6 +8,23 @@ from src.data_collector.__main__ import main
 from src.data_collector.orchestration.collector_service import CollectionResult
 
 
+@pytest.fixture(autouse=True)
+def _stub_sites_runners():
+    """main() 内の sites.yaml 走査関数を全テストで stub し、
+    本物の broken_tracker / output_writer 等に副作用が漏れないようにする。"""
+    with (
+        patch(
+            "src.data_collector.__main__.run_rule_based_sites",
+            return_value=(0, 0, []),
+        ),
+        patch(
+            "src.data_collector.__main__.run_llm_sites",
+            return_value=(0, 0, []),
+        ),
+    ):
+        yield
+
+
 class TestCLI:
     """CLI エントリーポイントのテストケース"""
 

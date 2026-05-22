@@ -245,7 +245,7 @@ async def public_stats(session: SessionDep) -> PublicStats:
     """
     from pathlib import Path
 
-    from sqlalchemy import case, func, select
+    from sqlalchemy import func, select
 
     from src.data_collector.infrastructure.database.models import Animal
     from src.data_collector.llm.config import SiteConfigLoader
@@ -259,19 +259,15 @@ async def public_stats(session: SessionDep) -> PublicStats:
         )
     ).scalar() or 0
 
-    avg_days_stmt = select(
-        func.avg(
-            case(
-                (
-                    Animal.shelter_date.isnot(None),
-                    func.extract("epoch", func.now() - Animal.shelter_date) / 86400.0,
-                ),
-                else_=None,
-            )
-        )
-    ).where(Animal.status == "sheltered")
-    avg_days_raw = (await session.execute(avg_days_stmt)).scalar()
-    avg_waiting_days = float(avg_days_raw) if avg_days_raw is not None else None
+    # PostgreSQL と SQLite の両方で動くように日付差は Python 側で計算する。
+    # （PostgreSQL 専用の `extract('epoch', now() - date)` を使うと
+    #  テストの SQLite で天文学的な値が返り、テストが落ちる。）
+    shelter_dates_stmt = select(Animal.shelter_date).where(
+        Animal.status == "sheltered", Animal.shelter_date.isnot(None)
+    )
+    today = datetime.now().date()
+    deltas = [(today - d).days for d in (await session.execute(shelter_dates_stmt)).scalars().all()]
+    avg_waiting_days = (sum(deltas) / len(deltas)) if deltas else None
 
     sites_yaml_path = Path(__file__).resolve().parents[2] / "config" / "sites.yaml"
     site_count = 0

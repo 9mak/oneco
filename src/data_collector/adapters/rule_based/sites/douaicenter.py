@@ -18,6 +18,8 @@ detail ページ:
 
 from __future__ import annotations
 
+from bs4 import BeautifulSoup
+
 from ..registry import SiteAdapterRegistry
 from ..wordpress_list import FieldSpec, WordPressListAdapter
 
@@ -27,6 +29,11 @@ class DouaicenterAdapter(WordPressListAdapter):
 
     list / detail 両方のテンプレートが 8 サイト共通なので、サイト名ごとに
     クラスを分けず、registry に複数の site_name を 1 クラスで束ねる。
+
+    detail テンプレートは 2 系統あり、それぞれラベルが異なる:
+    - `/animal/{id}` (センター収容/譲渡): 「保護日」「保護場所」「種類」「性別」…
+    - `/other-animal/{id}` (市民保護): 「不明日」「不明場所」「連絡先」…
+    そのため FieldSpec の label を複数候補 tuple にして両方を吸収する。
     """
 
     # /animal/{id} と /other-animal/{id} の両方の detail を抽出。
@@ -43,14 +50,25 @@ class DouaicenterAdapter(WordPressListAdapter):
         "age": FieldSpec(label="年齢"),
         "color": FieldSpec(label="毛色"),
         "size": FieldSpec(label="体格"),
-        "shelter_date": FieldSpec(label="収容日"),
-        "location": FieldSpec(label="収容場所"),
+        "shelter_date": FieldSpec(label=("保護日", "不明日", "収容日")),
+        "location": FieldSpec(label=("保護場所", "不明場所", "収容場所")),
         "phone": FieldSpec(label="連絡先"),
     }
 
     # detail ページ本体の動物写真は WordPress uploads 配下に配置される。
     # サイドバー/ヘッダの装飾画像は `_filter_image_urls` の uploads フィルタで除外される。
     IMAGE_SELECTOR = "img"
+
+    def _postprocess_fields(
+        self, fields: dict[str, str], detail_url: str, soup: BeautifulSoup
+    ) -> None:
+        """species が「雑種」等で犬猫判定できない場合、list_url で補正する。"""
+        species = fields.get("species", "")
+        # 「犬」「猫」が明示されていればそのまま、それ以外は URL hint で上書き
+        if not any(kw in species for kw in ("犬", "猫", "いぬ", "ねこ", "イヌ", "ネコ")):
+            hint = self._infer_species_from_url()
+            if hint:
+                fields["species"] = hint
 
 
 # ─────────────────── レジストリ登録 ───────────────────

@@ -99,7 +99,9 @@ class TestDouaicenterAdapterDetailExtraction:
         assert isinstance(raw, RawAnimalData)
         assert_raw_animal(
             raw,
-            species="雑種",
+            # detail HTML 上は「種類: 雑種」だが、犬/猫の判定不能なため
+            # adapter が list_url (`/animal/list/transfer/dog`) から「犬」に上書きする
+            species="犬",
             sex="メス",
             age="3歳",
             color="茶",
