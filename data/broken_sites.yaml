@@ -53,18 +53,6 @@
   consecutive_failures: 0
   last_error: 'HTTP エラー: 404 Client Error: Not Found for url: https://www.pref.ehime.jp/page/16976.html'
   last_failed_at: '2026-05-18T17:34:25+00:00'
-旭川市あにまある（収容その他）:
-  consecutive_failures: 3
-  last_error: detail link が見つかりません
-  last_failed_at: '2026-05-19T18:07:16+00:00'
-旭川市あにまある（収容犬）:
-  consecutive_failures: 3
-  last_error: detail link が見つかりません
-  last_failed_at: '2026-05-19T18:07:13+00:00'
-旭川市あにまある（市民保護犬）:
-  consecutive_failures: 3
-  last_error: detail link が見つかりません
-  last_failed_at: '2026-05-19T18:07:17+00:00'
 東讃保健福祉事務所（収容動物）:
   consecutive_failures: 1
   last_error: PDF リンクが見つかりません
@@ -141,10 +129,6 @@
   consecutive_failures: 0
   last_error: detail link が見つかりません
   last_failed_at: '2026-05-21T17:34:30+00:00'
-福岡県動物愛護協会（保健所収容猫）:
-  consecutive_failures: 3
-  last_error: detail link が見つかりません
-  last_failed_at: '2026-05-19T17:42:45+00:00'
 茨城県（収容中の動物たち）:
   consecutive_failures: 3
   last_error: PDF リンクが見つかりません
