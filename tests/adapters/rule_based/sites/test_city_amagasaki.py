@@ -13,8 +13,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.city_amagasaki import (
     CityAmagasakiAdapter,
@@ -220,14 +218,18 @@ class TestCityAmagasakiAdapter:
 
         assert result == []
 
-    def test_raises_parsing_error_when_heading_missing(self):
-        """『返還対象動物一覧』見出しすら無い場合は例外を出す"""
+    def test_heading_missing_returns_empty_list(self):
+        """『返還対象動物一覧』見出しが無くても真ゼロとして空リストを返す
+
+        PR #36 の方針 (HTML パース成功 + 行 0 件 = 真ゼロ) に揃え、DOM 構造変化
+        による偽陰性は zero_count_audit で別途検出する運用とする。
+        """
         html = "<html><body><main><h2>無関係</h2></main></body></html>"
         adapter = CityAmagasakiAdapter(_site())
 
         with patch.object(adapter, "_http_get", return_value=html):
-            with pytest.raises(Exception):
-                adapter.fetch_animal_list()
+            result = adapter.fetch_animal_list()
+        assert result == []
 
     def test_extract_caches_html_across_calls(self):
         """同一 adapter インスタンスでは _http_get は 1 回だけ呼ばれる"""

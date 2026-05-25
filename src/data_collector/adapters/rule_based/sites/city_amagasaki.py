@@ -116,23 +116,12 @@ class CityAmagasakiAdapter(SinglePageTableAdapter):
     def fetch_animal_list(self) -> list[tuple[str, str]]:
         """動物の仮想 URL リストを返す (0 件時は空リスト)
 
-        基底は行 0 件で `ParsingError` を投げるが、本サイトは「現在、返還対象
-        動物はいません。」が常時運用される正常状態のため、empty-state 告知を
-        検出した場合は空リストを返す。
+        PR #36 の方針 (HTML パース成功 + 行 0 件 = 真ゼロ) に揃え、見出し検出も
+        含めて行 0 件は ParsingError ではなく空リストを返す。DOM 構造変化等の
+        偽陰性は `zero_count_audit` で別途検出する運用。
         """
         rows = self._load_rows()
         if not rows:
-            if self._html_cache and self._EMPTY_STATE_PATTERN.search(self._html_cache):
-                return []
-            # 見出し自体が無い → テンプレート崩壊として例外化
-            soup = BeautifulSoup(self._html_cache or "", "html.parser")
-            if self._find_animal_heading(soup) is None:
-                raise ParsingError(
-                    f"見出し『{self._ANIMAL_HEADING_TEXT}』が見つかりません",
-                    selector="h2",
-                    url=self.site_config.list_url,
-                )
-            # 見出しはあるが表も告知も無い → 念のため空リスト扱い
             return []
 
         category = self.site_config.category
