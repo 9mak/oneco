@@ -253,11 +253,68 @@ class TestNormalizePhone:
         assert DataNormalizer._normalize_phone("(088)1234567") == "088-123-4567"
 
     def test_normalize_phone_invalid_length(self):
-        """無効な桁数の電話番号はそのまま返す (または ValueError)"""
-        # 実装方針によって挙動を決定
-        # Option 1: そのまま返す
+        """無効な桁数の電話番号は数字のみを返す"""
         result = DataNormalizer._normalize_phone("123")
-        assert result == "123"  # または ValueError
+        assert result == "123"
+
+    def test_normalize_phone_no_digits_returns_empty(self):
+        """数字が 1 桁も無い文字列 (URL や説明文) は空文字を返す
+
+        DB の phone VARCHAR(20) を超える長文 (例: 'お問い合わせフォームから連絡')
+        が phone セルに誤って流入したとき、そのまま return すると INSERT 失敗で
+        トランザクション全体 rollback となるため、空文字で安全側に倒す。
+        """
+        assert DataNormalizer._normalize_phone("お問い合わせフォームから連絡") == ""
+        assert DataNormalizer._normalize_phone("https://example.com/contact/") == ""
+        assert DataNormalizer._normalize_phone("お問い合わせはこちら") == ""
+
+    def test_normalize_phone_caps_at_20_chars(self):
+        """20 桁超の長大数字列 (誤マッピング) は 20 文字で切り捨てる"""
+        long_digits = "1" * 30
+        result = DataNormalizer._normalize_phone(long_digits)
+        assert len(result) <= 20
+
+
+class TestCapSize:
+    """size 長さ制限 (DB の VARCHAR(50) セーフネット)"""
+
+    def test_cap_size_short_passthrough(self):
+        assert DataNormalizer._cap_size("中型") == "中型"
+        assert DataNormalizer._cap_size("Sサイズ") == "Sサイズ"
+
+    def test_cap_size_empty_returns_none(self):
+        assert DataNormalizer._cap_size("") is None
+        assert DataNormalizer._cap_size(None) is None
+        assert DataNormalizer._cap_size("   ") is None
+
+    def test_cap_size_truncates_at_50_chars(self):
+        """50 文字超の size は 50 文字に切り詰めて DB 制約違反を防ぐ"""
+        long_text = "あ" * 80
+        result = DataNormalizer._cap_size(long_text)
+        assert result is not None
+        assert len(result) == 50
+
+
+class TestNormalizePhonePipeline:
+    """normalize 経由での phone 変換 (空文字 → None)"""
+
+    def test_phone_empty_string_becomes_none(self):
+        """数字無し phone が空文字経由で None として DB 保存される"""
+        raw = RawAnimalData(
+            species="犬",
+            sex="メス",
+            age="3歳",
+            color="茶",
+            size="中",
+            shelter_date="2026-05-01",
+            location="高知県",
+            phone="お問い合わせフォームから",
+            image_urls=[],
+            source_url="https://example.com/animals/1",
+            category="adoption",
+        )
+        result = DataNormalizer.normalize(raw)
+        assert result.phone is None
 
 
 class TestCapColor:
