@@ -8,6 +8,7 @@ import signal
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 try:
     from dotenv import load_dotenv
@@ -24,7 +25,7 @@ from .adapters.rule_based.broken_tracker import BrokenSitesTracker
 from .adapters.rule_based.registry import SiteAdapterRegistry
 from .domain.diff_detector import DiffDetector
 from .infrastructure.database.connection import DatabaseConnection, DatabaseSettings
-from .infrastructure.notification_client import NotificationClient
+from .infrastructure.notification_client import NotificationClient, NotificationLevel
 from .infrastructure.output_writer import OutputWriter
 from .infrastructure.snapshot_store import SnapshotStore
 from .llm.adapter import LlmAdapter
@@ -408,6 +409,71 @@ def run_rule_based_sites(
     return succeeded, failed, zero_count_sites
 
 
+# 全体失敗率がこの値を超えると CRITICAL、超えないが critical_sites>0 なら WARNING
+_RUN_FAIL_RATIO_CRITICAL = 0.2
+
+
+def _send_run_summary_alert(
+    *,
+    notification_client: NotificationClient,
+    broken_tracker: BrokenSitesTracker | None,
+    total_sites: int,
+    total_succeeded: int,
+    total_failed: int,
+    threshold: int,
+    logger: logging.Logger,
+) -> None:
+    """1 回の run 終了時に Slack へサマリアラートを送る。
+
+    判定:
+      - failure_ratio > 0.2 OR 全件失敗 → CRITICAL
+      - critical_sites (consec>=threshold) > 0 OR total_failed > 0 → WARNING
+      - 何も無ければ通知しない
+
+    Slack webhook 未設定時は NotificationClient が自動的に no-op になる。
+    """
+    if total_sites == 0:
+        return
+
+    critical_sites_list: list[str] = []
+    if broken_tracker is not None:
+        try:
+            critical_sites_list = broken_tracker.critical_sites(threshold=threshold)
+        except Exception as e:
+            logger.warning(f"critical_sites 取得失敗: {e}")
+
+    failure_ratio = total_failed / total_sites if total_sites else 0.0
+    is_critical = failure_ratio > _RUN_FAIL_RATIO_CRITICAL or (
+        total_succeeded == 0 and total_failed > 0
+    )
+    has_warning = bool(critical_sites_list) or total_failed > 0
+
+    if not (is_critical or has_warning):
+        return
+
+    level = NotificationLevel.CRITICAL if is_critical else NotificationLevel.WARNING
+    message = (
+        f"収集完了: 成功 {total_succeeded}/{total_sites} (失敗 {total_failed}, "
+        f"失敗率 {failure_ratio:.1%})"
+    )
+    details: dict[str, Any] = {
+        "total_sites": total_sites,
+        "succeeded": total_succeeded,
+        "failed": total_failed,
+        "failure_ratio": f"{failure_ratio:.1%}",
+        "auto_skip_threshold": threshold,
+        "critical_sites_count": len(critical_sites_list),
+    }
+    if critical_sites_list:
+        details["critical_sites_sample"] = ", ".join(critical_sites_list[:10]) + (
+            "..." if len(critical_sites_list) > 10 else ""
+        )
+    try:
+        notification_client.send_alert(level, message, details)
+    except Exception as e:
+        logger.warning(f"run summary alert 送信失敗: {e}")
+
+
 def main():
     """
     CLI エントリーポイント
@@ -553,6 +619,17 @@ def main():
                 if total_succeeded == 0 and total_failed > 0:
                     logger.error("全サイトで収集に失敗しました")
                     success = False
+
+                # Slack 通知: 連続失敗サイト / 全体失敗率に応じて Warning/Critical
+                _send_run_summary_alert(
+                    notification_client=notification_client,
+                    broken_tracker=broken_tracker,
+                    total_sites=len(config.sites),
+                    total_succeeded=total_succeeded,
+                    total_failed=total_failed,
+                    threshold=BROKEN_SITE_SKIP_THRESHOLD,
+                    logger=logger,
+                )
 
                 # 進捗ログ
                 stats = SiteAdapterRegistry.coverage_stats([s.name for s in config.sites])
