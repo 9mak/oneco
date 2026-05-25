@@ -84,12 +84,30 @@ class TestStaticFetcher:
 # ---------------------------------------------------------------------------
 
 
+def _mock_stream_response(content_bytes: bytes, content_length: str | None = None):
+    """`requests.get(..., stream=True)` の戻り値を模した context manager mock"""
+    response = MagicMock()
+    response.raise_for_status = MagicMock()
+    response.headers = {}
+    if content_length is not None:
+        response.headers["Content-Length"] = content_length
+
+    def iter_content(chunk_size: int = 64 * 1024):
+        i = 0
+        while i < len(content_bytes):
+            yield content_bytes[i : i + chunk_size]
+            i += chunk_size
+
+    response.iter_content = iter_content
+    response.__enter__ = MagicMock(return_value=response)
+    response.__exit__ = MagicMock(return_value=False)
+    return response
+
+
 class TestPdfFetcher:
     def test_pdf_fetcher_downloads_and_extracts_text(self):
         """PdfFetcherがPDFをダウンロードしてテキストを抽出すること"""
-        mock_response = MagicMock()
-        mock_response.content = b"%PDF-1.4 fake"
-        mock_response.raise_for_status = MagicMock()
+        mock_response = _mock_stream_response(b"%PDF-1.4 fake")
 
         mock_page = MagicMock()
         mock_page.extract_text.return_value = "犬 雄 3歳\n収容日 2026年3月21日"
@@ -115,9 +133,7 @@ class TestPdfFetcher:
 
     def test_pdf_fetcher_handles_multiple_pages(self):
         """複数ページのPDFを結合してテキストを返すこと"""
-        mock_response = MagicMock()
-        mock_response.content = b"%PDF-1.4 fake multipage"
-        mock_response.raise_for_status = MagicMock()
+        mock_response = _mock_stream_response(b"%PDF-1.4 fake multipage")
 
         mock_page1 = MagicMock()
         mock_page1.extract_text.return_value = "1ページ目テキスト"
@@ -142,6 +158,35 @@ class TestPdfFetcher:
         assert "1ページ目テキスト" in result
         assert "2ページ目テキスト" in result
 
+    def test_pdf_fetcher_rejects_oversize_via_content_length(self):
+        """Content-Length 宣言が上限超なら本体ダウンロード前に NetworkError"""
+        fetcher = PdfFetcher()
+        # 上限の 2 倍を宣言
+        huge = str(fetcher.PDF_MAX_BYTES * 2)
+        mock_response = _mock_stream_response(b"", content_length=huge)
+
+        with patch(
+            "src.data_collector.llm.fetcher.requests.get",
+            return_value=mock_response,
+        ):
+            with pytest.raises(NetworkError, match="上限"):
+                fetcher.fetch("https://example.com/huge.pdf")
+
+    def test_pdf_fetcher_rejects_oversize_streaming(self):
+        """Content-Length 未宣言でもストリーム中に上限超を検出して NetworkError"""
+        fetcher = PdfFetcher()
+        # 上限を 1KB に下げてテスト
+        fetcher.PDF_MAX_BYTES = 1024
+        oversize = b"x" * (fetcher.PDF_MAX_BYTES + 100)
+        mock_response = _mock_stream_response(oversize, content_length=None)
+
+        with patch(
+            "src.data_collector.llm.fetcher.requests.get",
+            return_value=mock_response,
+        ):
+            with pytest.raises(NetworkError, match="上限"):
+                fetcher.fetch("https://example.com/no-clength.pdf")
+
     def test_pdf_fetcher_raises_network_error_on_download_failure(self):
         """ダウンロード失敗時にNetworkErrorを送出すること"""
         import requests as req
@@ -158,9 +203,7 @@ class TestPdfFetcher:
 
     def test_pdf_fetcher_raises_network_error_on_extraction_failure(self):
         """テキスト抽出失敗時にNetworkErrorを送出すること"""
-        mock_response = MagicMock()
-        mock_response.content = b"not a real pdf"
-        mock_response.raise_for_status = MagicMock()
+        mock_response = _mock_stream_response(b"not a real pdf")
 
         with patch(
             "src.data_collector.llm.fetcher.requests.get",
@@ -181,9 +224,7 @@ class TestPdfFetcher:
 
     def test_pdf_fetcher_skips_none_page_text(self):
         """extract_textがNoneを返すページをスキップすること"""
-        mock_response = MagicMock()
-        mock_response.content = b"%PDF-1.4 fake"
-        mock_response.raise_for_status = MagicMock()
+        mock_response = _mock_stream_response(b"%PDF-1.4 fake")
 
         mock_page1 = MagicMock()
         mock_page1.extract_text.return_value = None  # テキストなし
