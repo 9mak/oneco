@@ -327,8 +327,12 @@ class DataNormalizer:
             month = int(match.group(2))
             day = int(match.group(3))
 
-            # 令和元年 = 2019年5月1日開始
-            # 令和N年 = 2018 + N (簡易計算: 令和1年 = 2019年)
+            # 令和元年 = 2019年5月1日開始。「令和0年」は存在しないので拒否
+            # (旧実装は 2018 年に変換していたが、これは元号開始前のため不正)
+            if reiwa_year < 1:
+                raise ValueError(f"令和0年は存在しません: {raw_date}")
+
+            # 令和N年 = 2018 + N (令和1年 = 2019年)
             year = 2018 + reiwa_year
 
             # 日付の妥当性チェック
@@ -342,6 +346,9 @@ class DataNormalizer:
             reiwa_year = int(match.group(1))
             month = int(match.group(2))
             day = int(match.group(3))
+
+            if reiwa_year < 1:
+                raise ValueError(f"令和0年は存在しません: {raw_date}")
 
             # 令和N年 = 2018 + N
             year = 2018 + reiwa_year
@@ -357,6 +364,8 @@ class DataNormalizer:
             reiwa_year = int(match.group(1))
             month = int(match.group(2))
             day = int(match.group(3))
+            if reiwa_year < 1:
+                raise ValueError(f"令和0年は存在しません: {raw_date}")
             year = 2018 + reiwa_year
             date_obj = datetime(year, month, day).date()
             return date_obj.strftime("%Y-%m-%d")
@@ -368,9 +377,8 @@ class DataNormalizer:
         if match:
             month = int(match.group(1))
             day = int(match.group(2))
-            year = datetime.now().year
             try:
-                date_obj = datetime(year, month, day).date()
+                date_obj = DataNormalizer._infer_yearless_date(month, day)
                 return date_obj.strftime("%Y-%m-%d")
             except ValueError:
                 pass
@@ -403,14 +411,42 @@ class DataNormalizer:
         if match:
             month = int(match.group(1))
             day = int(match.group(2))
-            year = datetime.now().year
-
-            # 日付の妥当性チェック
-            date_obj = datetime(year, month, day).date()
+            date_obj = DataNormalizer._infer_yearless_date(month, day)
             return date_obj.strftime("%Y-%m-%d")
 
         # マッチしない場合はエラー
         raise ValueError(f"無効な日付形式: {raw_date}")
+
+    @staticmethod
+    def _infer_yearless_date(month: int, day: int) -> date:
+        """年なし表記 (M月D日 / M/D) から date を構築する。
+
+        単純に `datetime.now().year` で補完すると、12月末収集時にサイト上の
+        翌1月日付が「今年1月」(過去) として保存されてしまい、アーカイブの
+        時系列整合性が崩れる (Codex 監査 MEDIUM #6)。
+
+        補完日付が今日から見て遠い未来 (30日超) なら、それは「前年の同月日」
+        と解釈するのが自然 (保護動物サイトは通常「最近の収容情報」を出す)。
+
+        Args:
+            month: 1-12
+            day: 1-31
+
+        Returns:
+            date: 補完済み日付
+
+        Raises:
+            ValueError: 不正な月日 (例: 2/30, 13月)
+        """
+        today = DataNormalizer._today()
+        year = today.year
+        candidate = date(year, month, day)
+        # 保護動物の収容日は通常「過去〜現在」。今日より大きく未来 (30日超) の
+        # 場合は前年補完が正解 (例: 5月収集時に "12/1" は今年 12/1 ではなく
+        # 去年 12/1 を指すのが自然)。
+        if (candidate - today).days > 30:
+            candidate = date(year - 1, month, day)
+        return candidate
 
     @staticmethod
     def _normalize_phone(raw_phone: str) -> str:
