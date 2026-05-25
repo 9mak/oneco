@@ -28,16 +28,12 @@ from __future__ import annotations
 import re
 from typing import ClassVar
 
-from bs4 import BeautifulSoup, Tag
+from bs4 import Tag
 
 from ....domain.models import RawAnimalData
 from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
-
-# 「現在、当所で保護している犬はありません」「保護している猫はいません」
-# 等の 0 件告知パターン。表記揺れ (です/ません/いません/ありません) を吸収。
-_EMPTY_STATE_PATTERN = re.compile(r"(?:保護|収容)し(?:て|ている)[^。]*?(?:いません|ありません)")
 
 
 class PrefKyotoAdapter(SinglePageTableAdapter):
@@ -70,27 +66,10 @@ class PrefKyotoAdapter(SinglePageTableAdapter):
 
     # ─────────────────── オーバーライド ───────────────────
 
-    def fetch_animal_list(self) -> list[tuple[str, str]]:
-        """一覧ページから動物の仮想 URL を返す
-
-        基底 `SinglePageTableAdapter.fetch_animal_list` は行が 0 件のとき
-        `ParsingError` を投げるが、京都府サイトでは「現在保護中の動物は
-        いません」という告知ページが正常状態として頻繁に発生する。
-        empty state テキストを検出した場合は空リストを返し、
-        それ以外で行が見つからなかった場合のみ ParsingError を伝播する。
-        """
-        rows = self._load_rows()
-        if not rows:
-            if self._html_cache and _EMPTY_STATE_PATTERN.search(self._html_cache):
-                # 「現在保護している動物はいません」等の正常な 0 件状態
-                return []
-            raise ParsingError(
-                "行要素が見つかりません",
-                selector=self.ROW_SELECTOR,
-                url=self.site_config.list_url,
-            )
-        category = self.site_config.category
-        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
+    # fetch_animal_list は基底実装 (rows 0 件 → 空リスト) で十分のため
+    # オーバーライドしない。京都府サイトの「現在保護している動物はいません」
+    # 告知ページも、基底実装が ROW_SELECTOR にヒットしないことを検知して
+    # 自然に [] を返す。
 
     def extract_animal_details(self, virtual_url: str, category: str = "lost") -> RawAnimalData:
         """1 個の `<table>` から RawAnimalData を構築する
@@ -176,27 +155,6 @@ class PrefKyotoAdapter(SinglePageTableAdapter):
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
-
-    def _load_rows(self) -> list[Tag]:
-        """list_url の HTML を 1 回だけ取得して行をキャッシュ
-
-        基底実装と同等だが、京都府サイトはエンコーディング宣言が
-        meta タグのみで requests が誤判定する可能性に備え BeautifulSoup
-        の解析を素直に行う (基底実装と同一)。
-        """
-        if self._rows_cache is not None:
-            return self._rows_cache
-
-        if self._html_cache is None:
-            self._html_cache = self._http_get(self.site_config.list_url)
-
-        soup = BeautifulSoup(self._html_cache, "html.parser")
-        rows = soup.select(self.ROW_SELECTOR)
-        rows = [r for r in rows if isinstance(r, Tag)]
-        if self.SKIP_FIRST_ROW and rows:
-            rows = rows[1:]
-        self._rows_cache = rows
-        return rows
 
     @staticmethod
     def _infer_species_from_site_name(name: str) -> str:

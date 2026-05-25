@@ -55,12 +55,12 @@ class PdfTableAdapter(RuleBasedAdapter):
         list_html = self._http_get(self.site_config.list_url)
         soup = BeautifulSoup(list_html, "html.parser")
         pdf_links = soup.select(self.PDF_LINK_SELECTOR)
+        # PDF リンク 0 件は「現在公開中の収容情報 PDF がない」真ゼロとして扱う。
+        # 茨城県や香川県の保健福祉事務所サイト等では、月次/週次の収容 PDF が
+        # 翌期に差し替わる過程で一時的に 0 件になる正常状態が発生する。
+        # サイト DOM 構造変化による偽陰性は zero_count_audit で別途検出する運用。
         if not pdf_links:
-            raise ParsingError(
-                "PDF リンクが見つかりません",
-                selector=self.PDF_LINK_SELECTOR,
-                url=self.site_config.list_url,
-            )
+            return []
 
         urls: list[tuple[str, str]] = []
         category = self.site_config.category

@@ -11,8 +11,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.pref_yamanashi import (
     PrefYamanashiAdapter,
@@ -130,9 +128,9 @@ class TestPrefYamanashiAdapter:
                 SiteAdapterRegistry.register(name, PrefYamanashiAdapter)
             assert SiteAdapterRegistry.get(name) is PrefYamanashiAdapter
 
-    def test_raises_parsing_error_when_no_cards(self):
-        """カード要素が見当たらない HTML では ParsingError 系例外を出す"""
+    def test_no_cards_returns_empty_list(self):
+        """カード要素が見当たらない HTML は真ゼロとして空リストを返す"""
         adapter = PrefYamanashiAdapter(_site())
         with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
-            with pytest.raises(Exception):
-                adapter.fetch_animal_list()
+            result = adapter.fetch_animal_list()
+        assert result == []

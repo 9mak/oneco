@@ -8,8 +8,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.single_page_table import SinglePageTableAdapter
 from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
@@ -87,8 +85,10 @@ class TestSinglePageTableAdapter:
         # ヘッダ行 (名前/種別/性別/...) を除外して 2 件
         assert len(result) == 2
 
-    def test_raises_parsing_error_when_no_rows(self):
+    def test_returns_empty_when_no_rows(self):
+        # ROW_SELECTOR にヒットしない場合は「現在その種別の収容動物がいない」
+        # 真ゼロとして空リストを返し、ParsingError を投げない。
         adapter = _SamplePageAdapter(_site())
         with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
-            with pytest.raises(Exception):
-                adapter.fetch_animal_list()
+            result = adapter.fetch_animal_list()
+        assert result == []

@@ -11,8 +11,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.city_chiba import (
     CityChibaAdapter,
@@ -145,9 +143,9 @@ class TestCityChibaAdapter:
             raw = adapter.extract_animal_details(urls[0][0], category="lost")
         assert raw.species == "猫"
 
-    def test_raises_parsing_error_when_no_blocks(self):
-        """動物ブロックが見当たらない HTML では ParsingError 系例外を出す"""
+    def test_no_blocks_returns_empty_list(self):
+        """動物ブロックが見当たらない HTML は真ゼロとして空リストを返す"""
         adapter = CityChibaAdapter(_site())
         with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
-            with pytest.raises(Exception):
-                adapter.fetch_animal_list()
+            result = adapter.fetch_animal_list()
+        assert result == []

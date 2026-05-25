@@ -7,8 +7,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.pdf_table import PdfTableAdapter
 from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
@@ -95,8 +93,10 @@ class TestPdfTableAdapter:
         assert raw.location == "高松"
         assert raw.shelter_date == "2026-05-01"
 
-    def test_raises_when_no_pdf_links(self):
+    def test_returns_empty_when_no_pdf_links(self):
+        # PDF_LINK_SELECTOR にヒットしない場合は「現在公開中の収容情報 PDF がない」
+        # 真ゼロとして空リストを返し、ParsingError を投げない。
         adapter = _SamplePdfAdapter(_site())
         with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
-            with pytest.raises(Exception):
-                adapter.fetch_animal_list()
+            result = adapter.fetch_animal_list()
+        assert result == []
