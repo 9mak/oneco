@@ -53,12 +53,13 @@ class SinglePageTableAdapter(RuleBasedAdapter):
 
     def fetch_animal_list(self) -> list[tuple[str, str]]:
         rows = self._load_rows()
+        # 行 0 件は「現在その種別の収容動物がいない」真ゼロとして扱う。
+        # HTML 取得・パースまで通っているのに ROW_SELECTOR にヒットしない状態は、
+        # 例えば京都府保健所サイトの「現在保護している動物はいません」表示や、
+        # 香川県等の収容 0 件状態で正常に発生する。
+        # サイト DOM 構造変化による偽陰性は zero_count_audit で別途検出する運用。
         if not rows:
-            raise ParsingError(
-                "行要素が見つかりません",
-                selector=self.ROW_SELECTOR,
-                url=self.site_config.list_url,
-            )
+            return []
         category = self.site_config.category
         return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
 

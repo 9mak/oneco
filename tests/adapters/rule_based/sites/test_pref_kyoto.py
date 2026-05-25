@@ -12,8 +12,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.pref_kyoto import (
     PrefKyotoAdapter,
@@ -85,16 +83,19 @@ class TestPrefKyotoAdapter:
             f"HTML はキャッシュされ HTTP は 1 回のみ: got {mock_get.call_count}"
         )
 
-    def test_raises_parsing_error_for_unrelated_html(self):
-        """テーブルも empty state テキストも無い HTML では ParsingError"""
+    def test_unrelated_html_returns_empty_list(self):
+        """テーブルが無い HTML は真ゼロとして空リストを返す
+        (旧仕様は empty state テキスト未検出で ParsingError を投げていたが、
+         サイト DOM 構造変化や別表記の empty state 告知でも 0 件は正常と扱う方針に変更)
+        """
         adapter = PrefKyotoAdapter(_site())
         with patch.object(
             adapter,
             "_http_get",
             return_value="<html><body><p>無関係なページ</p></body></html>",
         ):
-            with pytest.raises(Exception):
-                adapter.fetch_animal_list()
+            result = adapter.fetch_animal_list()
+        assert result == []
 
     def test_infer_species_from_site_name_dog(self):
         """サイト名に "犬" を含むと species 推定が "犬" になる"""
