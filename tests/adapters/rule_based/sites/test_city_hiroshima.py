@@ -10,8 +10,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.city_hiroshima import (
     CityHiroshimaAdapter,
@@ -137,12 +135,12 @@ class TestCityHiroshimaAdapter:
                 SiteAdapterRegistry.register(name, CityHiroshimaAdapter)
             assert SiteAdapterRegistry.get(name) is CityHiroshimaAdapter
 
-    def test_raises_parsing_error_when_no_dl(self):
-        """`<dl>` が存在しない HTML では ParsingError 系例外を出す"""
+    def test_no_dl_returns_empty_list(self):
+        """`<dl>` が存在しない HTML は真ゼロとして空リストを返す"""
         adapter = CityHiroshimaAdapter(_site_dog())
         with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
-            with pytest.raises(Exception):
-                adapter.fetch_animal_list()
+            result = adapter.fetch_animal_list()
+        assert result == []
 
     def test_zero_animals_acceptable_when_dl_empty(self):
         """`<dl>` 内の dt/dd が空でもクラッシュせず空フィールドで返す

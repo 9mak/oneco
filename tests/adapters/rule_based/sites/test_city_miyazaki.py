@@ -12,8 +12,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.city_miyazaki import (
     CityMiyazakiAdapter,
@@ -112,9 +110,9 @@ class TestCityMiyazakiAdapter:
                 SiteAdapterRegistry.register(name, CityMiyazakiAdapter)
             assert SiteAdapterRegistry.get(name) is CityMiyazakiAdapter
 
-    def test_raises_parsing_error_when_no_article(self):
-        """`article.body` 要素が無い HTML では例外を出す"""
+    def test_no_article_returns_empty_list(self):
+        """`article.body` 要素が無い HTML は真ゼロとして空リストを返す"""
         adapter = CityMiyazakiAdapter(_site())
         with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
-            with pytest.raises(Exception):
-                adapter.fetch_animal_list()
+            result = adapter.fetch_animal_list()
+        assert result == []

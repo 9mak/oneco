@@ -10,8 +10,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.city_toyota_pdf import (
     CityToyotaPdfAdapter,
@@ -191,15 +189,13 @@ class TestFetchAndExtract:
 
         assert mock_dl.call_count == initial_calls
 
-    def test_no_pdf_links_raises_parsing_error(self):
-        from data_collector.adapters.municipality_adapter import ParsingError
-
+    def test_no_pdf_links_returns_empty(self):
         adapter = CityToyotaPdfAdapter(_site())
         empty_html = "<html><body><p>準備中</p></body></html>"
 
         with patch.object(adapter, "_http_get", return_value=empty_html):
-            with pytest.raises(ParsingError):
-                adapter.fetch_animal_list()
+            result = adapter.fetch_animal_list()
+        assert result == []
 
 
 # ─────────────────── 登録テスト ───────────────────

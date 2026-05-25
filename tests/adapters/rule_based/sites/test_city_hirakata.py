@@ -13,8 +13,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.city_hirakata import (
     CityHirakataAdapter,
@@ -86,12 +84,15 @@ class TestCityHirakataAdapter:
             result = adapter.fetch_animal_list()
         assert result == []
 
-    def test_raises_parsing_error_when_no_blocks_and_no_empty_state(self):
-        """0 件告知すら無い空 HTML では ParsingError 系例外を出す"""
+    def test_no_blocks_returns_empty_list(self):
+        """0 件告知すら無い空 HTML でも真ゼロとして空リストを返す
+        (旧仕様は ParsingError を投げていたが、サイト DOM 構造変化や別表記の
+         empty state 告知でも 0 件は正常と扱う方針に変更)
+        """
         adapter = CityHirakataAdapter(_site_hirakata())
         with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
-            with pytest.raises(Exception):
-                adapter.fetch_animal_list()
+            result = adapter.fetch_animal_list()
+        assert result == []
 
     def test_extract_animal_details_with_dog_card(self):
         """犬カードがある HTML から species=犬 として抽出できる"""

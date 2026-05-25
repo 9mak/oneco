@@ -20,7 +20,6 @@
 
 from __future__ import annotations
 
-import re
 from typing import ClassVar
 
 from bs4 import Tag
@@ -76,33 +75,11 @@ class CityHirakataAdapter(SinglePageTableAdapter):
         "体重": "size",
     }
 
-    # 「掲載情報が無い場合でも、犬が行方不明になったら…」等の 0 件告知。
-    # 枚方市テンプレートでは「掲載情報が無い」フレーズが必ず本文中に
-    # 含まれるためこれを empty-state の signal とする。
-    _EMPTY_STATE_PATTERN: ClassVar[re.Pattern[str]] = re.compile(r"掲載情報[がは]?(?:無|な)い")
-
     # ─────────────────── オーバーライド ───────────────────
 
-    def fetch_animal_list(self) -> list[tuple[str, str]]:
-        """一覧ページから動物の仮想 URL を返す
-
-        基底実装は行が 0 件のとき `ParsingError` を投げるが、枚方市の
-        テンプレートでは「掲載情報が無い場合でも…」の告知文だけが
-        出る正常な 0 件状態が発生し得る。本文に empty-state テキストを
-        検出した場合は空リストを返し、それ以外で行が見つからなかった
-        場合のみ `ParsingError` を伝播する。
-        """
-        rows = self._load_rows()
-        if not rows:
-            if self._html_cache and self._EMPTY_STATE_PATTERN.search(self._html_cache):
-                return []
-            raise ParsingError(
-                "行要素が見つかりません",
-                selector=self.ROW_SELECTOR,
-                url=self.site_config.list_url,
-            )
-        category = self.site_config.category
-        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
+    # fetch_animal_list は基底実装 (rows 0 件 → 空リスト) で十分のため
+    # オーバーライドしない。「掲載情報が無い場合でも…」告知ページも、
+    # 基底実装が ROW_SELECTOR にヒットしないことを検知して自然に [] を返す。
 
     def extract_animal_details(
         self, virtual_url: str, category: str = "sheltered"
