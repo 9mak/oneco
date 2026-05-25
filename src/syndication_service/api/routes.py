@@ -11,6 +11,7 @@ Requirements Coverage:
 """
 
 import logging
+from datetime import date as Date
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response
@@ -26,6 +27,23 @@ from src.syndication_service.services.input_validator import InputValidator
 from src.syndication_service.services.metrics_collector import MetricsCollector
 
 logger = logging.getLogger(__name__)
+
+
+def _parse_iso_date(raw: str | None, field_name: str) -> Date | None:
+    """ISO 形式日付文字列をパース。不正な値は 400 を返す。
+
+    Date.fromisoformat の生 ValueError を伝播させると FastAPI が 500 を
+    返してしまうため、明示的に 400 を返す。
+    """
+    if raw is None:
+        return None
+    try:
+        return Date.fromisoformat(raw)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{field_name} は YYYY-MM-DD 形式で指定してください: {raw!r}",
+        ) from e
 
 
 async def get_animal_repository() -> AnimalRepository:
@@ -270,11 +288,9 @@ def create_syndication_router(
 
         Requirements: 6.1, 6.3, 6.4, 6.5, 6.6, 6.7
         """
-        from datetime import date as Date
-
-        # 日付文字列をパース
-        archived_from_date = Date.fromisoformat(archived_from) if archived_from else None
-        archived_to_date = Date.fromisoformat(archived_to) if archived_to else None
+        # 日付文字列をパース (不正な値は 400 を返す)
+        archived_from_date = _parse_iso_date(archived_from, "archived_from")
+        archived_to_date = _parse_iso_date(archived_to, "archived_to")
 
         # クエリパラメータを構築
         params = ArchiveFeedQueryParams(
@@ -362,11 +378,9 @@ def create_syndication_router(
 
         Requirements: 6.2, 6.3, 6.4, 6.5, 6.6, 6.7
         """
-        from datetime import date as Date
-
-        # 日付文字列をパース
-        archived_from_date = Date.fromisoformat(archived_from) if archived_from else None
-        archived_to_date = Date.fromisoformat(archived_to) if archived_to else None
+        # 日付文字列をパース (不正な値は 400 を返す)
+        archived_from_date = _parse_iso_date(archived_from, "archived_from")
+        archived_to_date = _parse_iso_date(archived_to, "archived_to")
 
         # クエリパラメータを構築
         params = ArchiveFeedQueryParams(

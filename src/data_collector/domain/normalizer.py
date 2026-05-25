@@ -65,11 +65,11 @@ class DataNormalizer:
             sex=DataNormalizer._normalize_sex(raw_data.sex),
             age_months=DataNormalizer._normalize_age(raw_data.age),
             color=DataNormalizer._cap_color(raw_data.color),
-            size=raw_data.size if raw_data.size else None,
+            size=DataNormalizer._cap_size(raw_data.size),
             shelter_date=datetime.strptime(shelter_date_str, "%Y-%m-%d").date(),
             location=raw_data.location if raw_data.location else "不明",
             prefecture=infer_prefecture_from_url(raw_data.source_url),
-            phone=DataNormalizer._normalize_phone(raw_data.phone),
+            phone=DataNormalizer._normalize_phone(raw_data.phone) or None,
             image_urls=image_urls_raw,
             source_url=raw_data.source_url,
             category=raw_data.category,
@@ -147,6 +147,10 @@ class DataNormalizer:
     # 全滅する。adapter 側のフィールド誤割当 (例: 横須賀の「特徴」欄に
     # 長文説明が入るケース) のセーフネットとしてこの長さで切り捨てる。
     _COLOR_MAX_LEN: int = 100
+    # animals.size VARCHAR(50)
+    _SIZE_MAX_LEN: int = 50
+    # animals.phone VARCHAR(20)
+    _PHONE_MAX_LEN: int = 20
 
     @staticmethod
     def _cap_color(raw_color: str | None) -> str | None:
@@ -158,6 +162,21 @@ class DataNormalizer:
             return None
         if len(text) > DataNormalizer._COLOR_MAX_LEN:
             return text[: DataNormalizer._COLOR_MAX_LEN]
+        return text
+
+    @staticmethod
+    def _cap_size(raw_size: str | None) -> str | None:
+        """size を DB 制約 VARCHAR(50) に収まる長さで返す。空は None。
+
+        adapter で 大きさ セルに長文説明が入る誤割当ケースのセーフネット。
+        """
+        if not raw_size:
+            return None
+        text = raw_size.strip()
+        if not text:
+            return None
+        if len(text) > DataNormalizer._SIZE_MAX_LEN:
+            return text[: DataNormalizer._SIZE_MAX_LEN]
         return text
 
     @staticmethod
@@ -438,5 +457,11 @@ class DataNormalizer:
         if len(digits) == 11:
             return f"{digits[0:3]}-{digits[3:7]}-{digits[7:11]}"
 
-        # 無効な桁数の場合は数字のみを返す (元のphone_strではなくdigits)
-        return digits if digits else phone_str
+        # 無効な桁数の場合は数字のみを返す。
+        # 数字が 0 桁 (例: 「お問い合わせフォームから」「https://...」が phone セルに
+        # 流入したケース) の場合に元の長文 phone_str を返すと、DB の phone VARCHAR(20)
+        # を超過して INSERT 失敗 → トランザクション全体 rollback でサイト全滅する。
+        # 数字無しは空文字 (= 後段で None に変換される) を返す。
+        if not digits:
+            return ""
+        return digits[: DataNormalizer._PHONE_MAX_LEN]
