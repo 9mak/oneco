@@ -7,6 +7,8 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
+import pytest
+
 from data_collector.adapters.rule_based.pdf_table import PdfTableAdapter
 from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
@@ -100,3 +102,76 @@ class TestPdfTableAdapter:
         with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             result = adapter.fetch_animal_list()
         assert result == []
+
+
+class TestPdfTableAdapterDownloadSizeLimit:
+    """`_download_pdf` のサイズ上限ガード (OOM / DoS 防止)"""
+
+    def _mock_response(self, content_bytes: bytes, content_length: str | None = None):
+        """`requests.get(..., stream=True)` の戻り値を模した context manager"""
+        from unittest.mock import MagicMock
+
+        response = MagicMock()
+        response.raise_for_status = MagicMock()
+        response.headers = {}
+        if content_length is not None:
+            response.headers["Content-Length"] = content_length
+
+        def iter_content(chunk_size: int = 64 * 1024):
+            i = 0
+            while i < len(content_bytes):
+                yield content_bytes[i : i + chunk_size]
+                i += chunk_size
+
+        response.iter_content = iter_content
+        response.__enter__ = MagicMock(return_value=response)
+        response.__exit__ = MagicMock(return_value=False)
+        return response
+
+    def test_small_pdf_downloads_normally(self):
+        """上限以下の PDF は通常通り bytes が返る"""
+        from unittest.mock import patch
+
+        adapter = _SamplePdfAdapter(_site())
+        small_pdf = b"PDF-1.4 small content"
+
+        with patch(
+            "data_collector.adapters.rule_based.pdf_table.requests.get",
+            return_value=self._mock_response(small_pdf, content_length=str(len(small_pdf))),
+        ):
+            result = adapter._download_pdf("https://example.com/small.pdf")
+        assert result == small_pdf
+
+    def test_content_length_over_limit_rejected_early(self):
+        """Content-Length が上限超なら本体ダウンロード前に NetworkError"""
+        from unittest.mock import patch
+
+        from data_collector.adapters.municipality_adapter import NetworkError
+
+        adapter = _SamplePdfAdapter(_site())
+        adapter.PDF_MAX_BYTES = 1000  # テスト用に小さく
+        huge_declared = str(adapter.PDF_MAX_BYTES + 1)
+
+        with patch(
+            "data_collector.adapters.rule_based.pdf_table.requests.get",
+            return_value=self._mock_response(b"", content_length=huge_declared),
+        ):
+            with pytest.raises(NetworkError, match="上限"):
+                adapter._download_pdf("https://example.com/huge.pdf")
+
+    def test_streaming_size_exceeded_raises(self):
+        """Content-Length 未宣言でもストリーム読み込み中に上限超で NetworkError"""
+        from unittest.mock import patch
+
+        from data_collector.adapters.municipality_adapter import NetworkError
+
+        adapter = _SamplePdfAdapter(_site())
+        adapter.PDF_MAX_BYTES = 1000  # テスト用に小さく
+        oversize_pdf = b"x" * (adapter.PDF_MAX_BYTES + 100)
+
+        with patch(
+            "data_collector.adapters.rule_based.pdf_table.requests.get",
+            return_value=self._mock_response(oversize_pdf, content_length=None),
+        ):
+            with pytest.raises(NetworkError, match="上限"):
+                adapter._download_pdf("https://example.com/no-clength.pdf")
