@@ -197,23 +197,35 @@ class TestNormalizeDate:
         assert DataNormalizer._normalize_date("R7　8/27　午前10時頃") == "2025-08-27"
         assert DataNormalizer._normalize_date("R6　9/27　午後3時頃") == "2024-09-27"
 
-    def test_normalize_date_month_day_only(self):
-        """月/日のみの場合、当年を補完"""
-        from datetime import datetime
+    def test_normalize_date_month_day_only(self, monkeypatch):
+        """月/日のみの場合、補完ロジック (今日固定 = 2026-05-25)
 
-        current_year = datetime.now().year
+        - "4/30" → 過去 25 日 → 今年扱い
+        - "6/17" → 未来 23 日 → 30 日以内なので今年扱い
+        - "1/31" → 過去 114 日 → 11 ヶ月以内なので今年扱い
+        """
+        monkeypatch.setattr(DataNormalizer, "_today", staticmethod(lambda: date(2026, 5, 25)))
 
-        assert DataNormalizer._normalize_date("4/30") == f"{current_year}-04-30"
-        assert DataNormalizer._normalize_date("6/17") == f"{current_year}-06-17"
-        assert DataNormalizer._normalize_date("12/1") == f"{current_year}-12-01"
+        assert DataNormalizer._normalize_date("4/30") == "2026-04-30"
+        assert DataNormalizer._normalize_date("6/17") == "2026-06-17"
+        # "12/1" を 5 月時点で見た場合は前年扱い (今日 +30 日超は前年補完)
+        assert DataNormalizer._normalize_date("12/1") == "2025-12-01"
 
-    def test_normalize_date_month_day_with_time_suffix(self):
-        """時刻付き月/日のみの場合、当年を補完"""
-        from datetime import datetime
+    def test_normalize_date_month_day_with_time_suffix(self, monkeypatch):
+        """時刻付き月/日のみの場合の補完"""
+        monkeypatch.setattr(DataNormalizer, "_today", staticmethod(lambda: date(2026, 5, 25)))
+        assert DataNormalizer._normalize_date("1/31　午前10時頃") == "2026-01-31"
 
-        current_year = datetime.now().year
+    def test_normalize_date_yearless_future_uses_previous_year(self, monkeypatch):
+        """年なし日付で 今日 +30 日 を超える未来は前年補完される (Codex MED #6)
 
-        assert DataNormalizer._normalize_date("1/31　午前10時頃") == f"{current_year}-01-31"
+        5 月時点でサイトに "12/1" と書かれていたら、その日付は来年 12/1 では
+        なく去年 12/1 を指すのが自然 (保護動物の収容日は通常過去)。
+        """
+        monkeypatch.setattr(DataNormalizer, "_today", staticmethod(lambda: date(2026, 5, 25)))
+        # 12/1 は 約 190 日後の未来 → 30 日超 → 前年に補完
+        assert DataNormalizer._normalize_date("12/1") == "2025-12-01"
+        assert DataNormalizer._normalize_date("12月1日") == "2025-12-01"
 
     def test_normalize_date_reiwa_dot_format(self):
         """RN.M/D 形式（ドット区切り）を ISO 8601 に変換"""
@@ -227,6 +239,19 @@ class TestNormalizeDate:
 
         with pytest.raises(ValueError):
             DataNormalizer._normalize_date("")
+
+    def test_normalize_date_reiwa_zero_year_rejected(self):
+        """令和0年 は存在しないので ValueError (Codex LOW #7)
+
+        旧実装は `年 = 2018 + reiwa_year` で「令和0年」を 2018 年として通過
+        させていたが、令和元年 = 2019 年なので 2018 年に変換するのは不正。
+        """
+        with pytest.raises(ValueError, match="令和0年"):
+            DataNormalizer._normalize_date("令和0年1月1日")
+        with pytest.raises(ValueError, match="令和0年"):
+            DataNormalizer._normalize_date("R0.1.1")
+        with pytest.raises(ValueError, match="令和0年"):
+            DataNormalizer._normalize_date("R0.1/1")
 
 
 class TestNormalizePhone:
