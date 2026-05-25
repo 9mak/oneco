@@ -260,6 +260,47 @@ class TestNormalizePhone:
         assert result == "123"  # または ValueError
 
 
+class TestCapColor:
+    """color 長さ制限 (DB の VARCHAR(100) セーフネット)"""
+
+    def test_cap_color_short_passthrough(self):
+        """短い color はそのまま返す"""
+        assert DataNormalizer._cap_color("茶白") == "茶白"
+        assert DataNormalizer._cap_color("黒") == "黒"
+
+    def test_cap_color_empty_returns_none(self):
+        """空文字 / None は None"""
+        assert DataNormalizer._cap_color("") is None
+        assert DataNormalizer._cap_color(None) is None
+        assert DataNormalizer._cap_color("   ") is None
+
+    def test_cap_color_truncates_at_100_chars(self):
+        """100 文字超の color は 100 文字に切り詰めて DB 制約違反を防ぐ"""
+        long_text = "あ" * 150
+        result = DataNormalizer._cap_color(long_text)
+        assert result is not None
+        assert len(result) == 100
+
+    def test_normalize_caps_long_color_in_pipeline(self):
+        """`normalize` 経由でも長文 color が 100 文字に収まる"""
+        raw = RawAnimalData(
+            species="犬",
+            sex="メス",
+            age="3歳",
+            color="あ" * 200,
+            size="中",
+            shelter_date="2026-05-01",
+            location="横須賀市",
+            phone="04-6869-0040",
+            image_urls=[],
+            source_url="https://example.com/animals/1",
+            category="adoption",
+        )
+        result = DataNormalizer.normalize(raw)
+        assert result.color is not None
+        assert len(result.color) <= 100
+
+
 class TestNormalizerIntegration:
     """DataNormalizer の統合テスト"""
 

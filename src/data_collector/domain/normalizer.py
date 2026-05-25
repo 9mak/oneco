@@ -64,7 +64,7 @@ class DataNormalizer:
             species=DataNormalizer._normalize_species(raw_data.species),
             sex=DataNormalizer._normalize_sex(raw_data.sex),
             age_months=DataNormalizer._normalize_age(raw_data.age),
-            color=raw_data.color if raw_data.color else None,
+            color=DataNormalizer._cap_color(raw_data.color),
             size=raw_data.size if raw_data.size else None,
             shelter_date=datetime.strptime(shelter_date_str, "%Y-%m-%d").date(),
             location=raw_data.location if raw_data.location else "不明",
@@ -141,6 +141,24 @@ class DataNormalizer:
         if today.day < birth.day:
             months -= 1
         return max(months, 0)
+
+    # DB の animals.color が VARCHAR(100) のため、これを超える文字列が
+    # 流入すると INSERT 失敗 → トランザクション全体 rollback で 1 サイト分が
+    # 全滅する。adapter 側のフィールド誤割当 (例: 横須賀の「特徴」欄に
+    # 長文説明が入るケース) のセーフネットとしてこの長さで切り捨てる。
+    _COLOR_MAX_LEN: int = 100
+
+    @staticmethod
+    def _cap_color(raw_color: str | None) -> str | None:
+        """color を DB 制約に収まる長さで返す。空/長さ 0 は None。"""
+        if not raw_color:
+            return None
+        text = raw_color.strip()
+        if not text:
+            return None
+        if len(text) > DataNormalizer._COLOR_MAX_LEN:
+            return text[: DataNormalizer._COLOR_MAX_LEN]
+        return text
 
     @staticmethod
     def _normalize_age(raw_age: str) -> int | None:

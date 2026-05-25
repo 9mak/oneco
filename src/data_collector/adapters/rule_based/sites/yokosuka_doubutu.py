@@ -44,6 +44,8 @@ class YokosukaDoubutuAdapter(WordPressListAdapter):
         # 年齢: 詳細ページに専用フィールドが無い
         "age": FieldSpec(label="年齢"),
         # 特徴（毛色を含むことが多い。例: "黒白"）
+        # 注: 譲渡カテゴリでは長文の説明が入るため _postprocess_fields で
+        # 30 文字超は color から外し description として扱う。
         "color": FieldSpec(label="特徴"),
         # 大きさ: 専用フィールドが無いことが多い
         "size": FieldSpec(label="大きさ"),
@@ -55,10 +57,28 @@ class YokosukaDoubutuAdapter(WordPressListAdapter):
         "phone": FieldSpec(selector="#footer-text-2"),
     }
 
+    # 「特徴」を color として扱える長さの上限。これを超える場合は
+    # 毛色ではなく譲渡対象動物の説明文と判定し color フィールドから外す。
+    _COLOR_MAX_LEN: ClassVar[int] = 30
+
     # 動物写真は `#photos` ブロック配下に集約されている
     IMAGE_SELECTOR: ClassVar[str] = "div#photos img"
 
     # ─────────────────── 拡張 ───────────────────
+
+    def _postprocess_fields(
+        self, fields: dict[str, str], detail_url: str, soup: BeautifulSoup
+    ) -> None:
+        """譲渡カテゴリの 特徴 セルは長文の説明文が入るため color から除外する
+
+        例: 「12歳、体重29Kg、フィラリア陰性、内部寄生虫駆除薬の投薬済...」
+        は毛色ではなく説明文のため、`_COLOR_MAX_LEN` 超のテキストを color に
+        入れたままだと DB の `String(100)` 制約で INSERT 失敗 → 全体 rollback
+        を引き起こす。長文判定時は空文字に置換する。
+        """
+        color = fields.get("color", "")
+        if color and len(color) > self._COLOR_MAX_LEN:
+            fields["color"] = ""
 
     def _extract_by_label(self, soup: BeautifulSoup, label: str) -> str:
         """基底の `<dt>/<dd>`, `<th>/<td>` に加えて `<td>/<td>` パターンも探す

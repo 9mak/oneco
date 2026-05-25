@@ -143,6 +143,57 @@ class TestYokosukaDoubutuAdapter:
                 SiteAdapterRegistry.register(name, YokosukaDoubutuAdapter)
             assert SiteAdapterRegistry.get(name) is YokosukaDoubutuAdapter
 
+    def test_long_features_text_excluded_from_color(self):
+        """譲渡カテゴリで「特徴」セルに長文説明が入る場合、color には流入させない
+
+        実サイトの譲渡犬/譲渡猫ページの 特徴 セルは「12歳、体重29Kg、フィラリア
+        陰性、内部寄生虫駆除薬の投薬済...」のような長文説明文が入ることがある。
+        この長文が DB の color VARCHAR(100) に INSERT されると StringDataRightTruncation
+        で失敗 → トランザクション全体 rollback で 1 サイト全滅する。
+        adapter 段階で 30 文字超の 特徴 は color から除外する。
+        """
+        long_features_html = """
+        <html><body><table><tbody>
+          <tr><td>整理番号</td><td>26-99</td></tr>
+          <tr><td>種類</td><td>雑種</td></tr>
+          <tr><td>性別</td><td>メス</td></tr>
+          <tr><td>収容日</td><td>R8.5.14</td></tr>
+          <tr><td>収容場所</td><td>不明</td></tr>
+          <tr><td>特徴</td><td>12歳、体重29Kg、フィラリア陰性、内部寄生虫駆除薬の投薬済。
+            お散歩大好きです。ダイエット中です。フードガードがあります。</td></tr>
+        </tbody></table></body></html>
+        """
+        adapter = YokosukaDoubutuAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=long_features_html):
+            raw = adapter.extract_animal_details(
+                "https://www.yokosuka-doubutu.com/adopted-animals/26-99/",
+                category="adoption",
+            )
+        # 長文説明文は color に流れ込まない
+        assert raw.color == ""
+        # 他のフィールドは通常通り抽出される
+        assert raw.species == "雑種"
+        assert raw.sex == "メス"
+
+    def test_short_color_text_kept_in_color(self):
+        """短い 特徴 (例: '黒白') は従来通り color として採用される"""
+        short_color_html = """
+        <html><body><table><tbody>
+          <tr><td>種類</td><td>豆柴</td></tr>
+          <tr><td>性別</td><td>オス</td></tr>
+          <tr><td>収容日</td><td>R8.5.14</td></tr>
+          <tr><td>収容場所</td><td>池田町</td></tr>
+          <tr><td>特徴</td><td>黒白</td></tr>
+        </tbody></table></body></html>
+        """
+        adapter = YokosukaDoubutuAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=short_color_html):
+            raw = adapter.extract_animal_details(
+                "https://www.yokosuka-doubutu.com/protected-animals/26-22/",
+                category="sheltered",
+            )
+        assert raw.color == "黒白"
+
     def test_extract_handles_table_without_th(self):
         """`<th>` を持たない 2 列テーブル (`<td>label</td><td>value</td>`)
         からラベルベースで値が取れる (本サイト固有の拡張)
