@@ -78,6 +78,10 @@ class StaticFetcher(PageFetcher):
 class PdfFetcher(PageFetcher):
     """PDFをダウンロードしてテキストを抽出するフェッチャー"""
 
+    # PDF ダウンロードのサイズ上限 (20MB)。
+    # 巨大ファイルでの OOM や長時間 hang を防ぐ。
+    PDF_MAX_BYTES: int = 20 * 1024 * 1024
+
     def fetch(self, url: str) -> str:
         """
         PDFをダウンロードしてテキストを返す（HTML代わりにLLMへ渡す）
@@ -89,7 +93,7 @@ class PdfFetcher(PageFetcher):
             PDFから抽出したテキスト（<pre>タグで囲んだ形式）
 
         Raises:
-            NetworkError: ダウンロード失敗またはテキスト抽出失敗時
+            NetworkError: ダウンロード失敗、サイズ上限超過、またはテキスト抽出失敗時
         """
         if pdfplumber is None:  # pragma: no cover
             raise NetworkError(
@@ -98,9 +102,40 @@ class PdfFetcher(PageFetcher):
             )
 
         try:
-            response = requests.get(url, timeout=30)
-            response.raise_for_status()
-            pdf_bytes = response.content
+            with requests.get(url, timeout=30, stream=True) as response:
+                response.raise_for_status()
+
+                # Content-Length 宣言があれば事前 reject
+                declared = response.headers.get("Content-Length")
+                if declared is not None:
+                    try:
+                        if int(declared) > self.PDF_MAX_BYTES:
+                            raise NetworkError(
+                                message=(
+                                    f"PDF サイズ ({declared} bytes) が上限 "
+                                    f"{self.PDF_MAX_BYTES} bytes を超過"
+                                ),
+                                url=url,
+                            )
+                    except ValueError:
+                        pass
+
+                chunks: list[bytes] = []
+                total = 0
+                for chunk in response.iter_content(chunk_size=64 * 1024):
+                    if not chunk:
+                        continue
+                    total += len(chunk)
+                    if total > self.PDF_MAX_BYTES:
+                        raise NetworkError(
+                            message=(
+                                f"PDF サイズが上限 {self.PDF_MAX_BYTES} bytes を"
+                                f"ストリーム読み込み中に超過 (受信 {total} bytes 時点)"
+                            ),
+                            url=url,
+                        )
+                    chunks.append(chunk)
+                pdf_bytes = b"".join(chunks)
         except requests.RequestException as e:
             raise NetworkError(
                 message=f"PDFダウンロード失敗: {e}",
