@@ -75,3 +75,4 @@ output/*
 .envrc
 scripts/poc_kochi_selectors.yaml
 scripts/poc_selectors/
+AGENTS.md

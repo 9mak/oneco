@@ -250,3 +250,39 @@ class TestArchiveFeedQueryParams:
 
         assert result["species"] == "犬"
         assert result["archived_from"] == "2026-01-01"
+
+
+class TestParseIsoDate:
+    """_parse_iso_date ヘルパー (不正値で 500 ではなく 400 を返す)"""
+
+    def test_parse_iso_date_valid(self):
+        from src.syndication_service.api.routes import _parse_iso_date
+
+        result = _parse_iso_date("2026-05-01", "archived_from")
+        assert result == date(2026, 5, 1)
+
+    def test_parse_iso_date_none_passthrough(self):
+        from src.syndication_service.api.routes import _parse_iso_date
+
+        assert _parse_iso_date(None, "archived_from") is None
+
+    def test_parse_iso_date_invalid_raises_400(self):
+        """不正な日付文字列は HTTPException(400) を投げる (500 ではなく)"""
+        from fastapi import HTTPException
+
+        from src.syndication_service.api.routes import _parse_iso_date
+
+        with pytest.raises(HTTPException) as exc:
+            _parse_iso_date("not-a-date", "archived_from")
+        assert exc.value.status_code == 400
+        assert "archived_from" in exc.value.detail
+
+    def test_parse_iso_date_empty_string_raises_400(self):
+        """空文字も不正値として 400"""
+        from fastapi import HTTPException
+
+        from src.syndication_service.api.routes import _parse_iso_date
+
+        with pytest.raises(HTTPException) as exc:
+            _parse_iso_date("", "archived_to")
+        assert exc.value.status_code == 400
