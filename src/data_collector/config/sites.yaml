@@ -1323,6 +1323,8 @@ sites:
     list_url: "https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html"
     category: "lost"
     single_page: true
+    # 過去 run で 120s タイムアウト連発のため個別に 240s へ拡張
+    timeout_sec: 240
 
   - name: "山梨県（探している他のペット）"
     prefecture: "山梨県"
@@ -1661,3 +1663,5 @@ sites:
     list_url: "https://kochi-apc.com/center-data/"
     list_link_pattern: "a[href*='kochi-apc.com/center-data/']"
     category: "adoption"
+    # 過去 run で 120s タイムアウト連発のため個別に 240s へ拡張
+    timeout_sec: 240

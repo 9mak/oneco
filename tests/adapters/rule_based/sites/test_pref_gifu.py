@@ -87,16 +87,20 @@ class TestPrefGifuAdapter:
             f"HTML はキャッシュされ HTTP は 1 回のみ: got {mock_get.call_count}"
         )
 
-    def test_raises_parsing_error_for_unrelated_html(self):
-        """ハブの目印 (保健所名/区域 や 迷い犬情報 等) が一切無い HTML では ParsingError"""
+    def test_unrelated_html_returns_empty_list(self):
+        """ハブの目印が一切無い HTML でも真ゼロとして空リストを返す
+
+        PR #36 の方針 (HTML パース成功 + 行 0 件 = 真ゼロ) に揃え、テンプレート
+        変化による偽陰性は zero_count_audit で別途検出する運用とする。
+        """
         adapter = PrefGifuAdapter(_site())
         with patch.object(
             adapter,
             "_http_get",
             return_value="<html><body><p>無関係なページ</p></body></html>",
         ):
-            with pytest.raises(ParsingError):
-                adapter.fetch_animal_list()
+            result = adapter.fetch_animal_list()
+        assert result == []
 
     def test_extract_animal_details_always_raises(self):
         """ハブページからは動物詳細が取れないため例外を投げる"""

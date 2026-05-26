@@ -60,24 +60,13 @@ class PrefGifuAdapter(SinglePageTableAdapter):
     def fetch_animal_list(self) -> list[tuple[str, str]]:
         """ハブページから動物の仮想 URL を返す
 
-        本ページは常に 0 件のハブ構造である。テンプレートが
-        想定通り (保健所名 / 区域 の案内表 or 案内文) であることを
-        確認した上で空リストを返す。テンプレートが大幅に変わった場合は
-        ParsingError を投げて手動検知できるようにする。
+        本ページは常に 0 件のハブ構造である。PR #36 の方針 (HTML パース成功 +
+        行 0 件 = 真ゼロ) に揃えて、目印テキスト検出の有無にかかわらず空リストを
+        返す。テンプレート変化による偽陰性は `zero_count_audit` で別途検出する運用。
         """
         # `_load_rows` は HTML を取得 + キャッシュする副作用を持つため呼ぶ
         self._load_rows()
-        html = self._html_cache or ""
-
-        if _HUB_HEADER_PATTERN.search(html) or _HUB_BODY_PATTERN.search(html):
-            # 想定通りのハブページ → 0 件で正常
-            return []
-
-        # ハブの目印が一切ない = テンプレート変更や別ページが返ってきた可能性
-        raise ParsingError(
-            "岐阜県迷い犬情報ハブページの目印が見つかりません",
-            url=self.site_config.list_url,
-        )
+        return []
 
     def extract_animal_details(self, virtual_url: str, category: str = "lost") -> RawAnimalData:
         """ハブページからは動物が取れないため呼ばれた時点で異常
