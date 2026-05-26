@@ -218,3 +218,52 @@ class TestLoadCountsBySiteUrlPrefix:
         )
         # dict 反復順は挿入順なので最初の "サイトA" が 1、"サイトA子" は 0
         assert sum(counts.values()) == 1
+
+
+class TestSnapshotStoreMergeOnSave:
+    """save_snapshot は既存ファイルと merge する (CollectorService が per-site で呼ぶため)"""
+
+    def test_consecutive_save_calls_accumulate_animals(self, tmp_path):
+        """2 回の save_snapshot で両方のサイトのデータが残る"""
+        snapshot_dir = tmp_path / "snapshots"
+        store = SnapshotStore(snapshot_dir=snapshot_dir)
+
+        site_a = _make_animal("https://site-a.example.com/animals/1", location="A 県")
+        site_b = _make_animal("https://site-b.example.com/animals/1", location="B 県")
+
+        store.save_snapshot([site_a])
+        store.save_snapshot([site_b])
+
+        loaded = store.load_animal_map()
+        assert len(loaded) == 2
+        assert "https://site-a.example.com/animals/1" in loaded
+        assert "https://site-b.example.com/animals/1" in loaded
+
+    def test_same_url_in_second_call_overrides_existing(self, tmp_path):
+        """同じ source_url が再保存されたら新しい値で上書き"""
+        snapshot_dir = tmp_path / "snapshots"
+        store = SnapshotStore(snapshot_dir=snapshot_dir)
+        url = "https://example.com/a/1"
+
+        store.save_snapshot([_make_animal(url, location="旧")])
+        store.save_snapshot([_make_animal(url, location="新")])
+
+        loaded = store.load_animal_map()
+        assert len(loaded) == 1
+        assert loaded[url].location == "新"
+
+    def test_reset_clears_snapshot(self, tmp_path):
+        """reset() で snapshot ファイルが削除される"""
+        snapshot_dir = tmp_path / "snapshots"
+        store = SnapshotStore(snapshot_dir=snapshot_dir)
+        store.save_snapshot([_make_animal("https://example.com/a/1")])
+        assert (snapshot_dir / "latest.json").exists()
+
+        store.reset()
+        assert not (snapshot_dir / "latest.json").exists()
+
+    def test_reset_missing_file_no_error(self, tmp_path):
+        """reset() は snapshot ファイルが無くてもエラーにならない"""
+        snapshot_dir = tmp_path / "snapshots"
+        store = SnapshotStore(snapshot_dir=snapshot_dir)
+        store.reset()  # 何も無い状態でも OK
