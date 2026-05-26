@@ -38,13 +38,12 @@ class DouaiPrefTochigiAdapter(WordPressListAdapter):
     site_name を 1 クラスで束ねる。
     """
 
-    # 一覧ページの detail link 候補:
-    # - `/news/<slug>/`     : 個別記事 (主要な動物データの公開先)
-    # - `#treatment_list .post_list .item a` :
-    #     カテゴリ親ページ等のカード (`/work/...` 系)。
-    #     `/news/` 投稿が無い期間でも一覧ページとして空にならない。
-    # 同じ URL は WordPressListAdapter 側の seen 集合で重複除去される。
-    LIST_LINK_SELECTOR: ClassVar[str] = "a[href*='/news/'], #treatment_list .post_list .item a"
+    # 一覧ページの detail link 候補は `/news/<slug>/` 形式の WordPress 個別記事のみ。
+    # 旧実装は `/news/` 末尾 URL や `#treatment_list .post_list .item a`
+    # (カテゴリ親 `/work/...` 系) も拾っており、これらが detail 抽出で失敗して
+    # 「Failed to process detail page」WARNING を多発させていた (栃木 9件/run)。
+    # `:not([href$='/news/'])` で slug 無し末尾を除外し、純粋な個別記事のみ採用する。
+    LIST_LINK_SELECTOR: ClassVar[str] = "a[href*='/news/']:not([href$='/news/'])"
 
     # detail ページの定義リスト/テーブル見出しに対応するラベル。
     # 同種のラベルが複数候補ある場合は、`_extract_by_label` で

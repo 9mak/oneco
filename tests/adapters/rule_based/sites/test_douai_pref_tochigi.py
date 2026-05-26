@@ -89,12 +89,13 @@ DETAIL_HTML = """
 class TestDouaiPrefTochigiListExtraction:
     """list ページからの detail URL 抽出"""
 
-    def test_fetch_animal_list_extracts_links_from_fixture(self, fixture_html):
-        """fixture (custody カテゴリページ) から detail URL が抽出できる
+    def test_fetch_animal_list_only_news_articles(self, fixture_html):
+        """fixture (custody カテゴリページ) から detail URL は `/news/<slug>/` のみ
 
-        fixture には `#treatment_list .post_list .item a` 配下に
-        サブセクションへの 3 つのリンクが含まれる。
-        ヘッダ/フッタ/メニュー側のリンクは selector で除外される。
+        selector を `a[href*='/news/']:not([href$='/news/'])` に厳格化したため、
+        `/work/...` カテゴリ親や `/news/` 末尾 URL は抽出されない。
+        category 親リンクは detail として fetch しても構造不一致で WARNING を
+        多発させていたため、純粋な個別記事のみ採用する設計に変更。
         """
         adapter = DouaiPrefTochigiAdapter(_custody_site())
         html = fixture_html("douai_pref_tochigi__custody")
@@ -102,10 +103,15 @@ class TestDouaiPrefTochigiListExtraction:
             result = adapter.fetch_animal_list()
 
         urls = [u for u, _cat in result]
-        # post_list 配下の 3 リンクが抽出される
-        assert "https://www.douai.pref.tochigi.lg.jp/work/custody-lostanimal/" in urls
-        assert "https://www.douai.pref.tochigi.lg.jp/work/return/" in urls
-        assert "https://www.douai.pref.tochigi.lg.jp/work/avoid_getting_lost/" in urls
+        # category 親 URL は混入しない
+        assert "https://www.douai.pref.tochigi.lg.jp/work/custody-lostanimal/" not in urls
+        assert "https://www.douai.pref.tochigi.lg.jp/work/return/" not in urls
+        # `/news/` 末尾もダメ
+        assert "https://www.douai.pref.tochigi.lg.jp/news/" not in urls
+        # 全 URL が `/news/<slug>/` 形式
+        for u in urls:
+            assert "/news/" in u
+            assert not u.endswith("/news/")
         # category は site_config 由来
         assert all(cat == "sheltered" for _u, cat in result)
 

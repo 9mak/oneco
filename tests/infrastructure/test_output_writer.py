@@ -162,25 +162,30 @@ class TestOutputWriter:
         assert "男の子" in content
         assert "女の子" in content
 
-    def test_write_output_overwrites_existing_file(
+    def test_write_output_merges_with_existing_file(
         self, output_writer, sample_animal_data, sample_diff_result
     ):
-        """既存ファイルが上書きされることを確認"""
-        # 最初の書き込み
+        """既存ファイルと merge される (CollectorService が per-site で呼ぶため)
+
+        2 回目の write_output で同一 source_url は新しい値に上書き、
+        diff カウントは累積される。
+        """
+        # 最初の書き込み (2 件、new=1)
         output_writer.write_output(sample_animal_data, sample_diff_result)
 
-        # 異なるデータで再度書き込み
-        new_data = [sample_animal_data[0]]  # 1件のみ
+        # 同じ URL を持つ 1 件で再度書き込み (updated)
+        new_data = [sample_animal_data[0]]
         new_diff = DiffResult(new=[], updated=[new_data[0]], deleted_candidates=[])
         output_writer.write_output(new_data, new_diff)
 
         with open(output_writer.OUTPUT_FILE, encoding="utf-8") as f:
             output_data = json.load(f)
 
-        # 新しいデータが反映されていることを確認
-        assert output_data["total_count"] == 1
-        assert output_data["diff"]["updated_count"] == 1
-        assert output_data["diff"]["new_count"] == 0
+        # merged: 1 つ目 URL は新しい値で上書き、2 つ目 URL は前回分が残る
+        assert output_data["total_count"] == 2
+        # diff カウントは累積
+        assert output_data["diff"]["new_count"] == 1  # 1 回目分
+        assert output_data["diff"]["updated_count"] == 1  # 2 回目分
 
     def test_write_output_empty_data(self, output_writer):
         """空データの場合でも正しく処理されることを確認"""
@@ -210,3 +215,53 @@ class TestOutputWriter:
             output_data = json.load(f)
 
         assert output_data["diff"]["deleted_count"] == 2
+
+    def test_write_output_accumulates_animals_from_different_sites(
+        self, output_writer, sample_animal_data
+    ):
+        """異なる site の write_output が累積される (209 サイト統合の根本仕様)"""
+        site_a = sample_animal_data[0]
+        site_b = AnimalData(
+            species="犬",
+            sex="女の子",
+            shelter_date="2026-01-10",
+            location="徳島県",
+            phone="088-000-0000",
+            source_url="https://example-tokushima.jp/animals/1",
+            category="adoption",
+        )
+        site_c = AnimalData(
+            species="猫",
+            sex="不明",
+            shelter_date="2026-01-11",
+            location="沖縄県",
+            phone="098-000-0000",
+            source_url="https://example-okinawa.jp/animals/1",
+            category="adoption",
+        )
+
+        diff = DiffResult(new=[], updated=[], deleted_candidates=[])
+        output_writer.write_output([site_a], diff)
+        output_writer.write_output([site_b], diff)
+        output_writer.write_output([site_c], diff)
+
+        with open(output_writer.OUTPUT_FILE, encoding="utf-8") as f:
+            output_data = json.load(f)
+
+        assert output_data["total_count"] == 3
+        urls = {a["source_url"] for a in output_data["animals"]}
+        assert "https://example-kochi.jp/animals/123" in urls
+        assert "https://example-tokushima.jp/animals/1" in urls
+        assert "https://example-okinawa.jp/animals/1" in urls
+
+    def test_reset_clears_output_file(self, output_writer, sample_animal_data, sample_diff_result):
+        """reset() で animals.json が削除される"""
+        output_writer.write_output(sample_animal_data, sample_diff_result)
+        assert output_writer.OUTPUT_FILE.exists()
+
+        output_writer.reset()
+        assert not output_writer.OUTPUT_FILE.exists()
+
+    def test_reset_missing_file_no_error(self, output_writer):
+        """reset() は output ファイルが無くてもエラーにならない"""
+        output_writer.reset()  # 何も無い状態でも OK

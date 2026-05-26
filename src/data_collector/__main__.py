@@ -576,6 +576,15 @@ def main():
                     f"件数低下異常検出対象 {len(anomaly_eligible)} サイト"
                 )
 
+                # 前回件数の計算が終わったら snapshot / output をリセット。
+                # CollectorService が **サイトごと** に save_snapshot / write_output を
+                # 呼ぶ仕様のため、両ファイルは merge モードで累積される。run の境界を
+                # クリアにするため、ここで一度だけ削除して fresh state からスタート。
+                # これを忘れると過去 run のデータが残り続ける。
+                snapshot_store.reset()
+                output_writer.reset()
+                logger.info("snapshot / output をリセット (fresh run 開始)")
+
                 # rule-based サイト群 (Registry 登録済み adapter を使用)
                 # BROKEN_SITES_PATH env でパス差し替え可能（テスト分離のため）。
                 broken_tracker_path = Path(
