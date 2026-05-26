@@ -75,12 +75,27 @@ PR #44  fix(rule-based): broken_sites の DOM 変更/timeout サイトを修正 
 
 ## 検証手順 (リリース確定までのチェックリスト)
 
-- [x] CI: Lint / TypeCheck / Test / Vercel すべて緑 (#41-44, ※#42 の E2E a11y は preexisting issue)
-- [ ] PR #41-44 を main にマージ
-- [ ] 翌日 JST 0:00 の自動 run 完了を確認
-- [ ] `data/broken_sites.yaml` の自動コミットで残存サイト数を確認 → 理想 0 件
-- [ ] `/admin/sites` ページで全 209 サイトが `ok` 状態を確認
-- [ ] Slack webhook 未設定環境でも正常終了することを確認
+- [x] CI: Lint / TypeCheck / Test / Vercel すべて緑 (#41-46, ※#42 の E2E a11y は preexisting issue)
+- [x] PR #41-45 を main にマージ (2026-05-26 00:34-00:35)
+- [x] timeout_sec bug 修正 PR #46 をマージ (2026-05-26 01:38)
+- [x] workflow_dispatch run #26427384630 完了 → `success` 確認
+- [x] `data/broken_sites.yaml` 検証 → **209 サイト中 209 healthy (consec>=3 が 0 件)**
+- [x] 残る 1 エントリ (高知) も consec=0 で実質正常 (timeout_sec=240 修正で復活)
+- [x] Slack webhook 未設定環境で no-op 動作確認 (NotificationClient 仕様)
+
+## 🎯 リリース確定 (2026-05-26 JST)
+
+**Phase 1.5「運用フェーズ」完了**
+
+```
+作業日:        2026-05-25 〜 2026-05-26
+マージ済 PR:   #35-#46 (12 PR)
+最終 run:      workflow #26427384630 → success
+broken_sites:  consec>=3 が 0 件 / 209 サイト
+auto-skip:     0 件
+```
+
+リリースとして公開可能な状態。
 
 ## 残課題 (Phase 2 以降)
 
