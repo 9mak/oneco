@@ -76,3 +76,6 @@ output/*
 scripts/poc_kochi_selectors.yaml
 scripts/poc_selectors/
 AGENTS.md
+release-screenshot-*.png
+test-*.png
+release-screenshot-*.png
