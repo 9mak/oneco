@@ -306,7 +306,16 @@ def run_rule_based_sites(
 
         site_start = time.time()
         logger.info(f"=== rule-based 収集開始: {site.name} ===")
-        timeout = SITE_TIMEOUT_JS_SEC if getattr(site, "requires_js", False) else SITE_TIMEOUT_SEC
+        # タイムアウト解決優先順位: サイト個別 (sites.yaml の timeout_sec) > requires_js 既定 > 通常既定
+        # ※ run_llm_sites と同じロジック。過去 run で `run_rule_based_sites` だけ
+        # `site.timeout_sec` を読まず、高知 (timeout_sec=240 設定済) が常に 120s で
+        # timeout していたため修正。
+        if site.timeout_sec is not None:
+            timeout = site.timeout_sec
+        elif getattr(site, "requires_js", False):
+            timeout = SITE_TIMEOUT_JS_SEC
+        else:
+            timeout = SITE_TIMEOUT_SEC
 
         try:
             adapter = adapter_cls(site)
