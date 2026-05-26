@@ -53,13 +53,43 @@ class SnapshotStore:
         return hashlib.sha1(key.encode("utf-8"), usedforsecurity=False).hexdigest()
 
     def save_snapshot(self, items: list[AnimalData]) -> None:
-        """全 AnimalData を `snapshots/latest.json` に JSON dump する。"""
+        """AnimalData リストを `snapshots/latest.json` に保存する (merge モード)。
+
+        CollectorService が **サイトごと** に呼び出すため、過去呼び出しで書かれた
+        既存ファイルを読み込み、source_url で dedupe (今回 items を優先) してから
+        書き直す。これにより、run 内で 209 サイト分のデータが累積される。
+
+        run の境界をクリアにするためには、main の collection ループ開始前に
+        snapshot ファイルを削除すること (`SnapshotStore.reset()` を呼ぶ)。
+        """
         self.snapshot_dir.mkdir(parents=True, exist_ok=True)
-        payload = [item.model_dump(mode="json") for item in items]
+
+        # 既存スナップショットを load (壊れていれば空扱い)
+        existing: list[dict] = []
+        if self._snapshot_path.exists():
+            try:
+                raw = json.loads(self._snapshot_path.read_text(encoding="utf-8"))
+                if isinstance(raw, list):
+                    existing = raw
+            except (json.JSONDecodeError, OSError):
+                pass
+
+        # 今回 items の source_url を集めて、既存から該当 URL を除外
+        new_urls = {str(item.source_url) for item in items}
+        merged = [e for e in existing if e.get("source_url") not in new_urls]
+        merged.extend(item.model_dump(mode="json") for item in items)
+
         self._snapshot_path.write_text(
-            json.dumps(payload, ensure_ascii=False, indent=2),
+            json.dumps(merged, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
+
+    def reset(self) -> None:
+        """次回 run の累積を fresh から始めるため snapshot ファイルを削除する。
+
+        main は collection ループ前に 1 回だけ呼ぶ。テストや手動 run でも使える。
+        """
+        self._snapshot_path.unlink(missing_ok=True)
 
     def load_animal_map(self) -> dict[str, AnimalData]:
         """`{source_url: AnimalData}` の dict を返す。
