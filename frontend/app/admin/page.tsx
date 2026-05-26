@@ -59,12 +59,20 @@ export default async function AdminDashboardPage() {
             （集計時刻: {stats ? formatDate(stats.generated_at) : '—'}）
           </p>
         </div>
-        <Link
-          href="/api/auth/signout"
-          className="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50"
-        >
-          サインアウト
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/admin/sites"
+            className="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50"
+          >
+            サイト健全性 →
+          </Link>
+          <Link
+            href="/api/auth/signout"
+            className="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50"
+          >
+            サインアウト
+          </Link>
+        </div>
       </header>
 
       {error && (

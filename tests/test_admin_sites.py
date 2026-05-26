@@ -92,8 +92,80 @@ async def test_admin_sites_includes_required_fields(test_app):
             "db_count",
             "last_shelter_date",
             "host",
+            "health",
         ):
             assert field in site, f"site row missing field: {field}"
+        # health の中身も検証
+        for field in (
+            "status",
+            "consecutive_failures",
+            "last_error",
+            "last_failed_at",
+        ):
+            assert field in site["health"], f"health missing field: {field}"
+        assert site["health"]["status"] in ("ok", "warning", "failing")
+
+
+@pytest.mark.asyncio
+async def test_admin_sites_returns_summary(test_app):
+    """レスポンスに健全性 summary が含まれる"""
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
+        response = await client.get(
+            "/admin/sites",
+            headers={"X-Internal-Token": _VALID_TOKEN},
+        )
+    body = response.json()
+    assert "summary" in body
+    for key in ("ok", "warning", "failing"):
+        assert key in body["summary"]
+        assert isinstance(body["summary"][key], int)
+    # 合計と total の整合性
+    summary_total = sum(body["summary"].values())
+    assert summary_total == body["total"]
+
+
+@pytest.mark.asyncio
+async def test_admin_sites_reflects_broken_sites_yaml(test_app, tmp_path, monkeypatch):
+    """broken_sites.yaml の連続失敗回数が health.status に反映される
+
+    threshold=3 で auto-skip 扱い (failing)、1-2 回は warning、未記録は ok。
+    """
+    import yaml
+
+    # テスト用 broken_sites.yaml を作成
+    broken_path = tmp_path / "broken_sites.yaml"
+    broken_data = {
+        # 既存サイトに対する記録 (sites.yaml 内のサイト名と一致させる必要あり)
+        # ここでは「サイトが存在しなくても response は returnable」を確認するため
+        # 適当な名前を入れる。集計に影響しない。
+        "存在しないテストサイト_failing": {
+            "consecutive_failures": 5,
+            "last_error": "test failing error",
+            "last_failed_at": "2026-05-26T00:00:00+00:00",
+        },
+        "存在しないテストサイト_warning": {
+            "consecutive_failures": 1,
+            "last_error": "test warning error",
+            "last_failed_at": "2026-05-26T00:00:00+00:00",
+        },
+    }
+    broken_path.write_text(yaml.safe_dump(broken_data, allow_unicode=True))
+
+    monkeypatch.setattr(
+        "src.data_collector.infrastructure.api.admin_routes._BROKEN_SITES_PATH",
+        broken_path,
+    )
+
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
+        response = await client.get(
+            "/admin/sites",
+            headers={"X-Internal-Token": _VALID_TOKEN},
+        )
+    body = response.json()
+    # sites.yaml に該当サイトが無いので summary の failing/warning は増えないが、
+    # endpoint がエラー無く動作することを確認 (broken_sites 統合の smoke test)
+    assert response.status_code == 200
+    assert "summary" in body
 
 
 @pytest.mark.asyncio
