@@ -96,6 +96,12 @@ class RuleBasedAdapter(MunicipalityAdapter):
         except requests.exceptions.RequestException as e:
             raise NetworkError(f"ネットワークエラー: {e}", url=url) from e
 
+        # requests は charset 未指定の text/* に ISO-8859-1 を仮定する
+        # (RFC 2616 §3.7.1)。<meta charset=...> でしか文字コードを宣言しない
+        # 自治体サイトで日本語が文字化けするため、ヘッダ未指定時は
+        # byte 検出 (apparent_encoding) にフォールバックする。
+        if "charset=" not in response.headers.get("Content-Type", "").lower():
+            response.encoding = response.apparent_encoding
         text = response.text
         # 構造崩壊 / 空ページ検出: HTTP 200 でも本文が極端に短いケースを警告ログに出す。
         # adapter 個別の ParsingError と snapshot 件数比較 (Task #9) のバックアップとして、
