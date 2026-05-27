@@ -465,6 +465,28 @@ class TestCollectorServiceWithRepository:
         # save_animal が1回呼ばれたことを確認
         mock_repository.save_animal.assert_called_once()
 
+    def test_save_via_repository_when_no_current_event_loop(
+        self, collector_service_with_repo, mock_repository, sample_animal_data
+    ):
+        """current event loop が無いスレッドからでも repository 保存が成功する
+
+        pytest-asyncio 1.4.x 以降や Python 3.12+ ではメインスレッドに
+        current event loop が残らない。その状態で ``asyncio.get_event_loop()``
+        を呼ぶと ``RuntimeError`` になり save_animal が呼ばれないまま握り潰される。
+        current loop を持たない別スレッドから保存を実行することで、CI で
+        顕在化したこの実バグを決定的に再現し回帰を防ぐ。
+        """
+        import threading
+
+        def _save_from_loopless_thread() -> None:
+            collector_service_with_repo._save_via_repository(sample_animal_data)
+
+        thread = threading.Thread(target=_save_from_loopless_thread)
+        thread.start()
+        thread.join()
+
+        mock_repository.save_animal.assert_called_once()
+
     def test_run_collection_alerts_on_database_error(
         self,
         collector_service_with_repo,

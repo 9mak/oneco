@@ -239,3 +239,38 @@ class TestNotificationManagerClient:
             result = client.notify_new_animals_sync(sample_animals)
 
             assert result is True
+
+    def test_sync_notify_when_no_current_event_loop(self, config, sample_animals):
+        """current event loop が無いスレッドからでも同期通知が成功する
+
+        pytest-asyncio 1.4.x 以降や Python 3.12+ では、非同期テスト後に
+        メインスレッドの current event loop が残らない。その状態で
+        ``asyncio.get_event_loop()`` を呼ぶと ``RuntimeError`` を投げる。
+        current loop を持たない別スレッドから呼ぶことで CI で顕在化した
+        この実バグを決定的に再現し、回帰を防ぐ。
+        """
+        import threading
+
+        client = NotificationManagerClient(config)
+        captured: dict[str, object] = {}
+
+        def _call_from_loopless_thread() -> None:
+            # 新規スレッドは current event loop を持たないため、
+            # get_event_loop() ベースの実装はここで RuntimeError になる。
+            with patch("httpx.AsyncClient") as mock_client_class:
+                mock_client = AsyncMock()
+                mock_response = Mock()
+                mock_response.status_code = 202
+                mock_response.raise_for_status = Mock()
+                mock_client.post = AsyncMock(return_value=mock_response)
+                mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+                mock_client.__aexit__ = AsyncMock(return_value=None)
+                mock_client_class.return_value = mock_client
+
+                captured["result"] = client.notify_new_animals_sync(sample_animals)
+
+        thread = threading.Thread(target=_call_from_loopless_thread)
+        thread.start()
+        thread.join()
+
+        assert captured["result"] is True
