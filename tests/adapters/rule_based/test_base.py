@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 import pytest
 import requests
+from requests.utils import get_encoding_from_headers
 
 from data_collector.adapters.municipality_adapter import (
     MunicipalityAdapter,
@@ -129,6 +130,7 @@ class TestHttpGet:
         class _MockResp:
             text = "<html>ok</html>"
             status_code = 200
+            headers = {"Content-Type": "text/html; charset=utf-8"}
 
             def raise_for_status(self):
                 pass
@@ -154,6 +156,7 @@ class TestHttpGet:
         class _MockResp:
             text = ""
             status_code = 200
+            headers = {"Content-Type": "text/html; charset=utf-8"}
 
             def raise_for_status(self):
                 pass
@@ -173,6 +176,7 @@ class TestHttpGet:
         class _MockResp:
             text = "x"  # 1 byte
             status_code = 200
+            headers = {"Content-Type": "text/html; charset=utf-8"}
 
             def raise_for_status(self):
                 pass
@@ -194,6 +198,7 @@ class TestHttpGet:
         class _MockResp:
             text = "<html>" + "x" * 1000 + "</html>"
             status_code = 200
+            headers = {"Content-Type": "text/html; charset=utf-8"}
 
             def raise_for_status(self):
                 pass
@@ -202,6 +207,69 @@ class TestHttpGet:
             with caplog.at_level(logging.WARNING, logger="data_collector.adapters.rule_based.base"):
                 adapter._http_get("https://example.com/")
         assert not any("HTML 取得サイズが小さい" in r.message for r in caplog.records)
+
+
+class TestHttpGetEncoding:
+    """Content-Type ヘッダに charset が無い応答のデコードを検証する。
+
+    requests は charset 未指定の text/* に対し ISO-8859-1 を仮定する
+    (RFC 2616 §3.7.1)。<meta charset=...> でしか文字コードを宣言しない
+    自治体サイトで日本語が文字化けする回帰を防ぐ。
+    """
+
+    @staticmethod
+    def _response(body: str, *, source_encoding: str, content_type: str) -> requests.Response:
+        resp = requests.Response()
+        resp.status_code = 200
+        resp._content = body.encode(source_encoding)
+        resp.headers["Content-Type"] = content_type
+        # requests.get() がヘッダから解決するのと同じ encoding を再現する。
+        # charset 未指定の text/* では "ISO-8859-1" が入り、未指定時に
+        # encoding=None で apparent_encoding に自動フォールバックする
+        # 偽の成功を避ける (実バグを正しく再現する)。
+        resp.encoding = get_encoding_from_headers(resp.headers)
+        return resp
+
+    def test_decodes_utf8_body_when_header_lacks_charset(self):
+        """charset 未指定の UTF-8 本文を文字化けさせず読む (山梨県の実例)"""
+        adapter = _ConcreteAdapter(_site())
+        body = "<html><body>" + "北杜市高根町清里 メス（避妊） 白、黒、茶 " * 8 + "</body></html>"
+        resp = self._response(body, source_encoding="utf-8", content_type="text/html")
+
+        with patch("requests.get", return_value=resp):
+            result = adapter._http_get("https://example.com/")
+
+        assert "北杜市高根町清里" in result
+        assert "ç" not in result  # ISO-8859-1 誤デコードの痕跡が無いこと
+
+    def test_decodes_shift_jis_body_when_header_lacks_charset(self):
+        """charset 未指定の Shift_JIS 本文も byte 検出で正しく読む"""
+        adapter = _ConcreteAdapter(_site())
+        body = (
+            "<html><body>"
+            + "保護されている犬猫の収容情報をお知らせします。譲渡をご希望の方はセンターまでご連絡ください。"
+            * 6
+            + "</body></html>"
+        )
+        resp = self._response(body, source_encoding="shift_jis", content_type="text/html")
+
+        with patch("requests.get", return_value=resp):
+            result = adapter._http_get("https://example.com/")
+
+        assert "保護されている犬猫の収容情報" in result
+
+    def test_respects_explicit_charset_in_header(self):
+        """ヘッダに charset 明示がある場合はそれを尊重する (回帰防止)"""
+        adapter = _ConcreteAdapter(_site())
+        body = "<html><body>" + "犬猫の里親募集中です。" * 8 + "</body></html>"
+        resp = self._response(
+            body, source_encoding="utf-8", content_type="text/html; charset=utf-8"
+        )
+
+        with patch("requests.get", return_value=resp):
+            result = adapter._http_get("https://example.com/")
+
+        assert "犬猫の里親募集中です。" in result
 
 
 class TestDefaultNormalize:
