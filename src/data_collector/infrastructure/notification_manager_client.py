@@ -137,16 +137,23 @@ class NotificationManagerClient:
             bool: 送信成功時は True、失敗時は False
         """
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # イベントループが既に実行中の場合は新しいループで実行
+            try:
+                asyncio.get_running_loop()
+            except RuntimeError:
+                # 実行中ループ無し（通常の同期コンテキスト）。
+                # current loop の有無に依存せず安全な asyncio.run を使う。
+                # asyncio.get_event_loop() は current loop 未設定時に
+                # RuntimeError を投げるため使わない（pytest-asyncio 1.4+ /
+                # Python 3.12+ で顕在化したバグの回避）。
+                return asyncio.run(self.notify_new_animals(new_animals))
+            else:
+                # 既にイベントループ実行中 → 同一スレッドで asyncio.run は
+                # 呼べないので、別スレッドで新しいループを回す。
                 import concurrent.futures
 
                 with concurrent.futures.ThreadPoolExecutor() as executor:
                     future = executor.submit(asyncio.run, self.notify_new_animals(new_animals))
                     return future.result()
-            else:
-                return loop.run_until_complete(self.notify_new_animals(new_animals))
         except Exception as e:
             self.logger.error(
                 f"Failed to notify notification-manager (sync): {e!s}",

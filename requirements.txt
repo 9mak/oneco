@@ -15,5 +15,7 @@ slowapi>=0.1.9
 pytest>=7.4.0
 pytest-cov>=4.1.0
 httpx>=0.25.0
-pytest-asyncio>=0.21.0
+# 上限を固定: メジャー更新による current-event-loop 挙動変更で
+# 「ローカル通過・CI失敗」が起きたため (1.4.0 で顕在化)。
+pytest-asyncio>=0.21.0,<2.0
 numpy>=1.24.0
