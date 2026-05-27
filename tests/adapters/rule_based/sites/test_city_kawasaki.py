@@ -170,6 +170,62 @@ class TestCityKawasakiAdapter:
         assert "幸区" in second.location
         assert second.shelter_date == "2026-05-10"
 
+    def test_fetch_single_animal_from_vertical_attribute_table(self, fixture_html):
+        """縦型属性テーブル (th-td-th-td) は1テーブル=1動物として抽出する
+
+        川崎市の実ページ (収容猫等) は h3 ブロックではなく、1匹の全属性を
+        th-td-th-td の縦型テーブル (管理番号/収容場所、収容日/収容期限 …) で
+        提供する。各 tr を別動物にしてはならず、テーブル全体を1件として
+        収容場所/収容日/性別/大きさ/毛色を拾う。
+        """
+        base = _load_kawasaki_html(fixture_html)
+        soup = BeautifulSoup(base, "html.parser")
+        honbun = soup.select_one("div.main_naka_kiji")
+        assert honbun is not None
+        # 動物ブロック候補となる h3 と告知 textblock を除去し、
+        # 実構造の縦型属性テーブルだけを残す
+        for h in honbun.find_all("h3"):
+            h.decompose()
+        contents = honbun.select_one("div.mol_contents")
+        assert contents is not None
+        for tb in contents.select("div.mol_textblock"):
+            tb.decompose()
+
+        table_html = BeautifulSoup(
+            """
+            <table>
+              <tr><th>管理番号</th><td>R8-28</td><th>収容場所</th><td>中原区木月</td></tr>
+              <tr><th>収容日</th><td>2026年5月21日</td><th>収容期限</th><td>2026年5月28日</td></tr>
+              <tr><th>動物名</th><td>猫</td><th>種類</th><td>雑種</td></tr>
+              <tr><th>大きさ</th><td>中</td><th>性別</th><td>オス</td></tr>
+              <tr><th>毛色</th><td>黒白</td><th>毛の長さ</th><td>短毛</td></tr>
+            </table>
+            """,
+            "html.parser",
+        )
+        for el in table_html.find_all(recursive=False):
+            contents.append(el)
+
+        adapter = CityKawasakiAdapter(
+            _site(
+                name="川崎市（収容猫）",
+                list_url="https://www.city.kawasaki.jp/350/page/0000109367.html",
+            )
+        )
+        with patch.object(adapter, "_http_get", return_value=str(soup)) as mock_get:
+            urls = adapter.fetch_animal_list()
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
+
+        assert mock_get.call_count == 1
+        assert len(urls) == 1, f"縦型属性テーブルは1匹=1件のはず (got {len(urls)})"
+        a = raws[0]
+        assert a.species == "猫"  # サイト名から推定
+        assert a.sex == "オス"
+        assert a.size == "中"
+        assert "黒白" in a.color
+        assert "中原区木月" in a.location
+        assert a.shelter_date == "2026-05-21"
+
     def test_species_inference_from_site_name(self):
         """サイト名で species が決まる (収容犬→犬 / 収容猫→猫 / その他→その他)"""
         assert CityKawasakiAdapter._infer_species_from_site_name("川崎市（収容犬）") == "犬"
