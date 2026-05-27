@@ -156,3 +156,47 @@ class TestOitaAigoAdapter:
         with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             result = adapter.fetch_animal_list()
         assert result == []
+
+
+# 譲渡ページ (anytimedog/anytimecat) のカードには「保護地域」欄が無い。
+# (譲渡動物はセンターに収容されているため発見場所の概念が無い)
+_ADOPTION_CARD_NO_LOCATION = """
+<html><body><main>
+  <div class="information_box">
+    <dl><dt>仮名</dt><dd>ブロンソン</dd></dl>
+    <dl><dt>種類</dt><dd>雑種</dd></dl>
+    <dl><dt>推定年齢</dt><dd>9歳 (R8.2.6現在)</dd></dl>
+    <dl><dt>性別</dt><dd>オス</dd></dl>
+    <dl><dt>体重</dt><dd>17.0kg</dd></dl>
+    <dl><dt>不妊手術</dt><dd>済</dd></dl>
+  </div>
+</main></body></html>
+"""
+
+
+class TestOitaAigoShelterLocationFallback:
+    """保護地域欄が無い譲渡カードで location をシェルター名に補完する。
+
+    旧実装では譲渡犬/猫が location 不明のまま保存されていた (実収集 24件)。
+    譲渡動物は当該センターに居るため、サイト名 (括弧内を除く) を location の
+    フォールバックに使う。
+    """
+
+    def test_adoption_card_without_location_falls_back_to_shelter_name(self):
+        adapter = OitaAigoAdapter(_adoption_dog_site())
+        with patch.object(adapter, "_http_get", return_value=_ADOPTION_CARD_NO_LOCATION):
+            urls = adapter.fetch_animal_list()
+            url, cat = urls[0]
+            raw = adapter.extract_animal_details(url, category=cat)
+        assert raw.location == "おおいた動物愛護センター"
+        assert raw.species == "犬"
+
+    def test_lostchild_keeps_real_location(self, fixture_html):
+        """保護地域がある迷子カードはシェルター名で上書きしない (回帰防止)"""
+        html = fixture_html("oita_aigo__lostchild")
+        adapter = OitaAigoAdapter(_lostchild_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            url, cat = urls[0]
+            raw = adapter.extract_animal_details(url, category=cat)
+        assert raw.location == "佐伯市"
