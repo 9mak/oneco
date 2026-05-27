@@ -266,9 +266,10 @@ def run_rule_based_sites(
 
     Args:
         previous_site_counts: `{site_name: 前回件数}` の dict。snapshot_store
-            から計算される。「前回 ≥ 1 件 → 今回 0 件」を adapter 破損の異常
-            として検出し、broken_tracker に failure 記録する (動物いるのに
-            adapter が読めなくなった疑いを次回 run で自動スキップに乗せる)。
+            から計算される。「前回 ≥ 1 件 → 今回 0 件」を件数低下として監視
+            ログに記録するために使う。在庫はけ (真の 0 件) と adapter 破損は
+            件数だけでは区別できないため、スキップ対象化 (record_failure) は
+            せず、本物の破損は list_error/detail_error/timeout で検知する。
 
     Returns:
         (成功サイト数, 失敗サイト数, 0件で完了したサイト名一覧)。
@@ -333,14 +334,19 @@ def run_rule_based_sites(
 
             elapsed = time.time() - site_start
 
-            # 件数低下異常検出: result.success かつ 今回 0 件 かつ 前回 ≥ 1 件
-            # 「動物いるはずなのに adapter が拾えていない」典型パターン
+            # 件数低下: result.success かつ 今回 0 件 かつ 前回 ≥ 1 件。
+            # かつては「adapter 破損」として record_failure し自動スキップ
+            # 対象にしていたが、result.success=True は adapter が正常終了した
+            # 証左であり、0 件の大半は在庫はけ (真の 0 件) の誤検知だった。
+            # 在庫 0 が続くと 3 回でスキップされ、動物が戻っても grace 期間
+            # (既定 7 日) は再収集されない副作用があったため、ここでは監視
+            # ログ + zero_count_sites 記録のみとし、スキップ対象化はしない。
+            # 本物の破損は list_error/detail_error/timeout で別途 record_failure
+            # される。
             prev_count = previous_site_counts.get(site.name, 0)
-            is_zero_count_anomaly = (
-                result.success and result.total_collected == 0 and prev_count >= 1
-            )
+            is_zero_count_drop = result.success and result.total_collected == 0 and prev_count >= 1
 
-            if result.success and not is_zero_count_anomaly:
+            if result.success:
                 logger.info(
                     f"[{site.name}] rule-based 収集完了: "
                     f"{result.total_collected}件, "
@@ -353,17 +359,15 @@ def run_rule_based_sites(
                 succeeded += 1
                 if result.total_collected == 0:
                     zero_count_sites.append(site.name)
+                    if is_zero_count_drop:
+                        logger.warning(
+                            f"[{site.name}] 件数低下: 前回 {prev_count} 件 → 今回 0 件 "
+                            f"(在庫 0 の可能性。adapter は正常終了したためスキップ対象化"
+                            f"はしない。構造変更が疑わしい場合は手動確認)"
+                        )
             else:
-                if is_zero_count_anomaly:
-                    err_msg = (
-                        f"件数低下異常: 前回 {prev_count} 件 → 今回 0 件 "
-                        f"(adapter 破損 or サイト構造変更の可能性)"
-                    )
-                    logger.error(f"[{site.name}] {err_msg}")
-                    zero_count_sites.append(site.name)
-                else:
-                    err_msg = "; ".join(result.errors)
-                    logger.error(f"[{site.name}] rule-based 収集失敗: {err_msg}")
+                err_msg = "; ".join(result.errors)
+                logger.error(f"[{site.name}] rule-based 収集失敗: {err_msg}")
                 if broken_tracker:
                     broken_tracker.record_failure(site.name, err_msg)
                 # fallback_to_llm: True ならLLM経路で再試行
@@ -566,14 +570,14 @@ def main():
                 )
 
                 # 前回スナップショットから各サイトの件数を集計する。
-                # 「前回 ≥ 1 件 → 今回 0 件」のサイトを adapter 破損として
-                # broken_tracker に記録するために使う (Task #9)。
+                # 「前回 ≥ 1 件 → 今回 0 件」のサイトを件数低下として監視ログに
+                # 記録するために使う (Task #9, 誤検知削減で改訂)。
                 site_list_urls = {s.name: s.list_url for s in config.sites}
                 previous_site_counts = snapshot_store.load_counts_by_site_url_prefix(site_list_urls)
-                anomaly_eligible = [n for n, c in previous_site_counts.items() if c >= 1]
+                drop_watch_eligible = [n for n, c in previous_site_counts.items() if c >= 1]
                 logger.info(
                     f"前回スナップショット: {sum(previous_site_counts.values())} 件, "
-                    f"件数低下異常検出対象 {len(anomaly_eligible)} サイト"
+                    f"件数低下監視対象 {len(drop_watch_eligible)} サイト"
                 )
 
                 # 前回件数の計算が終わったら snapshot / output をリセット。
