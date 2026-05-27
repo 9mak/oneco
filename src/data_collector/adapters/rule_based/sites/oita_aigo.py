@@ -24,6 +24,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import ClassVar
 
 from bs4 import Tag
@@ -93,6 +94,11 @@ class OitaAigoAdapter(SinglePageTableAdapter):
         # 動物種別はサイト名/URL から推定 (HTML には明示されない)。
         species = self._infer_species(self.site_config.name, self.site_config.list_url)
 
+        # location: 譲渡ページ (anytimedog/anytimecat) には「保護地域」欄が無く
+        # location が空になる。譲渡動物は当該センターに収容されているため、
+        # サイト名 (括弧内を除く) をシェルター名として補完する。
+        location = fields.get("location", "") or self._shelter_location()
+
         try:
             return RawAnimalData(
                 species=species,
@@ -101,7 +107,7 @@ class OitaAigoAdapter(SinglePageTableAdapter):
                 color=fields.get("color", ""),
                 size=fields.get("size", ""),
                 shelter_date=shelter_date,
-                location=fields.get("location", ""),
+                location=location,
                 phone="",
                 image_urls=self._extract_row_images(card, virtual_url),
                 source_url=virtual_url,
@@ -132,6 +138,14 @@ class OitaAigoAdapter(SinglePageTableAdapter):
             if field and field not in result:
                 result[field] = value
         return result
+
+    def _shelter_location(self) -> str:
+        """サイト名から括弧書き (例: 「（譲渡犬）」) を除いたシェルター名を返す。
+
+        例: 「おおいた動物愛護センター（譲渡犬）」→「おおいた動物愛護センター」。
+        保護地域が取れない譲渡カードの location フォールバックに使う。
+        """
+        return re.sub(r"[（(].*?[）)]", "", self.site_config.name).strip()
 
     @staticmethod
     def _infer_species(name: str, list_url: str) -> str:
