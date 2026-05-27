@@ -49,6 +49,7 @@ class DataNormalizer:
         # shelter_date は不明 / 解析不能な場合「データ取得日」をフォールバックに使う。
         # 譲渡カテゴリページや未対応フォーマットの日付表記でも AnimalData 化失敗で
         # 全件落ちることを防ぐためのセーフネット。
+        today = DataNormalizer._today()
         raw_shelter = (raw_data.shelter_date or "").strip()
         shelter_date_str = ""
         if raw_shelter:
@@ -57,7 +58,14 @@ class DataNormalizer:
             except ValueError:
                 shelter_date_str = ""
         if not shelter_date_str:
-            shelter_date_str = date.today().strftime("%Y-%m-%d")
+            shelter_date_str = today.strftime("%Y-%m-%d")
+        else:
+            # 収容日/「いなくなった日時」が未来日になるのは物理的に不正
+            # (長崎 animal-net の実例)。収集日 (今日) にフォールバックして
+            # アーカイブの時系列整合性を守る。
+            parsed_shelter = datetime.strptime(shelter_date_str, "%Y-%m-%d").date()
+            if parsed_shelter > today:
+                shelter_date_str = today.strftime("%Y-%m-%d")
 
         # 正規化処理
         return AnimalData(
@@ -142,6 +150,18 @@ class DataNormalizer:
             months -= 1
         return max(months, 0)
 
+    # 犬猫の寿命上限の余裕を持った値 (30歳 = 360ヶ月)。これを超える年齢は
+    # 個体識別番号や年号の誤抽出 (例: 沖縄 missing の 82歳=984ヶ月) なので
+    # 不明扱い (None) にする。長寿猫の 22歳(264ヶ月) 等は保持できる。
+    _MAX_PLAUSIBLE_AGE_MONTHS: int = 360
+
+    @staticmethod
+    def _reject_implausible_age(months: int) -> int | None:
+        """生物学的に有り得ない高齢は誤パースとして None を返す。"""
+        if months > DataNormalizer._MAX_PLAUSIBLE_AGE_MONTHS:
+            return None
+        return months
+
     # DB の animals.color が VARCHAR(100) のため、これを超える文字列が
     # 流入すると INSERT 失敗 → トランザクション全体 rollback で 1 サイト分が
     # 全滅する。adapter 側のフィールド誤割当 (例: 横須賀の「特徴」欄に
@@ -166,15 +186,43 @@ class DataNormalizer:
 
     @staticmethod
     def _cap_size(raw_size: str | None) -> str | None:
-        """size を DB 制約 VARCHAR(50) に収まる長さで返す。空は None。
+        """size を体格の正規形 (小型/中型/大型) に揃えつつ DB 制約に収める。
 
-        adapter で 大きさ セルに長文説明が入る誤割当ケースのセーフネット。
+        実データには (a) 単漢字 小/中/大、(b) 体重・タブ混入
+        ("小型\\t\\t（7.7kg）")、(c) 体重情報のみ ("0.3kg",
+        "(現在の体重：…Kg)") が混在する。UI のフィルタを統一するため:
+
+        1. 空白 (タブ/全角含む) を畳んで体格語を抽出 → 小型/中型/大型 に正規化
+        2. 体格語が無く体重情報のみなら size ではないので None
+        3. それ以外の未知表記は長さ制限のみ掛けて温存 (データ消失防止)
         """
         if not raw_size:
             return None
-        text = raw_size.strip()
+        text = re.sub(r"\s+", " ", raw_size).strip()
         if not text:
             return None
+
+        # 括弧 (全角/半角・入れ子) を繰り返し除去して体重等の付随情報を落とす
+        core = text
+        prev = None
+        while prev != core:
+            prev = core
+            core = re.sub(r"[（(][^（()）]*[）)]", "", core)
+        core = re.sub(r"\s+", "", core)
+
+        # 体格語の正規化 (小/中/大 は単独でも可)。互いに排他なので順に判定。
+        if "大型" in core or "大きめ" in core or core == "大":
+            return "大型"
+        if "中型" in core or core == "中":
+            return "中型"
+        if "小型" in core or "超小" in core or core == "小":
+            return "小型"
+
+        # 体格語が無く体重情報のみ → size ではないので捨てる
+        if "体重" in text or re.search(r"\d+(?:[.．]\d+)?\s*(?:kg|㎏|キロ)", text, re.IGNORECASE):
+            return None
+
+        # 未知表記は温存 (長さ制限のみ)
         if len(text) > DataNormalizer._SIZE_MAX_LEN:
             return text[: DataNormalizer._SIZE_MAX_LEN]
         return text
@@ -205,39 +253,32 @@ class DataNormalizer:
         if age_str in DataNormalizer._UNKNOWN_PATTERNS:
             return None
 
+        # 各パスは月数を months に代入し、末尾で妥当域チェックを一括適用する。
+        months: int | None = None
+
         # 1. 生年月日パターンを最初にチェック（"令和N年M月D日" の "N年" が
         #    "N年=Nヶ月*12" として誤マッチするのを避けるため）
         today = DataNormalizer._today()
         birth = DataNormalizer._parse_birth_date(age_str)
         if birth is not None:
-            return DataNormalizer._months_between(birth, today)
-
+            months = DataNormalizer._months_between(birth, today)
         # 2. "N歳M[ヶかカケ]月" の組み合わせ（年/月の合計）
-        match = re.search(r"(\d+)\s*歳\s*(\d+)\s*[ヶかカケ]月", age_str)
-        if match:
-            return int(match.group(1)) * 12 + int(match.group(2))
-
+        elif match := re.search(r"(\d+)\s*歳\s*(\d+)\s*[ヶかカケ]月", age_str):
+            months = int(match.group(1)) * 12 + int(match.group(2))
         # 3. "N歳" のパターン
-        match = re.search(r"(\d+)\s*歳", age_str)
-        if match:
-            years = int(match.group(1))
-            return years * 12
-
+        elif match := re.search(r"(\d+)\s*歳", age_str):
+            months = int(match.group(1)) * 12
         # 4. "Nヶ月", "Nか月", "Nカ月", "Nケ月" のパターン
-        match = re.search(r"(\d+)\s*[ヶかカケ]月", age_str)
-        if match:
+        elif match := re.search(r"(\d+)\s*[ヶかカケ]月", age_str):
             months = int(match.group(1))
-            return months
-
         # 5. "N年" のパターン (4桁年号 "YYYY年" や "令和N年" を除外)
-        if not re.search(r"\d{4}年|令和\d+年", age_str):
-            match = re.search(r"(\d+)\s*年", age_str)
-            if match:
-                years = int(match.group(1))
-                return years * 12
+        elif not re.search(r"\d{4}年|令和\d+年", age_str):
+            if match := re.search(r"(\d+)\s*年", age_str):
+                months = int(match.group(1)) * 12
 
-        # マッチしない場合は None
-        return None
+        if months is None:
+            return None
+        return DataNormalizer._reject_implausible_age(months)
 
     @staticmethod
     def _parse_birth_date(text: str) -> date | None:
