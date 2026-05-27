@@ -105,6 +105,8 @@ class TestNormalizeAge:
         assert DataNormalizer._normalize_age("6か月") == 6
         assert DataNormalizer._normalize_age("6カ月") == 6
         assert DataNormalizer._normalize_age("6ケ月") == 6
+        assert DataNormalizer._normalize_age("6ヵ月") == 6  # 小書きカタカナ (高知 APC 等)
+        assert DataNormalizer._normalize_age("10ヵ月") == 10
 
     def test_normalize_age_years_nen(self):
         """'N年' を月単位に変換"""
@@ -119,6 +121,23 @@ class TestNormalizeAge:
         assert DataNormalizer._normalize_age("?") is None
         assert DataNormalizer._normalize_age("") is None
         assert DataNormalizer._normalize_age("invalid") is None
+
+    def test_normalize_age_sai_kanji(self):
+        """'才' (歳の代用字) を歳として扱う (長崎・和歌山・旭川等)"""
+        assert DataNormalizer._normalize_age("3才") == 36
+        assert DataNormalizer._normalize_age("11才") == 132
+        # 全角数字
+        assert DataNormalizer._normalize_age("１１才") == 132
+        assert DataNormalizer._normalize_age("１０才") == 120
+
+    def test_normalize_age_with_suffix(self):
+        """'くらい/以上/前後/半/範囲' 等の付随表現があっても数値化する"""
+        assert DataNormalizer._normalize_age("13才くらい") == 156
+        assert DataNormalizer._normalize_age("１０才以上") == 120
+        assert DataNormalizer._normalize_age("3歳前後") == 36
+        assert DataNormalizer._normalize_age("2才半") == 24
+        # 範囲表記は上限側にマッチ (search が最初に '歳/才' に当たる数値を採用)
+        assert DataNormalizer._normalize_age("2~3才") == 36
 
     def test_normalize_age_combined_format(self):
         """'N歳Mヶ月' 形式 (オプション: 実装しない場合はスキップ可)"""
