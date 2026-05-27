@@ -229,7 +229,9 @@ class TestKumamotoDoubutuAigoAdapterDetailExtraction:
         assert isinstance(raw, RawAnimalData)
         assert_raw_animal(
             raw,
-            species="雑種",
+            # 種類="雑種" は犬/猫を判別できないため抽出せず、list URL の
+            # animal_id から "犬" を推定する (旧実装は "雑種"→その他化していた)
+            species="犬",
             sex="オス",
             age="成犬",
             color="茶白",
@@ -253,7 +255,8 @@ class TestKumamotoDoubutuAigoAdapterDetailExtraction:
 
         assert_raw_animal(
             raw,
-            species="三毛猫",
+            # 種類="三毛猫" も抽出せず list URL animal_id:2 から "猫" を推定
+            species="猫",
             sex="メス",
             color="三毛",
             shelter_date="2026年4月15日",
@@ -377,3 +380,57 @@ class TestKumamotoDoubutuAigoAdapterRegistry:
             if SiteAdapterRegistry.get(n) is KumamotoDoubutuAigoAdapter
         ]
         assert len(registered) == 8
+
+
+# 実サイト (2026-05 ブラウザ実査) の `<dl class="animal-detail">` を再現。
+# 譲渡/迷子いずれも 捕獲場所 / 保護した日 / 種類=雑種(ミックス) という構造。
+_REAL_DETAIL_DOG = """
+<html><body>
+  <dl class="animal-detail">
+    <dt>ナンバー</dt><dd>DC00710</dd>
+    <dt>種類</dt><dd>雑種(ミックス)</dd>
+    <dt>体重</dt><dd>10kg</dd>
+    <dt>毛色</dt><dd>黒系</dd>
+    <dt>性別</dt><dd>オス</dd>
+    <dt>年齢</dt><dd>4か月～1歳</dd>
+    <dt>首輪の有無</dt><dd>無</dd>
+    <dt>捕獲場所</dt><dd>天草本渡町</dd>
+    <dt>保護した日</dt><dd>2026年4月20日</dd>
+    <dt>備考</dt><dd>好奇心旺盛な男の子です。</dd>
+    <dt>連絡先</dt><dd>熊本県動物愛護センター</dd>
+    <dt>所在地</dt><dd>宇城市松橋町東松崎701-4</dd>
+    <dt>電話番号</dt><dd>0964-27-8115</dd>
+  </dl>
+</body></html>
+"""
+
+
+class TestKumamotoDoubutuAigoRealLabels:
+    """実サイトの見出しラベルに対する抽出を検証する (2026-05 ブラウザ実査ベース)。
+
+    旧実装は location='収容場所'・shelter_date='収容日' 固定で実サイトの
+    '捕獲場所'/'保護した日' に当たらず location が 100% 不明だった。また
+    種類='雑種(ミックス)' を species にそのまま入れて全件 'その他' 化していた。
+    """
+
+    def test_real_dog_detail_extracts_location_species_date_phone(self):
+        adapter = KumamotoDoubutuAigoAdapter(_site_center_dog())  # animal_id:1
+        url = "https://www.kumamoto-doubutuaigo.jp/animals/detail/4726"
+        with patch.object(adapter, "_http_get", return_value=_REAL_DETAIL_DOG):
+            raw = adapter.extract_animal_details(url, category="adoption")
+        assert raw.location == "天草本渡町"  # 捕獲場所
+        assert raw.shelter_date == "2026年4月20日"  # 保護した日
+        assert raw.species == "犬"  # 種類(雑種)ではなく URL/サイト名から推定
+        assert raw.phone == "0964-27-8115"  # 連絡先(施設名)ではなく電話番号
+        assert raw.sex == "オス"
+        assert raw.color == "黒系"
+
+    def test_real_dog_detail_normalizes_to_dog_not_other(self):
+        """正規化後の species が 'その他' ではなく '犬' になる (回帰防止の本丸)"""
+        adapter = KumamotoDoubutuAigoAdapter(_site_center_dog())
+        url = "https://www.kumamoto-doubutuaigo.jp/animals/detail/4726"
+        with patch.object(adapter, "_http_get", return_value=_REAL_DETAIL_DOG):
+            raw = adapter.extract_animal_details(url, category="adoption")
+        normalized = adapter.normalize(raw)
+        assert normalized.species == "犬"
+        assert normalized.location == "天草本渡町"

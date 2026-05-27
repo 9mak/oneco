@@ -49,16 +49,24 @@ class AniwelOkinawaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
     # accommodate / missing / protection の 3 prefix を共通で拾う。
     LIST_LINK_SELECTOR: ClassVar[str] = "a[href*='_view/']"
 
-    # 詳細ページの定義リスト (または table) 見出しに対応するラベル。
-    # 公開仕様書が無いため一般的な日本語ラベルを網羅的に並べる。
+    # 詳細ページ `<table><th><td>` の実見出しラベル (2026-05 ブラウザ実査)。
+    # 収容(accommodate)/行方不明(missing)/迷い込み(protection) の 3 系統で
+    # ラベルが異なるため、`_extract_by_label` の部分一致 (label ⊂ th文字列) と
+    # tuple OR 検索で全系統を 1 アダプターに束ねる。
+    #   - location: 場所 / 行方不明場所 / 迷い込んだ場所 → 共通部分文字列 "場所"
+    #   - size    : 体格 (旧 "大きさ" は実在せず location が 100% 不明だった)
+    #   - 日付    : 収容日 / 保護日 / 行方不明日 (受付月日より保護日を優先)
+    #   - age     : "年齢" は "推定年齢" にも部分一致する
+    #   - species : "種類"/"品種" は値が "雑種(ミケネコ)" 等で誤分類しやすいため
+    #               抽出せずサイト名から犬/猫を補完する (extract_animal_details)
     FIELD_SELECTORS: ClassVar[dict[str, FieldSpec]] = {
         "species": FieldSpec(label="種類"),
         "sex": FieldSpec(label="性別"),
         "age": FieldSpec(label="年齢"),
         "color": FieldSpec(label="毛色"),
-        "size": FieldSpec(label="大きさ"),
-        "shelter_date": FieldSpec(label="収容日"),
-        "location": FieldSpec(label="収容場所"),
+        "size": FieldSpec(label=("体格", "大きさ")),
+        "shelter_date": FieldSpec(label=("収容日", "保護日", "行方不明日")),
+        "location": FieldSpec(label="場所"),
         "phone": FieldSpec(label="連絡先"),
     }
 

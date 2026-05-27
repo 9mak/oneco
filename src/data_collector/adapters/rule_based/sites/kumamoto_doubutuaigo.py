@@ -66,25 +66,24 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
         "a[href*='/animals/detail/'], a[href*='/post_animals/detail/']"
     )
 
-    # 詳細ページの想定ラベル。実 HTML が入手できていないため、自治体 DB
-    # 系で広く見られる一般的な見出しを採用する。
+    # 詳細ページ `<dl class="animal-detail"><dt>項目</dt><dd>値</dd>` の実見出し
+    # ラベル (2026-05 ブラウザ実査)。譲渡/迷子いずれも同一ラベル。
+    #   - species: 「種類」値は "雑種(ミックス)" 等で犬/猫を判別できず その他化
+    #     するため、ここでは抽出せず URL の animal_id / サイト名から犬/猫を推定
+    #     する (extract_animal_details の補完ロジックに委ねる)。
+    #   - location: 「捕獲場所」等 → 共通部分文字列 "場所" で吸収
+    #     (旧 "収容場所" は実在せず location が 100% 不明だった)
+    #   - shelter_date: 「保護した日」(旧 "収容日" は実在しない)
+    #   - phone: 「連絡先」は施設名なので「電話番号」を優先
+    #   - size: 実サイトは「体重」のみで体格欄が無い ("大きさ" は温存=空→None)
     FIELD_SELECTORS: ClassVar[dict[str, FieldSpec]] = {
-        # 動物種別 (例: "犬", "猫", "雑種")
-        "species": FieldSpec(label="種類"),
-        # 性別 (例: "オス", "メス", "不明")
         "sex": FieldSpec(label="性別"),
-        # 年齢
         "age": FieldSpec(label="年齢"),
-        # 毛色
         "color": FieldSpec(label="毛色"),
-        # 大きさ (体格)
         "size": FieldSpec(label="大きさ"),
-        # 収容日 / 保護日
-        "shelter_date": FieldSpec(label="収容日"),
-        # 収容場所 / 発見場所
-        "location": FieldSpec(label="収容場所"),
-        # 連絡先 (電話番号)
-        "phone": FieldSpec(label="連絡先"),
+        "shelter_date": FieldSpec(label=("保護した日", "収容日")),
+        "location": FieldSpec(label="場所"),
+        "phone": FieldSpec(label=("電話番号", "連絡先")),
     }
 
     IMAGE_SELECTOR: ClassVar[str] = "img"
@@ -168,26 +167,31 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
 
     # ─────────────────── 抽出ヘルパー拡張 ───────────────────
 
-    def _extract_by_label(self, soup: BeautifulSoup, label: str) -> str:
-        """基底の `<dt>/<dd>`, `<th>/<td>` に加えて `<td>/<td>` パターンも探す"""
-        # まず基底の dl / th-td パターンを試す
+    def _extract_by_label(self, soup: BeautifulSoup, label: str | tuple[str, ...]) -> str:
+        """基底の `<dt>/<dd>`, `<th>/<td>` に加えて `<td>/<td>` パターンも探す。
+
+        label は str / tuple のどちらも受け付ける (tuple は OR 検索)。
+        """
+        # まず基底の dl / th-td パターンを試す (tuple も基底側で対応)
         value = super()._extract_by_label(soup, label)
         if value:
             return value
 
         # フォールバック: <td>label</td><td>value</td> の 2 列テーブル
-        for td in soup.find_all("td"):
-            if not isinstance(td, Tag):
-                continue
-            cell_text = td.get_text(strip=True)
-            if not cell_text or label not in cell_text:
-                continue
-            sibling = td.find_next_sibling("td")
-            if sibling is None:
-                continue
-            sibling_text = sibling.get_text(strip=True)
-            if sibling_text:
-                return sibling_text
+        labels = (label,) if isinstance(label, str) else tuple(label)
+        for lbl in labels:
+            for td in soup.find_all("td"):
+                if not isinstance(td, Tag):
+                    continue
+                cell_text = td.get_text(strip=True)
+                if not cell_text or lbl not in cell_text:
+                    continue
+                sibling = td.find_next_sibling("td")
+                if sibling is None:
+                    continue
+                sibling_text = sibling.get_text(strip=True)
+                if sibling_text:
+                    return sibling_text
         return ""
 
     # ─────────────────── 種別推定 ───────────────────
