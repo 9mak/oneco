@@ -344,9 +344,7 @@ def run_rule_based_sites(
             # 本物の破損は list_error/detail_error/timeout で別途 record_failure
             # される。
             prev_count = previous_site_counts.get(site.name, 0)
-            is_zero_count_drop = (
-                result.success and result.total_collected == 0 and prev_count >= 1
-            )
+            is_zero_count_drop = result.success and result.total_collected == 0 and prev_count >= 1
 
             if result.success:
                 logger.info(
