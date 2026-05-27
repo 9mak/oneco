@@ -233,9 +233,10 @@ class DataNormalizer:
         年齢を月単位の数値に変換
 
         対応形式:
-        - "N歳M[ヶか]月" → N * 12 + M
-        - "N歳" → N * 12
-        - "Nヶ月", "Nか月", "Nカ月", "Nケ月" → N
+        - "N歳M[ヶかヵ]月" → N * 12 + M
+        - "N歳" / "N才" → N * 12 ("才" は歳の代用字。"くらい/以上/前後/半"
+          等の付随表現や "2~3才" の範囲表記があっても数値を拾う)
+        - "Nヶ月", "Nか月", "Nカ月", "Nケ月", "Nヵ月" → N
         - "N年" → N * 12
         - 生年月日 (YYYY-MM-DD, YYYY/MM/DD, YYYY年M月D日, R{N}.M.D, 令和N年M月D日)
           → 今日との差分を月単位で返す
@@ -253,6 +254,11 @@ class DataNormalizer:
         if age_str in DataNormalizer._UNKNOWN_PATTERNS:
             return None
 
+        # "才" は "歳" の代用字 (長崎・和歌山・旭川あにまある 等で多用)。
+        # 歳に正規化して以降の年齢パターンに乗せる。"13才くらい"/"１０才以上"
+        # のような付随表現は re.search が数値+歳を拾うため自然に無視される。
+        age_str = age_str.replace("才", "歳")
+
         # 各パスは月数を months に代入し、末尾で妥当域チェックを一括適用する。
         months: int | None = None
 
@@ -262,14 +268,14 @@ class DataNormalizer:
         birth = DataNormalizer._parse_birth_date(age_str)
         if birth is not None:
             months = DataNormalizer._months_between(birth, today)
-        # 2. "N歳M[ヶかカケ]月" の組み合わせ（年/月の合計）
-        elif match := re.search(r"(\d+)\s*歳\s*(\d+)\s*[ヶかカケ]月", age_str):
+        # 2. "N歳M[ヶかカケヵ]月" の組み合わせ（年/月の合計）
+        elif match := re.search(r"(\d+)\s*歳\s*(\d+)\s*[ヶかカケヵ]月", age_str):
             months = int(match.group(1)) * 12 + int(match.group(2))
         # 3. "N歳" のパターン
         elif match := re.search(r"(\d+)\s*歳", age_str):
             months = int(match.group(1)) * 12
         # 4. "Nヶ月", "Nか月", "Nカ月", "Nケ月" のパターン
-        elif match := re.search(r"(\d+)\s*[ヶかカケ]月", age_str):
+        elif match := re.search(r"(\d+)\s*[ヶかカケヵ]月", age_str):
             months = int(match.group(1))
         # 5. "N年" のパターン (4桁年号 "YYYY年" や "令和N年" を除外)
         elif not re.search(r"\d{4}年|令和\d+年", age_str):
