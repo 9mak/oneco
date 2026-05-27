@@ -156,6 +156,20 @@ class TestNormalizeAge:
         assert DataNormalizer._normalize_age("2歳6ヶ月") == 30
         assert DataNormalizer._normalize_age("1歳3か月") == 15
 
+    def test_normalize_age_rejects_implausible_upper_bound(self):
+        """生物学的に有り得ない高齢 (30歳超) は誤パースなので None にする
+
+        沖縄の missing ページで '82歳'(984ヶ月) が観測された。犬猫の寿命の
+        上限を大きく超える値は ID 等の誤抽出なので不明扱いにする。
+        """
+        assert DataNormalizer._normalize_age("82歳") is None
+        assert DataNormalizer._normalize_age("100歳") is None
+        # 30歳 (360ヶ月) は稀だが有り得るので保持、31歳は棄却
+        assert DataNormalizer._normalize_age("30歳") == 360
+        assert DataNormalizer._normalize_age("31歳") is None
+        # 22歳(264ヶ月)は長寿猫として有り得るので保持 (aniwel の実例)
+        assert DataNormalizer._normalize_age("22歳") == 264
+
 
 class TestNormalizeDate:
     """日付正規化のテスト"""
@@ -319,6 +333,27 @@ class TestCapSize:
         assert result is not None
         assert len(result) == 50
 
+    def test_cap_size_normalizes_synonyms_to_canonical(self):
+        """単漢字 小/中/大 を 小型/中型/大型 に正規化する (UI フィルタ統一)"""
+        assert DataNormalizer._cap_size("小") == "小型"
+        assert DataNormalizer._cap_size("中") == "中型"
+        assert DataNormalizer._cap_size("大") == "大型"
+        # 既に正規形のものはそのまま
+        assert DataNormalizer._cap_size("小型") == "小型"
+        assert DataNormalizer._cap_size("大型") == "大型"
+
+    def test_cap_size_strips_weight_noise_keeping_size_word(self):
+        """体重・タブ混入を除去して体格語のみ残す (実データの汚染ケース)"""
+        assert DataNormalizer._cap_size("小型\t\t\t\t\t（7.7kg）") == "小型"
+        assert DataNormalizer._cap_size("中型\t\t\t（推定11kg）") == "中型"
+        assert DataNormalizer._cap_size("大型\t\t(4.3kg)") == "大型"
+
+    def test_cap_size_weight_only_becomes_none(self):
+        """体重情報のみ (体格語なし) は size ではないので None にする"""
+        assert DataNormalizer._cap_size("0.3kg") is None
+        assert DataNormalizer._cap_size("(現在の体重：４．９Kg（適正体重：６Kg～）)") is None
+        assert DataNormalizer._cap_size("(現在の体重：９．８５Kg)") is None
+
 
 class TestNormalizePhonePipeline:
     """normalize 経由での phone 変換 (空文字 → None)"""
@@ -414,6 +449,48 @@ class TestNormalizerIntegration:
         assert animal_data.phone == "088-123-4567"
         assert len(animal_data.image_urls) == 1
         assert str(animal_data.source_url) == "https://example-kochi.jp/animals/123"
+
+    def test_normalize_clamps_future_shelter_date_to_today(self, monkeypatch):
+        """未来の収容日は物理的に不正なので収集日(今日)にフォールバックする
+
+        長崎 animal-net で収容日/「いなくなった日時」が未来日 (2026-05-31,
+        2026-06-11) になる実例があり、アーカイブの時系列整合性が崩れる。
+        """
+        monkeypatch.setattr(DataNormalizer, "_today", staticmethod(lambda: date(2026, 5, 27)))
+        raw = RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="2歳",
+            color="茶",
+            size="中型",
+            shelter_date="2026-05-31",  # 4日先 = 未来日
+            location="長崎県",
+            phone="",
+            image_urls=[],
+            source_url="https://animal-net.pref.nagasaki.jp/animal/no-19632/",
+            category="sheltered",
+        )
+        result = DataNormalizer.normalize(raw)
+        assert result.shelter_date == date(2026, 5, 27)
+
+    def test_normalize_keeps_past_shelter_date(self, monkeypatch):
+        """過去〜当日の収容日はそのまま保持する (未来日ガードの誤発動防止)"""
+        monkeypatch.setattr(DataNormalizer, "_today", staticmethod(lambda: date(2026, 5, 27)))
+        raw = RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="2歳",
+            color="茶",
+            size="中型",
+            shelter_date="2026-05-20",
+            location="長崎県",
+            phone="",
+            image_urls=[],
+            source_url="https://animal-net.pref.nagasaki.jp/animal/no-1/",
+            category="sheltered",
+        )
+        result = DataNormalizer.normalize(raw)
+        assert result.shelter_date == date(2026, 5, 20)
 
     def test_normalize_with_unknown_values(self):
         """不明な値を含む RawAnimalData の正規化"""
