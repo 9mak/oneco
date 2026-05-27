@@ -382,10 +382,19 @@ class CollectorService:
         saved_count = 0
         error_count = 0
 
+        # 実行中ループの有無はこの同期メソッド内で変化しないので一度だけ判定する。
+        # asyncio.get_event_loop() は current loop 未設定時に RuntimeError を
+        # 投げるため使わない（pytest-asyncio 1.4+ / Python 3.12+ で顕在化）。
+        try:
+            asyncio.get_running_loop()
+            loop_running = True
+        except RuntimeError:
+            loop_running = False
+
         for animal in collected_data:
             try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
+                if loop_running:
+                    # 既にイベントループ実行中 → 別スレッドで新ループを回す。
                     with concurrent.futures.ThreadPoolExecutor() as executor:
                         future = executor.submit(
                             asyncio.run,
@@ -393,7 +402,8 @@ class CollectorService:
                         )
                         future.result()
                 else:
-                    loop.run_until_complete(self.repository.save_animal(animal))  # type: ignore[union-attr]
+                    # 通常の同期コンテキスト → current loop の有無に依存しない asyncio.run。
+                    asyncio.run(self.repository.save_animal(animal))  # type: ignore[union-attr]
                 saved_count += 1
             except Exception as e:
                 error_count += 1
