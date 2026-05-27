@@ -192,12 +192,14 @@ class TestBrokenSiteSkipThreshold:
 
 
 class TestZeroCountAnomalyDetection:
-    """件数低下異常検出 (Task #9)
+    """件数低下の扱い (Task #9 → 誤検知削減で改訂)
 
-    snapshot 比較で「前回 ≥ 1 件 → 今回 0 件」のサイトを adapter 破損疑い
-    として broken_tracker に failure 記録し、failed カウントに含める。
-    これにより「動物いるはずなのに adapter が拾えていない」ケースを
-    次回 run の自動スキップに乗せる。
+    snapshot 比較で「前回 ≥ 1 件 → 今回 0 件」を以前は adapter 破損疑いと
+    して broken_tracker に failure 記録 (スキップ対象化) していたが、
+    result.success=True は adapter が正常終了した証左であり、0 件の大半は
+    在庫はけ (真の 0 件) の誤検知だった。現在は監視ログ + zero_count_sites
+    への記録のみで、スキップ対象化 (record_failure) はしない。本物の破損は
+    list_error/detail_error/timeout で別途 record_failure される。
     """
 
     def _make_stub_adapter(self, total_collected: int):
@@ -299,25 +301,27 @@ class TestZeroCountAnomalyDetection:
         assert (succeeded, failed, zero) == (1, 0, [])
         assert tracker.consecutive_failures("テスト_継続取得") == 0
 
-    def test_prev_positive_current_zero_detected_as_anomaly(self, tmp_path):
-        """前回 ≥ 1 件 → 今回 0 件 = adapter 破損疑い、failed カウント + broken_tracker 記録"""
+    def test_prev_positive_current_zero_not_skipped(self, tmp_path):
+        """前回 ≥ 1 件 → 今回 0 件 = 収集成功扱い、スキップ対象化しない
+
+        result.success=True は adapter が正常終了した証左。0 件の大半は
+        在庫はけ (真の 0 件) であり、record_failure による自動スキップ
+        対象化は誤検知だった。succeeded にカウントし zero_count_sites に
+        記録 (監視用) するが、broken_tracker には failure を残さない。
+        """
         from data_collector.adapters.rule_based.broken_tracker import BrokenSitesTracker
 
         tracker = BrokenSitesTracker(tmp_path / "broken_sites.yaml")
         succeeded, failed, zero = self._run_with_stub(
-            "テスト_件数低下異常",
+            "テスト_件数低下",
             total_collected=0,
-            previous_counts={"テスト_件数低下異常": 4},
+            previous_counts={"テスト_件数低下": 4},
             tracker=tracker,
         )
-        assert (succeeded, failed) == (0, 1), "件数低下異常は failed としてカウント"
-        assert "テスト_件数低下異常" in zero
-        # broken_tracker に failure 記録され consecutive_failures が増えること
-        assert tracker.consecutive_failures("テスト_件数低下異常") == 1
-        # last_error に異常の理由が記録される
-        # (tracker の内部表現にアクセスして文言を確認)
-        entry = tracker._state.get("テスト_件数低下異常", {})
-        assert "件数低下" in entry.get("last_error", ""), "異常理由が記録される"
+        assert (succeeded, failed) == (1, 0), "件数低下は収集成功 (success) 扱い"
+        assert "テスト_件数低下" in zero, "監視用に zero_count_sites には残す"
+        # スキップ対象化されない: record_failure は呼ばれず consecutive=0
+        assert tracker.consecutive_failures("テスト_件数低下") == 0
 
     def test_no_previous_counts_treated_as_zero(self, tmp_path):
         """previous_site_counts が None / 空 dict なら全サイト前回 0 件扱い
