@@ -160,6 +160,58 @@ def _detail_html_table(**kwargs) -> str:
     """
 
 
+# 実サイト (2026-05 時点) の `<table><th><td>` 構造を忠実に再現したフィクスチャ。
+# 3 系統 (収容/行方不明/迷い込み) でラベルが異なるのが要点。
+_REAL_DETAIL_ACCOMMODATE = """
+<html><body><main>
+  <table>
+    <tr><th>記号</th><td>2026.5.25＿C-1</td></tr>
+    <tr><th>収容日</th><td>2026年5月25日</td></tr>
+    <tr><th>収容期限</th><td>2026年6月2日</td></tr>
+    <tr><th>場所</th><td>読谷村儀間</td></tr>
+    <tr><th>毛色</th><td>黒</td></tr>
+    <tr><th>性別</th><td>オス</td></tr>
+    <tr><th>体格</th><td>小</td></tr>
+    <tr><th>推定年齢</th><td>3</td></tr>
+    <tr><th>首輪</th><td>有り 青</td></tr>
+    <tr><th>備考</th><td>Bw:2.7kg／マイクロチップ入り</td></tr>
+  </table>
+</main></body></html>
+"""
+
+_REAL_DETAIL_MISSING = """
+<html><body><main>
+  <table>
+    <tr><th>受付番号</th><td>2026.5.26＿No.53</td></tr>
+    <tr><th>行方不明日</th><td>2026年5月20日</td></tr>
+    <tr><th>行方不明場所</th><td>那覇市 栄町リウボウ付近</td></tr>
+    <tr><th>品種</th><td>雑種（ミケネコ）</td></tr>
+    <tr><th>毛色</th><td>（キジトラ混じり）</td></tr>
+    <tr><th>性別</th><td>不妊メス</td></tr>
+    <tr><th>体格</th><td>大</td></tr>
+    <tr><th>年齢</th><td>９才</td></tr>
+    <tr><th>備考</th><td></td></tr>
+  </table>
+</main></body></html>
+"""
+
+_REAL_DETAIL_PROTECTION = """
+<html><body><main>
+  <table>
+    <tr><th>受付番号</th><td>2026.5.25＿No.79</td></tr>
+    <tr><th>受付月日</th><td>2026年5月26日</td></tr>
+    <tr><th>迷い込んだ場所</th><td>沖縄県南城市</td></tr>
+    <tr><th>品種</th><td>雑種</td></tr>
+    <tr><th>毛色</th><td>茶</td></tr>
+    <tr><th>性別</th><td>オス</td></tr>
+    <tr><th>体格</th><td>中</td></tr>
+    <tr><th>年齢</th><td>5か月程度</td></tr>
+    <tr><th>保護日</th><td>2026年5月25日</td></tr>
+  </table>
+</main></body></html>
+"""
+
+
 # ─────────────────── テスト ───────────────────
 
 
@@ -352,3 +404,47 @@ class TestAniwelOkinawaAdapter:
         assert len(result) == 2
         for url, _ in result:
             assert "_view/" in url
+
+
+class TestAniwelOkinawaRealLabels:
+    """実サイトの見出しラベルに対する抽出を検証する (2026-05 のブラウザ実査ベース)。
+
+    収容(accommodate)/行方不明(missing)/迷い込み(protection) でラベルが異なり、
+    旧実装は location='収容場所'・size='大きさ' 固定だったため実サイトの
+    '場所'/'体格' に当たらず location が 100% '不明' になっていた回帰を防ぐ。
+    """
+
+    def test_accommodate_extracts_location_size_date(self) -> None:
+        """収容: 場所/体格/収容日 を正しく取得する"""
+        adapter = AniwelOkinawaAdapter(_site(0))  # 収容犬
+        url = f"{_BASE}/animals/accommodate_view/24639"
+        with patch.object(adapter, "_http_get", return_value=_REAL_DETAIL_ACCOMMODATE):
+            raw = adapter.extract_animal_details(url, category="sheltered")
+        assert raw.location == "読谷村儀間"
+        assert raw.size == "小"
+        assert raw.shelter_date == "2026年5月25日"
+        assert raw.sex == "オス"
+        assert raw.color == "黒"
+        assert raw.species == "犬"  # サイト名から補完
+
+    def test_missing_extracts_location_size_date(self) -> None:
+        """行方不明: 行方不明場所/体格/行方不明日 を正しく取得する"""
+        adapter = AniwelOkinawaAdapter(_site(3))  # 行方不明猫
+        url = f"{_BASE}/animals/missing_view/24643"
+        with patch.object(adapter, "_http_get", return_value=_REAL_DETAIL_MISSING):
+            raw = adapter.extract_animal_details(url, category="lost")
+        assert raw.location == "那覇市 栄町リウボウ付近"
+        assert raw.size == "大"
+        assert raw.shelter_date == "2026年5月20日"
+        assert raw.species == "猫"  # サイト名から補完
+
+    def test_protection_extracts_location_size_date(self) -> None:
+        """迷い込み: 迷い込んだ場所/体格/保護日 を正しく取得する"""
+        adapter = AniwelOkinawaAdapter(_site(4))  # 迷い込み保護犬
+        url = f"{_BASE}/animals/protection_view/24644"
+        with patch.object(adapter, "_http_get", return_value=_REAL_DETAIL_PROTECTION):
+            raw = adapter.extract_animal_details(url, category="sheltered")
+        assert raw.location == "沖縄県南城市"
+        assert raw.size == "中"
+        assert raw.shelter_date == "2026年5月25日"  # 受付月日(5/26)ではなく保護日(5/25)
+        assert raw.species == "犬"
