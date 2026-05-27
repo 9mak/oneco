@@ -139,16 +139,18 @@ class CityKawasakiAdapter(SinglePageTableAdapter):
                 continue
             rows.append(h3)
 
-        # 2) フォールバック: 本文内 <table> のデータ行
+        # 2) フォールバック: 本文内 <table>
         if not rows:
             for table in honbun.find_all("table"):
                 if not isinstance(table, Tag):
                     continue
+                # 中身のあるデータ行 (td を持ち、全セル空でない) を集める
+                data_trs: list[Tag] = []
                 for tr in table.find_all("tr"):
                     if not isinstance(tr, Tag):
                         continue
                     if tr.find("td") is None:
-                        # ヘッダ行は除外
+                        # ヘッダ専用行 (th のみ) は除外
                         continue
                     # 全セル空 (`&nbsp;` のみ等) は除外
                     cells = tr.find_all(["td", "th"])
@@ -157,7 +159,20 @@ class CityKawasakiAdapter(SinglePageTableAdapter):
                         for c in cells
                     ):
                         continue
-                    rows.append(tr)
+                    data_trs.append(tr)
+                if not data_trs:
+                    continue
+                # 縦型属性テーブル判定: データ行の過半が th+td を併せ持つ
+                # (「ラベル｜値｜ラベル｜値」型) なら 1 テーブル = 1 動物として
+                # 扱う。川崎の収容ページ実構造がこれ。各行を別動物にすると
+                # 1 匹が属性行数ぶんに分裂し location 等も取れなくなる。
+                # th を含まない (ヘッダ行+データ行型) 横型一覧は従来どおり
+                # 各データ行を 1 動物とする。
+                rows_with_th = sum(1 for tr in data_trs if tr.find("th") is not None)
+                if rows_with_th >= max(1, (len(data_trs) + 1) // 2):
+                    rows.append(table)  # 縦型 → テーブル全体で 1 動物
+                else:
+                    rows.extend(data_trs)  # 横型 → 各行が 1 動物
 
         self._rows_cache = rows
         return rows
@@ -211,7 +226,9 @@ class CityKawasakiAdapter(SinglePageTableAdapter):
             )
         anchor = rows[idx]
 
-        if anchor.name == "tr":
+        if anchor.name == "table":
+            fields, image_urls = self._extract_from_attribute_table(anchor, virtual_url)
+        elif anchor.name == "tr":
             fields, image_urls = self._extract_from_table_row(anchor, virtual_url)
         else:
             fields, image_urls = self._extract_from_h3_block(anchor, virtual_url)
@@ -317,6 +334,42 @@ class CityKawasakiAdapter(SinglePageTableAdapter):
                 text = c.get_text(separator=" ", strip=True)
                 if text:
                     self._merge_label_fields(text, fields)
+
+        image_urls = self._filter_image_urls(image_urls, base_url)
+        return fields, image_urls
+
+    def _extract_from_attribute_table(
+        self, table: Tag, base_url: str
+    ) -> tuple[dict[str, str], list[str]]:
+        """縦型属性テーブル (1 テーブル = 1 動物) から (fields, image_urls) を抽出
+
+        各行は `<th>ラベル</th><td>値</td>` のペアが 1〜複数並ぶ形式
+        (例: `管理番号｜R8-28｜収容場所｜中原区木月`)。行・列をまたいで
+        全 th-td ペアを 1 動物の属性として集約する。
+        """
+        fields: dict[str, str] = {}
+        image_urls: list[str] = []
+
+        for img in table.find_all("img"):
+            src = img.get("src")
+            if isinstance(src, str) and src:
+                image_urls.append(self._absolute_url(src, base=base_url))
+
+        for tr in table.find_all("tr"):
+            if not isinstance(tr, Tag):
+                continue
+            cells = [c for c in tr.find_all(["td", "th"]) if isinstance(c, Tag)]
+            i = 0
+            while i < len(cells) - 1:
+                if cells[i].name == "th":
+                    label = cells[i].get_text(separator=" ", strip=True).rstrip("：:")
+                    value = cells[i + 1].get_text(separator=" ", strip=True)
+                    self._set_field_by_label(label, value, fields)
+                    # 「収容日：YYYY年…」の形に再結合して日付正規化にも乗せる
+                    self._merge_label_fields(f"{label}：{value}", fields)
+                    i += 2
+                else:
+                    i += 1
 
         image_urls = self._filter_image_urls(image_urls, base_url)
         return fields, image_urls
