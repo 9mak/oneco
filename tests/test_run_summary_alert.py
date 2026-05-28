@@ -137,3 +137,75 @@ def test_zero_sites_no_alert():
         logger=_make_logger(),
     )
     client.send_alert.assert_not_called()
+
+
+def test_field_drifts_alone_triggers_warning():
+    """failures 0 でも field_drifts があれば WARNING を出す (自己修復 Phase 1)"""
+    from src.data_collector.adapters.rule_based.field_quality_tracker import FieldDrift
+
+    client = MagicMock()
+    drifts = [
+        FieldDrift(
+            site_name="サイトA", field="location", prev_rate=0.05, curr_rate=0.85, delta=0.80
+        ),
+    ]
+    _send_run_summary_alert(
+        notification_client=client,
+        broken_tracker=_make_tracker(0),
+        total_sites=209,
+        total_succeeded=209,
+        total_failed=0,
+        threshold=3,
+        logger=_make_logger(),
+        field_drifts=drifts,
+    )
+    assert client.send_alert.called
+    args, _ = client.send_alert.call_args
+    assert args[0] == NotificationLevel.WARNING
+    # details にドリフト情報が含まれる
+    details = client.send_alert.call_args[0][2]
+    assert details.get("field_drifts_count") == 1
+    assert "サイトA" in details.get("field_drifts_sample", "")
+    assert "location" in details.get("field_drifts_sample", "")
+
+
+def test_field_drifts_empty_or_none_does_not_change_behavior():
+    """field_drifts が None / 空リストなら既存の判定そのまま (後方互換)"""
+    client = MagicMock()
+    _send_run_summary_alert(
+        notification_client=client,
+        broken_tracker=_make_tracker(0),
+        total_sites=10,
+        total_succeeded=10,
+        total_failed=0,
+        threshold=3,
+        logger=_make_logger(),
+        field_drifts=[],
+    )
+    client.send_alert.assert_not_called()
+
+
+def test_field_drifts_alongside_failures_warning():
+    """field_drifts と failure 両方ある場合も WARNING (CRITICAL 閾値未満なら)"""
+    from src.data_collector.adapters.rule_based.field_quality_tracker import FieldDrift
+
+    client = MagicMock()
+    drifts = [
+        FieldDrift("サイトX", "size", 0.0, 0.5, 0.5),
+        FieldDrift("サイトY", "phone", 0.1, 0.9, 0.8),
+    ]
+    _send_run_summary_alert(
+        notification_client=client,
+        broken_tracker=_make_tracker(1),
+        total_sites=100,
+        total_succeeded=98,
+        total_failed=2,
+        threshold=3,
+        logger=_make_logger(),
+        field_drifts=drifts,
+    )
+    assert client.send_alert.called
+    args, _ = client.send_alert.call_args
+    assert args[0] == NotificationLevel.WARNING
+    details = client.send_alert.call_args[0][2]
+    assert details["field_drifts_count"] == 2
