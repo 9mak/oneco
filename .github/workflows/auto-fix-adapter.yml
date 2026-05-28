@@ -1,0 +1,77 @@
+name: Auto-fix adapter
+
+# 自己修復ループ Phase 2: LLM-assisted adapter 自動修復ワーカー
+#
+# 検知シグナル (フィールド欠損率急増 / detail_error / 件数低下) を受けた
+# 1 サイトについて scripts/auto_fix_adapter.py を実行する。
+# 二重ガード (ユニットテスト + live test 改善定量確認) を通過したら
+# fix/auto-<slug> ブランチで PR (label: auto-fix) を作成し、
+# label `auto-fix` 付きの PR は Phase 3 (.github/workflows/auto-merge-fix-pr.yml)
+# で CI green 後に自動マージされる。
+
+on:
+  workflow_dispatch:
+    inputs:
+      site_name:
+        description: 'sites.yaml の name と完全一致 (例: 川崎市（収容犬）)'
+        required: true
+        type: string
+      model:
+        description: 'Claude model (デフォルト: claude-opus-4-7)'
+        required: false
+        type: string
+        default: 'claude-opus-4-7'
+      dry_run:
+        description: 'dry-run (PR を作らずパッチ適用までで止める)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  auto-fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # PR 作成用に GITHUB_TOKEN を使うため persistent credentials を保持
+          persist-credentials: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install -r requirements.txt
+
+      - name: Configure git author
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Run auto-fix
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          ARGS=(--site-name "${{ inputs.site_name }}" --model "${{ inputs.model }}")
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS+=(--dry-run)
+          fi
+          .venv/bin/python scripts/auto_fix_adapter.py "${ARGS[@]}"
