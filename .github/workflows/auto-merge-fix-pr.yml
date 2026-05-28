@@ -1,0 +1,41 @@
+name: Auto-merge auto-fix PRs
+
+# 自己修復ループ Phase 3: label `auto-fix` 付きの PR を CI 通過後に
+# 自動マージする。
+#
+# Phase 2 (auto-fix-adapter.yml + scripts/auto_fix_adapter.py) が
+# 二重ガード (ユニットテスト + live test 改善定量確認) 通過時のみ
+# `auto-fix` ラベル付き PR を作る。本 workflow はその PR に対して
+# `gh pr merge --auto` を有効化し、後続の CI が green になった瞬間に
+# GitHub 側で squash + branch 削除まで自動実行される。
+#
+# 安全性:
+# - `auto-fix` ラベルが付いていない PR には触らない
+# - Phase 2 の二重ガード + CI の static チェック を通過したものだけマージ
+# - 失敗時は `auto-fix` のままマージされずに残るので人間トリアージ可能
+
+on:
+  pull_request:
+    types: [opened, labeled, reopened, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  enable-auto-merge:
+    if: contains(github.event.pull_request.labels.*.name, 'auto-fix')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Enable auto-merge (squash)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          REPO="${{ github.repository }}"
+          echo "Enabling auto-merge for PR #${PR_NUMBER}"
+          # 既に auto-merge が有効でも冪等。failure (e.g. mergeable=false) は
+          # exit 1 で workflow を fail させ可視化する。
+          gh pr merge --auto --squash --delete-branch "${PR_NUMBER}" -R "${REPO}"
