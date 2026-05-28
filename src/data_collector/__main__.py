@@ -22,8 +22,10 @@ from .adapters.rule_based import (
     sites as _rule_based_sites,  # noqa: F401  全 adapter を Registry に登録
 )
 from .adapters.rule_based.broken_tracker import BrokenSitesTracker
+from .adapters.rule_based.field_quality_tracker import FieldDrift, FieldQualityTracker
 from .adapters.rule_based.registry import SiteAdapterRegistry
 from .domain.diff_detector import DiffDetector
+from .domain.quality_metrics import compute_missing_rates, group_animals_by_site
 from .infrastructure.database.connection import DatabaseConnection, DatabaseSettings
 from .infrastructure.notification_client import NotificationClient, NotificationLevel
 from .infrastructure.output_writer import OutputWriter
@@ -435,15 +437,23 @@ def _send_run_summary_alert(
     total_failed: int,
     threshold: int,
     logger: logging.Logger,
+    field_drifts: list[FieldDrift] | None = None,
 ) -> None:
     """1 回の run 終了時に Slack へサマリアラートを送る。
 
     判定:
       - failure_ratio > 0.2 OR 全件失敗 → CRITICAL
-      - critical_sites (consec>=threshold) > 0 OR total_failed > 0 → WARNING
+      - critical_sites (consec>=threshold) > 0
+        OR total_failed > 0
+        OR field_drifts (フィールド欠損率急増) > 0 → WARNING
       - 何も無ければ通知しない
 
     Slack webhook 未設定時は NotificationClient が自動的に no-op になる。
+
+    field_drifts: 自己修復ループ Phase 1 のフィールド欠損率ドリフト検知結果。
+    各サイトについて location/age_months 等の欠損率が前回比 +閾値 急増した
+    場合に投入される。adapter のラベル/セレクタ不一致シグナルとして通知に
+    含める。
     """
     if total_sites == 0:
         return
@@ -459,7 +469,8 @@ def _send_run_summary_alert(
     is_critical = failure_ratio > _RUN_FAIL_RATIO_CRITICAL or (
         total_succeeded == 0 and total_failed > 0
     )
-    has_warning = bool(critical_sites_list) or total_failed > 0
+    drifts = list(field_drifts) if field_drifts else []
+    has_warning = bool(critical_sites_list) or total_failed > 0 or bool(drifts)
 
     if not (is_critical or has_warning):
         return
@@ -469,6 +480,8 @@ def _send_run_summary_alert(
         f"収集完了: 成功 {total_succeeded}/{total_sites} (失敗 {total_failed}, "
         f"失敗率 {failure_ratio:.1%})"
     )
+    if drifts:
+        message += f", フィールド品質ドリフト {len(drifts)} 件"
     details: dict[str, Any] = {
         "total_sites": total_sites,
         "succeeded": total_succeeded,
@@ -481,6 +494,14 @@ def _send_run_summary_alert(
         details["critical_sites_sample"] = ", ".join(critical_sites_list[:10]) + (
             "..." if len(critical_sites_list) > 10 else ""
         )
+    if drifts:
+        details["field_drifts_count"] = len(drifts)
+        sample = "; ".join(
+            f"[{d.site_name}] {d.field}: {d.prev_rate:.0%}→{d.curr_rate:.0%}" for d in drifts[:5]
+        )
+        if len(drifts) > 5:
+            sample += f" ... (+{len(drifts) - 5} more)"
+        details["field_drifts_sample"] = sample
     try:
         notification_client.send_alert(level, message, details)
     except Exception as e:
@@ -642,7 +663,37 @@ def main():
                     logger.error("全サイトで収集に失敗しました")
                     success = False
 
-                # Slack 通知: 連続失敗サイト / 全体失敗率に応じて Warning/Critical
+                # フィールド欠損率ドリフト検知 (自己修復ループ Phase 1)。
+                # 今 run の snapshot を読み、各サイトについて location/age_months
+                # 等の欠損率を計算 → FieldQualityTracker に記録 → 前回比 +閾値
+                # 急増を検知。検出されたドリフトは Slack 通知に含めて adapter
+                # 修復ワーカー (Phase 2) のシグナルとする。失敗しても収集
+                # パイプラインは止めない (best-effort)。
+                field_drifts: list[FieldDrift] = []
+                try:
+                    fq_path = Path(
+                        os.environ.get("FIELD_QUALITY_DRIFT_PATH", "data/field_quality_drift.yaml")
+                    )
+                    fq_tracker = FieldQualityTracker(fq_path)
+                    animals_now = snapshot_store.load_snapshot()
+                    site_groups = group_animals_by_site(animals_now, site_list_urls)
+                    for site_name, animals in site_groups.items():
+                        rates = compute_missing_rates(animals)
+                        fq_tracker.record(site_name, rates, len(animals))
+                    field_drifts = fq_tracker.detect_drifts()
+                    if field_drifts:
+                        logger.warning(f"フィールド欠損率ドリフト検知: {len(field_drifts)} 件")
+                        for d in field_drifts[:10]:
+                            logger.warning(
+                                f"  [{d.site_name}] {d.field}: "
+                                f"{d.prev_rate:.0%} → {d.curr_rate:.0%} "
+                                f"(+{d.delta:.0%})"
+                            )
+                except Exception as e:
+                    logger.warning(f"フィールド欠損率ドリフト検知失敗: {e}")
+
+                # Slack 通知: 連続失敗サイト / 全体失敗率 / 欠損率ドリフト に応じて
+                # Warning/Critical
                 _send_run_summary_alert(
                     notification_client=notification_client,
                     broken_tracker=broken_tracker,
@@ -651,6 +702,7 @@ def main():
                     total_failed=total_failed,
                     threshold=BROKEN_SITE_SKIP_THRESHOLD,
                     logger=logger,
+                    field_drifts=field_drifts,
                 )
 
                 # 進捗ログ
