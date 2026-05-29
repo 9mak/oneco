@@ -42,23 +42,30 @@ function FavoritesLink() {
 
 export function Header() {
   return (
-    <header className="bg-white border-b border-gray-200">
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
-          {/* ロゴとサイトタイトル */}
-          <Link href="/" className="flex items-center space-x-2">
-            <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 border-b border-gray-200">
+      <div className="container mx-auto px-4 py-3 sm:py-4">
+        <div className="flex items-center justify-between gap-4">
+          {/* ロゴ + プロダクト説明 */}
+          <Link
+            href="/"
+            className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2 min-w-0 focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 rounded"
+            aria-label="oneco トップへ"
+          >
+            <h1 className="text-2xl font-bold text-[var(--color-text-primary)] leading-none">
               oneco
             </h1>
+            <p className="hidden sm:inline text-xs sm:text-sm text-[var(--color-text-secondary)] truncate">
+              全国の保護動物情報をひとつに
+            </p>
           </Link>
 
           {/* ナビゲーション */}
-          <nav aria-label="メインナビゲーション">
-            <ul className="flex items-center space-x-4">
+          <nav aria-label="メインナビゲーション" className="shrink-0">
+            <ul className="flex items-center gap-3 sm:gap-4">
               <li>
                 <Link
                   href="/"
-                  className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary-700)] transition-colors"
+                  className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary-700)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 rounded px-1"
                 >
                   動物一覧
                 </Link>
