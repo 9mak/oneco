@@ -17,11 +17,31 @@ export function AnimalGrid({
   pageSize = 20,
 }: AnimalGridProps) {
   if (initialItems.length === 0) {
-    const hasActiveFilters = Object.values(filters).some((v) => v !== undefined);
+    // status='sheltered' は parseFilters のデフォルト適用で実質的なフィルタ
+    // ではないため除外する。それ以外のフィルタ条件が指定されていれば
+    // 「絞り込み 0 件」として案内し、無ければ「収集タイミング待ち」案内にする。
+    const hasActiveFilters =
+      Boolean(filters.category) ||
+      Boolean(filters.species) ||
+      Boolean(filters.sex) ||
+      Boolean(filters.prefecture) ||
+      Boolean(filters.location) ||
+      Boolean(filters.q) ||
+      Boolean(filters.status && filters.status !== 'sheltered');
+
+    if (hasActiveFilters) {
+      return (
+        <EmptyState
+          message="条件に合う動物が見つかりませんでした"
+          suggestion="フィルタを変えるか、すべてクリアして再度お試しください。"
+          showClearButton
+        />
+      );
+    }
     return (
       <EmptyState
         message="現在表示できる動物がいません"
-        showClearButton={hasActiveFilters}
+        suggestion="最新の収集データが反映されるまで少しお待ちください。収集は毎日自動で更新されます。"
       />
     );
   }
