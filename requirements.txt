@@ -11,9 +11,10 @@ redis[asyncio]>=5.0.0
 fastapi-cache2>=0.2.0
 slowapi>=0.1.9
 
-# LLM SDK (収集経路では未使用。adapter 自己修復ワーカー
-# scripts/auto_fix_adapter.py から Claude API を呼ぶために必要)
-anthropic>=0.40.0
+# LLM SDK (収集経路では未使用。GroqProvider と adapter 自己修復ワーカー
+# scripts/auto_fix_adapter.py が openai SDK 経由で Groq エンドポイント
+# (https://api.groq.com/openai/v1) を叩く)
+openai>=1.0.0
 
 # Testing dependencies
 pytest>=7.4.0

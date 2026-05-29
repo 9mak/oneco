@@ -33,22 +33,16 @@ from .infrastructure.snapshot_store import SnapshotStore
 from .llm.adapter import LlmAdapter
 from .llm.config import SiteConfigLoader, SitesConfig
 from .llm.html_preprocessor import HtmlPreprocessor
-from .llm.providers.anthropic_provider import AnthropicProvider
 from .llm.providers.base import LlmProvider
-from .llm.providers.fallback_provider import FallbackProvider
 from .llm.providers.groq_provider import GroqProvider
 from .llm.robots_checker import RobotsChecker
 from .orchestration.collector_service import CollectorService
 
+# rule-based 100% 運用 (project_extraction_strategy.md)。LLM 経路の fallback
+# 用にプロバイダ層は残すが、現状 Groq のみ。Anthropic は採算化後に再評価する。
 PROVIDER_REGISTRY = {
-    "anthropic": AnthropicProvider,
     "groq": GroqProvider,
 }
-
-# Groq の非決定的な tool_use_failed や 500/503 をリトライしても収まらない場合に
-# Anthropic Claude（信頼性高い）に自動フォールバックする。ANTHROPIC_API_KEY が
-# 環境変数にある場合のみ有効化。
-ANTHROPIC_FALLBACK_MODEL = os.getenv("ANTHROPIC_FALLBACK_MODEL", "claude-haiku-4-5-20251001")
 
 # サイト別収集のタイムアウト（秒）
 # 209+ サイトを GitHub Actions の 6 時間以内に収まらせるため、ハングしたサイトを
@@ -97,23 +91,12 @@ def site_timeout(seconds: int, site_name: str):
 
 
 def create_provider(provider_name: str, model: str) -> LlmProvider:
-    """プロバイダーインスタンスを生成。
-
-    Groq を選んだ場合、ANTHROPIC_API_KEY が利用可能なら自動で
-    Groq → Anthropic フォールバックでラップする。
-    """
+    """プロバイダーインスタンスを生成 (現状 Groq のみ)"""
     cls = PROVIDER_REGISTRY.get(provider_name)
     if cls is None:
         supported = ", ".join(sorted(PROVIDER_REGISTRY.keys()))
         raise ValueError(f"未対応プロバイダー: {provider_name}。サポート対象: {supported}")
-
-    primary = cls(model=model)
-
-    if provider_name == "groq" and os.getenv("ANTHROPIC_API_KEY"):
-        fallback = AnthropicProvider(model=ANTHROPIC_FALLBACK_MODEL)
-        return FallbackProvider(primary=primary, fallback=fallback)
-
-    return primary
+    return cls(model=model)
 
 
 def _effective_extraction(site, config: SitesConfig) -> str:
