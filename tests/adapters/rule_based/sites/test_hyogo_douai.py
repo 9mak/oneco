@@ -142,24 +142,61 @@ class TestHyogoDouaiAdapter:
 
         fixture では `<a href="hogo3.html">` × 3, `<a href="hogo5.html">` × 1 が
         サマリーテーブル内に並んでおり、unique で 2 件になる想定。
+        ただし fetch_animal_list は各 detail を peek し動物データを含む
+        ものだけを採用する (真の 0 件除外) ため、本テストでは各 detail
+        として動物データ入り合成 HTML を mock する。
         """
         html = _load_hyogo_html(fixture_html)
+        detail_html = _build_detail_html_dog()
         adapter = HyogoDouaiAdapter(_site())
 
-        with patch.object(adapter, "_http_get", return_value=html):
+        # list (1 回) + detail peek (重複排除後 2 link 分 = 2 回) で計 3 回
+        with patch.object(adapter, "_http_get", side_effect=[html, detail_html, detail_html]):
             result = adapter.fetch_animal_list()
 
-        # hogo3.html と hogo5.html の 2 件 (重複排除済み)
+        # hogo3.html と hogo5.html の 2 件 (重複排除済み・動物データあり)
         assert len(result) == 2
         urls = [u for u, _ in result]
         assert any(u.endswith("hogo3.html") for u in urls)
         assert any(u.endswith("hogo5.html") for u in urls)
-        # 全て絶対 URL に変換されている
         for u in urls:
             assert u.startswith("https://hyogo-douai.sakura.ne.jp/")
-        # category は sites.yaml の sheltered が伝播
         for _, cat in result:
             assert cat == "sheltered"
+
+    def test_fetch_animal_list_skips_detail_without_animal_data(self, fixture_html):
+        """detail ページに動物個別データが無い (真の 0 件) link は除外される
+
+        各支所の常設ページが収容 0 でも存在するため、こうした空 detail を
+        誤って RawAnimalData 生成に流すと detail_error が量産される。
+        peek 時に「種類/毛色/性別」等のマーカーが無いものは結果から外す。
+        """
+        html = _load_hyogo_html(fixture_html)
+        empty_detail = "<html><body><nav>メニュー</nav><p>本所案内</p></body></html>"
+        adapter = HyogoDouaiAdapter(_site())
+
+        # list + detail x 2 (両方とも動物データ無し)
+        with patch.object(adapter, "_http_get", side_effect=[html, empty_detail, empty_detail]):
+            result = adapter.fetch_animal_list()
+
+        assert result == [], "全 detail が空ならば結果も空 (真の 0 件)"
+
+    def test_fetch_animal_list_caches_detail_html_for_extract(self, fixture_html):
+        """fetch_animal_list の peek で取得した detail HTML が
+        後続の extract_animal_details で再利用され、HTTP 重複呼びがない"""
+        html = _load_hyogo_html(fixture_html)
+        detail_html = _build_detail_html_dog()
+        adapter = HyogoDouaiAdapter(_site())
+
+        with patch.object(
+            adapter, "_http_get", side_effect=[html, detail_html, detail_html]
+        ) as mock_get:
+            urls = adapter.fetch_animal_list()
+            assert len(urls) == 2
+            for u, c in urls:
+                adapter.extract_animal_details(u, c)
+        # list (1) + detail peek (2) = 3 回。extract 時の追加 HTTP は無い
+        assert mock_get.call_count == 3
 
     def test_fetch_animal_list_returns_empty_when_no_detail_links(self):
         """サマリーテーブルはあるが detail link が無いときは空リストを返す

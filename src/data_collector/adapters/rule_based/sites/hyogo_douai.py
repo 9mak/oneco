@@ -27,7 +27,7 @@
 
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from bs4 import BeautifulSoup
 
@@ -83,6 +83,25 @@ class HyogoDouaiAdapter(WordPressListAdapter):
     # 動物写真 URL がそのまま残る。
     IMAGE_SELECTOR: ClassVar[str] = "img"
 
+    # detail 中身が「真に空」(個別動物データ無し) かを判定するマーカー。
+    # サイト構造上、各支所の detail ページは収容が 0 でも存在し続ける
+    # ため、これらのキーワードが一つも見つからない場合は「真の 0 件」と
+    # みなして fetch_animal_list の結果から除外する (detail_error 化を防ぐ)。
+    _ANIMAL_DATA_MARKERS: ClassVar[tuple[str, ...]] = (
+        "種類",
+        "毛色",
+        "性別",
+        "収容年月日",
+        "収容日",
+        "保護日",
+    )
+
+    def __init__(self, site_config: Any) -> None:
+        super().__init__(site_config)
+        # fetch_animal_list の peek 時に取得した detail HTML を
+        # extract_animal_details で再利用するキャッシュ (HTTP 重複呼び回避)
+        self._detail_html_cache: dict[str, str] = {}
+
     # ─────────────────── オーバーライド ───────────────────
 
     def fetch_animal_list(self) -> list[tuple[str, str]]:
@@ -92,6 +111,11 @@ class HyogoDouaiAdapter(WordPressListAdapter):
         1 件も見つからない場合に `ParsingError` を投げるが、本サイトは
         在庫 0 件の状態が日常的に発生し得る (どの支所も収容なし)。
         link が 0 件の場合は ParsingError ではなく空リストを返す。
+
+        さらに「detail ページは存在するが個別動物データが無い」ケース
+        (各支所の常設ページに動物が居ない時) も日常的に発生するため、
+        各 detail を peek し、`_has_animal_data` で動物個別データを含む
+        ものだけを返り値に採用する。これで detail_error 誤検知を避ける。
 
         サマリーテーブルそのものが見つからない (テンプレート崩壊)
         場合は ParsingError を出す。
@@ -111,9 +135,8 @@ class HyogoDouaiAdapter(WordPressListAdapter):
         if not links:
             return []
 
-        urls: list[tuple[str, str]] = []
+        candidates: list[str] = []
         seen: set[str] = set()
-        category = self.site_config.category
         for link in links:
             href = link.get("href")
             if not href or not isinstance(href, str):
@@ -122,8 +145,27 @@ class HyogoDouaiAdapter(WordPressListAdapter):
             if absolute in seen:
                 continue
             seen.add(absolute)
-            urls.append((absolute, category))
-        return urls
+            candidates.append(absolute)
+
+        valid: list[tuple[str, str]] = []
+        category = self.site_config.category
+        # peek 結果を per-run キャッシュ (run 毎に reset)
+        self._detail_html_cache = {}
+        for url in candidates:
+            try:
+                detail_html = self._http_get(url)
+            except Exception:
+                # 個別 detail の取得失敗はサイト全体の異常ではないのでスキップ
+                continue
+            if self._has_animal_data(detail_html):
+                self._detail_html_cache[url] = detail_html
+                valid.append((url, category))
+        return valid
+
+    def _has_animal_data(self, html: str) -> bool:
+        """detail HTML に動物個別データが含まれるかを判定 (真の 0 件除外)"""
+        text = BeautifulSoup(html, "html.parser").get_text()
+        return any(marker in text for marker in self._ANIMAL_DATA_MARKERS)
 
     def extract_animal_details(self, detail_url: str, category: str = "sheltered") -> RawAnimalData:
         """detail ページから RawAnimalData を構築する
@@ -133,8 +175,13 @@ class HyogoDouaiAdapter(WordPressListAdapter):
           「犬」「猫」を推定する (HPB の hogo*.html は通常、犬または
           猫のどちらかの一覧ページとして運用される)。
         - 1 フィールドも抽出できなかった場合は ParsingError。
+
+        fetch_animal_list の peek で取得済みなら `_detail_html_cache`
+        から再利用し、HTTP 重複呼び出しを避ける。
         """
-        html = self._http_get(detail_url)
+        html = self._detail_html_cache.get(detail_url)
+        if html is None:
+            html = self._http_get(detail_url)
         soup = BeautifulSoup(html, "html.parser")
 
         fields: dict[str, str] = {}
