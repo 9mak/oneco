@@ -2,17 +2,20 @@ import Link from 'next/link';
 
 interface EmptyStateProps {
   message?: string;
+  /** message の下に表示する補助説明 (状況の理由 or 次のアクション提案) */
+  suggestion?: string;
   showClearButton?: boolean;
 }
 
 export function EmptyState({
   message = '現在表示できる動物がいません',
+  suggestion,
   showClearButton = false,
 }: EmptyStateProps) {
   return (
     <div
       role="alert"
-      className="flex flex-col items-center justify-center gap-6 p-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300"
+      className="flex flex-col items-center justify-center gap-5 p-10 sm:p-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300"
     >
       <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
         <svg
@@ -32,9 +35,16 @@ export function EmptyState({
         </svg>
       </div>
 
-      <p className="text-lg font-medium text-[var(--color-text-primary)] text-center">
-        {message}
-      </p>
+      <div className="flex flex-col gap-2 items-center max-w-md">
+        <p className="text-lg font-medium text-[var(--color-text-primary)] text-center">
+          {message}
+        </p>
+        {suggestion && (
+          <p className="text-sm text-[var(--color-text-secondary)] text-center">
+            {suggestion}
+          </p>
+        )}
+      </div>
 
       {showClearButton && (
         <Link
