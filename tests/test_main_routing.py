@@ -60,11 +60,12 @@ class TestEffectiveExtraction:
 
 
 class TestProviderRegistry:
-    def test_anthropic_registered(self):
-        assert "anthropic" in PROVIDER_REGISTRY
-
     def test_groq_registered(self):
         assert "groq" in PROVIDER_REGISTRY
+
+    def test_anthropic_not_registered(self):
+        """Anthropic は採算化後に再評価するため 2026-05-29 に撤去済み"""
+        assert "anthropic" not in PROVIDER_REGISTRY
 
 
 class TestSiteRunReturnTypeContract:
