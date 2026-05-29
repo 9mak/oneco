@@ -1,7 +1,7 @@
 """LLM-assisted adapter 自動修復ワーカー (自己修復ループ Phase 2)
 
 検知シグナル (フィールド欠損率急増 / detail_error 連続 / 件数低下) を受けた
-1 サイトについて、Claude API で adapter コードのパッチを生成し、
+1 サイトについて、Groq API で adapter コードのパッチを生成し、
 二重ガード (ユニットテスト + live test 改善定量確認) を通過したら
 fix/auto-* ブランチで PR を作成する。失敗時は Issue を作成する。
 
@@ -9,8 +9,9 @@ Usage:
     python scripts/auto_fix_adapter.py --site-name "サイト名"
     python scripts/auto_fix_adapter.py --site-name "..." --dry-run
 
-設計方針 (project_self_healing.md):
+設計方針 (project_self_healing.md, project_extraction_strategy.md):
 - 運用は rule-based 100% 維持。LLM は adapter のコード修正にだけ使う
+- LLM は **Groq** を使う（既存 GROQ_API_KEY 流用、コスト最小化）
 - 自動マージは二重ガード通過時のみ。ガード未通過は Issue 化して人間判断
 """
 
@@ -49,7 +50,8 @@ from data_collector.domain.normalizer import DataNormalizer  # noqa: E402
 from data_collector.domain.quality_metrics import compute_missing_rates  # noqa: E402
 from data_collector.llm.config import SiteConfig  # noqa: E402
 
-DEFAULT_MODEL = "claude-opus-4-7"
+DEFAULT_MODEL = "llama-3.3-70b-versatile"  # Groq (既存 GroqProvider と揃える)
+GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 MAX_HTML_CHARS = 8000
 DETAIL_SAMPLE_COUNT = 5
 
@@ -232,10 +234,17 @@ def ask_llm_for_patch(
     samples: dict[str, str],
     model: str = DEFAULT_MODEL,
 ) -> str:
-    """Claude API に修正パッチを依頼。unified diff を返す。"""
-    import anthropic  # 遅延 import (テストで mock しやすくするため)
+    """Groq API (OpenAI 互換) に修正パッチを依頼。unified diff を返す。
 
-    client = anthropic.Anthropic()
+    既存 GroqProvider と同じ openai SDK + Groq エンドポイント経由。
+    `GROQ_API_KEY` 環境変数が必須。
+    """
+    from openai import OpenAI  # 遅延 import (テストで mock しやすくするため)
+
+    api_key = os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        raise RuntimeError("GROQ_API_KEY 環境変数が未設定です")
+    client = OpenAI(api_key=api_key, base_url=GROQ_BASE_URL)
     system_msg, user_msg = build_prompt(
         adapter_code,
         str(adapter_file.relative_to(ROOT)),
@@ -243,13 +252,15 @@ def ask_llm_for_patch(
         before,
         samples,
     )
-    response = client.messages.create(
+    response = client.chat.completions.create(
         model=model,
         max_tokens=4096,
-        system=system_msg,
-        messages=[{"role": "user", "content": user_msg}],
+        messages=[
+            {"role": "system", "content": system_msg},
+            {"role": "user", "content": user_msg},
+        ],
     )
-    text = response.content[0].text
+    text = response.choices[0].message.content or ""
     return extract_diff(text)
 
 
