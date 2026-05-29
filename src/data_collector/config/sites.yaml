@@ -1309,6 +1309,23 @@ sites:
     category: "sheltered"
     single_page: true
 
+  # 【長野県動物愛護センター（ハローアニマル）】47都道府県カバー完成のため
+  # 2026-05-29 追加。/inu-neko/inu.html と /neko.html (single_page、
+  # <div class="section"> 1 つを 1 動物として抽出)
+  - name: "長野県動物愛護センター（譲渡犬）"
+    prefecture: "長野県"
+    prefecture_code: "20"
+    list_url: "https://www.pref.nagano.lg.jp/dobutsuaigo/joto/inu-neko/inu.html"
+    category: "adoption"
+    single_page: true
+
+  - name: "長野県動物愛護センター（譲渡猫）"
+    prefecture: "長野県"
+    prefecture_code: "20"
+    list_url: "https://www.pref.nagano.lg.jp/dobutsuaigo/joto/inu-neko/neko.html"
+    category: "adoption"
+    single_page: true
+
   # 【山梨県動物愛護指導センター】6 URL
   - name: "山梨県（探している犬）"
     prefecture: "山梨県"
