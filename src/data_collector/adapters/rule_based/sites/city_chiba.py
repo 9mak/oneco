@@ -69,8 +69,12 @@ class CityChibaAdapter(SinglePageTableAdapter):
     LOCATION_COLUMN: ClassVar[int | None] = 1
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
 
-    # 属性ブロック (`<p>収容日：...<br>...`) 内のラベル → フィールド名
+    # 属性ブロック (`<p>保護日：...<br>...`) 内のラベル → フィールド名。
+    # サイトは現行「保護日 / 保護場所」表記、旧表記「収容日 / 収容場所」
+    # も併せて受ける (将来サイトが戻しても壊れない冗長性)。
     _LABEL_TO_FIELD: ClassVar[dict[str, str]] = {
+        "保護日": "shelter_date",
+        "保護場所": "location",
         "収容日": "shelter_date",
         "収容場所": "location",
         "種類": "species",
@@ -80,7 +84,67 @@ class CityChibaAdapter(SinglePageTableAdapter):
         "特徴": "features",
     }
 
+    # 「動物データを持つ `<p>`」を識別するためのラベル接頭辞。
+    # 注意書きの `<h4>` 直後の `<p>` にはこれらが含まれないため、
+    # fetch_animal_list の段階で動物ブロックか否かを判定するのに使う。
+    _ANIMAL_BLOCK_MARKERS: ClassVar[tuple[str, ...]] = (
+        "保護日：",
+        "保護場所：",
+        "収容日：",
+        "収容場所：",
+    )
+
+    # size フィールドの許容値ホワイトリスト。ソース側が体格欄に
+    # 年齢相当テキスト (「生後1か月前後」等) を書き込んだケースを
+    # adapter で防御するため、標準語彙以外は破棄する。
+    _SIZE_VALID_VALUES: ClassVar[frozenset[str]] = frozenset(
+        {"小", "中", "大", "小型", "中型", "大型", "その他"}
+    )
+
     # ─────────────────── オーバーライド ───────────────────
+
+    def fetch_animal_list(self) -> list[tuple[str, str]]:
+        """動物データを持つ `<h4>` ブロックのみを仮想 URL 化する
+
+        `#contents_editable` 配下には注意書きの `<h4>` (「猫は逃がさない
+        ように…」等) が並ぶことがあり、旧実装は全ての `<h4>` を機械的に
+        `#row=N` 化していたため、注意書きから空 RawAnimalData が
+        生成されて snapshot に「不明」レコードが残っていた (2026-05 観測)。
+
+        各 `<h4>` の後続 `<p>` 群を見て、「保護日：」「保護場所：」等の
+        ラベルを持つ `<p>` が 1 つでもあれば動物ブロックとみなす。
+        判定は h4 の元 index を維持して `#row=N` に反映するため、
+        `extract_animal_details` の `_load_rows()[idx]` と整合する。
+        """
+        rows = self._load_rows()
+        if not rows:
+            return []
+        category = self.site_config.category
+        urls: list[tuple[str, str]] = []
+        for i, h4 in enumerate(rows):
+            if not isinstance(h4, Tag):
+                continue
+            if self._h4_has_animal_data(h4):
+                urls.append((f"{self.site_config.list_url}#row={i}", category))
+        return urls
+
+    @classmethod
+    def _h4_has_animal_data(cls, h4: Tag) -> bool:
+        """`<h4>` 後続の `<p>` に動物属性ラベル接頭辞が含まれるかを判定する"""
+        for sib in h4.find_next_siblings():
+            if not isinstance(sib, Tag):
+                continue
+            name = sib.name
+            if name in ("h1", "h2", "h3", "h4", "hr", "ul"):
+                break
+            if name != "p":
+                continue
+            if sib.find("span", class_="txt_big") is not None:
+                break
+            text = sib.get_text()
+            if any(marker in text for marker in cls._ANIMAL_BLOCK_MARKERS):
+                return True
+        return False
 
     def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """`<h4>` を起点とした動物ブロックから RawAnimalData を構築する
@@ -135,6 +199,10 @@ class CityChibaAdapter(SinglePageTableAdapter):
                         value = value.strip()
                         field = self._LABEL_TO_FIELD.get(label)
                         if field and value and field not in fields:
+                            # size はソース側で年齢相当テキスト等が混入する
+                            # ケースがあるためホワイトリストで防御する。
+                            if field == "size" and value not in self._SIZE_VALID_VALUES:
+                                break
                             fields[field] = value
                         break
 
