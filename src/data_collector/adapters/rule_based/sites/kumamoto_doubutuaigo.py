@@ -71,8 +71,12 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
     #   - species: 「種類」値は "雑種(ミックス)" 等で犬/猫を判別できず その他化
     #     するため、ここでは抽出せず URL の animal_id / サイト名から犬/猫を推定
     #     する (extract_animal_details の補完ロジックに委ねる)。
-    #   - location: 「捕獲場所」等 → 共通部分文字列 "場所" で吸収
-    #     (旧 "収容場所" は実在せず location が 100% 不明だった)
+    #   - location: 迷子犬は「捕獲場所」、譲渡犬は「捕獲場所」を持たず
+    #     保健所の「所在地」のみで住所情報を提供する。tuple OR で
+    #     捕獲場所 → 所在地 の順に探し、両方無いケースのみ部分一致
+    #     "場所" にフォールバック。
+    #     (旧実装は "場所" 部分一致のみで「所在地」を拾えず、譲渡カテゴリ
+    #     27 件が全件 '不明' になっていた)
     #   - shelter_date: 「保護した日」(旧 "収容日" は実在しない)
     #   - phone: 「連絡先」は施設名なので「電話番号」を優先
     #   - size: 実サイトは「体重」のみで体格欄が無い ("大きさ" は温存=空→None)
@@ -82,7 +86,7 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
         "color": FieldSpec(label="毛色"),
         "size": FieldSpec(label="大きさ"),
         "shelter_date": FieldSpec(label=("保護した日", "収容日")),
-        "location": FieldSpec(label="場所"),
+        "location": FieldSpec(label=("捕獲場所", "保護場所", "所在地", "場所")),
         "phone": FieldSpec(label=("電話番号", "連絡先")),
     }
 
