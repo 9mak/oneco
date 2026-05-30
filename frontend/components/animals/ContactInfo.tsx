@@ -59,6 +59,11 @@ export function ContactInfo({ location, phone, category }: ContactInfoProps) {
           {categoryMessage[category]}
         </p>
       </div>
+
+      {/* 情報鮮度の補助テキスト */}
+      <p className="mt-3 text-xs text-gray-500 leading-relaxed">
+        ここに表示している情報は自治体の元サイトから自動取得しています。お問い合わせ前に最新の掲載状況を元のサイトでもご確認ください。
+      </p>
     </div>
   );
 }
