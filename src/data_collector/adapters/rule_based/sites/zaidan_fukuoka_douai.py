@@ -73,6 +73,12 @@ class ZaidanFukuokaDouaiAdapter(WordPressListAdapter):
     # 拾うセレクタにしぼる。
     IMAGE_SELECTOR: ClassVar[str] = "figure img"
 
+    # 譲渡カテゴリの詳細ページ (`/animals/center-detail/`, `/animals/group-detail/`)
+    # は「保護した場所」欄を持たないため、location が空になったまま snapshot に
+    # 出ると「不明」表示になる。譲渡対象動物は施設で会うことになるので、
+    # 施設名 (= 福岡県動物愛護センター) を location に代入する。
+    _CENTER_FACILITY_NAME: ClassVar[str] = "福岡県動物愛護センター"
+
     def _postprocess_fields(
         self, fields: dict[str, str], detail_url: str, soup: BeautifulSoup
     ) -> None:
@@ -80,6 +86,8 @@ class ZaidanFukuokaDouaiAdapter(WordPressListAdapter):
 
         - species: list_url の `/dog` `/cat` から推測
         - phone: 動物情報 table の外にある問い合わせ先 box から拾えれば拾う
+        - location: 譲渡カテゴリ (`center-detail` / `group-detail`) では
+          「保護した場所」欄が無いため施設名をフォールバックとして代入する
         """
         species = fields.get("species", "")
         if not any(kw in species for kw in ("犬", "猫", "いぬ", "ねこ", "イヌ", "ネコ")):
@@ -94,6 +102,10 @@ class ZaidanFukuokaDouaiAdapter(WordPressListAdapter):
             m = re.search(r"(\d{2,4}-\d{2,4}-\d{3,4})", text)
             if m:
                 fields["phone"] = m.group(1)
+        if not fields.get("location") and (
+            "/center-detail/" in detail_url or "/group-detail/" in detail_url
+        ):
+            fields["location"] = self._CENTER_FACILITY_NAME
 
 
 # ─────────────────── サイト登録 ───────────────────

@@ -189,6 +189,73 @@ class TestZaidanFukuokaDouaiAdapterRegistry:
 class TestZaidanFukuokaDouaiAdapterCenterCategory:
     """センター譲渡 (`/animals/centers/`) ルートも list 抽出が動くこと"""
 
+    def test_center_detail_falls_back_to_facility_name_for_location(self, assert_raw_animal):
+        """`center-detail` (センター譲渡) は「保護した場所」欄を持たないため
+        location を「福岡県動物愛護センター」で補完する
+
+        2026-05 実査: `/animals/center-detail/{uuid}` の詳細ページには
+        登録日 / 性別 / 毛色 / 大きさ / 推定年齢 / 避妊手術 / マイクロチップ
+        のみが並び、収容場所相当の情報が存在しない。location が空のまま
+        snapshot に乗ると「不明」表示になり、フロントエンドのユーザー体験を
+        損なうため、URL prefix で譲渡カテゴリと判別できた場合は施設名を
+        代入する (`group-detail` も同じ扱い)。
+        """
+        center_html = """
+        <html><body>
+          <table class="animals-data">
+            <tr><th>登録日</th><td>2026年05月27日</td></tr>
+            <tr><th>性別</th><td>メス</td></tr>
+            <tr><th>毛色</th><td>クリーム</td></tr>
+            <tr><th>大きさ</th><td>(３．３５kg)</td></tr>
+            <tr><th>推定年齢</th><td>2歳～5歳</td></tr>
+          </table>
+        </body></html>
+        """
+        adapter = ZaidanFukuokaDouaiAdapter(_site_centers_dog())
+        with patch.object(adapter, "_http_get", return_value=center_html):
+            raw = adapter.extract_animal_details(
+                "https://www.zaidan-fukuoka-douai.or.jp/animals/center-detail/9e5f290d-b1b6-4f1e-9fe3-7a2854b19010",
+                category="adoption",
+            )
+        assert raw.location == "福岡県動物愛護センター"
+
+    def test_group_detail_also_falls_back_to_facility_name(self):
+        """`group-detail` (団体譲渡) も同様に施設名フォールバック"""
+        group_html = """
+        <html><body>
+          <table class="animals-data">
+            <tr><th>登録日</th><td>2026年05月20日</td></tr>
+            <tr><th>性別</th><td>オス</td></tr>
+          </table>
+        </body></html>
+        """
+        adapter = ZaidanFukuokaDouaiAdapter(_site_centers_dog())
+        with patch.object(adapter, "_http_get", return_value=group_html):
+            raw = adapter.extract_animal_details(
+                "https://www.zaidan-fukuoka-douai.or.jp/animals/group-detail/abc-456",
+                category="adoption",
+            )
+        assert raw.location == "福岡県動物愛護センター"
+
+    def test_protection_detail_keeps_actual_location(self):
+        """`protection-detail` (保健所収容) は「保護した場所」が優先される (回帰防止)"""
+        protection_html = """
+        <html><body>
+          <table class="animals-data">
+            <tr><th>性別</th><td>オス</td></tr>
+            <tr><th>保護した場所</th><td>芦屋町山鹿</td></tr>
+            <tr><th>毛色</th><td>茶</td></tr>
+          </table>
+        </body></html>
+        """
+        adapter = ZaidanFukuokaDouaiAdapter(_site_protections_dog())
+        with patch.object(adapter, "_http_get", return_value=protection_html):
+            raw = adapter.extract_animal_details(
+                "https://www.zaidan-fukuoka-douai.or.jp/animals/protection-detail/xyz",
+                category="sheltered",
+            )
+        assert raw.location == "芦屋町山鹿"
+
     def test_center_detail_link_pattern_matches(self):
         """`/animals/center-detail/{uuid}` 形式の詳細リンクも拾える"""
         # 4 系統 (protection / personal-hogo / center / group) は
