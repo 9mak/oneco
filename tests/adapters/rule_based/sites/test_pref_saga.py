@@ -50,82 +50,96 @@ def _load_saga_html(fixture_html) -> str:
         return raw
 
 
+# 実データを持つテーブル 1 件と、データなし (「保護中…いません」) テーブル 2 件を
+# 合成した HTML。修正後は実データ 1 件のみが仮想 URL として返ることを検証する。
+_HTML_WITH_ONE_DATA_AND_TWO_EMPTY = """
+<html><body>
+<h3 class="title">保護犬情報</h3>
+<table class="__wys_table">
+  <tr><td>保護犬（26-1）</td><td colspan="2">保護した場所</td><td>嬉野市塩田町</td></tr>
+  <tr><td rowspan="8">備考なし</td><td rowspan="6">犬の特徴</td><td>種類</td><td>雑種</td></tr>
+  <tr><td>毛色</td><td>茶白</td></tr>
+  <tr><td>性別</td><td>オス</td></tr>
+  <tr><td>体格</td><td>中型</td></tr>
+  <tr><td>推定年齢</td><td>2歳</td></tr>
+  <tr><td>その他</td><td>人懐っこい</td></tr>
+  <tr><td colspan="2">収容日</td><td>令和8年4月5日</td></tr>
+  <tr><td colspan="2">ホームページ掲載期限</td><td>令和8年5月5日</td></tr>
+</table>
+
+<h3 class="title">保護猫情報</h3>
+<table class="__wys_table">
+  <tr><td>保護猫（- ）</td><td colspan="2">保護した場所</td><td>　</td></tr>
+  <tr><td rowspan="8">現在保護中の猫はいません</td><td rowspan="6">猫の特徴</td><td>種類</td><td></td></tr>
+  <tr><td>毛色</td><td></td></tr>
+  <tr><td>性別</td><td></td></tr>
+  <tr><td>体格</td><td></td></tr>
+  <tr><td>推定年齢</td><td></td></tr>
+  <tr><td>その他</td><td></td></tr>
+  <tr><td colspan="2">収容日</td><td>令和8年(2026年） 月 日</td></tr>
+  <tr><td colspan="2">ホームページ掲載期限</td><td>令和8年(2026年） 月 日</td></tr>
+</table>
+
+<h3 class="title">その他の保護動物情報</h3>
+<table class="__wys_table">
+  <tr><td>保護動物（- ）</td><td colspan="2">保護した場所</td><td>　　</td></tr>
+  <tr><td rowspan="8">現在保護中のその他の動物はいません</td><td rowspan="6">特徴</td><td>種類</td><td></td></tr>
+  <tr><td>毛色</td><td></td></tr>
+  <tr><td>性別</td><td></td></tr>
+  <tr><td>体格</td><td></td></tr>
+  <tr><td>推定年齢</td><td></td></tr>
+  <tr><td>その他</td><td></td></tr>
+  <tr><td colspan="2">収容日</td><td>令和8年(2026年） 月 日</td></tr>
+  <tr><td colspan="2">ホームページ掲載期限</td><td>令和8年(2026年） 月 日</td></tr>
+</table>
+</body></html>
+"""
+
+
 class TestPrefSagaAdapter:
-    def test_fetch_animal_list_returns_three_sections(self, fixture_html):
-        """1 ページに保護犬 / 保護猫 / その他の 3 セクションが抽出される"""
+    def test_fetch_animal_list_skips_empty_tables(self):
+        """「保護中の動物がいない」空テーブルは仮想 URL を生成しない
+
+        旧実装は 3 テーブル全件を `#row=N` 化し、全項目が空文字の
+        ダミー RawAnimalData を 14/15 件分 snapshot に乗せていた。
+        実データ 1 件 + 空 2 件の合成 HTML で、実データ 1 件のみが
+        返ることを検証する。
+        """
+        adapter = PrefSagaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=_HTML_WITH_ONE_DATA_AND_TWO_EMPTY):
+            result = adapter.fetch_animal_list()
+        assert len(result) == 1, (
+            f"実データ入りテーブル 1 件のみが残るはず: got {len(result)}"
+        )
+        url, cat = result[0]
+        # row index は元テーブルの位置 (0=犬) を保持
+        assert url == "https://www.pref.saga.lg.jp/kiji00349237/index.html#row=0"
+        assert cat == "adoption"
+
+    def test_fetch_animal_list_with_all_empty_tables_returns_empty(self, fixture_html):
+        """既存 fixture は 3 テーブルすべて「保護中の動物がいない」状態なので空リスト"""
         html = _load_saga_html(fixture_html)
         adapter = PrefSagaAdapter(_site())
-
         with patch.object(adapter, "_http_get", return_value=html):
             result = adapter.fetch_animal_list()
-
-        # 保護犬情報 / 保護猫情報 / その他の保護動物情報 の 3 テーブル
-        assert len(result) == 3, (
-            f"3 セクション (犬 / 猫 / その他) が抽出されるはず: got {len(result)}"
+        assert result == [], (
+            "fixture は実データなしのため 0 件を返すべき (旧実装は 3 件返していた)"
         )
-        for url, cat in result:
-            assert "#row=" in url
-            assert url.startswith("https://www.pref.saga.lg.jp/kiji00349237/")
-            assert cat == "adoption"
 
-        # 各セクションのインデックスが 0..N-1 で連番になっている
-        indices = [int(u.rsplit("=", 1)[1]) for u, _ in result]
-        assert indices == list(range(len(result)))
-
-    def test_extract_animal_details_infers_species_from_heading(self, fixture_html):
-        """先行する `<h3 class="title">` から動物種別が決定される
-
-        テーブル順は h3 順序と一致する想定:
-          - row 0: 保護犬情報   → species == "犬"
-          - row 1: 保護猫情報   → species == "猫"
-          - row 2: その他…情報 → species == "その他"
-        """
-        html = _load_saga_html(fixture_html)
+    def test_extract_animal_details_from_data_table(self):
+        """空でない実データテーブルから各フィールドが取れる"""
         adapter = PrefSagaAdapter(_site())
-
-        species_per_row: list[str] = []
-        with patch.object(adapter, "_http_get", return_value=html) as mock_get:
-            urls = adapter.fetch_animal_list()
-            for url, cat in urls:
-                raw = adapter.extract_animal_details(url, category=cat)
-                assert isinstance(raw, RawAnimalData)
-                # source_url / category が仮想 URL とサイト category と整合
-                assert raw.source_url == url
-                assert raw.category == "adoption"
-                species_per_row.append(raw.species)
-
-        # 同一ページから 3 件取得しても HTTP は 1 回 (キャッシュ確認)
-        assert mock_get.call_count == 1
-        assert species_per_row == ["犬", "猫", "その他"]
-
-    def test_extract_animal_details_reads_vertical_layout(self, fixture_html):
-        """縦並びテーブルから「保護した場所」と「ラベル → 値」セルが
-        正しくフィールドに割り当てられる
-
-        フィクスチャでは値セルが空のテーブルもあるが、
-        ラベル → フィールドのマッピング自体は壊れず、
-        - location / sex / color / size / age / shelter_date
-        が `RawAnimalData` 上に文字列として現れる (空文字含む) ことを検証する。
-        """
-        html = _load_saga_html(fixture_html)
-        adapter = PrefSagaAdapter(_site())
-
-        with patch.object(adapter, "_http_get", return_value=html):
+        with patch.object(adapter, "_http_get", return_value=_HTML_WITH_ONE_DATA_AND_TWO_EMPTY):
             urls = adapter.fetch_animal_list()
             raw = adapter.extract_animal_details(urls[0][0], category="adoption")
-
-        # str 型として全フィールドが定義されている (Pydantic バリデート済)
-        assert isinstance(raw.location, str)
-        assert isinstance(raw.sex, str)
-        assert isinstance(raw.color, str)
-        assert isinstance(raw.size, str)
-        assert isinstance(raw.age, str)
-        assert isinstance(raw.shelter_date, str)
-        assert isinstance(raw.phone, str)
-        # 画像 URL は list[str] (フィクスチャでは空でも可)
-        assert isinstance(raw.image_urls, list)
-        for u in raw.image_urls:
-            assert u.startswith("http")
+        assert isinstance(raw, RawAnimalData)
+        assert raw.location == "嬉野市塩田町"
+        assert raw.species == "犬"  # h3 から推定
+        assert raw.sex == "オス"
+        assert raw.color == "茶白"
+        assert raw.size == "中型"
+        assert raw.age == "2歳"
+        assert raw.shelter_date == "令和8年4月5日"
 
     def test_all_six_sites_registered(self):
         """6 つの佐賀県サイト名すべてが Registry に登録されている"""
