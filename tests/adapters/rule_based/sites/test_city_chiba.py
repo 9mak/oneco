@@ -52,6 +52,53 @@ def _load_chiba_html(fixture_html) -> str:
         return raw
 
 
+# 実 HTML を再現した合成 HTML。先頭の注意書き <h4> と、ラベルが
+# 「保護日：」「保護場所：」「体格：生後1か月前後」のケースを含む。
+_HTML_REAL_LABELS = """
+<html><body>
+<div id="contents_editable">
+  <h4>猫は逃がさないように飼いましょう。
+いなくなってしまったときは、責任を持ってすぐに探して下さい。</h4>
+  <p>注意書きの段落 (動物データではない)</p>
+
+  <h4>A-6002</h4>
+  <p><img alt="A-6002" src="/cmsfiles/images/a6002.jpg"></p>
+  <p>保護日：令和８年４月８日<br>
+保護場所：美浜区真砂<br>
+種類：雑種<br>
+毛色：三毛（茶黒白）<br>
+性別：不明<br>
+体格：中<br>
+特徴：真っすぐな尾長、長毛、人なれしている</p>
+
+  <h4>A-5073</h4>
+  <p><img alt="A-5073" src="/cmsfiles/images/a5073.jpg"></p>
+  <p>保護日：令和7年11月9日<br>
+保護場所：村田町付近<br>
+種類：雑種<br>
+毛色：キジトラ<br>
+性別：メス<br>
+体格：生後1か月前後<br>
+特徴：</p>
+</div>
+</body></html>
+"""
+
+
+def _site_cat() -> SiteConfig:
+    return SiteConfig(
+        name="千葉市（市民保護猫）",
+        prefecture="千葉県",
+        prefecture_code="12",
+        list_url=(
+            "https://www.city.chiba.jp/hokenfukushi/iryoeisei/"
+            "seikatsueisei/dobutsuhogo/hogo_cat.html"
+        ),
+        category="sheltered",
+        single_page=True,
+    )
+
+
 class TestCityChibaAdapter:
     def test_fetch_animal_list_returns_rows(self, fixture_html):
         """一覧ページから動物ブロック (仮想 URL) が抽出できる"""
@@ -66,6 +113,46 @@ class TestCityChibaAdapter:
             assert "#row=" in url
             assert url.startswith("https://www.city.chiba.jp/")
             assert cat == "lost"
+
+    def test_fetch_animal_list_skips_notice_h4(self):
+        """注意書きの h4 (「猫は逃がさないように…」) は動物ブロックではないのでスキップする"""
+        adapter = CityChibaAdapter(_site_cat())
+        with patch.object(adapter, "_http_get", return_value=_HTML_REAL_LABELS):
+            result = adapter.fetch_animal_list()
+        # 注意書き 1 件 + 動物 2 件 → 動物 2 件のみ
+        assert len(result) == 2
+        # row index は元 h4 リストでの位置を保持 (1, 2)
+        urls = [u for u, _c in result]
+        assert urls[0].endswith("#row=1")
+        assert urls[1].endswith("#row=2")
+
+    def test_extract_supports_hogo_labels(self):
+        """実 HTML の「保護日：」「保護場所：」ラベルが shelter_date / location に流れる
+
+        旧実装は「収容日：」「収容場所：」のみ対応で、現サイトのラベル変更
+        (「保護日」「保護場所」) で全件 location 取得できていなかった。
+        """
+        adapter = CityChibaAdapter(_site_cat())
+        with patch.object(adapter, "_http_get", return_value=_HTML_REAL_LABELS):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+        assert raw.location == "美浜区真砂"
+        assert "令和８年４月８日" == raw.shelter_date
+
+    def test_extract_drops_non_standard_size_value(self):
+        """size に標準値以外 (「生後1か月前後」) が入っていれば空文字にする
+
+        ソース側で体格欄に年齢相当テキストを書き込んだケースを adapter で
+        防御する。標準値は 小/中/大/小型/中型/大型/その他 のみ。
+        """
+        adapter = CityChibaAdapter(_site_cat())
+        with patch.object(adapter, "_http_get", return_value=_HTML_REAL_LABELS):
+            urls = adapter.fetch_animal_list()
+            # 2 件目 (A-5073) が「体格：生後1か月前後」
+            raw = adapter.extract_animal_details(urls[1][0], category="sheltered")
+        assert raw.size == "", f"非標準値 '生後1か月前後' は除外されるべき: got {raw.size!r}"
+        # location は引き続き取れる (副作用なし)
+        assert raw.location == "村田町付近"
 
     def test_extract_animal_details_first_row(self, fixture_html):
         """1 件目のブロックから RawAnimalData を構築できる
