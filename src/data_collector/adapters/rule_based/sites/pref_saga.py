@@ -47,6 +47,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import ClassVar
 
 from bs4 import Tag
@@ -55,6 +56,13 @@ from ....domain.models import RawAnimalData
 from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
+
+# 「現在保護中の◯はいません」「保護中の動物はありません」など、
+# 当該セクションに収容動物がいないことを示す文言。テーブル全文に
+# このパターンが含まれていれば仮想 URL を生成せずスキップする。
+_EMPTY_SECTION_PATTERN = re.compile(r"(保護中|現在)[^。]*?(いません|ありません)")
+# 収容日のプレースホルダ「令和 8 年(2026年） 月 日」。実値ではなくテンプレ。
+_PLACEHOLDER_DATE_PATTERN = re.compile(r"^令和\s*\d*\s*年")
 
 
 class PrefSagaAdapter(SinglePageTableAdapter):
@@ -85,6 +93,78 @@ class PrefSagaAdapter(SinglePageTableAdapter):
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
 
     # ─────────────────── オーバーライド ───────────────────
+
+    def fetch_animal_list(self) -> list[tuple[str, str]]:
+        """実データを持つテーブルのみを仮想 URL に変換する
+
+        旧実装は `table.__wys_table` を機械的に全件 `#row=N` 化して
+        いたため、「現在保護中の犬はいません」状態の空テーブルからも
+        全フィールド空の RawAnimalData が生成され、snapshot に
+        location='不明' のダミーレコードが 14/15 件分残る原因と
+        なっていた (2026-05 観測)。
+
+        実データの有無は以下のいずれかを満たすかで判定する:
+        - 1 行目最後セル (保護した場所) が空白を除いて空でない
+        - 2 行目以降の右端セル (種類 / 毛色 / 性別 / 体格 / 推定年齢) の
+          少なくとも 1 つが空白を除いて空でなく、収容日プレースホルダ
+          (「令和8年(2026年） 月 日」) でもない
+
+        ただしテーブル全体に「保護中…いません」が含まれる場合は実データ
+        なしと即断する。
+
+        元テーブルの行インデックスは仮想 URL の `#row=N` にそのまま保持し、
+        `extract_animal_details` 側の `_load_rows()` と整合させる。
+        """
+        rows = self._load_rows()
+        if not rows:
+            return []
+        category = self.site_config.category
+        urls: list[tuple[str, str]] = []
+        for i, table in enumerate(rows):
+            if not isinstance(table, Tag):
+                continue
+            if self._has_animal_data(table):
+                urls.append((f"{self.site_config.list_url}#row={i}", category))
+        return urls
+
+    @staticmethod
+    def _has_animal_data(table: Tag) -> bool:
+        """テーブルに実データが含まれるかを判定する
+
+        - 「保護中…いません」「現在…いません」を含むテーブルは即 False
+        - location セル or 主要フィールドの右セルに 1 つでも実値があれば True
+        """
+        full_text = table.get_text(" ", strip=True)
+        if _EMPTY_SECTION_PATTERN.search(full_text):
+            return False
+
+        trs = [tr for tr in table.find_all("tr") if isinstance(tr, Tag)]
+        if not trs:
+            return False
+
+        # 1 行目最後セル = 保護した場所
+        tr0_cells = trs[0].find_all(["td", "th"])
+        if tr0_cells:
+            loc = tr0_cells[-1].get_text(strip=True).replace("　", "")
+            if loc:
+                return True
+
+        # 2 行目以降の右端セルから実値を探す
+        for tr in trs[1:]:
+            cells = [c for c in tr.find_all(["td", "th"]) if isinstance(c, Tag)]
+            if len(cells) < 2:
+                continue
+            value = cells[-1].get_text(strip=True).replace("　", "")
+            if not value:
+                continue
+            # 収容日プレースホルダ (「令和8年(2026年） 月 日」) は実値ではない
+            if _PLACEHOLDER_DATE_PATTERN.match(value) and "月" in value and "日" in value:
+                # 数字付きの確定日 (「令和8年4月5日」) は通す、未確定 (「令和8年(2026年） 月 日」) は除外
+                if re.search(r"令和\s*\d+\s*年\s*\d+\s*月\s*\d+\s*日", value):
+                    return True
+                continue
+            return True
+        return False
 
     def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """1 つの `table.__wys_table` から RawAnimalData を構築する
