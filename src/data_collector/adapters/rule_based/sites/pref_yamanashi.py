@@ -36,14 +36,29 @@
 
 from __future__ import annotations
 
+import logging
+import re
 from typing import ClassVar
 
-from bs4 import Tag
+from bs4 import BeautifulSoup, Tag
 
 from ....domain.models import RawAnimalData
 from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
+
+_logger = logging.getLogger(__name__)
+
+# 「種類・体格」「性別」「毛色」「管轄保健所の連絡先」等の見出し直後の
+# `<p>` から値を拾うための h2 ラベル → フィールド名マッピング。
+_DETAIL_H2_LABELS: dict[str, str] = {
+    "種類・体格": "_kind_size",
+    "管轄保健所の連絡先": "phone",
+}
+# 体格は許容語彙のみ採用する (年齢相当テキストや「不明」等を弾く)
+_SIZE_VALID = frozenset({"小", "中", "大", "小型", "中型", "大型", "その他"})
+# 「峡東保健所TEL:0553-20-2751」のような「保健所名 + TEL/電話 + 番号」表記
+_PHONE_PATTERN = re.compile(r"(\d{2,4}-\d{2,4}-\d{3,4})")
 
 
 class PrefYamanashiAdapter(SinglePageTableAdapter):
@@ -107,22 +122,82 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
         # 動物種別はサイト名から推定 (URL パスでも可だが name の方が確実)
         species = self._infer_species_from_site_name(self.site_config.name)
 
+        # 詳細ページ (`/doubutsu/kt/{section}/{id}.html`) を辿って
+        # 一覧カードには無い phone と size を補完する。失敗時は空のまま。
+        phone, size = self._fetch_phone_and_size_from_detail(card, virtual_url)
+
         try:
             return RawAnimalData(
                 species=species,
                 sex=fields.get("sex", ""),
                 age="",
                 color=fields.get("color", ""),
-                size="",
+                size=size,
                 shelter_date=self.SHELTER_DATE_DEFAULT,
                 location=location,
-                phone="",
+                phone=phone,
                 image_urls=self._extract_row_images(card, virtual_url),
                 source_url=virtual_url,
                 category=category,
             )
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
+
+    # ─────────────────── detail 補完 ───────────────────
+
+    def _fetch_phone_and_size_from_detail(self, card: Tag, base_url: str) -> tuple[str, str]:
+        """カードの詳細リンクを辿って phone と size を抽出する
+
+        実サイト構造 (2026-05 観測):
+            <h2>種類・体格</h2><p>{犬種} {体格}</p>
+            <h2>管轄保健所の連絡先</h2><p>{保健所名}TEL:{番号}</p>
+
+        ネットワーク失敗・HTML 構造変化等は致命的でないため、例外は
+        握り潰して空文字を返す。
+        """
+        link = card.select_one("div.item_link_ttl p.txt a")
+        if not isinstance(link, Tag):
+            return "", ""
+        href = link.get("href")
+        if not isinstance(href, str) or not href:
+            return "", ""
+        detail_url = self._absolute_url(href, base=base_url)
+        try:
+            html = self._http_get(detail_url)
+        except Exception as e:
+            _logger.debug("yamanashi detail fetch failed %s: %s", detail_url, e)
+            return "", ""
+
+        soup = BeautifulSoup(html, "html.parser")
+        phone = ""
+        size = ""
+        for h2 in soup.find_all("h2"):
+            if not isinstance(h2, Tag):
+                continue
+            label = h2.get_text(strip=True)
+            target = next(
+                (key for key in _DETAIL_H2_LABELS if key in label),
+                None,
+            )
+            if target is None:
+                continue
+            nxt = h2.find_next_sibling()
+            if not isinstance(nxt, Tag):
+                continue
+            value = nxt.get_text(" ", strip=True)
+            if not value:
+                continue
+            if _DETAIL_H2_LABELS[target] == "phone":
+                m = _PHONE_PATTERN.search(value)
+                if m:
+                    phone = m.group(1)
+            elif _DETAIL_H2_LABELS[target] == "_kind_size":
+                # 「トイプードル 中型」のような並びから許容語彙の体格を抜き出す
+                for token in value.split():
+                    if token in _SIZE_VALID:
+                        size = token
+                        break
+        return phone, size
 
     # ─────────────────── ヘルパー ───────────────────
 
