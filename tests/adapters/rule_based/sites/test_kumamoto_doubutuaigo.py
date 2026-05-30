@@ -434,3 +434,61 @@ class TestKumamotoDoubutuAigoRealLabels:
         normalized = adapter.normalize(raw)
         assert normalized.species == "犬"
         assert normalized.location == "天草本渡町"
+
+    def test_real_dog_detail_falls_back_to_shozaichi_when_capture_missing(self):
+        """捕獲場所が無い譲渡ページでは「所在地」(保健所住所) を location に採用する
+
+        2026-05 実査 (animals/detail/4663 等): 譲渡犬の詳細ページは
+        「捕獲場所」を持たず、保健所の「所在地」のみが住所情報として
+        並ぶ。これを location に格納することで、譲渡カテゴリの 27 件で
+        全件 '不明' になっていた問題を解消する。
+        """
+        # 「捕獲場所」を欠き、保健所情報セクションに「所在地」がある HTML
+        detail_html = """
+        <html><body>
+          <dl class="animal-detail">
+            <dt>ナンバー</dt><dd>MN00352</dd>
+            <dt>種類</dt><dd>雑種(ミックス)</dd>
+            <dt>体重</dt><dd>20kg</dd>
+            <dt>毛色</dt><dd>茶色系</dd>
+            <dt>性別</dt><dd>オス</dd>
+            <dt>年齢</dt><dd>6歳～10歳</dd>
+            <dt>首輪の有無</dt><dd>無</dd>
+            <dt>保護した日</dt><dd>2026年4月6日</dd>
+            <dt>備考</dt><dd>元気な男の子です</dd>
+            <dt>連絡先</dt><dd>水俣保健所</dd>
+            <dt>受付時間</dt><dd>平日　8:30-17:15</dd>
+            <dt>所在地</dt><dd>水俣市八幡町３－２－７</dd>
+            <dt>電話番号</dt><dd>0966-63-4104</dd>
+          </dl>
+        </body></html>
+        """
+        adapter = KumamotoDoubutuAigoAdapter(_site_center_dog())
+        url = "https://www.kumamoto-doubutuaigo.jp/animals/detail/4663"
+        with patch.object(adapter, "_http_get", return_value=detail_html):
+            raw = adapter.extract_animal_details(url, category="adoption")
+        assert raw.location == "水俣市八幡町３－２－７"
+        assert raw.shelter_date == "2026年4月6日"
+        assert raw.phone == "0966-63-4104"
+
+    def test_capture_location_takes_priority_over_shozaichi(self):
+        """「捕獲場所」と「所在地」が両方あるときは捕獲場所を優先する
+
+        動物が見つかった場所のほうが保健所所在地より具体的なため、
+        FieldSpec の tuple OR で「捕獲場所」を先頭に置く。
+        """
+        detail_html = """
+        <html><body>
+          <dl>
+            <dt>種類</dt><dd>雑種</dd>
+            <dt>性別</dt><dd>オス</dd>
+            <dt>捕獲場所</dt><dd>天草本渡町</dd>
+            <dt>所在地</dt><dd>宇城市松橋町</dd>
+          </dl>
+        </body></html>
+        """
+        adapter = KumamotoDoubutuAigoAdapter(_site_center_dog())
+        url = "https://www.kumamoto-doubutuaigo.jp/animals/detail/x"
+        with patch.object(adapter, "_http_get", return_value=detail_html):
+            raw = adapter.extract_animal_details(url, category="adoption")
+        assert raw.location == "天草本渡町"
