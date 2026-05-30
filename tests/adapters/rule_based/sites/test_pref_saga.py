@@ -108,9 +108,7 @@ class TestPrefSagaAdapter:
         adapter = PrefSagaAdapter(_site())
         with patch.object(adapter, "_http_get", return_value=_HTML_WITH_ONE_DATA_AND_TWO_EMPTY):
             result = adapter.fetch_animal_list()
-        assert len(result) == 1, (
-            f"実データ入りテーブル 1 件のみが残るはず: got {len(result)}"
-        )
+        assert len(result) == 1, f"実データ入りテーブル 1 件のみが残るはず: got {len(result)}"
         url, cat = result[0]
         # row index は元テーブルの位置 (0=犬) を保持
         assert url == "https://www.pref.saga.lg.jp/kiji00349237/index.html#row=0"
@@ -122,9 +120,7 @@ class TestPrefSagaAdapter:
         adapter = PrefSagaAdapter(_site())
         with patch.object(adapter, "_http_get", return_value=html):
             result = adapter.fetch_animal_list()
-        assert result == [], (
-            "fixture は実データなしのため 0 件を返すべき (旧実装は 3 件返していた)"
-        )
+        assert result == [], "fixture は実データなしのため 0 件を返すべき (旧実装は 3 件返していた)"
 
     def test_extract_animal_details_from_data_table(self):
         """空でない実データテーブルから各フィールドが取れる"""
