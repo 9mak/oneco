@@ -126,7 +126,7 @@ class TestCityChibaAdapter:
         assert urls[0].endswith("#row=1")
         assert urls[1].endswith("#row=2")
 
-    def test_extract_supports_保護日_保護場所_labels(self):
+    def test_extract_supports_hogo_labels(self):
         """実 HTML の「保護日：」「保護場所：」ラベルが shelter_date / location に流れる
 
         旧実装は「収容日：」「収容場所：」のみ対応で、現サイトのラベル変更
