@@ -138,9 +138,7 @@ class TestPrefYamanashiAdapter:
 
         # detail から補完された size と phone
         assert raw.size == "中型", f"detail から size 補完されるべき: got {raw.size!r}"
-        assert raw.phone == "0553-20-2751", (
-            f"detail から phone 補完されるべき: got {raw.phone!r}"
-        )
+        assert raw.phone == "0553-20-2751", f"detail から phone 補完されるべき: got {raw.phone!r}"
 
     def test_extract_animal_details_falls_back_when_detail_fails(self, fixture_html):
         """detail fetch が失敗しても一覧の情報で RawAnimalData が返る"""
