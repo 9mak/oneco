@@ -65,17 +65,21 @@ class TestPrefYamanashiAdapter:
             assert cat == "lost"
 
     def test_extract_animal_details_first_row(self, fixture_html):
-        """1 件目のカードから RawAnimalData を構築できる"""
+        """1 件目のカードから RawAnimalData を構築できる + detail から補完が走る"""
         html = _load_yamanashi_html(fixture_html)
         adapter = PrefYamanashiAdapter(_site())
 
-        with patch.object(adapter, "_http_get", return_value=html) as mock_get:
+        # detail URL からは空の HTML を返してフェイルセーフを確認
+        def _http_side_effect(url):
+            if url.endswith("index.html"):
+                return html
+            return "<html><body></body></html>"
+
+        with patch.object(adapter, "_http_get", side_effect=_http_side_effect):
             urls = adapter.fetch_animal_list()
             first_url, category = urls[0]
             raw = adapter.extract_animal_details(first_url, category=category)
 
-        # 同一ページから複数取得しても HTTP は 1 回だけ (キャッシュ確認)
-        assert mock_get.call_count == 1
         assert isinstance(raw, RawAnimalData)
         # サイト名から犬と推定される
         assert raw.species == "犬"
@@ -90,6 +94,71 @@ class TestPrefYamanashiAdapter:
         # source_url は仮想 URL
         assert raw.source_url == first_url
         assert raw.category == "lost"
+
+    def test_extract_animal_details_enriches_with_detail_page(self, fixture_html):
+        """カードの detail URL を辿って phone / size を補完する
+
+        実サイト (2026-05 観測) の詳細ページは以下の構造:
+            <h2>種類・体格</h2>
+            <p>トイプードル　中型</p>
+            <h2>性別</h2>
+            <p>オス</p>
+            <h2>毛色</h2>
+            <p>濃い茶色</p>
+            <h2>管轄保健所の連絡先</h2>
+            <p>峡東保健所TEL:0553-20-2751</p>
+
+        旧実装は size と phone をハードコード空で返していたため、
+        山梨 218 件全件で size/phone が欠損していた。本テストは detail HTML
+        を mock して補完が走ることを保証する。
+        """
+        list_html = _load_yamanashi_html(fixture_html)
+        detail_html = """
+        <html><body>
+          <h2>管轄保健所の連絡先</h2>
+          <p>峡東保健所TEL:0553-20-2751</p>
+          <h2>種類・体格</h2>
+          <p>トイプードル　中型</p>
+          <h2>性別</h2>
+          <p>オス</p>
+          <h2>毛色</h2>
+          <p>濃い茶色</p>
+        </body></html>
+        """
+        adapter = PrefYamanashiAdapter(_site())
+
+        def _http_side_effect(url):
+            if url.endswith("index.html"):
+                return list_html
+            return detail_html
+
+        with patch.object(adapter, "_http_get", side_effect=_http_side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+
+        # detail から補完された size と phone
+        assert raw.size == "中型", f"detail から size 補完されるべき: got {raw.size!r}"
+        assert raw.phone == "0553-20-2751", f"detail から phone 補完されるべき: got {raw.phone!r}"
+
+    def test_extract_animal_details_falls_back_when_detail_fails(self, fixture_html):
+        """detail fetch が失敗しても一覧の情報で RawAnimalData が返る"""
+        html = _load_yamanashi_html(fixture_html)
+        adapter = PrefYamanashiAdapter(_site())
+
+        def _http_side_effect(url):
+            if url.endswith("index.html"):
+                return html
+            raise RuntimeError("detail fetch failed")
+
+        with patch.object(adapter, "_http_get", side_effect=_http_side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+        # 一覧の情報は取れている
+        assert "甲州市" in raw.location
+        assert raw.sex == "メス"
+        # size と phone は空のまま
+        assert raw.size == ""
+        assert raw.phone == ""
 
     def test_no_header_row_skipped_incorrectly(self, fixture_html):
         """カード形式なのでヘッダ行は存在せず、全件が動物として抽出される
