@@ -91,7 +91,25 @@ class CityKashiwaAdapter(SinglePageTableAdapter):
         "推定年齢": "age",
         "体格": "size",
         "大きさ": "size",
+        # 「特徴」は自由テキスト。年齢/体重ヒントを後段で正規表現で抽出する。
+        "特徴": "_features",
     }
+
+    # 「特徴」自由テキストから「推定1～2歳」「推定1歳」「N歳」「Nヶ月」等を拾う。
+    # 「推定」プレフィクスを許容し、範囲表現 (N～M歳) は下限値を採用 (normalizer 側の
+    #  「N歳」マッチが先頭の数字を取るため、下限値を含む文字列を渡せば月数換算できる)。
+    _AGE_HINT_PATTERN: ClassVar[re.Pattern[str]] = re.compile(
+        r"(?:推定)?\s*(\d+(?:\s*[～~〜-]\s*\d+)?\s*(?:歳|才|[ヶかカケヵ]月))"
+    )
+
+    # 体重 → size 推定の境界 (kg)。oita_aigo / kumamoto_doubutuaigo と同基準。
+    # 柏市は保護対象が猫が主体のため、~5kg を「小」、~15kg を「中」とする。
+    _SIZE_BOUNDARY_SMALL_KG: ClassVar[float] = 5.0
+    _SIZE_BOUNDARY_LARGE_KG: ClassVar[float] = 15.0
+    # 「体重4.7kg」「体重2.9kg」のような自由テキストから体重数値を拾う
+    _WEIGHT_HINT_PATTERN: ClassVar[re.Pattern[str]] = re.compile(
+        r"体重\s*[:：]?\s*約?\s*(\d+(?:\.\d+)?)\s*[kK][gG]"
+    )
 
     # 「現在、保護動物はおりません」「収容動物はいません」等の 0 件告知
     _EMPTY_STATE_PATTERN: ClassVar[re.Pattern[str]] = re.compile(
@@ -206,13 +224,20 @@ class CityKashiwaAdapter(SinglePageTableAdapter):
         if not species:
             species = self._infer_species_from_site_name(self.site_config.name)
 
+        # 「特徴」自由テキストから age / size を best-effort で補完。
+        # age は専用ラベル (年齢/推定年齢) が無いため特徴欄から「推定N歳」等を拾う。
+        # size は「体重Nkg」から oita_aigo と同じ境界で小/中/大に換算する。
+        features = fields.get("_features", "")
+        age = fields.get("age") or self._extract_age_from_features(features)
+        size = fields.get("size") or self._weight_to_size(features)
+
         try:
             return RawAnimalData(
                 species=species,
                 sex=fields.get("sex", ""),
-                age=fields.get("age", ""),
+                age=age,
                 color=fields.get("color", ""),
-                size=fields.get("size", ""),
+                size=size,
                 shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
                 location=fields.get("location", ""),
                 phone=self._CENTER_TEL,
@@ -258,6 +283,59 @@ class CityKashiwaAdapter(SinglePageTableAdapter):
         if "猫" in breed:
             return "猫"
         return ""
+
+    @classmethod
+    def _extract_age_from_features(cls, features: str) -> str:
+        """「特徴」自由テキストから age 文字列を best-effort で抽出する
+
+        柏市カードには専用の「年齢」フィールドが無く、「特徴」欄に
+        「推定1～2歳」「推定1歳」「年齢若め」のような自由表現で記載される。
+        normalizer が解釈できる「N歳」「Nヶ月」を含む部分を取り出して
+        そのまま raw_data.age に渡す (後段で `_normalize_age` が月数化する)。
+
+        - 「推定1～2歳」  → "1歳" (下限値) を返す
+        - 「推定1歳」    → "1歳"
+        - 「6ヶ月」      → "6ヶ月"
+        - 「年齢若め」 (数値なし)  → "" (DataNormalizer は数値が無いと None)
+
+        normalizer は範囲表記の下限を拾えないため、ここで明示的に下限値を
+        含む文字列に整形して返す。
+        """
+        if not features:
+            return ""
+        m = cls._AGE_HINT_PATTERN.search(features)
+        if not m:
+            return ""
+        snippet = m.group(1)
+        # 「1～2歳」のような範囲表記は下限値だけ残す ("1歳" → normalizer が "歳" を拾う)
+        range_m = re.search(r"(\d+)\s*[～~〜-]\s*\d+\s*(歳|才|[ヶかカケヵ]月)", snippet)
+        if range_m:
+            return f"{range_m.group(1)}{range_m.group(2)}"
+        return snippet.strip()
+
+    @classmethod
+    def _weight_to_size(cls, features: str) -> str:
+        """「特徴」自由テキスト中の「体重Nkg」から size 語彙 (小/中/大) を推定する
+
+        - 5kg 未満: 小
+        - 5kg 以上 15kg 未満: 中
+        - 15kg 以上: 大
+        - 体重表記が拾えない場合: 空文字 (size 不明)
+        """
+        if not features:
+            return ""
+        m = cls._WEIGHT_HINT_PATTERN.search(features)
+        if not m:
+            return ""
+        try:
+            kg = float(m.group(1))
+        except ValueError:
+            return ""
+        if kg < cls._SIZE_BOUNDARY_SMALL_KG:
+            return "小"
+        if kg < cls._SIZE_BOUNDARY_LARGE_KG:
+            return "中"
+        return "大"
 
     @staticmethod
     def _infer_species_from_site_name(name: str) -> str:

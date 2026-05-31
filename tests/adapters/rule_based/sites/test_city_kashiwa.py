@@ -227,6 +227,113 @@ class TestCityKashiwaAdapter:
         assert raw.color == "黒白"
         assert raw.sex == "オス"
 
+    def test_extract_age_from_features_with_estimated_range(self):
+        """「特徴」欄に「推定1～2歳」が含まれる場合、age に「1歳」が入る
+
+        範囲表記の下限値を normalizer が解釈可能な形 (N歳) に整形して渡す。
+        """
+        html = (
+            "<html><body><main><div id='tmp_contents'>"
+            "<h2>保護収容動物情報</h2><h3>猫</h3>"
+            "<div class='col2_sp2_wrap'><div class='col2'>"
+            "<div class='col2L'><p><img src='/images/cat.jpg'></p></div>"
+            "<div class='col2R'>"
+            "<p>番号：A100</p><p>種類：雑種</p><p>毛色：茶白</p>"
+            "<p>性別：オス</p><p>場所：高柳</p>"
+            "<p>特徴：首輪なし、耳カットなし、尾まっすぐでやや太め、足先白色、推定1～2歳</p>"
+            "</div></div></div>"
+            "</div></main></body></html>"
+        )
+        adapter = CityKashiwaAdapter(_site_hogo())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], "sheltered")
+        assert raw.age == "1歳"
+
+    def test_extract_age_from_features_with_estimated_single(self):
+        """「特徴」欄に「推定1歳」が含まれる場合、age に「1歳」が入る"""
+        html = (
+            "<html><body><main><div id='tmp_contents'>"
+            "<h2>保護収容動物情報</h2><h3>猫</h3>"
+            "<div class='col2_sp2_wrap'><div class='col2'>"
+            "<div class='col2L'><p><img src='/images/cat.jpg'></p></div>"
+            "<div class='col2R'>"
+            "<p>番号：A100</p><p>種類：雑種</p>"
+            "<p>性別：オス</p><p>場所：高柳</p>"
+            "<p>特徴：首輪なし、耳カットなし、尾まっすぐで長い、推定1歳</p>"
+            "</div></div></div>"
+            "</div></main></body></html>"
+        )
+        adapter = CityKashiwaAdapter(_site_hogo())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], "sheltered")
+        assert raw.age == "1歳"
+
+    def test_extract_size_from_weight_under_5kg_returns_small(self):
+        """「特徴」欄に「体重2.9kg」が含まれる場合、size は「小」になる"""
+        html = (
+            "<html><body><main><div id='tmp_contents'>"
+            "<h2>保護収容動物情報</h2><h3>猫</h3>"
+            "<div class='col2_sp2_wrap'><div class='col2'>"
+            "<div class='col2L'><p><img src='/images/cat.jpg'></p></div>"
+            "<div class='col2R'>"
+            "<p>番号：A100</p><p>種類：雑種</p>"
+            "<p>性別：メス</p><p>場所：豊四季台</p>"
+            "<p>特徴：首輪なし、体重2.9kg、人馴れしている</p>"
+            "</div></div></div>"
+            "</div></main></body></html>"
+        )
+        adapter = CityKashiwaAdapter(_site_hogo())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], "sheltered")
+        assert raw.size == "小"
+
+    def test_extract_age_returns_empty_when_only_qualitative(self):
+        """「特徴」欄に「年齢若め」(数値なし) のみの場合、age は空"""
+        html = (
+            "<html><body><main><div id='tmp_contents'>"
+            "<h2>保護収容動物情報</h2><h3>猫</h3>"
+            "<div class='col2_sp2_wrap'><div class='col2'>"
+            "<div class='col2L'><p><img src='/images/cat.jpg'></p></div>"
+            "<div class='col2R'>"
+            "<p>番号：A100</p><p>種類：雑種</p>"
+            "<p>性別：メス</p><p>場所：豊四季台</p>"
+            "<p>特徴：首輪なし、年齢若め、体重4.7kg</p>"
+            "</div></div></div>"
+            "</div></main></body></html>"
+        )
+        adapter = CityKashiwaAdapter(_site_hogo())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], "sheltered")
+        assert raw.age == ""
+        # 体重4.7kg は 5kg 未満なので「小」
+        assert raw.size == "小"
+
+    def test_existing_age_label_takes_precedence_over_features(self):
+        """専用「年齢：」ラベルがある場合は特徴欄の抽出より優先する"""
+        html = (
+            "<html><body><main><div id='tmp_contents'>"
+            "<h2>保護収容動物情報</h2><h3>猫</h3>"
+            "<div class='col2_sp2_wrap'><div class='col2'>"
+            "<div class='col2L'><p><img src='/images/cat.jpg'></p></div>"
+            "<div class='col2R'>"
+            "<p>番号：A100</p><p>種類：雑種</p>"
+            "<p>年齢：成猫</p>"
+            "<p>性別：メス</p><p>場所：豊四季台</p>"
+            "<p>特徴：推定5歳</p>"
+            "</div></div></div>"
+            "</div></main></body></html>"
+        )
+        adapter = CityKashiwaAdapter(_site_hogo())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], "sheltered")
+        # 専用ラベル「年齢：成猫」が優先される
+        assert raw.age == "成猫"
+
     def test_both_sites_registered(self):
         """2 つの柏市サイト名が Registry に登録されている"""
         expected = [
