@@ -66,18 +66,39 @@ class ZaidanFukuokaDouaiAdapter(WordPressListAdapter):
     }
 
     # 動物写真は `/files/download/Animals/<uuid>/image_XX/...` 配下に配置される。
-    # 親 WordPressListAdapter._filter_image_urls は `/wp-content/uploads/` を
-    # 期待するが、本サイトでは該当パスが存在しないためフェイルセーフで
-    # 元リストがそのまま返る挙動に依存する。装飾画像 (アイコン等) を排除
-    # するため、`<figure class="list-pht">` や本文 `figure` 配下の `img` のみを
-    # 拾うセレクタにしぼる。
-    IMAGE_SELECTOR: ClassVar[str] = "figure img"
+    # 2026-05 観測: 実サイトは `<figure>` ではなく `<a><img></a>` の lightbox 構造、
+    # またはスライダーの `.sp-thumbnail-container > img` で表示している。
+    # `<figure>` も将来対応のため残しつつ、URL に `/files/download/Animals/` を
+    # 含む img のみ採用する CSS attribute selector を併用。
+    # 装飾画像 (`/img/common/...`) は src パスから外れるため自動除外。
+    # スライダ構造はメイン画像とサムネで同一 src が複数回出るため、
+    # adapter 側で順序保持の重複排除を行う。
+    IMAGE_SELECTOR: ClassVar[str] = "figure img, img[src*='/files/download/Animals/']"
 
     # 譲渡カテゴリの詳細ページ (`/animals/center-detail/`, `/animals/group-detail/`)
     # は「保護した場所」欄を持たないため、location が空になったまま snapshot に
     # 出ると「不明」表示になる。譲渡対象動物は施設で会うことになるので、
     # 施設名 (= 福岡県動物愛護センター) を location に代入する。
     _CENTER_FACILITY_NAME: ClassVar[str] = "福岡県動物愛護センター"
+
+    def _filter_image_urls(self, urls: list[str], base_url: str) -> list[str]:
+        """`/files/download/Animals/` 配下のみを採用し順序保持で重複排除する
+
+        IMAGE_SELECTOR で attribute selector を使って既に動物画像のみを
+        拾っているが、スライダ構造でメイン画像とサムネが同一 src を 2 回
+        以上返すため、ここで dedupe する。`<figure img>` フォールバックも
+        引き続き同じ重複排除を通す。
+        """
+        cleaned: list[str] = []
+        seen: set[str] = set()
+        for u in urls:
+            if "/files/download/Animals/" not in u:
+                continue
+            if u in seen:
+                continue
+            seen.add(u)
+            cleaned.append(u)
+        return cleaned
 
     def _postprocess_fields(
         self, fields: dict[str, str], detail_url: str, soup: BeautifulSoup
