@@ -24,12 +24,28 @@
 
 from __future__ import annotations
 
+import re
 from typing import ClassVar
 
 from ....domain.models import AnimalData, RawAnimalData
 from ..playwright import PlaywrightFetchMixin
 from ..registry import SiteAdapterRegistry
 from ..wordpress_list import FieldSpec, WordPressListAdapter
+
+# 「12」のような数値のみの年齢を「N歳」へ補完するためのパターン。
+# 半角/全角数字、小数 (例: 「2.5」) を許容。
+_NUMERIC_ONLY_AGE = re.compile(r"^[\d０-９]+(?:[.．][\d０-９]+)?$")
+
+# 動物画像と装飾画像 (ロゴ・アイコン・サイドバー等) を区別するための URL パターン。
+# 沖縄県動愛サイトは `/files/animal/image/{ID}/` 配下に動物写真を置いている。
+_ANIMAL_IMAGE_PATH = "/files/animal/image/"
+_DECORATION_PATH_PATTERNS = (
+    "/images/header/",
+    "/images/sidebar/",
+    "/images/top/",
+    "/images/animals/pdf_icon",
+    "/images/animals/icon_",
+)
 
 
 class AniwelOkinawaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
@@ -70,21 +86,36 @@ class AniwelOkinawaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
         "phone": FieldSpec(label="連絡先"),
     }
 
-    # 動物画像。サイトが独自 CMS のため `/wp-content/uploads/` パスは無く、
-    # `_filter_image_urls` のフェイルセーフで全画像が返る挙動に依存する。
-    # 装飾画像 (ヘッダロゴ等) を排除するため、`<figure>` または
-    # 詳細本体らしい要素配下の `<img>` のみに限定する。
-    IMAGE_SELECTOR: ClassVar[str] = "figure img, .animal-photo img, main img"
+    # 動物画像。実サイトは `<td class="photo"><ul class="slick-main">...<img></ul></td>`
+    # 構造で表示している (slick-main は実画像、slick-nav はサムネだが同一 src)。
+    # `figure img` / `.animal-photo img` も将来対応のため残す。
+    IMAGE_SELECTOR: ClassVar[str] = "td.photo img, .slick-main img, figure img, .animal-photo img"
 
     # ─────────────────── オーバーライド ───────────────────
 
     def extract_animal_details(self, detail_url: str, category: str = "adoption") -> RawAnimalData:
-        """詳細ページ抽出。species が空ならサイト名から補完する。"""
+        """詳細ページ抽出。species/age を補完し、装飾画像を除外する。
+
+        - species が空ならサイト名から犬/猫を補完
+        - age が「12」「2.5」のような数値単独表記なら「12歳」に補完
+          (normalizer は単位付きしか解釈できないため)
+        - image_urls から `/images/header/` `/images/sidebar/` などの
+          装飾画像を除外し、重複 (slick-main と slick-nav の同一 src) を排除
+        """
         raw = super().extract_animal_details(detail_url, category=category)
+        updates: dict[str, object] = {}
         if not raw.species:
             hint = self._infer_species_from_site_name()
             if hint:
-                raw = raw.model_copy(update={"species": hint})
+                updates["species"] = hint
+        age = self._normalize_numeric_age(raw.age)
+        if age != raw.age:
+            updates["age"] = age
+        cleaned_images = self._filter_decoration_images(raw.image_urls)
+        if cleaned_images != raw.image_urls:
+            updates["image_urls"] = cleaned_images
+        if updates:
+            raw = raw.model_copy(update=updates)
         return raw
 
     def normalize(self, raw_data: RawAnimalData) -> AnimalData:
@@ -100,6 +131,40 @@ class AniwelOkinawaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
         if "猫" in name:
             return "猫"
         return ""
+
+    @staticmethod
+    def _normalize_numeric_age(age: str) -> str:
+        """「12」のような数値単独の年齢を「N歳」へ補完する
+
+        normalizer._normalize_age が「3歳」「6ヶ月」のように単位付きの
+        フォーマットしか解釈できないため、adapter 段階で単位を補う。
+        """
+        if not age:
+            return age
+        stripped = age.strip()
+        if _NUMERIC_ONLY_AGE.match(stripped):
+            return f"{stripped}歳"
+        return age
+
+    @staticmethod
+    def _filter_decoration_images(urls: list[str]) -> list[str]:
+        """装飾画像 (ヘッダ/サイドバー/PDF アイコン等) を除外し重複を排除
+
+        実サイトの動物写真は `/files/animal/image/{ID}/...` 配下にのみ置かれる。
+        IMAGE_SELECTOR で td.photo を指定しているが、念のため URL ベースの
+        二重防御を入れる。slick-main と slick-nav が同じ画像を 2 回返すので
+        順序を保ったまま重複も除去する。
+        """
+        cleaned: list[str] = []
+        seen: set[str] = set()
+        for u in urls:
+            if any(p in u for p in _DECORATION_PATH_PATTERNS):
+                continue
+            if u in seen:
+                continue
+            seen.add(u)
+            cleaned.append(u)
+        return cleaned
 
 
 # ─────────────────── サイト登録 ───────────────────
