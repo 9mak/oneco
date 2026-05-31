@@ -61,6 +61,14 @@ class YokosukaDoubutuAdapter(WordPressListAdapter):
     # 毛色ではなく譲渡対象動物の説明文と判定し color フィールドから外す。
     _COLOR_MAX_LEN: ClassVar[int] = 30
 
+    # 「特徴」セル内に混在する年齢表記を取り出す正規表現 (2026-05 観測)。
+    # 例: 「キジ白、推定1歳」「茶トラ、約3か月」「黒、子猫」「成犬」
+    # 抽出後は color テキストから該当部分を除去する。
+    _AGE_IN_FEATURE_RE: ClassVar[str] = (
+        r"(?:(?:推定|約)?\s*\d+\s*(?:歳|才|か月|ヶ月|ヵ月|カ月|ケ月)(?:\s*\d+\s*(?:か月|ヶ月|ヵ月|カ月|ケ月))?"
+        r"|子犬|子猫|成犬|成猫|幼犬|幼猫|老犬|老猫)"
+    )
+
     # 動物写真は `#photos` ブロック配下に集約されている
     IMAGE_SELECTOR: ClassVar[str] = "div#photos img"
 
@@ -69,15 +77,30 @@ class YokosukaDoubutuAdapter(WordPressListAdapter):
     def _postprocess_fields(
         self, fields: dict[str, str], detail_url: str, soup: BeautifulSoup
     ) -> None:
-        """譲渡カテゴリの 特徴 セルは長文の説明文が入るため color から除外する
+        """「特徴」セルから年齢を分離し、長文 color を除外する
 
-        例: 「12歳、体重29Kg、フィラリア陰性、内部寄生虫駆除薬の投薬済...」
-        は毛色ではなく説明文のため、`_COLOR_MAX_LEN` 超のテキストを color に
-        入れたままだと DB の `String(100)` 制約で INSERT 失敗 → 全体 rollback
-        を引き起こす。長文判定時は空文字に置換する。
+        - 「キジ白、推定1歳」のように color と age が同じセルに混在するため、
+          年齢パターンを正規表現で取り出して age が空のときに格納し、
+          color テキストから当該部分を除去する
+        - 譲渡カテゴリの長文説明 (`_COLOR_MAX_LEN` 超) は毛色ではないため
+          color から外す (DB の VARCHAR(100) 制約対策も兼ねる)
         """
+        import re as _re
+
         color = fields.get("color", "")
-        if color and len(color) > self._COLOR_MAX_LEN:
+        if color:
+            m = _re.search(self._AGE_IN_FEATURE_RE, color)
+            if m:
+                age_token = m.group(0).strip()
+                if not fields.get("age"):
+                    fields["age"] = age_token
+                # color から年齢部分を除去 (区切り文字も整理)
+                color = _re.sub(self._AGE_IN_FEATURE_RE, "", color)
+                color = _re.sub(r"[、,。\s]{2,}", "、", color).strip("、 ,")
+                fields["color"] = color
+
+        # 長文判定 (説明文相当) は color から除外
+        if fields.get("color") and len(fields["color"]) > self._COLOR_MAX_LEN:
             fields["color"] = ""
 
     def _extract_by_label(self, soup: BeautifulSoup, label: str) -> str:
