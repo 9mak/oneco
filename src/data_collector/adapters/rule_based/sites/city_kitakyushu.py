@@ -65,6 +65,10 @@ class CityKitakyushuAdapter(SinglePageTableAdapter):
     LOCATION_COLUMN: ClassVar[int | None] = 2
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
 
+    # ページ末尾の担当課お問い合わせ電話 (北九州市保健福祉局生活衛生課)。
+    # 動物テーブルに個別電話番号が無いため全件で共通利用する (2026-05 観測)。
+    _CENTER_TEL: ClassVar[str] = "093-581-1800"
+
     # ─────────────────── オーバーライド ───────────────────
 
     def _load_rows(self) -> list[Tag]:
@@ -153,7 +157,7 @@ class CityKitakyushuAdapter(SinglePageTableAdapter):
                 size=fields.get("size", ""),
                 shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
                 location=fields.get("location", ""),
-                phone="",
+                phone=self._CENTER_TEL,
                 image_urls=self._extract_row_images(row, virtual_url),
                 source_url=virtual_url,
                 category=category,

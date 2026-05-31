@@ -182,6 +182,8 @@ class TestCityKitakyushuAdapter:
         assert raw.location == "小倉南区"
         assert raw.source_url == first_url
         assert raw.category == "sheltered"
+        # phone は北九州市保健福祉局生活衛生課の代表電話を全件共通利用 (2026-05 観測)
+        assert raw.phone == "093-581-1800"
 
     def test_extract_animal_details_real_fixture(self, fixture_html):
         """実フィクスチャの 1 行目を抽出できる"""
