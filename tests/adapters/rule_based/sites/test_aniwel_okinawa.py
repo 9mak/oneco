@@ -448,3 +448,83 @@ class TestAniwelOkinawaRealLabels:
         assert raw.size == "中"
         assert raw.shelter_date == "2026年5月25日"  # 受付月日(5/26)ではなく保護日(5/25)
         assert raw.species == "犬"
+
+    def test_numeric_only_age_becomes_age_in_years(self) -> None:
+        """「推定年齢: 12」のような数値単独表記を「12歳」と解釈する
+
+        2026-05 観測: 沖縄県動愛の収容犬詳細では年齢欄に「12」(年齢=12歳の意)
+        のみが書かれているケースがあり、normalizer は「3歳」「6ヶ月」の
+        ような単位付き表記しか解釈できないため age_months=null になる。
+        adapter 側で「N」を「N歳」に補完して normalizer に渡す。
+        """
+        adapter = AniwelOkinawaAdapter(_site(0))  # 収容犬
+        url = f"{_BASE}/animals/accommodate_view/24647"
+        html = """
+        <html><body><main>
+          <table>
+            <tr><th>記号</th><td>2026.5.27＿H-1</td></tr>
+            <tr><th>収容日</th><td>2026年5月27日</td></tr>
+            <tr><th>場所</th><td>大宜味村大保</td></tr>
+            <tr><th>毛色</th><td>黒茶</td></tr>
+            <tr><th>性別</th><td>メス</td></tr>
+            <tr><th>体格</th><td>中</td></tr>
+            <tr><th>推定年齢</th><td>12</td></tr>
+            <tr><th>備考</th><td>Bw:11kg</td></tr>
+          </table>
+        </main></body></html>
+        """
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(url, category="sheltered")
+            normalized = adapter.normalize(raw)
+        assert raw.age == "12歳", f"adapter が「12」→「12歳」に補完: {raw.age!r}"
+        assert normalized.age_months == 144, (
+            f"normalizer が「12歳」→ 144 ヶ月: got {normalized.age_months}"
+        )
+
+    def test_numeric_with_kg_age_unchanged(self) -> None:
+        """単位付きの年齢 (例: 「5か月程度」) は触らずに渡す (既存挙動の維持)"""
+        adapter = AniwelOkinawaAdapter(_site(4))
+        url = f"{_BASE}/animals/protection_view/24644"
+        with patch.object(adapter, "_http_get", return_value=_REAL_DETAIL_PROTECTION):
+            raw = adapter.extract_animal_details(url, category="sheltered")
+        assert raw.age == "5か月程度"
+
+    def test_image_urls_extracted_from_slick_slider(self) -> None:
+        """`<td class="photo">` 内の slick スライダから動物写真を抽出する
+
+        実サイトは `<td class="photo"><ul class="slick-main">...
+        <img src="/files/animal/image/{ID}/large_image.JPG"></ul></td>` 構造。
+        装飾画像 (`/images/header/`, `/images/sidebar/`, `pdf_icon.png` 等)
+        と区別する必要がある。
+        """
+        adapter = AniwelOkinawaAdapter(_site(0))
+        url = f"{_BASE}/animals/accommodate_view/24647"
+        html = """
+        <html><body><main>
+          <table>
+            <tr><th>場所</th><td>大宜味村大保</td></tr>
+            <tr><th>体格</th><td>中</td></tr>
+            <tr>
+              <th>写真</th>
+              <td class="photo">
+                <ul class="slick-main">
+                  <li><img src="/files/animal/image/24647/large_image.JPG" alt="枚目写真"></li>
+                </ul>
+                <ul class="slick-nav">
+                  <li><img src="/files/animal/image/24647/large_image.JPG" alt="枚目写真"></li>
+                </ul>
+              </td>
+            </tr>
+          </table>
+          <img src="/images/sidebar/balloon01.png" alt="">
+          <img src="/images/animals/pdf_icon.png" alt="">
+        </main></body></html>
+        """
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(url, category="sheltered")
+        assert raw.image_urls, "動物画像が抽出されるべき"
+        assert all("/files/animal/image/" in u for u in raw.image_urls), (
+            f"装飾画像 (/images/...) が混入: {raw.image_urls}"
+        )
+        # 重複 (slick-main と slick-nav の同一 src) は排除
+        assert len(raw.image_urls) == len(set(raw.image_urls))
