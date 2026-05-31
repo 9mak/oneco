@@ -453,9 +453,7 @@ class TestShuyojohoTokyoAdapterSpeciesInference:
         ],
     )
     def test_species_contains_animal_keyword(self, value, expected):
-        assert (
-            ShuyojohoTokyoAdapter._species_contains_animal_keyword(value) is expected
-        )
+        assert ShuyojohoTokyoAdapter._species_contains_animal_keyword(value) is expected
 
 
 class TestShuyojohoTokyoAdapterRegistry:
