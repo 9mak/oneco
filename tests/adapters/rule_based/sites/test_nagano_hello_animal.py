@@ -22,6 +22,7 @@ from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
 
 # 実構造を模した合成 HTML: 飼い主募集中 2 件 + 県内保健所セクション (除外)
+# 各動物に img タグを含める (実サイトと同じ構造) ことで image_urls 抽出も検証する。
 ACTIVE_AND_OTHER_HTML = """
 <html><body>
 <div id="tmp_contents">
@@ -29,6 +30,7 @@ ACTIVE_AND_OTHER_HTML = """
   <h2>飼い主募集中の犬の情報</h2>
   <div class="section">
     <h3>やまと</h3>
+    <img src="/dobutsuaigo/joto/inu-neko/images/yamato.jpg" alt="やまと">
     <p>種類：ミックス（薄茶）</p>
     <p>性別：オス（去勢済み）</p>
     <p>生年月：2021年5月頃生まれ</p>
@@ -36,6 +38,7 @@ ACTIVE_AND_OTHER_HTML = """
   </div>
   <div class="section">
     <h3>はな</h3>
+    <img src="/dobutsuaigo/joto/inu-neko/images/hana.jpg" alt="はな">
     <p>種類：柴系雑種（茶白）</p>
     <p>性別：メス（避妊済み）</p>
     <p>生年月：2019年10月頃生まれ</p>
@@ -43,6 +46,7 @@ ACTIVE_AND_OTHER_HTML = """
   </div>
   <h2>県内保健所（保健福祉事務所）の情報</h2>
   <div class="section">
+    <img src="/dobutsuaigo/joto/inu-neko/images/should_not_be_picked.jpg" alt="excluded">
     <p>北信保健福祉事務所はこちら</p>
   </div>
 </div>
@@ -112,9 +116,16 @@ class TestNaganoExtract:
         assert "オス" in raw.sex
         assert "薄茶" in raw.color  # 種類：ミックス（薄茶）の括弧内
         assert "中型犬" in raw.size  # 備考から「中型犬」を拾う
-        assert "2021年5月" in raw.age  # 生年月 → DataNormalizer が月数化
+        # 生年月「2021年5月頃生まれ」→ adapter が「2021年5月1日」に整形して渡す
+        assert raw.age == "2021年5月1日"
         # location は施設名で固定 (location 不明回避)
         assert "ハローアニマル" in raw.location
+        # phone はページ末尾の代表電話を共通注入
+        assert raw.phone == "0267-24-5071"
+        # 各動物ブロック内の img を絶対 URL で抽出する
+        assert raw.image_urls == [
+            "https://www.pref.nagano.lg.jp/dobutsuaigo/joto/inu-neko/images/yamato.jpg"
+        ]
         assert raw.category == "adoption"
 
     def test_second_block(self):
@@ -126,6 +137,24 @@ class TestNaganoExtract:
         assert "メス" in raw.sex
         assert "茶白" in raw.color
         assert "小型犬" in raw.size
+        # 1匹目の img を巻き込まず 2 匹目分の img だけが拾える (DOM 範囲分離の検証)
+        assert raw.image_urls == [
+            "https://www.pref.nagano.lg.jp/dobutsuaigo/joto/inu-neko/images/hana.jpg"
+        ]
+        # 県内保健所セクションの img は別 h2 配下なので除外される
+        for u in raw.image_urls:
+            assert "should_not_be_picked" not in u
+
+    def test_normalize_birth_month_for_age(self):
+        """生年月「YYYY年M月頃生まれ」→「YYYY年M月1日」整形ヘルパー"""
+        f = NaganoHelloAnimalAdapter._normalize_birth_month_for_age
+        assert f("2021年5月頃生まれ") == "2021年5月1日"
+        assert f("2020年10月") == "2020年10月1日"
+        # 既に「日」がある場合はそのまま返す
+        assert f("2021年5月3日") == "2021年5月3日"
+        # 数字パターンが無ければそのまま返す
+        assert f("不明") == "不明"
+        assert f("") == ""
 
     def test_cat_site_species_inference(self):
         """猫サイトでは species が「猫」に推定される"""
