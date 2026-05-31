@@ -39,6 +39,7 @@ from __future__ import annotations
 from typing import ClassVar
 
 from bs4 import BeautifulSoup
+from bs4.element import Tag
 
 from ....domain.models import RawAnimalData
 from ...municipality_adapter import ParsingError
@@ -58,6 +59,11 @@ class CityFunabashiAdapter(SinglePageTableAdapter):
     ROW_SELECTOR: ClassVar[str] = "div.boxEntryFreeform table tr"
     # 1 行目はヘッダ (`<th>`) なので除外
     SKIP_FIRST_ROW: ClassVar[bool] = True
+    # 収容公示テーブルの列数。譲渡サイトには 4 列の「譲渡情報」テーブルや
+    # 3 列の「譲渡団体一覧」テーブルが混在するため、ヘッダ行の列数がこの値に
+    # 一致するテーブルのみをデータソースとして扱う。
+    TABLE_SELECTOR: ClassVar[str] = "div.boxEntryFreeform table"
+    EXPECTED_COLUMN_COUNT: ClassVar[int] = 11
     # 列インデックス → RawAnimalData フィールド名 のマッピング。
     # 列 0 (番号), 列 2 (公示満了日), 列 9 (備考), 列 10 (写真) は
     # RawAnimalData に対応するフィールドが無いため除外する。
@@ -73,6 +79,35 @@ class CityFunabashiAdapter(SinglePageTableAdapter):
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
 
     # ─────────────────── オーバーライド ───────────────────
+
+    def _load_rows(self) -> list[Tag]:
+        """ヘッダ列数が `EXPECTED_COLUMN_COUNT` のテーブルのみから行を抽出する
+
+        譲渡サイト (joutoindex.html) には 4 列の「犬譲渡情報」「猫譲渡情報」テーブルや
+        3 列の「譲渡団体一覧」テーブルが混在しており、無条件に `table tr` を拾うと
+        団体一覧をデータ行として誤取り込みする。各テーブル単位でヘッダ列数を確認し、
+        収容公示と同じ 11 列のものだけをデータソースとして採用する。
+        """
+        if self._rows_cache is not None:
+            return self._rows_cache
+
+        if self._html_cache is None:
+            self._html_cache = self._http_get(self.site_config.list_url)
+
+        soup = BeautifulSoup(self._html_cache, "html.parser")
+        matched: list[Tag] = []
+        for table in soup.select(self.TABLE_SELECTOR):
+            rows = [r for r in table.find_all("tr") if isinstance(r, Tag)]
+            if not rows:
+                continue
+            header_cells = rows[0].find_all(["th", "td"])
+            if len(header_cells) != self.EXPECTED_COLUMN_COUNT:
+                continue
+            if self.SKIP_FIRST_ROW:
+                rows = rows[1:]
+            matched.extend(rows)
+        self._rows_cache = matched
+        return matched
 
     def fetch_animal_list(self) -> list[tuple[str, str]]:
         """テーブル行を仮想 URL に変換する

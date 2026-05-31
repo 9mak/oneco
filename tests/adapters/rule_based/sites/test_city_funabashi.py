@@ -242,3 +242,65 @@ class TestCityFunabashiAdapter:
         with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()
+
+    def test_adoption_page_with_unrelated_tables_returns_empty(self, fixture_html):
+        """譲渡サイト (joutoindex.html) は構造が異なるテーブル
+
+        - 4 列の「犬譲渡情報」「猫譲渡情報」テーブル
+        - 3 列の「譲渡可能団体一覧」テーブル
+        のみで構成されており、11 列の収容公示テーブルは存在しない。
+        この場合は誤って団体一覧などをデータ行として取り込まず、空リストを返す。
+        """
+        raw = fixture_html("city_funabashi_jouto")
+        adoption_site = _site(
+            name="船橋市（譲渡可能犬猫）",
+            list_url=("https://www.city.funabashi.lg.jp/kurashi/doubutsu/003/joutoindex.html"),
+            category="adoption",
+        )
+        adapter = CityFunabashiAdapter(adoption_site)
+
+        with patch.object(adapter, "_http_get", return_value=raw):
+            result = adapter.fetch_animal_list()
+
+        assert result == []
+
+    def test_load_rows_filters_unrelated_tables_by_column_count(self):
+        """11 列の収容公示テーブルと別構造の混在ページでは 11 列テーブルのみ採用する"""
+        html = """
+        <html><body>
+          <div class="boxEntryFreeform">
+            <table>
+              <tr>
+                <th>番号</th><th>名称</th><th>対象動物</th>
+              </tr>
+              <tr><td>1</td><td>団体A</td><td>犬</td></tr>
+              <tr><td>2</td><td>団体B</td><td>猫</td></tr>
+            </table>
+            <table>
+              <tr>
+                <th>番号</th><th>収容年月日</th><th>公示満了日</th>
+                <th>収容場所</th><th>動物種</th><th>種類</th>
+                <th>毛色</th><th>性別</th><th>体格</th>
+                <th>備考</th><th>写真</th>
+              </tr>
+              <tr>
+                <td>1</td><td>令和8年5月10日</td><td>令和8年5月15日</td>
+                <td>船橋市潮見町</td><td>犬</td><td>柴犬</td>
+                <td>茶</td><td>オス</td><td>中</td>
+                <td>首輪あり</td>
+                <td><img src="/kurashi/doubutsu/003/img/dog001.jpg" alt=""></td>
+              </tr>
+            </table>
+          </div>
+        </body></html>
+        """
+        adapter = CityFunabashiAdapter(_site())
+
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            assert len(urls) == 1
+            raw = adapter.extract_animal_details(urls[0][0], category=urls[0][1])
+
+        assert raw.species == "犬"
+        assert raw.color == "茶"
+        assert raw.size == "中"
