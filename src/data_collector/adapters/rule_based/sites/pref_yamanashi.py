@@ -54,11 +54,16 @@ _logger = logging.getLogger(__name__)
 _DETAIL_H2_LABELS: dict[str, str] = {
     "種類・体格": "_kind_size",
     "管轄保健所の連絡先": "phone",
+    "その他の情報": "_other_info",
 }
 # 体格は許容語彙のみ採用する (年齢相当テキストや「不明」等を弾く)
 _SIZE_VALID = frozenset({"小", "中", "大", "小型", "中型", "大型", "その他"})
 # 「峡東保健所TEL:0553-20-2751」のような「保健所名 + TEL/電話 + 番号」表記
 _PHONE_PATTERN = re.compile(r"(\d{2,4}-\d{2,4}-\d{3,4})")
+# 「その他の情報」自由記述から年齢表現を best-effort 抽出する。
+# 構造化欄が無いため、ヒット率は限定的だが取れるものは取る。
+# 例: "年齢：3才", "推定2歳", "6ヶ月", "5か月くらい"
+_AGE_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*(才|歳|ヶ月|か月|カ月|ヵ月)")
 
 
 class PrefYamanashiAdapter(SinglePageTableAdapter):
@@ -123,14 +128,14 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
         species = self._infer_species_from_site_name(self.site_config.name)
 
         # 詳細ページ (`/doubutsu/kt/{section}/{id}.html`) を辿って
-        # 一覧カードには無い phone と size を補完する。失敗時は空のまま。
-        phone, size = self._fetch_phone_and_size_from_detail(card, virtual_url)
+        # 一覧カードには無い phone / size / age を補完する。失敗時は空のまま。
+        phone, size, age = self._fetch_phone_size_age_from_detail(card, virtual_url)
 
         try:
             return RawAnimalData(
                 species=species,
                 sex=fields.get("sex", ""),
-                age="",
+                age=age,
                 color=fields.get("color", ""),
                 size=size,
                 shelter_date=self.SHELTER_DATE_DEFAULT,
@@ -145,32 +150,39 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
 
     # ─────────────────── detail 補完 ───────────────────
 
-    def _fetch_phone_and_size_from_detail(self, card: Tag, base_url: str) -> tuple[str, str]:
-        """カードの詳細リンクを辿って phone と size を抽出する
+    def _fetch_phone_size_age_from_detail(
+        self, card: Tag, base_url: str
+    ) -> tuple[str, str, str]:
+        """カードの詳細リンクを辿って phone / size / age を抽出する
 
         実サイト構造 (2026-05 観測):
             <h2>種類・体格</h2><p>{犬種} {体格}</p>
             <h2>管轄保健所の連絡先</h2><p>{保健所名}TEL:{番号}</p>
+            <h2>その他の情報</h2><p>... 年齢：3才 ...</p>  ← 記載は任意
+
+        age は構造化欄が無いため「その他の情報」自由記述から
+        正規表現で best-effort 抽出する (記載がないカードでは空文字)。
 
         ネットワーク失敗・HTML 構造変化等は致命的でないため、例外は
         握り潰して空文字を返す。
         """
         link = card.select_one("div.item_link_ttl p.txt a")
         if not isinstance(link, Tag):
-            return "", ""
+            return "", "", ""
         href = link.get("href")
         if not isinstance(href, str) or not href:
-            return "", ""
+            return "", "", ""
         detail_url = self._absolute_url(href, base=base_url)
         try:
             html = self._http_get(detail_url)
         except Exception as e:
             _logger.debug("yamanashi detail fetch failed %s: %s", detail_url, e)
-            return "", ""
+            return "", "", ""
 
         soup = BeautifulSoup(html, "html.parser")
         phone = ""
         size = ""
+        age = ""
         for h2 in soup.find_all("h2"):
             if not isinstance(h2, Tag):
                 continue
@@ -187,17 +199,22 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
             value = nxt.get_text(" ", strip=True)
             if not value:
                 continue
-            if _DETAIL_H2_LABELS[target] == "phone":
+            kind = _DETAIL_H2_LABELS[target]
+            if kind == "phone":
                 m = _PHONE_PATTERN.search(value)
                 if m:
                     phone = m.group(1)
-            elif _DETAIL_H2_LABELS[target] == "_kind_size":
+            elif kind == "_kind_size":
                 # 「トイプードル 中型」のような並びから許容語彙の体格を抜き出す
                 for token in value.split():
                     if token in _SIZE_VALID:
                         size = token
                         break
-        return phone, size
+            elif kind == "_other_info":
+                m = _AGE_PATTERN.search(value)
+                if m:
+                    age = f"{m.group(1)}{m.group(2)}"
+        return phone, size, age
 
     # ─────────────────── ヘルパー ───────────────────
 
