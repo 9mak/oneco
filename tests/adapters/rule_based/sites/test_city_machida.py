@@ -221,6 +221,68 @@ class TestCityMachidaAdapterExtractFields:
         assert "2025年10月1日" in raw.shelter_date
         assert raw.category == "lost"
 
+    def test_phone_extracted_from_contact_aside(self):
+        """`<aside class="contact"><p class="contact__tel">電話：042-722-6727</p>`
+        からページ共通の問い合わせ先電話番号を取得する
+
+        2026-05 観測: 町田市 CMS は動物カード内に個別電話番号を持たず、
+        ページ末尾の問い合わせ先 aside に 1 つだけ電話番号が表示される。
+        全動物カードでこの電話番号を共通利用する。
+        """
+        animals_html = """
+        <div class="h3bg"><h3>猫（おす）</h3></div>
+        <div class="img-area-r">
+          <ul>
+            <li>種類：雑種</li>
+            <li>性別：おす</li>
+            <li>保護場所：町田市忠生</li>
+            <li>保護日：2025年11月21日</li>
+          </ul>
+        </div>
+        """
+        # 実サイト構造を再現: article 内の動物データ + 別 aside.contact に電話番号
+        html = f"""
+        <html><body>
+        <article>
+          <h1>ペットの保護情報</h1>
+          <h2>現在のペットの保護情報</h2>
+          {animals_html}
+        </article>
+        <aside class="contact" id="contact">
+          <div class="contact__inner">
+            <p class="contact__title">このページの担当課へのお問い合わせ
+              <span>保健所 生活衛生課 愛護動物係</span></p>
+            <div class="contact__content">
+              <p class="contact__tel">電話：042-722-6727</p>
+              <p class="contact__fax">FAX：042-722-3249</p>
+            </div>
+          </div>
+        </aside>
+        </body></html>
+        """
+        adapter = CityMachidaAdapter(_site(name="町田市（保護情報）"))
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+        assert raw.phone == "042-722-6727", (
+            f"contact__tel から電話番号が取れるべき: got {raw.phone!r}"
+        )
+
+    def test_phone_empty_when_no_contact_aside(self):
+        """contact aside が無い場合は空文字を維持する (フェイルセーフ)"""
+        animals_html = """
+        <div class="h3bg"><h3>猫（めす）</h3></div>
+        <div class="img-area-r">
+          <ul><li>種類：雑種</li><li>保護場所：町田市</li></ul>
+        </div>
+        """
+        html = _build_html("現在のペットの保護情報", animals_html)
+        adapter = CityMachidaAdapter(_site(name="町田市（保護情報）"))
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+        assert raw.phone == ""
+
     def test_species_from_h3_when_label_missing(self):
         """li に「種類」ラベルが無いケースは h3 から species を推定する"""
         animals_html = """
