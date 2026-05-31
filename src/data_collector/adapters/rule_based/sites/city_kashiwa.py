@@ -74,6 +74,10 @@ class CityKashiwaAdapter(SinglePageTableAdapter):
     LOCATION_COLUMN: ClassVar[int | None] = 5
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
 
+    # 動物カードに個別電話番号が無いため、柏市動物愛護ふれあいセンター代表電話を
+    # 全動物カード共通で割り当てる (2026-05 観測)。
+    _CENTER_TEL: ClassVar[str] = "04-7190-2828"
+
     # 「番号：051101」のようなラベル → RawAnimalData フィールド名のマッピング
     _LABEL_TO_FIELD: ClassVar[dict[str, str]] = {
         "種類": "species",
@@ -175,7 +179,7 @@ class CityKashiwaAdapter(SinglePageTableAdapter):
                 size=fields.get("size", ""),
                 shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
                 location=fields.get("location", ""),
-                phone="",
+                phone=self._CENTER_TEL,
                 image_urls=self._extract_row_images(card, virtual_url),
                 source_url=virtual_url,
                 category=category,
