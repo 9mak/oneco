@@ -36,6 +36,8 @@ from ..single_page_table import SinglePageTableAdapter
 
 # 対象テーブルを `<caption>` で識別するためのキーワード
 _TARGET_CAPTION_KEYWORDS = ("収容表", "譲渡")
+# 譲渡犬テーブル (924_11834) を判別するキーワード (列順が保護犬と異なる)
+_ADOPTION_CAPTION_KEYWORDS = ("譲渡",)
 
 
 class CityKitakyushuAdapter(SinglePageTableAdapter):
@@ -43,6 +45,14 @@ class CityKitakyushuAdapter(SinglePageTableAdapter):
 
     保護犬 (924_11831) / 譲渡犬 (924_11834) の 2 サイトで共通テンプレート。
     `<table>` ヘッダ行 + データ行 N 件の single_page 形式。
+
+    ただし保護犬と譲渡犬は同一 adapter でも**列構造が異なる**:
+    - 保護犬 (収容表):   収容日 / 期限 / 区 / 種類 / 毛色 / 性別 / 体格 / 備考
+    - 譲渡犬 (譲渡対象): 番号 / 種類 / 性別 / 毛色 / 推定生年 / フィラリア / 備考 / 写真
+
+    また譲渡犬テーブルには「推定生年」(age 推定) と「写真」(画像 URL) 列が
+    存在するため、本 adapter は対象テーブルの種別に応じて列マッピングと
+    画像抽出ロジックを切り替える (2026-06 拡張)。
     """
 
     # ROW_SELECTOR は基底契約上必須だが、本 adapter は `_load_rows` を
@@ -50,7 +60,7 @@ class CityKitakyushuAdapter(SinglePageTableAdapter):
     # 直接 select には使わない (フォールバック用に残す)。
     ROW_SELECTOR: ClassVar[str] = "table tr"
     SKIP_FIRST_ROW: ClassVar[bool] = False  # tbody > tr のみ抽出するため不要
-    # 列インデックス → RawAnimalData フィールド名 のマッピング。
+    # 保護犬 (収容表) 用の列マッピング。
     # 列 0 (収容日) は shelter_date, 列 1 (収容期限) と列 7 (備考) は使わない。
     # 列 2 (区) を location, 列 3 (種類) は犬種詳細だが species にも使う、
     # ただし species はサイト名から「犬」固定で上書きする。
@@ -62,6 +72,17 @@ class CityKitakyushuAdapter(SinglePageTableAdapter):
         5: "sex",
         6: "size",
     }
+    # 譲渡犬 (譲渡対象の成犬の一覧) 用の列マッピング。
+    # 列 0 (番号/愛称) と列 5 (フィラリア)・列 6 (備考) は RawAnimalData に
+    # 直接マップしない。列 7 (写真) は別途 image_urls として処理する。
+    _ADOPTION_COLUMN_FIELDS: ClassVar[dict[int, str]] = {
+        1: "species",
+        2: "sex",
+        3: "color",
+        4: "age",
+    }
+    # 譲渡犬テーブルの「写真」列インデックス (<a href="*.jpg"> リンクが並ぶ)
+    _ADOPTION_PHOTO_COLUMN: ClassVar[int] = 7
     LOCATION_COLUMN: ClassVar[int | None] = 2
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
 
@@ -70,6 +91,9 @@ class CityKitakyushuAdapter(SinglePageTableAdapter):
     _CENTER_TEL: ClassVar[str] = "093-581-1800"
 
     # ─────────────────── オーバーライド ───────────────────
+
+    # 対象テーブルが譲渡犬テーブルかを行抽出時に判定し extract 時に参照する
+    _is_adoption_table_cache: bool = False
 
     def _load_rows(self) -> list[Tag]:
         """対象テーブル (`<caption>` に「収容表」等を含む) のデータ行のみ返す
@@ -87,7 +111,11 @@ class CityKitakyushuAdapter(SinglePageTableAdapter):
         target_table = self._find_target_table(soup)
         if target_table is None:
             self._rows_cache = []
+            self._is_adoption_table_cache = False
             return self._rows_cache
+
+        # caption から保護犬/譲渡犬を判別し、extract 時の列マッピング切替に使う
+        self._is_adoption_table_cache = self._is_adoption_table(target_table)
 
         # `<tbody>` 配下の `<tr>` を優先。無ければ `<thead>` を除く全 `<tr>`
         tbody = target_table.find("tbody")
@@ -123,8 +151,9 @@ class CityKitakyushuAdapter(SinglePageTableAdapter):
     def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """テーブル行から RawAnimalData を構築する
 
-        基底のセルベース既定実装に対し、species をサイト名 (犬固定) で
-        上書きし、shelter_date / location をテーブル列から取得する。
+        対象テーブルが保護犬 (収容表) か譲渡犬 (譲渡対象) かを `_load_rows` 時の
+        判定 (`_is_adoption_table_cache`) に基づいて列マッピングを切り替える。
+        species はサイト名 (犬固定) で常に上書きする。
         """
         rows = self._load_rows()
         idx = self._parse_row_index(virtual_url)
@@ -136,8 +165,13 @@ class CityKitakyushuAdapter(SinglePageTableAdapter):
         row = rows[idx]
         cells = row.find_all(["td", "th"])
 
+        column_map = (
+            self._ADOPTION_COLUMN_FIELDS
+            if self._is_adoption_table_cache
+            else self.COLUMN_FIELDS
+        )
         fields: dict[str, str] = {}
-        for col_idx, field_name in self.COLUMN_FIELDS.items():
+        for col_idx, field_name in column_map.items():
             if col_idx < len(cells):
                 fields[field_name] = cells[col_idx].get_text(separator=" ", strip=True)
 
@@ -148,17 +182,24 @@ class CityKitakyushuAdapter(SinglePageTableAdapter):
         if not species:
             species = fields.get("species", "")
 
+        # 画像 URL は譲渡犬テーブルでは「写真」列の <a href="*.jpg"> から取得する。
+        # 保護犬テーブルには画像列が存在しないため空リスト。
+        if self._is_adoption_table_cache:
+            image_urls = self._extract_adoption_photo_links(row, virtual_url)
+        else:
+            image_urls = self._extract_row_images(row, virtual_url)
+
         try:
             return RawAnimalData(
                 species=species,
                 sex=fields.get("sex", ""),
-                age="",
+                age=fields.get("age", ""),
                 color=fields.get("color", ""),
                 size=fields.get("size", ""),
                 shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
                 location=fields.get("location", ""),
                 phone=self._CENTER_TEL,
-                image_urls=self._extract_row_images(row, virtual_url),
+                image_urls=image_urls,
                 source_url=virtual_url,
                 category=category,
             )
@@ -191,6 +232,49 @@ class CityKitakyushuAdapter(SinglePageTableAdapter):
             if "収容日" in header_text and ("種類" in header_text or "毛色" in header_text):
                 return table
         return None
+
+    @staticmethod
+    def _is_adoption_table(table: Tag) -> bool:
+        """対象テーブルが譲渡犬 (譲渡対象) テーブルかを `<caption>` で判定する
+
+        保護犬テーブルは「収容表」、譲渡犬テーブルは「譲渡対象の成犬の一覧」
+        のように caption が異なる。caption が無い場合は保護犬扱い (False)。
+        """
+        caption = table.find("caption")
+        if not isinstance(caption, Tag):
+            return False
+        text = caption.get_text(strip=True)
+        return any(kw in text for kw in _ADOPTION_CAPTION_KEYWORDS)
+
+    def _extract_adoption_photo_links(self, row: Tag, base_url: str) -> list[str]:
+        """譲渡犬テーブルの「写真」列の <a href="*.jpg"> から画像 URL を取得する
+
+        実サイト (924_11834) では写真列に `<a href="/files/xxx.jpg">写真N</a>`
+        のリンクが複数並ぶ (img タグは無い)。基底の `_extract_row_images` は
+        img タグ前提のため、本サイト用にリンク抽出を行う。
+        """
+        cells = row.find_all(["td", "th"])
+        if self._ADOPTION_PHOTO_COLUMN >= len(cells):
+            return []
+        photo_cell = cells[self._ADOPTION_PHOTO_COLUMN]
+        urls: list[str] = []
+        for a in photo_cell.find_all("a"):
+            href = a.get("href")
+            if not isinstance(href, str):
+                continue
+            # 画像拡張子を持つリンクのみ採用 (PDF 等のリンクが混ざる場合に備える)
+            lowered = href.lower().split("?", 1)[0]
+            if not lowered.endswith((".jpg", ".jpeg", ".png", ".gif", ".webp")):
+                continue
+            urls.append(self._absolute_url(href, base=base_url))
+        # 重複除去 (順序保持)
+        seen: set[str] = set()
+        deduped: list[str] = []
+        for u in urls:
+            if u not in seen:
+                seen.add(u)
+                deduped.append(u)
+        return self._filter_image_urls(deduped, base_url)
 
     @staticmethod
     def _infer_species_from_site_name(name: str) -> str:
