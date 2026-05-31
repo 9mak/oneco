@@ -150,9 +150,7 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
 
     # ─────────────────── detail 補完 ───────────────────
 
-    def _fetch_phone_size_age_from_detail(
-        self, card: Tag, base_url: str
-    ) -> tuple[str, str, str]:
+    def _fetch_phone_size_age_from_detail(self, card: Tag, base_url: str) -> tuple[str, str, str]:
         """カードの詳細リンクを辿って phone / size / age を抽出する
 
         実サイト構造 (2026-05 観測):
