@@ -113,6 +113,8 @@ class TestCityKashiwaAdapter:
         assert raw.sex == "メス"
         assert "茶" in raw.color
         assert "豊四季台" in raw.location
+        # phone は柏市動物愛護ふれあいセンター代表電話を全件共通利用 (2026-05 観測)
+        assert raw.phone == "04-7190-2828"
         assert "5月11日" in raw.shelter_date
         # 画像 URL が絶対 URL に変換されている
         assert raw.image_urls
