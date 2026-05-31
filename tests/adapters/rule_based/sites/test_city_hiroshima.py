@@ -142,22 +142,49 @@ class TestCityHiroshimaAdapter:
             result = adapter.fetch_animal_list()
         assert result == []
 
-    def test_zero_animals_acceptable_when_dl_empty(self):
-        """`<dl>` 内の dt/dd が空でもクラッシュせず空フィールドで返す
+    def test_empty_dl_template_skipped(self):
+        """全 `<dd>` が空のテンプレート `<dl>` は 0 件として扱う
 
-        実運用では「在庫 0 件」(該当なし) のページに切り替わることがあり、
-        その場合 `<dl>` 自体が無くなることが多いが、テンプレート上だけ
-        残るケースに備えて防御的に動作することを確認する。
+        実運用では「整理番号：」だけが残った空テンプレートが描画されることがあり、
+        従来はそれを 1 件のゴミレコードとして取り込んでしまっていた。
+        空テンプレートは fetch_animal_list の段階で除外し、ParsingError も
+        発生させずに空リストを返す。
         """
-        empty_html = '<html><body><div id="voice"><h2>該当なし</h2><dl></dl></div></body></html>'
+        empty_html = (
+            '<html><body><div id="voice"><h2>整理番号：</h2><dl>'
+            "<dt>収容月日</dt><dd>&nbsp;</dd>"
+            "<dt>種類</dt><dd>&nbsp;</dd>"
+            "<dt>性別</dt><dd>&nbsp;</dd>"
+            "<dt>推定年齢</dt><dd>&nbsp;</dd>"
+            "<dt>毛色</dt><dd>&nbsp;</dd>"
+            "<dt>拾得等の場所</dt><dd>&nbsp;</dd>"
+            "</dl></div></body></html>"
+        )
         adapter = CityHiroshimaAdapter(_site_dog())
         with patch.object(adapter, "_http_get", return_value=empty_html):
-            urls = adapter.fetch_animal_list()
-            url, cat = urls[0]
-            raw = adapter.extract_animal_details(url, category=cat)
+            result = adapter.fetch_animal_list()
+        assert result == []
 
-        assert raw.species == "犬"  # サイト名ベース
-        assert raw.sex == ""
-        assert raw.color == ""
-        assert raw.location == ""
-        assert raw.image_urls == []
+    def test_partial_data_dl_kept_and_phone_injected(self):
+        """値が 1 つでも入っている `<dl>` は採用され、phone 共通値が注入される
+
+        広島市動物愛護センターの代表電話 (082-243-6058) は HTML 本文に
+        固定で記載されているため、サイト共通値として全レコードに注入する。
+        """
+        partial_html = (
+            '<html><body><div id="voice"><h2>整理番号：3</h2><dl>'
+            "<dt>収容月日</dt><dd>令和8年5月21日</dd>"
+            "<dt>種類</dt><dd>&nbsp;</dd>"
+            "<dt>性別</dt><dd>メス</dd>"
+            "<dt>毛色</dt><dd>&nbsp;</dd>"
+            "<dt>拾得等の場所</dt><dd>&nbsp;</dd>"
+            "</dl></div></body></html>"
+        )
+        adapter = CityHiroshimaAdapter(_site_dog())
+        with patch.object(adapter, "_http_get", return_value=partial_html):
+            urls = adapter.fetch_animal_list()
+            assert len(urls) == 1
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+
+        assert raw.sex == "メス"
+        assert raw.phone == "082-243-6058"
