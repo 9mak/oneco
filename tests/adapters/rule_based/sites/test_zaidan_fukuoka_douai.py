@@ -237,6 +237,56 @@ class TestZaidanFukuokaDouaiAdapterCenterCategory:
             )
         assert raw.location == "福岡県動物愛護センター"
 
+    def test_image_urls_extracted_from_anchor_img_structure(self, assert_raw_animal):
+        """実サイトの `<a><img src="/files/download/Animals/..."></a>` 構造から画像を取得する
+
+        2026-05 観測: 実サイトでは `<figure>` ではなく `<a>` 直下に `<img>` が
+        並ぶ構造 (lightbox 形式) で動物画像を表示している。slideshow の
+        サムネ (`.sp-thumbnail-container img`) は同一 src でメイン画像と
+        重複するため、重複排除も行う。
+        """
+        # 実サイト構造を再現: figure 無し、`<a><img></a>` と
+        # `.sp-thumbnail-container > img` が混在する
+        real_html = """
+        <html><body>
+          <div class="main">
+            <div class="detail-wrap">
+              <a href="/files/download/Animals/xyz/image_01/main/l">
+                <img src="/files/download/Animals/xyz/image_01/main/l">
+              </a>
+              <a href="/files/download/Animals/xyz/image_02/main/l">
+                <img src="/files/download/Animals/xyz/image_02/main/l">
+              </a>
+              <div class="sp-thumbnail-container sp-selected-thumbnail">
+                <img src="/files/download/Animals/xyz/image_01/main/l">
+              </div>
+              <div class="sp-thumbnail-container">
+                <img src="/files/download/Animals/xyz/image_02/main/l">
+              </div>
+              <table class="animals-data">
+                <tr><th>性別</th><td>オス</td></tr>
+                <tr><th>保護した場所</th><td>芦屋町山鹿</td></tr>
+              </table>
+              <p>TEL: 0930-23-2380</p>
+            </div>
+          </div>
+          <p class="logo"><img src="/img/common/f-logo.png"></p>
+          <a href="#"><img src="/img/common/img_tail_dog.png"></a>
+        </body></html>
+        """
+        adapter = ZaidanFukuokaDouaiAdapter(_site_protections_dog())
+        with patch.object(adapter, "_http_get", return_value=real_html):
+            raw = adapter.extract_animal_details(
+                "https://www.zaidan-fukuoka-douai.or.jp/animals/protection-detail/xyz",
+                category="sheltered",
+            )
+        # 動物画像 2 枚が拾えている (image_01, image_02)
+        assert len(raw.image_urls) == 2, f"画像 2 枚が拾えるべき (重複排除後): got {raw.image_urls}"
+        # 全件 /files/download/Animals/ 配下
+        assert all("/files/download/Animals/" in u for u in raw.image_urls), (
+            f"装飾画像 (/img/common/...) が混入: {raw.image_urls}"
+        )
+
     def test_protection_detail_keeps_actual_location(self):
         """`protection-detail` (保健所収容) は「保護した場所」が優先される (回帰防止)"""
         protection_html = """
