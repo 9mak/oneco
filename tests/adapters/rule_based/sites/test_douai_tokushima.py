@@ -311,6 +311,8 @@ class TestDouaiTokushimaDetailExtraction:
         )
         # location は固定でセンター名
         assert raw.location == "徳島県動物愛護管理センター"
+        # phone はセンター代表電話を全動物カードで共通利用する (2026-05 観測)
+        assert raw.phone == "088-636-6122"
 
     def test_stray_extract_second_row_cat(self, assert_raw_animal):
         adapter = DouaiTokushimaAdapter(_stray_site())
