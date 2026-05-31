@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from bs4 import Tag
+from bs4 import BeautifulSoup, Tag
 
 from ....domain.models import RawAnimalData
 from ...municipality_adapter import ParsingError
@@ -46,6 +46,9 @@ class CityHiroshimaAdapter(SinglePageTableAdapter):
     # 収容日は dt "収容月日" から取得するためデフォルトは空
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
 
+    # 広島市動物愛護センター代表電話（HTML 本文の問い合わせ先に固定で記載）
+    _CONTACT_PHONE: ClassVar[str] = "082-243-6058"
+
     # `<dt>` テキスト -> RawAnimalData フィールド名 のマッピング。
     # 表記揺れに備えキー側でゆるくマッチさせる。
     _DT_LABEL_MAP: ClassVar[dict[str, str]] = {
@@ -66,6 +69,46 @@ class CityHiroshimaAdapter(SinglePageTableAdapter):
     }
 
     # ─────────────────── オーバーライド ───────────────────
+
+    def _load_rows(self) -> list[Tag]:
+        """`<div id="voice"> <dl>` のうち全 `<dd>` が空のテンプレートを除外する
+
+        広島市のページは収容動物が 0 件の期間でも `<h2>整理番号：</h2><dl>` の
+        空テンプレートが残ったまま描画されることがある。すべての `<dd>` が
+        `&nbsp;` や空白のみの場合は「データなし」と判定して除外し、
+        snapshot にゴミレコードが取り込まれないようにする。
+        """
+        if self._rows_cache is not None:
+            return self._rows_cache
+
+        if self._html_cache is None:
+            self._html_cache = self._http_get(self.site_config.list_url)
+
+        soup = BeautifulSoup(self._html_cache, "html.parser")
+        rows: list[Tag] = []
+        for dl in soup.select(self.ROW_SELECTOR):
+            if not isinstance(dl, Tag):
+                continue
+            if self._is_empty_dl(dl):
+                continue
+            rows.append(dl)
+
+        self._rows_cache = rows
+        return rows
+
+    @staticmethod
+    def _is_empty_dl(dl: Tag) -> bool:
+        """`<dl>` 内のすべての `<dd>` が空白のみなら True"""
+        dds = dl.find_all("dd")
+        if not dds:
+            return True
+        for dd in dds:
+            text = dd.get_text(separator="", strip=True)
+            # `&nbsp;` (U+00A0) はそのままだと strip で消えないため明示除去
+            text = text.replace("\xa0", "").strip()
+            if text:
+                return False
+        return True
 
     def extract_animal_details(self, virtual_url: str, category: str = "lost") -> RawAnimalData:
         """`<dl>` (= 動物 1 件) から RawAnimalData を構築する"""
@@ -105,7 +148,7 @@ class CityHiroshimaAdapter(SinglePageTableAdapter):
                 size="",
                 shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
                 location=fields.get("location", ""),
-                phone="",
+                phone=self._normalize_phone(self._CONTACT_PHONE),
                 image_urls=self._extract_animal_images(dl, virtual_url),
                 source_url=virtual_url,
                 category=category,
