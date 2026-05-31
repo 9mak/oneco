@@ -192,6 +192,41 @@ class TestCityKashiwaAdapter:
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()
 
+    def test_cards_without_label_fields_are_skipped(self):
+        """col2R に「ラベル：値」形式テキストが無いカードは除外される
+
+        柏市の譲渡対象動物ページ (satoya.html) では、写真と名前だけで
+        構造化フィールドを持たないカードが混在することがあり、従来は
+        species/age/color/size すべて空のゴミレコードとして取り込まれていた。
+        ラベル「種類」「毛色」等が1つも無いカードは fetch_animal_list の
+        段階で除外し、ラベル有りのカードのみを動物データとして採用する。
+        """
+        html = (
+            "<html><body><main><div id='tmp_contents'>"
+            "<h2>譲渡対象動物</h2><h3>猫</h3>"
+            # ラベルなしカード（画像と名前テキストのみ）
+            "<div class='col2_sp2_wrap'><div class='col2'>"
+            "<div class='col2L'><p><img src='/images/cat_a.jpg'></p></div>"
+            "<div class='col2R'><p>左：マッキー　右：あんにん</p></div>"
+            "</div></div>"
+            # ラベル有りカード
+            "<div class='col2_sp2_wrap'><div class='col2'>"
+            "<div class='col2L'><p><img src='/images/cat_b.jpg'></p></div>"
+            "<div class='col2R'>"
+            "<p>番号：A123</p><p>種類：雑種</p><p>毛色：黒白</p>"
+            "<p>性別：オス</p><p>場所：豊四季台</p>"
+            "</div></div></div>"
+            "</div></main></body></html>"
+        )
+        adapter = CityKashiwaAdapter(_site_satoya())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            assert len(urls) == 1
+            raw = adapter.extract_animal_details(urls[0][0], category="adoption")
+
+        assert raw.color == "黒白"
+        assert raw.sex == "オス"
+
     def test_both_sites_registered(self):
         """2 つの柏市サイト名が Registry に登録されている"""
         expected = [
