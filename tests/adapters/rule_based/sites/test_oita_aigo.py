@@ -91,15 +91,16 @@ class TestOitaAigoAdapter:
             raw,
             sex="オス",
             age="8歳",
-            size="14.04kg",
+            # 14.04kg → 中 (5kg以上15kg未満) に変換される
+            size="中",
             location="佐伯市",
             shelter_date="令和8年5月1日",
             category="sheltered",
         )
         # 迷子情報メインは犬猫混在のため species は空 (不明)
         assert raw.species == ""
-        # phone はカード内に無いため空
-        assert raw.phone == ""
+        # phone は全動物カードでセンター本部代表電話を共通利用する
+        assert raw.phone == "097-588-1122"
         # 画像 URL が絶対化され、uploads 配下のみ採用される
         assert raw.image_urls
         assert all(u.startswith("https://oita-aigo.com/") for u in raw.image_urls)
@@ -200,3 +201,94 @@ class TestOitaAigoShelterLocationFallback:
             url, cat = urls[0]
             raw = adapter.extract_animal_details(url, category=cat)
         assert raw.location == "佐伯市"
+
+
+class TestOitaAigoWeightToSize:
+    """カードの「体重: 11.64kg」を size の語彙 (小/中/大) に変換する。
+
+    旧実装は「11.64kg」をそのまま size に流していたが、
+    normalizer は SIZE_VALID = {小,中,大,...} にのみマッチさせるため
+    全件 size=None に落ちていた (実収集 27/27 全件で size 欠損)。
+    体重レンジで小/中/大に推定し、normalizer に標準語彙で渡す。
+    """
+
+    @staticmethod
+    def _card(weight: str) -> str:
+        return f"""
+        <html><body><main>
+          <div class="information_box">
+            <dl><dt>保護地域</dt><dd>杵築市</dd></dl>
+            <dl><dt>推定年齢</dt><dd>1歳</dd></dl>
+            <dl><dt>性別</dt><dd>メス</dd></dl>
+            <dl><dt>体重</dt><dd>{weight}</dd></dl>
+          </div>
+        </main></body></html>
+        """
+
+    def test_under_5kg_becomes_small(self):
+        adapter = OitaAigoAdapter(_lostchild_site())
+        with patch.object(adapter, "_http_get", return_value=self._card("4.48kg")):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+        assert raw.size == "小"
+
+    def test_between_5_and_15kg_becomes_medium(self):
+        adapter = OitaAigoAdapter(_lostchild_site())
+        with patch.object(adapter, "_http_get", return_value=self._card("11.64kg")):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+        assert raw.size == "中"
+
+    def test_15kg_or_more_becomes_large(self):
+        adapter = OitaAigoAdapter(_lostchild_site())
+        with patch.object(adapter, "_http_get", return_value=self._card("17.0kg")):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+        assert raw.size == "大"
+
+    def test_non_numeric_weight_keeps_empty(self):
+        """体重欄が空や非数値の場合は size を空文字にする"""
+        adapter = OitaAigoAdapter(_lostchild_site())
+        with patch.object(adapter, "_http_get", return_value=self._card("不明")):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+        assert raw.size == ""
+
+
+class TestOitaAigoPhone:
+    """phone はカード内に無いが、ページ末尾 (またはサイト共通) の
+    センター代表電話を全動物に割り当てる。
+
+    2026-05 観測: oita-aigo.com には複数の地域別保健所電話番号が
+    並ぶが、動物カードと特定の番号が紐付いていない。最頻の代表電話
+    `097-588-1122` (おおいた動物愛護センター本部) を共通利用する。
+    """
+
+    _CENTER_TEL = "097-588-1122"
+
+    def _card_with_footer(self) -> str:
+        return f"""
+        <html><body>
+          <main>
+            <div class="information_box">
+              <dl><dt>保護地域</dt><dd>杵築市</dd></dl>
+              <dl><dt>推定年齢</dt><dd>1歳</dd></dl>
+              <dl><dt>性別</dt><dd>メス</dd></dl>
+              <dl><dt>体重</dt><dd>4.48kg</dd></dl>
+            </div>
+          </main>
+          <footer>
+            <p>おおいた動物愛護センター</p>
+            <p>TEL：{self._CENTER_TEL}</p>
+          </footer>
+        </body></html>
+        """
+
+    def test_phone_extracted_from_center_tel(self):
+        adapter = OitaAigoAdapter(_lostchild_site())
+        with patch.object(adapter, "_http_get", return_value=self._card_with_footer()):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+        assert raw.phone == self._CENTER_TEL, (
+            f"センター代表電話が phone に入るべき: got {raw.phone!r}"
+        )
