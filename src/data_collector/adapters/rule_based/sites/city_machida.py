@@ -51,6 +51,24 @@ from ...municipality_adapter import ParsingError
 from ..base import RuleBasedAdapter
 from ..registry import SiteAdapterRegistry
 
+# 体重 → size 推定の境界 (kg)。oita_aigo / kumamoto_doubutuaigo._weight_to_size と同基準。
+_SIZE_BOUNDARY_SMALL_KG: float = 5.0
+_SIZE_BOUNDARY_LARGE_KG: float = 15.0
+
+# 「特徴」フィールドの自由記述から体重を抽出する正規表現。
+# 「体重4キロ」「体重約7キロ」「3キログラム」「7キロ越え」「5キロくらい」など。
+# 範囲表記「3〜4キログラム」は最小値を採用 (軽い方を採って小判定を残す)。
+_WEIGHT_KG_RE = re.compile(
+    r"(\d+(?:\.\d+)?)"
+    r"(?:\s*[〜~\-ー]\s*\d+(?:\.\d+)?)?"
+    r"\s*(?:キロ(?:グラム)?|キログラム|kg|ｋｇ|Kg|KG)"
+)
+
+# 体格を明示する強キーワード。誤推定を避けるため「ぽっちゃり」「ふっくら」等の
+# 曖昧表現は意図的に含めない。
+_SIZE_SMALL_WORDS_RE = re.compile(r"小柄|小さめ|小型|子犬|子猫|小さい")
+_SIZE_LARGE_WORDS_RE = re.compile(r"大柄|大型|大きい(?!が)")
+
 # セクションアンカーとなる h2 テキストパターン。
 # 完全一致ではなく substring match で、表記揺れを吸収する。
 _SECTION_ANCHORS: tuple[str, ...] = (
@@ -78,6 +96,8 @@ _LABEL_TO_FIELD: dict[str, str] = {
     "色": "color",
     "体格": "size",
     "大きさ": "size",
+    "体重": "_weight",  # 後段で kg → size 語彙 (小/中/大) に変換
+    "特徴": "_feature",  # 後段で体重数値・体格語を抽出して size 推定に使用
     "年齢": "age",
     "推定年齢": "age",
     "収容日": "shelter_date",
@@ -168,13 +188,23 @@ class CityMachidaAdapter(RuleBasedAdapter):
         # `<p class="contact__tel">電話：042-722-6727</p>` から取得 (ページ共通)
         phone = self._extract_contact_phone()
 
+        # size: 「大きさ」「体格」明示ラベルが最優先。空のときは「体重」ラベル、
+        # それでも空なら「特徴」フィールド内の自由記述から体重数値・体格語で推定。
+        # 町田市 CMS は「大きさ」欄を実質的に持たず (59件全件で size 欠損)、
+        # 動物の体重・体格はもっぱら「特徴」自由記述に書かれている。
+        size = (
+            fields.get("size", "")
+            or self._weight_to_size(fields.get("_weight", ""))
+            or self._infer_size_from_feature(fields.get("_feature", ""))
+        )
+
         try:
             return RawAnimalData(
                 species=species,
                 sex=sex,
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),
-                size=fields.get("size", ""),
+                size=size,
                 shelter_date=fields.get("shelter_date", ""),
                 location=fields.get("location", ""),
                 phone=phone,
@@ -332,6 +362,59 @@ class CityMachidaAdapter(RuleBasedAdapter):
         phone = m.group(1).replace("ー", "-") if m else ""
         self._phone_cache = phone
         return phone
+
+    @staticmethod
+    def _weight_to_size(weight_text: str) -> str:
+        """「4kg」「4キロ」「3〜4キログラム」を「小/中/大」に変換
+
+        - 5kg 未満: 小
+        - 5kg 以上 15kg 未満: 中
+        - 15kg 以上: 大
+        - 数値が拾えない/空: 空文字
+
+        範囲表記「3〜4」は最小値を採用する。oita_aigo._weight_to_size と同基準。
+        """
+        if not weight_text:
+            return ""
+        m = re.search(r"(\d+(?:\.\d+)?)", weight_text)
+        if not m:
+            return ""
+        try:
+            kg = float(m.group(1))
+        except ValueError:
+            return ""
+        if kg < _SIZE_BOUNDARY_SMALL_KG:
+            return "小"
+        if kg < _SIZE_BOUNDARY_LARGE_KG:
+            return "中"
+        return "大"
+
+    @classmethod
+    def _infer_size_from_feature(cls, feature_text: str) -> str:
+        """「特徴」自由記述から size を推定する
+
+        優先度:
+        1. 体重数値 (「体重4キロ」「3キログラム程度」等) → _weight_to_size
+        2. 体格語 (「小柄」「大柄」等) → 小/大
+        3. それ以外: 空文字 (誤推定を避ける)
+
+        町田市 CMS は「大きさ」明示欄が無いため、自由記述からの推定が
+        サイズフィールドの実質的な抽出経路になる。
+        """
+        if not feature_text:
+            return ""
+
+        # 体重数値があれば最優先 (範囲表記は最小値が拾われる)
+        m = _WEIGHT_KG_RE.search(feature_text)
+        if m:
+            return cls._weight_to_size(m.group(0))
+
+        # 体格語 (強キーワードのみ。「ぽっちゃり」等の曖昧表現は意図的に除外)
+        if _SIZE_SMALL_WORDS_RE.search(feature_text):
+            return "小"
+        if _SIZE_LARGE_WORDS_RE.search(feature_text):
+            return "大"
+        return ""
 
     def _infer_species(self, text: str) -> str:
         """テキストから「犬」「猫」を判定する（猫を先にチェック）"""
