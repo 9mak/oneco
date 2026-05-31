@@ -303,6 +303,68 @@ class TestKumamotoDoubutuAigoAdapterDetailExtraction:
                     "https://www.kumamoto-doubutuaigo.jp/animals/detail/x"
                 )
 
+    def test_size_inferred_from_weight_when_size_label_missing(self):
+        """「大きさ」欄が無くても「体重」値から size を「小/中/大」に推定する
+
+        熊本サイトの detail ページには「大きさ」欄が無く「体重: 15kg」のような
+        体重表記しかないため、snapshot で size 全件 null になっていた。
+        weight ラベルを別フィールドとして拾い、size 空のとき体重→size 推定
+        (oita_aigo._weight_to_size と同基準) で補完する。
+        """
+        html = """
+        <html><body>
+        <dl>
+          <dt>性別</dt><dd>オス</dd>
+          <dt>体重</dt><dd>15kg</dd>
+        </dl>
+        </body></html>
+        """
+        adapter = KumamotoDoubutuAigoAdapter(_site_center_dog())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.kumamoto-doubutuaigo.jp/animals/detail/w1",
+                category="adoption",
+            )
+        # 15kg ちょうど = 大 (15kg 以上)
+        assert raw.size == "大"
+
+    def test_size_label_takes_priority_over_weight(self):
+        """「大きさ」欄が存在するときは weight 推定よりも優先する"""
+        html = """
+        <html><body>
+        <dl>
+          <dt>性別</dt><dd>オス</dd>
+          <dt>大きさ</dt><dd>中型</dd>
+          <dt>体重</dt><dd>30kg</dd>
+        </dl>
+        </body></html>
+        """
+        adapter = KumamotoDoubutuAigoAdapter(_site_center_dog())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.kumamoto-doubutuaigo.jp/animals/detail/w2",
+                category="adoption",
+            )
+        assert raw.size == "中型"
+
+    @pytest.mark.parametrize(
+        "weight_text,expected",
+        [
+            ("3kg", "小"),
+            ("4.9kg", "小"),
+            ("5kg", "中"),
+            ("10kg", "中"),
+            ("14.9kg", "中"),
+            ("15kg", "大"),
+            ("30kg前後", "大"),
+            ("不明", ""),
+            ("", ""),
+        ],
+    )
+    def test_weight_to_size_boundaries(self, weight_text, expected):
+        """体重→size 推定の境界 (5kg/15kg) の挙動"""
+        assert KumamotoDoubutuAigoAdapter._weight_to_size(weight_text) == expected
+
 
 class TestKumamotoDoubutuAigoAdapterSpeciesInference:
     """`animal_id:N` URL / サイト名からの動物種別推定"""
