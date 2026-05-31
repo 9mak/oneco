@@ -101,6 +101,42 @@ class CityKashiwaAdapter(SinglePageTableAdapter):
 
     # ─────────────────── オーバーライド ───────────────────
 
+    def _load_rows(self) -> list[Tag]:
+        """ROW_SELECTOR で取得した行から「ラベル付きカード」のみを残す
+
+        柏市の譲渡対象動物ページ (satoya.html) には、写真と名前テキストだけで
+        「種類：xxx」「毛色：xxx」のような構造化情報を持たないカードが
+        混在する。それらを動物データとして取り込むと species/age/color/size が
+        すべて空の無意味なレコードが snapshot に並ぶため、ラベル付きの
+        カードだけを採用するようフィルタする。
+        """
+        if self._rows_cache is not None:
+            return self._rows_cache
+
+        # 親実装で取得 → 親が _rows_cache に保存するので上書きする
+        raw_rows = super()._load_rows()
+        valid = [r for r in raw_rows if self._has_labeled_field(r)]
+        self._rows_cache = valid
+        return valid
+
+    @classmethod
+    def _has_labeled_field(cls, card: Tag) -> bool:
+        """カードに「種類:xxx」「毛色:xxx」等の構造化ラベルが1つ以上あれば True"""
+        col2r = card.select_one("div.col2R")
+        if not isinstance(col2r, Tag):
+            return False
+        for p in col2r.find_all("p"):
+            text = p.get_text(separator=" ", strip=True)
+            if not text:
+                continue
+            for sep in ("：", ":"):
+                if sep in text:
+                    label = text.split(sep, 1)[0].strip()
+                    if label in cls._LABEL_TO_FIELD:
+                        return True
+                    break
+        return False
+
     def fetch_animal_list(self) -> list[tuple[str, str]]:
         """一覧ページから動物の仮想 URL を返す
 
