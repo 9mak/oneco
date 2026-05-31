@@ -62,6 +62,17 @@ class NyantomoAdapter(SinglePageTableAdapter):
         "性別": "sex",
     }
 
+    # location キーワード -> 施設代表電話のマッピング (2026-05 観測)。
+    # nyantomo.jp は 3 つの電話番号を載せている:
+    #   - 070-9338-2665 (ニャン友ねっとわーく本部)
+    #   - 0138-32-1524 (函館市保健所内 函館市愛護センター)
+    #   - 0138-44-2690 (北海道立 道南愛護センター)
+    # location 文字列に部分一致する最初のキーを採用する。
+    _LOCATION_TO_PHONE: ClassVar[tuple[tuple[str, str], ...]] = (
+        ("函館市", "0138-32-1524"),
+        ("道南", "0138-44-2690"),
+    )
+
     # ─────────────────── オーバーライド ───────────────────
 
     def fetch_animal_list(self) -> list[tuple[str, str]]:
@@ -119,7 +130,7 @@ class NyantomoAdapter(SinglePageTableAdapter):
                 # 名前 (例: 「道南 ふわ」) と組み合わせるとより文脈が
                 # 残るが、location は施設名を優先する。
                 location=location or fields.get("name", ""),
-                phone="",
+                phone=self._phone_for_location(location),
                 image_urls=self._extract_row_images(card, virtual_url),
                 source_url=virtual_url,
                 category=category,
@@ -172,6 +183,21 @@ class NyantomoAdapter(SinglePageTableAdapter):
             if not text:
                 continue
             return text
+        return ""
+
+    @classmethod
+    def _phone_for_location(cls, location: str) -> str:
+        """location 文字列から施設の代表電話を判定する
+
+        マッピングに合致しない場合は空文字を返す。「道南」を「函館市」より
+        優先したい場合は _LOCATION_TO_PHONE の並びで調整する (現状は
+        函館市を先頭にし、「道南」を含めば道南センター電話に流れる)。
+        """
+        if not location:
+            return ""
+        for keyword, phone in cls._LOCATION_TO_PHONE:
+            if keyword in location:
+                return phone
         return ""
 
     @staticmethod
