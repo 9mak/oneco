@@ -36,6 +36,8 @@ _REIWA_RE = re.compile(r"令和\s*(\d{1,2})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\
 _GREG_DATE_RE = re.compile(r"(\d{4})\s*[年/\-.]\s*(\d{1,2})\s*[月/\-.]\s*(\d{1,2})")
 # 動物種別フィールド: 「猫（雑種）」「犬（トイプードル）」など
 _SPECIES_BREED_RE = re.compile(r"^\s*([^（(\s]+)\s*(?:[（(]([^）)]*)[）)])?\s*$")
+# detail ページ <li> 内のラベル付き項目 (例: 「毛色：黒」「特徴：首輪無」)
+_DETAIL_LABEL_RE = re.compile(r"^\s*([^：:]+?)\s*[：:]\s*(.+?)\s*$")
 # 性別記号 → 文字列マッピング
 _SEX_MAP = {
     "♂": "オス",
@@ -157,12 +159,19 @@ class CityKurashikiAdapter(SinglePageTableAdapter):
         else:
             source_url = virtual_url
 
+        # detail ページに「毛色：黒」「特徴：首輪無」等の追加情報がある。
+        # 取得失敗は無視して、一覧から得た基本情報だけは確実に返す。
+        color = ""
+        if isinstance(href, str) and href:
+            detail = self._fetch_detail_fields(source_url)
+            color = detail.get("毛色", "")
+
         try:
             return RawAnimalData(
                 species=species,
                 sex=sex,
                 age="",
-                color="",
+                color=color,
                 size="",
                 shelter_date=shelter_date or self.SHELTER_DATE_DEFAULT,
                 location=location,
@@ -173,6 +182,31 @@ class CityKurashikiAdapter(SinglePageTableAdapter):
             )
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
+
+    def _fetch_detail_fields(self, detail_url: str) -> dict[str, str]:
+        """detail ページから「ラベル：値」形式の項目を辞書化する
+
+        倉敷市の detail ページは `<ul><li>保護場所：児島小川</li>...</ul>` のように
+        ラベル付き項目を並べる構成。HTTP 取得失敗時は空 dict を返し、
+        呼び出し元で「補完情報なし」として扱う（基本情報のみで RawAnimalData を構築）。
+        """
+        try:
+            html = self._http_get(detail_url)
+        except Exception:
+            return {}
+        soup = BeautifulSoup(html, "html.parser")
+        fields: dict[str, str] = {}
+        for li in soup.find_all("li"):
+            text = li.get_text(separator=" ", strip=True)
+            if not text or len(text) > 200:
+                continue
+            m = _DETAIL_LABEL_RE.match(text)
+            if not m:
+                continue
+            key, val = m.group(1).strip(), m.group(2).strip()
+            if key and val and key not in fields:
+                fields[key] = val
+        return fields
 
     # ─────────────────── ヘルパー ───────────────────
 

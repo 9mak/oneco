@@ -133,8 +133,12 @@ class TestCityKurashikiAdapter:
         assert raws[2].species == "猫"
         assert raws[2].sex == "オス"
 
-    def test_http_called_only_once(self):
-        """_load_rows のキャッシュにより HTTP は 1 回しか呼ばれない"""
+    def test_list_http_called_only_once_for_list_url(self):
+        """_load_rows のキャッシュにより list URL の HTTP は 1 回しか呼ばれない
+
+        detail ページ取得は 1 件あたり 1 回追加で行うため、
+        list URL に絞って 1 回のみであることを検証する。
+        """
         adapter = CityKurashikiAdapter(_site())
 
         with patch.object(adapter, "_http_get", return_value=_populated_html()) as mock_get:
@@ -142,7 +146,8 @@ class TestCityKurashikiAdapter:
             for url, cat in urls:
                 adapter.extract_animal_details(url, category=cat)
 
-        assert mock_get.call_count == 1
+        list_calls = [c for c in mock_get.call_args_list if c.args and c.args[0] == LIST_URL]
+        assert len(list_calls) == 1
 
     # ─────────────── 在庫 0 件 ───────────────
 
@@ -240,6 +245,46 @@ class TestCityKurashikiAdapter:
             normalized = adapter.normalize(raw)
         assert normalized is not None
         assert hasattr(normalized, "species")
+
+    # ─────────────── detail ページ補完 ───────────────
+
+    def test_color_from_detail_page(self, fixture_html):
+        """detail ページの「毛色：黒」から color を補完する"""
+        list_html = _populated_html()
+        detail_html = fixture_html("city_kurashiki_detail_1026186")
+
+        def _side_effect(url, *args, **kwargs):
+            if url == LIST_URL:
+                return list_html
+            return detail_html
+
+        adapter = CityKurashikiAdapter(_site())
+        with patch.object(adapter, "_http_get", side_effect=_side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+
+        assert raw.color == "黒"
+
+    def test_detail_fetch_failure_falls_back_to_empty_color(self):
+        """detail ページ取得に失敗しても他フィールドは保たれ、color は空文字"""
+        list_html = _populated_html()
+
+        def _side_effect(url, *args, **kwargs):
+            if url == LIST_URL:
+                return list_html
+            raise RuntimeError("detail HTTP failed")
+
+        adapter = CityKurashikiAdapter(_site())
+        with patch.object(adapter, "_http_get", side_effect=_side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+
+        # 一覧ページから取れた基本情報は保持される
+        assert raw.species == "猫"
+        assert raw.sex == "メス"
+        assert raw.location == "児島小川"
+        # detail 取得失敗時は color は空のまま
+        assert raw.color == ""
 
     # ─────────────── レジストリ ───────────────
 
