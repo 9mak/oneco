@@ -67,6 +67,11 @@ class AniwelAdapter(SinglePageTableAdapter):
         "age": "age",
     }
 
+    # 動物カードに個別電話番号・施設情報が無いため、ページ末尾の運営団体
+    # 代表電話と団体所在地を全動物カード共通で割り当てる (2026-05 観測)。
+    _CENTER_TEL: ClassVar[str] = "0157-57-3612"
+    _CENTER_LOCATION: ClassVar[str] = "アニウェル北海道（北見市）"
+
     # ─────────────────── オーバーライド ───────────────────
 
     def fetch_animal_list(self) -> list[tuple[str, str]]:
@@ -124,8 +129,8 @@ class AniwelAdapter(SinglePageTableAdapter):
                 color="",
                 size="",
                 shelter_date=self.SHELTER_DATE_DEFAULT,
-                location="",
-                phone="",
+                location=self._CENTER_LOCATION,
+                phone=self._CENTER_TEL,
                 image_urls=self._extract_row_images(card, virtual_url),
                 source_url=virtual_url,
                 category=category,
