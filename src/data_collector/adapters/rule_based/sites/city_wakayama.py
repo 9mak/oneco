@@ -96,6 +96,8 @@ class CityWakayamaAdapter(SinglePageTableAdapter):
         super().__init__(site_config)
         # カード index -> 推定 species ('犬' / '猫' / 'その他')
         self._species_by_index: dict[int, str] = {}
+        # ページ末尾のお問い合わせブロックから取得した電話番号 (1 度だけ抽出)
+        self._phone_cache: str | None = None
 
     # ─────────────────── オーバーライド ───────────────────
 
@@ -168,7 +170,7 @@ class CityWakayamaAdapter(SinglePageTableAdapter):
                 size="",
                 shelter_date=self.SHELTER_DATE_DEFAULT,
                 location=self.DEFAULT_LOCATION,
-                phone="",
+                phone=self._extract_contact_phone(),
                 image_urls=self._extract_row_images(card, virtual_url),
                 source_url=virtual_url,
                 category=category,
@@ -178,6 +180,31 @@ class CityWakayamaAdapter(SinglePageTableAdapter):
                 f"RawAnimalData バリデーション失敗: {e} (breed={breed!r})",
                 url=virtual_url,
             ) from e
+
+    # ─────────────────── 電話番号 (ページ共通) ───────────────────
+
+    def _extract_contact_phone(self) -> str:
+        """ページ末尾のお問い合わせブロックから施設の電話番号を取得する
+
+        和歌山市 CMS は動物カード内に個別電話番号を持たず、ページ末尾の
+        「電話：073-488-2032」をページ共通の連絡先として表示している。
+        同 list_url 内の全動物で同じ電話番号を共通利用する。
+        """
+        if self._phone_cache is not None:
+            return self._phone_cache
+        if self._html_cache is None:
+            self._phone_cache = ""
+            return ""
+        soup = BeautifulSoup(self._html_cache, "html.parser")
+        text = soup.get_text(" ", strip=True)
+        # 「電話：073-488-2032」「電話: 073-488-2032」両方を許容
+        m = re.search(r"電話[：:]\s*(\d{2,4}[-ー]\d{2,4}[-ー]\d{3,4})", text)
+        if not m:
+            self._phone_cache = ""
+            return ""
+        phone = m.group(1).replace("ー", "-")
+        self._phone_cache = phone
+        return phone
 
     # ─────────────────── 画像 URL 抽出 (オーバーライド) ───────────────────
 
