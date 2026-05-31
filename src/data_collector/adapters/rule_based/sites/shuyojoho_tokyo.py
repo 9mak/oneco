@@ -139,11 +139,18 @@ class ShuyojohoTokyoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
                 url=detail_url,
             )
 
-        # species 補完: ラベル「種類」が空のとき
-        # 1) 同じ詳細ページの「動物名」(イヌ/ネコ) → 犬/猫 にマップ
-        # 2) site_config.list_url の `/cat` 有無でフォールバック
-        # 3) site_config.name の "犬"/"猫" でフォールバック
-        if not fields.get("species"):
+        # species 補完: 以下の順で犬/猫を確定させる。
+        # 1) ラベル「種類」値が犬/猫キーワードを含む (例: 柴犬, ペルシャ猫) → そのまま採用
+        # 2) 同じ詳細ページの「動物名」(イヌ/ネコ) → 犬/猫 にマップ
+        # 3) site_config.list_url の `/cat` 有無でフォールバック
+        # 4) site_config.name の "犬"/"猫" でフォールバック
+        # 5) いずれも取れなければ「種類」値をそのまま渡す
+        #
+        # 「種類」値が「雑種」「ミックス」など犬/猫を含まない場合、後段の
+        # `DataNormalizer._normalize_species` は「その他」に倒してしまうため、
+        # 動物名 (イヌ/ネコ) が DOM 上に存在するならそちらを優先する。
+        species_value = fields.get("species", "")
+        if not self._species_contains_animal_keyword(species_value):
             inferred = (
                 self._infer_species_from_animal_name(soup)
                 or self._infer_species_from_list_url(self.site_config.list_url)
@@ -172,6 +179,22 @@ class ShuyojohoTokyoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=detail_url) from e
 
     # ─────────────────── 種別推定 ───────────────────
+
+    @staticmethod
+    def _species_contains_animal_keyword(species_value: str) -> bool:
+        """「種類」値が犬/猫を識別可能なキーワードを含むか判定する
+
+        含むなら DataNormalizer の `_normalize_species` がそのまま
+        正しい "犬"/"猫" を抽出できる。含まないなら ("雑種"/"ミックス" 等)
+        動物名フィールドの推定を優先する必要がある。
+        """
+        if not species_value:
+            return False
+        # `DataNormalizer._SPECIES_DOG_PATTERNS` / `_SPECIES_CAT_PATTERNS`
+        # と同じキーワード集合 (循環 import 回避のためここに再掲)。
+        keywords = ("犬", "いぬ", "イヌ", "dog", "猫", "ねこ", "ネコ", "cat")
+        lowered = species_value.lower()
+        return any(k.lower() in lowered for k in keywords)
 
     @staticmethod
     def _infer_species_from_animal_name(soup: BeautifulSoup) -> str:

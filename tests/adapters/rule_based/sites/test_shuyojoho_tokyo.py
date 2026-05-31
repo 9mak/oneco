@@ -274,7 +274,11 @@ class TestShuyojohoTokyoAdapterDetailExtraction:
     """detail ページからの RawAnimalData 構築"""
 
     def test_extract_animal_details_cat(self, assert_raw_animal):
-        """猫の詳細ページから各フィールドが抽出できる"""
+        """猫の詳細ページから各フィールドが抽出できる
+
+        「種類」値が「雑種」(犬/猫キーワード非含有) の場合は、
+        動物名「ネコ」を優先して species="猫" に推定する。
+        """
         adapter = ShuyojohoTokyoAdapter(_site_cat())
         detail_url = "https://shuyojoho.metro.tokyo.lg.jp/animals/detail/8700"
         with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_CAT):
@@ -283,7 +287,7 @@ class TestShuyojohoTokyoAdapterDetailExtraction:
         assert isinstance(raw, RawAnimalData)
         assert_raw_animal(
             raw,
-            species="雑種",
+            species="猫",
             sex="オス(去勢含む)",
             color="黒/白",
             size="中",
@@ -317,6 +321,21 @@ class TestShuyojohoTokyoAdapterDetailExtraction:
         )
         assert raw.phone == "03-3302-3507"
         assert any("dog_001.jpg" in u for u in raw.image_urls)
+
+    def test_extract_animal_details_preserves_breed_species_when_animal_keyword_present(
+        self, assert_raw_animal
+    ):
+        """「種類」値に犬/猫キーワードを含む場合 (例: 柴犬) は値をそのまま保持する
+
+        DataNormalizer の `_normalize_species` がキーワードで犬/猫を判別できるため、
+        動物名フォールバックは適用しない。
+        """
+        adapter = ShuyojohoTokyoAdapter(_site_dog())
+        detail_url = "https://shuyojoho.metro.tokyo.lg.jp/animals/detail/8701"
+        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_DOG):
+            raw = adapter.extract_animal_details(detail_url, category="sheltered")
+        # 「柴犬」は犬キーワードを含むためそのまま保持される
+        assert raw.species == "柴犬"
 
     def test_extract_animal_details_infers_species_from_animal_name_cat(self):
         """species ラベルが空でも 動物名「ネコ」から "猫" が推定される"""
@@ -418,6 +437,23 @@ class TestShuyojohoTokyoAdapterSpeciesInference:
     )
     def test_infer_species_from_site_name(self, name, expected):
         assert ShuyojohoTokyoAdapter._infer_species_from_site_name(name) == expected
+
+    @pytest.mark.parametrize(
+        "value,expected",
+        [
+            ("柴犬", True),
+            ("犬", True),
+            ("イヌ", True),
+            ("ペルシャ猫", True),
+            ("猫", True),
+            ("ネコ", True),
+            ("雑種", False),
+            ("ミックス", False),
+            ("", False),
+        ],
+    )
+    def test_species_contains_animal_keyword(self, value, expected):
+        assert ShuyojohoTokyoAdapter._species_contains_animal_keyword(value) is expected
 
 
 class TestShuyojohoTokyoAdapterRegistry:
