@@ -22,6 +22,27 @@ from data_collector.adapters.rule_based.sites.yokosuka_doubutu import (
 from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
 
+
+def _site_cat_shelter() -> SiteConfig:
+    return SiteConfig(
+        name="横須賀市（保護猫）",
+        prefecture="神奈川県",
+        prefecture_code="14",
+        list_url="https://www.yokosuka-doubutu.com/protected-animals-cat/",
+        category="sheltered",
+    )
+
+
+def _site_dog_adoption() -> SiteConfig:
+    return SiteConfig(
+        name="横須賀市（譲渡犬）",
+        prefecture="神奈川県",
+        prefecture_code="14",
+        list_url="https://www.yokosuka-doubutu.com/adopted-animals-dog/",
+        category="adoption",
+    )
+
+
 # 横須賀市の詳細ページを模した最小 HTML
 # (実サイトの構造: フッターに `#footer-text-2` の電話番号、本文に
 #  `#photos` の動物写真と 2 列テーブルの基本情報を持つ)
@@ -113,7 +134,9 @@ class TestYokosukaDoubutuAdapter:
             raw = adapter.extract_animal_details(detail_url, category=category)
 
         assert isinstance(raw, RawAnimalData)
-        assert raw.species == "豆柴"
+        # species は「分類」セル ("犬(保護収容)") から「犬」に正規化される
+        # (旧仕様では「種類」セルの "豆柴" がそのまま species に入っていた)
+        assert raw.species == "犬"
         assert raw.sex == "メス"
         assert raw.color == "黒白"
         assert raw.shelter_date == "R8.5.14（木曜日）"
@@ -172,7 +195,9 @@ class TestYokosukaDoubutuAdapter:
         # 長文説明文は color に流れ込まない
         assert raw.color == ""
         # 他のフィールドは通常通り抽出される
-        assert raw.species == "雑種"
+        # 注: HTML に「分類」セルが無いため site_config.name (横須賀市（保護犬）) から
+        # species="犬" に推定される (旧仕様では「種類」セルの "雑種" が species だった)
+        assert raw.species == "犬"
         assert raw.sex == "メス"
 
     def test_feature_with_age_splits_color_and_age(self):
@@ -264,3 +289,188 @@ class TestYokosukaDoubutuAdapter:
                 adapter.extract_animal_details(
                     "https://www.yokosuka-doubutu.com/protected-animals/00-00/"
                 )
+
+    def test_species_inferred_from_category_cell_cat(self):
+        """「分類」セルの "猫(保護収容)" から species="猫" を抽出
+
+        実サイト 2026-05 観測: 「種類」セルにはブリード ("MIX", "豆柴") が入り
+        species (犬/猫/その他) は「分類」セルに記載される。
+        """
+        html = """
+        <html><body><table><tbody>
+          <tr><td>整理番号</td><td>26-19</td></tr>
+          <tr><td>分類</td><td>猫(保護収容)</td></tr>
+          <tr><td>収容日</td><td>R8.5.4</td></tr>
+          <tr><td>収容場所</td><td>長井</td></tr>
+          <tr><td>種類</td><td>MIX</td></tr>
+          <tr><td>性別</td><td>メス</td></tr>
+          <tr><td>特徴</td><td>キジ白</td></tr>
+        </tbody></table></body></html>
+        """
+        adapter = YokosukaDoubutuAdapter(_site_cat_shelter())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.yokosuka-doubutu.com/protected-animals/3131/",
+                category="sheltered",
+            )
+        assert raw.species == "猫", f"分類セルから species=猫 推定: got {raw.species!r}"
+
+    def test_species_inferred_from_category_cell_dog(self):
+        """「分類」セルの "犬(譲渡)" から species="犬" を抽出"""
+        html = """
+        <html><body><table><tbody>
+          <tr><td>整理番号</td><td>26-16</td></tr>
+          <tr><td>分類</td><td>犬(譲渡)</td></tr>
+          <tr><td>種類</td><td>ラブラドルレトリバー</td></tr>
+          <tr><td>性別</td><td>メス</td></tr>
+          <tr><td>収容日</td><td>R8.5.1</td></tr>
+          <tr><td>収容場所</td><td>横須賀</td></tr>
+          <tr><td>体重</td><td>29Kg</td></tr>
+          <tr><td>特徴</td><td>お散歩大好き</td></tr>
+        </tbody></table></body></html>
+        """
+        adapter = YokosukaDoubutuAdapter(_site_dog_adoption())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.yokosuka-doubutu.com/adopted-animals/26-16/",
+                category="adoption",
+            )
+        assert raw.species == "犬", f"分類セルから species=犬 推定: got {raw.species!r}"
+
+    def test_species_fallback_to_site_name(self):
+        """「分類」セルが無い詳細ページではサイト名 (横須賀市（保護猫）) から推定"""
+        html = """
+        <html><body><table><tbody>
+          <tr><td>整理番号</td><td>26-19</td></tr>
+          <tr><td>収容日</td><td>R8.5.4</td></tr>
+          <tr><td>収容場所</td><td>長井</td></tr>
+          <tr><td>種類</td><td>MIX</td></tr>
+          <tr><td>性別</td><td>メス</td></tr>
+        </tbody></table></body></html>
+        """
+        adapter = YokosukaDoubutuAdapter(_site_cat_shelter())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.yokosuka-doubutu.com/protected-animals/3131/",
+                category="sheltered",
+            )
+        assert raw.species == "猫"
+
+    def test_size_inferred_from_weight_cell_large(self):
+        """「体重: 29Kg」セルから size="大" 推定 (15kg 以上)"""
+        html = """
+        <html><body><table><tbody>
+          <tr><td>分類</td><td>犬(譲渡)</td></tr>
+          <tr><td>種類</td><td>ラブラドルレトリバー</td></tr>
+          <tr><td>性別</td><td>メス</td></tr>
+          <tr><td>収容日</td><td>R8.5.1</td></tr>
+          <tr><td>収容場所</td><td>横須賀</td></tr>
+          <tr><td>体重</td><td>29Kg</td></tr>
+        </tbody></table></body></html>
+        """
+        adapter = YokosukaDoubutuAdapter(_site_dog_adoption())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.yokosuka-doubutu.com/adopted-animals/26-16/",
+                category="adoption",
+            )
+        assert raw.size == "大", f"体重29Kg → size=大: got {raw.size!r}"
+
+    def test_size_inferred_from_weight_cell_medium(self):
+        """「体重: 9.6Kg」セルから size="中" 推定 (5kg 以上 15kg 未満)"""
+        html = """
+        <html><body><table><tbody>
+          <tr><td>分類</td><td>犬(譲渡)</td></tr>
+          <tr><td>種類</td><td>フレンチブルドッグ</td></tr>
+          <tr><td>性別</td><td>オス</td></tr>
+          <tr><td>収容日</td><td>R8.5.1</td></tr>
+          <tr><td>収容場所</td><td>横須賀</td></tr>
+          <tr><td>体重</td><td>9.6Kg</td></tr>
+        </tbody></table></body></html>
+        """
+        adapter = YokosukaDoubutuAdapter(_site_dog_adoption())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.yokosuka-doubutu.com/adopted-animals/3162/",
+                category="adoption",
+            )
+        assert raw.size == "中"
+
+    def test_size_inferred_from_weight_cell_small(self):
+        """「体重: 3kg」セルから size="小" 推定 (5kg 未満)"""
+        html = """
+        <html><body><table><tbody>
+          <tr><td>分類</td><td>猫(譲渡)</td></tr>
+          <tr><td>種類</td><td>MIX</td></tr>
+          <tr><td>性別</td><td>オス</td></tr>
+          <tr><td>収容場所</td><td>横須賀</td></tr>
+          <tr><td>体重</td><td>3kg</td></tr>
+        </tbody></table></body></html>
+        """
+        adapter = YokosukaDoubutuAdapter(_site_cat_shelter())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.yokosuka-doubutu.com/adopted-animals/25-79/",
+                category="adoption",
+            )
+        assert raw.size == "小"
+
+    def test_weight_not_leaked_to_raw_data(self):
+        """`weight` は内部一時フィールドであり RawAnimalData に直接漏れない
+
+        size が「大きさ」セル/体重推定で埋まる前提で、weight 自体は
+        RawAnimalData の属性として露出しない。
+        """
+        html = """
+        <html><body><table><tbody>
+          <tr><td>分類</td><td>犬(譲渡)</td></tr>
+          <tr><td>種類</td><td>ラブラドル</td></tr>
+          <tr><td>性別</td><td>メス</td></tr>
+          <tr><td>収容場所</td><td>横須賀</td></tr>
+          <tr><td>体重</td><td>29Kg</td></tr>
+        </tbody></table></body></html>
+        """
+        adapter = YokosukaDoubutuAdapter(_site_dog_adoption())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.yokosuka-doubutu.com/adopted-animals/26-16/",
+                category="adoption",
+            )
+        assert not hasattr(raw, "weight")
+        assert raw.size == "大"
+
+    def test_size_field_preferred_over_weight(self):
+        """「大きさ」セルがある場合は体重推定よりも優先する"""
+        html = """
+        <html><body><table><tbody>
+          <tr><td>分類</td><td>犬(譲渡)</td></tr>
+          <tr><td>種類</td><td>柴犬</td></tr>
+          <tr><td>性別</td><td>メス</td></tr>
+          <tr><td>収容場所</td><td>横須賀</td></tr>
+          <tr><td>大きさ</td><td>中型</td></tr>
+          <tr><td>体重</td><td>30Kg</td></tr>
+        </tbody></table></body></html>
+        """
+        adapter = YokosukaDoubutuAdapter(_site_dog_adoption())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.yokosuka-doubutu.com/adopted-animals/x/",
+                category="adoption",
+            )
+        assert raw.size == "中型"
+
+    @pytest.mark.parametrize(
+        "weight_text,expected",
+        [
+            ("4.9kg", "小"),
+            ("5kg", "中"),
+            ("14.9Kg", "中"),
+            ("15kg", "大"),
+            ("29Kg", "大"),
+            ("不明", ""),
+            ("", ""),
+        ],
+    )
+    def test_weight_to_size_boundaries(self, weight_text, expected):
+        """境界値 (5kg / 15kg) を含む体重→size 変換の検証"""
+        assert YokosukaDoubutuAdapter._weight_to_size(weight_text) == expected
