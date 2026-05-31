@@ -305,6 +305,127 @@ class TestCityMachidaAdapterExtractFields:
         assert raw.sex == "メス"
 
 
+class TestCityMachidaAdapterSizeInference:
+    """町田市 CMS は「大きさ」欄を持たないが、特徴フィールドに体重・体格表現が
+    自由記述で含まれることが多い。これを「小/中/大」語彙に推定して size を補完する。
+
+    2026-05 観測 (snapshots/latest.json):
+    - hogo.html + search_{cat,dog}.html の 59件全件で size=null
+    - 「特徴」フィールド 57件中、約 9件で「N キロ/N キログラム」明記
+    - さらに 9 件で「小柄」「大きめ」など体格語が含まれる
+    - 合計で約 30% を構造的に補完可能
+    """
+
+    def _extract_one(self, animals_html: str, anchor: str = "現在のペットの保護情報"):
+        html = _build_html(anchor, animals_html)
+        adapter = CityMachidaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            return adapter.extract_animal_details(urls[0][0], category="sheltered")
+
+    def test_size_from_explicit_weight_label(self):
+        """「体重：4kg」のような明示ラベルがあれば直接 size に変換する"""
+        animals_html = """
+        <div class="h3bg"><h3>猫（おす）</h3></div>
+        <div class="img-area-r">
+          <ul>
+            <li>種類：雑種</li>
+            <li>性別：おす</li>
+            <li>体重：4kg</li>
+            <li>保護場所：町田市</li>
+          </ul>
+        </div>
+        """
+        raw = self._extract_one(animals_html)
+        assert raw.size == "小"
+
+    @pytest.mark.parametrize(
+        ("feature_text", "expected_size"),
+        [
+            # 体重 → 小/中/大 (kumamoto/oita と同じ 5kg / 15kg 境界)
+            ("長毛、人懐こい、体重4キロほど", "小"),
+            ("尻尾が短い、二重あご、体重約7キロ", "中"),
+            ("7キロ越えの骨格しっかり目、老犬", "中"),
+            ("体重3キログラム程度、水色の洋服を着ている", "小"),
+            ("大きめで体重5キロくらい　臆病", "中"),
+            ("長毛、大きく見えるが体重は軽い（3～4キログラム）", "小"),
+            # 体格語 → 小/大 (中は曖昧なため推定しない)
+            ("首の周りから胸まで白。小柄で細身、とても臆病。立ち耳。", "小"),
+            ("体格は小柄、臆病な性格", "小"),
+            ("小柄", "小"),
+            ("体型は小柄、基本おとなしくおっとり", "小"),
+            # 体重と体格語が両方ある場合は体重を優先
+            ("大きめで体重5キロくらい", "中"),
+        ],
+    )
+    def test_size_from_feature_text(self, feature_text: str, expected_size: str):
+        """「特徴」フィールドから体重数値・体格語で size を推定する"""
+        animals_html = f"""
+        <div class="h3bg"><h3>猫（おす）</h3></div>
+        <div class="img-area-r">
+          <ul>
+            <li>種類：雑種</li>
+            <li>性別：おす</li>
+            <li>特徴：{feature_text}</li>
+            <li>保護場所：町田市</li>
+          </ul>
+        </div>
+        """
+        raw = self._extract_one(animals_html)
+        assert raw.size == expected_size, (
+            f"feature={feature_text!r} → size={raw.size!r} (expected {expected_size!r})"
+        )
+
+    def test_size_empty_when_no_signal(self):
+        """体重・体格語が無い特徴文では size は空のまま維持する (誤推定を避ける)"""
+        animals_html = """
+        <div class="h3bg"><h3>猫（おす）</h3></div>
+        <div class="img-area-r">
+          <ul>
+            <li>種類：雑種</li>
+            <li>性別：おす</li>
+            <li>特徴：右耳桜耳、左耳が切れている</li>
+            <li>保護場所：町田市</li>
+          </ul>
+        </div>
+        """
+        raw = self._extract_one(animals_html)
+        assert raw.size == ""
+
+    def test_size_label_preferred_over_feature_weight(self):
+        """「大きさ」「体格」明示欄がある場合はそちらを優先する (推定にフォールバックしない)"""
+        animals_html = """
+        <div class="h3bg"><h3>犬（おす）</h3></div>
+        <div class="img-area-r">
+          <ul>
+            <li>種類：柴犬</li>
+            <li>大きさ：中型</li>
+            <li>特徴：体重30キログラム</li>
+            <li>保護場所：町田市</li>
+          </ul>
+        </div>
+        """
+        raw = self._extract_one(animals_html)
+        # 明示「中型」ラベルは raw.size に保持され、特徴文の 30kg→大 では上書きされない
+        assert "中型" in raw.size or raw.size == "中"
+
+    def test_size_from_age_kogata_pattern(self):
+        """「子猫」「子犬」表記も小サイズとして拾う"""
+        animals_html = """
+        <div class="h3bg"><h3>猫（めす）</h3></div>
+        <div class="img-area-r">
+          <ul>
+            <li>種類：雑種</li>
+            <li>性別：めす</li>
+            <li>特徴：生後4か月の子猫、あまり慣れていない</li>
+            <li>保護場所：町田市</li>
+          </ul>
+        </div>
+        """
+        raw = self._extract_one(animals_html)
+        assert raw.size == "小"
+
+
 class TestCityMachidaAdapterRegistry:
     def test_all_six_sites_registered(self):
         """6 サイト全名称が同じ adapter にマップされている"""
