@@ -35,6 +35,8 @@ from __future__ import annotations
 import re
 from typing import ClassVar
 
+from bs4 import Tag
+
 from ....domain.models import RawAnimalData
 from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
@@ -60,12 +62,38 @@ _LABEL_FIELD_MAP: dict[str, str] = {
     "保護場所": "location",
     "種類/体格": "species_size",  # "雑／中" のような複合値、後でパース
     "毛の色/長さ": "color",  # "茶白／中" の前半を毛色として採用
+    "毛の色/毛の長さ": "color",  # 中通り猫等で見られる表記揺れ
     "性別": "sex",
     "推定年月齢": "age",
     "装着品": "equipment",  # 直接マップ先は無いが取り出しておく
+    "首輪": "equipment",  # 中通り猫等で見られる表記揺れ
     "その他の特徴等": "note",
     "その他特徴等": "note",
 }
+
+
+# 空プレースホルダー判定に使う「主要フィールド」のラベル正規化キー。
+# サイト側が雛形だけ並べて実データがまだ入っていない table を除外する。
+# 実例 (2026-06 確認):
+# - maigo-dog-miharu.html の row=0/row=2 (管理番号 n08-1 / s--1 等)
+# - maigo-cat-miharu.html の row=0/row=1 (保護場所が "地内" のみ等)
+# - maigo-cat-soso.html の table 0、maigo-dog-aizu.html の唯一の table
+#   (全 9〜10 個の table が完全に空のテンプレ)
+# これらをそのまま動物データとして取り込むと、location/sex/age/color/size が
+# 全件 None の偽レコードが大量発生する (snapshot で 13 件中 9〜10 件)。
+_REQUIRED_NONEMPTY_LABELS: tuple[str, ...] = (
+    "保護場所",
+    "性別",
+    "種類/体格",
+    "毛の色/長さ",
+    "毛の色/毛の長さ",
+)
+# 主要ラベルのうち最低この数の実値が無いとプレースホルダー扱い。
+# 実データの table はだいたい 4〜5 個全部入る一方、プレースホルダーは
+# 0〜1 個しか実値が無い (= "地内" だけ残った雛形等) ため 2 が安全な閾値。
+_MIN_NONEMPTY_FIELDS: int = 2
+# 値セルがこの集合に含まれる場合 (区切り文字/全角空白のみ等の雛形) は空扱い
+_PLACEHOLDER_VALUE_RE = re.compile(r"^[\s 　/／\-ー－]*$")
 
 
 _SITE_PHONE_MAP: dict[str, str] = {
@@ -99,6 +127,56 @@ class PrefFukushimaAdapter(SinglePageTableAdapter):
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
 
     # ─────────────────── オーバーライド ───────────────────
+
+    def _load_rows(self) -> list[Tag]:
+        """基底の `_load_rows` を呼び、空プレースホルダー table を除外する
+
+        実サイトの 6 ページのうち多くは「テンプレートだけ並んでおり値が
+        全部空」の table を残しており、これを無条件に取り込むと
+        sex/age/color/size/location が全て None の偽レコードが大量に
+        生成される (snapshot で 13 件中 10 件以上)。
+        fetch_animal_list の段階で空 table を返さなくなり、
+        `extract_animal_details` は実データ table のみを相手にする。
+        """
+        rows = super()._load_rows()
+        filtered = [t for t in rows if not self._is_empty_placeholder_table(t)]
+        # キャッシュも上書きしておく (二重フィルタを避ける)
+        self._rows_cache = filtered
+        return filtered
+
+    @classmethod
+    def _is_empty_placeholder_table(cls, table: Tag) -> bool:
+        """値が実質的に空のテンプレート table か判定する
+
+        判定基準:
+        - 2 列構成 (`<td>` * 2) の `<tr>` が 1 行も無ければ空とみなす。
+        - 主要ラベル ("保護場所" / "性別" / "種類/体格" / "毛の色/長さ" 等)
+          の値セルのうち、実値 (区切り文字/空白のみではない値) が
+          `_MIN_NONEMPTY_FIELDS` 個未満なら空プレースホルダーとみなす。
+        """
+        label_to_value: dict[str, str] = {}
+        has_two_col_row = False
+        for tr in table.find_all("tr"):
+            tds = tr.find_all("td")
+            if len(tds) < 2:
+                continue
+            has_two_col_row = True
+            label_raw = tds[0].get_text(separator="", strip=True)
+            value = tds[1].get_text(separator=" ", strip=True)
+            key = _normalize_label(label_raw)
+            label_to_value[key] = value
+
+        if not has_two_col_row:
+            # 値セルが一つも無い (相双猫 table 1-4 等) → 空とみなす
+            return True
+
+        nonempty_count = 0
+        for label in _REQUIRED_NONEMPTY_LABELS:
+            value = label_to_value.get(label, "")
+            if value and not _PLACEHOLDER_VALUE_RE.match(value):
+                nonempty_count += 1
+
+        return nonempty_count < _MIN_NONEMPTY_FIELDS
 
     def extract_animal_details(self, virtual_url: str, category: str = "lost") -> RawAnimalData:
         """1 個の `<table>` から RawAnimalData を構築する
