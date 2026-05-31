@@ -83,6 +83,11 @@ class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
     束ねて registry に登録する。
     """
 
+    # ページ末尾に載るセンター代表電話。aria-label に「電話」「連絡先」が
+    # 無く各カード個別の phone が取れないため、全動物カード共通で割り当てる。
+    # (個別 li に phone aria-label があれば優先採用)
+    _CENTER_TEL: ClassVar[str] = "088-636-6122"
+
     # ─────────────────── Playwright 設定 ───────────────────
     # iframe 内の `<ul class="news">` が描画されたら抽出可能。
     # baserCMS は jQuery で読み込むため networkidle 待機 + selector 待機の
@@ -163,6 +168,11 @@ class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
                 url=virtual_url,
             )
 
+        # phone はカードの aria-label から取れないため、ページ末尾に載っている
+        # センター代表電話を全動物カード共通で割り当てる (2026-05 観測)。
+        # 個別 li に phone aria-label があれば優先採用。
+        phone = self._normalize_phone(fields.get("phone", "")) or self._CENTER_TEL
+
         try:
             return RawAnimalData(
                 species=fields.get("species", ""),
@@ -172,7 +182,7 @@ class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
                 size=fields.get("size", ""),
                 shelter_date=fields.get("shelter_date", ""),
                 location=location,
-                phone=self._normalize_phone(fields.get("phone", "")),
+                phone=phone,
                 image_urls=self._extract_row_images(row, virtual_url),
                 source_url=virtual_url,
                 category=category,
