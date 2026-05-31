@@ -92,8 +92,8 @@ class TestKyotoAniLoveAdapter:
             shelter_date="３月１７日",
             category="lost",
         )
-        # phone はカード内に無いため空
-        assert raw.phone == ""
+        # phone はカード内に無いが、京都動物愛護センター代表電話を共通注入する
+        assert raw.phone == "075-671-0336"
         # source_url は仮想 URL
         assert raw.source_url == first_url
         # age (推定年齢) は "成犬"
