@@ -545,9 +545,7 @@ class TestAniwelOkinawaPhoneInjection:
         url = f"{_BASE}/animals/accommodate_view/24639"
         with patch.object(adapter, "_http_get", return_value=_REAL_DETAIL_ACCOMMODATE):
             raw = adapter.extract_animal_details(url, category="sheltered")
-        assert raw.phone == "098-945-3043", (
-            f"本所代表電話が共通注入されるべき: got {raw.phone!r}"
-        )
+        assert raw.phone == "098-945-3043", f"本所代表電話が共通注入されるべき: got {raw.phone!r}"
 
     def test_phone_injected_for_missing_category(self) -> None:
         """missing (行方不明) 系統でも同じ代表電話を注入する"""
