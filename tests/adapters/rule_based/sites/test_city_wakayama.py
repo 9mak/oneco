@@ -81,6 +81,12 @@ def _build_html_with_one_card_cat() -> str:
           </div>
         </div>
       </article>
+      <div>
+        <p>このページに関するお問い合わせ</p>
+        <p>健康局　健康推進部　生活保健課　動物愛護管理センター</p>
+        <p>〒640-8422和歌山市松江東3丁目2番63号</p>
+        <p>電話：073-488-2032　ファクス：073-488-2033</p>
+      </div>
     </body></html>
     """
 
@@ -198,6 +204,47 @@ class TestCityWakayamaAdapter:
         assert raw.image_urls[0].endswith("cat-1.png")
         assert raw.source_url == first_url
         assert raw.category == "adoption"
+
+    def test_phone_extracted_from_page_footer(self):
+        """ページ末尾の「電話：073-488-2032」をページ共通の phone として取得する
+
+        2026-05 観測: 和歌山市 CMS は動物カード内に個別電話番号を持たず、
+        ページ末尾のお問い合わせブロック内に施設の電話番号が表示される。
+        25 件全件でこの phone を共通利用する。
+        """
+        html = _build_html_with_one_card_cat()
+        adapter = CityWakayamaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="adoption")
+        assert raw.phone == "073-488-2032", (
+            f"ページ末尾の電話番号が phone に入るべき: got {raw.phone!r}"
+        )
+
+    def test_phone_empty_when_no_footer(self):
+        """お問い合わせブロックが無い場合は空文字を維持 (フェイルセーフ)"""
+        html_no_footer = """
+        <html><body>
+          <article id="content">
+            <h3>飼い主さんを募集中の犬</h3>
+            <div class="img3lows">
+              <div class="box">
+                <div class="imglows">
+                  <p class="imagecenter">
+                    <img src="/_res/projects/default_project/_page_/001/002/096/dog-X.png" alt="">
+                  </p>
+                  <p>仮名：いぬX<br>性別：オス（手術済）<br>種類：雑種</p>
+                </div>
+              </div>
+            </div>
+          </article>
+        </body></html>
+        """
+        adapter = CityWakayamaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html_no_footer):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="adoption")
+        assert raw.phone == ""
 
     def test_species_inferred_from_section_heading(self):
         """セクション見出しに従って猫 / 犬を判定する"""
