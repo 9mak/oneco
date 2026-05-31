@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import re
 from typing import Any
+from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup, NavigableString, Tag
 
@@ -62,10 +63,15 @@ class NaganoHelloAnimalAdapter(RuleBasedAdapter):
     1動物として抽出。各ブロックの h3 が動物名、後続テキストが属性。
     """
 
+    # 全動物カード共通の連絡先電話番号 (2026-06 観測)。
+    # ページ末尾に「電話番号：0267-24-5071」とのみ記載され、動物単位の
+    # 個別電話番号は無いため、長野県動物愛護センター代表電話を共通注入する。
+    _CENTER_TEL = "0267-24-5071"
+
     def __init__(self, site_config: Any) -> None:
         super().__init__(site_config)
         self._html_cache: str | None = None
-        self._blocks_cache: list[dict[str, str]] | None = None
+        self._blocks_cache: list[dict[str, Any]] | None = None
 
     # ─────────────────── オーバーライド ───────────────────
 
@@ -93,18 +99,24 @@ class NaganoHelloAnimalAdapter(RuleBasedAdapter):
         # ことが多い: 「ミックス」「ポメラニアン」など)
         species = self._infer_species_from_site_name(self.site_config.name) or "犬"
 
+        # age は「2021年5月頃生まれ」のような生年月表記。`_normalize_age` の
+        # `_parse_birth_date` は YYYY年M月D日 を要求するため、日付を補完して
+        # 渡すと月数換算できる。
+        age_raw = block.get("age", "")
+        age = self._normalize_birth_month_for_age(age_raw)
+
         try:
             return RawAnimalData(
                 species=species,
                 sex=block.get("sex", ""),
-                age=block.get("age", ""),
+                age=age,
                 color=block.get("color", ""),
                 size=block.get("size", ""),
                 shelter_date="",  # 譲渡待ちページは収容日相当の情報が無い
                 # 大分市と同じく施設名を location に入れる (location 不明回避)
                 location="長野県動物愛護センター（ハローアニマル）",
-                phone="",
-                image_urls=[],
+                phone=self._CENTER_TEL,
+                image_urls=block.get("image_urls", []) or [],
                 source_url=virtual_url,
                 category=category,
             )
@@ -117,7 +129,7 @@ class NaganoHelloAnimalAdapter(RuleBasedAdapter):
 
     # ─────────────────── ブロック抽出 ───────────────────
 
-    def _load_blocks(self) -> list[dict[str, str]]:
+    def _load_blocks(self) -> list[dict[str, Any]]:
         """list_url HTML から「飼い主募集中」配下の動物ブロックを抽出
 
         構造のバリエーション:
@@ -128,6 +140,9 @@ class NaganoHelloAnimalAdapter(RuleBasedAdapter):
         「飼い主募集中」h2 → 次の h2 (= 別セクション) までの DOM 範囲内で、
         全ての h3 を 1 動物の起点とし、次の h3 (or 範囲終端) までのテキストを
         1 動物のテキストとして field 抽出する。
+
+        各 block には属性辞書に加えて、h3 ～ 次 h3 までの DOM 範囲に含まれる
+        `<img src=...>` を絶対 URL 化した `image_urls` リストを格納する。
         """
         if self._blocks_cache is not None:
             return self._blocks_cache
@@ -144,7 +159,7 @@ class NaganoHelloAnimalAdapter(RuleBasedAdapter):
                 start_h2 = h2
                 break
 
-        blocks: list[dict[str, str]] = []
+        blocks: list[dict[str, Any]] = []
         if start_h2 is None:
             self._blocks_cache = blocks
             return blocks
@@ -171,16 +186,58 @@ class NaganoHelloAnimalAdapter(RuleBasedAdapter):
             if isinstance(elem, Tag) and elem.name == "h3":
                 h3_anchors.append(elem)
 
-        # 各 h3 → 次の h3 (or boundary) までのテキストを 1 動物として抽出
+        # 各 h3 → 次の h3 (or boundary) までのテキスト/画像を 1 動物として抽出
         for i, h3 in enumerate(h3_anchors):
             next_anchor: Tag | None = h3_anchors[i + 1] if i + 1 < len(h3_anchors) else boundary
             block_text = self._collect_text_between(h3, next_anchor)
-            block = self._extract_block_fields_from_text(block_text)
-            if block:
-                blocks.append(block)
+            block: dict[str, Any] = dict(self._extract_block_fields_from_text(block_text))
+            if not block:
+                continue
+            block["image_urls"] = self._collect_images_between(h3, next_anchor)
+            blocks.append(block)
 
         self._blocks_cache = blocks
         return blocks
+
+    def _collect_images_between(self, start: Tag, end: Tag | None) -> list[str]:
+        """start (含む) から end (除く) までの `<img src=...>` を絶対 URL で集める
+
+        ハローアニマルの動物ブロックには各動物の写真が <img> で配置される。
+        DOM 順にスキャンし、相対 URL は list_url を base にして絶対化する。
+        重複は除外する (順序は保持)。
+        """
+        urls: list[str] = []
+        seen: set[str] = set()
+        base = self.site_config.list_url
+        elem: Tag | NavigableString | None = start
+        while elem is not None and elem is not end:
+            if isinstance(elem, Tag) and elem.name == "img":
+                src = elem.get("src")
+                if isinstance(src, str) and src.strip():
+                    absolute = urljoin(base, src.strip())
+                    if absolute not in seen:
+                        seen.add(absolute)
+                        urls.append(absolute)
+            elem = elem.next_element if hasattr(elem, "next_element") else None
+        return urls
+
+    @staticmethod
+    def _normalize_birth_month_for_age(age_raw: str) -> str:
+        """「2021年5月頃生まれ」を normalizer が解釈可能な形に整形する
+
+        `DataNormalizer._parse_birth_date` の「YYYY年M月D日」パターンに合わせて
+        日付 (1日) を補完する。元の文字列に既に「日」が含まれている場合は
+        そのまま返す (フォーマット重複を避ける)。
+        """
+        if not age_raw:
+            return ""
+        # 既に YYYY年M月D日 が含まれているなら追加処理は不要
+        if re.search(r"\d{4}年\d{1,2}月\d{1,2}日", age_raw):
+            return age_raw
+        m = re.search(r"(\d{4})年(\d{1,2})月", age_raw)
+        if not m:
+            return age_raw
+        return f"{m.group(1)}年{m.group(2)}月1日"
 
     @staticmethod
     def _collect_text_between(start: Tag, end: Tag | None) -> str:
