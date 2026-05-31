@@ -123,7 +123,10 @@ class TestAniwelAdapter:
         assert "約4歳" in raw.age
         assert raw.color == ""
         assert raw.size == ""
-        assert raw.location == ""
+        # 動物カードに施設情報が無いため運営団体の所在地を共通で割り当てる
+        assert raw.location == "アニウェル北海道（北見市）"
+        # phone は運営団体の代表電話を共通で割り当てる (2026-05 観測)
+        assert raw.phone == "0157-57-3612"
         assert raw.shelter_date == ""
         assert raw.source_url == first_url
         assert raw.category == "adoption"
