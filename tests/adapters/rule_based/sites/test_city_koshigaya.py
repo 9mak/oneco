@@ -180,6 +180,8 @@ class TestCityKoshigayaAdapter:
         assert "2026" in first.shelter_date
         assert first.source_url == urls[0][0]
         assert first.category == "sheltered"
+        # 動物管理センター代表電話を全件共通で割り当てる (2026-06 観測)
+        assert first.phone == "048-969-8511"
 
         # 2 件目: 雑種 メス 白黒 小, 場所 東町, 収容日 5/10
         second = raws[1]
@@ -187,6 +189,40 @@ class TestCityKoshigayaAdapter:
         assert "白黒" in second.color
         assert second.size == "小"
         assert "東町" in second.location
+        assert second.phone == "048-969-8511"
+
+    def test_phone_uses_center_default_for_cat_site(self):
+        """保護猫サイトでも動物管理センター代表電話が共通注入される
+
+        越谷市の動物データテーブルは犬・猫共通テンプレートで電話番号列を
+        持たない。問い合わせ先はページ末尾の「電話：048-969-8511」固定。
+        snapshot で全 5 件 phone=None だったため、サイト共通の固定値として
+        全行に注入する。
+        """
+        html = """
+        <html><body>
+        <div id="tmp_honbun">
+        <table>
+          <tbody>
+            <tr><td>収容場所</td><td>収容日</td><td>収容期限</td></tr>
+            <tr><td>越谷市中島３丁目</td><td>令和8年5月29日</td><td>令和8年6月8日</td></tr>
+          </tbody>
+        </table>
+        <table>
+          <tbody>
+            <tr><td>種類</td><td>性別</td><td>年齢</td><td>毛色</td><td>体格</td><td>備考</td></tr>
+            <tr><td>雑種</td><td>めす</td><td>推定6週齢</td><td>サビ</td><td>小型</td><td>短毛</td></tr>
+          </tbody>
+        </table>
+        </div></body></html>
+        """
+        adapter = CityKoshigayaAdapter(_site(name="越谷市（保護猫）"))
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            assert len(urls) == 1
+            raw = adapter.extract_animal_details(urls[0][0], category=urls[0][1])
+
+        assert raw.phone == "048-969-8511"
 
     def test_species_inference_from_site_name(self, fixture_html):
         """サイト名で species が決まる (保護犬→犬 / 保護猫→猫 / 犬猫→その他)"""
