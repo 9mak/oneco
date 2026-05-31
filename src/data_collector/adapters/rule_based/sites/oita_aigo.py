@@ -59,9 +59,21 @@ class OitaAigoAdapter(SinglePageTableAdapter):
         "保護地域": "location",
         "推定年齢": "age",
         "性別": "sex",
-        "体重": "size",
+        "体重": "_weight",  # 後段で kg → size 語彙 (小/中/大) に変換
         "毛色": "color",
     }
+
+    # 体重 → size 推定の境界 (kg)。
+    # - ~5kg: 小型 (例: 子犬, 猫の多くがここに入る)
+    # - 5~15kg: 中型 (例: 柴犬, 雑種の中型犬)
+    # - 15kg~: 大型 (例: ラブラドール, シェパード)
+    _SIZE_BOUNDARY_SMALL_KG: ClassVar[float] = 5.0
+    _SIZE_BOUNDARY_LARGE_KG: ClassVar[float] = 15.0
+
+    # ページ末尾 (またはサイト共通) で表示される愛護センター本部の代表電話。
+    # 個別の保健所電話番号も並ぶが、動物カードと特定の番号が紐付かないため
+    # 本部代表を全動物カード共通の phone として割り当てる。
+    _CENTER_TEL: ClassVar[str] = "097-588-1122"
 
     # ─────────────────── オーバーライド ───────────────────
 
@@ -99,16 +111,19 @@ class OitaAigoAdapter(SinglePageTableAdapter):
         # サイト名 (括弧内を除く) をシェルター名として補完する。
         location = fields.get("location", "") or self._shelter_location()
 
+        # size: 「体重: 11.64kg」を normalizer が解釈できる語彙 (小/中/大) に変換
+        size = self._weight_to_size(fields.get("_weight", ""))
+
         try:
             return RawAnimalData(
                 species=species,
                 sex=fields.get("sex", ""),
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),
-                size=fields.get("size", ""),
+                size=size,
                 shelter_date=shelter_date,
                 location=location,
-                phone="",
+                phone=self._CENTER_TEL,
                 image_urls=self._extract_row_images(card, virtual_url),
                 source_url=virtual_url,
                 category=category,
@@ -138,6 +153,30 @@ class OitaAigoAdapter(SinglePageTableAdapter):
             if field and field not in result:
                 result[field] = value
         return result
+
+    @classmethod
+    def _weight_to_size(cls, weight_text: str) -> str:
+        """「11.64kg」のような体重テキストを normalizer 語彙 (小/中/大) に変換
+
+        - 5kg 未満: 小
+        - 5kg 以上 15kg 未満: 中
+        - 15kg 以上: 大
+        - 数値が拾えない場合 (空文字, 「不明」等): 空文字
+        """
+        if not weight_text:
+            return ""
+        m = re.search(r"(\d+(?:\.\d+)?)", weight_text)
+        if not m:
+            return ""
+        try:
+            kg = float(m.group(1))
+        except ValueError:
+            return ""
+        if kg < cls._SIZE_BOUNDARY_SMALL_KG:
+            return "小"
+        if kg < cls._SIZE_BOUNDARY_LARGE_KG:
+            return "中"
+        return "大"
 
     def _shelter_location(self) -> str:
         """サイト名から括弧書き (例: 「（譲渡犬）」) を除いたシェルター名を返す。
