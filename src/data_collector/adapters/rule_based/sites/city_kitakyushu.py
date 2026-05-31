@@ -166,9 +166,7 @@ class CityKitakyushuAdapter(SinglePageTableAdapter):
         cells = row.find_all(["td", "th"])
 
         column_map = (
-            self._ADOPTION_COLUMN_FIELDS
-            if self._is_adoption_table_cache
-            else self.COLUMN_FIELDS
+            self._ADOPTION_COLUMN_FIELDS if self._is_adoption_table_cache else self.COLUMN_FIELDS
         )
         fields: dict[str, str] = {}
         for col_idx, field_name in column_map.items():
