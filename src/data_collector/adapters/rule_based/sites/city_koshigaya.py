@@ -78,6 +78,11 @@ class CityKoshigayaAdapter(SinglePageTableAdapter):
     LOCATION_COLUMN: ClassVar[int | None] = None
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
 
+    # 動物管理センターの代表電話 (2026-06 観測)。動物データテーブルには
+    # 行ごとの電話番号が無く、ページ末尾の問い合わせ先 1 件のみ。
+    # 保護犬 / 保護猫サイト共通でこの値を全行に注入する。
+    _CENTER_TEL: ClassVar[str] = "048-969-8511"
+
     # ─────────────────── オーバーライド ───────────────────
 
     def _load_rows(self) -> list[Tag]:
@@ -222,7 +227,7 @@ class CityKoshigayaAdapter(SinglePageTableAdapter):
                 size=size,
                 shelter_date=shelter_date,
                 location=location,
-                phone="",
+                phone=self._CENTER_TEL,
                 image_urls=self._extract_row_images(tr, virtual_url),
                 source_url=virtual_url,
                 category=category,
