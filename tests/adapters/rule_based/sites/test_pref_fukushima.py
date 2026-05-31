@@ -175,3 +175,52 @@ class TestPrefFukushimaAdapter:
         with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             result = adapter.fetch_animal_list()
         assert result == []
+
+    def test_phone_injected_per_branch(self, fixture_html):
+        """支所別の代表電話番号が phone に注入される
+
+        サイト名で「中通り(本所)/会津/相双」を識別し、それぞれの支所代表番号を
+        各 RawAnimalData に注入する。マッピングに無い名称では phone="" のまま。
+        """
+        html = _load_fukushima_html(fixture_html)
+        expected_phone_by_name = {
+            "福島県（中通り 迷子犬）": "024-953-6400",
+            "福島県（中通り 迷子猫）": "024-953-6400",
+            "福島県（会津 迷子犬）": "0242-29-5517",
+            "福島県（会津 迷子猫）": "0242-29-5517",
+            "福島県（相双 迷子犬）": "0244-26-1351",
+            "福島県（相双 迷子猫）": "0244-26-1351",
+        }
+        for site_name, expected_phone in expected_phone_by_name.items():
+            site = SiteConfig(
+                name=site_name,
+                prefecture="福島県",
+                prefecture_code="07",
+                list_url="https://www.pref.fukushima.lg.jp/sec/21620a/dummy.html",
+                category="lost",
+                single_page=True,
+            )
+            adapter = PrefFukushimaAdapter(site)
+            with patch.object(adapter, "_http_get", return_value=html):
+                urls = adapter.fetch_animal_list()
+                raw = adapter.extract_animal_details(urls[0][0], category="lost")
+            assert raw.phone == expected_phone, (
+                f"{site_name}: expected {expected_phone!r}, got {raw.phone!r}"
+            )
+
+    def test_phone_empty_for_unknown_site_name(self, fixture_html):
+        """サイト名マッピングに無い場合は phone='' で誤った番号を出さない"""
+        html = _load_fukushima_html(fixture_html)
+        unknown_site = SiteConfig(
+            name="福島県（架空の支所 迷子犬）",
+            prefecture="福島県",
+            prefecture_code="07",
+            list_url="https://www.pref.fukushima.lg.jp/sec/21620a/dummy.html",
+            category="lost",
+            single_page=True,
+        )
+        adapter = PrefFukushimaAdapter(unknown_site)
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+        assert raw.phone == ""
