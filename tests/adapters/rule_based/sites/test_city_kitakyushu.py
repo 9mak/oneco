@@ -301,3 +301,128 @@ class TestCityKitakyushuAdapter:
                     f"{adapter.site_config.list_url}#row=99",
                     category="sheltered",
                 )
+
+
+def _build_adoption_html_with_one_row() -> str:
+    """譲渡犬テーブル (caption=「譲渡対象の成犬の一覧」) を含む HTML
+
+    実サイト (924_11834.html) の構造を再現:
+    列: 番号(愛称) / 種類 / 性別 / 毛色 / 推定生年 / フィラリア検査 / 備考 / 写真
+    写真列は <a href="/files/xxx.jpg">写真N</a> 形式 (img タグではなくリンク)。
+    """
+    return """
+    <html><body>
+      <table>
+        <caption>譲渡対象の成犬の一覧</caption>
+        <thead>
+          <tr>
+            <th>番号<br>（愛称）</th>
+            <th>種類</th>
+            <th>性別</th>
+            <th>毛色</th>
+            <th>推定生年</th>
+            <th>フィラリア検査</th>
+            <th>備考</th>
+            <th>写真</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><p>A24135<br>（アポロ）</p></td>
+            <td>雑種</td>
+            <td>オス<br>（去勢済）</td>
+            <td>茶白</td>
+            <td>2017年</td>
+            <td>強陽性</td>
+            <td><p>受付中</p><p>人懐っこい性格です。</p></td>
+            <td>
+              <p><a href="/files/001133183.jpg">写真1</a></p>
+              <p><a href="/files/001133184.jpg">写真2</a></p>
+              <p><a href="/files/001149263.jpg">写真3</a></p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </body></html>
+    """
+
+
+class TestCityKitakyushuAdoptionTable:
+    """譲渡犬テーブル (列構造が保護犬と異なる) の抽出を検証"""
+
+    @staticmethod
+    def _adoption_site() -> SiteConfig:
+        return SiteConfig(
+            name="北九州市（譲渡犬）",
+            prefecture="福岡県",
+            prefecture_code="40",
+            list_url="https://www.city.kitakyushu.lg.jp/contents/924_11834.html",
+            category="adoption",
+            single_page=True,
+        )
+
+    def test_age_extracted_from_birth_year_column(self):
+        """譲渡犬の「推定生年」列 (例: 2017年) を age として抽出する"""
+        html = _build_adoption_html_with_one_row()
+        adapter = CityKitakyushuAdapter(self._adoption_site())
+
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="adoption")
+
+        assert raw.age == "2017年"
+
+    def test_image_urls_extracted_from_photo_anchors(self):
+        """譲渡犬の「写真」列の <a href="*.jpg"> から画像 URL を抽出する"""
+        html = _build_adoption_html_with_one_row()
+        adapter = CityKitakyushuAdapter(self._adoption_site())
+
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="adoption")
+
+        assert raw.image_urls == [
+            "https://www.city.kitakyushu.lg.jp/files/001133183.jpg",
+            "https://www.city.kitakyushu.lg.jp/files/001133184.jpg",
+            "https://www.city.kitakyushu.lg.jp/files/001149263.jpg",
+        ]
+
+    def test_adoption_columns_correctly_mapped(self):
+        """譲渡犬テーブルでは保護犬と異なる列順を正しくマッピングする
+
+        保護犬列: shelter_date(0) / 期限(1) / 区(2) / 種類(3) / 毛色(4) / 性別(5) / 体格(6)
+        譲渡犬列: 番号(0) / 種類(1) / 性別(2) / 毛色(3) / 推定生年(4) / フィラリア(5) / 備考(6) / 写真(7)
+        """
+        html = _build_adoption_html_with_one_row()
+        adapter = CityKitakyushuAdapter(self._adoption_site())
+
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="adoption")
+
+        # 譲渡犬テーブルでは性別は col=2, 毛色は col=3
+        assert "オス" in raw.sex
+        assert raw.color == "茶白"
+        # 保護犬テーブルにある「区」「収容日」「体格」列は譲渡犬テーブルには無い
+        assert raw.size == ""
+        assert raw.shelter_date == ""
+        # サイト名から species=犬 と推定する既存挙動は維持
+        assert raw.species == "犬"
+        # phone は引き続き共通の代表電話
+        assert raw.phone == "093-581-1800"
+
+    def test_shelter_table_still_has_no_age_or_images(self):
+        """保護犬テーブル (構造的に age/image 無し) の挙動は変更しない
+
+        実サイトの保護犬ページには年齢列も画像も存在しないため、
+        age='' / image_urls=[] のままが正しい (回帰防止)。
+        """
+        html = _build_html_with_one_row()
+        adapter = CityKitakyushuAdapter(_site())
+
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+
+        assert raw.age == ""
+        assert raw.image_urls == []
