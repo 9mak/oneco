@@ -66,6 +66,11 @@ class KyotoAniLoveAdapter(SinglePageTableAdapter):
     # 受入日 / 保護日はカード内に存在するため空文字をデフォルトにしておく
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
 
+    # 京都動物愛護センター代表電話 (2026-06 観測)。
+    # ページヘッダの「TEL 075-671-0336」がカード横断で共通の連絡先となっており、
+    # カード単位の電話番号は HTML 上に無いため、全動物カードに共通注入する。
+    _CENTER_TEL: ClassVar[str] = "075-671-0336"
+
     # `<th>` ラベル → RawAnimalData フィールド名のマッピング。
     # 同義ラベル (品種/犬種/猫種、保護日/受入日 等) を網羅する。
     # 同一フィールドに複数候補がある場合は最初に見つかったものを採用する。
@@ -152,7 +157,7 @@ class KyotoAniLoveAdapter(SinglePageTableAdapter):
                 size=fields.get("size", ""),
                 shelter_date=shelter_date,
                 location=fields.get("location", ""),
-                phone="",
+                phone=self._CENTER_TEL,
                 image_urls=self._extract_row_images(image_source, virtual_url),
                 source_url=virtual_url,
                 category=category,
