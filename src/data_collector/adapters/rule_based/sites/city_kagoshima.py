@@ -84,6 +84,10 @@ class CityKagoshimaAdapter(SinglePageTableAdapter):
         "性別": "sex",
         "体格": "size",
         "推定年齢": "age",
+        # 鹿児島市の保護猫サイトは「毛色：灰茶」のように毛色を全件記載する
+        # (2026-06 観測)。犬サイトは現状「毛色」ラベルが無いが、将来追加
+        # された場合も自然に拾えるよう一律マッピングする。
+        "毛色": "color",
     }
 
     # 性別表記の正規化マップ (鹿児島市は「雄/雌」表記)。
@@ -178,7 +182,10 @@ class CityKagoshimaAdapter(SinglePageTableAdapter):
                 species=species,
                 sex=sex,
                 age=fields.get("age", ""),
-                color="",  # 鹿児島市の HTML には毛色項目が無い
+                # 保護猫サイトは「毛色」ラベルあり、保護犬サイトは現状無し。
+                # ラベル不在時は `_LABEL_TO_FIELD` 経由で fields に入らない
+                # ため、`get("color", "")` で空文字フォールバックする。
+                color=fields.get("color", ""),
                 size=fields.get("size", ""),
                 shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
                 location=fields.get("location", ""),
