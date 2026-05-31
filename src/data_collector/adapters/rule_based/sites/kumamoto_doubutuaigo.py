@@ -85,10 +85,17 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
         "age": FieldSpec(label="年齢"),
         "color": FieldSpec(label="毛色"),
         "size": FieldSpec(label="大きさ"),
+        # 「体重: 15kg」を後段で normalizer 語彙 (小/中/大) に変換するため、
+        # 一時フィールドとして取り出しておく。size が空のときの推定ソース。
+        "weight": FieldSpec(label="体重"),
         "shelter_date": FieldSpec(label=("保護した日", "収容日")),
         "location": FieldSpec(label=("捕獲場所", "保護場所", "所在地", "場所")),
         "phone": FieldSpec(label=("電話番号", "連絡先")),
     }
+
+    # 体重 → size 推定の境界 (kg)。oita_aigo._weight_to_size と同基準。
+    _SIZE_BOUNDARY_SMALL_KG: ClassVar[float] = 5.0
+    _SIZE_BOUNDARY_LARGE_KG: ClassVar[float] = 15.0
 
     IMAGE_SELECTOR: ClassVar[str] = "img"
 
@@ -152,13 +159,18 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
 
         image_urls = self._extract_images(soup, detail_url)
 
+        # size: 「大きさ」欄が無い熊本サイト用に「体重: 15kg」を
+        # normalizer 語彙 (小/中/大) に変換するフォールバック。
+        # 既に大きさ欄が取れている場合はそちらを優先する。
+        size = fields.get("size", "") or self._weight_to_size(fields.get("weight", ""))
+
         try:
             return RawAnimalData(
                 species=fields.get("species", ""),
                 sex=fields.get("sex", ""),
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),
-                size=fields.get("size", ""),
+                size=size,
                 shelter_date=fields.get("shelter_date", ""),
                 location=fields.get("location", ""),
                 phone=self._normalize_phone(fields.get("phone", "")),
@@ -168,6 +180,30 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
             )
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=detail_url) from e
+
+    @classmethod
+    def _weight_to_size(cls, weight_text: str) -> str:
+        """「15kg」「13kg前後」のような体重テキストを「小/中/大」に変換
+
+        - 5kg 未満: 小
+        - 5kg 以上 15kg 未満: 中
+        - 15kg 以上: 大
+        - 数値が拾えない場合 ("不明" 等): 空文字
+        """
+        if not weight_text:
+            return ""
+        m = re.search(r"(\d+(?:\.\d+)?)", weight_text)
+        if not m:
+            return ""
+        try:
+            kg = float(m.group(1))
+        except ValueError:
+            return ""
+        if kg < cls._SIZE_BOUNDARY_SMALL_KG:
+            return "小"
+        if kg < cls._SIZE_BOUNDARY_LARGE_KG:
+            return "中"
+        return "大"
 
     # ─────────────────── 抽出ヘルパー拡張 ───────────────────
 
