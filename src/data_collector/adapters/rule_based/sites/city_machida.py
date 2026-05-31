@@ -117,6 +117,7 @@ class CityMachidaAdapter(RuleBasedAdapter):
         super().__init__(site_config)
         self._html_cache: str | None = None
         self._h3_cache: list[Tag] | None = None
+        self._phone_cache: str | None = None
 
     # ─────────────────── 公開 API ───────────────────
 
@@ -163,6 +164,10 @@ class CityMachidaAdapter(RuleBasedAdapter):
         # 画像 URL は h3 直後の div.img-area-r 内の img から取得
         image_urls = self._extract_images_after_h3(h3, virtual_url)
 
+        # 電話番号はページ末尾の `<aside class="contact">` 内
+        # `<p class="contact__tel">電話：042-722-6727</p>` から取得 (ページ共通)
+        phone = self._extract_contact_phone()
+
         try:
             return RawAnimalData(
                 species=species,
@@ -172,7 +177,7 @@ class CityMachidaAdapter(RuleBasedAdapter):
                 size=fields.get("size", ""),
                 shelter_date=fields.get("shelter_date", ""),
                 location=fields.get("location", ""),
-                phone="",
+                phone=phone,
                 image_urls=image_urls,
                 source_url=virtual_url,
                 category=category,
@@ -300,6 +305,33 @@ class CityMachidaAdapter(RuleBasedAdapter):
                             urls.append(self._absolute_url(src, base=base_url))
                     break
         return self._filter_image_urls(urls, base_url)
+
+    def _extract_contact_phone(self) -> str:
+        """ページ末尾の `<aside class="contact">` 内 `<p class="contact__tel">` から
+        ページ共通の問い合わせ先電話番号を取得する
+
+        町田市 CMS は動物カード内に個別電話番号を持たず、ページ末尾の
+        担当課お問い合わせ aside に 1 つだけ電話番号が表示される。
+        全動物カードでこの電話番号を共通利用する (同 list_url 内の全件で同じ)。
+        """
+        if self._phone_cache is not None:
+            return self._phone_cache
+        if self._html_cache is None:
+            # _load_h3_list 経由で _html_cache が埋まる前提だが、フェイルセーフ
+            self._phone_cache = ""
+            return ""
+        soup = BeautifulSoup(self._html_cache, "html.parser")
+        # aside.contact > .contact__inner > .contact__content > p.contact__tel
+        tel_p = soup.select_one("aside.contact .contact__tel")
+        if tel_p is None:
+            self._phone_cache = ""
+            return ""
+        # 「電話：042-722-6727」のような表記から番号部分のみ抽出
+        text = tel_p.get_text(separator=" ", strip=True)
+        m = re.search(r"(\d{2,4}[-ー]\d{2,4}[-ー]\d{3,4})", text)
+        phone = m.group(1).replace("ー", "-") if m else ""
+        self._phone_cache = phone
+        return phone
 
     def _infer_species(self, text: str) -> str:
         """テキストから「犬」「猫」を判定する（猫を先にチェック）"""
