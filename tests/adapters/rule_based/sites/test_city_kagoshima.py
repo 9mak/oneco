@@ -127,6 +127,7 @@ class TestCityKagoshimaAdapter:
         """サイト名 "鹿児島市（保護猫）" のときは species が "猫" になる
 
         実フィクスチャは犬版なのでミニマルな猫サイト用 HTML を組み立てる。
+        猫サイトには「体格」ラベルが無いことを反映している (2026-06 観測)。
         """
         cat_html = """
         <html><body><div id="tmp_contents">
@@ -139,7 +140,7 @@ class TestCityKagoshimaAdapter:
           <p>保護場所：城山町</p>
           <p>種類：雑種</p>
           <p>性別：雌</p>
-          <p>体格：小</p>
+          <p>毛色：黒</p>
           <p>推定年齢：3歳</p>
         </div></body></html>
         """
@@ -161,6 +162,62 @@ class TestCityKagoshimaAdapter:
         assert raw.sex == "メス"
         assert "城山" in raw.location
         assert "令和8年5月10日" in raw.shelter_date
+        # 猫サイトは「毛色」ラベルが記載されているので color が取得される
+        assert raw.color == "黒"
+
+    def test_color_extracted_from_keiro_label(self):
+        """`<p>毛色：灰茶</p>` の「毛色」ラベルから color を抽出する
+
+        鹿児島市の保護猫サイトは全件で「毛色」ラベルが記載されているが、
+        旧 adapter は color を空文字でハードコードしていたため snapshot で
+        全件 color=None になっていた (2026-05 観測)。「毛色」ラベルを
+        `_LABEL_TO_FIELD` 経由で拾うように改修する。
+        """
+        cat_html = """
+        <html><body><div id="tmp_contents">
+          <h2>No.260008</h2>
+          <p><img src="/images/260008.jpg" alt="260008"/>保護日：令和8年4月30日（木曜日）</p>
+          <p>保護場所：東谷山一丁目</p>
+          <p>種類：雑種</p>
+          <p>性別：メス</p>
+          <p>毛色：灰茶</p>
+          <p>推定年齢：不明（成猫）</p>
+          <p>首輪色など：ピンク白ノミ取り</p>
+        </div></body></html>
+        """
+        cat_site = _site(
+            name="鹿児島市（保護猫）",
+            list_url=(
+                "https://www.city.kagoshima.lg.jp/kenkofukushi/hokenjo/"
+                "seiei-jueki/kurashi/dobutsu/kainushi/joho/neko.html"
+            ),
+        )
+        adapter = CityKagoshimaAdapter(cat_site)
+        with patch.object(adapter, "_http_get", return_value=cat_html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+
+        assert raw.color == "灰茶"
+
+    def test_color_empty_when_no_keiro_label(self):
+        """「毛色」ラベルが無い場合 (旧テンプレートの犬サイト等) は color が空文字"""
+        dog_html = """
+        <html><body><div id="tmp_contents">
+          <h2>No.260009</h2>
+          <p>保護日：令和8年4月30日（木曜日）</p>
+          <p>保護場所：光山二丁目</p>
+          <p>種類：雑種</p>
+          <p>性別：雄</p>
+          <p>体格：小</p>
+          <p>推定年齢：10歳</p>
+        </div></body></html>
+        """
+        adapter = CityKagoshimaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=dog_html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+
+        assert raw.color == ""
 
     def test_returns_empty_when_no_animal_h2(self):
         """No.XXX を含む h2 が無い (在庫 0 件) ときは空リストを返す
