@@ -68,6 +68,19 @@ _LABEL_FIELD_MAP: dict[str, str] = {
 }
 
 
+_SITE_PHONE_MAP: dict[str, str] = {
+    # 福島県動物愛護センター本所（中通り） 024-953-6400
+    "福島県（中通り 迷子犬）": "024-953-6400",
+    "福島県（中通り 迷子猫）": "024-953-6400",
+    # 福島県動物愛護センター会津支所 0242-29-5517
+    "福島県（会津 迷子犬）": "0242-29-5517",
+    "福島県（会津 迷子猫）": "0242-29-5517",
+    # 福島県動物愛護センター相双支所 0244-26-1351
+    "福島県（相双 迷子犬）": "0244-26-1351",
+    "福島県（相双 迷子猫）": "0244-26-1351",
+}
+
+
 class PrefFukushimaAdapter(SinglePageTableAdapter):
     """福島県動物愛護センター用 rule-based adapter
 
@@ -134,6 +147,11 @@ class PrefFukushimaAdapter(SinglePageTableAdapter):
 
         species = self._infer_species_from_site_name(self.site_config.name)
 
+        # 支所別の代表電話を注入する。サイト名が _SITE_PHONE_MAP に
+        # 無い場合は phone を空のままにし、誤った番号が出ることを防ぐ。
+        phone_raw = _SITE_PHONE_MAP.get(self.site_config.name, "")
+        phone = self._normalize_phone(phone_raw) if phone_raw else ""
+
         try:
             return RawAnimalData(
                 species=species,
@@ -143,7 +161,7 @@ class PrefFukushimaAdapter(SinglePageTableAdapter):
                 size=size,
                 shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
                 location=fields.get("location", ""),
-                phone="",
+                phone=phone,
                 image_urls=self._extract_row_images(table, virtual_url),
                 source_url=virtual_url,
                 category=category,
