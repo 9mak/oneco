@@ -224,3 +224,147 @@ class TestPrefFukushimaAdapter:
             urls = adapter.fetch_animal_list()
             raw = adapter.extract_animal_details(urls[0][0], category="lost")
         assert raw.phone == ""
+
+    def test_empty_placeholder_table_is_skipped(self, fixture_html):
+        """値が全て空のプレースホルダー table はスキップする
+
+        フィクスチャ table 2 は管理番号だけ "令和年月日（s-）" のような
+        雛形が残り、保護場所/種類/毛色/性別/年齢が全て空のテンプレート行。
+        実サイトでも `maigo-dog-miharu.html` の row=0/row=2 や
+        `maigo-cat-soso.html` の table 0 等で同型の空プレースホルダーが
+        多数並んでおり、これらをそのまま動物データとして取り込むと
+        location/sex/age/color/size が全件 None の偽レコードが生成される。
+        `fetch_animal_list` の段階で除外し、実データを持つ table のみ
+        返すことを保証する。
+        """
+        html = _load_fukushima_html(fixture_html)
+        adapter = PrefFukushimaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+
+        # 既存フィクスチャ: 実データ table 0/1 + 空プレースホルダー table 2
+        # → row=0 と row=1 だけが返り、row=2 は含まれない
+        assert len(urls) == 2, f"空プレースホルダー除外後は 2 件のはず: {urls}"
+        for url, _ in urls:
+            idx = int(url.rsplit("#row=", 1)[1])
+            assert idx in (0, 1), f"row=2 はスキップされるべき: {url}"
+
+    def test_empty_placeholder_with_only_separator_values(self):
+        """値が区切り文字 (／) のみ・空白のみの table もスキップする
+
+        実サイト (`maigo-dog-miharu.html`) の row=0/row=2 では管理番号枠に
+        `n08-1` `s--1` のような雛形だけが残り、種類/体格 の値が "／" の
+        ような区切り文字単体になっている。これも空プレースホルダーとして
+        除外する。実データ table と混在させて 1 件のみ抽出されることを確認。
+        """
+        html = (
+            "<html><body><div id='main_body'>"
+            # table 0: 完全空プレースホルダー
+            "<table>"
+            "<tr><td>保護日 (管理番号)</td><td>令和年月日（s--1）</td></tr>"
+            "<tr><td>保護場所</td><td></td></tr>"
+            "<tr><td>種類／体格</td><td>／</td></tr>"
+            "<tr><td>毛の色／長さ</td><td>／</td></tr>"
+            "<tr><td>性別</td><td></td></tr>"
+            "<tr><td>推定年月齢</td><td></td></tr>"
+            "</table>"
+            # table 1: 実データ
+            "<table>"
+            "<tr><td>保護日 (管理番号)</td><td>令和8年5月14日（c080514-1）</td></tr>"
+            "<tr><td>保護場所</td><td>田村市都路町古道字小滝沢　地内</td></tr>"
+            "<tr><td>種類／体格</td><td>雑／中</td></tr>"
+            "<tr><td>毛の色／長さ</td><td>茶／短</td></tr>"
+            "<tr><td>性別</td><td>メス</td></tr>"
+            "<tr><td>推定年月齢</td><td>１０～１３歳</td></tr>"
+            "</table>"
+            "</div></body></html>"
+        )
+        adapter = PrefFukushimaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+
+        assert len(urls) == 1, f"実データ table のみ残るはず: {urls}"
+        assert urls[0][0].endswith("#row=0")
+
+    def test_partial_placeholder_with_only_location_is_skipped(self):
+        """保護場所だけ "地内" のような断片が残った table もスキップする
+
+        実サイト (`maigo-cat-miharu.html`) の row=1 では保護場所が "地内"
+        だけ、種類/毛色/性別/年齢は全て空という中途半端なプレースホルダーが
+        確認されている。主要ラベルのうち実値が 1 個しか無い table は
+        実データではないと判定し除外する。
+        """
+        html = (
+            "<html><body><div id='main_body'>"
+            "<table>"
+            "<tr><td>保護日 (管理番号)</td><td>令和7年月日（c-07-1）</td></tr>"
+            "<tr><td>保護場所</td><td>地内</td></tr>"
+            "<tr><td>種類／体格</td><td>/</td></tr>"
+            "<tr><td>毛の色／毛の長さ</td><td>/</td></tr>"
+            "<tr><td>性別</td><td></td></tr>"
+            "<tr><td>推定年月齢</td><td></td></tr>"
+            "</table>"
+            "</div></body></html>"
+        )
+        adapter = PrefFukushimaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+        assert urls == [], "実値が 1 個のみの table は空とみなす"
+
+    def test_color_extracted_from_kemonoiro_kenocho_label_variant(self):
+        """ラベル "毛の色／毛の長さ" (中通り猫) からも color が取れる
+
+        中通り猫ページ (maigo-cat-miharu.html) は `毛の色/長さ` ではなく
+        `毛の色/毛の長さ` というラベル表記が使われており、既存マッピングを
+        補強しないと color が常に空になる。
+        """
+        html = (
+            "<html><body><div id='main_body'>"
+            "<table>"
+            "<tr><td>保護日 (管理番号)</td><td>令和8年5月29日（s080529－1）</td></tr>"
+            "<tr><td>保護場所</td><td>西郷村大字鶴生字由井ヶ原 地内</td></tr>"
+            "<tr><td>種類／体格</td><td>アメリカンショートヘア／中</td></tr>"
+            "<tr><td>毛の色／毛の長さ</td><td>シルバータビー／短</td></tr>"
+            "<tr><td>性別</td><td>オス</td></tr>"
+            "<tr><td>推定年月齢</td><td>約 ８ 歳</td></tr>"
+            "<tr><td>首輪</td><td>なし</td></tr>"
+            "</table>"
+            "</div></body></html>"
+        )
+        cat_site = SiteConfig(
+            name="福島県（中通り 迷子猫）",
+            prefecture="福島県",
+            prefecture_code="07",
+            list_url="https://www.pref.fukushima.lg.jp/sec/21620a/maigo-cat-miharu.html",
+            category="lost",
+            single_page=True,
+        )
+        adapter = PrefFukushimaAdapter(cat_site)
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+        assert raw.color == "シルバータビー"
+        assert raw.size == "中"
+        assert raw.sex == "オス"
+        assert raw.species == "猫"
+
+    def test_table_without_value_cells_is_skipped(self):
+        """2 列構成の <tr> が無い table (tds=0 等) はスキップする
+
+        実サイト (`maigo-cat-soso.html`) の table 1-4 はラベルだけ並び
+        値セルが一つも無い構造で、これらも空として除外する。
+        """
+        html = (
+            "<html><body><div id='main_body'>"
+            "<table>"
+            "<tr><th>管理番号</th></tr>"
+            "<tr><th>保護日</th></tr>"
+            "<tr><th>保護場所</th></tr>"
+            "</table>"
+            "</div></body></html>"
+        )
+        adapter = PrefFukushimaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+
+        assert urls == [], "値セルを持たない table は空とみなしスキップする"
