@@ -140,6 +140,89 @@ class TestPrefYamanashiAdapter:
         assert raw.size == "中型", f"detail から size 補完されるべき: got {raw.size!r}"
         assert raw.phone == "0553-20-2751", f"detail から phone 補完されるべき: got {raw.phone!r}"
 
+    def test_extract_animal_details_enriches_age_from_other_info(self, fixture_html):
+        """detail ページの「その他の情報」欄から「年齢：3才」等を抽出する
+
+        実サイト (2026-05 観測) は「種類・体格」「性別」「毛色」等の構造化欄に
+        加えて、自由記述の「その他の情報」欄に「年齢：3才」「推定2歳」のような
+        フォーマットで年齢が記載されることがある。記載がないカードもあるため
+        best-effort で抽出し、見つからない場合は空文字のまま (age_months → None)。
+        """
+        list_html = _load_yamanashi_html(fixture_html)
+        detail_html = """
+        <html><body>
+          <h2>管轄保健所の連絡先</h2>
+          <p>峡東保健所TEL:0553-20-2751</p>
+          <h2>種類・体格</h2>
+          <p>トイプードル　中型</p>
+          <h2>性別</h2>
+          <p>オス</p>
+          <h2>毛色</h2>
+          <p>濃い茶色</p>
+          <h2>その他の情報</h2>
+          <p>人なつこい 年齢：3才 首輪なし</p>
+        </body></html>
+        """
+        adapter = PrefYamanashiAdapter(_site())
+
+        def _http_side_effect(url):
+            if url.endswith("index.html"):
+                return list_html
+            return detail_html
+
+        with patch.object(adapter, "_http_get", side_effect=_http_side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+
+        assert raw.age == "3才", f"その他の情報欄から age 抽出されるべき: got {raw.age!r}"
+
+    def test_extract_animal_details_age_supports_months_and_years(self, fixture_html):
+        """「○ヶ月」「推定○歳」等の age バリエーションも拾える"""
+        list_html = _load_yamanashi_html(fixture_html)
+        detail_html_months = """
+        <html><body>
+          <h2>その他の情報</h2>
+          <p>推定6ヶ月 子犬</p>
+        </body></html>
+        """
+        adapter = PrefYamanashiAdapter(_site())
+
+        def _http_side_effect(url):
+            if url.endswith("index.html"):
+                return list_html
+            return detail_html_months
+
+        with patch.object(adapter, "_http_get", side_effect=_http_side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+
+        assert "6" in raw.age
+        assert "月" in raw.age or "ヶ月" in raw.age
+
+    def test_extract_animal_details_age_empty_when_not_present(self, fixture_html):
+        """その他の情報欄に年齢記載がないカードは age 空文字"""
+        list_html = _load_yamanashi_html(fixture_html)
+        detail_html_no_age = """
+        <html><body>
+          <h2>種類・体格</h2>
+          <p>甲斐犬　中型</p>
+          <h2>その他の情報</h2>
+          <p>首輪無し マイクロチップ無し</p>
+        </body></html>
+        """
+        adapter = PrefYamanashiAdapter(_site())
+
+        def _http_side_effect(url):
+            if url.endswith("index.html"):
+                return list_html
+            return detail_html_no_age
+
+        with patch.object(adapter, "_http_get", side_effect=_http_side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+
+        assert raw.age == ""
+
     def test_extract_animal_details_falls_back_when_detail_fails(self, fixture_html):
         """detail fetch が失敗しても一覧の情報で RawAnimalData が返る"""
         html = _load_yamanashi_html(fixture_html)
