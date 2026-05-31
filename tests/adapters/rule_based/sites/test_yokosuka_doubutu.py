@@ -175,6 +175,53 @@ class TestYokosukaDoubutuAdapter:
         assert raw.species == "雑種"
         assert raw.sex == "メス"
 
+    def test_feature_with_age_splits_color_and_age(self):
+        """「特徴」セルに color と age が混在するケースを分離する
+
+        2026-05 観測: 横須賀市は「特徴」セルに「キジ白、推定1歳」のような
+        毛色と年齢が同居している。年齢パターンを正規表現で抽出し age に
+        格納、color テキストから当該部分を除去する。
+        """
+        html = """
+        <html><body><table><tbody>
+          <tr><td>整理番号</td><td>26-19</td></tr>
+          <tr><td>分類</td><td>猫(保護収容)</td></tr>
+          <tr><td>収容日</td><td>R8.5.4</td></tr>
+          <tr><td>収容場所</td><td>長井</td></tr>
+          <tr><td>種類</td><td>MIX</td></tr>
+          <tr><td>性別</td><td>メス</td></tr>
+          <tr><td>特徴</td><td>キジ白、推定1歳</td></tr>
+        </tbody></table></body></html>
+        """
+        adapter = YokosukaDoubutuAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.yokosuka-doubutu.com/protected-animals/3131/",
+                category="sheltered",
+            )
+        assert raw.color == "キジ白", f"年齢部分が除去された color: got {raw.color!r}"
+        assert "1歳" in raw.age, f"年齢が age に流れた: got {raw.age!r}"
+        assert raw.location == "長井"
+
+    def test_feature_only_age_keyword(self):
+        """「子猫」「成犬」のような年齢キーワード単独でも age に流れる"""
+        html = """
+        <html><body><table><tbody>
+          <tr><td>種類</td><td>MIX</td></tr>
+          <tr><td>性別</td><td>オス</td></tr>
+          <tr><td>収容場所</td><td>横須賀</td></tr>
+          <tr><td>特徴</td><td>茶トラ、子猫</td></tr>
+        </tbody></table></body></html>
+        """
+        adapter = YokosukaDoubutuAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.yokosuka-doubutu.com/protected-animals/x/",
+                category="sheltered",
+            )
+        assert raw.color == "茶トラ"
+        assert raw.age == "子猫"
+
     def test_short_color_text_kept_in_color(self):
         """短い 特徴 (例: '黒白') は従来通り color として採用される"""
         short_color_html = """
