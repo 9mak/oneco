@@ -528,3 +528,55 @@ class TestAniwelOkinawaRealLabels:
         )
         # 重複 (slick-main と slick-nav の同一 src) は排除
         assert len(raw.image_urls) == len(set(raw.image_urls))
+
+
+class TestAniwelOkinawaPhoneInjection:
+    """沖縄県動物愛護管理センター本所の代表電話を共通注入する挙動を検証する。
+
+    2026-06 観測 (https://www.aniwel-pref.okinawa/): 詳細ページの動物カード
+    本文に電話番号が含まれず、snapshots では 91件全件で phone=null。
+    運営は南城市の本所（およびハピアニおきなわ）で代表電話は同一の
+    098-945-3043。サイト全体で共通の番号として注入する。
+    """
+
+    def test_phone_injected_when_detail_has_no_phone(self) -> None:
+        """detail ページに連絡先記載が無いとき、本所代表電話を注入する"""
+        adapter = AniwelOkinawaAdapter(_site(0))  # 収容犬
+        url = f"{_BASE}/animals/accommodate_view/24639"
+        with patch.object(adapter, "_http_get", return_value=_REAL_DETAIL_ACCOMMODATE):
+            raw = adapter.extract_animal_details(url, category="sheltered")
+        assert raw.phone == "098-945-3043", f"本所代表電話が共通注入されるべき: got {raw.phone!r}"
+
+    def test_phone_injected_for_missing_category(self) -> None:
+        """missing (行方不明) 系統でも同じ代表電話を注入する"""
+        adapter = AniwelOkinawaAdapter(_site(3))  # 行方不明猫
+        url = f"{_BASE}/animals/missing_view/24643"
+        with patch.object(adapter, "_http_get", return_value=_REAL_DETAIL_MISSING):
+            raw = adapter.extract_animal_details(url, category="lost")
+        assert raw.phone == "098-945-3043"
+
+    def test_phone_injected_for_protection_category(self) -> None:
+        """protection (迷い込み保護) 系統でも同じ代表電話を注入する"""
+        adapter = AniwelOkinawaAdapter(_site(4))  # 迷い込み保護犬
+        url = f"{_BASE}/animals/protection_view/24644"
+        with patch.object(adapter, "_http_get", return_value=_REAL_DETAIL_PROTECTION):
+            raw = adapter.extract_animal_details(url, category="sheltered")
+        assert raw.phone == "098-945-3043"
+
+    def test_existing_phone_in_detail_is_preserved(self) -> None:
+        """detail ページに電話番号が書かれている場合は上書きしない
+
+        将来サイト側で個別連絡先が記載されるようになっても、
+        共通注入は「空のときだけ」走るので個別値を保持する。
+        """
+        adapter = AniwelOkinawaAdapter(_site(0))  # 収容犬
+        url = f"{_BASE}/animals/accommodate_view/101"
+        # _detail_html_dl() は phone="098-945-3043" を含むが、わざと別番号にする
+        # (parser の _normalize_phone を通る区切りなし 10 桁を使う)
+        html = _detail_html_dl(phone="0570111222")
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(url, category="sheltered")
+        # 個別値 (0570-111-222) が保持され、共通の 098-945-3043 で上書きされない
+        assert raw.phone == "057-011-1222", (
+            f"detail 側に phone があれば上書きしない: got {raw.phone!r}"
+        )

@@ -47,6 +47,15 @@ _DECORATION_PATH_PATTERNS = (
     "/images/animals/icon_",
 )
 
+# 沖縄県動物愛護管理センター本所 (南城市大里) 代表電話。
+# 2026-06 観測: https://www.aniwel-pref.okinawa/ のお問い合わせに記載。
+# 本所 / ハピアニおきなわ (譲渡推進棟) ともに同じ代表電話を使うため、
+# 6 サイト (収容/行方不明/迷い込み × 犬/猫) 全件で共通の連絡先として
+# 注入する。詳細ページ自体に phone 欄が無く、snapshots では 91 件全件で
+# phone=null だったので空のときだけ補完する (将来 detail に番号が
+# 書かれるようになった場合に上書きしないため)。
+_DEFAULT_PHONE = "098-945-3043"
+
 
 class AniwelOkinawaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
     """沖縄県動物愛護管理センター 共通アダプター
@@ -94,13 +103,16 @@ class AniwelOkinawaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
     # ─────────────────── オーバーライド ───────────────────
 
     def extract_animal_details(self, detail_url: str, category: str = "adoption") -> RawAnimalData:
-        """詳細ページ抽出。species/age を補完し、装飾画像を除外する。
+        """詳細ページ抽出。species/age/phone を補完し、装飾画像を除外する。
 
         - species が空ならサイト名から犬/猫を補完
         - age が「12」「2.5」のような数値単独表記なら「12歳」に補完
           (normalizer は単位付きしか解釈できないため)
         - image_urls から `/images/header/` `/images/sidebar/` などの
           装飾画像を除外し、重複 (slick-main と slick-nav の同一 src) を排除
+        - phone が空なら沖縄県動物愛護管理センター本所代表電話を注入
+          (detail ページ自体に連絡先欄が無いため。将来 detail に番号が
+          書かれた場合は上書きしない)
         """
         raw = super().extract_animal_details(detail_url, category=category)
         updates: dict[str, object] = {}
@@ -114,6 +126,8 @@ class AniwelOkinawaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
         cleaned_images = self._filter_decoration_images(raw.image_urls)
         if cleaned_images != raw.image_urls:
             updates["image_urls"] = cleaned_images
+        if not raw.phone:
+            updates["phone"] = self._normalize_phone(_DEFAULT_PHONE)
         if updates:
             raw = raw.model_copy(update=updates)
         return raw
