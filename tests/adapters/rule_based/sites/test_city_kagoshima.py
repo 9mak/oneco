@@ -95,6 +95,8 @@ class TestCityKagoshimaAdapter:
         assert raw.sex == "オス"
         assert raw.size == "小"
         assert "10" in raw.age
+        # phone は鹿児島市動物管理センターの代表電話を全件共通利用 (2026-05 観測)
+        assert raw.phone == "099-264-1237"
         # 画像 URL が絶対 URL に変換されている
         assert raw.image_urls
         for u in raw.image_urls:
