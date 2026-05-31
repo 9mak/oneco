@@ -68,6 +68,10 @@ class CityKagoshimaAdapter(SinglePageTableAdapter):
     LOCATION_COLUMN: ClassVar[int | None] = None
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
 
+    # 動物カードに個別電話番号が無いため、鹿児島市動物管理センターの
+    # 代表電話を全動物カード共通で割り当てる (2026-05 観測)。
+    _CENTER_TEL: ClassVar[str] = "099-264-1237"
+
     # `<p>` ラベルから RawAnimalData フィールドへのマッピング。
     # 鹿児島市は「ラベル：値」形式で全角コロン区切りで記載されている。
     # キーは label の prefix 一致 (substring) で判定する。
@@ -178,7 +182,7 @@ class CityKagoshimaAdapter(SinglePageTableAdapter):
                 size=fields.get("size", ""),
                 shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
                 location=fields.get("location", ""),
-                phone="",
+                phone=self._CENTER_TEL,
                 image_urls=self._filter_image_urls(image_urls, virtual_url),
                 source_url=virtual_url,
                 category=category,
