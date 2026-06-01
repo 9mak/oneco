@@ -175,6 +175,67 @@ class TestNormalizeAge:
         assert DataNormalizer._normalize_age("2歳6ヶ月") == 30
         assert DataNormalizer._normalize_age("1歳3か月") == 15
 
+    def test_normalize_age_yyyy_year_only(self, monkeypatch):
+        """4桁年号のみ「YYYY年生まれ」「YYYY年」は 1/1 仮定で今日との差分を月数化
+
+        kitakyushu 譲渡犬テーブルで raw age が「2017年」のみで日が無いケース。
+        旧実装は 4桁年号を除外していたため None になり age_months=0% の真因。
+        """
+        from datetime import date
+        monkeypatch.setattr(DataNormalizer, "_today", staticmethod(lambda: date(2026, 6, 1)))
+
+        # 2017-01-01 〜 2026-06-01 = 9年5ヶ月 = 113ヶ月
+        assert DataNormalizer._normalize_age("2017年") == 113
+        assert DataNormalizer._normalize_age("2024年生まれ") == 29
+        # 30歳超の異常値は実装上限で棄却 (1900年は126歳 → None)
+        assert DataNormalizer._normalize_age("1900年") is None
+        # 未来年号は None
+        assert DataNormalizer._normalize_age("2030年") is None
+
+    def test_normalize_age_yyyy_year_month(self, monkeypatch):
+        """「YYYY年M月生まれ」「YYYY年M月頃生まれ」は日 1 仮定で月数化
+
+        memory ID:1841 既知。山梨「生年月日：令和6年8月頃」等の表記対応。
+        """
+        from datetime import date
+        monkeypatch.setattr(DataNormalizer, "_today", staticmethod(lambda: date(2026, 6, 1)))
+
+        # 2024-08-01 〜 2026-06-01 = 22ヶ月
+        assert DataNormalizer._normalize_age("2024年8月生まれ") == 22
+        assert DataNormalizer._normalize_age("2024年8月頃生まれ") == 22
+        # 令和表記も同様
+        assert DataNormalizer._normalize_age("令和6年8月頃") == 22
+
+    def test_normalize_age_n_week_old(self):
+        """「N週齢」「推定N週齢」表記を月数化 (1ヶ月 ≈ 4週)
+
+        koshigaya 譲渡動物で「推定６週齢」のような表記が頻出。
+        """
+        # 6週 → 1ヶ月 (6/4 切り捨て)
+        assert DataNormalizer._normalize_age("6週齢") == 1
+        assert DataNormalizer._normalize_age("推定6週齢") == 1
+        # 全角数字も対応
+        assert DataNormalizer._normalize_age("推定６週齢") == 1
+        # 8週 → 2ヶ月
+        assert DataNormalizer._normalize_age("8週齢") == 2
+        # 12週 → 3ヶ月
+        assert DataNormalizer._normalize_age("12週齢") == 3
+
+    def test_normalize_age_age_class_keywords(self):
+        """「幼齢/若齢/中齢/高齢」自治体独自表記を代表月数に変換
+
+        koshigaya 等の譲渡動物表で観測される定性的年齢表記。
+        環境省ガイドラインの目安に近い値を採用。
+        """
+        # 幼齢 = 子犬子猫 (〜半年) → 3ヶ月
+        assert DataNormalizer._normalize_age("幼齢") == 3
+        # 若齢 = 0.5〜2歳 → 12ヶ月
+        assert DataNormalizer._normalize_age("若齢") == 12
+        # 中齢 = 2〜7歳 → 60ヶ月 (5歳)
+        assert DataNormalizer._normalize_age("中齢") == 60
+        # 高齢 = 7歳〜 → 120ヶ月 (10歳)
+        assert DataNormalizer._normalize_age("高齢") == 120
+
     def test_normalize_age_rejects_implausible_upper_bound(self):
         """生物学的に有り得ない高齢 (30歳超) は誤パースなので None にする
 
