@@ -58,6 +58,11 @@ _DETAIL_H2_LABELS: dict[str, str] = {
 }
 # 体格は許容語彙のみ採用する (年齢相当テキストや「不明」等を弾く)
 _SIZE_VALID = frozenset({"小", "中", "大", "小型", "中型", "大型", "その他"})
+# 「小型（3.5kg）」「中型(...)」のように体格 token に注記が続くケースで
+# token 完全一致では取れないため prefix match 用パターンを併用する。
+# 「超大型」「超小型」も拾う。長い prefix を先頭にして "中" が "中型" を
+# 横取りしないよう sort 済み。
+_SIZE_PREFIX_PATTERN = re.compile(r"^(超大型|超小型|大型|中型|小型|大|中|小|その他)")
 # 「峡東保健所TEL:0553-20-2751」のような「保健所名 + TEL/電話 + 番号」表記
 _PHONE_PATTERN = re.compile(r"(\d{2,4}-\d{2,4}-\d{3,4})")
 # 「その他の情報」自由記述から年齢表現を best-effort 抽出する。
@@ -203,10 +208,16 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
                 if m:
                     phone = m.group(1)
             elif kind == "_kind_size":
-                # 「トイプードル 中型」のような並びから許容語彙の体格を抜き出す
+                # 「トイプードル 中型」「雑種 小型（3.5kg）」のような並びから
+                # 体格 token を抜き出す。完全一致 → prefix match の順で評価し、
+                # 注記 (kg/cm/年齢等) が後続するケースも拾う。
                 for token in value.split():
                     if token in _SIZE_VALID:
                         size = token
+                        break
+                    m = _SIZE_PREFIX_PATTERN.match(token)
+                    if m:
+                        size = m.group(1)
                         break
             elif kind == "_other_info":
                 m = _AGE_PATTERN.search(value)
