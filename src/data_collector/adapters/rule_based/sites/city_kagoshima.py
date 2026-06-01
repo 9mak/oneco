@@ -48,6 +48,29 @@ _ANIMAL_H2_RE = re.compile(r"No\.?\s*\d+", re.IGNORECASE)
 # 半角/全角括弧の揺れに耐える形にする。
 _RETURNED_RE = re.compile(r"飼い主.*戻り")
 
+# 「N kg」「N.Nkg」「Nキロ」等の体重表記を捕捉するパターン。
+# 鹿児島市の保護猫サイトは「体格」ラベルが存在しないが、稀に
+# 「体重：5.5kg」のように記載される個体や、「その他：…体重5.5kg…」のように
+# 自由記述に埋もれた個体がいるため、ここから size を推定する。
+_WEIGHT_PATTERN = re.compile(r"(\d+(?:[.．]\d+)?)\s*(?:kg|㎏|キロ|キログラム)", re.IGNORECASE)
+# 体重 → size 推定の境界 (oita_aigo / pref_yamanashi と同基準)。
+_WEIGHT_SIZE_SMALL_KG = 5.0
+_WEIGHT_SIZE_LARGE_KG = 15.0
+
+# 「成猫」「成犬」「子猫」「子犬」の年齢キーワードを正規化テキストへ
+# マッピングする。鹿児島市の保護猫サイトは全件で「推定年齢：不明（成猫）」と
+# 記載されており、normalizer の「不明」判定で age_months が None になって
+# しまう (2026-06 観測、snapshot 8件全件)。
+# kochi-apc (`KochiAdapter._KOCHI_DEFAULT_AGE_MONTHS_WHEN_UNKNOWN = 36`)
+# と同じ「成獣 → 3歳」の慣行に揃え、adapter 段階で normalizer が解釈可能な
+# 文字列に書き換える。子猫/子犬は離乳直後を想定して 3ヶ月とする。
+_AGE_KEYWORD_TO_NORMALIZED: dict[str, str] = {
+    "成猫": "3歳",
+    "成犬": "3歳",
+    "子猫": "3ヶ月",
+    "子犬": "3ヶ月",
+}
+
 
 class CityKagoshimaAdapter(SinglePageTableAdapter):
     """鹿児島市保健所 (生活衛生課) 用 rule-based adapter
@@ -83,6 +106,10 @@ class CityKagoshimaAdapter(SinglePageTableAdapter):
         # 「種類」ラベルは抽出しても使わない (将来 detail 拡張用)。
         "性別": "sex",
         "体格": "size",
+        # 鹿児島市の保護猫サイトには「体格」ラベルが無く、稀に「体重：5.5kg」
+        # のように体重ラベルが現れる (2026-06 観測)。size 推定の素材として
+        # 取り込み、`_postprocess_size` 内で kg → 小/中/大 に変換する。
+        "体重": "_weight",
         "推定年齢": "age",
         # 鹿児島市の保護猫サイトは「毛色：灰茶」のように毛色を全件記載する
         # (2026-06 観測)。犬サイトは現状「毛色」ラベルが無いが、将来追加
@@ -156,6 +183,10 @@ class CityKagoshimaAdapter(SinglePageTableAdapter):
 
         fields: dict[str, str] = {}
         image_urls: list[str] = []
+        # 「その他：」自由記述からも体重表記を拾えるように全 p テキストを連結
+        # 保持する (label 一致しない値や、複数行に跨る自由記述に体重が
+        # 混じるケースのフォールバック素材として `_postprocess_size` に渡す)。
+        all_text_parts: list[str] = []
         for p in block_paragraphs:
             # ブロック内の画像も一緒に拾う
             for img in p.find_all("img"):
@@ -165,6 +196,7 @@ class CityKagoshimaAdapter(SinglePageTableAdapter):
             text = p.get_text(separator=" ", strip=True)
             if not text:
                 continue
+            all_text_parts.append(text)
             label, value = self._split_label_value(text)
             if not label:
                 continue
@@ -176,17 +208,23 @@ class CityKagoshimaAdapter(SinglePageTableAdapter):
         species = self._infer_species_from_site_name(self.site_config.name)
 
         sex = self._normalize_sex(fields.get("sex", ""))
+        age = self._postprocess_age(fields.get("age", ""))
+        # 体重は専用ラベルが無くても「その他：…体重5.5kg…」のような自由記述に
+        # 現れることがあるため、`_weight` ラベル値が空の場合は全文を補助素材に
+        # 渡して `_postprocess_size` 内で kg を search() する。
+        weight_hint = fields.get("_weight", "") or " ".join(all_text_parts)
+        size = self._postprocess_size(fields.get("size", ""), weight_hint)
 
         try:
             return RawAnimalData(
                 species=species,
                 sex=sex,
-                age=fields.get("age", ""),
+                age=age,
                 # 保護猫サイトは「毛色」ラベルあり、保護犬サイトは現状無し。
                 # ラベル不在時は `_LABEL_TO_FIELD` 経由で fields に入らない
                 # ため、`get("color", "")` で空文字フォールバックする。
                 color=fields.get("color", ""),
-                size=fields.get("size", ""),
+                size=size,
                 shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
                 location=fields.get("location", ""),
                 phone=self._CENTER_TEL,
@@ -243,6 +281,70 @@ class CityKagoshimaAdapter(SinglePageTableAdapter):
             if src in raw_sex:
                 return dst
         return raw_sex
+
+    @staticmethod
+    def _postprocess_age(raw_age: str) -> str:
+        """年齢テキストを normalizer が解釈可能な形に補正する
+
+        鹿児島市の保護猫サイトは全件で「推定年齢：不明（成猫）」「不明（子猫）」
+        と記載されており (2026-06 観測)、normalizer の `_UNKNOWN_PATTERNS`
+        や年齢パターン抽出ロジックでは `None` になってしまう。
+        adapter 段階で以下のフォールバックを適用する:
+
+        - 数字 + 歳/年/ヶ月 等の明示的な年齢表記を含む場合 → 原文を温存
+          (normalizer 側で月齢に変換される)
+        - 「成猫」「成犬」 → "3歳" (= 36ヶ月、kochi-apc と同基準)
+        - 「子猫」「子犬」 → "3ヶ月"
+        - 上記いずれにも該当しない (例: "不明" のみ) → 原文をそのまま返し、
+          normalizer 側で None として扱わせる
+        """
+        text = (raw_age or "").strip()
+        if not text:
+            return text
+
+        # 明示的な数値年齢が含まれる場合はそのまま温存
+        # (例: "10歳", "3歳2ヶ月", "推定2年", "5ヶ月")
+        if re.search(r"\d+\s*(?:歳|才|年|[ヶかカケヵ]月)", text):
+            return text
+
+        for keyword, normalized in _AGE_KEYWORD_TO_NORMALIZED.items():
+            if keyword in text:
+                return normalized
+
+        return text
+
+    @staticmethod
+    def _postprocess_size(raw_size: str, raw_weight: str) -> str:
+        """size を取得できない場合は体重ラベルから推定する
+
+        鹿児島市の保護猫サイトには「体格」ラベルが構造的に無く、稀に
+        「体重：5.5kg」のような体重ラベル、または「その他：…体重5.5kg…」
+        という自由記述の中だけに体重表記が現れることがある (2026-06 観測)。
+        oita_aigo / pref_yamanashi / kumamoto_doubutuaigo と同じ
+        kg → size 推定 (5kg 未満=小、5kg 以上 15kg 未満=中、15kg 以上=大)
+        を適用する。
+        """
+        size = (raw_size or "").strip()
+        if size:
+            # 体格ラベルが明示されている場合はそれを尊重 (犬サイト経路)
+            return size
+        weight_text = (raw_weight or "").strip()
+        if not weight_text:
+            return ""
+        m = _WEIGHT_PATTERN.search(weight_text)
+        if not m:
+            return ""
+        try:
+            kg = float(m.group(1).replace("．", "."))
+        except ValueError:
+            return ""
+        if kg <= 0:
+            return ""
+        if kg < _WEIGHT_SIZE_SMALL_KG:
+            return "小"
+        if kg < _WEIGHT_SIZE_LARGE_KG:
+            return "中"
+        return "大"
 
     @staticmethod
     def _infer_species_from_site_name(name: str) -> str:
