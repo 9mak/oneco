@@ -21,6 +21,8 @@
 
 from __future__ import annotations
 
+import re
+import unicodedata
 from typing import ClassVar
 
 from bs4 import BeautifulSoup
@@ -97,6 +99,23 @@ class ZaidanFukuokaDouaiAdapter(WordPressListAdapter):
     # 施設名 (= 福岡県動物愛護センター) を location に代入する。
     _CENTER_FACILITY_NAME: ClassVar[str] = "福岡県動物愛護センター"
 
+    # 体重 → size 推定の境界 (kg)。犬の体格分類の一般基準。
+    # `kumamoto_doubutuaigo._weight_to_size` / `oita_aigo._weight_to_size` と同基準。
+    #   - 5kg 未満       → 小型
+    #   - 5kg 以上 15kg 未満 → 中型
+    #   - 15kg 以上      → 大型
+    _SIZE_BOUNDARY_SMALL_KG: ClassVar[float] = 5.0
+    _SIZE_BOUNDARY_LARGE_KG: ClassVar[float] = 15.0
+
+    # 体格語ホワイトリスト。「大きさ（体重）」欄に「中型」等が
+    # 直接入っているケース (既に取れている 30 件) を kg フォールバックより
+    # 優先するために使う。
+    _SIZE_CLASS_KEYWORDS: ClassVar[tuple[str, ...]] = (
+        "小型",
+        "中型",
+        "大型",
+    )
+
     def _filter_image_urls(self, urls: list[str], base_url: str) -> list[str]:
         """動物画像 bucket 配下のみを採用し順序保持で重複排除する
 
@@ -128,6 +147,11 @@ class ZaidanFukuokaDouaiAdapter(WordPressListAdapter):
         - phone: 動物情報 table の外にある問い合わせ先 box から拾えれば拾う
         - location: 譲渡カテゴリ (`center-detail` / `group-detail`) では
           「保護した場所」欄が無いため施設名をフォールバックとして代入する
+        - size: 「大きさ（体重）」欄が `(現在の体重：４．９Kg…)` のような
+          体重のみ表記の場合、DataNormalizer._cap_size がそれを捨てて None に
+          してしまう (snapshot 5/35 件欠損)。adapter 側で kg 数値を抽出し
+          犬の体格基準で 小型/中型/大型 を補う。体格語が直接書かれているケースは
+          そのまま温存する。
         """
         species = fields.get("species", "")
         if not any(kw in species for kw in ("犬", "猫", "いぬ", "ねこ", "イヌ", "ネコ")):
@@ -136,8 +160,6 @@ class ZaidanFukuokaDouaiAdapter(WordPressListAdapter):
                 fields["species"] = hint
         if not fields.get("phone"):
             # ページ末尾の「お問い合わせ」block に電話番号がある場合、最初の TEL: パターンを採用
-            import re
-
             text = soup.get_text(" ", strip=True)
             m = re.search(r"(\d{2,4}-\d{2,4}-\d{3,4})", text)
             if m:
@@ -146,6 +168,55 @@ class ZaidanFukuokaDouaiAdapter(WordPressListAdapter):
             "/center-detail/" in detail_url or "/group-detail/" in detail_url
         ):
             fields["location"] = self._CENTER_FACILITY_NAME
+
+        # size: 体重のみ表記から体格を推定する。体格語が含まれていればそちらを優先。
+        size_raw = fields.get("size", "")
+        if size_raw and not self._contains_size_class(size_raw):
+            estimated = self._weight_to_size_class(size_raw)
+            if estimated:
+                fields["size"] = estimated
+
+    @classmethod
+    def _contains_size_class(cls, text: str) -> bool:
+        """テキストに体格語 (小型/中型/大型) が含まれるか"""
+        return any(kw in text for kw in cls._SIZE_CLASS_KEYWORDS)
+
+    @classmethod
+    def _weight_to_size_class(cls, text: str) -> str:
+        """`(現在の体重：４．９Kg…)` のような体重表記から 小型/中型/大型 を推定する
+
+        - 5kg 未満      : 小型
+        - 5kg 以上 15kg 未満: 中型
+        - 15kg 以上     : 大型
+        - kg 数値が見つからなければ空文字 (= 推定不能)
+
+        実サイトは全角数字 (４．９) や全角 kg (ｋｇ) を使うため、最初に
+        NFKC 正規化で半角化してから数値抽出する。
+        「現在の体重」キーワードがあればその直後の数値を、なければ
+        最初の数値を採用する (適正体重との取り違え防止)。
+        """
+        if not text:
+            return ""
+        normalized = unicodedata.normalize("NFKC", text)
+        # 「現在の体重: 4.9kg」形式があれば優先 (適正体重を拾わないため)
+        m = re.search(
+            r"現在の体重\s*[：:]?\s*(\d+(?:\.\d+)?)",
+            normalized,
+        )
+        if not m:
+            # それ以外は最初の `(数値)kg` を採用 ("(3.35kg)" 形式)
+            m = re.search(r"(\d+(?:\.\d+)?)\s*(?:kg|キロ)", normalized, re.IGNORECASE)
+        if not m:
+            return ""
+        try:
+            kg = float(m.group(1))
+        except ValueError:
+            return ""
+        if kg < cls._SIZE_BOUNDARY_SMALL_KG:
+            return "小型"
+        if kg < cls._SIZE_BOUNDARY_LARGE_KG:
+            return "中型"
+        return "大型"
 
 
 # ─────────────────── サイト登録 ───────────────────
