@@ -474,3 +474,178 @@ class TestYokosukaDoubutuAdapter:
     def test_weight_to_size_boundaries(self, weight_text, expected):
         """境界値 (5kg / 15kg) を含む体重→size 変換の検証"""
         assert YokosukaDoubutuAdapter._weight_to_size(weight_text) == expected
+
+    def test_color_extracted_from_breed_cell_simple(self):
+        """「種類」セルが「MIX、黒白」のように毛色併記の場合、color に「黒白」を抽出
+
+        2026-06 実サイト観測 (譲渡カテゴリ):
+        - 「種類」セルにブリードと毛色が「、」区切りで併記される
+          例: "MIX、黒白" / "チンチラ、白" / "ミヌエット、レッド＆ホワイト"
+        - 「特徴」セルは長文説明 (DB color VARCHAR 制約超過) のため color に流れない
+        - 結果として color が空のまま 10/11 件が color 欠損していた
+        """
+        html = """
+        <html><body><table><tbody>
+          <tr><td>整理番号</td><td>25-79</td></tr>
+          <tr><td>分類</td><td>猫(譲渡)</td></tr>
+          <tr><td>種類</td><td>MIX、黒白</td></tr>
+          <tr><td>性別</td><td>オス</td></tr>
+        </tbody></table></body></html>
+        """
+        adapter = YokosukaDoubutuAdapter(_site_cat_shelter())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.yokosuka-doubutu.com/adopted-animals/25-79/",
+                category="adoption",
+            )
+        assert raw.color == "黒白", f"got {raw.color!r}"
+        assert raw.species == "猫"
+
+    def test_color_extracted_from_breed_cell_complex(self):
+        """長めの毛色併記 (「スコティッシュフォールド、ブラウンマッカレルタビー」) も抽出"""
+        html = """
+        <html><body><table><tbody>
+          <tr><td>分類</td><td>猫(譲渡)</td></tr>
+          <tr><td>種類</td><td>スコティッシュフォールド、ブラウンマッカレルタビー</td></tr>
+          <tr><td>性別</td><td>オス</td></tr>
+        </tbody></table></body></html>
+        """
+        adapter = YokosukaDoubutuAdapter(_site_cat_shelter())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.yokosuka-doubutu.com/adopted-animals/26-15/",
+                category="adoption",
+            )
+        assert raw.color == "ブラウンマッカレルタビー"
+
+    def test_color_extracted_from_breed_cell_with_ampersand(self):
+        """「ミヌエット、レッド＆ホワイト」のように記号を含む毛色も抽出"""
+        html = """
+        <html><body><table><tbody>
+          <tr><td>分類</td><td>猫(譲渡)</td></tr>
+          <tr><td>種類</td><td>ミヌエット、レッド＆ホワイト</td></tr>
+          <tr><td>性別</td><td>オス</td></tr>
+        </tbody></table></body></html>
+        """
+        adapter = YokosukaDoubutuAdapter(_site_cat_shelter())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.yokosuka-doubutu.com/adopted-animals/25-64/",
+                category="adoption",
+            )
+        assert raw.color == "レッド＆ホワイト"
+
+    def test_color_not_extracted_when_breed_cell_single(self):
+        """「種類」セルに区切りが無い場合 (例: "フレンチブルドッグ") は color 空のまま"""
+        html = """
+        <html><body><table><tbody>
+          <tr><td>分類</td><td>犬(譲渡)</td></tr>
+          <tr><td>種類</td><td>フレンチブルドッグ</td></tr>
+          <tr><td>性別</td><td>オス</td></tr>
+        </tbody></table></body></html>
+        """
+        adapter = YokosukaDoubutuAdapter(_site_dog_adoption())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.yokosuka-doubutu.com/adopted-animals/26-25/",
+                category="adoption",
+            )
+        assert raw.color == ""
+        assert raw.species == "犬"
+
+    def test_color_from_breed_cell_does_not_override_feature_color(self):
+        """「特徴」セルから取れた短い毛色 (例: "黒白") を「種類」セル抽出で上書きしない"""
+        html = """
+        <html><body><table><tbody>
+          <tr><td>分類</td><td>猫(譲渡)</td></tr>
+          <tr><td>種類</td><td>MIX、白</td></tr>
+          <tr><td>性別</td><td>オス</td></tr>
+          <tr><td>特徴</td><td>黒白</td></tr>
+        </tbody></table></body></html>
+        """
+        adapter = YokosukaDoubutuAdapter(_site_cat_shelter())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.yokosuka-doubutu.com/adopted-animals/x/",
+                category="adoption",
+            )
+        # 「特徴」セルが先に拾われた色 ("黒白") が優先される
+        assert raw.color == "黒白"
+
+    def test_color_from_breed_cell_rejects_long_text(self):
+        """「種類」セルの後半が極端に長い場合 (説明文混入) は color に採用しない"""
+        html = """
+        <html><body><table><tbody>
+          <tr><td>分類</td><td>猫(譲渡)</td></tr>
+          <tr><td>種類</td><td>MIX、とても可愛い毛並みの綺麗な人懐っこい長毛の素敵な男の子です</td></tr>
+          <tr><td>性別</td><td>オス</td></tr>
+        </tbody></table></body></html>
+        """
+        adapter = YokosukaDoubutuAdapter(_site_cat_shelter())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.yokosuka-doubutu.com/adopted-animals/x/",
+                category="adoption",
+            )
+        # 長文は color に流れ込まない
+        assert raw.color == ""
+
+    def test_location_defaults_to_facility_for_adoption_pages(self):
+        """譲渡カテゴリ (`/adopted-animals/`) は「収容場所」セルが無いため
+        施設名 ("横須賀市動物愛護センター") を location に代入する
+
+        2026-06 実サイト観測: 譲渡 (adopted-animals/*) は「収容場所」セルを
+        持たず location が空 → normalizer で "不明" になる。譲渡対象動物は
+        施設で会うことになるので、施設名を location に充てる。
+        """
+        html = """
+        <html><body><table><tbody>
+          <tr><td>分類</td><td>猫(譲渡)</td></tr>
+          <tr><td>種類</td><td>MIX、白</td></tr>
+          <tr><td>性別</td><td>メス</td></tr>
+        </tbody></table></body></html>
+        """
+        adapter = YokosukaDoubutuAdapter(_site_cat_shelter())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.yokosuka-doubutu.com/adopted-animals/25-79/",
+                category="adoption",
+            )
+        assert raw.location == "横須賀市動物愛護センター", f"got {raw.location!r}"
+
+    def test_location_not_defaulted_for_protected_pages(self):
+        """保護収容 (`/protected-animals/`) は「収容場所」セルがある前提で
+        デフォルト充填しない (空のときは空のまま normalizer に委ねる)"""
+        html = """
+        <html><body><table><tbody>
+          <tr><td>分類</td><td>猫(保護収容)</td></tr>
+          <tr><td>種類</td><td>MIX</td></tr>
+          <tr><td>性別</td><td>メス</td></tr>
+          <tr><td>収容場所</td><td>長井</td></tr>
+        </tbody></table></body></html>
+        """
+        adapter = YokosukaDoubutuAdapter(_site_cat_shelter())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.yokosuka-doubutu.com/protected-animals/3131/",
+                category="sheltered",
+            )
+        assert raw.location == "長井"
+
+    def test_location_existing_value_not_overridden_for_adoption(self):
+        """譲渡カテゴリでも「収容場所」セルが存在する場合は元の値を優先"""
+        html = """
+        <html><body><table><tbody>
+          <tr><td>分類</td><td>犬(譲渡)</td></tr>
+          <tr><td>種類</td><td>柴犬</td></tr>
+          <tr><td>性別</td><td>メス</td></tr>
+          <tr><td>収容場所</td><td>横須賀</td></tr>
+        </tbody></table></body></html>
+        """
+        adapter = YokosukaDoubutuAdapter(_site_dog_adoption())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.yokosuka-doubutu.com/adopted-animals/x/",
+                category="adoption",
+            )
+        assert raw.location == "横須賀"

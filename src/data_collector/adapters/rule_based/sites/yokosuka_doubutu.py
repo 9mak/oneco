@@ -72,6 +72,11 @@ class YokosukaDoubutuAdapter(WordPressListAdapter):
     # 毛色ではなく譲渡対象動物の説明文と判定し color フィールドから外す。
     _COLOR_MAX_LEN: ClassVar[int] = 30
 
+    # 「種類」セル併記の毛色 (例: "黒白", "ブラウンマッカレルタビー") として
+    # 採用する最大長。実観測の最長 "ブラウンマッカレルタビー" は 12 文字
+    # なので 15 を上限としておく (これを超えるものは説明文混入と判定)。
+    _BREED_COLOR_MAX_LEN: ClassVar[int] = 15
+
     # 「特徴」セル内に混在する年齢表記を取り出す正規表現 (2026-05 観測)。
     # 例: 「キジ白、推定1歳」「茶トラ、約3か月」「黒、子猫」「成犬」
     # 抽出後は color テキストから該当部分を除去する。
@@ -83,6 +88,12 @@ class YokosukaDoubutuAdapter(WordPressListAdapter):
     # 体重 → size 推定の境界 (kg)。oita_aigo / kumamoto_doubutuaigo と同基準。
     _SIZE_BOUNDARY_SMALL_KG: ClassVar[float] = 5.0
     _SIZE_BOUNDARY_LARGE_KG: ClassVar[float] = 15.0
+
+    # 譲渡カテゴリ (`/adopted-animals/`) の詳細ページは「収容場所」セルを
+    # 持たないため location が空になり normalizer で "不明" になる。
+    # 譲渡対象動物は施設で会うため、施設名を location に代入する
+    # (zaidan_fukuoka_douai._CENTER_FACILITY_NAME と同じ運用)。
+    _CENTER_FACILITY_NAME: ClassVar[str] = "横須賀市動物愛護センター"
 
     # 動物写真は `#photos` ブロック配下に集約されている
     IMAGE_SELECTOR: ClassVar[str] = "div#photos img"
@@ -107,7 +118,24 @@ class YokosukaDoubutuAdapter(WordPressListAdapter):
         color/age (既存ロジック):
           - 「キジ白、推定1歳」のように color と age が同セルに混在するため
             年齢を分離する。長文 (`_COLOR_MAX_LEN` 超) は color から除外する。
+
+        color (種類セル併記、2026-06 追加):
+          - 譲渡カテゴリでは「種類」セルにブリードと毛色が「、」区切りで
+            併記される (例: "MIX、黒白", "スコティッシュフォールド、ホワイト")。
+            「特徴」セルから color が取れない場合のみ、後半部分を color に
+            採用する (区切りなし/後半が長文の場合はスキップ)。
+          - species 正規化で「種類」セルが上書きされる前に処理する。
+
+        location (譲渡カテゴリのデフォルト、2026-06 追加):
+          - 譲渡 (`/adopted-animals/`) は「収容場所」セルを持たないため
+            location が空 → normalizer で "不明" になる。譲渡対象動物は
+            施設で会うため、施設名を location に充てる。
         """
+        # 「種類」セルから毛色を抽出 (species 上書き前に実施)
+        breed_color = self._extract_color_from_breed_cell(fields.get("species", ""))
+        if breed_color and not fields.get("color"):
+            fields["color"] = breed_color
+
         # species: 「分類」セル → サイト名の順で正規化
         # 注: 基底実装は _postprocess_fields の **後** に
         # `any(fields.values())` で空ページを検出して ParsingError を投げる。
@@ -147,6 +175,40 @@ class YokosukaDoubutuAdapter(WordPressListAdapter):
         # size: 「大きさ」セル優先、なければ体重から推定
         if not fields.get("size"):
             fields["size"] = self._weight_to_size(fields.get("weight", ""))
+
+        # location: 譲渡カテゴリで空なら施設名を充てる
+        if not fields.get("location") and "/adopted-animals/" in detail_url:
+            fields["location"] = self._CENTER_FACILITY_NAME
+
+    @classmethod
+    def _extract_color_from_breed_cell(cls, breed_cell: str) -> str:
+        """「種類」セル ("MIX、黒白" 等) の区切り後ろから毛色候補を取り出す
+
+        - 区切りは「、」/「,」/「，」(全角カンマ) を受け付ける
+        - 最後の区切り以降の文字列を毛色候補とする
+        - 候補が空 / 長すぎる (`_COLOR_MAX_LEN` 超) 場合は採用しない
+        - 候補が species 語彙 ("犬"/"猫"/"その他") そのものなら毛色ではない
+
+        例:
+        - "MIX、黒白" → "黒白"
+        - "スコティッシュフォールド、ブラウンマッカレルタビー" → "ブラウンマッカレルタビー"
+        - "ミヌエット、レッド＆ホワイト" → "レッド＆ホワイト"
+        - "フレンチブルドッグ" → "" (区切りなし)
+        - "MIX、とても可愛い毛並みの…" → "" (長文)
+        """
+        if not breed_cell:
+            return ""
+        parts = re.split(r"[、,，]", breed_cell)
+        if len(parts) < 2:
+            return ""
+        candidate = parts[-1].strip()
+        if not candidate:
+            return ""
+        if len(candidate) > cls._BREED_COLOR_MAX_LEN:
+            return ""
+        if candidate in {"犬", "猫", "その他"}:
+            return ""
+        return candidate
 
     @classmethod
     def _species_from_category_label(cls, label: str) -> str:
