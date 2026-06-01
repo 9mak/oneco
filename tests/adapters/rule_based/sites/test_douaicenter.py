@@ -65,6 +65,67 @@ DETAIL_HTML = """
 """
 
 
+# `/animal/` 配下: 「連絡先」フィールド自体が存在しない実テンプレート想定
+ANIMAL_DETAIL_NO_PHONE_HTML = """
+<html><body>
+  <article class="animal">
+    <h1>犬No.10</h1>
+    <img src="https://www.douaicenter.jp/wp-content/uploads/2026/04/dog10.jpg">
+    <dl>
+      <dt>種類</dt><dd>雑種</dd>
+      <dt>性別</dt><dd>オス</dd>
+      <dt>年齢</dt><dd>1歳</dd>
+      <dt>毛色</dt><dd>白黒</dd>
+      <dt>体格</dt><dd>中型</dd>
+      <dt>保護日</dt><dd>2026-04-01</dd>
+      <dt>保護場所</dt><dd>豊岡２条８丁目</dd>
+    </dl>
+  </article>
+</body></html>
+"""
+
+
+# `/other-animal/` 配下: 「連絡先」フィールド無し・個別連絡先もコメント欄外で拾えないケース
+OTHER_ANIMAL_DETAIL_NO_PHONE_HTML = """
+<html><body>
+  <article class="animal">
+    <h1>猫</h1>
+    <img src="https://www.douaicenter.jp/wp-content/uploads/2026/05/cat.jpg">
+    <dl>
+      <dt>種類</dt><dd>雑種</dd>
+      <dt>性別</dt><dd>不明</dd>
+      <dt>年齢</dt><dd>不明</dd>
+      <dt>毛色</dt><dd>キジトラ白</dd>
+      <dt>体格</dt><dd>中</dd>
+      <dt>不明日</dt><dd>2026-05-20</dd>
+      <dt>不明場所</dt><dd>東光20条7丁目付近</dd>
+    </dl>
+  </article>
+</body></html>
+"""
+
+
+# `/other-animal/` 配下: 個別連絡先（市民の電話）がフィールドに入っているケース
+OTHER_ANIMAL_DETAIL_WITH_PERSONAL_PHONE_HTML = """
+<html><body>
+  <article class="animal">
+    <h1>犬</h1>
+    <img src="https://www.douaicenter.jp/wp-content/uploads/2026/05/dog.jpg">
+    <dl>
+      <dt>種類</dt><dd>雑種</dd>
+      <dt>性別</dt><dd>オス</dd>
+      <dt>年齢</dt><dd>不明</dd>
+      <dt>毛色</dt><dd>茶</dd>
+      <dt>体格</dt><dd>小</dd>
+      <dt>不明日</dt><dd>2026-05-10</dd>
+      <dt>不明場所</dt><dd>東光２条４丁目</dd>
+      <dt>連絡先</dt><dd>090-6995-1114</dd>
+    </dl>
+  </article>
+</body></html>
+"""
+
+
 class TestDouaicenterAdapterListExtraction:
     """list ページからの detail URL 抽出"""
 
@@ -120,6 +181,50 @@ class TestDouaicenterAdapterDetailExtraction:
         # uploads 配下の 2 枚のみ残り、themes 配下のロゴは弾かれる
         assert len(raw.image_urls) == 2
         assert all("/wp-content/uploads/" in u for u in raw.image_urls)
+
+
+class TestDouaicenterAdapterCenterPhoneFallback:
+    """旭川市動物愛護センター 代表電話 (0166-25-5271) のフォールバック注入
+
+    実 douaicenter.jp の detail テンプレートには「連絡先」フィールド自体が
+    無い個体が多く (snapshot 9 件中 7 件)、結果として phone が空のまま
+    DataNormalizer に渡されていた。テンプレート上は誰もが旭川市動物愛護
+    センター宛に問い合わせれば良いので、phone が空のとき代表電話を注入する。
+    """
+
+    EXPECTED_CENTER_PHONE = "0166-25-5271"
+
+    def test_animal_route_phone_falls_back_to_center_phone(self):
+        """`/animal/` 配下で「連絡先」フィールドが無いとき代表電話を注入する"""
+        adapter = DouaicenterAdapter(_adoption_dog_site())
+        with patch.object(adapter, "_http_get", return_value=ANIMAL_DETAIL_NO_PHONE_HTML):
+            raw = adapter.extract_animal_details(
+                "https://www.douaicenter.jp/animal/13772",
+                category="adoption",
+            )
+        assert raw.phone == self.EXPECTED_CENTER_PHONE
+
+    def test_other_animal_route_phone_falls_back_to_center_phone(self):
+        """`/other-animal/` 配下で個別連絡先が拾えないとき代表電話を注入する"""
+        adapter = DouaicenterAdapter(_shelter_other_dog_site())
+        with patch.object(adapter, "_http_get", return_value=OTHER_ANIMAL_DETAIL_NO_PHONE_HTML):
+            raw = adapter.extract_animal_details(
+                "https://www.douaicenter.jp/other-animal/13946",
+                category="sheltered",
+            )
+        assert raw.phone == self.EXPECTED_CENTER_PHONE
+
+    def test_other_animal_route_keeps_personal_phone_when_present(self):
+        """`/other-animal/` で個別連絡先が拾えるときは代表電話で上書きしない"""
+        adapter = DouaicenterAdapter(_shelter_other_dog_site())
+        with patch.object(
+            adapter, "_http_get", return_value=OTHER_ANIMAL_DETAIL_WITH_PERSONAL_PHONE_HTML
+        ):
+            raw = adapter.extract_animal_details(
+                "https://www.douaicenter.jp/other-animal/13827",
+                category="sheltered",
+            )
+        assert raw.phone == "090-6995-1114"
 
 
 class TestDouaicenterAdapterRegistry:
