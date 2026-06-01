@@ -215,6 +215,7 @@ class TestCityChibaAdapter:
         html = _load_chiba_html(fixture_html)
         # 電話表記が含まれていれば除去 (テスト分離)
         import re as _re
+
         html_no_phone = _re.sub(r"電話\s*[：:]\s*[\d\-（）()]+", "", html)
         adapter = CityChibaAdapter(_site())
         with patch.object(adapter, "_http_get", return_value=html_no_phone):
