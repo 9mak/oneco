@@ -140,6 +140,57 @@ class TestPrefYamanashiAdapter:
         assert raw.size == "中型", f"detail から size 補完されるべき: got {raw.size!r}"
         assert raw.phone == "0553-20-2751", f"detail から phone 補完されるべき: got {raw.phone!r}"
 
+    def test_extract_animal_details_size_with_annotation(self, fixture_html):
+        """「雑種 小型（3.5kg）」のように体格 token に注記が続くケースも拾う
+
+        旧実装は token 完全一致 (`_SIZE_VALID` set) のみだったため
+        「小型（3.5kg）」のような注記付き token を取り損ねていた。
+        snapshot で 184件の size 欠損のうち相当数がこのパターン。
+        """
+        list_html = _load_yamanashi_html(fixture_html)
+        detail_html = """
+        <html><body>
+          <h2>種類・体格</h2>
+          <p>雑種　小型（3.5kg）</p>
+          <h2>管轄保健所の連絡先</h2>
+          <p>峡東保健所TEL:0553-20-2751</p>
+        </body></html>
+        """
+        adapter = PrefYamanashiAdapter(_site())
+
+        def _http_side_effect(url):
+            if url.endswith("index.html"):
+                return list_html
+            return detail_html
+
+        with patch.object(adapter, "_http_get", side_effect=_http_side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+
+        assert raw.size == "小型", f"注記付き token から size 抽出されるべき: got {raw.size!r}"
+
+    def test_extract_animal_details_size_kind_only_returns_empty(self, fixture_html):
+        """「雑種」のみで体格欄無しは構造的に取得不可で空文字"""
+        list_html = _load_yamanashi_html(fixture_html)
+        detail_html = """
+        <html><body>
+          <h2>種類・体格</h2>
+          <p>雑種</p>
+        </body></html>
+        """
+        adapter = PrefYamanashiAdapter(_site())
+
+        def _http_side_effect(url):
+            if url.endswith("index.html"):
+                return list_html
+            return detail_html
+
+        with patch.object(adapter, "_http_get", side_effect=_http_side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+
+        assert raw.size == ""
+
     def test_extract_animal_details_enriches_age_from_other_info(self, fixture_html):
         """detail ページの「その他の情報」欄から「年齢：3才」等を抽出する
 
