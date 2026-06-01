@@ -83,8 +83,20 @@ _SECTION_ANCHORS: tuple[str, ...] = (
 # 「ラベル：値」「ラベル: 値」両方を許容する区切り
 _FIELD_SEP_RE = re.compile(r"[：:]")
 
+# コロン無しラベルにも対応するため、prefix として認識する label を列挙する。
+# 例: 「毛色キジトラ（足は白）」「柄ハチワレ」のような CMS 入力ミス。
+# 誤マッチを避けるため、color 系のごく限られたラベルのみ prefix 扱いにする。
+# 順序は重要 (長い prefix を先にしないと「色柄」が「色」にマッチして残りが「柄...」になる)。
+_NO_COLON_PREFIX_LABELS: tuple[str, ...] = (
+    "色柄",
+    "毛色",
+    "毛の色",
+    "柄",
+)
+
 # li のラベル → RawAnimalData フィールドのマッピング。
 # 同義語を網羅し、町田市内の 5 サイトで共通利用できるようにする。
+# 2026-06 観測: search_cat.html の数件で「柄」「色柄」が color として使われていた。
 _LABEL_TO_FIELD: dict[str, str] = {
     "種類": "species_detail",
     "種別": "species_detail",
@@ -94,6 +106,8 @@ _LABEL_TO_FIELD: dict[str, str] = {
     "毛色": "color",
     "毛の色": "color",
     "色": "color",
+    "色柄": "color",
+    "柄": "color",
     "体格": "size",
     "大きさ": "size",
     "体重": "_weight",  # 後段で kg → size 語彙 (小/中/大) に変換
@@ -303,12 +317,8 @@ class CityMachidaAdapter(RuleBasedAdapter):
             if sib.name == "ul":
                 for li in sib.find_all("li"):
                     text = li.get_text(separator=" ", strip=True)
-                    parts = _FIELD_SEP_RE.split(text, maxsplit=1)
-                    if len(parts) != 2:
-                        continue
-                    label = parts[0].strip()
-                    value = parts[1].strip()
-                    if not value:
+                    label, value = self._parse_li_label_value(text)
+                    if label is None or not value:
                         continue
                     field = _LABEL_TO_FIELD.get(label)
                     if field is None:
@@ -319,6 +329,31 @@ class CityMachidaAdapter(RuleBasedAdapter):
                 # 1 動物 1 ul を前提とする（CMS テンプレ通り）。
                 break
         return fields
+
+    @staticmethod
+    def _parse_li_label_value(text: str) -> tuple[str | None, str]:
+        """li テキストを「ラベル」「値」に分解する
+
+        1. 通常は「：」「:」 で 1 度だけ split (例: 「毛色：キジトラ」)
+        2. コロンが無い場合は `_NO_COLON_PREFIX_LABELS` の prefix と一致するかを
+           長い順に判定し、残りを値として返す (例: 「毛色キジトラ（足は白）」)
+        3. どちらでも判定できないときは `(None, "")` を返す。
+
+        誤マッチ防止のため prefix fallback は color 系の限られたラベルのみに
+        適用する (「しっぽ」「失踪場所」等の他フィールドは必ずコロンを持つ前提)。
+        """
+        parts = _FIELD_SEP_RE.split(text, maxsplit=1)
+        if len(parts) == 2:
+            return parts[0].strip(), parts[1].strip()
+
+        # コロン無し fallback: 長い prefix を優先 (「色柄」 > 「柄」)
+        stripped = text.strip()
+        for prefix in _NO_COLON_PREFIX_LABELS:
+            if stripped.startswith(prefix):
+                value = stripped[len(prefix) :].strip()
+                if value:
+                    return prefix, value
+        return None, ""
 
     def _extract_images_after_h3(self, h3: Tag, base_url: str) -> list[str]:
         """h3 直後の div.img-area-r 内の img src を絶対 URL リストとして返す"""
