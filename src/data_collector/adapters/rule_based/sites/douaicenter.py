@@ -34,7 +34,18 @@ class DouaicenterAdapter(WordPressListAdapter):
     - `/animal/{id}` (センター収容/譲渡): 「保護日」「保護場所」「種類」「性別」…
     - `/other-animal/{id}` (市民保護): 「不明日」「不明場所」「連絡先」…
     そのため FieldSpec の label を複数候補 tuple にして両方を吸収する。
+
+    phone について:
+    - `/animal/` 配下のテンプレートには「連絡先」フィールド自体が無く、
+      実運用上はすべて旭川市動物愛護センター宛 (0166-25-5271) で問い合わせる。
+    - `/other-animal/` (市民保護) には個別連絡先が入る場合があるが、
+      省略されている個体も多い。
+    どちらも phone が空のときは代表電話をフォールバックとして注入する。
     """
+
+    # 旭川市動物愛護センター あにまある 代表電話
+    # サイト全ページのヘッダ/フッタに `<a href="tel:0166255271">` で固定埋め込み。
+    _CENTER_PHONE = "0166-25-5271"
 
     # /animal/{id} と /other-animal/{id} の両方の detail を抽出。
     # animal-list-img-box 内のリンクのみ対象にすることで、ヘッダ/メニュー側の
@@ -62,13 +73,24 @@ class DouaicenterAdapter(WordPressListAdapter):
     def _postprocess_fields(
         self, fields: dict[str, str], detail_url: str, soup: BeautifulSoup
     ) -> None:
-        """species が「雑種」等で犬猫判定できない場合、list_url で補正する。"""
+        """species と phone の不足分を補完する。
+
+        - species: 「雑種」等で犬猫判定できない場合、list_url で補正する。
+        - phone: 「連絡先」フィールドが無いか空の場合、旭川市動物愛護センター
+          代表電話を注入する。`/animal/` 配下は「連絡先」フィールド自体が
+          存在しないため必ず注入され、`/other-animal/` 配下は個別連絡先が
+          優先され、無い場合のみ注入される。
+        """
         species = fields.get("species", "")
         # 「犬」「猫」が明示されていればそのまま、それ以外は URL hint で上書き
         if not any(kw in species for kw in ("犬", "猫", "いぬ", "ねこ", "イヌ", "ネコ")):
             hint = self._infer_species_from_url()
             if hint:
                 fields["species"] = hint
+
+        # phone フォールバック: 空 (またはキー未設定) のとき代表電話を入れる
+        if not fields.get("phone"):
+            fields["phone"] = self._CENTER_PHONE
 
 
 # ─────────────────── レジストリ登録 ───────────────────
