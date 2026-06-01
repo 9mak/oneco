@@ -131,10 +131,12 @@ class YokosukaDoubutuAdapter(WordPressListAdapter):
             location が空 → normalizer で "不明" になる。譲渡対象動物は
             施設で会うため、施設名を location に充てる。
         """
-        # 「種類」セルから毛色を抽出 (species 上書き前に実施)
-        breed_color = self._extract_color_from_breed_cell(fields.get("species", ""))
-        if breed_color and not fields.get("color"):
-            fields["color"] = breed_color
+        # 「種類」セル併記からの color 候補を **先に確保** しておく
+        # (species 正規化で fields["species"] が「猫」「犬」に書き換えられた後では
+        #  「MIX、黒白」のような併記が失われるため、ここで取り出しておく)
+        # 採用判断は後段で行う: 「特徴」セルから取れた色を優先しつつ、
+        # 「特徴」が空 / 長文 (説明文) でリジェクトされた場合はこの候補を使う。
+        breed_color_candidate = self._extract_color_from_breed_cell(fields.get("species", ""))
 
         # species: 「分類」セル → サイト名の順で正規化
         # 注: 基底実装は _postprocess_fields の **後** に
@@ -171,6 +173,11 @@ class YokosukaDoubutuAdapter(WordPressListAdapter):
         # 長文判定 (説明文相当) は color から除外
         if fields.get("color") and len(fields["color"]) > self._COLOR_MAX_LEN:
             fields["color"] = ""
+
+        # 「特徴」セルが空 / 長文リジェクトで空になった場合のフォールバックとして
+        # 「種類」セル併記 (例: "MIX、黒白") から取り出した色を採用する
+        if not fields.get("color") and breed_color_candidate:
+            fields["color"] = breed_color_candidate
 
         # size: 「大きさ」セル優先、なければ体重から推定
         if not fields.get("size"):
