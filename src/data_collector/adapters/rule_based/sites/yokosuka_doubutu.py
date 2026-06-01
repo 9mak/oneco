@@ -89,6 +89,14 @@ class YokosukaDoubutuAdapter(WordPressListAdapter):
     _SIZE_BOUNDARY_SMALL_KG: ClassVar[float] = 5.0
     _SIZE_BOUNDARY_LARGE_KG: ClassVar[float] = 15.0
 
+    # 「特徴」セル長文内に埋め込まれた「体重Nkg」を抽出する正規表現。
+    # 実サイトは「体重」というセル行を持たず "12歳、体重29Kg、フィラリア…"
+    # のように特徴セル内に体重情報が埋め込まれているケースが多く、
+    # FieldSpec(label="体重") ではセル行マッチのため永遠にヒットしない。
+    _WEIGHT_IN_FEATURE_RE: ClassVar[str] = (
+        r"体重\s*(?:約\s*)?(\d+(?:\.\d+)?)\s*[kKｋＫ][gGｇＧ]"
+    )
+
     # 譲渡カテゴリ (`/adopted-animals/`) の詳細ページは「収容場所」セルを
     # 持たないため location が空になり normalizer で "不明" になる。
     # 譲渡対象動物は施設で会うため、施設名を location に代入する
@@ -158,6 +166,10 @@ class YokosukaDoubutuAdapter(WordPressListAdapter):
             if inferred:
                 fields["species"] = inferred
 
+        # 「特徴」セルの原文 (年齢除去・長文リジェクト前) を保持する。
+        # 後段の size 推定で「体重Nkg」を埋め込みパターンで拾うため必要。
+        raw_features = fields.get("color", "")
+
         color = fields.get("color", "")
         if color:
             m = re.search(self._AGE_IN_FEATURE_RE, color)
@@ -179,9 +191,16 @@ class YokosukaDoubutuAdapter(WordPressListAdapter):
         if not fields.get("color") and breed_color_candidate:
             fields["color"] = breed_color_candidate
 
-        # size: 「大きさ」セル優先、なければ体重から推定
+        # size: 「大きさ」セル優先、なければ「体重」セル、それも無ければ
+        # 「特徴」セル長文内に埋め込まれた「体重Nkg」から推定。
+        # 「特徴」セルは長文リジェクトで color が空になる前に元値を参照する
+        # 必要があるため fields["color"] ではなく raw_features を保持する。
         if not fields.get("size"):
             fields["size"] = self._weight_to_size(fields.get("weight", ""))
+        if not fields.get("size"):
+            m = re.search(self._WEIGHT_IN_FEATURE_RE, raw_features)
+            if m:
+                fields["size"] = self._weight_to_size(f"{m.group(1)}kg")
 
         # location: 譲渡カテゴリで空なら施設名を充てる
         if not fields.get("location") and "/adopted-animals/" in detail_url:
