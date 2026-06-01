@@ -409,6 +409,136 @@ class TestZaidanFukuokaDouaiAdapterCenterCategory:
             )
         assert raw.location == "芦屋町山鹿"
 
+    def test_weight_only_size_falls_back_to_size_class(self):
+        """`大きさ（体重）` の値が体重表記のみの場合、kg 数値から 小型/中型/大型 を推定する
+
+        2026-06 観測: `/animals/center-detail/{uuid}` 系の詳細ページでは
+        「大きさ（体重）」欄に「(現在の体重：４．９Kg（適正体重：６Kg～）)」や
+        「(３．３５kg)」のような体重のみ表記しか入っていないことがあり、
+        DataNormalizer._cap_size はこれを「体格語が無い体重情報」として捨てるため
+        size 欄が None になり snapshot で 5/35 件欠損していた。
+        adapter 側で kg 数値を抽出し犬の体格基準で 小型/中型/大型 を補う。
+
+        基準: < 5kg = 小型 / 5kg 以上 15kg 未満 = 中型 / 15kg 以上 = 大型
+        (`kumamoto_doubutuaigo._weight_to_size` と同基準)
+        """
+        # ケース 1: 軽量 (3.35kg) → 小型
+        small_html = """
+        <html><body>
+          <table class="animals-data">
+            <tr><th>性別</th><td>メス</td></tr>
+            <tr><th>毛色</th><td>クリーム</td></tr>
+            <tr><th>大きさ（体重）</th><td>(３．３５kg)</td></tr>
+          </table>
+        </body></html>
+        """
+        adapter = ZaidanFukuokaDouaiAdapter(_site_centers_dog())
+        with patch.object(adapter, "_http_get", return_value=small_html):
+            raw = adapter.extract_animal_details(
+                "https://www.zaidan-fukuoka-douai.or.jp/animals/center-detail/abc",
+                category="adoption",
+            )
+        assert raw.size == "小型", f"3.35kg は小型のはず: got {raw.size!r}"
+
+        # ケース 2: 中量 (4.9kg、適正 6kg～) → 小型 (現在体重で判定)
+        medium_low_html = """
+        <html><body>
+          <table class="animals-data">
+            <tr><th>性別</th><td>オス</td></tr>
+            <tr><th>大きさ（体重）</th><td>(現在の体重：４．９Kg（適正体重：６Kg～）)</td></tr>
+          </table>
+        </body></html>
+        """
+        adapter = ZaidanFukuokaDouaiAdapter(_site_centers_dog())
+        with patch.object(adapter, "_http_get", return_value=medium_low_html):
+            raw = adapter.extract_animal_details(
+                "https://www.zaidan-fukuoka-douai.or.jp/animals/center-detail/def",
+                category="adoption",
+            )
+        # 4.9kg は < 5kg なので 小型
+        assert raw.size == "小型", f"4.9kg は小型のはず: got {raw.size!r}"
+
+        # ケース 3: 中量 (12kg) → 中型
+        medium_html = """
+        <html><body>
+          <table class="animals-data">
+            <tr><th>性別</th><td>オス</td></tr>
+            <tr><th>大きさ（体重）</th><td>(現在の体重：１２Kg（適正体重：１５ｋｇ前後）)</td></tr>
+          </table>
+        </body></html>
+        """
+        adapter = ZaidanFukuokaDouaiAdapter(_site_centers_dog())
+        with patch.object(adapter, "_http_get", return_value=medium_html):
+            raw = adapter.extract_animal_details(
+                "https://www.zaidan-fukuoka-douai.or.jp/animals/center-detail/ghi",
+                category="adoption",
+            )
+        assert raw.size == "中型", f"12kg は中型のはず: got {raw.size!r}"
+
+        # ケース 4: 重量 (16kg) → 大型
+        large_html = """
+        <html><body>
+          <table class="animals-data">
+            <tr><th>性別</th><td>メス</td></tr>
+            <tr><th>大きさ（体重）</th><td>(現在の体重：１６ｋｇ)</td></tr>
+          </table>
+        </body></html>
+        """
+        adapter = ZaidanFukuokaDouaiAdapter(_site_centers_dog())
+        with patch.object(adapter, "_http_get", return_value=large_html):
+            raw = adapter.extract_animal_details(
+                "https://www.zaidan-fukuoka-douai.or.jp/animals/center-detail/jkl",
+                category="adoption",
+            )
+        assert raw.size == "大型", f"16kg は大型のはず: got {raw.size!r}"
+
+    def test_size_class_label_takes_precedence_over_weight(self):
+        """`大きさ` 欄に「中型」等の体格語が含まれる場合はそちらを優先する (回帰防止)
+
+        既に取れている 30 件は「中型」「小型」「大型」が直接書かれているケース。
+        kg フォールバックがそれらを上書きしないことを確認する。
+        """
+        html = """
+        <html><body>
+          <table class="animals-data">
+            <tr><th>性別</th><td>オス</td></tr>
+            <tr><th>大きさ</th><td>中型</td></tr>
+          </table>
+        </body></html>
+        """
+        adapter = ZaidanFukuokaDouaiAdapter(_site_centers_dog())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.zaidan-fukuoka-douai.or.jp/animals/center-detail/xyz",
+                category="adoption",
+            )
+        assert raw.size == "中型"
+
+    def test_weight_unparseable_size_remains_unchanged(self):
+        """kg 数値が取れない `大きさ（体重）` 値は元値のまま (空 size を捏造しない)
+
+        既存値温存原則: kg も体格語も含まない値は adapter が判定できないため、
+        元のテキストを温存して下流 (DataNormalizer._cap_size) の判定に任せる。
+        DataNormalizer は体重キーワード or kg を含まない未知表記を温存し、
+        含むなら None にする (= size=None で snapshot に出る)。
+        """
+        html = """
+        <html><body>
+          <table class="animals-data">
+            <tr><th>性別</th><td>オス</td></tr>
+            <tr><th>大きさ（体重）</th><td>(不明)</td></tr>
+          </table>
+        </body></html>
+        """
+        adapter = ZaidanFukuokaDouaiAdapter(_site_centers_dog())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.zaidan-fukuoka-douai.or.jp/animals/center-detail/xyz",
+                category="adoption",
+            )
+        # 数値が無く体格語も無いので推定不能 → 元値温存 (DataNormalizer 側の判定に委ねる)
+        assert raw.size == "(不明)"
+
     def test_center_detail_link_pattern_matches(self):
         """`/animals/center-detail/{uuid}` 形式の詳細リンクも拾える"""
         # 4 系統 (protection / personal-hogo / center / group) は
