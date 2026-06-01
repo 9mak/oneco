@@ -308,7 +308,10 @@ class TestDouaiTokushimaDetailExtraction:
             raw,
             species="犬",
             sex="メス",
-            age="成犬",
+            # 「成犬」は adapter 層で「36ヶ月」(3歳相当) に変換される。
+            # 元の語彙では normalizer (`_normalize_age`) が拾えず age_months
+            # が None になるため。kochi_adapter._KOCHI_AGE_ESTIMATES と同基準。
+            age="36ヶ月",
             color="茶",
             size="中型",
             shelter_date="2026/5/15",
@@ -330,7 +333,8 @@ class TestDouaiTokushimaDetailExtraction:
             raw,
             species="猫",
             sex="オス",
-            age="幼猫",
+            # 「幼猫」→「3ヶ月」(子猫相当)
+            age="3ヶ月",
             color="キジ白",
             size="小型",
             shelter_date="2026/5/14",
@@ -440,6 +444,124 @@ class TestDouaiTokushimaColorFromEtcs:
     )
     def test_color_from_etcs(self, etcs, expected):
         assert DouaiTokushimaAdapter._color_from_etcs(etcs) == expected
+
+
+class TestDouaiTokushimaAgeWordToMonths:
+    """収容中テーブルの「推定年齢」セルが「成犬」「若犬」など語彙のとき、
+    `Nヶ月` 表記に変換することで normalizer (`_normalize_age`) が
+    age_months を埋められるようにする。
+
+    変換値は `kochi_adapter._KOCHI_AGE_ESTIMATES` と同基準:
+      - 成犬/成猫/成熟 → 36 (3歳相当)
+      - 若犬/若猫/若齢 → 18 (1.5歳相当)
+      - 高齢/老齢/老犬/老猫 → 120 (10歳相当)
+      - 中齢 → 60 (5歳相当)
+      - 子犬/仔犬/子猫/仔猫/幼齢/幼犬/幼猫 → 3 (3ヶ月相当)
+      - 乳飲み子 → 1 (1ヶ月相当)
+    """
+
+    @pytest.mark.parametrize(
+        "age_text,expected",
+        [
+            ("成犬", "36ヶ月"),
+            ("成猫", "36ヶ月"),
+            ("成熟", "36ヶ月"),
+            ("若犬", "18ヶ月"),
+            ("若猫", "18ヶ月"),
+            ("若齢", "18ヶ月"),
+            ("高齢", "120ヶ月"),
+            ("老齢", "120ヶ月"),
+            ("老犬", "120ヶ月"),
+            ("老猫", "120ヶ月"),
+            ("中齢", "60ヶ月"),
+            ("子犬", "3ヶ月"),
+            ("仔犬", "3ヶ月"),
+            ("子猫", "3ヶ月"),
+            ("仔猫", "3ヶ月"),
+            ("幼犬", "3ヶ月"),
+            ("幼猫", "3ヶ月"),
+            ("幼齢", "3ヶ月"),
+            ("乳飲み子", "1ヶ月"),
+            # 既に数値表記の場合はそのまま返す (normalizer が処理)
+            ("2歳", "2歳"),
+            ("3ヶ月", "3ヶ月"),
+            ("２０２５年８月８日", "２０２５年８月８日"),
+            # 不明系・空はそのまま (normalizer 側で None になる)
+            ("不明", "不明"),
+            ("", ""),
+            # 前後に空白がある場合もマッチ
+            (" 成犬 ", "36ヶ月"),
+        ],
+    )
+    def test_age_word_to_months(self, age_text, expected):
+        assert DouaiTokushimaAdapter._age_word_to_months(age_text) == expected
+
+
+class TestDouaiTokushimaStrayAgeNormalization:
+    """list1 (収容中) の各 row が「成犬/若犬/若猫」のとき、
+    extract_animal_details の戻り raw.age が「Nヶ月」化されていることを確認。
+    normalizer (`DataNormalizer._normalize_age`) と組み合わせて age_months
+    を埋めるための前段。
+    """
+
+    STRAY_AGE_WORDS_HTML = """
+    <html><body>
+      <ul class="news">
+        <li>
+          <table class="f_a">
+            <tr><th>種類</th><th>性別</th></tr>
+            <tr><td aria-label="種類">犬</td><td aria-label="性別">オス</td></tr>
+            <tr><th>推定年齢</th><th>体格</th></tr>
+            <tr><td aria-label="推定年齢">成犬</td><td aria-label="体格">中型</td></tr>
+            <tr><th>毛色</th><th>その他特徴</th></tr>
+            <tr><td aria-label="毛色">白</td><td aria-label="その他特徴">--</td></tr>
+          </table>
+        </li>
+        <li>
+          <table class="f_a">
+            <tr><th>種類</th><th>性別</th></tr>
+            <tr><td aria-label="種類">犬</td><td aria-label="性別">メス</td></tr>
+            <tr><th>推定年齢</th><th>体格</th></tr>
+            <tr><td aria-label="推定年齢">若犬</td><td aria-label="体格">小型</td></tr>
+            <tr><th>毛色</th><th>その他特徴</th></tr>
+            <tr><td aria-label="毛色">茶</td><td aria-label="その他特徴">--</td></tr>
+          </table>
+        </li>
+        <li>
+          <table class="f_a">
+            <tr><th>種類</th><th>性別</th></tr>
+            <tr><td aria-label="種類">猫</td><td aria-label="性別">メス</td></tr>
+            <tr><th>推定年齢</th><th>体格</th></tr>
+            <tr><td aria-label="推定年齢">若猫</td><td aria-label="体格">小型</td></tr>
+            <tr><th>毛色</th><th>その他特徴</th></tr>
+            <tr><td aria-label="毛色">キジトラ</td><td aria-label="その他特徴">--</td></tr>
+          </table>
+        </li>
+      </ul>
+    </body></html>
+    """
+
+    def test_stray_age_words_converted_to_months(self):
+        """成犬/若犬/若猫 → 36ヶ月/18ヶ月/18ヶ月"""
+        adapter = DouaiTokushimaAdapter(_stray_site())
+        with patch.object(adapter, "_http_get", return_value=self.STRAY_AGE_WORDS_HTML):
+            urls = adapter.fetch_animal_list()
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
+        assert raws[0].age == "36ヶ月"
+        assert raws[1].age == "18ヶ月"
+        assert raws[2].age == "18ヶ月"
+
+    def test_normalize_converts_age_months_for_stray_age_words(self):
+        """adapter → normalizer の経路で age_months が埋まることを確認"""
+        adapter = DouaiTokushimaAdapter(_stray_site())
+        with patch.object(adapter, "_http_get", return_value=self.STRAY_AGE_WORDS_HTML):
+            urls = adapter.fetch_animal_list()
+            normalized = [
+                adapter.normalize(adapter.extract_animal_details(u, category=c)) for u, c in urls
+            ]
+        assert normalized[0].age_months == 36
+        assert normalized[1].age_months == 18
+        assert normalized[2].age_months == 18
 
 
 class TestDouaiTokushimaTaikakuKgFallback:
