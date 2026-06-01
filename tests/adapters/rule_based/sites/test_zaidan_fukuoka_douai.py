@@ -287,6 +287,109 @@ class TestZaidanFukuokaDouaiAdapterCenterCategory:
             f"装飾画像 (/img/common/...) が混入: {raw.image_urls}"
         )
 
+    def test_personal_hogo_detail_extracts_image_urls(self):
+        """`hogo-detail` (一般保護) は `/files/download/PersonalAnimals/` 配下に画像を置く
+
+        2026-06 観測: `personal-animals/hogo-detail/{uuid}` の詳細ページでは
+        `<a href="/files/PersonalAnimals/..."><img src="/files/download/PersonalAnimals/...">`
+        の lightbox 構造で画像を表示している。`Animals` ではなく `PersonalAnimals`
+        パスのため、従来の IMAGE_SELECTOR では一切拾えていなかった (snapshot で
+        11 件全件 image_urls 空欠損)。
+        """
+        hogo_html = """
+        <html><body>
+          <div class="main"><div class="detail-wrap">
+            <a href="/files/PersonalAnimals/abc/image_01/aaaa.jpg">
+              <img src="/files/download/PersonalAnimals/abc/image_01/title/m" alt="保護犬のサムネイル画像1">
+            </a>
+            <a href="/files/PersonalAnimals/abc/image_02/bbbb.jpg">
+              <img src="/files/download/PersonalAnimals/abc/image_02/title/m" alt="保護犬のサムネイル画像2">
+            </a>
+            <table class="animals-data">
+              <tr><th>性別</th><td>メス</td></tr>
+              <tr><th>保護した場所</th><td>福岡市内</td></tr>
+            </table>
+          </div></div>
+          <p class="logo"><img src="/img/common/f-logo.png"></p>
+        </body></html>
+        """
+        adapter = ZaidanFukuokaDouaiAdapter(
+            SiteConfig(
+                name="福岡県動物愛護協会（一般保護犬）",
+                prefecture="福岡県",
+                prefecture_code="40",
+                list_url="https://www.zaidan-fukuoka-douai.or.jp/personal-animals/hogo/dog",
+                category="sheltered",
+            )
+        )
+        with patch.object(adapter, "_http_get", return_value=hogo_html):
+            raw = adapter.extract_animal_details(
+                "https://www.zaidan-fukuoka-douai.or.jp/personal-animals/hogo-detail/abc",
+                category="sheltered",
+            )
+        assert len(raw.image_urls) == 2, (
+            f"PersonalAnimals 画像 2 枚が拾えるべき: got {raw.image_urls}"
+        )
+        assert all("/files/download/PersonalAnimals/" in u for u in raw.image_urls), (
+            f"PersonalAnimals 配下のみ採用されるべき: {raw.image_urls}"
+        )
+        # 装飾画像は除外
+        assert all("/img/common/" not in u for u in raw.image_urls)
+
+    def test_center_detail_extracts_image_urls(self):
+        """`center-detail` (センター譲渡) は `/files/download/AnimalCompletes/` 配下に画像を置く
+
+        2026-06 観測: `animals/center-detail/{uuid}` 系では譲渡完了動物用の
+        AnimalCompletes パスを使う。`group-detail` (団体譲渡) も同じパス。
+        """
+        center_html = """
+        <html><body>
+          <a href="/files/AnimalCompletes/xyz/image_01/aaa.jpg">
+            <img src="/files/download/AnimalCompletes/xyz/image_01/title/m" alt="センター譲渡犬の写真1">
+          </a>
+          <a href="/files/AnimalCompletes/xyz/image_02/bbb.jpg">
+            <img src="/files/download/AnimalCompletes/xyz/image_02/title/m" alt="センター譲渡犬の写真2">
+          </a>
+          <a href="/files/AnimalCompletes/xyz/image_03/ccc.jpg">
+            <img src="/files/download/AnimalCompletes/xyz/image_03/title/m" alt="センター譲渡犬の写真3">
+          </a>
+          <table class="animals-data">
+            <tr><th>性別</th><td>メス</td></tr>
+          </table>
+        </body></html>
+        """
+        adapter = ZaidanFukuokaDouaiAdapter(_site_centers_dog())
+        with patch.object(adapter, "_http_get", return_value=center_html):
+            raw = adapter.extract_animal_details(
+                "https://www.zaidan-fukuoka-douai.or.jp/animals/center-detail/xyz",
+                category="adoption",
+            )
+        assert len(raw.image_urls) == 3, (
+            f"AnimalCompletes 画像 3 枚が拾えるべき: got {raw.image_urls}"
+        )
+        assert all("/files/download/AnimalCompletes/" in u for u in raw.image_urls)
+
+    def test_group_detail_extracts_image_urls(self):
+        """`group-detail` (団体譲渡) も `AnimalCompletes` 配下から画像を取れる"""
+        group_html = """
+        <html><body>
+          <a href="/files/AnimalCompletes/grp/image_01/aaa.jpg">
+            <img src="/files/download/AnimalCompletes/grp/image_01/title/m" alt="団体譲渡犬の写真1">
+          </a>
+          <table class="animals-data">
+            <tr><th>性別</th><td>オス</td></tr>
+          </table>
+        </body></html>
+        """
+        adapter = ZaidanFukuokaDouaiAdapter(_site_centers_dog())
+        with patch.object(adapter, "_http_get", return_value=group_html):
+            raw = adapter.extract_animal_details(
+                "https://www.zaidan-fukuoka-douai.or.jp/animals/group-detail/grp",
+                category="adoption",
+            )
+        assert len(raw.image_urls) == 1
+        assert "/files/download/AnimalCompletes/grp/image_01/title/m" in raw.image_urls[0]
+
     def test_protection_detail_keeps_actual_location(self):
         """`protection-detail` (保健所収容) は「保護した場所」が優先される (回帰防止)"""
         protection_html = """
