@@ -385,6 +385,172 @@ class TestKochiAdapterNormalize:
         assert animal_data.location == "高知県動物愛護センター"
 
 
+class TestKochiAdapterAgeEstimation:
+    """【高知県特別ルール】年齢推定フォールバックのテスト
+
+    snapshots/latest.json で kochi-apc.com の 63 件中 12 件が age_months=None と
+    なっていたため、以下の追加ルールを導入する:
+
+    1. "誕生日：M/D" のような年なし月日表記を、当年/前年で補完し月齢計算する
+    2. 年齢欄が空文字 or "不明" の場合は「成犬/成猫」(36ヶ月) をデフォルトとする
+       （保護動物サイトの掲載対象の大半が成獣であり、_KOCHI_AGE_ESTIMATES に
+        既に「成犬」「成猫」キーワード→36ヶ月の前例があるため整合する）
+    """
+
+    def test_estimate_kochi_age_birthday_month_day_only_past(self):
+        """誕生日：M/D (年なし) を当年の月日と解釈し月齢へ変換する
+
+        誕生日が今日より過去の月日: 当年扱い → 月齢計算
+        """
+        from datetime import date
+
+        adapter = KochiAdapter()
+        today = date.today()
+        # 1ヶ月前の月日
+        if today.month > 1:
+            past_month = today.month - 1
+        else:
+            past_month = 12
+        text = f"誕生日：{past_month}/{today.day}"
+
+        result = adapter._estimate_kochi_age(text)
+
+        # 経過月数が 0 ヶ月以上であること（"Nヶ月" or "N歳"）
+        assert result != text
+        assert result.endswith("ヶ月") or result.endswith("歳")
+
+    def test_estimate_kochi_age_birthday_month_day_only_future(self):
+        """誕生日：M/D が今年で見ると未来の月日の場合、前年扱いとする
+
+        例: 今日が 2026-06-01 で 誕生日：12/31 → 2025-12-31 と解釈
+        """
+        from datetime import date
+
+        adapter = KochiAdapter()
+        today = date.today()
+        # 確実に未来になる月日（今日の翌月 1日、または12月の場合は11月）
+        if today.month < 12:
+            future_month = today.month + 1
+            future_day = today.day if today.day <= 28 else 28
+        else:
+            future_month = 11  # ありえないが分岐安全
+            future_day = 30
+        text = f"誕生日：{future_month}/{future_day}"
+
+        result = adapter._estimate_kochi_age(text)
+
+        # 前年扱いで約 11ヶ月～1歳 になるはず
+        assert result != text
+        assert result.endswith("ヶ月") or result.endswith("歳")
+
+    def test_estimate_kochi_age_birthday_full_birthday_keyword(self):
+        """誕生日キーワード + 月日のみのバリエーション
+
+        "誕生日:3/20", "誕生日 3/20" 等のセパレータ揺れに対応
+        """
+        adapter = KochiAdapter()
+
+        for text in ["誕生日：3/20", "誕生日:3/20", "誕生日 3/20", "生年月日：3/20"]:
+            result = adapter._estimate_kochi_age(text)
+            assert result != text, f"failed for {text!r}"
+            assert result.endswith("ヶ月") or result.endswith("歳"), (
+                f"failed for {text!r}: got {result!r}"
+            )
+
+    def test_estimate_kochi_age_empty_defaults_to_adult(self):
+        """年齢欄が空文字の場合は「成犬」相当 (36ヶ月=3歳) にフォールバックする"""
+        adapter = KochiAdapter()
+        assert adapter._estimate_kochi_age("") == "3歳"
+
+    def test_estimate_kochi_age_unknown_defaults_to_adult(self):
+        """年齢欄が "不明" の場合は「成犬」相当 (36ヶ月=3歳) にフォールバックする"""
+        adapter = KochiAdapter()
+        assert adapter._estimate_kochi_age("不明") == "3歳"
+        assert adapter._estimate_kochi_age("ふめい") == "3歳"
+
+    def test_estimate_kochi_age_preserves_explicit_year_birthday(self):
+        """西暦/和暦の生年月日は既存ロジックを温存（後方互換）"""
+        adapter = KochiAdapter()
+        # 2018年8月生まれ → 7歳～8歳
+        result = adapter._estimate_kochi_age("生年月日：2018.8/2")
+        assert result.endswith("歳"), result
+
+    def test_estimate_kochi_age_preserves_numeric_pattern(self):
+        """数値パターンは既存ロジックを温存（後方互換）"""
+        adapter = KochiAdapter()
+        assert adapter._estimate_kochi_age("2歳") == "2歳"
+        assert adapter._estimate_kochi_age("3ヶ月") == "3ヶ月"
+
+    def test_normalize_empty_age_defaults_to_36_months(self):
+        """空の年齢欄を持つ動物が normalize 経由で age_months=36 を獲得する"""
+        adapter = KochiAdapter()
+        raw_data = RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="",  # 年齢欄が空
+            color="茶色",
+            size="中型",
+            shelter_date="2024-10-01",
+            location="高知県",
+            phone="0881234567",
+            image_urls=[],
+            source_url="https://kochi-apc.com/center-data/test",
+            category="adoption",
+        )
+        animal_data = adapter.normalize(raw_data)
+        assert animal_data.age_months == 36
+
+    def test_normalize_unknown_age_defaults_to_36_months(self):
+        """「不明」の年齢欄を持つ動物が normalize 経由で age_months=36 を獲得する"""
+        adapter = KochiAdapter()
+        raw_data = RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="不明",
+            color="茶色",
+            size="中型",
+            shelter_date="2024-11-25",
+            location="高知県",
+            phone="0881234567",
+            image_urls=[],
+            source_url="https://kochi-apc.com/center-data/test2",
+            category="adoption",
+        )
+        animal_data = adapter.normalize(raw_data)
+        assert animal_data.age_months == 36
+
+    def test_normalize_birthday_month_day_only(self):
+        """誕生日：M/D (年なし) で正しく月齢が計算される"""
+        from datetime import date
+
+        adapter = KochiAdapter()
+        today = date.today()
+        # 確実に過去の月日（1月の場合のみ前年12月扱いになるが許容）
+        if today.month > 1:
+            past_month = today.month - 1
+        else:
+            past_month = 12
+        day = today.day if today.day <= 28 else 28
+
+        raw_data = RawAnimalData(
+            species="猫",
+            sex="オス",
+            age=f"誕生日：{past_month}/{day}",
+            color="白",
+            size="小型",
+            shelter_date="2026-03-30",
+            location="高知県",
+            phone="0881234567",
+            image_urls=[],
+            source_url="https://kochi-apc.com/center-data/test3",
+            category="adoption",
+        )
+        animal_data = adapter.normalize(raw_data)
+        # 約 1ヶ月～12ヶ月 (12月→1月の場合)
+        assert animal_data.age_months is not None
+        assert 0 <= animal_data.age_months <= 13
+
+
 class TestKochiAdapterIntegration:
     """KochiAdapter 統合テスト"""
 
