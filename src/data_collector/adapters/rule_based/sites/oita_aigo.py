@@ -27,10 +27,10 @@ from __future__ import annotations
 import re
 from typing import ClassVar
 
-from bs4 import Tag
+from bs4 import BeautifulSoup, Tag
 
 from ....domain.models import RawAnimalData
-from ...municipality_adapter import ParsingError
+from ...municipality_adapter import NetworkError, ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
@@ -55,12 +55,17 @@ class OitaAigoAdapter(SinglePageTableAdapter):
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
 
     # 定義リストの dt ラベル -> RawAnimalData フィールド名
+    # 詳細ページのみに現れるラベル (「毛色・長さ」「大きさ」) もここに含める。
+    # 一覧カードに無い項目は extract_animal_details が詳細ページから補完する。
     LABEL_FIELDS: ClassVar[dict[str, str]] = {
         "保護地域": "location",
         "推定年齢": "age",
         "性別": "sex",
         "体重": "_weight",  # 後段で kg → size 語彙 (小/中/大) に変換
         "毛色": "color",
+        "毛色・長さ": "color",  # 迷子情報詳細ページの揺れ
+        "大きさ": "size",  # 詳細ページの体格 (中型/大型)
+        "体格": "size",  # 念のための揺れ
     }
 
     # 体重 → size 推定の境界 (kg)。
@@ -76,6 +81,11 @@ class OitaAigoAdapter(SinglePageTableAdapter):
     _CENTER_TEL: ClassVar[str] = "097-588-1122"
 
     # ─────────────────── オーバーライド ───────────────────
+
+    def __init__(self, site_config) -> None:
+        super().__init__(site_config)
+        # 詳細ページ HTML のキャッシュ。同一 URL を 1 回しか取得しない。
+        self._detail_html_cache: dict[str, str] = {}
 
     def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """`<div class="information_box">` カードから RawAnimalData を構築する
@@ -94,6 +104,17 @@ class OitaAigoAdapter(SinglePageTableAdapter):
 
         fields = self._extract_dl_fields(card)
 
+        # 一覧カードに無い項目 (毛色/大きさ) を詳細ページから補完する。
+        # 譲渡犬 (anytimedog) / 迷子 (lostchild) の一覧カードには毛色が無く、
+        # 詳細ページ (transferdoglist / lostchild/...) にのみ「毛色」または
+        # 「毛色・長さ」「大きさ」の dt がある。猫サイトは詳細ページにも体重
+        # ・大きさ情報は無いが、毛色は一覧から取れているので補完不要。
+        # 詳細ページ取得が失敗した場合は一覧カードの情報のみで継続する。
+        detail_fields = self._fetch_detail_fields(card)
+        for key, value in detail_fields.items():
+            if value and not fields.get(key):
+                fields[key] = value
+
         # 収容日: `<dd class="lostchild_ttl">` (例: "令和8年5月1日") を採用。
         # 無い場合は SHELTER_DATE_DEFAULT (空文字) で不明扱い。
         shelter_date = ""
@@ -111,8 +132,9 @@ class OitaAigoAdapter(SinglePageTableAdapter):
         # サイト名 (括弧内を除く) をシェルター名として補完する。
         location = fields.get("location", "") or self._shelter_location()
 
-        # size: 「体重: 11.64kg」を normalizer が解釈できる語彙 (小/中/大) に変換
-        size = self._weight_to_size(fields.get("_weight", ""))
+        # size: 詳細ページに「大きさ」(中型/大型) があればそれを優先。
+        # 詳細にも体格語が無ければ「体重: 11.64kg」から小/中/大 を推定する。
+        size = fields.get("size", "") or self._weight_to_size(fields.get("_weight", ""))
 
         try:
             return RawAnimalData(
@@ -132,6 +154,44 @@ class OitaAigoAdapter(SinglePageTableAdapter):
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
+
+    def _fetch_detail_fields(self, card: Tag) -> dict[str, str]:
+        """カードに紐づく詳細ページの dl から LABEL_FIELDS マッピング済み辞書を返す
+
+        詳細ページ URL の取得:
+          - カード直下の最初の `<a href=...>` を採用する
+          - href が無い、もしくは絶対 URL に解決できない場合は空辞書
+
+        詳細ページ取得失敗 (NetworkError) は致命ではない。
+        一覧カードのみで取れる範囲を返したいため、空辞書を返して継続する。
+        同一 URL は `_detail_html_cache` で 1 回しかフェッチしない。
+        """
+        href_tag = card.find("a", href=True)
+        if not isinstance(href_tag, Tag):
+            return {}
+        href = href_tag.get("href")
+        if not isinstance(href, str) or not href:
+            return {}
+        detail_url = self._absolute_url(href, base=self.site_config.list_url)
+        # 同一ドメイン以外 (外部リンク) は無視する
+        if "oita-aigo.com" not in detail_url:
+            return {}
+
+        if detail_url in self._detail_html_cache:
+            html = self._detail_html_cache[detail_url]
+        else:
+            try:
+                html = self._http_get(detail_url)
+            except NetworkError:
+                # 詳細ページが取れなくても一覧側の情報は返したいので空辞書で継続
+                return {}
+            self._detail_html_cache[detail_url] = html
+
+        soup = BeautifulSoup(html, "html.parser")
+        # 詳細ページは `<div class="information_box">` を持たないので
+        # ページ全体の dl を走査する。ヘッダ/フッタにも dl はあるが
+        # LABEL_FIELDS に登録されたラベルのみ採用するので衝突しない。
+        return self._extract_dl_fields(soup)
 
     def _extract_dl_fields(self, card: Tag) -> dict[str, str]:
         """カード配下の `<dl><dt>label</dt><dd>value</dd></dl>` を辞書化する
