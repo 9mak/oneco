@@ -33,9 +33,10 @@
 
 from __future__ import annotations
 
+import re
 from typing import ClassVar
 
-from bs4 import Tag
+from bs4 import BeautifulSoup, Tag
 
 from ....domain.models import RawAnimalData
 from ...municipality_adapter import ParsingError
@@ -99,6 +100,15 @@ class CityChibaAdapter(SinglePageTableAdapter):
     # adapter で防御するため、標準語彙以外は破棄する。
     _SIZE_VALID_VALUES: ClassVar[frozenset[str]] = frozenset(
         {"小", "中", "大", "小型", "中型", "大型", "その他"}
+    )
+
+    # 千葉市の動物保護ページは各動物ブロックに電話番号を持たず、ページ
+    # 共通フッタに保健所の電話番号 (例: 「電話：043-258-7817」) が記載
+    # されている。「電話：」「TEL：」(全角・半角混在) の直後の番号を拾う。
+    # ASCII / 全角ハイフン両対応。
+    _PAGE_PHONE_PATTERN: ClassVar[str] = (
+        r"(?:電話|TEL|Tel|tel)\s*[：:]\s*"
+        r"(\d{2,4}[\-－‐ー]\d{2,4}[\-－‐ー]\d{3,4})"
     )
 
     # ─────────────────── オーバーライド ───────────────────
@@ -218,6 +228,10 @@ class CityChibaAdapter(SinglePageTableAdapter):
         # 動物種別: HTML の「種類」(柴犬/雑種等) は具体名のためサイト名から推定する
         species = self._infer_species_from_site_name(self.site_config.name)
 
+        # phone: ページ共通フッタの「電話：043-258-7817」等を抽出する
+        # (各動物ブロックには電話番号が無いため、ページ全体から共通値を拾う)
+        phone = self._extract_page_phone()
+
         try:
             return RawAnimalData(
                 species=species,
@@ -227,13 +241,31 @@ class CityChibaAdapter(SinglePageTableAdapter):
                 size=fields.get("size", ""),
                 shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
                 location=fields.get("location", ""),
-                phone="",
+                phone=phone,
                 image_urls=image_urls,
                 source_url=virtual_url,
                 category=category,
             )
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
+
+    def _extract_page_phone(self) -> str:
+        """ページ全体から「電話：XXX-XXXX-XXXX」を抽出して正規化する
+
+        各動物ブロックには電話番号が無く、ページ共通フッタに保健所の
+        代表電話 (例: 「電話：043-258-7817」) が記載されている。
+        マッチしない場合は空文字を返す。
+        """
+        if not self._html_cache:
+            return ""
+        # ページ全体のテキストから探す
+        soup = BeautifulSoup(self._html_cache, "html.parser")
+        text = soup.get_text(" ", strip=True)
+        m = re.search(self._PAGE_PHONE_PATTERN, text)
+        if not m:
+            return ""
+        # 全角ハイフン類を ASCII に統一
+        return re.sub(r"[－‐ー]", "-", m.group(1))
 
     # ─────────────────── ヘルパー ───────────────────
 
