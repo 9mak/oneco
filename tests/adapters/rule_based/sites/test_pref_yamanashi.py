@@ -140,6 +140,34 @@ class TestPrefYamanashiAdapter:
         assert raw.size == "中型", f"detail から size 補完されるべき: got {raw.size!r}"
         assert raw.phone == "0553-20-2751", f"detail から phone 補完されるべき: got {raw.phone!r}"
 
+    def test_extract_size_from_kind_size_variants(self):
+        """「種類・体格」テキストの多様な表記から size を抽出する単体テスト
+
+        実サイト (2026-06 調査) で観測された表記パターンを網羅する。
+        旧 token 分割実装は全角括弧・中点・体重表記を取り損ねていた。
+        """
+        cls = PrefYamanashiAdapter
+        # 直接体格語
+        assert cls._extract_size_from_kind_size("トイプードル 中型") == "中型"
+        assert cls._extract_size_from_kind_size("雑種 小型（3.5kg）") == "小型"
+        # 全角括弧 token 分離不能
+        assert cls._extract_size_from_kind_size("猫（雑種）大型") == "大型"
+        # 中点区切り
+        assert cls._extract_size_from_kind_size("猫（雑種）・中型") == "中型"
+        # 体重 → size 推定
+        assert cls._extract_size_from_kind_size("雑種、体重約4kg") == "小"
+        assert cls._extract_size_from_kind_size("3kgくらい") == "小"
+        assert cls._extract_size_from_kind_size("雑種 10kg") == "中"
+        # 体格語優先 (kg 注記より)
+        assert cls._extract_size_from_kind_size("大型犬 20kg") == "大型"
+        # 年齢キーワード
+        assert cls._extract_size_from_kind_size("子猫") == "小"
+        assert cls._extract_size_from_kind_size("子犬") == "小"
+        # 構造的不可能 (情報なし)
+        assert cls._extract_size_from_kind_size("雑種") == ""
+        assert cls._extract_size_from_kind_size("柴犬") == ""
+        assert cls._extract_size_from_kind_size("ポメラニアンとチワワのミックス") == ""
+
     def test_extract_animal_details_size_with_annotation(self, fixture_html):
         """「雑種 小型（3.5kg）」のように体格 token に注記が続くケースも拾う
 
