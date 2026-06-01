@@ -172,6 +172,7 @@ class CityYokohamaAdapter(SinglePageTableAdapter):
         if not self._html_cache:
             return None
         from bs4 import BeautifulSoup
+
         soup = BeautifulSoup(self._html_cache, "html.parser")
         for row in soup.select(self.ROW_SELECTOR):
             if not isinstance(row, Tag):
