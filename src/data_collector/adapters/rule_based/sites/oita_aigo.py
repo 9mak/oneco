@@ -159,22 +159,23 @@ class OitaAigoAdapter(SinglePageTableAdapter):
         """カードに紐づく詳細ページの dl から LABEL_FIELDS マッピング済み辞書を返す
 
         詳細ページ URL の取得:
-          - カード直下の最初の `<a href=...>` を採用する
+          - カード内の `<a href=...>` を順に走査し、list_url 自身 (例:
+            「随時」カテゴリ自リンク) と同一/外部ドメインを除外した上で
+            最初に見つかった href を採用する
           - href が無い、もしくは絶対 URL に解決できない場合は空辞書
+
+        実 oita-aigo.com 観測 (2026-06):
+          anytimedog / anytimecat ページではカード内最初の `<a>` が
+          「随時」カテゴリの自リンク (list_url 自身) であり、単純な
+          `card.find("a")` だと詳細フェッチが list URL に向かい毛色 dl が
+          一切取れない。list_url と一致するリンクは必ずスキップする。
 
         詳細ページ取得失敗 (NetworkError) は致命ではない。
         一覧カードのみで取れる範囲を返したいため、空辞書を返して継続する。
         同一 URL は `_detail_html_cache` で 1 回しかフェッチしない。
         """
-        href_tag = card.find("a", href=True)
-        if not isinstance(href_tag, Tag):
-            return {}
-        href = href_tag.get("href")
-        if not isinstance(href, str) or not href:
-            return {}
-        detail_url = self._absolute_url(href, base=self.site_config.list_url)
-        # 同一ドメイン以外 (外部リンク) は無視する
-        if "oita-aigo.com" not in detail_url:
+        detail_url = self._select_detail_url(card)
+        if not detail_url:
             return {}
 
         if detail_url in self._detail_html_cache:
@@ -192,6 +193,33 @@ class OitaAigoAdapter(SinglePageTableAdapter):
         # ページ全体の dl を走査する。ヘッダ/フッタにも dl はあるが
         # LABEL_FIELDS に登録されたラベルのみ採用するので衝突しない。
         return self._extract_dl_fields(soup)
+
+    def _select_detail_url(self, card: Tag) -> str:
+        """カード内の `<a href>` から詳細ページ URL を 1 つ選ぶ
+
+        スキップ条件:
+          - href 属性が空
+          - 絶対 URL 化した結果が oita-aigo.com 以外 (外部リンク)
+          - list_url 自身 (anytimedog/anytimecat の「随時」カテゴリ自リンク等)。
+            末尾スラッシュの有無は正規化して比較する。
+
+        見つからなければ空文字を返す。
+        """
+        list_url_normalized = self.site_config.list_url.rstrip("/")
+        for href_tag in card.find_all("a", href=True):
+            if not isinstance(href_tag, Tag):
+                continue
+            href = href_tag.get("href")
+            if not isinstance(href, str) or not href.strip():
+                continue
+            candidate = self._absolute_url(href, base=self.site_config.list_url)
+            if "oita-aigo.com" not in candidate:
+                continue
+            # list_url 自身 (カテゴリ自リンク) は詳細ではない
+            if candidate.rstrip("/") == list_url_normalized:
+                continue
+            return candidate
+        return ""
 
     def _extract_dl_fields(self, card: Tag) -> dict[str, str]:
         """カード配下の `<dl><dt>label</dt><dd>value</dd></dl>` を辞書化する

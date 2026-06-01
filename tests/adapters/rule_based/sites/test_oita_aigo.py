@@ -475,3 +475,107 @@ class TestOitaAigoDetailPageFallback:
         detail_calls = sum(1 for u in call_log if "transferdoglist" in u)
         assert list_calls == 1, f"list page should be fetched once: {call_log}"
         assert detail_calls == 1, f"detail page should be fetched once: {call_log}"
+
+
+# 実 oita-aigo.com の anytimedog / anytimecat ページでは、カード先頭に
+# 「随時」というカテゴリラベル付きの自リンク (一覧 URL 自身) があり、
+# 詳細ページへのリンクはその次に並ぶ。PR #108 の実装は
+# `card.find("a", href=True)` で先頭の `<a>` を取っていたため、
+# 詳細フェッチが list URL に向かい毛色 dl が一切取れず実スナップショットで
+# 改善ゼロだった。本クラスはこの構造を fixture で再現し、詳細リンクが
+# 正しく選ばれて color が補完されることを担保する。
+_LIST_WITH_CATEGORY_SELF_LINK_THEN_DETAIL = """
+<html><body><main>
+  <div class="information_box">
+    <a href="https://oita-aigo.com/information_doglist/anytimedog/">随時</a>
+    <a href="https://oita-aigo.com/transferdoglist/24-0609-2/">
+      <div class="information_image"><img src="/img.jpg"></div>
+      <div class="information_text">
+        <dl><dd>No.24-0609-2</dd></dl>
+        <dl><dt>仮名</dt><dd>ブロンソン</dd></dl>
+        <dl><dt>種類</dt><dd>雑種</dd></dl>
+        <dl><dt>推定年齢</dt><dd>9歳</dd></dl>
+        <dl><dt>性別</dt><dd>オス</dd></dl>
+        <dl><dt>体重</dt><dd>17.0kg</dd></dl>
+      </div>
+    </a>
+  </div>
+</main></body></html>
+"""
+
+# 迷子情報メインも同様にカテゴリ自リンク → 詳細リンクの並びになりうる
+_LIST_LOSTCHILD_WITH_CATEGORY_SELF_LINK_THEN_DETAIL = """
+<html><body><main>
+  <div class="information_box">
+    <a href="https://oita-aigo.com/lostchild/">迷子</a>
+    <a href="https://oita-aigo.com/lostchild/r8-5-28/">
+      <div class="information_text">
+        <dl><dd class="lostchild_ttl">令和8年5月28日</dd></dl>
+        <dl><dt>保護地域</dt><dd>杵築市</dd></dl>
+        <dl><dt>推定年齢</dt><dd>1歳</dd></dl>
+        <dl><dt>性別</dt><dd>メス</dd></dl>
+        <dl><dt>体重</dt><dd>11.64kg</dd></dl>
+      </div>
+    </a>
+  </div>
+</main></body></html>
+"""
+
+
+class TestOitaAigoDetailLinkSelection:
+    """カード内に複数の `<a>` がある場合、list URL 自身ではなく
+    詳細ページ URL を選ぶ (PR #108 の取り損ね原因の修正)。
+    """
+
+    def test_anytimedog_skips_category_self_link_and_picks_detail(self):
+        """カテゴリ自リンク (list URL と同一) はスキップし詳細リンクを選ぶ"""
+        adapter = OitaAigoAdapter(_adoption_dog_site())
+        fake = _make_http_get(
+            _LIST_WITH_CATEGORY_SELF_LINK_THEN_DETAIL,
+            "https://oita-aigo.com/transferdoglist/24-0609-2/",
+            _DETAIL_DOG_HTML,
+        )
+        with patch.object(adapter, "_http_get", side_effect=fake):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="adoption")
+        # 詳細ページの「毛色: 茶」で color が補完されているはず
+        assert raw.color == "茶"
+
+    def test_anytimedog_does_not_fetch_list_url_as_detail(self):
+        """list URL を detail として取得してはならない (無限ループ/重複防止)"""
+        adapter = OitaAigoAdapter(_adoption_dog_site())
+        call_log: list[str] = []
+
+        def _logged_get(url: str, **kwargs) -> str:
+            call_log.append(url)
+            if "transferdoglist" in url:
+                return _DETAIL_DOG_HTML
+            return _LIST_WITH_CATEGORY_SELF_LINK_THEN_DETAIL
+
+        with patch.object(adapter, "_http_get", side_effect=_logged_get):
+            urls = adapter.fetch_animal_list()
+            adapter.extract_animal_details(urls[0][0], category="adoption")
+
+        # list URL (anytimedog/) は fetch_animal_list の 1 回のみ
+        list_calls = sum(1 for u in call_log if u.endswith("/anytimedog/"))
+        assert list_calls == 1, (
+            f"list URL should only be fetched once (for the list itself), "
+            f"not as a detail fallback: {call_log}"
+        )
+        # 詳細リンクが正しく拾われていれば transferdoglist が 1 回呼ばれる
+        detail_calls = sum(1 for u in call_log if "transferdoglist" in u)
+        assert detail_calls == 1, f"detail page should be fetched: {call_log}"
+
+    def test_lostchild_skips_category_self_link_and_picks_detail(self):
+        """迷子情報でもカテゴリ自リンクを飛ばして詳細リンクを選ぶ"""
+        adapter = OitaAigoAdapter(_lostchild_site())
+        fake = _make_http_get(
+            _LIST_LOSTCHILD_WITH_CATEGORY_SELF_LINK_THEN_DETAIL,
+            "https://oita-aigo.com/lostchild/r8-5-28/",
+            _DETAIL_LOSTCHILD_HTML,
+        )
+        with patch.object(adapter, "_http_get", side_effect=fake):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+        assert raw.color == "黒茶白"
+        assert raw.size == "中型"
