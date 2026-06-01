@@ -145,6 +145,10 @@ STRAY_HTML = """
 """
 
 # 譲渡犬: 1 件のみ (`<table class="f_a3">` フォーマット)
+# f_a3 テーブルには「毛色」「体格」aria-label が存在しないため、
+# 「その他の情報」(etcs) フィールドの自由記述から色 / 体重を推定する。
+# このフィクスチャは「白い子」「４．９kg」の両方を含み color と size を
+# 同時に推定できることを検証する。
 DOG_TRANSFER_HTML = """
 <html><body>
   <ul class="news">
@@ -181,7 +185,9 @@ DOG_TRANSFER_HTML = """
         </tr>
         <tr><th colspan="2">その他の情報</th></tr>
         <tr>
-          <td colspan="2" aria-label="その他の情報">怖がりな白い子です。</td>
+          <td colspan="2" aria-label="その他の情報">
+            怖がりな白い子です。５／２７時点で体重が４．９kg有ります。
+          </td>
         </tr>
       </table>
     </li>
@@ -332,7 +338,9 @@ class TestDouaiTokushimaDetailExtraction:
 
     def test_dog_transfer_uses_species_hint_when_table_lacks_kind(self, assert_raw_animal):
         """譲渡犬テーブルには `<td aria-label="種類">` が無いが、
-        サイト名から species を「犬」に補完できる"""
+        サイト名から species を「犬」に補完できる。
+        また f_a3 には 毛色 / 体格 セルが無いため、その他の情報の自由記述から
+        color (「白い子」→ 白) と size (「４．９kg」→ 小) を推定する。"""
         adapter = DouaiTokushimaAdapter(_dog_site())
         with patch.object(adapter, "_http_get", return_value=DOG_TRANSFER_HTML):
             urls = adapter.fetch_animal_list()
@@ -343,6 +351,8 @@ class TestDouaiTokushimaDetailExtraction:
             species="犬",
             sex="メス(避妊手術済)",
             age="２０２５年８月８日",
+            color="白",
+            size="小",
             category="adoption",
         )
 
@@ -379,6 +389,97 @@ class TestDouaiTokushimaDetailExtraction:
             for url, cat in urls:
                 adapter.extract_animal_details(url, category=cat)
         assert mock_get.call_count == 1
+
+
+# ─────────────────── color / size の etcs 推定 ───────────────────
+
+
+class TestDouaiTokushimaWeightToSize:
+    """その他の情報 (etcs) に書かれた体重表記から size を推定"""
+
+    @pytest.mark.parametrize(
+        "weight_text,expected",
+        [
+            ("体重は3.25kgあります", "小"),
+            ("4.6kg", "小"),
+            ("体重４．９kg", "小"),  # 全角数字 + 全角小数点
+            ("体重５．０kg", "中"),  # 境界値 5.0kg は中
+            ("７．８５kg", "中"),
+            ("12kg", "中"),
+            ("15kg", "大"),
+            ("20kgあります", "大"),
+            ("体重不明", ""),
+            ("", ""),
+        ],
+    )
+    def test_weight_to_size(self, weight_text, expected):
+        assert DouaiTokushimaAdapter._weight_to_size(weight_text) == expected
+
+
+class TestDouaiTokushimaColorFromEtcs:
+    """その他の情報 (etcs) の自由記述から色キーワードを抽出"""
+
+    @pytest.mark.parametrize(
+        "etcs,expected",
+        [
+            # 単色: 「白い」「黒い」「茶色」など語尾を伴うキーワード
+            ("怖がりな白い子です。", "白"),
+            ("黒い男の子☆", "黒"),
+            ("茶色の柴犬", "茶"),
+            # 複合色: 黒白 / 白黒 / 茶白 / 黒茶 / キジ白
+            ("少しシャイな黒白の男の子です", "黒白"),
+            ("白黒のかわいい子", "黒白"),  # 白黒 → 黒白 に正規化
+            ("茶白のオス", "茶白"),
+            # 柴系の表現は茶系として推定
+            ("少し怖がりな柴風の男の子", "茶"),
+            # 完全一致のパターン
+            ("キジトラのかわいい子", "キジトラ"),
+            # 該当色キーワードが無いケースは空文字
+            ("ちょっとシャイな男の子です", ""),
+        ],
+    )
+    def test_color_from_etcs(self, etcs, expected):
+        assert DouaiTokushimaAdapter._color_from_etcs(etcs) == expected
+
+
+class TestDouaiTokushimaTaikakuKgFallback:
+    """収容中テーブルの「体格」セルが体重 (kg) 表記の場合も _weight_to_size で救済"""
+
+    KG_TAIKAKU_HTML = """
+    <html><body>
+      <ul class="news">
+        <li>
+          <table class="f_a">
+            <tr><th>種類</th><th>性別</th></tr>
+            <tr>
+              <td aria-label="種類">猫</td>
+              <td aria-label="性別">メス</td>
+            </tr>
+            <tr><th>推定年齢</th><th>体格</th></tr>
+            <tr>
+              <td aria-label="推定年齢">若猫</td>
+              <td aria-label="体格">0.3kg</td>
+            </tr>
+            <tr><th>毛色</th><th>その他特徴</th></tr>
+            <tr>
+              <td aria-label="毛色">キジトラ</td>
+              <td aria-label="その他特徴">--</td>
+            </tr>
+          </table>
+        </li>
+      </ul>
+    </body></html>
+    """
+
+    def test_taikaku_with_kg_value_normalized_to_size_word(self, assert_raw_animal):
+        """体格セルが「0.3kg」のように数値を含む場合、後段の normalize で
+        弾かれてしまうため adapter 層で 小/中/大 に変換する"""
+        adapter = DouaiTokushimaAdapter(_stray_site())
+        with patch.object(adapter, "_http_get", return_value=self.KG_TAIKAKU_HTML):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0])
+        assert raw.size == "小"
+        assert raw.color == "キジトラ"
 
 
 # ─────────────────── normalize ───────────────────

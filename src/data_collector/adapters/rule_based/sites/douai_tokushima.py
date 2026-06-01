@@ -28,6 +28,8 @@
 
 from __future__ import annotations
 
+import re
+import unicodedata
 from typing import ClassVar
 
 from bs4 import BeautifulSoup, Tag
@@ -72,7 +74,38 @@ _LABEL_CANDIDATES: dict[str, tuple[str, ...]] = {
     # 譲渡側は table に体格列が無いが、収容中側は体格列がある
     "size": ("体格",),
     "shelter_date": ("発見日",),
+    # 譲渡カード (f_a3) のみ存在する自由記述フィールド。
+    # color / size を直接持たないため、ここから体重・色キーワードを推定する。
+    "etcs": ("その他の情報",),
 }
+
+
+# その他の情報 (etcs) から色を推定するためのキーワードと採用色。
+# 順序が結果を決めるので、複合色 (黒白 / キジ白 等) を単色より先に並べる。
+# 各タプルは (検索キーワード, RawAnimalData.color に格納する値)。
+_ETCS_COLOR_PATTERNS: tuple[tuple[str, str], ...] = (
+    ("キジトラ", "キジトラ"),
+    ("キジ白", "キジ白"),
+    ("サビ", "サビ"),
+    ("三毛", "三毛"),
+    # 白黒 / 黒白 はどちらも「黒白」に正規化 (順序: 複合 → 単色)
+    ("白黒", "黒白"),
+    ("黒白", "黒白"),
+    ("茶白", "茶白"),
+    ("黒茶", "黒茶"),
+    # 単色 (語尾を伴う表現のみマッチ。例: 「白い」「白色」)
+    ("白い", "白"),
+    ("白色", "白"),
+    ("黒い", "黒"),
+    ("黒色", "黒"),
+    ("茶色", "茶"),
+    ("茶系", "茶"),
+    # 柴犬風の表現は茶系として扱う (実写真の傾向)
+    ("柴犬風", "茶"),
+    ("柴風", "茶"),
+    ("クリーム", "クリーム"),
+    ("グレー", "グレー"),
+)
 
 
 class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
@@ -87,6 +120,13 @@ class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
     # 無く各カード個別の phone が取れないため、全動物カード共通で割り当てる。
     # (個別 li に phone aria-label があれば優先採用)
     _CENTER_TEL: ClassVar[str] = "088-636-6122"
+
+    # 体重 → size 推定の境界 (kg)。kumamoto_doubutuaigo と同基準で揃える。
+    # - 5kg 未満: 小
+    # - 5kg 以上 15kg 未満: 中
+    # - 15kg 以上: 大
+    _SIZE_BOUNDARY_SMALL_KG: ClassVar[float] = 5.0
+    _SIZE_BOUNDARY_LARGE_KG: ClassVar[float] = 15.0
 
     # ─────────────────── Playwright 設定 ───────────────────
     # iframe 内の `<ul class="news">` が描画されたら抽出可能。
@@ -173,13 +213,32 @@ class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
         # 個別 li に phone aria-label があれば優先採用。
         phone = self._normalize_phone(fields.get("phone", "")) or self._CENTER_TEL
 
+        # size の決定ロジック:
+        # 1. 「体格」セルの値が「小型 / 中型 / 大型」のような語であればそのまま採用。
+        # 2. 「体格」セルが「0.3kg」のように数値混じりの場合は _weight_to_size で
+        #    小/中/大 に変換する (後段 normalize で kg 表記が落ちる救済)。
+        # 3. 「体格」セルが空 (譲渡カード) であれば、その他の情報の体重表記を
+        #    探して同様に推定する。
+        raw_size = fields.get("size", "")
+        size = raw_size if raw_size else ""
+        if size and self._contains_kg_value(size):
+            size = self._weight_to_size(size)
+        if not size:
+            size = self._weight_to_size(fields.get("etcs", ""))
+
+        # color の決定ロジック: 「毛色」セルを優先採用し、空の場合のみ
+        # その他の情報からキーワードベースで推定する。
+        color = fields.get("color", "")
+        if not color:
+            color = self._color_from_etcs(fields.get("etcs", ""))
+
         try:
             return RawAnimalData(
                 species=fields.get("species", ""),
                 sex=fields.get("sex", ""),
                 age=fields.get("age", ""),
-                color=fields.get("color", ""),
-                size=fields.get("size", ""),
+                color=color,
+                size=size,
                 shelter_date=fields.get("shelter_date", ""),
                 location=location,
                 phone=phone,
@@ -221,6 +280,53 @@ class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
                 text = td.get_text(separator=" ", strip=True)
                 if text:
                     return text
+        return ""
+
+    @staticmethod
+    def _contains_kg_value(text: str) -> bool:
+        """テキストに「N kg」「Ｎ kg」など体重を表す数値+kg が含まれるか"""
+        norm = unicodedata.normalize("NFKC", text).replace("．", ".")
+        return bool(re.search(r"\d+(?:\.\d+)?\s*kg", norm, flags=re.IGNORECASE))
+
+    @classmethod
+    def _weight_to_size(cls, text: str) -> str:
+        """体重表記 (例: 「４．９kg」「12kg」) から size 語 (小/中/大) を推定
+
+        - 5kg 未満: 小
+        - 5kg 以上 15kg 未満: 中
+        - 15kg 以上: 大
+        - 数値 + kg が見つからない場合: 空文字
+
+        全角数字 / 全角小数点 (．) も正規化して扱う。
+        """
+        if not text:
+            return ""
+        norm = unicodedata.normalize("NFKC", text).replace("．", ".")
+        m = re.search(r"(\d+(?:\.\d+)?)\s*kg", norm, flags=re.IGNORECASE)
+        if not m:
+            return ""
+        try:
+            kg = float(m.group(1))
+        except ValueError:
+            return ""
+        if kg < cls._SIZE_BOUNDARY_SMALL_KG:
+            return "小"
+        if kg < cls._SIZE_BOUNDARY_LARGE_KG:
+            return "中"
+        return "大"
+
+    @staticmethod
+    def _color_from_etcs(text: str) -> str:
+        """その他の情報の自由記述から色キーワードを抽出
+
+        `_ETCS_COLOR_PATTERNS` の順 (複合色 → 単色) で最初にヒットした
+        キーワードに対応する色を返す。該当無しなら空文字。
+        """
+        if not text:
+            return ""
+        for keyword, color in _ETCS_COLOR_PATTERNS:
+            if keyword in text:
+                return color
         return ""
 
 
