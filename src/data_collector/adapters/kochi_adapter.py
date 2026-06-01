@@ -612,6 +612,14 @@ class KochiAdapter(MunicipalityAdapter):
         # uploads画像が1枚もない場合は元のリストを返す（データ消失防止）
         return filtered if filtered else image_urls
 
+    # 【高知県特別ルール】年齢欄が空または"不明"系のときに使うデフォルト月齢
+    # 保護動物サイトに掲載されている個体の大半は成獣であり、
+    # _KOCHI_AGE_ESTIMATES の「成犬→36」「成猫→36」と同等の前提を採用する。
+    _KOCHI_DEFAULT_AGE_MONTHS_WHEN_UNKNOWN = 36
+
+    # 年齢欄が「不明」相当とみなすトークン
+    _KOCHI_UNKNOWN_AGE_TOKENS = ("不明", "ふめい", "未確認", "わからない", "わかりません")
+
     def _estimate_kochi_age(self, raw_age: str) -> str:
         """
         【高知県特別ルール】日本語テキスト年齢を推定数値に変換
@@ -620,20 +628,23 @@ class KochiAdapter(MunicipalityAdapter):
         高知県サイトでは「高齢」「成犬」「子猫」等のテキスト表記が使われるため、
         アダプター層で推定月齢に変換してからnormalizerに渡す。
 
+        さらに、年齢欄が空欄 / "不明" の個体が一定数存在するため、その場合は
+        「成犬/成猫」相当 (36ヶ月) のデフォルト値を返してデータ欠損を補完する。
+
         Args:
-            raw_age: 年齢テキスト（例: "高齢", "成犬", "3歳"）
+            raw_age: 年齢テキスト（例: "高齢", "成犬", "3歳", "誕生日：3/20", ""）
 
         Returns:
             str: normalizerが処理可能な形式（例: "10歳", "3歳", "3ヶ月"）
                  数値パターンの場合はそのまま返す
         """
-        if not raw_age:
-            return raw_age
-
         import re
-        from datetime import date
 
-        age_stripped = raw_age.strip()
+        age_stripped = (raw_age or "").strip()
+
+        # 【高知県特別ルール】空欄 → 成犬相当 (36ヶ月) にフォールバック
+        if not age_stripped:
+            return self._default_kochi_age_string()
 
         # 既に数値パターンを含む場合はそのまま返す
         if re.search(r"\d+\s*[歳年]", age_stripped) or re.search(
@@ -645,13 +656,13 @@ class KochiAdapter(MunicipalityAdapter):
         # パターン: "生年月日：2018.8/2", "生年月日2023.5.12", "誕生日：R8.2/10"
         birthday = self._parse_kochi_birthday(age_stripped)
         if birthday:
-            today = date.today()
-            age_months = (today.year - birthday.year) * 12 + (today.month - birthday.month)
-            age_months = max(age_months, 0)
-            if age_months >= 12:
-                return f"{age_months // 12}歳"
-            else:
-                return f"{age_months}ヶ月"
+            return self._birthday_to_age_string(birthday)
+
+        # 【高知県特別ルール】年なしの月日のみ "誕生日：3/20" パターン
+        # 西暦/和暦が省略されているケース。当年で過去なら当年、未来なら前年とみなす。
+        partial_birthday = self._parse_kochi_birthday_month_day_only(age_stripped)
+        if partial_birthday:
+            return self._birthday_to_age_string(partial_birthday)
 
         # 【高知県特別ルール】"推定N歳" や "N-M歳" の範囲パターン
         range_match = re.search(r"(\d+)\s*[-~〜]\s*(\d+)\s*歳", age_stripped)
@@ -669,8 +680,83 @@ class KochiAdapter(MunicipalityAdapter):
                 else:
                     return f"{months}ヶ月"
 
+        # 【高知県特別ルール】"不明" 系トークン → 成犬相当 (36ヶ月)
+        if any(token in age_stripped for token in self._KOCHI_UNKNOWN_AGE_TOKENS):
+            return self._default_kochi_age_string()
+
         # マッチしない場合はそのまま返す（normalizerがNoneにする）
         return raw_age
+
+    @classmethod
+    def _default_kochi_age_string(cls) -> str:
+        """空欄/不明時のデフォルト年齢文字列 (36ヶ月 → "3歳")"""
+        months = cls._KOCHI_DEFAULT_AGE_MONTHS_WHEN_UNKNOWN
+        if months >= 12:
+            return f"{months // 12}歳"
+        return f"{months}ヶ月"
+
+    @staticmethod
+    def _birthday_to_age_string(birthday: "date") -> str:
+        """生年月日 → "N歳" or "Nヶ月" 形式の文字列に変換"""
+        from datetime import date
+
+        today = date.today()
+        age_months = (today.year - birthday.year) * 12 + (today.month - birthday.month)
+        age_months = max(age_months, 0)
+        if age_months >= 12:
+            return f"{age_months // 12}歳"
+        return f"{age_months}ヶ月"
+
+    @staticmethod
+    def _parse_kochi_birthday_month_day_only(age_text: str) -> "date | None":
+        """
+        【高知県特別ルール】"誕生日：M/D" のような年なし月日のみの生年月日を解析
+
+        実サイトの例:
+            "誕生日：3/20"  → 今日が 3/20 より過去なら前年、それ以外は当年
+            "誕生日:3/20", "誕生日 3/20", "生年月日：3/20" 等のセパレータ揺れにも対応
+
+        西暦/和暦を含む場合は `_parse_kochi_birthday` 側で処理されるため、ここでは
+        4桁西暦 / 和暦 (R/H) を含まないケースのみを対象とする。
+
+        Args:
+            age_text: 年齢テキスト
+
+        Returns:
+            date or None: 解析できた場合はdateオブジェクト
+        """
+        import re
+        from datetime import date
+
+        # 生年月日/誕生日キーワードがない場合はスキップ
+        if not any(kw in age_text for kw in ["生年月日", "誕生日"]):
+            return None
+
+        # 西暦/和暦パターンが含まれている場合は通常パーサに任せる
+        if re.search(r"\d{4}", age_text):
+            return None
+        if re.search(r"[RHrh]\s*\d", age_text):
+            return None
+
+        # 月日のみ: "3/20", "3.20", "3-20"
+        match = re.search(r"(\d{1,2})\s*[./\-]\s*(\d{1,2})", age_text)
+        if not match:
+            return None
+
+        month = int(match.group(1))
+        day = int(match.group(2))
+        if not (1 <= month <= 12 and 1 <= day <= 31):
+            return None
+
+        today = date.today()
+        try:
+            # 当年で構築 → 未来日付なら前年扱い
+            candidate = date(today.year, month, day)
+            if candidate > today:
+                candidate = date(today.year - 1, month, day)
+            return candidate
+        except ValueError:
+            return None
 
     @staticmethod
     def _parse_kochi_birthday(age_text: str) -> "date | None":
