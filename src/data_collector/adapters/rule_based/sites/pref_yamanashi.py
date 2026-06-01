@@ -56,13 +56,21 @@ _DETAIL_H2_LABELS: dict[str, str] = {
     "管轄保健所の連絡先": "phone",
     "その他の情報": "_other_info",
 }
-# 体格は許容語彙のみ採用する (年齢相当テキストや「不明」等を弾く)
-_SIZE_VALID = frozenset({"小", "中", "大", "小型", "中型", "大型", "その他"})
-# 「小型（3.5kg）」「中型(...)」のように体格 token に注記が続くケースで
-# token 完全一致では取れないため prefix match 用パターンを併用する。
-# 「超大型」「超小型」も拾う。長い prefix を先頭にして "中" が "中型" を
-# 横取りしないよう sort 済み。
-_SIZE_PREFIX_PATTERN = re.compile(r"^(超大型|超小型|大型|中型|小型|大|中|小|その他)")
+# 体格表記の正規化用パターン。
+# 「猫（雑種）大型」「猫（雑種）・中型」のように全角括弧/中点が token を
+# 分割不能にするため、文字列全体から search() で体格語を探す。
+# 旧 token 完全一致 + prefix match 戦略では拾えなかった。
+# 長い表記 (中型/小型/大型) を先頭、短い表記 (大/中/小) を後尾にして
+# 「中」が「中型」を横取りしないように sort 済み。
+_SIZE_SEARCH_PATTERN = re.compile(r"(超大型|超小型|大型|中型|小型|その他|[小中大])")
+# 体重 → size 推定 (oita_aigo / kumamoto_doubutuaigo と同基準)
+# 「3kgくらい」「体重約4kg」のような体重表記から size 推定。
+# 「12kg」「12.5kg」「12.5キロ」「キログラム」も拾う。
+_WEIGHT_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*(?:kg|キロ|キログラム)")
+_WEIGHT_SIZE_SMALL_KG = 5.0
+_WEIGHT_SIZE_LARGE_KG = 15.0
+# 「子猫」「子犬」は size=「小」、「成犬」「成猫」は推定不可で空のまま
+_AGE_KEYWORD_TO_SIZE = {"子猫": "小", "子犬": "小"}
 # 「峡東保健所TEL:0553-20-2751」のような「保健所名 + TEL/電話 + 番号」表記
 _PHONE_PATTERN = re.compile(r"(\d{2,4}-\d{2,4}-\d{3,4})")
 # 「その他の情報」自由記述から年齢表現を best-effort 抽出する。
@@ -208,22 +216,53 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
                 if m:
                     phone = m.group(1)
             elif kind == "_kind_size":
-                # 「トイプードル 中型」「雑種 小型（3.5kg）」のような並びから
-                # 体格 token を抜き出す。完全一致 → prefix match の順で評価し、
-                # 注記 (kg/cm/年齢等) が後続するケースも拾う。
-                for token in value.split():
-                    if token in _SIZE_VALID:
-                        size = token
-                        break
-                    m = _SIZE_PREFIX_PATTERN.match(token)
-                    if m:
-                        size = m.group(1)
-                        break
+                size = self._extract_size_from_kind_size(value)
             elif kind == "_other_info":
                 m = _AGE_PATTERN.search(value)
                 if m:
                     age = f"{m.group(1)}{m.group(2)}"
         return phone, size, age
+
+    @classmethod
+    def _extract_size_from_kind_size(cls, value: str) -> str:
+        """「種類・体格」欄のテキストから size を 3 段階で推定する
+
+        実サイトに見られる多様な表記をカバー (2026-06 調査):
+            "トイプードル 中型"           → "中型"  (素直)
+            "雑種 小型（3.5kg）"          → "小型"  (注記付き)
+            "猫（雑種）大型"               → "大型"  (全角括弧で token 分離不能)
+            "猫（雑種）・中型"             → "中型"  (中点区切り)
+            "雑種、体重約4kg"             → "小"    (体重 → size 推定)
+            "3kgくらい"                    → "小"    (体重単独)
+            "子猫"                          → "小"    (年齢キーワード)
+            "雑種"                          → ""     (体格情報なし、構造的不可能)
+            "柴犬"                          → ""     (犬種のみ)
+
+        優先順位:
+        1. 体格語の直接検出 (`_SIZE_SEARCH_PATTERN`)
+        2. 体重 → size 推定 (`_WEIGHT_PATTERN` + 5kg/15kg 境界)
+        3. 年齢キーワード (子犬/子猫 → "小")
+        4. 該当なし → 空文字
+        """
+        m = _SIZE_SEARCH_PATTERN.search(value)
+        if m:
+            return m.group(1)
+        m = _WEIGHT_PATTERN.search(value)
+        if m:
+            try:
+                kg = float(m.group(1))
+            except ValueError:
+                kg = 0.0
+            if kg > 0:
+                if kg < _WEIGHT_SIZE_SMALL_KG:
+                    return "小"
+                if kg < _WEIGHT_SIZE_LARGE_KG:
+                    return "中"
+                return "大"
+        for keyword, size in _AGE_KEYWORD_TO_SIZE.items():
+            if keyword in value:
+                return size
+        return ""
 
     # ─────────────────── ヘルパー ───────────────────
 
