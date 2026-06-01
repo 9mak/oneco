@@ -172,14 +172,36 @@ class DataNormalizer:
     # animals.phone VARCHAR(20)
     _PHONE_MAX_LEN: int = 20
 
+    # PII (個人情報) 検出パターン。自治体サイトの「特徴」「コメント」自由記述に
+    # 飼い主や保護者の個人連絡先が混入するケースがあり、公開リスクとなる。
+    # color など自由テキスト由来のフィールドで以下を ███ に置換する:
+    # - 電話番号 (半角/全角ハイフン、ハイフン無し 10/11 桁含む)
+    # - メールアドレス
+    _PII_PHONE_RE = re.compile(
+        r"(?:\d|[０-９]){2,4}\s*[-－‐ー]\s*(?:\d|[０-９]){2,4}\s*[-－‐ー]\s*(?:\d|[０-９]){3,4}"
+        r"|0[5789]0\d{8}"  # ハイフン無し携帯/IP 11桁
+        r"|0\d{9}"  # ハイフン無し固定電話 10桁
+    )
+    _PII_EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+    _PII_REPLACEMENT = "███"
+
+    @staticmethod
+    def _redact_pii(text: str) -> str:
+        """テキストから電話番号・メールアドレスを ███ に置換する"""
+        text = DataNormalizer._PII_PHONE_RE.sub(DataNormalizer._PII_REPLACEMENT, text)
+        text = DataNormalizer._PII_EMAIL_RE.sub(DataNormalizer._PII_REPLACEMENT, text)
+        return text
+
     @staticmethod
     def _cap_color(raw_color: str | None) -> str | None:
-        """color を DB 制約に収まる長さで返す。空/長さ 0 は None。"""
+        """color を DB 制約に収まる長さで返し、PII を除去する。空/長さ 0 は None。"""
         if not raw_color:
             return None
         text = raw_color.strip()
         if not text:
             return None
+        # PII (電話番号・メール) を ███ に置換
+        text = DataNormalizer._redact_pii(text)
         if len(text) > DataNormalizer._COLOR_MAX_LEN:
             return text[: DataNormalizer._COLOR_MAX_LEN]
         return text
