@@ -590,6 +590,42 @@ class TestYokosukaDoubutuAdapter:
         # 長文は color に流れ込まない
         assert raw.color == ""
 
+    def test_color_extracted_from_breed_cell_when_feature_is_long_description(self):
+        """「特徴」セルが長文 (説明文) で長文リジェクトにかかる場合でも
+        「種類」セル併記から color を取り出せること
+
+        2026-06 実サイト観測 (回帰):
+        - 譲渡ページの「特徴」セルは「11歳。不妊手術済。FIV（＋）...」のような
+          200 文字級の長文が入る。
+        - PR #105 では `not fields.get("color")` ガードにより、長文の「特徴」
+          セル値が先に color に入った段階で「種類」セル抽出がスキップされ、
+          その後の長文リジェクトで color が空になる回帰が発生していた。
+        - 「特徴」セルが長文の場合は「種類」セルからの抽出を優先することで
+          実サイト 10/11 件の color 欠損を解消する。
+        """
+        feature_long = (
+            "11歳。不妊手術済。FIV（＋）おしゃべりをたくさんします。"
+            "少し怖がりで、まだあまり寄ってきてくれませんが、人恋しいようです。"
+            "寂しがりやです。眼に古い傷があり、白くなっていますが、見えています。"
+        )
+        html = f"""
+        <html><body><table><tbody>
+          <tr><td>整理番号</td><td>25-79</td></tr>
+          <tr><td>分類</td><td>猫(譲渡)</td></tr>
+          <tr><td>種類</td><td>MIX、黒白</td></tr>
+          <tr><td>性別</td><td>オス</td></tr>
+          <tr><td>特徴</td><td>{feature_long}</td></tr>
+        </tbody></table></body></html>
+        """
+        adapter = YokosukaDoubutuAdapter(_site_cat_shelter())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.yokosuka-doubutu.com/adopted-animals/25-79/",
+                category="adoption",
+            )
+        # 「特徴」が長文でも「種類」セル後半の "黒白" が color に入る
+        assert raw.color == "黒白", f"got {raw.color!r}"
+
     def test_location_defaults_to_facility_for_adoption_pages(self):
         """譲渡カテゴリ (`/adopted-animals/`) は「収容場所」セルが無いため
         施設名 ("横須賀市動物愛護センター") を location に代入する
