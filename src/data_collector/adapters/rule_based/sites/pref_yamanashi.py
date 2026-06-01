@@ -51,9 +51,13 @@ _logger = logging.getLogger(__name__)
 
 # 「種類・体格」「性別」「毛色」「管轄保健所の連絡先」等の見出し直後の
 # `<p>` から値を拾うための h2 ラベル → フィールド名マッピング。
+# phone は「管轄保健所の連絡先」が正式系統だが、古い detail テンプレート
+# (例: `/doubutsu/p_cat/{id}.html`) には存在せず「現在の収容場所及び連絡先」
+# のみが phone を持つケースがあり、後者をフォールバックとして許容する。
 _DETAIL_H2_LABELS: dict[str, str] = {
     "種類・体格": "_kind_size",
     "管轄保健所の連絡先": "phone",
+    "現在の収容場所及び連絡先": "phone_fallback",
     "その他の情報": "_other_info",
 }
 # 体格表記の正規化用パターン。
@@ -71,8 +75,18 @@ _WEIGHT_SIZE_SMALL_KG = 5.0
 _WEIGHT_SIZE_LARGE_KG = 15.0
 # 「子猫」「子犬」は size=「小」、「成犬」「成猫」は推定不可で空のまま
 _AGE_KEYWORD_TO_SIZE = {"子猫": "小", "子犬": "小"}
-# 「峡東保健所TEL:0553-20-2751」のような「保健所名 + TEL/電話 + 番号」表記
-_PHONE_PATTERN = re.compile(r"(\d{2,4}-\d{2,4}-\d{3,4})")
+# 「峡東保健所TEL:0553-20-2751」のような「保健所名 + TEL/電話 + 番号」表記。
+# サイトには ASCII ハイフン `-` 以外に、全角ハイフン類が混在する:
+#   - `ｰ` (U+FF70 HALFWIDTH KATAKANA-HIRAGANA PROLONGED SOUND MARK)
+#   - `ー` (U+30FC KATAKANA-HIRAGANA PROLONGED SOUND MARK)
+#   - `－` (U+FF0D FULLWIDTH HYPHEN-MINUS)
+#   - `‐` (U+2010 HYPHEN)
+# これらを区切り文字として受け付ける (内部正規化で ASCII ハイフンへ統一)。
+_PHONE_HYPHEN_CLASS = r"[-ｰー－‐]"
+_PHONE_PATTERN = re.compile(
+    rf"(\d{{2,4}}{_PHONE_HYPHEN_CLASS}\d{{2,4}}{_PHONE_HYPHEN_CLASS}\d{{3,4}})"
+)
+_PHONE_HYPHEN_NORMALIZE_RE = re.compile(_PHONE_HYPHEN_CLASS)
 # 「その他の情報」自由記述から年齢表現を best-effort 抽出する。
 # 構造化欄が無いため、ヒット率は限定的だが取れるものは取る。
 # 例: "年齢：3才", "推定2歳", "6ヶ月", "5か月くらい"
@@ -192,6 +206,7 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
 
         soup = BeautifulSoup(html, "html.parser")
         phone = ""
+        phone_fallback = ""
         size = ""
         age = ""
         for h2 in soup.find_all("h2"):
@@ -212,16 +227,34 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
                 continue
             kind = _DETAIL_H2_LABELS[target]
             if kind == "phone":
-                m = _PHONE_PATTERN.search(value)
-                if m:
-                    phone = m.group(1)
+                extracted = self._extract_phone(value)
+                if extracted:
+                    phone = extracted
+            elif kind == "phone_fallback":
+                extracted = self._extract_phone(value)
+                if extracted:
+                    phone_fallback = extracted
             elif kind == "_kind_size":
                 size = self._extract_size_from_kind_size(value)
             elif kind == "_other_info":
                 m = _AGE_PATTERN.search(value)
                 if m:
                     age = f"{m.group(1)}{m.group(2)}"
-        return phone, size, age
+        # 「管轄保健所の連絡先」を優先、無ければ「現在の収容場所及び連絡先」で補完
+        return phone or phone_fallback, size, age
+
+    @staticmethod
+    def _extract_phone(value: str) -> str:
+        """phone 文字列から電話番号を抽出して ASCII ハイフン区切りで返す
+
+        サイト内には ASCII `-` 以外に全角ハイフン (ｰ ー － ‐) が混在するため、
+        どちらでマッチした場合も内部で ASCII `-` に統一する。
+        マッチしない場合は空文字。
+        """
+        m = _PHONE_PATTERN.search(value)
+        if not m:
+            return ""
+        return _PHONE_HYPHEN_NORMALIZE_RE.sub("-", m.group(1))
 
     @classmethod
     def _extract_size_from_kind_size(cls, value: str) -> str:

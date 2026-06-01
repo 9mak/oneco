@@ -302,6 +302,103 @@ class TestPrefYamanashiAdapter:
 
         assert raw.age == ""
 
+    def test_extract_animal_details_phone_from_genzai_fallback(self, fixture_html):
+        """`管轄保健所の連絡先` h2 が存在しないページでも
+        `現在の収容場所及び連絡先` h2 から phone を補完する
+
+        2026-06 snapshot で phone 欠損していた 26 件は
+        `/doubutsu/p_cat/{id}.html` 等の古い detail テンプレートで、
+        `管轄保健所の連絡先` h2 が存在せず `現在の収容場所及び連絡先`
+        h2 のみが phone を持っていたパターン。フォールバックとして
+        後者からも phone を拾えるようにする。
+        """
+        list_html = _load_yamanashi_html(fixture_html)
+        # `管轄保健所の連絡先` 無し、`現在の収容場所及び連絡先` のみ
+        detail_html = """
+        <html><body>
+          <h2>保護した場所</h2>
+          <p>中央市一町畑</p>
+          <h2>現在の収容場所及び連絡先</h2>
+          <p>（収容場所）住民<br />（連絡先）中北保健所（動物愛護指導センター内）<br />TEL：055-273-5034</p>
+          <h2>種類・体格</h2>
+          <p>雑種</p>
+        </body></html>
+        """
+        adapter = PrefYamanashiAdapter(_site())
+
+        def _http_side_effect(url):
+            if url.endswith("index.html"):
+                return list_html
+            return detail_html
+
+        with patch.object(adapter, "_http_get", side_effect=_http_side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+
+        assert raw.phone == "055-273-5034", (
+            f"現在の収容場所及び連絡先 から phone 補完されるべき: got {raw.phone!r}"
+        )
+
+    def test_extract_animal_details_phone_prefers_kankatsu_over_genzai(self, fixture_html):
+        """両方の h2 が存在する場合は `管轄保健所の連絡先` を優先する
+
+        `現在の収容場所及び連絡先` は収容施設の連絡先で、`管轄保健所の連絡先`
+        が保健所の正式番号。両方ある場合は後者を優先したい。
+        """
+        list_html = _load_yamanashi_html(fixture_html)
+        detail_html = """
+        <html><body>
+          <h2>管轄保健所の連絡先</h2>
+          <p>峡東保健所<br />TEL：0553-20-2751</p>
+          <h2>現在の収容場所及び連絡先</h2>
+          <p>（収容場所）住民<br />（連絡先）動物愛護指導センター<br />TEL：055-273-5034</p>
+        </body></html>
+        """
+        adapter = PrefYamanashiAdapter(_site())
+
+        def _http_side_effect(url):
+            if url.endswith("index.html"):
+                return list_html
+            return detail_html
+
+        with patch.object(adapter, "_http_get", side_effect=_http_side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+
+        assert raw.phone == "0553-20-2751", f"管轄保健所の連絡先 を優先するべき: got {raw.phone!r}"
+
+    def test_extract_animal_details_phone_full_width_hyphen(self, fixture_html):
+        """全角ハイフン (ｰ U+FF70 / ー U+30FC / － U+FF0D) 区切りも phone として認識する
+
+        実サイトの一部 detail ページ (例: kt/m_cat/33798.html) は
+        `0553ｰ20ｰ2751` のように半角カタカナ長音 (U+FF70) を区切り文字に
+        使っており、ASCII ハイフンのみを受け付ける旧パターンでは
+        全角ハイフン経由の phone を取り逃がしていた。
+        """
+        list_html = _load_yamanashi_html(fixture_html)
+        # ｰ = U+FF70 (HALFWIDTH KATAKANA-HIRAGANA PROLONGED SOUND MARK)
+        detail_html_ff70 = """
+        <html><body>
+          <h2>管轄保健所の連絡先</h2>
+          <p>峡東保健所 TEL:0553ｰ20ｰ2751</p>
+        </body></html>
+        """
+        adapter = PrefYamanashiAdapter(_site())
+
+        def _http_side_effect(url):
+            if url.endswith("index.html"):
+                return list_html
+            return detail_html_ff70
+
+        with patch.object(adapter, "_http_get", side_effect=_http_side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+
+        # 全角ハイフンは ASCII ハイフンに正規化された上で抽出される
+        assert raw.phone == "0553-20-2751", (
+            f"全角ハイフン区切り phone を抽出すべき: got {raw.phone!r}"
+        )
+
     def test_extract_animal_details_falls_back_when_detail_fails(self, fixture_html):
         """detail fetch が失敗しても一覧の情報で RawAnimalData が返る"""
         html = _load_yamanashi_html(fixture_html)
