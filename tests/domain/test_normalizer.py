@@ -182,6 +182,7 @@ class TestNormalizeAge:
         旧実装は 4桁年号を除外していたため None になり age_months=0% の真因。
         """
         from datetime import date
+
         monkeypatch.setattr(DataNormalizer, "_today", staticmethod(lambda: date(2026, 6, 1)))
 
         # 2017-01-01 〜 2026-06-01 = 9年5ヶ月 = 113ヶ月
@@ -198,6 +199,7 @@ class TestNormalizeAge:
         memory ID:1841 既知。山梨「生年月日：令和6年8月頃」等の表記対応。
         """
         from datetime import date
+
         monkeypatch.setattr(DataNormalizer, "_today", staticmethod(lambda: date(2026, 6, 1)))
 
         # 2024-08-01 〜 2026-06-01 = 22ヶ月
