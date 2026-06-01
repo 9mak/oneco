@@ -69,8 +69,14 @@ _DETAIL_H2_LABELS: dict[str, str] = {
 _SIZE_SEARCH_PATTERN = re.compile(r"(超大型|超小型|大型|中型|小型|その他|[小中大])")
 # 体重 → size 推定 (oita_aigo / kumamoto_doubutuaigo と同基準)
 # 「3kgくらい」「体重約4kg」のような体重表記から size 推定。
-# 「12kg」「12.5kg」「12.5キロ」「キログラム」も拾う。
-_WEIGHT_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*(?:kg|キロ|キログラム)")
+# 「12kg」「12.5kg」「12.5キロ」「キログラム」「U+339F ㎏」「全角ｋｇ」も拾う。
+# 山梨「その他の情報」に「体重６ｋｇ」「大型5㎏くらい」のような全角・記号表記が混在。
+_WEIGHT_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*(?:kg|キロ|キログラム|㎏)")
+# 全角 → 半角の数字・kg 変換テーブル (size 抽出前に正規化)
+_FULLWIDTH_NORMALIZE = str.maketrans(
+    "０１２３４５６７８９ｋｇＫＧ．",
+    "0123456789kgKG.",
+)
 _WEIGHT_SIZE_SMALL_KG = 5.0
 _WEIGHT_SIZE_LARGE_KG = 15.0
 # 「子猫」「子犬」は size=「小」、「成犬」「成猫」は推定不可で空のまま
@@ -240,6 +246,10 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
                 m = _AGE_PATTERN.search(value)
                 if m:
                     age = f"{m.group(1)}{m.group(2)}"
+                # 種類・体格 で size が取れなかった場合のみ
+                # その他の情報の自由記述から best-effort で抽出
+                if not size:
+                    size = self._extract_size_from_kind_size(value)
         # 「管轄保健所の連絡先」を優先、無ければ「現在の収容場所及び連絡先」で補完
         return phone or phone_fallback, size, age
 
@@ -277,6 +287,8 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
         3. 年齢キーワード (子犬/子猫 → "小")
         4. 該当なし → 空文字
         """
+        # 全角数字・全角 kg・U+339F ㎏ を半角に正規化してから検索
+        value = value.translate(_FULLWIDTH_NORMALIZE)
         m = _SIZE_SEARCH_PATTERN.search(value)
         if m:
             return m.group(1)
