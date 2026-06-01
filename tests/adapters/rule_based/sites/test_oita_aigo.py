@@ -84,8 +84,14 @@ class TestOitaAigoAdapter:
             first_url, category = urls[0]
             raw = adapter.extract_animal_details(first_url, category=category)
 
-        # 同一ページから複数取得しても HTTP は 1 回だけ (キャッシュ確認)
-        assert mock_get.call_count == 1
+        # 一覧 HTML は 1 回しか取得しない (詳細ページが別 URL にあれば
+        # それは別途取得されるため call_count は 1 とは限らない)。
+        list_calls = sum(
+            1
+            for c in mock_get.call_args_list
+            if c.args and c.args[0] == adapter.site_config.list_url
+        )
+        assert list_calls == 1
         assert isinstance(raw, RawAnimalData)
         assert_raw_animal(
             raw,
@@ -292,3 +298,180 @@ class TestOitaAigoPhone:
         assert raw.phone == self._CENTER_TEL, (
             f"センター代表電話が phone に入るべき: got {raw.phone!r}"
         )
+
+
+# ─────────────────── 詳細ページからの color/size 補完 ───────────────────
+# 一覧カードには毛色情報が無いが、各カードから詳細ページにリンクが張られており、
+# 詳細ページの `<dl><dt>毛色</dt>` (または「毛色・長さ」) には色情報がある。
+# 同様に犬の「大きさ」(中型/大型) も詳細ページにのみ存在する。
+# 2026-05 観測: 26件中 color 12件 / size 14件しか取れていない。
+# 残14件(犬・lostchild) で color、残12件(猫) で size を埋めるための
+# 詳細ページ追加フェッチ機構をテストする。
+_LIST_WITH_DETAIL_LINK = """
+<html><body><main>
+  <div class="information_box">
+    <a href="https://oita-aigo.com/transferdoglist/24-0609-2/">
+      <div class="information_image"><img src="/img.jpg"></div>
+      <div class="information_text">
+        <dl><dd>No.24-0609-2</dd></dl>
+        <dl><dt>仮名</dt><dd>ブロンソン</dd></dl>
+        <dl><dt>種類</dt><dd>雑種</dd></dl>
+        <dl><dt>推定年齢</dt><dd>9歳</dd></dl>
+        <dl><dt>性別</dt><dd>オス</dd></dl>
+        <dl><dt>体重</dt><dd>17.0kg</dd></dl>
+      </div>
+    </a>
+  </div>
+</main></body></html>
+"""
+
+# 譲渡犬の詳細ページ。「毛色」dt がある。
+_DETAIL_DOG_HTML = """
+<html><body><main>
+  <dl><dt>種類</dt><dd>雑種</dd></dl>
+  <dl><dt>推定年齢</dt><dd>9歳 (R8.2.6現在)</dd></dl>
+  <dl><dt>毛色</dt><dd>茶</dd></dl>
+  <dl><dt>性別</dt><dd>オス</dd></dl>
+  <dl><dt>体重</dt><dd>17.0kg</dd></dl>
+  <dl><dt>首回り</dt><dd>34cm</dd></dl>
+</main></body></html>
+"""
+
+# 迷子犬の詳細ページ。「毛色・長さ」と「大きさ」がある。
+_LIST_LOSTCHILD_WITH_DETAIL_LINK = """
+<html><body><main>
+  <div class="information_box">
+    <a href="https://oita-aigo.com/lostchild/r8-5-28/">
+      <div class="information_text">
+        <dl><dd class="lostchild_ttl">令和8年5月28日</dd></dl>
+        <dl><dt>保護地域</dt><dd>杵築市</dd></dl>
+        <dl><dt>推定年齢</dt><dd>1歳</dd></dl>
+        <dl><dt>性別</dt><dd>メス</dd></dl>
+        <dl><dt>体重</dt><dd>11.64kg</dd></dl>
+      </div>
+    </a>
+  </div>
+</main></body></html>
+"""
+
+_DETAIL_LOSTCHILD_HTML = """
+<html><body><main>
+  <dl><dt>保護地域</dt><dd>杵築市山香町</dd></dl>
+  <dl><dt>種類</dt><dd>ビーグル雑種</dd></dl>
+  <dl><dt>毛色・長さ</dt><dd>黒茶白</dd></dl>
+  <dl><dt>性別</dt><dd>メス</dd></dl>
+  <dl><dt>大きさ</dt><dd>中型</dd></dl>
+  <dl><dt>体重</dt><dd>11.64kg</dd></dl>
+</main></body></html>
+"""
+
+
+def _make_http_get(list_html: str, detail_url: str, detail_html: str):
+    """list_url を返し、detail_url なら detail_html を返す _http_get モック工場"""
+
+    def _fake_get(url: str, **kwargs) -> str:
+        if url == detail_url:
+            return detail_html
+        return list_html
+
+    return _fake_get
+
+
+class TestOitaAigoDetailPageFallback:
+    """カードから取れない color/size を詳細ページから補完する。
+
+    実 oita-aigo.com 観測 (2026-05):
+      - lostchild / anytimedog カードには「毛色」「大きさ」がない
+      - 詳細ページの `<dl><dt>毛色</dt>` (もしくは「毛色・長さ」) と
+        `<dt>大きさ</dt>` には記載がある
+    カードのリンク (`<a href>`) を辿って詳細ページから補完する。
+    HTTP は同一詳細 URL あたり 1 回までキャッシュする。
+    """
+
+    def test_anytimedog_color_filled_from_detail(self):
+        """譲渡犬カードの color を詳細ページの「毛色」で補完する"""
+        adapter = OitaAigoAdapter(_adoption_dog_site())
+        fake = _make_http_get(
+            _LIST_WITH_DETAIL_LINK,
+            "https://oita-aigo.com/transferdoglist/24-0609-2/",
+            _DETAIL_DOG_HTML,
+        )
+        with patch.object(adapter, "_http_get", side_effect=fake):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="adoption")
+        assert raw.color == "茶"
+        # 体重推定の中(17kg → 大)は依然として使われる (詳細に「大きさ」が無い場合)
+        assert raw.size == "大"
+
+    def test_lostchild_color_filled_from_keyword_label(self):
+        """迷子カードの color を詳細ページの「毛色・長さ」で補完する"""
+        adapter = OitaAigoAdapter(_lostchild_site())
+        fake = _make_http_get(
+            _LIST_LOSTCHILD_WITH_DETAIL_LINK,
+            "https://oita-aigo.com/lostchild/r8-5-28/",
+            _DETAIL_LOSTCHILD_HTML,
+        )
+        with patch.object(adapter, "_http_get", side_effect=fake):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+        assert raw.color == "黒茶白"
+
+    def test_lostchild_size_prefers_detail_size_label_over_weight(self):
+        """詳細ページに「大きさ」(中型) がある場合は体重推定より優先する
+
+        体重 11.64kg は推定だと「中」になるが、詳細ページに「中型」とある
+        ので語彙としてもデータソースとしても明示的な「中型」を採用する。
+        """
+        adapter = OitaAigoAdapter(_lostchild_site())
+        fake = _make_http_get(
+            _LIST_LOSTCHILD_WITH_DETAIL_LINK,
+            "https://oita-aigo.com/lostchild/r8-5-28/",
+            _DETAIL_LOSTCHILD_HTML,
+        )
+        with patch.object(adapter, "_http_get", side_effect=fake):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+        assert raw.size == "中型"
+
+    def test_detail_fetch_failure_does_not_break_extraction(self):
+        """詳細ページ取得が失敗しても、カードから取れる範囲は返す (回帰防止)"""
+        from data_collector.adapters.municipality_adapter import NetworkError
+
+        adapter = OitaAigoAdapter(_adoption_dog_site())
+
+        def _flaky(url: str, **kwargs) -> str:
+            if "transferdoglist" in url:
+                raise NetworkError("detail unreachable", url=url)
+            return _LIST_WITH_DETAIL_LINK
+
+        with patch.object(adapter, "_http_get", side_effect=_flaky):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="adoption")
+
+        # 詳細失敗時は color 空のまま、size は体重推定が効く
+        assert raw.color == ""
+        assert raw.size == "大"  # 17kg → 大
+        assert raw.sex == "オス"
+
+    def test_detail_page_fetched_only_once_per_url(self):
+        """同一詳細 URL に対して _http_get は 1 回しか呼ばれない (キャッシュ)"""
+        adapter = OitaAigoAdapter(_adoption_dog_site())
+
+        call_log: list[str] = []
+
+        def _logged_get(url: str, **kwargs) -> str:
+            call_log.append(url)
+            if "transferdoglist" in url:
+                return _DETAIL_DOG_HTML
+            return _LIST_WITH_DETAIL_LINK
+
+        with patch.object(adapter, "_http_get", side_effect=_logged_get):
+            urls = adapter.fetch_animal_list()
+            # 同じ仮想 URL を 2 回呼ぶ → list/detail それぞれ 1 回までに収まること
+            adapter.extract_animal_details(urls[0][0], category="adoption")
+            adapter.extract_animal_details(urls[0][0], category="adoption")
+
+        list_calls = sum(1 for u in call_log if u.endswith("/anytimedog/"))
+        detail_calls = sum(1 for u in call_log if "transferdoglist" in u)
+        assert list_calls == 1, f"list page should be fetched once: {call_log}"
+        assert detail_calls == 1, f"detail page should be fetched once: {call_log}"
