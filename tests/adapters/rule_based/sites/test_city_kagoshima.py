@@ -263,3 +263,207 @@ class TestCityKagoshimaAdapter:
                 adapter.extract_animal_details(u, category=c)
 
         assert mock_get.call_count == 1
+
+    def test_age_fallback_seinekko_to_3years(self):
+        """猫サイトの「推定年齢：不明（成猫）」を 3歳 相当に推定する
+
+        鹿児島市の保護猫サイトは全件で「推定年齢：不明（成猫）」「不明（子猫）」
+        と記載されており (2026-06 観測、snapshot 8件全件で age_months=None)、
+        normalizer の `_UNKNOWN_PATTERNS` 経由で None になってしまう。
+        adapter で「成猫」を検出した場合は kochi-apc と同じ慣行に従い
+        「3歳」(=36ヶ月) 相当として渡す。
+        """
+        cat_html = """
+        <html><body><div id="tmp_contents">
+          <h2>No.260008</h2>
+          <p><img src="/images/260008.jpg" alt="260008"/>保護日：令和8年4月30日（木曜日）</p>
+          <p>保護場所：東谷山一丁目</p>
+          <p>種類：雑種</p>
+          <p>性別：メス</p>
+          <p>毛色：灰茶</p>
+          <p>推定年齢：不明（成猫）</p>
+          <p>首輪色など：ピンク白ノミ取り</p>
+        </div></body></html>
+        """
+        cat_site = _site(
+            name="鹿児島市（保護猫）",
+            list_url=(
+                "https://www.city.kagoshima.lg.jp/kenkofukushi/hokenjo/"
+                "seiei-jueki/kurashi/dobutsu/kainushi/joho/neko.html"
+            ),
+        )
+        adapter = CityKagoshimaAdapter(cat_site)
+        with patch.object(adapter, "_http_get", return_value=cat_html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+
+        # adapter 段階で「成猫」フォールバック → "3歳" 相当のテキスト
+        assert raw.age == "3歳"
+
+    def test_age_fallback_konekko_to_3months(self):
+        """「不明（子猫）」「子猫」は 3ヶ月相当に推定する"""
+        cat_html = """
+        <html><body><div id="tmp_contents">
+          <h2>No.260050</h2>
+          <p>保護日：令和8年5月1日（金曜日）</p>
+          <p>保護場所：城山町</p>
+          <p>種類：雑種</p>
+          <p>性別：メス</p>
+          <p>毛色：白</p>
+          <p>推定年齢：不明（子猫）</p>
+        </div></body></html>
+        """
+        cat_site = _site(
+            name="鹿児島市（保護猫）",
+            list_url=(
+                "https://www.city.kagoshima.lg.jp/kenkofukushi/hokenjo/"
+                "seiei-jueki/kurashi/dobutsu/kainushi/joho/neko.html"
+            ),
+        )
+        adapter = CityKagoshimaAdapter(cat_site)
+        with patch.object(adapter, "_http_get", return_value=cat_html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+
+        assert raw.age == "3ヶ月"
+
+    def test_age_explicit_value_preserved(self):
+        """明示的な年齢 (例: "10歳") はフォールバック対象外として温存する"""
+        dog_html = """
+        <html><body><div id="tmp_contents">
+          <h2>No.260009</h2>
+          <p>保護日：令和8年4月30日（木曜日）</p>
+          <p>保護場所：光山二丁目</p>
+          <p>種類：雑種</p>
+          <p>性別：雄</p>
+          <p>体格：小</p>
+          <p>推定年齢：10歳</p>
+        </div></body></html>
+        """
+        adapter = CityKagoshimaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=dog_html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+
+        assert "10" in raw.age and "歳" in raw.age
+
+    def test_age_unknown_without_keyword_stays_empty(self):
+        """「不明」のみ (成猫/子猫キーワード無し) はフォールバックしない"""
+        cat_html = """
+        <html><body><div id="tmp_contents">
+          <h2>No.260060</h2>
+          <p>保護日：令和8年5月10日（月曜日）</p>
+          <p>保護場所：吉野町</p>
+          <p>種類：雑種</p>
+          <p>性別：メス</p>
+          <p>毛色：黒</p>
+          <p>推定年齢：不明</p>
+        </div></body></html>
+        """
+        cat_site = _site(
+            name="鹿児島市（保護猫）",
+            list_url=(
+                "https://www.city.kagoshima.lg.jp/kenkofukushi/hokenjo/"
+                "seiei-jueki/kurashi/dobutsu/kainushi/joho/neko.html"
+            ),
+        )
+        adapter = CityKagoshimaAdapter(cat_site)
+        with patch.object(adapter, "_http_get", return_value=cat_html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+
+        # 「成猫」「子猫」「成犬」「子犬」のキーワードが無いため原文のまま
+        assert raw.age == "不明"
+
+    def test_size_from_weight_label(self):
+        """「体重：5.5kg」ラベルから size を推定する (kg→size 境界 5/15)
+
+        猫サイトには「体格」ラベルが無いが、稀に「体重」ラベルが記載される
+        (2026-06 観測)。oita_aigo / pref_yamanashi と同じ kg→size 推定
+        (5kg未満=小、5-15kg=中、15kg以上=大) を適用してデータ欠損を緩和する。
+        """
+        cat_html = """
+        <html><body><div id="tmp_contents">
+          <h2>No.250092</h2>
+          <p>保護日：令和7年11月29日（土曜日）</p>
+          <p>保護場所：永吉</p>
+          <p>種類：雑種</p>
+          <p>性別：オス（去勢済み）</p>
+          <p>毛色：黒キジ白</p>
+          <p>推定年齢：不明（成猫）</p>
+          <p>体重：5.5kg</p>
+          <p>首輪色など：首輪無し、右耳カット</p>
+        </div></body></html>
+        """
+        cat_site = _site(
+            name="鹿児島市（保護猫）",
+            list_url=(
+                "https://www.city.kagoshima.lg.jp/kenkofukushi/hokenjo/"
+                "seiei-jueki/kurashi/dobutsu/kainushi/joho/neko.html"
+            ),
+        )
+        adapter = CityKagoshimaAdapter(cat_site)
+        with patch.object(adapter, "_http_get", return_value=cat_html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+
+        # 5.5kg → 5kg 以上 15kg 未満 = "中"
+        assert raw.size == "中"
+
+    def test_size_from_weight_inside_freeform_text(self):
+        """「その他：…体重5.5kg…」の自由記述からも size を推定する
+
+        実サイトでは「体重」ラベルとして単独行を持たず、「その他：」自由記述
+        の中に「体重5.5kgの大きな男の子です」のように体重表記が埋もれている
+        ケースがある (2026-06 観測、No250092-1)。`<p>体重: ...</p>` 単独
+        ラベルが無くてもブロック全体のテキストから体重を search() して
+        size を推定する。
+        """
+        cat_html = """
+        <html><body><div id="tmp_contents">
+          <h2>No250092-1</h2>
+          <p>保護日：令和7年11月29日（土曜日）</p>
+          <p>保護場所：永吉</p>
+          <p>種類：雑種</p>
+          <p>性別：オス</p>
+          <p>毛色：黒キジ白</p>
+          <p>推定年齢：不明（成猫）</p>
+          <p>その他：左耳がけがの後で縮んでいます体重5.5kgの大きな男の子です。</p>
+          <p>首輪色など：首輪無し、右耳カット</p>
+        </div></body></html>
+        """
+        cat_site = _site(
+            name="鹿児島市（保護猫）",
+            list_url=(
+                "https://www.city.kagoshima.lg.jp/kenkofukushi/hokenjo/"
+                "seiei-jueki/kurashi/dobutsu/kainushi/joho/neko.html"
+            ),
+        )
+        adapter = CityKagoshimaAdapter(cat_site)
+        with patch.object(adapter, "_http_get", return_value=cat_html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+
+        # 5.5kg → 中
+        assert raw.size == "中"
+
+    def test_size_explicit_taikaku_preserved(self):
+        """「体格：小」のラベルが明示的にある犬サイトは原文 size を温存"""
+        dog_html = """
+        <html><body><div id="tmp_contents">
+          <h2>No.260009</h2>
+          <p>保護日：令和8年4月30日（木曜日）</p>
+          <p>保護場所：光山二丁目</p>
+          <p>種類：雑種</p>
+          <p>性別：雄</p>
+          <p>体格：小</p>
+          <p>推定年齢：10歳</p>
+        </div></body></html>
+        """
+        adapter = CityKagoshimaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=dog_html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+
+        # 体格が明示されている場合は原文を尊重 (体重ラベルは無い)
+        assert raw.size == "小"
