@@ -426,6 +426,159 @@ class TestCityMachidaAdapterSizeInference:
         assert raw.size == "小"
 
 
+class TestCityMachidaAdapterColorExtraction:
+    """町田市 CMS では「毛色」以外のラベル揺れ・コロン抜けが観測される。
+    残 6 件の color 欠損を解消するための分岐網羅。
+
+    2026-06 観測 (search_cat.html 55件中 6件 color=null):
+    - 「柄：ハチワレ（白黒）」「色柄：茶色、縞模様あり」など別ラベル: 4件
+    - 「毛色○○」とコロンが抜けた CMS 入力ミス: 2件 (idx=36, 37)
+    """
+
+    def _extract_one(self, animals_html: str, anchor: str = "現在の迷子の猫情報"):
+        html = _build_html(anchor, animals_html)
+        adapter = CityMachidaAdapter(
+            _site(
+                name="町田市（迷子猫・捜索）",
+                list_url=(
+                    "https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/pet_fumei/search_cat.html"
+                ),
+                category="lost",
+            )
+        )
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            return adapter.extract_animal_details(urls[0][0], category="lost")
+
+    def test_color_from_gara_label(self):
+        """「柄：ハチワレ（白黒）」を color として抽出する (idx=17 相当)"""
+        animals_html = """
+        <div class="h3bg"><h3>猫（めす）</h3></div>
+        <div class="img-area-r">
+          <ul>
+            <li>性別：めす（避妊済）</li>
+            <li>種類：雑種</li>
+            <li>柄：ハチワレ（白黒）</li>
+            <li>失踪場所：小山が丘1丁目</li>
+          </ul>
+        </div>
+        """
+        raw = self._extract_one(animals_html)
+        assert "ハチワレ" in raw.color
+        assert "白黒" in raw.color
+
+    def test_color_from_irogara_label(self):
+        """「色柄：茶色、縞模様あり」を color として抽出する (idx=27 相当)"""
+        animals_html = """
+        <div class="h3bg"><h3>猫（おす）</h3></div>
+        <div class="img-area-r">
+          <ul>
+            <li>性別：おす</li>
+            <li>色柄：茶色、縞模様あり</li>
+            <li>失踪場所：図師町3000番台</li>
+          </ul>
+        </div>
+        """
+        raw = self._extract_one(animals_html)
+        assert "茶色" in raw.color
+        assert "縞模様" in raw.color
+
+    def test_color_from_long_irogara_value(self):
+        """値が長文 (30+ 文字) の「色柄」も切り捨てずに color に入る (idx=28,29 相当)"""
+        animals_html = """
+        <div class="h3bg"><h3>猫（めす）</h3></div>
+        <div class="img-area-r">
+          <ul>
+            <li>性別：めす</li>
+            <li>色柄：白地、顔右側・背中2ヶ所・腰に黒トラのぶち、尻尾も黒トラ模様</li>
+            <li>失踪場所：高ヶ坂4丁目付近</li>
+          </ul>
+        </div>
+        """
+        raw = self._extract_one(animals_html)
+        assert "白地" in raw.color
+        assert "黒トラ" in raw.color
+
+    def test_color_from_keiro_without_colon(self):
+        """「毛色○○」とコロン抜けの CMS 入力ミスでも color を抽出する (idx=36 相当)"""
+        animals_html = """
+        <div class="h3bg"><h3>猫（おす）</h3></div>
+        <div class="img-area-r">
+          <ul>
+            <li>性別：おす（去勢手術していない）</li>
+            <li>種類：雑種</li>
+            <li>毛色黒と白（足は白）</li>
+            <li>失踪場所：町田市図師町2000番台付近</li>
+          </ul>
+        </div>
+        """
+        raw = self._extract_one(animals_html)
+        assert "黒と白" in raw.color
+
+    def test_color_from_keiro_without_colon_kijitora(self):
+        """同上: 「毛色キジトラ（足は白）」を color に抽出 (idx=37 相当)"""
+        animals_html = """
+        <div class="h3bg"><h3>猫（めす）</h3></div>
+        <div class="img-area-r">
+          <ul>
+            <li>性別：めす</li>
+            <li>種類：雑種</li>
+            <li>毛色キジトラ（足は白）</li>
+            <li>失踪場所：町田市原町田1丁目</li>
+          </ul>
+        </div>
+        """
+        raw = self._extract_one(animals_html)
+        assert "キジトラ" in raw.color
+
+    def test_color_from_gara_without_colon(self):
+        """「柄○○」コロン抜けでも対応する (idx=17 系の派生バリアント)"""
+        animals_html = """
+        <div class="h3bg"><h3>猫（めす）</h3></div>
+        <div class="img-area-r">
+          <ul>
+            <li>性別：めす</li>
+            <li>柄ハチワレ</li>
+            <li>失踪場所：町田市</li>
+          </ul>
+        </div>
+        """
+        raw = self._extract_one(animals_html)
+        assert "ハチワレ" in raw.color
+
+    def test_existing_keiro_label_still_works(self):
+        """既存「毛色：キジトラ」の動作は壊さない (リグレッション防止)"""
+        animals_html = """
+        <div class="h3bg"><h3>猫（おす）</h3></div>
+        <div class="img-area-r">
+          <ul>
+            <li>性別：おす</li>
+            <li>毛色：キジトラ</li>
+            <li>失踪場所：町田市</li>
+          </ul>
+        </div>
+        """
+        raw = self._extract_one(animals_html)
+        assert raw.color == "キジトラ"
+
+    def test_shippo_label_not_misclassified_as_color(self):
+        """「しっぽ：黒くて長い」は color に誤マップしない (柄 と prefix 衝突しない確認)"""
+        animals_html = """
+        <div class="h3bg"><h3>猫（めす）</h3></div>
+        <div class="img-area-r">
+          <ul>
+            <li>性別：めす</li>
+            <li>しっぽ：黒くて長いまっすぐなしっぽ</li>
+            <li>毛色：キジトラ</li>
+            <li>失踪場所：町田市</li>
+          </ul>
+        </div>
+        """
+        raw = self._extract_one(animals_html)
+        # 毛色 ラベルの値だけが color に入り、しっぽの内容は混ざらない
+        assert raw.color == "キジトラ"
+
+
 class TestCityMachidaAdapterRegistry:
     def test_all_six_sites_registered(self):
         """6 サイト全名称が同じ adapter にマップされている"""
