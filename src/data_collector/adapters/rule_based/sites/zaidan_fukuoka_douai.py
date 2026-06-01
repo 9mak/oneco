@@ -65,15 +65,31 @@ class ZaidanFukuokaDouaiAdapter(WordPressListAdapter):
         "phone": FieldSpec(label="連絡先"),
     }
 
-    # 動物写真は `/files/download/Animals/<uuid>/image_XX/...` 配下に配置される。
-    # 2026-05 観測: 実サイトは `<figure>` ではなく `<a><img></a>` の lightbox 構造、
-    # またはスライダーの `.sp-thumbnail-container > img` で表示している。
-    # `<figure>` も将来対応のため残しつつ、URL に `/files/download/Animals/` を
-    # 含む img のみ採用する CSS attribute selector を併用。
+    # 動物写真は `/files/download/<Bucket>/<uuid>/image_XX/...` 配下に配置される。
+    # 2026-05/06 観測: 詳細ページのカテゴリで bucket 名が違う。
+    #   - `protection-detail` (保健所収容)   → `/files/download/Animals/`
+    #   - `hogo-detail`       (一般保護)     → `/files/download/PersonalAnimals/`
+    #   - `center-detail`     (センター譲渡) → `/files/download/AnimalCompletes/`
+    #   - `group-detail`      (団体譲渡)     → `/files/download/AnimalCompletes/`
+    # 旧 selector は `Animals` だけしか拾えず、`personal-animals/hogo-detail/...`
+    # と `animals/{center,group}-detail/...` の 33/36 件で image_urls が空欠損。
+    # 3 系統すべてを拾うため、CSS attribute selector を 3 つ列挙する。
     # 装飾画像 (`/img/common/...`) は src パスから外れるため自動除外。
     # スライダ構造はメイン画像とサムネで同一 src が複数回出るため、
-    # adapter 側で順序保持の重複排除を行う。
-    IMAGE_SELECTOR: ClassVar[str] = "figure img, img[src*='/files/download/Animals/']"
+    # adapter 側で順序保持の重複排除を行う (`<figure>` も将来対応のため残す)。
+    IMAGE_SELECTOR: ClassVar[str] = (
+        "figure img,"
+        " img[src*='/files/download/Animals/'],"
+        " img[src*='/files/download/PersonalAnimals/'],"
+        " img[src*='/files/download/AnimalCompletes/']"
+    )
+
+    # 動物写真として採用するパス prefix の集合。`_filter_image_urls` で参照。
+    _ANIMAL_IMAGE_PATH_PREFIXES: ClassVar[tuple[str, ...]] = (
+        "/files/download/Animals/",
+        "/files/download/PersonalAnimals/",
+        "/files/download/AnimalCompletes/",
+    )
 
     # 譲渡カテゴリの詳細ページ (`/animals/center-detail/`, `/animals/group-detail/`)
     # は「保護した場所」欄を持たないため、location が空になったまま snapshot に
@@ -82,17 +98,20 @@ class ZaidanFukuokaDouaiAdapter(WordPressListAdapter):
     _CENTER_FACILITY_NAME: ClassVar[str] = "福岡県動物愛護センター"
 
     def _filter_image_urls(self, urls: list[str], base_url: str) -> list[str]:
-        """`/files/download/Animals/` 配下のみを採用し順序保持で重複排除する
+        """動物画像 bucket 配下のみを採用し順序保持で重複排除する
 
         IMAGE_SELECTOR で attribute selector を使って既に動物画像のみを
         拾っているが、スライダ構造でメイン画像とサムネが同一 src を 2 回
         以上返すため、ここで dedupe する。`<figure img>` フォールバックも
         引き続き同じ重複排除を通す。
+
+        bucket は カテゴリにより `Animals` / `PersonalAnimals` / `AnimalCompletes`
+        の 3 種があるため、いずれかの prefix を含むもののみ残す。
         """
         cleaned: list[str] = []
         seen: set[str] = set()
         for u in urls:
-            if "/files/download/Animals/" not in u:
+            if not any(prefix in u for prefix in self._ANIMAL_IMAGE_PATH_PREFIXES):
                 continue
             if u in seen:
                 continue
