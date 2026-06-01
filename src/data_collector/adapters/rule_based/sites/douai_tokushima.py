@@ -108,6 +108,40 @@ _ETCS_COLOR_PATTERNS: tuple[tuple[str, str], ...] = (
 )
 
 
+# 「推定年齢」セルが「成犬/若犬/若猫」などの語彙のとき、
+# normalizer (`DataNormalizer._normalize_age`) は数値パターンしか拾えず
+# age_months が None になる。kochi_adapter._KOCHI_AGE_ESTIMATES と同基準で
+# adapter 層で目安月齢 (Nヶ月) に置換し、normalizer が拾える形に整える。
+# 値の意図:
+#   高齢/老齢/老犬/老猫 = 10歳 (120ヶ月)
+#   成犬/成猫/成熟      = 3歳  (36ヶ月)
+#   中齢                = 5歳  (60ヶ月)
+#   若犬/若猫/若齢      = 1.5歳 (18ヶ月)
+#   子犬/子猫/仔犬/仔猫/幼犬/幼猫/幼齢 = 3ヶ月
+#   乳飲み子            = 1ヶ月
+_AGE_WORD_TO_MONTHS: dict[str, int] = {
+    "高齢": 120,
+    "老齢": 120,
+    "老犬": 120,
+    "老猫": 120,
+    "成犬": 36,
+    "成猫": 36,
+    "成熟": 36,
+    "中齢": 60,
+    "若犬": 18,
+    "若猫": 18,
+    "若齢": 18,
+    "子犬": 3,
+    "仔犬": 3,
+    "子猫": 3,
+    "仔猫": 3,
+    "幼犬": 3,
+    "幼猫": 3,
+    "幼齢": 3,
+    "乳飲み子": 1,
+}
+
+
 class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
     """徳島県動物愛護管理センター 共通アダプター
 
@@ -232,11 +266,18 @@ class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
         if not color:
             color = self._color_from_etcs(fields.get("etcs", ""))
 
+        # age の決定ロジック:
+        # 収容中テーブルの「推定年齢」が「成犬/若犬/若猫」などの語彙のとき、
+        # normalizer は数値パターンしか拾えず age_months が None になる。
+        # adapter 層で目安月齢 (Nヶ月) に置換し、normalizer が拾える形に整える。
+        # 数値表記 (「2歳」「3ヶ月」「２０２５年８月８日」) はそのまま保持する。
+        age = self._age_word_to_months(fields.get("age", ""))
+
         try:
             return RawAnimalData(
                 species=fields.get("species", ""),
                 sex=fields.get("sex", ""),
-                age=fields.get("age", ""),
+                age=age,
                 color=color,
                 size=size,
                 shelter_date=fields.get("shelter_date", ""),
@@ -314,6 +355,21 @@ class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
         if kg < cls._SIZE_BOUNDARY_LARGE_KG:
             return "中"
         return "大"
+
+    @staticmethod
+    def _age_word_to_months(text: str) -> str:
+        """「成犬/若犬/若猫」などの語彙を「Nヶ月」表記に変換
+
+        - 辞書 `_AGE_WORD_TO_MONTHS` に完全一致 (前後 strip 後) する語のみ
+          目安月齢に置換する。
+        - 既に数値表記 (「2歳」「3ヶ月」) や日付表記 (「２０２５年８月８日」) は
+          そのまま返す。normalizer 側で正しく処理される。
+        - 「不明」「--」「空文字」もそのまま返す (normalizer 側で None になる)。
+        """
+        stripped = text.strip()
+        if stripped in _AGE_WORD_TO_MONTHS:
+            return f"{_AGE_WORD_TO_MONTHS[stripped]}ヶ月"
+        return text
 
     @staticmethod
     def _color_from_etcs(text: str) -> str:
