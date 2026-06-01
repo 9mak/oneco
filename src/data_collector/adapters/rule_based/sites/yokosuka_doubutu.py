@@ -93,9 +93,7 @@ class YokosukaDoubutuAdapter(WordPressListAdapter):
     # 実サイトは「体重」というセル行を持たず "12歳、体重29Kg、フィラリア…"
     # のように特徴セル内に体重情報が埋め込まれているケースが多く、
     # FieldSpec(label="体重") ではセル行マッチのため永遠にヒットしない。
-    _WEIGHT_IN_FEATURE_RE: ClassVar[str] = (
-        r"体重\s*(?:約\s*)?(\d+(?:\.\d+)?)\s*[kKｋＫ][gGｇＧ]"
-    )
+    _WEIGHT_IN_FEATURE_RE: ClassVar[str] = r"体重\s*(?:約\s*)?(\d+(?:\.\d+)?)\s*[kKｋＫ][gGｇＧ]"
 
     # 譲渡カテゴリ (`/adopted-animals/`) の詳細ページは「収容場所」セルを
     # 持たないため location が空になり normalizer で "不明" になる。
