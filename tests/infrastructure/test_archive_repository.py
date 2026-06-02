@@ -168,6 +168,45 @@ class TestListArchived:
         assert result[0].species == "犬"
 
     @pytest.mark.asyncio
+    async def test_list_archived_filters_by_location(self, archive_repository, async_session):
+        """list_archived() が location で部分一致フィルタできるか
+
+        location フィルタが無視されると「高知のアーカイブフィード」と称して
+        全国のデータを返す誤表示になるため、確実にフィルタを効かせる。
+        """
+        async_session.add(
+            AnimalArchive(
+                original_id=201,
+                species="犬",
+                shelter_date=date(2025, 6, 1),
+                location="高知県高知市",
+                source_url="https://example.com/archived_kochi",
+                category="adoption",
+                status="adopted",
+                archived_at=datetime.now(UTC),
+            )
+        )
+        async_session.add(
+            AnimalArchive(
+                original_id=202,
+                species="犬",
+                shelter_date=date(2025, 6, 1),
+                location="徳島県",
+                source_url="https://example.com/archived_tokushima",
+                category="adoption",
+                status="adopted",
+                archived_at=datetime.now(UTC),
+            )
+        )
+        await async_session.commit()
+
+        result, total = await archive_repository.list_archived(location="高知")
+
+        assert total == 1
+        assert len(result) == 1
+        assert "高知" in result[0].location
+
+    @pytest.mark.asyncio
     async def test_list_archived_filters_by_archived_from(self, archive_repository, async_session):
         """list_archived() が archived_from でフィルタリングできるか"""
         # 異なる日時のアーカイブデータを挿入
