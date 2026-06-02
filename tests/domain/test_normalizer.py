@@ -480,6 +480,36 @@ class TestCapColor:
         assert result.color is not None
         assert len(result.color) <= 100
 
+    def test_normalize_filters_invalid_image_url_schemes(self):
+        """data:/javascript: 等の不正スキーム画像URLでレコードが全損しない
+
+        AnimalData.image_urls は HttpUrl のため、不正スキームが 1 件でも混入すると
+        ValidationError で動物レコードごと欠落する。http(s) のみに濾過して守る。
+        """
+        raw = RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="2歳",
+            color="茶",
+            size="中型",
+            shelter_date="2026-05-01",
+            location="高知市",
+            phone="",
+            image_urls=[
+                "data:image/gif;base64,R0lGOD",
+                "https://example.com/dog.jpg",
+                "javascript:alert(1)",
+                "/relative/path.jpg",
+            ],
+            source_url="https://example.com/animals/1",
+            category="adoption",
+        )
+        result = DataNormalizer.normalize(raw)
+        urls = [str(u) for u in result.image_urls]
+        assert all(u.startswith("http") for u in urls)
+        assert any("example.com/dog.jpg" in u for u in urls)
+        assert len(urls) == 1
+
 
 class TestNormalizerIntegration:
     """DataNormalizer の統合テスト"""

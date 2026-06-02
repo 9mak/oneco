@@ -42,9 +42,10 @@ class DataNormalizer:
         Raises:
             ValidationError: 必須フィールド欠損または不正な値の場合
         """
-        # 画像URLの処理 (文字列リストをそのまま渡す)
-        # AnimalData の image_urls は HttpUrl のリストなので、Pydantic が自動変換する
-        image_urls_raw = raw_data.image_urls if raw_data.image_urls else []
+        # 画像URLの処理。AnimalData.image_urls は HttpUrl のため、data:/javascript:
+        # や相対パス等の不正スキームが 1 件でも混入すると ValidationError で
+        # 動物レコードごと欠落する。http(s) のみに濾過してレコード全損を防ぐ。
+        image_urls_raw = DataNormalizer._filter_valid_image_urls(raw_data.image_urls)
 
         # shelter_date は不明 / 解析不能な場合「データ取得日」をフォールバックに使う。
         # 譲渡カテゴリページや未対応フォーマットの日付表記でも AnimalData 化失敗で
@@ -82,6 +83,30 @@ class DataNormalizer:
             source_url=raw_data.source_url,
             category=raw_data.category,
         )
+
+    @staticmethod
+    def _filter_valid_image_urls(urls: list[str] | None) -> list[str]:
+        """http(s) スキームの画像 URL のみを残す。
+
+        AnimalData.image_urls は HttpUrl 制約のため、data:/javascript:/相対パス等が
+        混入すると Pydantic の ValidationError で動物レコードごと欠落してしまう。
+        重複は順序を保って除去する。
+        """
+        if not urls:
+            return []
+        seen: set[str] = set()
+        valid: list[str] = []
+        for u in urls:
+            if not isinstance(u, str):
+                continue
+            candidate = u.strip()
+            if not (candidate.startswith("http://") or candidate.startswith("https://")):
+                continue
+            if candidate in seen:
+                continue
+            seen.add(candidate)
+            valid.append(candidate)
+        return valid
 
     @staticmethod
     def _normalize_species(raw_species: str) -> str:
