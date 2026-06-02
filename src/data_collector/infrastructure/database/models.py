@@ -82,6 +82,15 @@ class Animal(Base):
         nullable=True,
     )
 
+    # 収集で最後に確認できた日時。ソースサイトから消えた動物 (= last_seen_at が
+    # 古い) を公開面で非表示にするための鮮度指標。save_animal で毎回 now に更新する。
+    # NULL は「未記録」= 非表示にしない (鮮度不明で誤って隠さないフェイルセーフ)。
+    last_seen_at: datetime | None = Column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+    )
+
     # 画像永続化フィールド
     local_image_paths: list[str] = Column(
         JSON().with_variant(JSONB, "postgresql"),

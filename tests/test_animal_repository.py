@@ -5,7 +5,7 @@ Repository パターンによるデータアクセス層が要件通りに実装
 upsert、取得、フィルタリング、ページネーション機能をテストします。
 """
 
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 import pytest_asyncio
@@ -261,6 +261,65 @@ async def test_list_animals_filters_by_species(repository, async_session):
     assert len(result) == 1
     assert total == 1
     assert result[0].species == "犬"
+
+
+@pytest.mark.asyncio
+async def test_save_animal_sets_last_seen_at(repository, async_session):
+    """save_animal は last_seen_at を更新する（= 今ソースで確認できた証跡）"""
+    from sqlalchemy import select
+
+    data = AnimalData(
+        species="犬",
+        shelter_date=date(2026, 1, 5),
+        location="高知県",
+        source_url="https://example.com/seen",
+        category="adoption",
+    )
+    await repository.save_animal(data)
+
+    orm = (
+        await async_session.execute(
+            select(Animal).where(Animal.source_url == "https://example.com/seen")
+        )
+    ).scalar_one()
+    assert orm.last_seen_at is not None
+
+
+@pytest.mark.asyncio
+async def test_list_animals_hides_disappeared(repository, async_session):
+    """ソースから消えた（last_seen_at が古い）動物は公開一覧から除外される
+
+    収集で再確認できない動物 = ソースから消えた（譲渡/死亡等）とみなし、
+    収容中のまま表示し続けない。include_hidden=True では全件返す。
+    """
+    fresh = Animal(
+        species="犬",
+        shelter_date=date(2026, 1, 5),
+        location="高知県",
+        source_url="https://example.com/fresh",
+        category="adoption",
+        last_seen_at=datetime.now(UTC),
+    )
+    gone = Animal(
+        species="猫",
+        shelter_date=date(2026, 1, 5),
+        location="高知県",
+        source_url="https://example.com/gone",
+        category="adoption",
+        last_seen_at=datetime.now(UTC) - timedelta(days=30),
+    )
+    async_session.add_all([fresh, gone])
+    await async_session.commit()
+
+    result, total = await repository.list_animals()
+    urls = {str(a.source_url) for a in result}
+    assert "https://example.com/fresh" in urls
+    assert "https://example.com/gone" not in urls
+    assert total == 1
+
+    # include_hidden=True なら消えた子も含め全件
+    _, all_total = await repository.list_animals(include_hidden=True)
+    assert all_total == 2
 
 
 @pytest.mark.asyncio

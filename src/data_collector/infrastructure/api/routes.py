@@ -225,11 +225,17 @@ async def stats_by_prefecture(session: SessionDep) -> dict[str, int]:
     from sqlalchemy import func, select
 
     from src.data_collector.infrastructure.database.models import Animal
+    from src.data_collector.infrastructure.database.repository import (
+        _not_disappeared,
+        _stale_cutoff,
+    )
 
+    # 一覧と件数を一致させるため、ソースから消えた動物は地図件数からも除外する
     stmt = (
         select(Animal.prefecture, func.count(Animal.id))
         .where(Animal.status == "sheltered")
         .where(Animal.prefecture.isnot(None))
+        .where(_not_disappeared(_stale_cutoff()))
         .group_by(Animal.prefecture)
     )
     result = await session.execute(stmt)
