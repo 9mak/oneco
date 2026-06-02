@@ -23,8 +23,8 @@ class DataNormalizer:
     _SPECIES_DOG_PATTERNS = ["犬", "いぬ", "イヌ", "inu", "dog"]
     _SPECIES_CAT_PATTERNS = ["猫", "ねこ", "ネコ", "neko", "cat"]
 
-    _SEX_MALE_PATTERNS = ["男の子", "オトコノコ", "オス", "おす", "雄", "♂", "male"]
-    _SEX_FEMALE_PATTERNS = ["女の子", "オンナノコ", "メス", "めす", "雌", "♀", "female"]
+    _SEX_MALE_PATTERNS = ["男の子", "オトコノコ", "オス", "おす", "雄", "牡", "♂", "male"]
+    _SEX_FEMALE_PATTERNS = ["女の子", "オンナノコ", "メス", "めす", "雌", "牝", "♀", "female"]
 
     _UNKNOWN_PATTERNS = ["不明", "?", "？", "unknown", ""]
 
@@ -172,6 +172,16 @@ class DataNormalizer:
     # animals.phone VARCHAR(20)
     _PHONE_MAX_LEN: int = 20
 
+    # 電話番号の全角→半角正規化テーブル。Python の \d は全角数字にもマッチする
+    # ため、変換前に桁数判定すると全角電話番号で誤分割が起きる。全角数字・各種
+    # 全角ハイフン・全角括弧を半角へ寄せてから処理する。
+    _PHONE_ZEN_TO_HAN = str.maketrans(
+        "０１２３４５６７８９（）－‐‑–—―ー−",
+        "0123456789()--------",
+    )
+    # 整形済みハイフン区切り電話番号 (0XX-XXX-XXXX / 0X-XXXX-XXXX 等)
+    _PHONE_FORMATTED_RE = re.compile(r"0\d{1,4}-\d{2,4}-\d{3,4}")
+
     @staticmethod
     def _cap_color(raw_color: str | None) -> str | None:
         """color を DB 制約に収まる長さで返す。空/長さ 0 は None。"""
@@ -261,26 +271,27 @@ class DataNormalizer:
 
         # 各パスは月数を months に代入し、末尾で妥当域チェックを一括適用する。
         months: int | None = None
-
-        # 1. 生年月日パターンを最初にチェック（"令和N年M月D日" の "N年" が
-        #    "N年=Nヶ月*12" として誤マッチするのを避けるため）
         today = DataNormalizer._today()
-        birth = DataNormalizer._parse_birth_date(age_str)
-        if birth is not None:
-            months = DataNormalizer._months_between(birth, today)
-        # 2. "N歳M[ヶかカケヵ]月" の組み合わせ（年/月の合計）
-        elif match := re.search(r"(\d+)\s*歳\s*(\d+)\s*[ヶかカケヵ]月", age_str):
+
+        # 1. 明示的な年齢表記 (N歳M月 / N歳 / Nヶ月) を最優先する。
+        #    収容日・掲載日 (例: "3歳 2026-05-01収容") が併記されていても、
+        #    その日付を生年月日と誤認して月齢を再計算しないため。
+        if match := re.search(r"(\d+)\s*歳\s*(\d+)\s*[ヶかカケヵ]月", age_str):
             months = int(match.group(1)) * 12 + int(match.group(2))
-        # 3. "N歳" のパターン
         elif match := re.search(r"(\d+)\s*歳", age_str):
             months = int(match.group(1)) * 12
-        # 4. "Nヶ月", "Nか月", "Nカ月", "Nケ月" のパターン
         elif match := re.search(r"(\d+)\s*[ヶかカケヵ]月", age_str):
             months = int(match.group(1))
-        # 5. "N年" のパターン (4桁年号 "YYYY年" や "令和N年" を除外)
-        elif not re.search(r"\d{4}年|令和\d+年", age_str):
-            if match := re.search(r"(\d+)\s*年", age_str):
-                months = int(match.group(1)) * 12
+        else:
+            # 2. 明示年齢が無い場合のみ生年月日から月齢を計算する。
+            #    ("令和N年M月D日生まれ" の "N年" を Nヶ月と誤マッチさせない)
+            birth = DataNormalizer._parse_birth_date(age_str)
+            if birth is not None:
+                months = DataNormalizer._months_between(birth, today)
+            # 3. "N年" のパターン (4桁年号 "YYYY年" や "令和N年" を除外)
+            elif not re.search(r"\d{4}年|令和\d+年", age_str):
+                if match := re.search(r"(\d+)\s*年", age_str):
+                    months = int(match.group(1)) * 12
 
         if months is None:
             return None
@@ -514,37 +525,39 @@ class DataNormalizer:
         Returns:
             str: ハイフン付き電話番号
         """
-        phone_str = raw_phone.strip()
+        if not raw_phone:
+            return ""
 
-        # 括弧を削除
-        phone_str = phone_str.replace("(", "").replace(")", "")
+        # 全角数字・全角ハイフン・全角括弧を半角へ寄せる (桁数判定の前提)
+        phone_str = raw_phone.translate(DataNormalizer._PHONE_ZEN_TO_HAN)
+        # 括弧を除去: "(0XX)XXX-XXXX" → "0XX-XXX-XXXX" の形に寄せる
+        phone_str = phone_str.replace("(", "").replace(")", "-")
 
-        # すでにハイフンが含まれている場合
-        if "-" in phone_str:
-            # 数字のみを抽出して再フォーマット
-            digits = re.sub(r"\D", "", phone_str)
-        else:
-            # 数字のみを抽出
-            digits = re.sub(r"\D", "", phone_str)
+        # 1. 既に整形済みのハイフン区切り電話番号があれば、その形式を尊重して返す。
+        #    045-671-2100 (3桁市外局番) をハイフン無し再分割で 04-5671-... と壊すのを
+        #    防ぎ、内線・複数番号併記 ("03-1234-5678（内線123）"/"03-... / 06-...") から
+        #    は先頭の正規番号だけを取り出す。
+        formatted = DataNormalizer._PHONE_FORMATTED_RE.search(phone_str)
+        if formatted:
+            return formatted.group(0)
 
-        # 10桁の場合: 市外局番に応じて分割
-        if len(digits) == 10:
-            # 2桁市外局番 (03, 04, 05, 06 など)
-            if digits[0:2] in ["03", "04", "05", "06"]:
-                return f"{digits[0:2]}-{digits[2:6]}-{digits[6:10]}"
-            # 3桁市外局番 (088, 090 など)
-            else:
-                return f"{digits[0:3]}-{digits[3:6]}-{digits[6:10]}"
+        # 2. ハイフン無し: 数字のみ抽出して桁数で分割
+        digits = re.sub(r"\D", "", phone_str)
 
-        # 11桁の場合: 0XX-XXXX-XXXX
+        # 11桁: 携帯・IP (0X0-XXXX-XXXX)
         if len(digits) == 11:
             return f"{digits[0:3]}-{digits[3:7]}-{digits[7:11]}"
 
-        # 無効な桁数の場合は数字のみを返す。
-        # 数字が 0 桁 (例: 「お問い合わせフォームから」「https://...」が phone セルに
-        # 流入したケース) の場合に元の長文 phone_str を返すと、DB の phone VARCHAR(20)
-        # を超過して INSERT 失敗 → トランザクション全体 rollback でサイト全滅する。
-        # 数字無しは空文字 (= 後段で None に変換される) を返す。
+        # 10桁: 2桁市外局番は 03(東京)/06(大阪) のみ。045/052 等は 3桁市外局番なので
+        # 先頭2桁を市外局番扱いしてはならない (旧実装の誤分割バグ)。
+        if len(digits) == 10:
+            if digits[0:2] in ("03", "06"):
+                return f"{digits[0:2]}-{digits[2:6]}-{digits[6:10]}"
+            return f"{digits[0:3]}-{digits[3:6]}-{digits[6:10]}"
+
+        # 無効な桁数の場合は数字のみを返す。数字が 0 桁 (URL や説明文が phone セルに
+        # 流入したケース) は空文字 (= 後段で None) を返す。長大数字列は DB の
+        # phone VARCHAR(20) 超過による INSERT 失敗を防ぐため 20 文字で切り詰める。
         if not digits:
             return ""
         return digits[: DataNormalizer._PHONE_MAX_LEN]

@@ -83,6 +83,15 @@ class TestNormalizeSex:
         assert DataNormalizer._normalize_sex("") == "不明"
         assert DataNormalizer._normalize_sex("その他") == "不明"
 
+    def test_normalize_sex_old_kanji(self):
+        """牡 (雄) / 牝 (雌) の旧表記を正しく判定する
+
+        一部自治体サイトは「牡」「牝」表記を使う。これを取りこぼすと
+        sex が全件「不明」になり性別フィルタが機能しない。
+        """
+        assert DataNormalizer._normalize_sex("牡") == "男の子"
+        assert DataNormalizer._normalize_sex("牝") == "女の子"
+
 
 class TestNormalizeAge:
     """年齢正規化のテスト"""
@@ -144,6 +153,18 @@ class TestNormalizeAge:
         # 実装する場合のテスト
         # assert DataNormalizer._normalize_age("2歳6ヶ月") == 30
         pass
+
+    def test_normalize_age_explicit_age_beats_collection_date(self, monkeypatch):
+        """明示年齢と収容日/掲載日が併記された場合、明示年齢を優先する
+
+        "3歳 2026-05-01収容" のような表記で、収容日を生年月日と誤認して
+        月齢を再計算してしまうと、3歳(36ヶ月)が約1ヶ月などに化ける。
+        """
+        monkeypatch.setattr(DataNormalizer, "_today", staticmethod(lambda: date(2026, 6, 1)))
+        assert DataNormalizer._normalize_age("3歳 2026-05-01収容") == 36
+        assert DataNormalizer._normalize_age("2歳 2024-01-01掲載") == 24
+        # 明示年齢が無く生年月日のみなら従来通り月齢計算
+        assert DataNormalizer._normalize_age("2024-06-01") == 24
 
     def test_normalize_age_iso_birth_date(self, monkeypatch):
         """ISO 形式の生年月日 → 今日との差分を月数で返す"""
@@ -331,6 +352,29 @@ class TestNormalizePhone:
         long_digits = "1" * 30
         result = DataNormalizer._normalize_phone(long_digits)
         assert len(result) <= 20
+
+    def test_normalize_phone_preserves_3digit_areacode_hyphenated(self):
+        """既にハイフン整形済みの 3 桁市外局番を再分割で壊さない
+
+        045(横浜)/052(名古屋)/044(川崎) 等は 3 桁市外局番。旧実装は
+        先頭2桁(04/05)を市外局番扱いし 045-671-2100 を 04-5671-2100 に
+        破壊していた。利用者が施設に電話できなくなる重大バグ。
+        """
+        assert DataNormalizer._normalize_phone("045-671-2100") == "045-671-2100"
+        assert DataNormalizer._normalize_phone("052-961-1111") == "052-961-1111"
+        assert DataNormalizer._normalize_phone("044-200-2111") == "044-200-2111"
+        # 2 桁市外局番 (03/06) は従来通り
+        assert DataNormalizer._normalize_phone("03-1234-5678") == "03-1234-5678"
+
+    def test_normalize_phone_fullwidth_digits(self):
+        """全角数字・全角ハイフンの電話番号を半角整形する"""
+        assert DataNormalizer._normalize_phone("０３－１２３４－５６７８") == "03-1234-5678"
+        assert DataNormalizer._normalize_phone("０４５－６７１－２１００") == "045-671-2100"
+
+    def test_normalize_phone_extension_and_multiple(self):
+        """内線・複数番号併記からは先頭の正規番号のみを取り出す"""
+        assert DataNormalizer._normalize_phone("03-1234-5678（内線123）") == "03-1234-5678"
+        assert DataNormalizer._normalize_phone("03-1111-2222 / 06-3333-4444") == "03-1111-2222"
 
 
 class TestCapSize:
