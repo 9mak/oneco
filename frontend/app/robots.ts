@@ -8,7 +8,8 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/api/'],
+        // /admin/* は認証必須の管理画面、/api/* は内部 API。検索インデックス対象外。
+        disallow: ['/api/', '/admin/'],
       },
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,
