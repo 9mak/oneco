@@ -1,7 +1,10 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FilterState } from '@/types/animal';
+
+const SEARCH_DEBOUNCE_MS = 300;
 
 const PREFECTURES = [
   '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
@@ -72,6 +75,21 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
     }
     const qs = newParams.toString();
     router.replace(qs ? `?${qs}` : '/', { scroll: false });
+  };
+
+  // キーワード検索はキーストローク毎のナビゲーションを避けるため debounce する
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+    };
+  }, []);
+
+  const handleSearchChange = (value: string) => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => {
+      updateParam('q', value.trim() || undefined);
+    }, SEARCH_DEBOUNCE_MS);
   };
 
   const clearAll = () => {
@@ -191,11 +209,7 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
               id="q-search"
               type="search"
               defaultValue={filters.q || ''}
-              onChange={(e) => {
-                const v = e.target.value.trim();
-                // 簡易デバウンス: 入力ごとに更新（Next.js が自動スロットリングするので問題ない）
-                updateParam('q', v || undefined);
-              }}
+              onChange={(e) => handleSearchChange(e.target.value)}
               placeholder="例: 茶白、子犬、四万十町..."
               maxLength={100}
               className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] min-h-[44px]"

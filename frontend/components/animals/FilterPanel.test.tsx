@@ -54,6 +54,44 @@ describe('FilterPanel', () => {
     expect(mockReplace).toHaveBeenCalledWith('?species=%E7%8A%AC', { scroll: false });
   });
 
+  it('キーワード検索はdebounce後にURLを更新する', () => {
+    vi.useFakeTimers();
+    try {
+      render(<FilterPanel filters={defaultFilters} resultCount={42} />);
+
+      fireEvent.change(screen.getByLabelText('キーワード検索'), {
+        target: { value: 'shiba' },
+      });
+      // debounce 経過前は更新しない
+      expect(mockReplace).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(400);
+      expect(mockReplace).toHaveBeenCalledWith('?q=shiba', { scroll: false });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('連続入力では最後の値のみで一度だけ更新する', () => {
+    vi.useFakeTimers();
+    try {
+      render(<FilterPanel filters={defaultFilters} resultCount={42} />);
+      const input = screen.getByLabelText('キーワード検索');
+
+      fireEvent.change(input, { target: { value: 's' } });
+      vi.advanceTimersByTime(100);
+      fireEvent.change(input, { target: { value: 'shi' } });
+      vi.advanceTimersByTime(100);
+      fireEvent.change(input, { target: { value: 'shiba' } });
+      vi.advanceTimersByTime(400);
+
+      expect(mockReplace).toHaveBeenCalledTimes(1);
+      expect(mockReplace).toHaveBeenCalledWith('?q=shiba', { scroll: false });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('適用中フィルタがチップとして表示される', () => {
     currentSearchParams = new URLSearchParams('species=犬&prefecture=東京都');
     render(
