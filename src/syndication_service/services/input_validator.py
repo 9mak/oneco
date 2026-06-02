@@ -9,7 +9,9 @@ class InputValidator:
     """クエリパラメータのバリデーションとサニタイゼーション"""
 
     VALID_SPECIES = ["犬", "猫", "その他"]
-    VALID_CATEGORY = ["adoption", "lost"]
+    # data_collector の /animals と許容値を揃える ("sheltered" を含む)。
+    # 揃えないと同じ category 値がフィードでは 400、JSON API では通る不整合になる。
+    VALID_CATEGORY = ["adoption", "lost", "sheltered"]
     VALID_STATUS = ["sheltered", "adopted", "returned", "deceased"]
     VALID_SEX = ["男の子", "女の子", "不明"]
     MAX_QUERY_LENGTH = 1000

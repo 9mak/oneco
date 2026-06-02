@@ -37,6 +37,11 @@ class TestInputValidator:
         assert exc_info.value.status_code == 400
         assert "無効なパラメータ: category" in str(exc_info.value.detail)
 
+    def test_validate_category_sheltered_accepted(self):
+        """category=sheltered は data_collector の /animals と揃えて許容する"""
+        # 例外を出さなければ OK (サービス間で許容値が一致)
+        InputValidator.validate_query_params({"category": "sheltered"})
+
     def test_validate_invalid_status(self):
         """無効な status はエラーを発生"""
         params = {"status": "invalid"}
