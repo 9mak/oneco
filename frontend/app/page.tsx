@@ -6,6 +6,7 @@ import { FilterPanel } from '@/components/animals/FilterPanel';
 import { JapanMap } from '@/components/animals/JapanMap';
 import { PrefectureMap } from '@/components/animals/PrefectureMap';
 import { Hero } from '@/components/layout/Hero';
+import { PrefectureContextBar } from '@/components/animals/PrefectureContextBar';
 import type { AnimalPublic, FilterState } from '@/types/animal';
 
 export const revalidate = 300;
@@ -125,13 +126,22 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     !filters.q &&
     (!filters.status || filters.status === 'sheltered');
 
+  // 都道府県フィルタのみ解除した戻り先（他フィルタは保持）
+  const backParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value && key !== 'prefecture') backParams.set(key, value);
+  }
+  const backHref = backParams.toString() ? `/?${backParams.toString()}` : '/';
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       {/* 初訪問者向けの導入（フィルタ未適用時のみ） */}
       {isPristine && <Hero />}
 
-      {/* 都道府県別マップ（フィルター無し時のみ表示） */}
-      {!filters.prefecture && (
+      {/* 都道府県別マップ（未選択時）／選択中は文脈バー＋全国マップ復帰導線 */}
+      {filters.prefecture ? (
+        <PrefectureContextBar prefecture={filters.prefecture} backHref={backHref} />
+      ) : (
         <Suspense fallback={<div className="bg-white rounded-lg shadow-md p-6 h-64 animate-pulse" />}>
           <PrefectureMapSection />
         </Suspense>
