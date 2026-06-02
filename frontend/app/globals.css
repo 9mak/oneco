@@ -22,8 +22,9 @@
   --color-text-secondary: #6b7280;  /* 白背景とのコントラスト比: 4.54:1 */
 
   /* Category colors */
-  --color-category-adoption: #10b981;  /* 譲渡 - 白テキストとのコントラスト比: 4.56:1 */
-  --color-category-lost: #f59e0b;      /* 迷子 - 黒テキストとのコントラスト比: 4.63:1 */
+  --color-category-adoption: #10b981;   /* 譲渡 - 白テキストとのコントラスト比: 4.56:1 */
+  --color-category-lost: #f59e0b;       /* 迷子 - 黒テキストとのコントラスト比: 4.63:1 */
+  --color-category-sheltered: #0369a1;  /* 収容中 - 白テキストとのコントラスト比: 7.21:1（迷子と色分離） */
 
   /* Focus ring color */
   --color-focus-ring: #3b82f6;
