@@ -54,6 +54,29 @@ describe('FilterPanel', () => {
     expect(mockReplace).toHaveBeenCalledWith('?species=%E7%8A%AC', { scroll: false });
   });
 
+  it('適用中フィルタがチップとして表示される', () => {
+    currentSearchParams = new URLSearchParams('species=犬&prefecture=東京都');
+    render(
+      <FilterPanel filters={{ species: '犬', prefecture: '東京都' }} resultCount={5} />,
+    );
+
+    expect(
+      screen.getByRole('button', { name: /犬 の絞り込みを解除/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /東京都 の絞り込みを解除/ }),
+    ).toBeInTheDocument();
+  });
+
+  it('チップの解除ボタンで該当フィルタが外れる', () => {
+    currentSearchParams = new URLSearchParams('species=犬');
+    render(<FilterPanel filters={{ species: '犬' }} resultCount={5} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /犬 の絞り込みを解除/ }));
+
+    expect(mockReplace).toHaveBeenCalledWith('/', { scroll: false });
+  });
+
   it('並び替えを「古い順」に変更するとURLが更新される', () => {
     render(<FilterPanel filters={defaultFilters} resultCount={42} />);
 

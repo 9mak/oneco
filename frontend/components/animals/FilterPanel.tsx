@@ -39,6 +39,26 @@ function filtersToTab(filters: FilterState): TabValue {
   return 'sheltered';
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  adopted: '譲渡済',
+  returned: '返還済',
+  deceased: '死亡',
+};
+
+/** 適用中フィルタをチップ表示用に列挙（カテゴリはタブ・並び替えは別UIなので除外） */
+function activeChips(filters: FilterState): { key: keyof FilterState; label: string }[] {
+  const chips: { key: keyof FilterState; label: string }[] = [];
+  if (filters.species) chips.push({ key: 'species', label: filters.species });
+  if (filters.sex) chips.push({ key: 'sex', label: filters.sex });
+  if (filters.prefecture) chips.push({ key: 'prefecture', label: filters.prefecture });
+  if (filters.location) chips.push({ key: 'location', label: filters.location });
+  if (filters.q) chips.push({ key: 'q', label: `「${filters.q}」` });
+  if (filters.status && filters.status !== 'sheltered') {
+    chips.push({ key: 'status', label: STATUS_LABELS[filters.status] ?? filters.status });
+  }
+  return chips;
+}
+
 export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -71,6 +91,7 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
   );
 
   const activeTab = filtersToTab(filters);
+  const chips = activeChips(filters);
 
   const handleTabClick = (tab: TabValue) => {
     if (tab === 'sheltered') {
@@ -133,6 +154,26 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
             </select>
           </div>
         </div>
+
+        {/* 適用中フィルタのチップ */}
+        {chips.length > 0 && (
+          <ul className="flex flex-wrap gap-2" aria-label="適用中の絞り込み">
+            {chips.map((chip) => (
+              <li key={chip.key}>
+                <button
+                  onClick={() => updateParam(chip.key, undefined)}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-800)] border border-[var(--color-primary-100)] hover:bg-[var(--color-primary-100)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)]"
+                  aria-label={`${chip.label} の絞り込みを解除`}
+                >
+                  <span>{chip.label}</span>
+                  <span aria-hidden="true" className="text-base leading-none">
+                    ×
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
 
         {/* キーワード検索 */}
         <div>
