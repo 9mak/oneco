@@ -264,6 +264,40 @@ async def test_list_animals_filters_by_species(repository, async_session):
 
 
 @pytest.mark.asyncio
+async def test_list_animals_location_wildcard_is_literal(repository, async_session):
+    """location の % が LIKE ワイルドカードとして解釈されない（リテラル一致）
+
+    エスケープが無いと location=% で全件マッチしてしまう。
+    """
+    async_session.add(
+        Animal(
+            species="犬",
+            shelter_date=date(2026, 1, 5),
+            location="高知県",
+            source_url="https://example.com/a",
+            category="adoption",
+        )
+    )
+    async_session.add(
+        Animal(
+            species="猫",
+            shelter_date=date(2026, 1, 5),
+            location="徳島県",
+            source_url="https://example.com/b",
+            category="adoption",
+        )
+    )
+    await async_session.commit()
+
+    # "%" はリテラル扱い → "%" を含む location は無いので 0 件
+    _, total_wild = await repository.list_animals(location="%")
+    assert total_wild == 0
+    # 通常の部分一致は機能する
+    _, total_normal = await repository.list_animals(location="高知")
+    assert total_normal == 1
+
+
+@pytest.mark.asyncio
 async def test_list_animals_pagination(repository, async_session):
     """list_animals()がページネーションを正しく適用するか"""
     # テストデータを10件挿入

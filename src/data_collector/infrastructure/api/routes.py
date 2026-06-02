@@ -57,10 +57,12 @@ def require_internal_token(
 @router.get("/animals", response_model=PaginatedResponse[AnimalPublic])
 async def list_animals(
     session: SessionDep,
-    species: str | None = Query(None, description="動物種別フィルタ"),
-    sex: str | None = Query(None, description="性別フィルタ"),
-    location: str | None = Query(None, description="場所フィルタ（部分一致）"),
-    prefecture: str | None = Query(None, description="都道府県フィルタ (完全一致, 例: '高知県')"),
+    species: str | None = Query(None, description="動物種別フィルタ", max_length=50),
+    sex: str | None = Query(None, description="性別フィルタ", max_length=20),
+    location: str | None = Query(None, description="場所フィルタ（部分一致）", max_length=100),
+    prefecture: str | None = Query(
+        None, description="都道府県フィルタ (完全一致, 例: '高知県')", max_length=20
+    ),
     category: str | None = Query(None, description="カテゴリフィルタ ('adoption' または 'lost')"),
     shelter_date_from: date | None = Query(None, description="収容日開始"),
     shelter_date_to: date | None = Query(None, description="収容日終了"),
