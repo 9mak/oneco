@@ -36,6 +36,35 @@ export interface AnimalPublic {
 }
 
 /**
+ * アーカイブ済み動物の公開情報。
+ * 譲渡済(adopted)/返還済(returned) のみが構造的に含まれる（死亡は構造除外）。
+ * status_transition の保持期間経過後にアーカイブされる。
+ */
+export interface ArchivedAnimalPublic {
+  id: number;
+  /** アーカイブ前の Animal.id */
+  original_id: number;
+  species: string;
+  sex: string;
+  age_months: number | null;
+  color: string | null;
+  size: string | null;
+  shelter_date: string;
+  location: string;
+  prefecture: string | null;
+  phone: string | null;
+  image_urls: string[];
+  source_url: string;
+  category: 'adoption' | 'lost' | 'sheltered';
+  /** アーカイブ済みは 'adopted' か 'returned' のいずれか */
+  status: 'adopted' | 'returned';
+  status_changed_at: string | null;
+  /** 譲渡/返還が成立した日 */
+  outcome_date: string | null;
+  archived_at: string;
+}
+
+/**
  * ページネーションメタデータ
  */
 export interface PaginationMeta {

@@ -94,6 +94,14 @@ export function Header() {
                 </Link>
               </li>
               <li>
+                <Link
+                  href="/archive"
+                  className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary-700)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 rounded px-1"
+                >
+                  卒業した子たち
+                </Link>
+              </li>
+              <li>
                 <FavoritesLink />
               </li>
             </ul>
