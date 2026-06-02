@@ -109,10 +109,29 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
       </div>
 
       <div className="p-6 space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <span className="text-sm text-[var(--color-text-secondary)]">
             {resultCount}件の動物
           </span>
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="sort-order"
+              className="text-sm text-[var(--color-text-secondary)] shrink-0"
+            >
+              並び替え
+            </label>
+            <select
+              id="sort-order"
+              value={filters.sort || 'newest'}
+              onChange={(e) =>
+                updateParam('sort', e.target.value === 'newest' ? undefined : e.target.value)
+              }
+              className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] min-h-[44px]"
+            >
+              <option value="newest">収容日が新しい順</option>
+              <option value="oldest">収容日が古い順</option>
+            </select>
+          </div>
         </div>
 
         {/* キーワード検索 */}

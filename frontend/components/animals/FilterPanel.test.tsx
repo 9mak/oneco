@@ -54,6 +54,23 @@ describe('FilterPanel', () => {
     expect(mockReplace).toHaveBeenCalledWith('?species=%E7%8A%AC', { scroll: false });
   });
 
+  it('並び替えを「古い順」に変更するとURLが更新される', () => {
+    render(<FilterPanel filters={defaultFilters} resultCount={42} />);
+
+    fireEvent.change(screen.getByLabelText('並び替え'), { target: { value: 'oldest' } });
+
+    expect(mockReplace).toHaveBeenCalledWith('?sort=oldest', { scroll: false });
+  });
+
+  it('並び替えを「新着順」に戻すとsortパラメータが消える', () => {
+    currentSearchParams = new URLSearchParams('sort=oldest');
+    render(<FilterPanel filters={{ sort: 'oldest' }} resultCount={42} />);
+
+    fireEvent.change(screen.getByLabelText('並び替え'), { target: { value: 'newest' } });
+
+    expect(mockReplace).toHaveBeenCalledWith('/', { scroll: false });
+  });
+
   it('性別フィルタを変更するとURLが更新される', () => {
     render(<FilterPanel filters={defaultFilters} resultCount={42} />);
 

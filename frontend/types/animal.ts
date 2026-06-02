@@ -89,4 +89,6 @@ export interface FilterState {
   prefecture?: string;
   /** キーワード検索（複数フィールド OR 部分一致） */
   q?: string;
+  /** 並び替え（'newest': 収容日が新しい順=デフォルト, 'oldest': 古い順） */
+  sort?: 'newest' | 'oldest';
 }

@@ -19,6 +19,7 @@ interface HomePageProps {
     category?: string;
     status?: string;
     q?: string;
+    sort?: string;
   }>;
 }
 
@@ -58,6 +59,9 @@ function parseFilters(params: Awaited<HomePageProps['searchParams']>): FilterSta
   }
   if (params.q && params.q.trim()) {
     filters.q = params.q.trim().slice(0, 100);
+  }
+  if (params.sort === 'oldest') {
+    filters.sort = 'oldest';
   }
   return filters;
 }
