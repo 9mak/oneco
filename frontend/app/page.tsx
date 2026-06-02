@@ -112,6 +112,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
+      {/* ページ固有の見出し (視覚的には非表示)。ヘッダーのロゴを h1 にしないため、
+          トップページの主題をスクリーンリーダー/SEO 向けにここで提供する */}
+      <h1 className="sr-only">保護動物をさがす — 全国の保護犬・保護猫情報</h1>
       {/* 都道府県別マップ（フィルター無し時のみ表示） */}
       {!filters.prefecture && (
         <Suspense fallback={<div className="bg-white rounded-lg shadow-md p-6 h-64 animate-pulse" />}>

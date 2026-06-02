@@ -51,9 +51,11 @@ export function Header() {
             className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2 min-w-0 focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 rounded"
             aria-label="oneco トップへ"
           >
-            <h1 className="text-2xl font-bold text-[var(--color-text-primary)] leading-none">
+            {/* サイト名は h1 にしない: 各ページが固有の h1 を持つため
+                (ロゴを h1 にすると全ページで h1 が重複し見出し階層が崩れる) */}
+            <span className="text-2xl font-bold text-[var(--color-text-primary)] leading-none">
               oneco
-            </h1>
+            </span>
             <p className="hidden sm:inline text-xs sm:text-sm text-[var(--color-text-secondary)] truncate">
               全国の保護動物情報をひとつに
             </p>

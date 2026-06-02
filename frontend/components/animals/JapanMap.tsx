@@ -59,16 +59,29 @@ export async function JapanMap({ countsByPrefecture }: JapanMapProps) {
               const fill = bucketColor(count, max);
               const href = `/?prefecture=${encodeURIComponent(g.prefecture)}`;
               const label = `${g.prefecture}: ${count}件`;
+              const path = (
+                <path
+                  d={g.d}
+                  fill={fill}
+                  stroke="#9ca3af"
+                  strokeWidth={0.5}
+                  className={count > 0 ? 'transition-opacity hover:opacity-80' : undefined}
+                />
+              );
+              // 0件県はリンクにしない（クリックしても空ページに飛ぶだけで、
+              // PrefectureMap と挙動を揃える）。タイトルは残す。
+              if (count === 0) {
+                return (
+                  <g key={g.prefecture} aria-label={label}>
+                    <title>{label}</title>
+                    {path}
+                  </g>
+                );
+              }
               return (
                 <a key={g.prefecture} href={href} aria-label={label}>
                   <title>{label}</title>
-                  <path
-                    d={g.d}
-                    fill={fill}
-                    stroke="#9ca3af"
-                    strokeWidth={0.5}
-                    className="transition-opacity hover:opacity-80"
-                  />
+                  {path}
                 </a>
               );
             })}

@@ -110,7 +110,11 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
 
       <div className="p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-[var(--color-text-secondary)]">
+          <span
+            className="text-sm text-[var(--color-text-secondary)]"
+            aria-live="polite"
+            aria-atomic="true"
+          >
             {resultCount}件の動物
           </span>
         </div>
