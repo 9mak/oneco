@@ -264,6 +264,99 @@ async def test_list_animals_filters_by_species(repository, async_session):
 
 
 @pytest.mark.asyncio
+async def test_save_animal_records_source_site(repository, async_session):
+    """save_animal は渡された source_site を記録する（消滅同期削除のスコープ用）"""
+    from sqlalchemy import select
+
+    data = AnimalData(
+        species="犬",
+        shelter_date=date(2026, 1, 5),
+        location="高知県",
+        source_url="https://example.com/site-tagged",
+        category="adoption",
+    )
+    await repository.save_animal(data, source_site="高知県動物愛護センター")
+
+    orm = (
+        await async_session.execute(
+            select(Animal).where(Animal.source_url == "https://example.com/site-tagged")
+        )
+    ).scalar_one()
+    assert orm.source_site == "高知県動物愛護センター"
+
+
+@pytest.mark.asyncio
+async def test_prune_disappeared_removes_only_gone_within_site(repository, async_session):
+    """収集で見つからなかった動物だけを、対象サイトに限って削除する（ソースと同期）"""
+    from sqlalchemy import select
+
+    site = "高知サイト"
+    other = "徳島サイト"
+    async_session.add_all(
+        [
+            Animal(
+                species="犬",
+                shelter_date=date(2026, 1, 5),
+                location="高知県",
+                source_url="https://ex.com/keep",
+                category="adoption",
+                source_site=site,
+            ),
+            Animal(
+                species="猫",
+                shelter_date=date(2026, 1, 5),
+                location="高知県",
+                source_url="https://ex.com/gone",
+                category="adoption",
+                source_site=site,
+            ),
+            Animal(
+                species="犬",
+                shelter_date=date(2026, 1, 5),
+                location="徳島県",
+                source_url="https://ex.com/other-site",
+                category="adoption",
+                source_site=other,
+            ),
+        ]
+    )
+    await async_session.commit()
+
+    removed = await repository.prune_disappeared(site, {"https://ex.com/keep"})
+
+    assert removed == 1
+    urls = {r.source_url for r in (await async_session.execute(select(Animal))).scalars().all()}
+    assert "https://ex.com/keep" in urls  # 今回も見つかった → 残る
+    assert "https://ex.com/gone" not in urls  # 消えた → 削除
+    assert "https://ex.com/other-site" in urls  # 別サイト → 触らない
+
+
+@pytest.mark.asyncio
+async def test_prune_disappeared_empty_seen_is_noop(repository, async_session):
+    """seen が空（収集0件 / adapter 破損の可能性）のときは安全に何もしない"""
+    from sqlalchemy import select
+
+    site = "高知サイト"
+    async_session.add(
+        Animal(
+            species="犬",
+            shelter_date=date(2026, 1, 5),
+            location="高知県",
+            source_url="https://ex.com/safe",
+            category="adoption",
+            source_site=site,
+        )
+    )
+    await async_session.commit()
+
+    removed = await repository.prune_disappeared(site, set())
+
+    assert removed == 0
+    remaining = (await async_session.execute(select(Animal))).scalars().all()
+    assert len(remaining) == 1  # 全消しされない
+
+
+@pytest.mark.asyncio
 async def test_list_animals_pagination(repository, async_session):
     """list_animals()がページネーションを正しく適用するか"""
     # テストデータを10件挿入
