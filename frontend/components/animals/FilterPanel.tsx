@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FilterState } from '@/types/animal';
 
@@ -43,6 +44,14 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // 検索キーワードは「非制御 input + URL 同期をデバウンス」にする。
+  // 毎キーストロークで router.replace すると親の <Suspense key={filters}> が
+  // FilterPanel ごと再マウントし、入力欄のフォーカスと IME 変換中の文字が
+  // 失われる (日本語入力が実用に耐えない)。input を非制御のままにして
+  // ブラウザに IME を委ね、入力が止まってから一度だけ URL に反映する。
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isComposingRef = useRef(false);
+
   const updateParam = (key: keyof FilterState, value: string | undefined) => {
     const newParams = new URLSearchParams(searchParams.toString());
     if (value) {
@@ -53,6 +62,25 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
     const qs = newParams.toString();
     router.replace(qs ? `?${qs}` : '/', { scroll: false });
   };
+
+  const syncKeyword = (raw: string) => {
+    const v = raw.trim();
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    // 入力が止まってから URL に反映 (再マウントはこのタイミングで1回だけ)
+    debounceRef.current = setTimeout(() => {
+      updateParam('q', v || undefined);
+    }, 350);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, []);
 
   const clearAll = () => {
     router.replace('/', { scroll: false });
@@ -136,9 +164,17 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
               type="search"
               defaultValue={filters.q || ''}
               onChange={(e) => {
-                const v = e.target.value.trim();
-                // 簡易デバウンス: 入力ごとに更新（Next.js が自動スロットリングするので問題ない）
-                updateParam('q', v || undefined);
+                // IME 変換確定前は同期しない (確定文字だけを検索語にする)
+                if (!isComposingRef.current) {
+                  syncKeyword(e.target.value);
+                }
+              }}
+              onCompositionStart={() => {
+                isComposingRef.current = true;
+              }}
+              onCompositionEnd={(e) => {
+                isComposingRef.current = false;
+                syncKeyword((e.target as HTMLInputElement).value);
               }}
               placeholder="例: 茶白、子犬、四万十町..."
               maxLength={100}
