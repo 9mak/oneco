@@ -19,7 +19,7 @@ export function ExternalLink({ sourceUrl, label = '元のページを見る' }: 
       href={sourceUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center justify-center px-6 py-3 text-base font-medium text-[var(--color-primary-500)] bg-white border-2 border-[var(--color-primary-500)] hover:bg-[var(--color-primary-50)] rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary-500)] min-h-[44px] min-w-[44px]"
+      className="inline-flex items-center justify-center px-6 py-3 text-base font-medium text-[var(--color-primary-700)] bg-white border-2 border-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary-500)] min-h-[44px] min-w-[44px]"
       aria-label={`${label}（新しいタブで開きます）`}
     >
       <svg

@@ -13,8 +13,9 @@ interface AnimalCardProps {
 }
 
 export function AnimalCard({ animal }: AnimalCardProps) {
-  const ageDisplay = animal.age_months
-    ? animal.age_months >= 12
+  const ageDisplay =
+    animal.age_months != null
+      ? animal.age_months >= 12
       ? `${Math.floor(animal.age_months / 12)}歳`
       : `${animal.age_months}ヶ月`
     : '不明';

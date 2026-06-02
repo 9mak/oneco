@@ -42,7 +42,7 @@ export function ContactInfo({ location, phone, category }: ContactInfoProps) {
           <dd>
             <a
               href={`tel:${phone}`}
-              className="text-base text-[var(--color-primary-500)] hover:text-[var(--color-primary-700)] underline focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary-500)] rounded"
+              className="text-base text-[var(--color-primary-700)] hover:text-[var(--color-primary-800)] underline focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary-500)] rounded"
             >
               {phone}
             </a>
@@ -53,7 +53,7 @@ export function ContactInfo({ location, phone, category }: ContactInfoProps) {
       {/* カテゴリ別案内文 */}
       <div
         className="mt-6 p-4 bg-blue-50 border-l-4 border-[var(--color-primary-500)] rounded"
-        role="alert"
+        role="note"
       >
         <p className="text-sm text-gray-700">
           {categoryMessage[category]}
