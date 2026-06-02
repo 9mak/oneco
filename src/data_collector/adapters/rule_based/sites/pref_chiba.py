@@ -155,11 +155,11 @@ class PrefChibaAdapter(SinglePageTableAdapter):
         col2L = self._find_col2L_after(h2)
 
         location = ""
-        breed = ""  # 「種類」(雑種/柴犬 等) ※species 判定は site 名で行う
         color = ""
         sex = ""
         size = ""
         age = ""
+        attrs_parsed = False  # 最初の "・" 属性段落のみ解析する (付帯情報段落を拾わない)
         image_urls: list[str] = []
 
         if col2L is not None:
@@ -197,9 +197,11 @@ class PrefChibaAdapter(SinglePageTableAdapter):
                 # 属性段落: "種類・毛色・性別・体格・年齢" を「・」区切りで分解
                 # 例: "雑種・白黒茶・オス・中・成犬"
                 #     "首輪無・鑑札無" のような付帯情報段落も同形式で来る
-                if "・" in text and not breed:
+                if "・" in text and not attrs_parsed:
                     parts = [s.strip() for s in text.split("・")]
-                    breed, color, sex, size, age = self._parse_attribute_parts(parts)
+                    # breed (品種) は species 判定に使わないため破棄
+                    _breed, color, sex, size, age = self._parse_attribute_parts(parts)
+                    attrs_parsed = True
 
         # 種別はサイト名から推定 (HTML の breed は品種名のため)
         species = self._infer_species_from_site_name(self.site_config.name)
@@ -247,18 +249,56 @@ class PrefChibaAdapter(SinglePageTableAdapter):
                     return col2L
         return None
 
+    # 属性の分類用語彙。位置ではなく内容で sex/size/age を判定する
+    # ("雑種・白黒茶・オス・中・成犬" のような可変長表記で毛色が欠けても崩れない)。
+    # sex は厳密一致 (テンプレ行の "オスメス" を sex に拾わないため)。
+    _SEX_TOKENS = frozenset({"オス", "メス", "雄", "雌", "牡", "牝", "♂", "♀", "男の子", "女の子"})
+    _SIZE_TOKENS = frozenset({"小", "中", "大", "小型", "中型", "大型", "超小型", "超小", "大きめ"})
+    _AGE_TOKENS = frozenset(
+        {
+            "成犬",
+            "子犬",
+            "成猫",
+            "子猫",
+            "老犬",
+            "老猫",
+            "幼犬",
+            "幼猫",
+            "若犬",
+            "若猫",
+            "シニア",
+            "高齢",
+        }
+    )
+
     @staticmethod
     def _parse_attribute_parts(parts: list[str]) -> tuple[str, str, str, str, str]:
         """「・」区切り属性リストから (breed, color, sex, size, age) を返す
 
         典型例: ["雑種", "白黒茶", "オス", "中", "成犬"]
-        要素数が足りない場合は空文字で埋める。
+
+        位置固定で割り当てると毛色欠落 (["雑種","オス","中","成犬"]) 等で
+        color=オス / sex=中 のように総崩れするため、sex/size/age は内容で判定し、
+        残り (品種・毛色) を先頭から breed→color に割り当てる。
         """
-        breed = parts[0] if len(parts) > 0 else ""
-        color = parts[1] if len(parts) > 1 else ""
-        sex = parts[2] if len(parts) > 2 else ""
-        size = parts[3] if len(parts) > 3 else ""
-        age = parts[4] if len(parts) > 4 else ""
+        sex = ""
+        size = ""
+        age = ""
+        others: list[str] = []
+        for p in parts:
+            if not sex and p in PrefChibaAdapter._SEX_TOKENS:
+                sex = p
+            elif not size and p in PrefChibaAdapter._SIZE_TOKENS:
+                size = p
+            elif not age and (
+                p in PrefChibaAdapter._AGE_TOKENS
+                or re.search(r"\d+\s*(?:歳|才|[ヶかカケヵ]月|年)", p)
+            ):
+                age = p
+            else:
+                others.append(p)
+        breed = others[0] if len(others) > 0 else ""
+        color = others[1] if len(others) > 1 else ""
         return breed, color, sex, size, age
 
     @staticmethod

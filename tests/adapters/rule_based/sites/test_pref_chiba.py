@@ -118,6 +118,32 @@ class TestPrefChibaAdapter:
             assert raw.sex != "オスメス"
             assert "種類" not in raw.color  # "種類・毛色・オスメス" 由来の混入が無いこと
 
+    def test_parse_attribute_parts_is_keyword_based(self):
+        """属性が可変長でも sex/size/age を内容で正しく割り当てる
+
+        旧実装は位置固定で、毛色が欠けた4要素 "雑種・オス・中・成犬" で
+        color=オス / sex=中 / size=成犬 と総崩れしていた。
+        """
+        parse = PrefChibaAdapter._parse_attribute_parts
+        # 標準 5 要素は従来通り
+        assert parse(["雑種", "白黒茶", "オス", "中", "成犬"]) == (
+            "雑種",
+            "白黒茶",
+            "オス",
+            "中",
+            "成犬",
+        )
+        # 毛色欠落の 4 要素
+        breed, color, sex, size, age = parse(["雑種", "オス", "中", "成犬"])
+        assert breed == "雑種"
+        assert sex == "オス"
+        assert size == "中"
+        assert age == "成犬"
+        assert "オス" not in color and "中" not in color
+        # 年齢が "1歳" のような数値表記でも age に入る
+        _, _, _, _, age2 = parse(["柴犬", "茶", "メス", "小", "2歳"])
+        assert age2 == "2歳"
+
     def test_empty_page_returns_empty_list(self):
         """動物 h2 が無いページ (在庫 0 件) でも例外を出さない"""
         empty_html = (
