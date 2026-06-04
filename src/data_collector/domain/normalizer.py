@@ -529,25 +529,37 @@ class DataNormalizer:
         - 11桁 (0XXXXXXXXXXX) → 0XX-XXXX-XXXX
         - すでにハイフン付き → 括弧を削除して返す
         - 括弧付き (0XX)XXX-XXXX → 0XX-XXX-XXXX
+        - 全角数字・全角ハイフン・括弧 → 半角に正規化
+        - 「内線」「ext.」「(代表)」等の付帯情報は除去（13桁化を防ぐ）
+
+        桁数が想定外（9桁未満や12桁以上）の場合は空文字を返す。旧実装は部分文字列を
+        返していたが、内線数字が混入した「088-826-2364内線123」が「08882623641」のような
+        不正データになる原因だったため、安全側に倒す。
 
         Args:
             raw_phone: 正規化前の電話番号
 
         Returns:
-            str: ハイフン付き電話番号
+            str: ハイフン付き電話番号、または空文字列
         """
         phone_str = raw_phone.strip()
 
-        # 括弧を削除
-        phone_str = phone_str.replace("(", "").replace(")", "")
+        # 全角数字 → 半角数字
+        phone_str = phone_str.translate(str.maketrans("０１２３４５６７８９", "0123456789"))
+        # 全角・各種ハイフン → ASCII ハイフン（ー(長音)、－、―、‐、−、–、—）
+        phone_str = re.sub(r"[ー－―‐−–—]", "-", phone_str)
+        # 全角・半角括弧を削除
+        phone_str = re.sub(r"[()（）]", "", phone_str)
 
-        # すでにハイフンが含まれている場合
-        if "-" in phone_str:
-            # 数字のみを抽出して再フォーマット
-            digits = re.sub(r"\D", "", phone_str)
-        else:
-            # 数字のみを抽出
-            digits = re.sub(r"\D", "", phone_str)
+        # 内線・付帯情報以降を切り捨て（混入数字が桁数を狂わせるのを防ぐ）
+        for kw in ("内線", "ext.", "ext", "EXT", "Ext", "代表", "（", "(", "／", "/"):
+            idx = phone_str.find(kw)
+            if idx > 0:
+                phone_str = phone_str[:idx]
+                break
+
+        # 数字のみを抽出
+        digits = re.sub(r"\D", "", phone_str)
 
         # 10桁の場合: 市外局番に応じて分割
         if len(digits) == 10:
@@ -562,11 +574,7 @@ class DataNormalizer:
         if len(digits) == 11:
             return f"{digits[0:3]}-{digits[3:7]}-{digits[7:11]}"
 
-        # 無効な桁数の場合は数字のみを返す。
-        # 数字が 0 桁 (例: 「お問い合わせフォームから」「https://...」が phone セルに
-        # 流入したケース) の場合に元の長文 phone_str を返すと、DB の phone VARCHAR(20)
-        # を超過して INSERT 失敗 → トランザクション全体 rollback でサイト全滅する。
-        # 数字無しは空文字 (= 後段で None に変換される) を返す。
-        if not digits:
-            return ""
-        return digits[: DataNormalizer._PHONE_MAX_LEN]
+        # 桁数が想定外 (9桁以下や12桁以上) は空文字。
+        # 旧実装は digits[:20] で部分文字列を返していたが、これは内線混入時の
+        # 13桁化等の不正データの原因。Codex リリースレビュー I-10 で指摘。
+        return ""

@@ -311,9 +311,28 @@ class TestNormalizePhone:
         assert DataNormalizer._normalize_phone("(088)1234567") == "088-123-4567"
 
     def test_normalize_phone_invalid_length(self):
-        """無効な桁数の電話番号は数字のみを返す"""
-        result = DataNormalizer._normalize_phone("123")
-        assert result == "123"
+        """無効な桁数 (9桁以下や12桁以上) は空文字を返す (内線混入時の不正データ防止)"""
+        assert DataNormalizer._normalize_phone("123") == ""
+        assert DataNormalizer._normalize_phone("12345678") == ""
+        assert DataNormalizer._normalize_phone("123456789012") == ""
+
+    def test_normalize_phone_zenkaku_digits(self):
+        """全角数字を半角に正規化して整形する"""
+        assert DataNormalizer._normalize_phone("０８８ー８２６ー２３６４") == "088-826-2364"
+        assert DataNormalizer._normalize_phone("０９０－１２３４－５６７８") == "090-1234-5678"
+
+    def test_normalize_phone_ignores_extension(self):
+        """内線以降は切り捨てて桁数を狂わせない"""
+        assert DataNormalizer._normalize_phone("088-826-2364 内線123") == "088-826-2364"
+        assert DataNormalizer._normalize_phone("0888262364 ext. 99") == "088-826-2364"
+
+    def test_normalize_phone_ignores_representative_label(self):
+        """「(代表)」等の付帯情報を切り捨てる"""
+        assert DataNormalizer._normalize_phone("088-826-2364 (代表)") == "088-826-2364"
+
+    def test_normalize_phone_ignores_secondary_number(self):
+        """スラッシュ区切りの2番目の番号 (受付時刻等) は無視する"""
+        assert DataNormalizer._normalize_phone("088-826-2364 / 9:00-17:00") == "088-826-2364"
 
     def test_normalize_phone_no_digits_returns_empty(self):
         """数字が 1 桁も無い文字列 (URL や説明文) は空文字を返す
@@ -326,11 +345,14 @@ class TestNormalizePhone:
         assert DataNormalizer._normalize_phone("https://example.com/contact/") == ""
         assert DataNormalizer._normalize_phone("お問い合わせはこちら") == ""
 
-    def test_normalize_phone_caps_at_20_chars(self):
-        """20 桁超の長大数字列 (誤マッピング) は 20 文字で切り捨てる"""
+    def test_normalize_phone_long_garbage_returns_empty(self):
+        """20 桁超の長大数字列 (誤マッピング) は空文字を返す。
+
+        旧実装は 20 文字で切り捨てて DB に入れていたが、これは不正電話番号の
+        混入経路だった (Codex リリースレビュー I-10)。安全側に倒し空文字 → None。
+        """
         long_digits = "1" * 30
-        result = DataNormalizer._normalize_phone(long_digits)
-        assert len(result) <= 20
+        assert DataNormalizer._normalize_phone(long_digits) == ""
 
 
 class TestCapSize:
