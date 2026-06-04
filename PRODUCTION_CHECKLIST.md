@@ -48,8 +48,8 @@
   - [ ] `REDIS_URL`: 本番Redis接続文字列
   - [ ] `SECRET_KEY`: ランダムな秘密鍵生成
   - [ ] `CORS_ORIGINS`: フロントエンドドメイン設定
-  - [ ] `LINE_CHANNEL_ACCESS_TOKEN`: LINE Messaging APIトークン
-  - [ ] `LINE_CHANNEL_SECRET`: LINEチャネルシークレット
+  - [ ] `LINE_CHANNEL_ACCESS_TOKEN`: LINE Messaging APIトークン (※未公開機能・後述参照)
+  - [ ] `LINE_CHANNEL_SECRET`: LINEチャネルシークレット (※未公開機能・後述参照)
   - [ ] `NOTIFICATION_EMAIL`: 運用者メールアドレス
   - [ ] `SLACK_WEBHOOK_URL`: Slack通知用Webhook URL
 
@@ -223,9 +223,9 @@
   - [ ] data-collector が正常に実行されたか
   - [ ] GitHub Actions ワークフローの成功確認
 
-- [ ] **通知配信確認**
-  - [ ] LINE通知が正常に配信されたか
-  - [ ] notification-manager ログ確認
+- [ ] **通知配信確認** (※LINE通知は MVP リリース時点で未公開機能。本セクションはスキップ可。詳細は notification_manager の README/コードコメント参照)
+  - [ ] LINE通知が正常に配信されたか（未公開）
+  - [ ] notification-manager ログ確認（未公開）
 
 - [ ] **バックアップ確認**
   - [ ] 自動バックアップが実行されたか
