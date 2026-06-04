@@ -276,6 +276,7 @@ class AnimalRepository:
         shelter_date_to: date | None = None,
         status: AnimalStatus | None = None,
         q: str | None = None,
+        sort: str = "newest",
         limit: int = 50,
         offset: int = 0,
     ) -> tuple[list[Animal], int]:
@@ -339,8 +340,11 @@ class AnimalRepository:
         count_result = await self.session.execute(count_stmt)
         total_count = count_result.scalar()
 
-        # ソートとページネーション適用
-        stmt = stmt.order_by(Animal.shelter_date.desc())
+        # ソートとページネーション適用（id を tie-breaker にして安定化）
+        if sort == "oldest":
+            stmt = stmt.order_by(Animal.shelter_date.asc(), Animal.id.asc())
+        else:
+            stmt = stmt.order_by(Animal.shelter_date.desc(), Animal.id.desc())
         stmt = stmt.limit(limit).offset(offset)
 
         # データ取得

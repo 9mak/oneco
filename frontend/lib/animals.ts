@@ -18,6 +18,8 @@ function buildQuery(params: FetchAnimalsParams): string {
   if (params.category) search.set('category', params.category);
   if (params.status) search.set('status', params.status);
   if (params.q) search.set('q', params.q);
+  // newest はデフォルトなので明示しない（URL/キャッシュキーを汚さない）
+  if (params.sort && params.sort !== 'newest') search.set('sort', params.sort);
   return search.toString();
 }
 

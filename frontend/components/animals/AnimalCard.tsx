@@ -54,7 +54,7 @@ export function AnimalCard({ animal }: AnimalCardProps) {
 
       <div className="p-4 space-y-2">
         <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
-          {animal.species} / {animal.sex}
+          {animal.sex === '不明' ? animal.species : `${animal.species}の${animal.sex}`}
         </h3>
 
         <dl className="grid grid-cols-2 gap-2 text-sm">
@@ -62,6 +62,18 @@ export function AnimalCard({ animal }: AnimalCardProps) {
             <dt className="text-[var(--color-text-secondary)]">推定年齢</dt>
             <dd className="text-[var(--color-text-primary)] font-medium">{ageDisplay}</dd>
           </div>
+          {animal.color && (
+            <div>
+              <dt className="text-[var(--color-text-secondary)]">毛色</dt>
+              <dd className="text-[var(--color-text-primary)] font-medium">{animal.color}</dd>
+            </div>
+          )}
+          {animal.size && (
+            <div>
+              <dt className="text-[var(--color-text-secondary)]">体格</dt>
+              <dd className="text-[var(--color-text-primary)] font-medium">{animal.size}</dd>
+            </div>
+          )}
           <div>
             <dt className="text-[var(--color-text-secondary)]">収容日</dt>
             <dd className="text-[var(--color-text-primary)] font-medium">{shelterDate}</dd>

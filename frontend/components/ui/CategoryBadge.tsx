@@ -28,8 +28,8 @@ export function CategoryBadge({ category, size = 'md' }: CategoryBadgeProps) {
     },
     sheltered: {
       label: '収容中',
-      bgColor: 'bg-[var(--color-category-lost)]',
-      textColor: 'text-black',
+      bgColor: 'bg-[var(--color-category-sheltered)]',
+      textColor: 'text-white',
     },
   };
 

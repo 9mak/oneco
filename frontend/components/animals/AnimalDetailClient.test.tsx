@@ -7,12 +7,13 @@ import React from 'react';
 
 // Mock Next.js navigation
 const mockPush = vi.fn();
+const mockBack = vi.fn();
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
     replace: vi.fn(),
-    back: vi.fn(),
+    back: mockBack,
     forward: vi.fn(),
     refresh: vi.fn(),
     prefetch: vi.fn(),
@@ -174,13 +175,26 @@ describe('AnimalDetailClient', () => {
     expect(externalLink).toHaveAttribute('href', 'https://kochi-apc.com/jouto/dog1');
   });
 
-  it('「一覧に戻る」ボタンをクリックするとトップページに遷移する', async () => {
+  it('履歴がある場合「一覧に戻る」は前のページ（フィルタ保持）に戻る', async () => {
+    Object.defineProperty(window.history, 'length', { value: 2, configurable: true });
+    render(<AnimalDetailClient animal={mockAnimal} />);
+
+    const backButton = screen.getByRole('button', { name: '一覧に戻る' });
+    await userEvent.click(backButton);
+
+    expect(mockBack).toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('履歴が無い（直接訪問）場合「一覧に戻る」はトップページへ遷移する', async () => {
+    Object.defineProperty(window.history, 'length', { value: 1, configurable: true });
     render(<AnimalDetailClient animal={mockAnimal} />);
 
     const backButton = screen.getByRole('button', { name: '一覧に戻る' });
     await userEvent.click(backButton);
 
     expect(mockPush).toHaveBeenCalledWith('/');
+    expect(mockBack).not.toHaveBeenCalled();
   });
 
   it('「一覧に戻る」ボタンにフォーカスリングが適用される', () => {
