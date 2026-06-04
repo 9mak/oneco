@@ -139,8 +139,24 @@ jobs:
           pip install mypy types-requests
 
       - name: Run mypy type checker
+        # I-6: 既存エラー約120件のため全体即時ブロッキングは無理だが、
+        # 進捗を可視化しつつ MYPY_MAX_ERRORS 環境変数で閾値ゲートできるようにする。
+        # リリースワークフローでは MYPY_MAX_ERRORS=120 等を設定して回帰を防ぐ運用が可能。
+        env:
+          MYPY_MAX_ERRORS: ${{ vars.MYPY_MAX_ERRORS || '' }}
         run: |
-          mypy src/data_collector --ignore-missing-imports --no-error-summary || true
+          set +e
+          mypy src/data_collector --ignore-missing-imports --no-error-summary \
+            > mypy_output.txt 2>&1
+          status=$?
+          set -e
+          cat mypy_output.txt
+          error_count=$(grep -c "^.*: error:" mypy_output.txt || true)
+          echo "::notice title=mypy::mypy reported ${error_count} errors (exit status=${status})"
+          if [ -n "${MYPY_MAX_ERRORS}" ] && [ "${error_count}" -gt "${MYPY_MAX_ERRORS}" ]; then
+            echo "::error title=mypy gate::mypy errors ${error_count} exceeded threshold ${MYPY_MAX_ERRORS}"
+            exit 1
+          fi
 
   build:
     name: Build Package

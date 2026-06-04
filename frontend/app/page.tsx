@@ -70,12 +70,14 @@ function parseFilters(params: Awaited<HomePageProps['searchParams']>): FilterSta
 async function AnimalsSection({ filters }: { filters: FilterState }) {
   let items: AnimalPublic[] = [];
   let totalCount = 0;
+  let fetchFailed = false;
   try {
     const data = await fetchAnimals({ ...filters, limit: PAGE_SIZE, offset: 0 });
     items = data.items;
     totalCount = data.meta.total_count;
   } catch (error) {
     console.error('Failed to fetch animals:', error);
+    fetchFailed = true;
   }
 
   return (
@@ -86,6 +88,7 @@ async function AnimalsSection({ filters }: { filters: FilterState }) {
         totalCount={totalCount}
         filters={filters}
         pageSize={PAGE_SIZE}
+        fetchFailed={fetchFailed}
       />
     </>
   );

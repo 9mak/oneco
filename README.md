@@ -50,7 +50,7 @@ oneco/
 │   │   ├── domain/            # ドメインモデル・バリデーション
 │   │   ├── infrastructure/    # DB, API, LLM アダプター
 │   │   └── orchestration/     # 収集オーケストレーション
-│   ├── notification_manager/  # LINE 通知管理
+│   ├── notification_manager/  # LINE 通知管理（MVP では未公開機能、配線は今後）
 │   └── syndication_service/   # RSS/Atom 配信
 ├── frontend/                  # Next.js Web ポータル
 ├── tests/                     # テストコード

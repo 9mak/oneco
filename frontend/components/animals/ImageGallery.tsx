@@ -17,9 +17,11 @@ interface ImageGalleryProps {
   imageUrls: string[];
   /** 画像の代替テキスト（動物の種別など） */
   alt: string;
+  /** 出典元ページURL (任意。モーダルで「原寸大は元のページで」リンク表示用) */
+  sourceUrl?: string;
 }
 
-export function ImageGallery({ imageUrls, alt }: ImageGalleryProps) {
+export function ImageGallery({ imageUrls, alt, sourceUrl }: ImageGalleryProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [erroredIndices, setErroredIndices] = useState<Set<number>>(new Set());
 
@@ -89,6 +91,7 @@ export function ImageGallery({ imageUrls, alt }: ImageGalleryProps) {
           imageUrl={resolveSrc(selectedImageIndex, imageUrls[selectedImageIndex])}
           alt={`${alt}の画像${selectedImageIndex + 1}`}
           onClose={handleCloseModal}
+          sourceUrl={sourceUrl}
         />
       )}
     </div>

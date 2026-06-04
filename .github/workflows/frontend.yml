@@ -172,9 +172,15 @@ jobs:
           sleep 10
 
           # Run Lighthouse audits
-          lhci autorun --config=lighthouserc.json || true
+          # I-6: 通常時は監視 (|| true)、LIGHTHOUSE_GATE=true 設定時はブロッキング。
+          if [ "${LIGHTHOUSE_GATE:-}" = "true" ]; then
+            lhci autorun --config=lighthouserc.json
+          else
+            lhci autorun --config=lighthouserc.json || true
+          fi
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+          LIGHTHOUSE_GATE: ${{ vars.LIGHTHOUSE_GATE || '' }}
 
       - name: Upload Lighthouse reports
         uses: actions/upload-artifact@v4
