@@ -57,7 +57,10 @@ jobs:
         run: |
           python -m venv .venv
           .venv/bin/python -m pip install --upgrade pip
-          .venv/bin/python -m pip install -r requirements.txt
+          # I-5: pyproject.toml を信頼できる単一源泉として editable install。
+          # 旧 'pip install -r requirements.txt' は pyyaml/playwright/pdfplumber が
+          # 含まれず data-collector 経路が壊れていた。
+          .venv/bin/python -m pip install -e .
 
       - name: Configure git author
         run: |
