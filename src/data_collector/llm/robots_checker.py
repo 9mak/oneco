@@ -10,7 +10,9 @@ from urllib.robotparser import RobotFileParser
 
 import requests
 
-DEFAULT_USER_AGENT = "oneco-collector/1.0 (+https://github.com/9mak/oneco)"
+from ..adapters.politeness import ONECO_USER_AGENT
+
+DEFAULT_USER_AGENT = ONECO_USER_AGENT
 DEFAULT_TIMEOUT_SEC = 10
 
 
@@ -47,6 +49,23 @@ class RobotsChecker:
         if parser is None:
             return True
         return parser.can_fetch(self.user_agent, url)
+
+    def crawl_delay(self, url: str) -> float | None:
+        """robots.txt が指定する Crawl-delay（秒）を返す。指定無しは None。"""
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https") or not parsed.netloc:
+            return None
+        origin = f"{parsed.scheme}://{parsed.netloc}"
+        parser = self._get_parser(origin)
+        if parser is None:
+            return None
+        delay = parser.crawl_delay(self.user_agent)
+        if delay is None:
+            return None
+        try:
+            return float(delay)
+        except (TypeError, ValueError):
+            return None
 
     def _get_parser(self, origin: str) -> RobotFileParser | None:
         if origin in self._parsers:

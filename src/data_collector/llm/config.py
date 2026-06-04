@@ -38,6 +38,11 @@ class SiteConfig(BaseModel):
         False  # rule-based 抽出失敗時に LLM 抽出で再試行（rule-basedモードのみ意味あり）
     )
     timeout_sec: int | None = None  # サイト個別タイムアウト秒。未指定時はグローバル値を使用
+    # 利用規約・ライセンスの棚卸し用（オープンデータ適法性の根拠記録）。
+    # license: 'public_data'|'cc_by'|'gov_standard'|'unknown'|'prohibited' 等
+    # terms_url: そのサイトの利用規約 / オープンデータ規約の URL
+    license: str = "unknown"
+    terms_url: str | None = None
 
     @field_validator("name", "prefecture", "list_url")
     @classmethod

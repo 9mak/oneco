@@ -8,6 +8,7 @@
 from abc import ABC, abstractmethod
 
 from ..domain.models import AnimalData, RawAnimalData
+from .politeness import DEFAULT_MIN_INTERVAL_SEC, RequestThrottle
 
 
 class NetworkError(Exception):
@@ -79,6 +80,11 @@ class MunicipalityAdapter(ABC):
         """
         self.prefecture_code = prefecture_code
         self.municipality_name = municipality_name
+        self._throttle = RequestThrottle()
+
+    def _polite_wait(self, interval_sec: float | None = None) -> None:
+        """HTTP 取得の直前に呼び、最小アクセス間隔を保証する。"""
+        self._throttle.wait(interval_sec if interval_sec is not None else DEFAULT_MIN_INTERVAL_SEC)
 
     @abstractmethod
     def fetch_animal_list(self) -> list[tuple[str, str]]:

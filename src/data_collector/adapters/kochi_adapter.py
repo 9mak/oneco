@@ -12,6 +12,7 @@ from bs4 import BeautifulSoup
 from ..domain.models import AnimalData, RawAnimalData
 from ..domain.normalizer import DataNormalizer
 from .municipality_adapter import MunicipalityAdapter, NetworkError, ParsingError
+from .politeness import DEFAULT_MIN_INTERVAL_SEC, ONECO_USER_AGENT
 
 
 class KochiAdapter(MunicipalityAdapter):
@@ -35,9 +36,9 @@ class KochiAdapter(MunicipalityAdapter):
     CATEGORY_ADOPTION = "adoption"
     CATEGORY_LOST = "lost"
 
-    # HTTP リクエストヘッダー
+    # HTTP リクエストヘッダー（User-Agent は politeness 共通定数で統一・連絡先明記）
     HEADERS = {
-        "User-Agent": "PetRescueApp/1.0 (Data Collection Bot for Animal Rescue)",
+        "User-Agent": ONECO_USER_AGENT,
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "ja,en;q=0.5",
     }
@@ -138,6 +139,8 @@ class KochiAdapter(MunicipalityAdapter):
             NetworkError: HTTP エラー発生時
             ParsingError: HTML 構造が想定と異なる時
         """
+        # アクセス間隔の保証（偽計業務妨害リスク低減）
+        self._polite_wait(DEFAULT_MIN_INTERVAL_SEC)
         try:
             response = requests.get(
                 page_url,
@@ -250,6 +253,8 @@ class KochiAdapter(MunicipalityAdapter):
             NetworkError: HTTP エラー発生時
             ParsingError: HTML 構造が想定と異なる時
         """
+        # アクセス間隔の保証（偽計業務妨害リスク低減）
+        self._polite_wait(DEFAULT_MIN_INTERVAL_SEC)
         try:
             response = requests.get(
                 detail_url,

@@ -64,6 +64,11 @@ export default function TermsPage() {
         <h2 className="text-xl font-semibold mb-3">6. 著作権・データの利用</h2>
         <p>
           動物の画像・情報の著作権は各自治体・元サイトの管理者に帰属します。
+          当サイトは、保護動物の所在を案内し譲渡・返還を支援する目的で、
+          各自治体の公開情報を出典を明示して掲載しています。画像については、
+          検索・所在案内に必要な範囲の縮小表示（サムネイル）に留めています。
+        </p>
+        <p className="mt-3">
           当サイトのコード（オープンソース）は
           <a
             href="https://github.com/9mak/oneco"
@@ -78,7 +83,29 @@ export default function TermsPage() {
       </section>
 
       <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-3">7. 規約の変更</h2>
+        <h2 className="text-xl font-semibold mb-3">
+          7. 掲載停止・削除のご依頼（自治体・権利者の方へ）
+        </h2>
+        <p>
+          掲載元の自治体・権利者の方で、当サイトへの情報・画像の掲載停止や削除をご希望の場合は、
+          下記の窓口よりご連絡ください。確認のうえ速やかに対応いたします。
+          収集ロボットのアクセスを制限されたい場合は、robots.txt の指定も尊重します。
+        </p>
+        <p className="mt-3">
+          ご連絡先:{' '}
+          <a
+            href="https://github.com/9mak/oneco/issues"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[var(--color-primary-500)] hover:underline"
+          >
+            GitHub Issues
+          </a>
+        </p>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold mb-3">8. 規約の変更</h2>
         <p>
           本規約は予告なく改訂されることがあります。改訂後も継続して当サイトを利用する場合、
           改訂後の規約に同意したものとみなします。
@@ -86,7 +113,7 @@ export default function TermsPage() {
       </section>
 
       <section>
-        <h2 className="text-xl font-semibold mb-3">8. お問い合わせ</h2>
+        <h2 className="text-xl font-semibold mb-3">9. お問い合わせ</h2>
         <p>
           本規約に関するお問い合わせは、
           <a

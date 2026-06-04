@@ -15,6 +15,13 @@ const nextConfig: NextConfig = {
       },
     ],
     formats: ['image/webp', 'image/avif'], // WebP/AVIF自動変換
+    /* 著作権配慮（著作権法47条の5「軽微利用」の趣旨）:
+     * 元サイト画像をそのまま再配信せず、検索・所在案内に必要な範囲の
+     * 縮小サムネイルに留める。配信解像度の上限と品質を抑える。
+     */
+    deviceSizes: [640, 750, 828],
+    imageSizes: [96, 128, 256, 384],
+    qualities: [60],
   },
 
   /* Content Security Policy ヘッダー設定
