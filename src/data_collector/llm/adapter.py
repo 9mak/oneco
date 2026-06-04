@@ -206,10 +206,16 @@ class LlmAdapter(MunicipalityAdapter):
             self.stats.total_output_tokens += result.output_tokens
 
             raw_list = []
-            for fields in result.animals:
+            for i, fields in enumerate(result.animals):
                 # species ヒントで上書き（URLから確実に分かる場合）
                 if hint_species and not fields.get("species"):
                     fields["species"] = hint_species
+
+                # 仮想URL: 同一 PDF から複数頭抽出される場合、source_url を
+                # `<pdf>#<index>` 形式に分けて DB の upsert キー衝突を防ぐ
+                # (Codex リリースレビュー C-1: 旧実装は全頭が同じ pdf_url で
+                # upsert され、最後の1頭で他の全行が上書きされていた)。
+                virtual_url = f"{pdf_url}#{i}"
 
                 raw_list.append(
                     RawAnimalData(
@@ -222,7 +228,7 @@ class LlmAdapter(MunicipalityAdapter):
                         location=fields.get("location", ""),
                         phone=fields.get("phone", ""),
                         image_urls=fields.get("image_urls", []),
-                        source_url=pdf_url,
+                        source_url=virtual_url,
                         category=category,
                     )
                 )
@@ -265,7 +271,15 @@ class LlmAdapter(MunicipalityAdapter):
         return raw_list[index]
 
     def _fetch_page(self, url: str) -> str:
-        """URLからHTML（またはPDFテキスト）を取得"""
+        """URLからHTML（またはPDFテキスト）を取得。
+
+        Codex リリースレビュー I-1 対応: すべての fetch 経路 (StaticFetcher /
+        PdfFetcher / PlaywrightFetcher) の直前に politeness wait を共通適用し、
+        list_url だけでなく detail / PDF / pagination URL のアクセス間隔を保証する。
+        """
+        # アクセス間隔の保証 (per-instance throttle、site_config.request_interval を採用)
+        self._polite_wait(getattr(self.site_config, "request_interval", None))
+
         if self._fetcher is not None:
             # テスト用インジェクション済みフェッチャーを使用
             return self._fetcher.fetch(url)

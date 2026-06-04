@@ -66,14 +66,17 @@ export default async function AnimalDetailPage({ params }: AnimalDetailPageProps
   // メタデータ用のタイトル生成
   const title = `${animal.species} - ${animal.location}`;
 
+  // a11y: layout.tsx で <main> ランドマークを出しているためここでは <section>。
+  // h1 は AnimalDetailClient が持つので sr-only h1 は重複回避のため削除。
+  // title はメタデータ生成側で利用される。
+  void title;
   return (
-    <main className="min-h-screen bg-gray-50">
+    <section className="min-h-screen bg-gray-50">
       <PetSchema animal={animal} siteUrl={SITE_URL} />
       <div className="container mx-auto px-4 py-8">
-        <h1 className="sr-only">{title}</h1>
         <AnimalDetailClient animal={animal} />
       </div>
-    </main>
+    </section>
   );
 }
 

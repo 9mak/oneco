@@ -656,6 +656,30 @@ def main():
                     logger.error("全サイトで収集に失敗しました")
                     success = False
 
+                # 失敗率・0件率の閾値ゲート (Codex リリースレビュー I-3)。
+                # サイレントな大規模劣化を検知するため、環境変数で閾値を制御。
+                # デフォルト 1.0 (=100%) は現状の挙動を維持（=全件失敗時のみ失敗扱い）。
+                # リリース後は ONECO_MAX_FAIL_RATIO=0.3、ONECO_MAX_ZERO_RATIO=0.5 等に
+                # 絞って急性的劣化を検知できる。
+                total_sites = total_succeeded + total_failed
+                if total_sites > 0:
+                    fail_ratio = total_failed / total_sites
+                    zero_ratio = len(zero_count_sites) / total_sites
+                    max_fail_ratio = float(os.environ.get("ONECO_MAX_FAIL_RATIO", "1.0"))
+                    max_zero_ratio = float(os.environ.get("ONECO_MAX_ZERO_RATIO", "1.0"))
+                    if fail_ratio > max_fail_ratio:
+                        logger.error(
+                            f"失敗率 {fail_ratio:.2%} が閾値 {max_fail_ratio:.2%} を超過 "
+                            f"({total_failed}/{total_sites} サイト失敗)"
+                        )
+                        success = False
+                    if zero_ratio > max_zero_ratio:
+                        logger.error(
+                            f"0件サイト率 {zero_ratio:.2%} が閾値 {max_zero_ratio:.2%} を超過 "
+                            f"({len(zero_count_sites)}/{total_sites} サイト)"
+                        )
+                        success = False
+
                 # フィールド欠損率ドリフト検知 (自己修復ループ Phase 1)。
                 # 今 run の snapshot を読み、各サイトについて location/age_months
                 # 等の欠損率を計算 → FieldQualityTracker に記録 → 前回比 +閾値

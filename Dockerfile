@@ -12,12 +12,14 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy dependency files
-COPY requirements.txt setup.py pyproject.toml ./
+COPY setup.py pyproject.toml README.md ./
 COPY src/ ./src/
 
 # Install Python dependencies
+# I-5: pyproject.toml を信頼できる単一源泉として editable install。
+# 旧 'pip install -r requirements.txt' は pyyaml/playwright/pdfplumber 等が
+# 欠落しており、'pip install -e .' との二重 install で混乱を招いていた。
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir -e .
 
 # Copy alembic migrations and entry point

@@ -104,7 +104,11 @@ export function AnimalDetailClient({ animal }: AnimalDetailClientProps) {
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
               写真
             </h2>
-            <ImageGallery imageUrls={animal.image_urls} alt={animal.species} />
+            <ImageGallery
+              imageUrls={animal.image_urls}
+              alt={animal.species}
+              sourceUrl={animal.source_url}
+            />
           </section>
         </div>
 

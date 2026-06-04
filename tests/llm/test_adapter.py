@@ -327,6 +327,35 @@ class TestPdfMultiAnimal:
         # extract_multiple_animals が1回呼ばれること
         assert mock_provider.multi_calls == 1
 
+    def test_multi_animal_pdf_assigns_distinct_source_urls(self, multi_site_config):
+        """multi-animal PDF の各頭は仮想URL(#index)を source_url に持つこと。
+
+        Codex C-1 指摘: 旧実装は全頭が同じ pdf_url で source_url upsert され
+        最後の1頭で他の全行が上書きされていた。virtual_url を反映してDB上
+        ユニークになることを検証する。
+        """
+        list_html = (
+            '<html><body><a href="https://example.com/0322dog.pdf">犬PDF</a></body></html>'
+        )
+        pdf_text = "<pre>犬一覧</pre>"
+        mock_fetcher = MagicMock()
+        mock_fetcher.fetch.side_effect = [list_html, pdf_text]
+
+        with patch("src.data_collector.llm.adapter.time.sleep"):
+            adapter = LlmAdapter(
+                site_config=multi_site_config,
+                provider=MockProvider(),
+                fetcher=mock_fetcher,
+            )
+            urls = adapter.fetch_animal_list()
+            # 各仮想URLから抽出される RawAnimalData の source_url は仮想URLで分かれる
+            raw0 = adapter.extract_animal_details(urls[0][0], urls[0][1])
+            raw1 = adapter.extract_animal_details(urls[1][0], urls[1][1])
+
+        assert raw0.source_url == "https://example.com/0322dog.pdf#0"
+        assert raw1.source_url == "https://example.com/0322dog.pdf#1"
+        assert raw0.source_url != raw1.source_url
+
     def test_species_hint_from_dog_url(self, multi_site_config):
         """dog を含むURLでは hint_species='犬' が渡されること"""
         list_html = """<html><body>
