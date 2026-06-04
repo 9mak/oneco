@@ -217,6 +217,37 @@ async def test_list_animals_offset_validation(test_app, populated_session):
 
 
 @pytest.mark.asyncio
+async def test_list_animals_sort_newest_is_default(test_app, populated_session):
+    """sort 未指定時は収容日の新しい順（デフォルト）で返すか"""
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
+        response = await client.get("/animals")
+
+    assert response.status_code == 200
+    dates = [item["shelter_date"] for item in response.json()["items"]]
+    assert dates == ["2026-01-07", "2026-01-06", "2026-01-05"]
+
+
+@pytest.mark.asyncio
+async def test_list_animals_sort_oldest(test_app, populated_session):
+    """sort=oldest で収容日の古い順に返すか"""
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
+        response = await client.get("/animals?sort=oldest")
+
+    assert response.status_code == 200
+    dates = [item["shelter_date"] for item in response.json()["items"]]
+    assert dates == ["2026-01-05", "2026-01-06", "2026-01-07"]
+
+
+@pytest.mark.asyncio
+async def test_list_animals_invalid_sort_returns_400(test_app, populated_session):
+    """無効な sort 値は HTTP 400 を返すか"""
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
+        response = await client.get("/animals?sort=bogus")
+
+    assert response.status_code == 400
+
+
+@pytest.mark.asyncio
 async def test_get_animal_by_id_returns_animal(test_app, populated_session):
     """GET /animals/{id} が指定されたIDの動物を返すか"""
     # 最初の動物のIDを取得

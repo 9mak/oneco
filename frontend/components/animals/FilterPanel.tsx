@@ -1,7 +1,10 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FilterState } from '@/types/animal';
+
+const SEARCH_DEBOUNCE_MS = 300;
 
 const PREFECTURES = [
   '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
@@ -39,6 +42,26 @@ function filtersToTab(filters: FilterState): TabValue {
   return 'sheltered';
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  adopted: '譲渡済',
+  returned: '返還済',
+  deceased: '死亡',
+};
+
+/** 適用中フィルタをチップ表示用に列挙（カテゴリはタブ・並び替えは別UIなので除外） */
+function activeChips(filters: FilterState): { key: keyof FilterState; label: string }[] {
+  const chips: { key: keyof FilterState; label: string }[] = [];
+  if (filters.species) chips.push({ key: 'species', label: filters.species });
+  if (filters.sex) chips.push({ key: 'sex', label: filters.sex });
+  if (filters.prefecture) chips.push({ key: 'prefecture', label: filters.prefecture });
+  if (filters.location) chips.push({ key: 'location', label: filters.location });
+  if (filters.q) chips.push({ key: 'q', label: `「${filters.q}」` });
+  if (filters.status && filters.status !== 'sheltered') {
+    chips.push({ key: 'status', label: STATUS_LABELS[filters.status] ?? filters.status });
+  }
+  return chips;
+}
+
 export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -52,6 +75,21 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
     }
     const qs = newParams.toString();
     router.replace(qs ? `?${qs}` : '/', { scroll: false });
+  };
+
+  // キーワード検索はキーストローク毎のナビゲーションを避けるため debounce する
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+    };
+  }, []);
+
+  const handleSearchChange = (value: string) => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => {
+      updateParam('q', value.trim() || undefined);
+    }, SEARCH_DEBOUNCE_MS);
   };
 
   const clearAll = () => {
@@ -71,6 +109,7 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
   );
 
   const activeTab = filtersToTab(filters);
+  const chips = activeChips(filters);
 
   const handleTabClick = (tab: TabValue) => {
     if (tab === 'sheltered') {
@@ -109,11 +148,50 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
       </div>
 
       <div className="p-6 space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <span className="text-sm text-[var(--color-text-secondary)]">
             {resultCount}件の動物
           </span>
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="sort-order"
+              className="text-sm text-[var(--color-text-secondary)] shrink-0"
+            >
+              並び替え
+            </label>
+            <select
+              id="sort-order"
+              value={filters.sort || 'newest'}
+              onChange={(e) =>
+                updateParam('sort', e.target.value === 'newest' ? undefined : e.target.value)
+              }
+              className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] min-h-[44px]"
+            >
+              <option value="newest">収容日が新しい順</option>
+              <option value="oldest">収容日が古い順</option>
+            </select>
+          </div>
         </div>
+
+        {/* 適用中フィルタのチップ */}
+        {chips.length > 0 && (
+          <ul className="flex flex-wrap gap-2" aria-label="適用中の絞り込み">
+            {chips.map((chip) => (
+              <li key={chip.key}>
+                <button
+                  onClick={() => updateParam(chip.key, undefined)}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-800)] border border-[var(--color-primary-100)] hover:bg-[var(--color-primary-100)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)]"
+                  aria-label={`${chip.label} の絞り込みを解除`}
+                >
+                  <span>{chip.label}</span>
+                  <span aria-hidden="true" className="text-base leading-none">
+                    ×
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
 
         {/* キーワード検索 */}
         <div>
@@ -131,11 +209,7 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
               id="q-search"
               type="search"
               defaultValue={filters.q || ''}
-              onChange={(e) => {
-                const v = e.target.value.trim();
-                // 簡易デバウンス: 入力ごとに更新（Next.js が自動スロットリングするので問題ない）
-                updateParam('q', v || undefined);
-              }}
+              onChange={(e) => handleSearchChange(e.target.value)}
               placeholder="例: 茶白、子犬、四万十町..."
               maxLength={100}
               className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] min-h-[44px]"

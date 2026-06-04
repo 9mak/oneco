@@ -22,7 +22,26 @@ describe('AnimalCard', () => {
 
   it('動物の種別と性別が表示される', () => {
     render(<AnimalCard animal={mockAnimal} />);
-    expect(screen.getByRole('heading', { name: /犬 \/ 男の子/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /犬の男の子/ })).toBeInTheDocument();
+  });
+
+  it('性別が不明な場合は種別のみ見出しに表示される', () => {
+    const unknownSex = { ...mockAnimal, sex: '不明' };
+    render(<AnimalCard animal={unknownSex} />);
+    expect(screen.getByRole('heading', { name: '犬' })).toBeInTheDocument();
+  });
+
+  it('毛色と体格が表示される', () => {
+    render(<AnimalCard animal={mockAnimal} />);
+    expect(screen.getByText('茶色')).toBeInTheDocument();
+    expect(screen.getByText('中型')).toBeInTheDocument();
+  });
+
+  it('毛色・体格が null の場合は該当項目を表示しない', () => {
+    const noColorSize = { ...mockAnimal, color: null, size: null };
+    render(<AnimalCard animal={noColorSize} />);
+    expect(screen.queryByText('毛色')).not.toBeInTheDocument();
+    expect(screen.queryByText('体格')).not.toBeInTheDocument();
   });
 
   it('推定年齢が月から年に変換されて表示される (12ヶ月以上)', () => {

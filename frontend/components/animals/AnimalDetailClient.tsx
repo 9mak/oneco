@@ -24,8 +24,14 @@ export function AnimalDetailClient({ animal }: AnimalDetailClientProps) {
   const router = useRouter();
 
   // 「一覧に戻る」ボタンハンドラー
+  // 一覧から遷移してきた場合は back() でフィルタ・スクロール位置を保持。
+  // 直接訪問（履歴なし）の場合のみトップへフォールバック。
   const handleBackToList = () => {
-    router.push('/');
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/');
+    }
   };
 
   // 年齢表示（月単位を年月に変換）

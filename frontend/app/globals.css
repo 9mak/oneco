@@ -7,17 +7,24 @@
   /* WCAG 2.1 AA準拠カラーパレット */
   /* Primary colors - コントラスト比検証済み */
   --color-primary-50: #f0f9ff;
+  --color-primary-100: #e0f2fe;  /* 淡いボーダー/背景用 */
   --color-primary-500: #0ea5e9;  /* 白テキストとのコントラスト比: 2.77:1 (AA不適合・装飾/ボーダー用) */
   --color-primary-700: #0369a1;  /* 白テキストとのコントラスト比: 7.21:1 (AA適合・背景+白文字用) */
   --color-primary-800: #075985;  /* 白テキストとのコントラスト比: 9.36:1 (hover/active用) */
+
+  /* Accent colors - 暖色（保護動物サイトの温度感） */
+  --color-accent-50: #fff7ed;
+  --color-accent-100: #ffedd5;
+  --color-accent-700: #c2410c;  /* 白背景とのコントラスト比: 5.94:1 (AA適合) */
 
   /* Text colors */
   --color-text-primary: #1f2937;    /* 白背景とのコントラスト比: 16.11:1 */
   --color-text-secondary: #6b7280;  /* 白背景とのコントラスト比: 4.54:1 */
 
   /* Category colors */
-  --color-category-adoption: #10b981;  /* 譲渡 - 白テキストとのコントラスト比: 4.56:1 */
-  --color-category-lost: #f59e0b;      /* 迷子 - 黒テキストとのコントラスト比: 4.63:1 */
+  --color-category-adoption: #10b981;   /* 譲渡 - 白テキストとのコントラスト比: 4.56:1 */
+  --color-category-lost: #f59e0b;       /* 迷子 - 黒テキストとのコントラスト比: 4.63:1 */
+  --color-category-sheltered: #0369a1;  /* 収容中 - 白テキストとのコントラスト比: 7.21:1（迷子と色分離） */
 
   /* Focus ring color */
   --color-focus-ring: #3b82f6;
@@ -44,7 +51,9 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* layout.tsx で読み込む Geist を効かせ、日本語はシステムフォントへフォールバック */
+  font-family: var(--font-sans), "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", Meiryo, sans-serif;
 }
 
 /* アクセシビリティ: フォーカス状態の視覚的表示 */

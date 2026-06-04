@@ -72,6 +72,9 @@ async def list_animals(
         description="キーワード検索（species/color/size/location/prefecture を OR 部分一致）",
         max_length=100,
     ),
+    sort: str = Query(
+        "newest", description="並び替え ('newest': 収容日が新しい順, 'oldest': 古い順)"
+    ),
     limit: Annotated[int, Query(le=1000, ge=1)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> PaginatedResponse[AnimalPublic]:
@@ -98,6 +101,13 @@ async def list_animals(
             )
         status_enum = AnimalStatus(status)
 
+    # ソートバリデーション
+    if sort not in ["newest", "oldest"]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"無効な並び替え: {sort}。'newest' または 'oldest' を指定してください",
+        )
+
     logger.info(
         f"GET /animals - species={species}, sex={sex}, location={location}, "
         f"prefecture={prefecture}, category={category}, status={status}, "
@@ -117,6 +127,7 @@ async def list_animals(
         shelter_date_from=shelter_date_from,
         shelter_date_to=shelter_date_to,
         q=q,
+        sort=sort,
         limit=limit,
         offset=offset,
     )
