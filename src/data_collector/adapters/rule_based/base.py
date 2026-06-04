@@ -19,16 +19,12 @@ from ...domain.models import AnimalData, RawAnimalData
 from ...domain.normalizer import DataNormalizer
 from ...llm.config import SiteConfig
 from ..municipality_adapter import MunicipalityAdapter, NetworkError
+from ..politeness import ONECO_USER_AGENT
 
 logger = logging.getLogger(__name__)
 
-# サイト共通の HTTP ヘッダ
-_DEFAULT_USER_AGENT = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36 "
-    "(oneco data collector)"
-)
-_DEFAULT_HEADERS = {"User-Agent": _DEFAULT_USER_AGENT}
+# サイト共通の HTTP ヘッダ（User-Agent は politeness の共通定数で統一）
+_DEFAULT_HEADERS = {"User-Agent": ONECO_USER_AGENT}
 _DEFAULT_TIMEOUT_SEC = 30
 
 # HTML 取得結果がこれより短ければ「構造崩壊 or 空ページ」の警告を出す。
@@ -86,6 +82,10 @@ class RuleBasedAdapter(MunicipalityAdapter):
         headers = dict(_DEFAULT_HEADERS)
         if extra_headers:
             headers.update(extra_headers)
+
+        # アクセス間隔の保証（偽計業務妨害リスク低減）。
+        # site_config.request_interval（最小1.0秒）を最小間隔として待機する。
+        self._polite_wait(getattr(self.site_config, "request_interval", None))
 
         try:
             response = requests.get(url, headers=headers, timeout=timeout)

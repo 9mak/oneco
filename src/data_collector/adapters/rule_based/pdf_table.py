@@ -18,6 +18,7 @@ from bs4 import BeautifulSoup
 
 from ...domain.models import AnimalData, RawAnimalData
 from ..municipality_adapter import NetworkError, ParsingError
+from ..politeness import ONECO_USER_AGENT
 from .base import RuleBasedAdapter
 
 try:
@@ -140,8 +141,15 @@ class PdfTableAdapter(RuleBasedAdapter):
         - chunk 単位で読み込み累積サイズが上限を超えたら接続切断 + NetworkError
         - 上限を超えなければ raw bytes を返す
         """
+        # アクセス間隔の保証（偽計業務妨害リスク低減）
+        self._polite_wait(getattr(self.site_config, "request_interval", None))
         try:
-            with requests.get(url, timeout=60, stream=True) as response:
+            with requests.get(
+                url,
+                timeout=60,
+                stream=True,
+                headers={"User-Agent": ONECO_USER_AGENT},
+            ) as response:
                 response.raise_for_status()
 
                 # Content-Length 宣言があれば事前 reject
