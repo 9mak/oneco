@@ -131,6 +131,58 @@ class SitesConfig(BaseModel):
 class SiteConfigLoader:
     """YAML設定ファイルの読み込みとバリデーション"""
 
+    # 民間団体・指定管理者・財団が運営するドメイン（自治体公式ではない）。
+    # オープンデータ規約の対象外で、利用規約は個別。商用利用時は必ず個別確認が必要。
+    _NON_GOV_DOMAINS: frozenset[str] = frozenset(
+        {
+            "aniwel.jp",
+            "douai-tokushima.com",
+            "hyogo-douai.sakura.ne.jp",
+            "kochi-apc.com",
+            "kyoto-ani-love.com",
+            "mie-dakc.server-shared.com",
+            "nyantomo.jp",
+            "oita-aigo.com",
+            "toyohashi-aikuru.jp",
+            "www.aniwel-pref.okinawa",
+            "www.aomori-animal.jp",
+            "www.douaicenter.jp",
+            "www.hama-aikyou.jp",
+            "www.kumamoto-doubutuaigo.jp",
+            "www.sapca.jp",
+            "www.yokosuka-doubutu.com",
+            "www.zaidan-fukuoka-douai.or.jp",
+            "animal-net.pref.nagasaki.jp",
+            "wannyan-navi.pref.aichi.jp",
+            "wannyapia.akita.jp",
+        }
+    )
+
+    @staticmethod
+    def infer_license(list_url: str) -> str:
+        """list_url のドメインからライセンス区分を推定する（L5 棚卸し）。
+
+        自治体公式ドメインは 'gov_standard'（政府標準/公共データ利用規約準拠を推定）、
+        民間団体ドメインは 'unknown'（個別の利用規約確認が必須）。
+        いずれも推定。商用利用（マネタイズ）前には実際の規約確認が必要。
+        """
+        from urllib.parse import urlparse
+
+        domain = urlparse(list_url).netloc.lower()
+        if domain in SiteConfigLoader._NON_GOV_DOMAINS:
+            return "unknown"
+        if (
+            domain.endswith(".lg.jp")
+            or domain.endswith(".go.jp")
+            or ".pref." in domain
+            or domain.startswith("www.pref.")
+            or ".city." in domain
+            or domain.startswith("www.city.")
+            or ".metro." in domain
+        ):
+            return "gov_standard"
+        return "unknown"
+
     @staticmethod
     def load(config_path: Path) -> SitesConfig:
         """
@@ -156,7 +208,15 @@ class SiteConfigLoader:
         if not isinstance(raw, dict):
             raise ValueError(f"設定ファイルの形式が不正です: {config_path}")
 
-        return SitesConfig(**raw)
+        config = SitesConfig(**raw)
+
+        # ライセンス自動推定（L5 棚卸し）: sites.yaml で明示されていないサイトに
+        # ドメイン推定値を埋める。明示済み（unknown 以外）はそのまま尊重。
+        for site in config.sites:
+            if site.license == "unknown":
+                site.license = SiteConfigLoader.infer_license(site.list_url)
+
+        return config
 
     @staticmethod
     def resolve_provider(site: SiteConfig, config: SitesConfig) -> tuple[str, str]:
