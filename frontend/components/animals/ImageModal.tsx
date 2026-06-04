@@ -19,9 +19,11 @@ interface ImageModalProps {
   alt: string;
   /** モーダルを閉じるコールバック */
   onClose: () => void;
+  /** 原寸大を確認するための出典元URL (任意。指定時は「元のページで見る」リンクを表示) */
+  sourceUrl?: string;
 }
 
-export function ImageModal({ imageUrl, alt, onClose }: ImageModalProps) {
+export function ImageModal({ imageUrl, alt, onClose, sourceUrl }: ImageModalProps) {
   const [imgSrc, setImgSrc] = useState(imageUrl);
 
   // imageUrl が切り替わったら src をリセット
@@ -84,19 +86,32 @@ export function ImageModal({ imageUrl, alt, onClose }: ImageModalProps) {
           </svg>
         </button>
 
-        {/* 画像 */}
+        {/* 画像 - 著作権配慮 (47条の7「軽微利用」の趣旨) でモーダルも縮小サムネイル化。
+            原寸大は元サイトで確認する導線を下部に提供する。priority は外す (LCP対象外)。 */}
         <div className="relative w-full h-full">
           <Image
             src={imgSrc}
             alt={alt}
-            width={1200}
-            height={800}
-            className="object-contain max-h-[80vh] w-auto h-auto"
-            priority
+            width={640}
+            height={480}
+            className="object-contain max-h-[70vh] w-auto h-auto"
             unoptimized={imgSrc === PLACEHOLDER_IMAGE ? true : undefined}
             onError={() => setImgSrc(PLACEHOLDER_IMAGE)}
           />
         </div>
+
+        {sourceUrl && (
+          <p className="mt-3 text-center text-sm text-white/80">
+            <a
+              href={sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-white focus:outline-none focus:ring-2 focus:ring-white rounded"
+            >
+              原寸大の画像は元のページでご確認ください ↗
+            </a>
+          </p>
+        )}
       </div>
     </div>,
     document.body
