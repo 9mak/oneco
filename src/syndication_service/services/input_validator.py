@@ -9,7 +9,9 @@ class InputValidator:
     """クエリパラメータのバリデーションとサニタイゼーション"""
 
     VALID_SPECIES = ["犬", "猫", "その他"]
-    VALID_CATEGORY = ["adoption", "lost"]
+    # 公開API (data_collector/infrastructure/api/routes.py) と Enum を統一。
+    # 'sheltered' は category として data_collector 側で受理されるためここでも許可する。
+    VALID_CATEGORY = ["adoption", "lost", "sheltered"]
     VALID_STATUS = ["sheltered", "adopted", "returned", "deceased"]
     VALID_SEX = ["男の子", "女の子", "不明"]
     MAX_QUERY_LENGTH = 1000
