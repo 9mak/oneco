@@ -5,11 +5,14 @@
 動物種別、性別、年齢、日付、電話番号などの正規化ルールを提供します。
 """
 
+import logging
 import re
 from datetime import date, datetime
 
 from ..utils.prefecture import infer_prefecture_from_url
 from .models import AnimalData, RawAnimalData
+
+logger = logging.getLogger(__name__)
 
 
 class DataNormalizer:
@@ -49,6 +52,8 @@ class DataNormalizer:
         # shelter_date は不明 / 解析不能な場合「データ取得日」をフォールバックに使う。
         # 譲渡カテゴリページや未対応フォーマットの日付表記でも AnimalData 化失敗で
         # 全件落ちることを防ぐためのセーフネット。
+        # ただし「静かに丸めて誤データを混入」する盲点を避けるため、
+        # フォールバック発生時は WARNING ログを出して可視化する。
         today = DataNormalizer._today()
         raw_shelter = (raw_data.shelter_date or "").strip()
         shelter_date_str = ""
@@ -58,6 +63,15 @@ class DataNormalizer:
             except ValueError:
                 shelter_date_str = ""
         if not shelter_date_str:
+            if raw_shelter:
+                # 入力はあるが解析失敗 — adapter のフォーマット対応不足の可能性
+                logger.warning(
+                    "shelter_date parse failed, falling back to today",
+                    extra={
+                        "raw_shelter_date": raw_shelter,
+                        "source_url": raw_data.source_url,
+                    },
+                )
             shelter_date_str = today.strftime("%Y-%m-%d")
         else:
             # 収容日/「いなくなった日時」が未来日になるのは物理的に不正
@@ -65,6 +79,14 @@ class DataNormalizer:
             # アーカイブの時系列整合性を守る。
             parsed_shelter = datetime.strptime(shelter_date_str, "%Y-%m-%d").date()
             if parsed_shelter > today:
+                logger.warning(
+                    "shelter_date is in future, clamping to today",
+                    extra={
+                        "raw_shelter_date": raw_shelter,
+                        "parsed_shelter_date": shelter_date_str,
+                        "source_url": raw_data.source_url,
+                    },
+                )
                 shelter_date_str = today.strftime("%Y-%m-%d")
 
         # 正規化処理
