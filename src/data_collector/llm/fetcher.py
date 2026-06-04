@@ -12,6 +12,7 @@ from abc import ABC, abstractmethod
 import requests
 
 from ..adapters.municipality_adapter import NetworkError
+from ..adapters.politeness import ONECO_USER_AGENT
 
 try:
     import pdfplumber
@@ -61,7 +62,9 @@ class StaticFetcher(PageFetcher):
             NetworkError: HTTP エラーまたは接続エラー時
         """
         try:
-            response = requests.get(url, timeout=30)
+            response = requests.get(
+                url, timeout=30, headers={"User-Agent": ONECO_USER_AGENT}
+            )
             response.raise_for_status()
             response.encoding = response.apparent_encoding
             return response.text
@@ -102,7 +105,12 @@ class PdfFetcher(PageFetcher):
             )
 
         try:
-            with requests.get(url, timeout=30, stream=True) as response:
+            with requests.get(
+                url,
+                timeout=30,
+                stream=True,
+                headers={"User-Agent": ONECO_USER_AGENT},
+            ) as response:
                 response.raise_for_status()
 
                 # Content-Length 宣言があれば事前 reject
@@ -197,13 +205,9 @@ class PlaywrightFetcher(PageFetcher):
         try:
             with sync_playwright() as p:
                 browser = p.chromium.launch(headless=True)
-                context = browser.new_context(
-                    user_agent=(
-                        "Mozilla/5.0 (X11; Linux x86_64) "
-                        "AppleWebKit/537.36 (KHTML, like Gecko) "
-                        "Chrome/120.0.0.0 Safari/537.36"
-                    )
-                )
+                # ブラウザ UA への偽装は運営者から見て crawler 識別不能となるため、
+                # 連絡先付きの oneco UA を明示する (Codex I-1 指摘)。
+                context = browser.new_context(user_agent=ONECO_USER_AGENT)
                 page = context.new_page()
                 page.goto(url, wait_until=self.wait_until, timeout=self.timeout)
                 if self.wait_selector:

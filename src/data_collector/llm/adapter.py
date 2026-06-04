@@ -271,7 +271,15 @@ class LlmAdapter(MunicipalityAdapter):
         return raw_list[index]
 
     def _fetch_page(self, url: str) -> str:
-        """URLからHTML（またはPDFテキスト）を取得"""
+        """URLからHTML（またはPDFテキスト）を取得。
+
+        Codex リリースレビュー I-1 対応: すべての fetch 経路 (StaticFetcher /
+        PdfFetcher / PlaywrightFetcher) の直前に politeness wait を共通適用し、
+        list_url だけでなく detail / PDF / pagination URL のアクセス間隔を保証する。
+        """
+        # アクセス間隔の保証 (per-instance throttle、site_config.request_interval を採用)
+        self._polite_wait(getattr(self.site_config, "request_interval", None))
+
         if self._fetcher is not None:
             # テスト用インジェクション済みフェッチャーを使用
             return self._fetcher.fetch(url)

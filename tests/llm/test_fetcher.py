@@ -57,7 +57,14 @@ class TestStaticFetcher:
             fetcher = StaticFetcher()
             result = fetcher.fetch("https://example.com/page")
 
-        mock_get.assert_called_once_with("https://example.com/page", timeout=30)
+        # I-1: 全 fetch 経路に oneco の連絡先入り UA を統一適用
+        from src.data_collector.adapters.politeness import ONECO_USER_AGENT
+
+        mock_get.assert_called_once_with(
+            "https://example.com/page",
+            timeout=30,
+            headers={"User-Agent": ONECO_USER_AGENT},
+        )
         assert result == "<html><body>テスト</body></html>"
 
     def test_static_fetcher_raises_network_error_on_failure(self):
