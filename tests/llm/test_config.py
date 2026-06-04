@@ -251,3 +251,103 @@ class TestResolveProvider:
         provider, model = SiteConfigLoader.resolve_provider(config.sites[0], config)
         assert provider == "anthropic"
         assert model == "claude-haiku-4-5-20251001"
+
+
+class TestLicenseInference:
+    """L5: ドメインからライセンス区分を推定するロジック"""
+
+    def test_lg_jp_is_gov_standard(self):
+        from src.data_collector.llm.config import SiteConfigLoader
+
+        assert (
+            SiteConfigLoader.infer_license("https://www.city.machida.tokyo.jp/x/y/")
+            == "gov_standard"
+        )
+
+    def test_go_jp_is_gov_standard(self):
+        from src.data_collector.llm.config import SiteConfigLoader
+
+        assert SiteConfigLoader.infer_license("https://example.go.jp/foo") == "gov_standard"
+
+    def test_pref_jp_is_gov_standard(self):
+        from src.data_collector.llm.config import SiteConfigLoader
+
+        assert SiteConfigLoader.infer_license("https://www.pref.kyoto.jp/foo") == "gov_standard"
+
+    def test_metro_lg_jp_is_gov_standard(self):
+        from src.data_collector.llm.config import SiteConfigLoader
+
+        assert (
+            SiteConfigLoader.infer_license("https://shuyojoho.metro.tokyo.lg.jp/foo")
+            == "gov_standard"
+        )
+
+    def test_non_gov_org_is_unknown(self):
+        from src.data_collector.llm.config import SiteConfigLoader
+
+        # 民間団体（指定管理者・財団）
+        assert (
+            SiteConfigLoader.infer_license("https://www.zaidan-fukuoka-douai.or.jp/") == "unknown"
+        )
+        assert SiteConfigLoader.infer_license("https://kochi-apc.com/") == "unknown"
+
+    def test_pref_domain_in_non_gov_list_is_unknown(self):
+        """pref. を含むが団体運営ドメインは unknown（個別確認必須）"""
+        from src.data_collector.llm.config import SiteConfigLoader
+
+        assert SiteConfigLoader.infer_license("https://animal-net.pref.nagasaki.jp/") == "unknown"
+
+    def test_unknown_top_level_is_unknown(self):
+        from src.data_collector.llm.config import SiteConfigLoader
+
+        assert SiteConfigLoader.infer_license("https://example.com/foo") == "unknown"
+
+
+class TestLoadAppliesInferredLicense:
+    """L5: load() が明示なしのサイトに推定ライセンスを埋めること"""
+
+    def test_load_fills_inferred_license(self, tmp_path):
+        from src.data_collector.llm.config import SiteConfigLoader
+
+        cfg = tmp_path / "sites.yaml"
+        cfg.write_text(
+            "extraction:\n"
+            "  default_provider: groq\n"
+            "  default_model: llama-3.3-70b-versatile\n"
+            "  default_extraction: rule-based\n"
+            "sites:\n"
+            "  - name: 政府公式サイト\n"
+            "    prefecture: 東京都\n"
+            "    prefecture_code: '13'\n"
+            "    list_url: https://www.city.machida.tokyo.jp/x/\n"
+            "  - name: 民間団体サイト\n"
+            "    prefecture: 福岡県\n"
+            "    prefecture_code: '40'\n"
+            "    list_url: https://www.zaidan-fukuoka-douai.or.jp/y/\n",
+            encoding="utf-8",
+        )
+        config = SiteConfigLoader.load(cfg)
+        assert config.sites[0].license == "gov_standard"
+        assert config.sites[1].license == "unknown"
+
+    def test_load_does_not_overwrite_explicit_license(self, tmp_path):
+        from src.data_collector.llm.config import SiteConfigLoader
+
+        cfg = tmp_path / "sites.yaml"
+        cfg.write_text(
+            "extraction:\n"
+            "  default_provider: groq\n"
+            "  default_model: llama-3.3-70b-versatile\n"
+            "  default_extraction: rule-based\n"
+            "sites:\n"
+            "  - name: 明示済みサイト\n"
+            "    prefecture: 東京都\n"
+            "    prefecture_code: '13'\n"
+            "    list_url: https://www.city.machida.tokyo.jp/x/\n"
+            "    license: prohibited\n"
+            "    terms_url: https://example.com/terms\n",
+            encoding="utf-8",
+        )
+        config = SiteConfigLoader.load(cfg)
+        assert config.sites[0].license == "prohibited"
+        assert config.sites[0].terms_url == "https://example.com/terms"
