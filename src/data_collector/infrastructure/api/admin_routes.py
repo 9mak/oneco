@@ -265,13 +265,15 @@ async def list_admin_sites(
         logger.warning(f"sites.yaml load 失敗: {e}")
         return {"sites": [], "total": 0, "generated_at": datetime.now(UTC).isoformat()}
 
-    # host → (count, last_shelter_date) を 1 クエリで集計
+    # host → (count, last_shelter_date) を 1 クエリで集計。
+    # PostgreSQL は SELECT 非集約列に GROUP BY を要求するため source_url で集約する
+    # （SQLite は GROUP BY 無しでも通るが本番で死ぬ）。
     rows = await session.execute(
         select(
             Animal.source_url,
             func.count(Animal.id),
             func.max(Animal.shelter_date),
-        )
+        ).group_by(Animal.source_url)
     )
     host_stats: dict[str, dict] = {}
     for source_url, count, last_date in rows.all():
