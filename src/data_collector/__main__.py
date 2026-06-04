@@ -160,6 +160,16 @@ def run_llm_sites(
             )
             continue
 
+        # robots.txt の Crawl-delay を尊重: 指定があれば request_interval の
+        # 大きい方を最小アクセス間隔として採用（偽計業務妨害リスク低減）
+        crawl_delay = robots.crawl_delay(site.list_url)
+        if crawl_delay is not None and crawl_delay > site.request_interval:
+            logger.info(
+                f"[{site.name}] robots.txt Crawl-delay={crawl_delay}s を採用 "
+                f"(request_interval={site.request_interval}s)"
+            )
+            site.request_interval = crawl_delay
+
         # タイムアウト解決優先順位: サイト個別 (sites.yaml の timeout_sec) > requires_js 既定 > 通常既定
         if site.timeout_sec is not None:
             timeout = site.timeout_sec
