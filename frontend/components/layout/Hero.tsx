@@ -29,11 +29,9 @@ export function Hero() {
       className="rounded-2xl bg-gradient-to-br from-[var(--color-primary-50)] via-white to-[var(--color-accent-50)] border border-[var(--color-primary-100)] p-6 sm:p-10"
     >
       <div className="max-w-3xl">
-        <h2
-          className="text-2xl sm:text-3xl font-bold text-[var(--color-text-primary)] leading-snug"
-        >
+        <h1 className="text-2xl sm:text-3xl font-bold text-[var(--color-text-primary)] leading-snug">
           全国の保護動物を、ひとつの場所で。
-        </h2>
+        </h1>
         <p className="mt-3 text-sm sm:text-base text-[var(--color-text-secondary)] leading-relaxed">
           各自治体の動物愛護センターに収容・譲渡対象として登録された犬や猫の情報を、
           oneco がまとめて検索できるようにしています。新しい家族を探している方も、

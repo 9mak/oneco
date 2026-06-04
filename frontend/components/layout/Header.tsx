@@ -73,9 +73,10 @@ export function Header() {
               </svg>
             </span>
             <span className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2 min-w-0">
-              <h1 className="text-2xl font-bold text-[var(--color-text-primary)] leading-none">
+              {/* a11y: ロゴは h1 ではなく span。h1 は各ページの主見出しに譲る */}
+              <span className="text-2xl font-bold text-[var(--color-text-primary)] leading-none">
                 oneco
-              </h1>
+              </span>
               <span className="hidden sm:inline text-xs sm:text-sm text-[var(--color-text-secondary)] truncate">
                 全国の保護動物情報をひとつに
               </span>
