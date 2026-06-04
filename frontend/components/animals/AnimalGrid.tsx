@@ -8,6 +8,8 @@ interface AnimalGridProps {
   totalCount: number;
   filters: FilterState;
   pageSize?: number;
+  /** API取得が失敗したか。true の場合は「0件」ではなく障害として案内する */
+  fetchFailed?: boolean;
 }
 
 export function AnimalGrid({
@@ -15,7 +17,18 @@ export function AnimalGrid({
   totalCount,
   filters,
   pageSize = 20,
+  fetchFailed = false,
 }: AnimalGridProps) {
+  // API取得失敗は「0件」と明確に区別して案内する（障害の可視化）
+  if (fetchFailed) {
+    return (
+      <EmptyState
+        message="現在情報を取得できません"
+        suggestion="一時的な障害が発生している可能性があります。少し時間をおいて再度お試しください。"
+      />
+    );
+  }
+
   if (initialItems.length === 0) {
     // status='sheltered' は parseFilters のデフォルト適用で実質的なフィルタ
     // ではないため除外する。それ以外のフィルタ条件が指定されていれば
