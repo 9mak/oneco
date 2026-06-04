@@ -29,6 +29,12 @@ const nextConfig: NextConfig = {
    * 同様の理由で個別ドメイン列挙は非現実的。
    */
   async headers() {
+    // dev は React Refresh / Fast Refresh で eval が必要、本番は除去して
+    // XSS の爆発半径を縮める (R-3: Codex リリースレビュー指摘)。
+    const isDev = process.env.NODE_ENV !== 'production';
+    const scriptSrc = isDev
+      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+      : "script-src 'self' 'unsafe-inline'";
     return [
       {
         source: '/:path*',
@@ -37,7 +43,7 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              scriptSrc,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               `connect-src 'self' ${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}`,
