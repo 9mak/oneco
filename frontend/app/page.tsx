@@ -41,12 +41,14 @@ function parseFilters(params: Awaited<HomePageProps['searchParams']>): FilterSta
   ) {
     filters.category = params.category;
   }
-  // status は未指定時 'sheltered'（収容中）を暗黙適用。譲渡済等は明示指定で表示
+  // status は未指定時 'sheltered'（収容中）を暗黙適用。
+  // 'deceased'（死亡）はポータルに直接表示しない方針のため許可リストから除外し、
+  // ?status=deceased が来ても 'sheltered' にフォールバックさせる（死亡個体は
+  // ライブDBに残り続け category バッジが誤って付くため、誤表示を防ぐ）。
   if (
     params.status === 'sheltered' ||
     params.status === 'adopted' ||
-    params.status === 'returned' ||
-    params.status === 'deceased'
+    params.status === 'returned'
   ) {
     filters.status = params.status;
   } else {
