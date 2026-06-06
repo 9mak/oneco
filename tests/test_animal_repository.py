@@ -264,6 +264,72 @@ async def test_list_animals_filters_by_species(repository, async_session):
 
 
 @pytest.mark.asyncio
+async def test_list_animals_location_wildcard_is_literal(repository, async_session):
+    """location の % が LIKE ワイルドカードとして解釈されない（リテラル一致）。
+
+    エスケープが無いと location=% で全件マッチしてしまう。
+    """
+    async_session.add(
+        Animal(
+            species="犬",
+            shelter_date=date(2026, 1, 5),
+            location="高知県",
+            source_url="https://example.com/dog",
+            category="adoption",
+        )
+    )
+    async_session.add(
+        Animal(
+            species="猫",
+            shelter_date=date(2026, 1, 5),
+            location="徳島県",
+            source_url="https://example.com/cat",
+            category="adoption",
+        )
+    )
+    await async_session.commit()
+
+    # 単独の '%' をリテラルとして扱えば 0 件 (全件マッチではない)
+    result, total = await repository.list_animals(location="%")
+    assert total == 0
+    assert result == []
+
+    # 通常の部分一致は引き続き動作
+    result, total = await repository.list_animals(location="高知")
+    assert total == 1
+    assert result[0].location == "高知県"
+
+
+@pytest.mark.asyncio
+async def test_list_animals_q_underscore_is_literal(repository, async_session):
+    """q の _ が任意 1 文字に化けない（リテラル一致）。"""
+    async_session.add(
+        Animal(
+            species="犬",
+            shelter_date=date(2026, 1, 5),
+            location="A_B センター",
+            source_url="https://example.com/lit",
+            category="adoption",
+        )
+    )
+    async_session.add(
+        Animal(
+            species="犬",
+            shelter_date=date(2026, 1, 5),
+            location="AXB センター",
+            source_url="https://example.com/wild",
+            category="adoption",
+        )
+    )
+    await async_session.commit()
+
+    # '_' をリテラルとして扱えば AXB はヒットしない
+    result, total = await repository.list_animals(q="A_B")
+    assert total == 1
+    assert result[0].location == "A_B センター"
+
+
+@pytest.mark.asyncio
 async def test_save_animal_records_source_site(repository, async_session):
     """save_animal は渡された source_site を記録する（消滅同期削除のスコープ用）"""
     from sqlalchemy import select
