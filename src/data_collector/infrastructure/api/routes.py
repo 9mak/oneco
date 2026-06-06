@@ -23,7 +23,6 @@ from src.data_collector.infrastructure.api.schemas import (
     StatusUpdateRequest,
     StatusUpdateResponse,
 )
-from src.data_collector.infrastructure.database.archive_repository import ArchiveRepository
 from src.data_collector.infrastructure.database.repository import (
     AnimalRepository,
     NotFoundError,
@@ -59,9 +58,7 @@ async def list_animals(
     session: SessionDep,
     species: str | None = Query(None, description="動物種別フィルタ", max_length=20),
     sex: str | None = Query(None, description="性別フィルタ", max_length=20),
-    location: str | None = Query(
-        None, description="場所フィルタ（部分一致）", max_length=100
-    ),
+    location: str | None = Query(None, description="場所フィルタ（部分一致）", max_length=100),
     prefecture: str | None = Query(
         None, description="都道府県フィルタ (完全一致, 例: '高知県')", max_length=20
     ),
@@ -358,19 +355,37 @@ async def list_archived_animals(
         f"archived_to={archived_to}, limit={limit}, offset={offset}"
     )
 
-    repository = ArchiveRepository(session)
-
-    # データ取得
-    _animals, total_count = await repository.list_archived(
-        species=species,
-        archived_from=archived_from,
-        archived_to=archived_to,
-        limit=limit,
-        offset=offset,
-    )
-
-    # ページネーションメタデータを計算
+    # ArchivedAnimalPublic は original_id / archived_at を含むため ORM から直接取得する。
+    # フィルタは 1 度だけ構築し、件数取得と本体取得で共用する (旧実装は
+    # ArchiveRepository.list_archived で items を取得・破棄した上で同等クエリを
+    # 再構築しており、計 3 回同じクエリを実行していた)。
     import math
+
+    from sqlalchemy import func, select
+
+    from src.data_collector.infrastructure.database.models import AnimalArchive
+
+    filters = []
+    if species:
+        filters.append(AnimalArchive.species == species)
+    if archived_from:
+        archived_from_dt = datetime.combine(archived_from, datetime.min.time())
+        filters.append(AnimalArchive.archived_at >= archived_from_dt)
+    if archived_to:
+        archived_to_dt = datetime.combine(archived_to, datetime.max.time())
+        filters.append(AnimalArchive.archived_at <= archived_to_dt)
+
+    count_stmt = select(func.count(AnimalArchive.id))
+    items_stmt = select(AnimalArchive)
+    if filters:
+        count_stmt = count_stmt.where(*filters)
+        items_stmt = items_stmt.where(*filters)
+
+    total_count = (await session.execute(count_stmt)).scalar() or 0
+
+    items_stmt = items_stmt.order_by(AnimalArchive.archived_at.desc()).limit(limit).offset(offset)
+    orm_archives = (await session.execute(items_stmt)).scalars().all()
+    archived_publics = [ArchivedAnimalPublic.model_validate(a) for a in orm_archives]
 
     if limit > 0:
         current_page = math.ceil((offset + limit) / limit)
@@ -388,35 +403,6 @@ async def list_archived_animals(
         total_pages=total_pages,
         has_next=has_next,
     )
-
-    # AnimalData を ArchivedAnimalPublic に変換
-    # NOTE: ArchiveRepository は AnimalData を返すが、ArchivedAnimalPublic には
-    # original_id と archived_at が必要なため、ORM からの取得が必要
-    from sqlalchemy import select
-
-    from src.data_collector.infrastructure.database.models import AnimalArchive
-
-    stmt = select(AnimalArchive)
-    filters = []
-    if species:
-        filters.append(AnimalArchive.species == species)
-    if archived_from:
-        archived_from_dt = datetime.combine(archived_from, datetime.min.time())
-        filters.append(AnimalArchive.archived_at >= archived_from_dt)
-    if archived_to:
-        archived_to_dt = datetime.combine(archived_to, datetime.max.time())
-        filters.append(AnimalArchive.archived_at <= archived_to_dt)
-
-    if filters:
-        stmt = stmt.where(*filters)
-
-    stmt = stmt.order_by(AnimalArchive.archived_at.desc())
-    stmt = stmt.limit(limit).offset(offset)
-
-    result = await session.execute(stmt)
-    orm_archives = result.scalars().all()
-
-    archived_publics = [ArchivedAnimalPublic.model_validate(a) for a in orm_archives]
 
     return PaginatedResponse(items=archived_publics, meta=meta)
 
