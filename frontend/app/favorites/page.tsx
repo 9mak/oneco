@@ -21,18 +21,32 @@ export default function FavoritesPage() {
       setLoading(true);
       setError(null);
       try {
-        const results = await Promise.allSettled(
+        // 404 (= 譲渡済み/削除で元データ消失) と、fetch 自体の失敗 (= サーバー
+        // 到達不可) を区別する。前者は「譲渡済み等」の注記、後者はエラー表示。
+        const results = await Promise.all(
           favorites.map(async (id) => {
-            const res = await fetch(`${API_BASE_URL}/animals/${id}`);
-            if (!res.ok) throw new Error(`status ${res.status}`);
-            return (await res.json()) as AnimalPublic;
+            try {
+              const res = await fetch(`${API_BASE_URL}/animals/${id}`);
+              if (res.ok) {
+                return { kind: 'ok' as const, value: (await res.json()) as AnimalPublic };
+              }
+              return { kind: 'notfound' as const };
+            } catch {
+              return { kind: 'error' as const };
+            }
           }),
         );
         if (cancelled) return;
         const ok = results
-          .filter((r): r is PromiseFulfilledResult<AnimalPublic> => r.status === 'fulfilled')
+          .filter((r): r is { kind: 'ok'; value: AnimalPublic } => r.kind === 'ok')
           .map((r) => r.value);
+        const networkErrors = results.filter((r) => r.kind === 'error').length;
         setAnimals(ok);
+        // 1 件も取得できず、原因がネットワーク/サーバー障害なら明示エラー。
+        // (全件 404 = 全部譲渡済みのケースは後段の注記で案内する)
+        if (ok.length === 0 && networkErrors > 0) {
+          setError('一時的に読み込めませんでした');
+        }
       } catch (e) {
         if (!cancelled) setError(String(e));
       } finally {

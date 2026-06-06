@@ -82,22 +82,22 @@ describe('CategoryBadge Accessibility', () => {
     expect(results).toHaveNoViolations();
   });
 
-  it('should have role="status" for screen readers', () => {
+  it('should expose category via aria-label without a live-region role', () => {
     render(<CategoryBadge category="adoption" />);
-    const badge = screen.getByRole('status');
-    expect(badge).toBeInTheDocument();
+    // 静的バッジを role="status" (ライブリージョン) にすると一覧で多数の
+    // バッジが描画時に一斉読み上げされるため、aria-label のみで識別する。
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('カテゴリ: 譲渡対象')).toBeInTheDocument();
   });
 
   it('should have descriptive aria-label', () => {
     render(<CategoryBadge category="adoption" />);
-    const badge = screen.getByRole('status');
-    expect(badge).toHaveAttribute('aria-label', 'カテゴリ: 譲渡対象');
+    expect(screen.getByLabelText('カテゴリ: 譲渡対象')).toBeInTheDocument();
   });
 
   it('should display correct text for lost category', () => {
     render(<CategoryBadge category="lost" />);
-    const badge = screen.getByRole('status');
-    expect(badge).toHaveAttribute('aria-label', 'カテゴリ: 迷子');
+    const badge = screen.getByLabelText('カテゴリ: 迷子');
     expect(badge).toHaveTextContent('迷子');
   });
 });

@@ -86,7 +86,7 @@ export default function PrivacyPage() {
             href="https://github.com/9mak/oneco/issues"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[var(--color-primary-500)] hover:underline"
+            className="text-[var(--color-primary-700)] hover:underline"
           >
             GitHub Issues
           </a>

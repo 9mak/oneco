@@ -59,7 +59,7 @@ export function AnimalDetailClient({ animal }: AnimalDetailClientProps) {
       {/* 戻るボタン */}
       <button
         onClick={handleBackToList}
-        className="inline-flex items-center text-[var(--color-primary-500)] hover:text-[var(--color-primary-700)] mb-6 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary-500)] rounded p-2 -ml-2"
+        className="inline-flex items-center text-[var(--color-primary-700)] hover:text-[var(--color-primary-800)] mb-6 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary-500)] rounded p-2 -ml-2"
         aria-label="一覧に戻る"
       >
         <svg
