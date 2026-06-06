@@ -59,9 +59,7 @@ async def list_animals(
     session: SessionDep,
     species: str | None = Query(None, description="動物種別フィルタ", max_length=20),
     sex: str | None = Query(None, description="性別フィルタ", max_length=20),
-    location: str | None = Query(
-        None, description="場所フィルタ（部分一致）", max_length=100
-    ),
+    location: str | None = Query(None, description="場所フィルタ（部分一致）", max_length=100),
     prefecture: str | None = Query(
         None, description="都道府県フィルタ (完全一致, 例: '高知県')", max_length=20
     ),
