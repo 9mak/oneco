@@ -45,7 +45,6 @@ export function CategoryBadge({ category, size = 'md' }: CategoryBadgeProps) {
 
   return (
     <span
-      role="status"
       className={`inline-flex items-center justify-center rounded-full font-medium ${config.bgColor} ${config.textColor} ${sizeStyle}`}
       aria-label={`カテゴリ: ${config.label}`}
     >
