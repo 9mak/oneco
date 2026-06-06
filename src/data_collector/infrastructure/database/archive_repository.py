@@ -104,6 +104,7 @@ class ArchiveRepository:
     async def list_archived(
         self,
         species: str | None = None,
+        location: str | None = None,
         archived_from: date | None = None,
         archived_to: date | None = None,
         limit: int = 50,
@@ -114,6 +115,7 @@ class ArchiveRepository:
 
         Args:
             species: 動物種別フィルタ
+            location: 地域フィルタ（部分一致）
             archived_from: アーカイブ日開始
             archived_to: アーカイブ日終了
             limit: 取得件数（デフォルト50）
@@ -129,6 +131,8 @@ class ArchiveRepository:
         filters = []
         if species:
             filters.append(AnimalArchive.species == species)
+        if location:
+            filters.append(AnimalArchive.location.ilike(f"%{location}%"))
         if archived_from:
             # date を datetime に変換（その日の開始時刻）
             archived_from_dt = datetime.combine(archived_from, datetime.min.time())

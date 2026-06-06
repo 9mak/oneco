@@ -334,6 +334,7 @@ def create_syndication_router(
         # ArchiveRepository からデータ取得
         archived_animals, _total = await repository.list_archived(
             species=params.species,
+            location=params.location,
             archived_from=params.archived_from,
             archived_to=params.archived_to,
             limit=params.limit,
@@ -424,6 +425,7 @@ def create_syndication_router(
         # ArchiveRepository からデータ取得
         archived_animals, _total = await repository.list_archived(
             species=params.species,
+            location=params.location,
             archived_from=params.archived_from,
             archived_to=params.archived_to,
             limit=params.limit,
