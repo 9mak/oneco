@@ -77,8 +77,12 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
     router.replace(qs ? `?${qs}` : '/', { scroll: false });
   };
 
-  // キーワード検索はキーストローク毎のナビゲーションを避けるため debounce する
+  // キーワード検索はキーストローク毎のナビゲーションを避けるため debounce する。
+  // また IME 変換中 (Composition) は同期しない — router.replace で親
+  // <Suspense key={filters}> が再マウントすると、変換中の文字とフォーカスが
+  // 失われ日本語入力が実用に耐えない。確定 (onCompositionEnd) で初めて同期する。
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isComposingRef = useRef(false);
   useEffect(() => {
     return () => {
       if (searchTimer.current) clearTimeout(searchTimer.current);
@@ -149,7 +153,11 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
 
       <div className="p-6 space-y-4">
         <div className="flex items-center justify-between gap-4">
-          <span className="text-sm text-[var(--color-text-secondary)]">
+          <span
+            className="text-sm text-[var(--color-text-secondary)]"
+            aria-live="polite"
+            aria-atomic="true"
+          >
             {resultCount}件の動物
           </span>
           <div className="flex items-center gap-2">
@@ -209,7 +217,19 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
               id="q-search"
               type="search"
               defaultValue={filters.q || ''}
-              onChange={(e) => handleSearchChange(e.target.value)}
+              onChange={(e) => {
+                // IME 変換確定前は同期しない (確定文字だけを検索語にする)
+                if (!isComposingRef.current) {
+                  handleSearchChange(e.target.value);
+                }
+              }}
+              onCompositionStart={() => {
+                isComposingRef.current = true;
+              }}
+              onCompositionEnd={(e) => {
+                isComposingRef.current = false;
+                handleSearchChange((e.target as HTMLInputElement).value);
+              }}
               placeholder="例: 茶白、子犬、四万十町..."
               maxLength={100}
               className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] min-h-[44px]"
