@@ -16,6 +16,25 @@ from slowapi.util import get_remote_address
 logger = logging.getLogger(__name__)
 
 
+def client_ip_key(request: Request) -> str:
+    """レート制限のキーに使うクライアント IP を返す。
+
+    Cloud Run 等のプロキシ背後では ``request.client.host`` が常に Google Front End
+    の IP になり、全リクエストが同一キー（実質グローバルバケット）になってしまう。
+    そこで ``X-Forwarded-For`` の先頭（オリジナルクライアント）を優先採用する。
+
+    注: XFF はクライアントが詐称可能。厳密な DoS 防御には Load Balancer +
+    Cloud Armor 等で検証済みの XFF を使うのが望ましい。本ポータルは公開 GET 中心の
+    ため、現実的な緩和としてこの方式（global バケットよりは確実に改善）を採る。
+    """
+    xff = request.headers.get("x-forwarded-for")
+    if xff:
+        first = xff.split(",")[0].strip()
+        if first:
+            return first
+    return get_remote_address(request)
+
+
 def create_limiter(redis_url: str | None = None) -> Limiter | None:
     """
     Create a slowapi Limiter instance.
@@ -55,7 +74,7 @@ def create_limiter(redis_url: str | None = None) -> Limiter | None:
 
         # Create limiter with Redis (or memory) storage
         limiter = Limiter(
-            key_func=get_remote_address,
+            key_func=client_ip_key,
             storage_uri=redis_url,
             strategy="fixed-window",
             headers_enabled=True,  # Enable X-RateLimit-* headers
