@@ -82,6 +82,11 @@ class Animal(Base):
         nullable=True,
     )
 
+    # 収集元サイトの識別名 (SiteConfig.name)。収集のたびに save_animal が設定する。
+    # ソースから消えた動物の同期削除を「サイト単位」で安全に行うために使う
+    # (1ドメインに複数サイトが同居するケースがあり source_url では分離できないため)。
+    source_site: str | None = Column(String(255), nullable=True, index=True)
+
     # 画像永続化フィールド
     local_image_paths: list[str] = Column(
         JSON().with_variant(JSONB, "postgresql"),

@@ -349,9 +349,10 @@ class CollectorService:
                 async with db.get_session() as session:
                     repo = AnimalRepository(session)
                     url_recorder = URLHashRecorder(session)
+                    site_name = self.adapter.municipality_name
                     for animal in collected_data:
                         try:
-                            await repo.save_animal(animal)
+                            await repo.save_animal(animal, source_site=site_name)
                             saved += 1
                         except Exception as e:
                             errors += 1
@@ -368,6 +369,18 @@ class CollectorService:
                             self.logger.warning(
                                 f"Failed to record image URL hashes for {animal.source_url}: {e}",
                             )
+
+                    # ソースから消えた動物を同期削除する（このサイトで今回見つからなかった
+                    # = もういない）。0 件時は prune_disappeared 側で無効化（全消し防止）。
+                    try:
+                        seen_urls = {str(a.source_url) for a in collected_data}
+                        removed = await repo.prune_disappeared(site_name, seen_urls)
+                        if removed:
+                            self.logger.info(
+                                f"[{site_name}] ソースから消えた {removed} 件を削除（同期）"
+                            )
+                    except Exception as e:
+                        self.logger.warning(f"[{site_name}] 消滅同期削除に失敗: {e}")
             finally:
                 await db.close()
             return saved, errors
