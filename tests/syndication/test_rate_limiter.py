@@ -103,3 +103,32 @@ class TestCreateLimiterPing:
 
         limiter = create_limiter("memory://")
         assert limiter is not None
+
+
+class TestClientIpKey:
+    """client_ip_key() のキー算出（プロキシ背後のクライアント識別）"""
+
+    def test_uses_xforwarded_for_first_entry(self):
+        """X-Forwarded-For があれば先頭(オリジナルクライアント)を採用する
+
+        get_remote_address だと Cloud Run では GFE の IP になり全リクエストが
+        同一キー(グローバルバケット)になってしまう。
+        """
+        from types import SimpleNamespace
+
+        from src.syndication_service.middleware.rate_limiter import client_ip_key
+
+        req = SimpleNamespace(
+            headers={"x-forwarded-for": "203.0.113.7, 35.191.0.1"},
+            client=SimpleNamespace(host="35.191.0.1"),
+        )
+        assert client_ip_key(req) == "203.0.113.7"
+
+    def test_falls_back_to_client_host_without_xff(self):
+        """X-Forwarded-For が無ければ request.client.host を使う"""
+        from types import SimpleNamespace
+
+        from src.syndication_service.middleware.rate_limiter import client_ip_key
+
+        req = SimpleNamespace(headers={}, client=SimpleNamespace(host="10.0.0.5"))
+        assert client_ip_key(req) == "10.0.0.5"
