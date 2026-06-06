@@ -102,6 +102,28 @@ class TestWordPressListAdapter:
             with pytest.raises(Exception):  # ParsingError or ValidationError
                 adapter.extract_animal_details("https://example.com/animals/1")
 
+    def test_extract_by_label_prefers_exact_over_partial(self):
+        """ラベル完全一致を優先し、'色' が '特色' を誤って拾わない
+
+        部分一致のみだと DOM 順で先に来る紛らわしい見出し (特色=特徴) を
+        拾い、色の値に説明文が入る誤抽出が起きる。
+        """
+        from bs4 import BeautifulSoup
+
+        adapter = _SampleWPAdapter(_site())
+        html = (
+            "<table>"
+            "<tr><th>特色</th><td>人なつこい</td></tr>"
+            "<tr><th>色</th><td>茶色</td></tr>"
+            "</table>"
+        )
+        soup = BeautifulSoup(html, "html.parser")
+        assert adapter._extract_by_label(soup, "色") == "茶色"
+
+        # 完全一致が無ければ部分一致にフォールバック (後方互換: '色'→'毛色')
+        soup2 = BeautifulSoup("<dl><dt>毛色</dt><dd>白黒</dd></dl>", "html.parser")
+        assert adapter._extract_by_label(soup2, "色") == "白黒"
+
     def test_fetch_animal_list_returns_empty_when_no_links(self):
         # list ページが取得できても detail link が 1 つも無い (=現在その種別の
         # 収容動物がいない真ゼロ) ケースを error にせず空リストで返す。

@@ -181,27 +181,30 @@ class WordPressListAdapter(RuleBasedAdapter):
         値を返す（複数表記が並ぶサイト構造に対応するため）。
         """
         labels = (label,) if isinstance(label, str) else tuple(label)
-        for lbl in labels:
-            # 定義リスト
+
+        def _lookup(match) -> str:
+            # 定義リスト (<dt><dd>)
             for dt in soup.find_all("dt"):
-                if not isinstance(dt, Tag):
-                    continue
-                if lbl in dt.get_text(strip=True):
+                if isinstance(dt, Tag) and match(dt.get_text(strip=True)):
                     dd = dt.find_next_sibling("dd")
-                    if dd:
-                        text = dd.get_text(strip=True)
-                        if text:
-                            return text
-            # テーブル
+                    if dd and (text := dd.get_text(strip=True)):
+                        return text
+            # テーブル (<th><td>)
             for th in soup.find_all("th"):
-                if not isinstance(th, Tag):
-                    continue
-                if lbl in th.get_text(strip=True):
+                if isinstance(th, Tag) and match(th.get_text(strip=True)):
                     td = th.find_next_sibling("td")
-                    if td:
-                        text = td.get_text(strip=True)
-                        if text:
-                            return text
+                    if td and (text := td.get_text(strip=True)):
+                        return text
+            return ""
+
+        # 1st pass: 完全一致を優先（label="色" が "特色" を誤って拾うのを防ぐ）
+        for lbl in labels:
+            if value := _lookup(lambda cell, lbl=lbl: cell == lbl):
+                return value
+        # 2nd pass: 部分一致フォールバック（"色"→"毛色" 等のラベル簡略指定に後方互換）
+        for lbl in labels:
+            if value := _lookup(lambda cell, lbl=lbl: lbl in cell):
+                return value
         return ""
 
     def _extract_images(self, soup: BeautifulSoup, base_url: str) -> list[str]:
