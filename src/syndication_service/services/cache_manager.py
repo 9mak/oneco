@@ -70,23 +70,25 @@ class CacheManager:
 
         try:
             cache_key = self._generate_cache_key(format, filter_params)
-            etag = self._generate_etag(cache_key)
 
-            # If-None-Match ヘッダーチェック
+            # 先にキャッシュ本文を取得し、ETag は本文の内容から生成する。
+            # （ETag をフィルタキー由来にすると新着追加後も 304 が返り続ける）
+            cached_feed = await self.redis_client.get(cache_key)
+
+            if not cached_feed:
+                logger.info(f"Cache miss: {cache_key}")
+                return None, None, False
+
+            etag = self._generate_etag(cached_feed)
+
+            # If-None-Match ヘッダーチェック（本文由来 ETag で比較）
             if if_none_match and if_none_match == etag:
                 # ETag 一致: 304 Not Modified
                 logger.info(f"Cache ETag match (304): {cache_key}")
                 return None, etag, True
 
-            # Redis からキャッシュ取得
-            cached_feed = await self.redis_client.get(cache_key)
-
-            if cached_feed:
-                logger.info(f"Cache hit: {cache_key}")
-                return cached_feed, etag, False
-            else:
-                logger.info(f"Cache miss: {cache_key}")
-                return None, None, False
+            logger.info(f"Cache hit: {cache_key}")
+            return cached_feed, etag, False
 
         except Exception as e:
             # Redis エラー時は graceful degradation（キャッシュミスとして扱う）
@@ -108,7 +110,7 @@ class CacheManager:
             etag: 生成された ETag
         """
         cache_key = self._generate_cache_key(format, filter_params)
-        etag = self._generate_etag(cache_key)
+        etag = self._generate_etag(feed_xml)
 
         if self.redis_client is None:
             # Redis が利用不可の場合、ETag のみ返却（キャッシュはスキップ）
@@ -147,16 +149,21 @@ class CacheManager:
 
         return f"feed:{format}:{hash_value}"
 
-    def _generate_etag(self, cache_key: str) -> str:
+    def _generate_etag(self, content: str | bytes) -> str:
         """
-        ETag を生成（キャッシュキーの MD5 ハッシュ）
+        ETag を生成（フィード本文の MD5 ハッシュ）
+
+        ETag はフィルタ条件ではなく **フィード本文の内容** から生成する。
+        フィルタキー由来にすると新着動物が追加されても ETag が不変となり、
+        If-None-Match で永久に 304 が返って新着が配信されないため。
 
         Args:
-            cache_key: キャッシュキー
+            content: フィード本文 (str または Redis から得た bytes)
 
         Returns:
             ETag（例: "abc123"）
         """
+        data = content.encode() if isinstance(content, str) else content
         # ETag 用ハッシュ（暗号用途ではない）
-        hash_value = hashlib.md5(cache_key.encode(), usedforsecurity=False).hexdigest()
+        hash_value = hashlib.md5(data, usedforsecurity=False).hexdigest()
         return f'"{hash_value}"'

@@ -134,6 +134,25 @@ class TestCacheRetrival:
             assert etag2 == etag
             assert is_304 is True
 
+    async def test_etag_changes_when_feed_content_changes(self, cache_manager, filter_params_1):
+        """同一フィルタでもフィード本文が変われば ETag が変わること
+
+        ETag をフィルタキー由来にすると、新しい保護動物が追加されても ETag が
+        不変のままになり、フィードリーダーが If-None-Match で永久に 304 を受け取って
+        新着を取得できない (プロダクトの中核機能を損なう) バグになる。ETag は
+        フィード本文の内容から生成する。
+        """
+        with patch.object(cache_manager, "redis_client", new_callable=AsyncMock) as mock_redis:
+            mock_redis.get.return_value = "<rss>OLD</rss>"
+            _, etag_old, _ = await cache_manager.get_cached_feed("rss", filter_params_1)
+
+            mock_redis.get.return_value = "<rss>NEW 新着動物が追加された</rss>"
+            _, etag_new, _ = await cache_manager.get_cached_feed("rss", filter_params_1)
+
+        assert etag_old is not None
+        assert etag_new is not None
+        assert etag_old != etag_new
+
 
 @pytest.mark.asyncio
 class TestCacheSaving:
