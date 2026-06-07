@@ -198,6 +198,81 @@ class TestCityYokohamaAdapter:
                 SiteAdapterRegistry.register(name, CityYokohamaAdapter)
             assert SiteAdapterRegistry.get(name) is CityYokohamaAdapter
 
+    def test_extract_phone_injected_from_constant(self):
+        """各動物カードには phone 欄が無いがフロントで連絡先表示が必須なため
+        動物愛護センター代表電話 045-471-2111 を常に注入する"""
+        html = _build_html_with_one_row()
+        adapter = CityYokohamaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+        assert raw.phone == "045-471-2111", f"代表電話が注入されるべき: got {raw.phone!r}"
+
+    def test_extract_animal_details_cat_table_8_columns(self):
+        """収容猫テーブルは犬と列構造が違う (8列, 先頭「掲載日」追加, 6列目「年齢」)
+
+        実サイト調査 (2026-06): 収容猫ページのテーブルヘッダは
+        [掲載日, 収容日・収容場所, 写真, 種類, 性別, 毛色, 年齢, その他]
+        旧実装は犬の 7列構造で固定だったため、color/size の値が誤った
+        セルから取得されていた (snapshot で color が性別文字列だった証拠)。
+
+        ヘッダ <th> の文字列からフィールドマッピングを動的に構築する。
+        """
+        cat_html = """
+        <html><body>
+          <div class="wysiwyg_wp">
+            <table>
+              <caption>収容動物情報</caption>
+              <tr>
+                <th>掲載日</th>
+                <th>収容日・収容場所</th>
+                <th>写真</th>
+                <th>種類</th>
+                <th>性別</th>
+                <th>毛色</th>
+                <th>年齢</th>
+                <th>その他</th>
+              </tr>
+              <tr>
+                <td>令和8年5月20日</td>
+                <td>
+                  収容日：令和8年5月18日<br>
+                  収容場所：横浜市旭区
+                </td>
+                <td><img src="/img/cat001.jpg" alt=""></td>
+                <td>雑種</td>
+                <td>メス</td>
+                <td>三毛</td>
+                <td>3歳</td>
+                <td>首輪なし</td>
+              </tr>
+            </table>
+          </div>
+        </body></html>
+        """
+        cat_site = _site(
+            name="横浜市（収容猫）",
+            list_url=(
+                "https://www.city.yokohama.lg.jp/kurashi/sumai-kurashi/"
+                "pet-dobutsu/aigo/maigo/20121004094818.html"
+            ),
+        )
+        adapter = CityYokohamaAdapter(cat_site)
+        with patch.object(adapter, "_http_get", return_value=cat_html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+        # color と sex が正しく取得される (旧実装ではズレていた)
+        assert raw.species == "猫"
+        assert raw.sex == "メス", f"sex 列ズレ修正されるべき: got {raw.sex!r}"
+        assert raw.color == "三毛", f"color 列ズレ修正されるべき: got {raw.color!r}"
+        # 猫テーブル特有の「年齢」列が age に流れる (犬テーブルには無い)
+        assert raw.age == "3歳", f"年齢列が age に格納されるべき: got {raw.age!r}"
+        # 収容日/場所は2列目から正しく抽出
+        assert "令和8年5月18日" in raw.shelter_date
+        assert "横浜市旭区" in raw.location
+        # 体格列が無いので size は空 (size を sex/color から誤取得しない)
+        assert raw.size == "", f"猫テーブルに体格列なし: got {raw.size!r}"
+
     def test_raises_parsing_error_when_no_table(self):
         """テーブルが見当たらない HTML では例外を出す"""
         adapter = CityYokohamaAdapter(_site())
