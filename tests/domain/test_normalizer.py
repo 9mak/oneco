@@ -83,6 +83,15 @@ class TestNormalizeSex:
         assert DataNormalizer._normalize_sex("") == "不明"
         assert DataNormalizer._normalize_sex("その他") == "不明"
 
+    def test_normalize_sex_old_kanji(self):
+        """牡 (雄) / 牝 (雌) の旧表記を正しく判定する。
+
+        一部自治体サイトは「牡」「牝」表記を使う。これを取りこぼすと
+        sex が全件「不明」になり性別フィルタが機能しない。
+        """
+        assert DataNormalizer._normalize_sex("牡") == "男の子"
+        assert DataNormalizer._normalize_sex("牝") == "女の子"
+
 
 class TestNormalizeAge:
     """年齢正規化のテスト"""
@@ -174,6 +183,19 @@ class TestNormalizeAge:
         """'N歳Mヶ月' 形式の合計を返す"""
         assert DataNormalizer._normalize_age("2歳6ヶ月") == 30
         assert DataNormalizer._normalize_age("1歳3か月") == 15
+
+    def test_normalize_age_explicit_age_wins_over_shelter_date(self, monkeypatch):
+        """明示年齢 (N歳) は併記された日付より優先する。
+
+        例: "3歳 2026-05-01収容" の収容日を生年月日と誤認して月齢を
+        再計算するのを防ぐ (旧実装では 36ヶ月 → 約1ヶ月 に化けていた)。
+        """
+        from datetime import date
+
+        monkeypatch.setattr(DataNormalizer, "_today", staticmethod(lambda: date(2026, 6, 1)))
+        assert DataNormalizer._normalize_age("3歳 2026-05-01収容") == 36
+        assert DataNormalizer._normalize_age("1歳 (2025/4/1 収容)") == 12
+        assert DataNormalizer._normalize_age("6ヶ月 / 令和7年5月10日収容") == 6
 
     def test_normalize_age_rejects_implausible_upper_bound(self):
         """生物学的に有り得ない高齢 (30歳超) は誤パースなので None にする
@@ -654,6 +676,61 @@ class TestNormalizerIntegration:
             assert animal_data.species == case["expected"]["species"]
             assert animal_data.sex == case["expected"]["sex"]
             assert animal_data.age_months == case["expected"]["age_months"]
+
+
+class TestFilterValidImageUrls:
+    """画像URLフィルタ: http(s) 以外を除外しレコード全損を防ぐ"""
+
+    def test_filters_invalid_schemes(self):
+        urls = [
+            "https://example.com/a.jpg",
+            "data:image/png;base64,AAA",
+            "javascript:alert(1)",
+            "/relative/path.jpg",
+            "http://example.com/b.jpg",
+        ]
+        assert DataNormalizer._filter_valid_image_urls(urls) == [
+            "https://example.com/a.jpg",
+            "http://example.com/b.jpg",
+        ]
+
+    def test_dedupes_while_preserving_order(self):
+        urls = [
+            "https://example.com/a.jpg",
+            "https://example.com/b.jpg",
+            "https://example.com/a.jpg",
+        ]
+        assert DataNormalizer._filter_valid_image_urls(urls) == [
+            "https://example.com/a.jpg",
+            "https://example.com/b.jpg",
+        ]
+
+    def test_handles_none_and_empty(self):
+        assert DataNormalizer._filter_valid_image_urls(None) == []
+        assert DataNormalizer._filter_valid_image_urls([]) == []
+
+    def test_normalize_does_not_drop_record_on_bad_image_url(self):
+        """不正スキームの画像 URL が混入してもレコードは生存する"""
+        raw = RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="2歳",
+            color="",
+            size="",
+            shelter_date="2026-01-05",
+            location="センター",
+            phone="",
+            image_urls=[
+                "https://example.com/ok.jpg",
+                "javascript:alert(1)",
+                "data:image/gif;base64,XXX",
+            ],
+            source_url="https://example.com/animals/1",
+            category="adoption",
+        )
+        animal = DataNormalizer.normalize(raw)
+        assert len(animal.image_urls) == 1
+        assert str(animal.image_urls[0]) == "https://example.com/ok.jpg"
 
 
 class TestNormalizeCategory:

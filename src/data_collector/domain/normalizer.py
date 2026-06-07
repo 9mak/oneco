@@ -26,8 +26,9 @@ class DataNormalizer:
     _SPECIES_DOG_PATTERNS = ["犬", "いぬ", "イヌ", "inu", "dog"]
     _SPECIES_CAT_PATTERNS = ["猫", "ねこ", "ネコ", "neko", "cat"]
 
-    _SEX_MALE_PATTERNS = ["男の子", "オトコノコ", "オス", "おす", "雄", "♂", "male"]
-    _SEX_FEMALE_PATTERNS = ["女の子", "オンナノコ", "メス", "めす", "雌", "♀", "female"]
+    # 牡 / 牝 は一部自治体の旧表記。取りこぼすと sex 全件「不明」になりフィルタが死ぬ。
+    _SEX_MALE_PATTERNS = ["男の子", "オトコノコ", "オス", "おす", "雄", "牡", "♂", "male"]
+    _SEX_FEMALE_PATTERNS = ["女の子", "オンナノコ", "メス", "めす", "雌", "牝", "♀", "female"]
 
     _UNKNOWN_PATTERNS = ["不明", "?", "？", "unknown", ""]
 
@@ -45,9 +46,10 @@ class DataNormalizer:
         Raises:
             ValidationError: 必須フィールド欠損または不正な値の場合
         """
-        # 画像URLの処理 (文字列リストをそのまま渡す)
-        # AnimalData の image_urls は HttpUrl のリストなので、Pydantic が自動変換する
-        image_urls_raw = raw_data.image_urls if raw_data.image_urls else []
+        # AnimalData.image_urls は HttpUrl 制約のため、data:/javascript:/相対パス等が
+        # 1 件でも混入すると Pydantic の ValidationError で動物レコードごと欠落する。
+        # http(s) のみに濾過してレコード全損を防ぐ。
+        image_urls_raw = DataNormalizer._filter_valid_image_urls(raw_data.image_urls)
 
         # shelter_date は不明 / 解析不能な場合「データ取得日」をフォールバックに使う。
         # 譲渡カテゴリページや未対応フォーマットの日付表記でも AnimalData 化失敗で
@@ -104,6 +106,30 @@ class DataNormalizer:
             source_url=raw_data.source_url,
             category=raw_data.category,
         )
+
+    @staticmethod
+    def _filter_valid_image_urls(urls: list[str] | None) -> list[str]:
+        """http(s) スキームの画像 URL のみを残し、重複を順序保ち除去する。
+
+        AnimalData.image_urls は HttpUrl 制約。data:/javascript:/相対パス等を
+        Pydantic に渡すと ValidationError でレコードごと欠落するため、ここで
+        防御する (全アダプター共通)。
+        """
+        if not urls:
+            return []
+        seen: set[str] = set()
+        valid: list[str] = []
+        for u in urls:
+            if not isinstance(u, str):
+                continue
+            candidate = u.strip()
+            if not (candidate.startswith("http://") or candidate.startswith("https://")):
+                continue
+            if candidate in seen:
+                continue
+            seen.add(candidate)
+            valid.append(candidate)
+        return valid
 
     @staticmethod
     def _normalize_species(raw_species: str) -> str:
@@ -284,25 +310,27 @@ class DataNormalizer:
         # 各パスは月数を months に代入し、末尾で妥当域チェックを一括適用する。
         months: int | None = None
 
-        # 1. 生年月日パターンを最初にチェック（"令和N年M月D日" の "N年" が
-        #    "N年=Nヶ月*12" として誤マッチするのを避けるため）
         today = DataNormalizer._today()
-        birth = DataNormalizer._parse_birth_date(age_str)
-        if birth is not None:
-            months = DataNormalizer._months_between(birth, today)
-        # 2. "N歳M[ヶかカケヵ]月" の組み合わせ（年/月の合計）
-        elif match := re.search(r"(\d+)\s*歳\s*(\d+)\s*[ヶかカケヵ]月", age_str):
+
+        # 1. 明示的な年齢表記 (N歳M月 / N歳 / Nヶ月) を最優先する。
+        #    収容日・掲載日 (例: "3歳 2026-05-01収容") が併記されていても、
+        #    その日付を生年月日と誤認して月齢を再計算しない (旧実装の age 化けバグ)。
+        if match := re.search(r"(\d+)\s*歳\s*(\d+)\s*[ヶかカケヵ]月", age_str):
             months = int(match.group(1)) * 12 + int(match.group(2))
-        # 3. "N歳" のパターン
         elif match := re.search(r"(\d+)\s*歳", age_str):
             months = int(match.group(1)) * 12
-        # 4. "Nヶ月", "Nか月", "Nカ月", "Nケ月" のパターン
         elif match := re.search(r"(\d+)\s*[ヶかカケヵ]月", age_str):
             months = int(match.group(1))
-        # 5. "N年" のパターン (4桁年号 "YYYY年" や "令和N年" を除外)
-        elif not re.search(r"\d{4}年|令和\d+年", age_str):
-            if match := re.search(r"(\d+)\s*年", age_str):
-                months = int(match.group(1)) * 12
+        else:
+            # 2. 明示年齢が無い場合のみ生年月日から月齢を計算する。
+            #    "令和N年M月D日" の "N年" を Nヶ月と誤マッチさせない。
+            birth = DataNormalizer._parse_birth_date(age_str)
+            if birth is not None:
+                months = DataNormalizer._months_between(birth, today)
+            # 3. "N年" のパターン (4桁年号 "YYYY年" や "令和N年" を除外)
+            elif not re.search(r"\d{4}年|令和\d+年", age_str):
+                if match := re.search(r"(\d+)\s*年", age_str):
+                    months = int(match.group(1)) * 12
 
         if months is None:
             return None
