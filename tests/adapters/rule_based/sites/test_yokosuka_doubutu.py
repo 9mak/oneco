@@ -439,6 +439,58 @@ class TestYokosukaDoubutuAdapter:
         assert not hasattr(raw, "weight")
         assert raw.size == "大"
 
+    def test_size_inferred_from_weight_in_feature_cell(self):
+        """「特徴」セル長文内に埋め込まれた「体重Nkg」から size を推定する
+
+        実サイト (2026-06 観測) の譲渡犬ページは「体重」というセル行が存在せず、
+        「特徴」セル長文に「12歳、体重29Kg、フィラリア陰性...」のように
+        体重が埋め込まれているケースが多い。FieldSpec(label="体重") では
+        セル行マッチのため永遠にヒットせず、snapshot 上 size=0% の原因。
+
+        長文 color はリジェクトされても、抽出された体重は size 推定に使う。
+        """
+        html = """
+        <html><body><table><tbody>
+          <tr><td>整理番号</td><td>26-99</td></tr>
+          <tr><td>分類</td><td>犬(譲渡)</td></tr>
+          <tr><td>種類</td><td>雑種</td></tr>
+          <tr><td>性別</td><td>メス</td></tr>
+          <tr><td>収容日</td><td>R8.5.14</td></tr>
+          <tr><td>収容場所</td><td>不明</td></tr>
+          <tr><td>特徴</td><td>12歳、体重29Kg、フィラリア陰性、内部寄生虫駆除薬の投薬済。
+            お散歩大好きです。ダイエット中です。フードガードがあります。</td></tr>
+        </tbody></table></body></html>
+        """
+        adapter = YokosukaDoubutuAdapter(_site_dog_adoption())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.yokosuka-doubutu.com/adopted-animals/26-99/",
+                category="adoption",
+            )
+        # 長文説明文は color から除外される (既存挙動)
+        assert raw.color == ""
+        # 特徴セル長文内に埋め込まれた「体重29Kg」から size 推定
+        assert raw.size == "大", f"特徴セル内の体重から size 推定されるべき: got {raw.size!r}"
+
+    def test_size_inferred_from_weight_in_short_feature(self):
+        """「特徴」セルが短い (color として採用される) ケースでも、
+        セル内に体重情報があれば size を推定する"""
+        html = """
+        <html><body><table><tbody>
+          <tr><td>分類</td><td>犬(譲渡)</td></tr>
+          <tr><td>種類</td><td>雑種</td></tr>
+          <tr><td>性別</td><td>メス</td></tr>
+          <tr><td>特徴</td><td>キジ白、体重9.6kg</td></tr>
+        </tbody></table></body></html>
+        """
+        adapter = YokosukaDoubutuAdapter(_site_dog_adoption())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://www.yokosuka-doubutu.com/adopted-animals/x/",
+                category="adoption",
+            )
+        assert raw.size == "中", f"短い特徴セル内の体重からも size 推定されるべき: got {raw.size!r}"
+
     def test_size_field_preferred_over_weight(self):
         """「大きさ」セルがある場合は体重推定よりも優先する"""
         html = """
