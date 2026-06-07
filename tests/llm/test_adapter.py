@@ -334,9 +334,7 @@ class TestPdfMultiAnimal:
         最後の1頭で他の全行が上書きされていた。virtual_url を反映してDB上
         ユニークになることを検証する。
         """
-        list_html = (
-            '<html><body><a href="https://example.com/0322dog.pdf">犬PDF</a></body></html>'
-        )
+        list_html = '<html><body><a href="https://example.com/0322dog.pdf">犬PDF</a></body></html>'
         pdf_text = "<pre>犬一覧</pre>"
         mock_fetcher = MagicMock()
         mock_fetcher.fetch.side_effect = [list_html, pdf_text]

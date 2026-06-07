@@ -62,9 +62,7 @@ class StaticFetcher(PageFetcher):
             NetworkError: HTTP エラーまたは接続エラー時
         """
         try:
-            response = requests.get(
-                url, timeout=30, headers={"User-Agent": ONECO_USER_AGENT}
-            )
+            response = requests.get(url, timeout=30, headers={"User-Agent": ONECO_USER_AGENT})
             response.raise_for_status()
             response.encoding = response.apparent_encoding
             return response.text
