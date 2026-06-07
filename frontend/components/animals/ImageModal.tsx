@@ -7,7 +7,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { PLACEHOLDER_IMAGE } from '@/lib/images';
@@ -25,26 +25,56 @@ interface ImageModalProps {
 
 export function ImageModal({ imageUrl, alt, onClose, sourceUrl }: ImageModalProps) {
   const [imgSrc, setImgSrc] = useState(imageUrl);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   // imageUrl が切り替わったら src をリセット
   useEffect(() => {
     setImgSrc(imageUrl);
   }, [imageUrl]);
 
-  // Escキーで閉じる
+  // 開いたら閉じるボタンへフォーカスを移し、閉じたら起点要素へ戻す (WCAG 2.4.3)
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    closeButtonRef.current?.focus();
+    return () => {
+      previouslyFocused?.focus?.();
+    };
+  }, []);
+
+  // Esc で閉じる + Tab をダイアログ内に拘束する (WCAG 2.1.2 フォーカストラップ)
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
+        return;
+      }
+      if (e.key === 'Tab') {
+        const focusables = dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        );
+        if (!focusables || focusables.length === 0) {
+          e.preventDefault();
+          return;
+        }
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     };
 
-    document.addEventListener('keydown', handleEscape);
+    document.addEventListener('keydown', handleKey);
     // モーダル表示中はbodyのスクロールを無効化
     document.body.style.overflow = 'hidden';
 
     return () => {
-      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('keydown', handleKey);
       document.body.style.overflow = 'unset';
     };
   }, [onClose]);
@@ -52,6 +82,7 @@ export function ImageModal({ imageUrl, alt, onClose, sourceUrl }: ImageModalProp
   // React Portalでbody直下にマウント
   return createPortal(
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4"
       role="dialog"
       aria-modal="true"
@@ -65,6 +96,7 @@ export function ImageModal({ imageUrl, alt, onClose, sourceUrl }: ImageModalProp
       >
         {/* 閉じるボタン */}
         <button
+          ref={closeButtonRef}
           onClick={onClose}
           className="absolute -top-12 right-0 text-white hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-white rounded p-2 min-h-[44px] min-w-[44px]"
           aria-label="モーダルを閉じる"
