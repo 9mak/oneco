@@ -221,14 +221,24 @@ test.describe('Accessibility - Mobile Responsiveness', () => {
   test('should have touch-friendly button sizes (44x44px minimum)', async ({ page }) => {
     await page.goto('/');
 
-    const buttons = await page.locator('button').all();
+    // Next.js が開発モードで注入する Dev Tools ボタン (#next-logo, 32x32px) は
+    // 本番ビルドには存在しないフレームワーク要素なので検証対象から除外し、
+    // アプリ自身のボタンのみ WCAG 2.5.5 を満たすか確認する。
+    const buttons = await page
+      .locator('button:not([data-nextjs-dev-tools-button]):not([data-next-mark])')
+      .all();
 
     for (const button of buttons) {
       const boundingBox = await button.boundingBox();
       if (boundingBox) {
+        // 失敗時にどのボタンか分かるようラベルを添える
+        const label =
+          (await button.textContent())?.trim() ||
+          (await button.getAttribute('aria-label')) ||
+          '(no label)';
         // WCAG 2.5.5: 最小タッチターゲットサイズ
-        expect(boundingBox.width).toBeGreaterThanOrEqual(44);
-        expect(boundingBox.height).toBeGreaterThanOrEqual(44);
+        expect(boundingBox.width, `button "${label}" width`).toBeGreaterThanOrEqual(44);
+        expect(boundingBox.height, `button "${label}" height`).toBeGreaterThanOrEqual(44);
       }
     }
   });

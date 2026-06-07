@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { AnimalPublic } from '@/types/animal';
 import { CategoryBadge } from '@/components/ui/CategoryBadge';
 import { FavoriteButton } from '@/components/animals/FavoriteButton';
+import { StaleDataBadge } from '@/components/animals/StaleDataBadge';
 import { PLACEHOLDER_IMAGE } from '@/lib/images';
 
 interface AnimalCardProps {
@@ -54,9 +55,12 @@ export function AnimalCard({ animal }: AnimalCardProps) {
       </div>
 
       <div className="p-4 space-y-2">
-        <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
-          {animal.sex === '不明' ? animal.species : `${animal.species}の${animal.sex}`}
-        </h3>
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+            {animal.sex === '不明' ? animal.species : `${animal.species}の${animal.sex}`}
+          </h3>
+          <StaleDataBadge shelterDate={animal.shelter_date} />
+        </div>
 
         <dl className="grid grid-cols-2 gap-2 text-sm">
           <div>

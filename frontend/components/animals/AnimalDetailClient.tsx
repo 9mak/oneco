@@ -14,6 +14,7 @@ import { ImageGallery } from './ImageGallery';
 import { FavoriteButton } from './FavoriteButton';
 import { ContactInfo } from './ContactInfo';
 import { ExternalLink } from './ExternalLink';
+import { StaleDataBadge } from './StaleDataBadge';
 
 interface AnimalDetailClientProps {
   /** 動物データ */
@@ -84,6 +85,11 @@ export function AnimalDetailClient({ animal }: AnimalDetailClientProps) {
       <div className="mb-4 flex items-center justify-between">
         <CategoryBadge category={animal.category} size="lg" />
         <FavoriteButton animalId={animal.id} size="lg" />
+      </div>
+
+      {/* データ鮮度バッジ (収容から30日/60日以上経過時) */}
+      <div className="mb-4">
+        <StaleDataBadge shelterDate={animal.shelter_date} />
       </div>
 
       {/* 動物情報ヘッダー */}
