@@ -35,6 +35,11 @@ class SnapshotStore:
         if snapshot_dir is None:
             snapshot_dir = Path("snapshots")
         self.snapshot_dir = Path(snapshot_dir)
+        # 並列収集中に複数 worker が同じ latest.json を read-modify-write するため
+        # 書き込み区間を直列化する。
+        import threading
+
+        self._lock = threading.Lock()
 
     @property
     def _snapshot_path(self) -> Path:
@@ -64,25 +69,26 @@ class SnapshotStore:
         """
         self.snapshot_dir.mkdir(parents=True, exist_ok=True)
 
-        # 既存スナップショットを load (壊れていれば空扱い)
-        existing: list[dict] = []
-        if self._snapshot_path.exists():
-            try:
-                raw = json.loads(self._snapshot_path.read_text(encoding="utf-8"))
-                if isinstance(raw, list):
-                    existing = raw
-            except (json.JSONDecodeError, OSError):
-                pass
+        with self._lock:
+            # 既存スナップショットを load (壊れていれば空扱い)
+            existing: list[dict] = []
+            if self._snapshot_path.exists():
+                try:
+                    raw = json.loads(self._snapshot_path.read_text(encoding="utf-8"))
+                    if isinstance(raw, list):
+                        existing = raw
+                except (json.JSONDecodeError, OSError):
+                    pass
 
-        # 今回 items の source_url を集めて、既存から該当 URL を除外
-        new_urls = {str(item.source_url) for item in items}
-        merged = [e for e in existing if e.get("source_url") not in new_urls]
-        merged.extend(item.model_dump(mode="json") for item in items)
+            # 今回 items の source_url を集めて、既存から該当 URL を除外
+            new_urls = {str(item.source_url) for item in items}
+            merged = [e for e in existing if e.get("source_url") not in new_urls]
+            merged.extend(item.model_dump(mode="json") for item in items)
 
-        self._snapshot_path.write_text(
-            json.dumps(merged, ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
+            self._snapshot_path.write_text(
+                json.dumps(merged, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
 
     def reset(self) -> None:
         """次回 run の累積を fresh から始めるため snapshot ファイルを削除する。

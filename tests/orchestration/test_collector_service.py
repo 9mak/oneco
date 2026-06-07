@@ -162,6 +162,53 @@ class TestCollectorService:
         assert len(result) == 1
         assert mock_adapter.fetch_animal_list.call_count == 1
 
+    def test_collect_with_retry_returns_partial_on_soft_deadline(
+        self, collector_service, mock_adapter, sample_animal_data
+    ):
+        """ソフトデッドラインが detail ループ途中で発火すると、それまでに集めた
+        分だけを返す (部分保存フォールバック)。タイムアウトで全件破棄するより
+        ユーザー価値が高い。
+        """
+        from data_collector.orchestration.soft_deadline import SoftDeadline
+
+        # 100 件の detail URL を返す
+        urls = [(f"https://x/{i}", "adoption") for i in range(100)]
+        mock_adapter.fetch_animal_list.return_value = urls
+        mock_adapter.extract_animal_details.return_value = Mock()
+        mock_adapter.normalize.return_value = sample_animal_data[0]
+
+        # 3 件処理した時点で soft deadline 発火、以降は break
+        call_count = {"n": 0}
+
+        class TripAfterN:
+            def __init__(self, n: int) -> None:
+                self._n = n
+
+            def should_soft_stop(self) -> bool:
+                triggered = call_count["n"] >= self._n
+                call_count["n"] += 1
+                return triggered
+
+        result = collector_service._collect_with_retry(soft_deadline=TripAfterN(3))
+        # 3 件は処理し、4 件目のチェックで打ち切る
+        assert len(result) == 3
+        assert mock_adapter.extract_animal_details.call_count == 3
+        # SoftDeadline 型を実渡ししても落ちないことも確認 (型シグネチャ整合性)
+        result2 = collector_service._collect_with_retry(soft_deadline=SoftDeadline(seconds=10))
+        assert len(result2) > 0  # 即時には発火しないので全件処理される
+
+    def test_collect_with_retry_no_soft_deadline_processes_all(
+        self, collector_service, mock_adapter, sample_animal_data
+    ):
+        """soft_deadline=None なら従来通り全件処理する (既存テストの後方互換確認)。"""
+        urls = [(f"https://x/{i}", "adoption") for i in range(5)]
+        mock_adapter.fetch_animal_list.return_value = urls
+        mock_adapter.extract_animal_details.return_value = Mock()
+        mock_adapter.normalize.return_value = sample_animal_data[0]
+
+        result = collector_service._collect_with_retry()
+        assert len(result) == 5
+
     def test_collect_with_retry_retries_on_network_error(
         self, collector_service, mock_adapter, sample_animal_data
     ):

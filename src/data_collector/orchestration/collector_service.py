@@ -16,6 +16,7 @@ from ..infrastructure.notification_client import NotificationClient, Notificatio
 from ..infrastructure.notification_manager_client import NotificationManagerClient
 from ..infrastructure.output_writer import OutputWriter
 from ..infrastructure.snapshot_store import SnapshotStore
+from .soft_deadline import SoftDeadline
 
 if TYPE_CHECKING:
     from ..infrastructure.database.connection import DatabaseConnection
@@ -82,7 +83,7 @@ class CollectorService:
         self.logger = logging.getLogger(__name__)
         self._structure_changed = False
 
-    def run_collection(self) -> CollectionResult:
+    def run_collection(self, soft_deadline: SoftDeadline | None = None) -> CollectionResult:
         """
         収集処理を実行
 
@@ -114,7 +115,7 @@ class CollectorService:
             )
 
             # 収集実行
-            collected_data = self._collect_with_retry()
+            collected_data = self._collect_with_retry(soft_deadline=soft_deadline)
 
             # 差分検知
             diff_result = self.diff_detector.detect_diff(collected_data)
@@ -195,7 +196,11 @@ class CollectorService:
         finally:
             self._release_lock()
 
-    def _collect_with_retry(self, max_retries: int = 3) -> list[AnimalData]:
+    def _collect_with_retry(
+        self,
+        max_retries: int = 3,
+        soft_deadline: SoftDeadline | None = None,
+    ) -> list[AnimalData]:
         """
         リトライ付き収集
 
@@ -205,6 +210,9 @@ class CollectorService:
 
         Args:
             max_retries: 最大リトライ回数
+            soft_deadline: ハード timeout の手前で early-return するための協調
+                キャンセル。detail ループ内で should_soft_stop を見て、True に
+                なったら既収集分を返す (= タイムアウト全件破棄を防ぐ部分保存)。
 
         Returns:
             List[AnimalData]: 収集した動物データリスト
@@ -227,7 +235,14 @@ class CollectorService:
                 # 各個体詳細ページから情報を抽出・正規化
                 collected_data = []
                 skipped = 0
-                for url, category in detail_url_category_pairs:
+                soft_stopped_at: int | None = None
+                for idx, (url, category) in enumerate(detail_url_category_pairs):
+                    # ソフトデッドラインチェック: detail ループは politeness throttle で
+                    # 件数に比例して時間が伸びる。ハード timeout 直前で残り detail を
+                    # 諦めて既収集分を返す = 全件破棄を回避する部分保存フォールバック。
+                    if soft_deadline is not None and soft_deadline.should_soft_stop():
+                        soft_stopped_at = idx
+                        break
                     # 既知 URL は LLM スキップ → 前回 AnimalData を再利用
                     if url in known_animals:
                         collected_data.append(known_animals[url])
@@ -249,6 +264,18 @@ class CollectorService:
                             f"Failed to process detail page: {url} (category: {category})",
                             extra={"error": str(e)},
                         )
+
+                if soft_stopped_at is not None:
+                    self.logger.warning(
+                        "Soft deadline reached during detail loop: "
+                        f"processed {soft_stopped_at}/{len(detail_url_category_pairs)} URLs, "
+                        f"returning {len(collected_data)} animals (partial save fallback)",
+                        extra={
+                            "soft_stopped_at": soft_stopped_at,
+                            "total_urls": len(detail_url_category_pairs),
+                            "collected": len(collected_data),
+                        },
+                    )
 
                 if skipped > 0:
                     extracted = len(collected_data) - skipped

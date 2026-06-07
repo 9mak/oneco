@@ -27,23 +27,30 @@ class BrokenSitesTracker:
     def __init__(self, state_path: Path) -> None:
         self.state_path = Path(state_path)
         self._state: dict[str, dict] = self._load()
+        # 並列収集中に複数 worker が同じ YAML を read-modify-write するため、
+        # in-memory state と disk write を直列化する。
+        import threading
+
+        self._lock = threading.Lock()
 
     # ─────────────────── 公開 API ───────────────────
 
     def record_failure(self, site_name: str, error_message: str) -> None:
         """サイトの失敗を記録（連続失敗カウンタ +1）"""
-        entry = self._state.get(site_name, {"consecutive_failures": 0})
-        entry["consecutive_failures"] = int(entry.get("consecutive_failures", 0)) + 1
-        entry["last_error"] = error_message
-        entry["last_failed_at"] = datetime.now().astimezone().isoformat(timespec="seconds")
-        self._state[site_name] = entry
-        self._save()
+        with self._lock:
+            entry = self._state.get(site_name, {"consecutive_failures": 0})
+            entry["consecutive_failures"] = int(entry.get("consecutive_failures", 0)) + 1
+            entry["last_error"] = error_message
+            entry["last_failed_at"] = datetime.now().astimezone().isoformat(timespec="seconds")
+            self._state[site_name] = entry
+            self._save()
 
     def record_success(self, site_name: str) -> None:
         """サイトの成功を記録（カウンタリセット）"""
-        if site_name in self._state:
-            self._state[site_name]["consecutive_failures"] = 0
-            self._save()
+        with self._lock:
+            if site_name in self._state:
+                self._state[site_name]["consecutive_failures"] = 0
+                self._save()
 
     def consecutive_failures(self, site_name: str) -> int:
         """site_name の連続失敗回数を返す（未記録なら 0）"""

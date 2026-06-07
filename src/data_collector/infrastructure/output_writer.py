@@ -25,7 +25,12 @@ class OutputWriter:
 
     def __init__(self):
         """OutputWriter を初期化"""
-        pass
+        # 並列収集中に複数 worker が同じ animals.json を read-modify-write する
+        # ため、書き込み区間を直列化する。ファイル I/O は高速 (数百 KB) なので
+        # ロック競合のオーバーヘッドは無視できる。
+        import threading
+
+        self._lock = threading.Lock()
 
     def write_output(self, data: list[AnimalData], diff_result: DiffResult) -> Path:
         """
@@ -48,41 +53,42 @@ class OutputWriter:
         """
         self.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-        # 既存 animals.json を load (壊れていれば空扱い)
-        existing_animals: list[dict] = []
-        existing_diff = {"new_count": 0, "updated_count": 0, "deleted_count": 0}
-        if self.OUTPUT_FILE.exists():
-            try:
-                with open(self.OUTPUT_FILE, encoding="utf-8") as f:
-                    old = json.load(f)
-                if isinstance(old, dict):
-                    existing_animals = old.get("animals", []) or []
-                    existing_diff = old.get("diff", existing_diff) or existing_diff
-            except (json.JSONDecodeError, OSError):
-                pass
+        with self._lock:
+            # 既存 animals.json を load (壊れていれば空扱い)
+            existing_animals: list[dict] = []
+            existing_diff = {"new_count": 0, "updated_count": 0, "deleted_count": 0}
+            if self.OUTPUT_FILE.exists():
+                try:
+                    with open(self.OUTPUT_FILE, encoding="utf-8") as f:
+                        old = json.load(f)
+                    if isinstance(old, dict):
+                        existing_animals = old.get("animals", []) or []
+                        existing_diff = old.get("diff", existing_diff) or existing_diff
+                except (json.JSONDecodeError, OSError):
+                    pass
 
-        # 今回 data の source_url を集めて、既存から該当 URL を除外
-        new_urls = {str(a.source_url) for a in data}
-        merged_animals = [a for a in existing_animals if a.get("source_url") not in new_urls]
-        merged_animals.extend(a.model_dump(mode="json") for a in data)
+            # 今回 data の source_url を集めて、既存から該当 URL を除外
+            new_urls = {str(a.source_url) for a in data}
+            merged_animals = [a for a in existing_animals if a.get("source_url") not in new_urls]
+            merged_animals.extend(a.model_dump(mode="json") for a in data)
 
-        # diff カウントは累積
-        merged_diff = {
-            "new_count": existing_diff.get("new_count", 0) + len(diff_result.new),
-            "updated_count": existing_diff.get("updated_count", 0) + len(diff_result.updated),
-            "deleted_count": existing_diff.get("deleted_count", 0)
-            + len(diff_result.deleted_candidates),
-        }
+            # diff カウントは累積
+            merged_diff = {
+                "new_count": existing_diff.get("new_count", 0) + len(diff_result.new),
+                "updated_count": existing_diff.get("updated_count", 0) + len(diff_result.updated),
+                "deleted_count": existing_diff.get("deleted_count", 0)
+                + len(diff_result.deleted_candidates),
+            }
 
-        output_data = {
-            "collected_at": self._get_current_timestamp(),
-            "total_count": len(merged_animals),
-            "diff": merged_diff,
-            "animals": merged_animals,
-        }
+            output_data = {
+                "collected_at": self._get_current_timestamp(),
+                "total_count": len(merged_animals),
+                "diff": merged_diff,
+                "animals": merged_animals,
+            }
 
-        with open(self.OUTPUT_FILE, "w", encoding="utf-8") as f:
-            json.dump(output_data, f, ensure_ascii=False, indent=2)
+            with open(self.OUTPUT_FILE, "w", encoding="utf-8") as f:
+                json.dump(output_data, f, ensure_ascii=False, indent=2)
 
         return self.OUTPUT_FILE
 
