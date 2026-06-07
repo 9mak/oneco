@@ -1,12 +1,12 @@
 三重県動物愛護管理センター（迷い犬情報）:
-  consecutive_failures: 0
+  consecutive_failures: 1
   last_error: 'ネットワークエラー: HTTPConnectionPool(host=''mie-dakc.server-shared.com'',
     port=80): Max retries exceeded with url: /maigoinujyouhou.html (Caused by ConnectTimeoutError(<HTTPConnection(host=''mie-dakc.server-shared.com'',
-    port=80) at 0x7fca95966c90>, ''Connection to mie-dakc.server-shared.com timed
+    port=80) at 0x7fb46cc0c210>, ''Connection to mie-dakc.server-shared.com timed
     out. (connect timeout=30)''))'
-  last_failed_at: '2026-05-27T04:05:13+00:00'
+  last_failed_at: '2026-06-07T10:04:00+00:00'
 山梨県（探している猫）:
-  consecutive_failures: 1
+  consecutive_failures: 0
   last_error: 'site collection timed out after 240s: 山梨県（探している猫）'
   last_failed_at: '2026-06-07T07:45:52+00:00'
 東京都収容動物情報（犬）:
@@ -38,7 +38,7 @@
   last_error: '件数低下異常: 前回 3 件 → 今回 0 件 (adapter 破損 or サイト構造変更の可能性)'
   last_failed_at: '2026-05-27T04:06:07+00:00'
 高知県動物愛護センター:
-  consecutive_failures: 1
+  consecutive_failures: 0
   last_error: 'site collection timed out after 240s: 高知県動物愛護センター'
   last_failed_at: '2026-06-07T07:56:24+00:00'
 鹿児島市（保護犬）:
