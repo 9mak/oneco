@@ -136,6 +136,53 @@ class TestCollectorService:
 
         collector_service._release_lock()
 
+    def test_lock_file_is_unique_per_site(
+        self,
+        tmp_path,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+    ):
+        """並列収集で複数 CollectorService を作っても、サイト名でロックを分けるため
+        異なるサイト間で「Already running」干渉が起きないことを確認 (PR #152 回帰)。
+        """
+        import os
+
+        os.chdir(tmp_path)
+        adapter_a = Mock()
+        adapter_a.prefecture_code = "13"
+        adapter_a.municipality_name = "東京都"
+
+        adapter_b = Mock()
+        adapter_b.prefecture_code = "27"
+        adapter_b.municipality_name = "大阪府"
+
+        service_a = CollectorService(
+            adapter=adapter_a,
+            diff_detector=mock_diff_detector,
+            output_writer=mock_output_writer,
+            notification_client=mock_notification_client,
+            snapshot_store=mock_snapshot_store,
+        )
+        service_b = CollectorService(
+            adapter=adapter_b,
+            diff_detector=mock_diff_detector,
+            output_writer=mock_output_writer,
+            notification_client=mock_notification_client,
+            snapshot_store=mock_snapshot_store,
+        )
+
+        # サイト名でロックパスが分かれていること
+        assert service_a.LOCK_FILE != service_b.LOCK_FILE
+        # service_a が lock 取得しても service_b は影響を受けない
+        service_a._acquire_lock()
+        try:
+            assert service_a._is_running() is True
+            assert service_b._is_running() is False
+        finally:
+            service_a._release_lock()
+
     def test_run_collection_releases_lock_on_exception(self, collector_service, mock_adapter):
         """例外発生時もロックファイルがクリーンアップされることを確認"""
         mock_adapter.fetch_animal_list.side_effect = Exception("Test error")

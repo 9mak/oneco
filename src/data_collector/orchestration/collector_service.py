@@ -1,6 +1,7 @@
 """収集オーケストレーションサービス"""
 
 import asyncio
+import hashlib
 import logging
 import time
 import uuid
@@ -59,6 +60,9 @@ class CollectorService:
     Requirements: 5.1, 5.2, 5.5, 6.3, 6.4, 6.5
     """
 
+    # 既定の lock file パス (後方互換: 旧テストはクラス変数を直接上書きする)。
+    # 並列実行時は __init__ で adapter.municipality_name を含む path に
+    # インスタンス上書きされるため、サイト間で衝突しない。
     LOCK_FILE = Path(".collector.lock")
 
     def __init__(
@@ -82,6 +86,16 @@ class CollectorService:
         self.notification_manager_client = notification_manager_client
         self.logger = logging.getLogger(__name__)
         self._structure_changed = False
+        # 並列収集 (parallel_runner) でサイト間の lock 衝突を避けるため、
+        # adapter.municipality_name のハッシュでユニーク化したインスタンス
+        # lock を持つ。日本語名同士でも衝突せず、ファイル名として安全。
+        # 既存テストは __init__ 後に `service.LOCK_FILE = ...` でインスタンス
+        # 属性を上書きするので、そちらが優先される (後方互換)。
+        site_hash = hashlib.sha1(
+            str(adapter.municipality_name or "site").encode("utf-8"),
+            usedforsecurity=False,
+        ).hexdigest()[:12]
+        self.LOCK_FILE = Path(f".collector.{site_hash}.lock")
 
     def run_collection(self, soft_deadline: SoftDeadline | None = None) -> CollectionResult:
         """
