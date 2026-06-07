@@ -60,17 +60,31 @@ class CityYokohamaAdapter(SinglePageTableAdapter):
     ROW_SELECTOR: ClassVar[str] = "div.wysiwyg_wp table tr"
     # 1 行目はヘッダ (`<th>`) なので除外
     SKIP_FIRST_ROW: ClassVar[bool] = True
-    # 列インデックス → RawAnimalData フィールド名 のマッピング。
-    # 列 0 は「収容日・収容場所」を 1 セルにまとめた表記なので独自処理が必要。
-    # 列 1 は写真 (img) なのでテキスト抽出対象外。
-    COLUMN_FIELDS: ClassVar[dict[int, str]] = {
-        2: "species",
-        3: "sex",
-        4: "color",
-        5: "size",
-    }
-    LOCATION_COLUMN: ClassVar[int | None] = None  # 列 0 から独自抽出
+    # ヘッダ行から動的に column → field マッピングを構築するため、
+    # 静的 COLUMN_FIELDS は使用しない (収容犬/収容猫で列構造が異なる)。
+    # 犬: [収容日・収容場所, 写真, 種類, 性別, 毛色, 体格, その他]
+    # 猫: [掲載日, 収容日・収容場所, 写真, 種類, 性別, 毛色, 年齢, その他]
+    # 旧 hardcoded {2:species, 3:sex, 4:color, 5:size} は猫テーブルで列ズレが
+    # 発生し snapshot で color が性別文字列、size が毛色文字列になっていた。
+    COLUMN_FIELDS: ClassVar[dict[int, str]] = {}
+    LOCATION_COLUMN: ClassVar[int | None] = None
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
+
+    # ヘッダ <th> のラベル → RawAnimalData フィールド名 のマッピング。
+    # 「収容日・収容場所」「掲載日」「写真」「その他」は無視 (独自処理 or 不要)。
+    _HEADER_LABEL_TO_FIELD: ClassVar[dict[str, str]] = {
+        "種類": "species",
+        "性別": "sex",
+        "毛色": "color",
+        "体格": "size",
+        "大きさ": "size",
+        "年齢": "age",  # 収容猫テーブル特有
+    }
+
+    # 動物愛護センター代表電話 (フッタ・案内ページに共通記載)。
+    # 各動物カードには電話欄が無いが、フロントの問い合わせ表示で必須なため
+    # adapter で定数注入する (city_kurashiki / yokosuka_doubutu と同じ運用)。
+    _CENTER_PHONE: ClassVar[str] = "045-471-2111"
 
     # ─────────────────── オーバーライド ───────────────────
 
@@ -96,10 +110,19 @@ class CityYokohamaAdapter(SinglePageTableAdapter):
     def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """テーブル行から RawAnimalData を構築する
 
-        基底のセルベース既定実装に対し、列 0 (収容日・収容場所) の分割と
-        species のサイト名推定を加える。
+        基底のセルベース既定実装に対し、ヘッダ <th> ラベルからの動的
+        フィールドマッピング、列「収容日・収容場所」の分割、species の
+        サイト名推定、代表電話の注入を加える。
         """
-        rows = [r for r in self._load_rows() if not self._is_empty_placeholder(r)]
+        # ヘッダ行 (`<th>`) は SKIP_FIRST_ROW=True で _load_rows から除外されているため、
+        # キャッシュ済み HTML から別途取得する
+        header_row = self._load_header_row()
+        header_map = self._build_header_map_from_row(header_row)
+        # 収容日・収容場所 列のインデックスを動的に特定
+        shelter_loc_col = self._find_shelter_location_column_from_row(header_row)
+
+        all_rows = self._load_rows()
+        rows = [r for r in all_rows if not self._is_empty_placeholder(r)]
         idx = self._parse_row_index(virtual_url)
         if idx >= len(rows):
             raise ParsingError(
@@ -109,15 +132,16 @@ class CityYokohamaAdapter(SinglePageTableAdapter):
         row = rows[idx]
         cells = row.find_all(["td", "th"])
 
+        # ヘッダから動的に取得したマッピングでフィールド抽出
         fields: dict[str, str] = {}
-        for col_idx, field_name in self.COLUMN_FIELDS.items():
+        for field_name, col_idx in header_map.items():
             if col_idx < len(cells):
                 fields[field_name] = cells[col_idx].get_text(separator=" ", strip=True)
 
-        # 列 0: 「収容日・収容場所」を分割
+        # 「収容日・収容場所」セルを分割 (列位置は猫/犬で異なる)
         shelter_date, location = "", ""
-        if cells:
-            shelter_date, location = self._split_date_and_location(cells[0])
+        if shelter_loc_col is not None and shelter_loc_col < len(cells):
+            shelter_date, location = self._split_date_and_location(cells[shelter_loc_col])
 
         # 動物種別はサイト名から推定 (HTML の「種類」は犬種名など具体的な値)
         species = self._infer_species_from_site_name(self.site_config.name)
@@ -126,18 +150,66 @@ class CityYokohamaAdapter(SinglePageTableAdapter):
             return RawAnimalData(
                 species=species,
                 sex=fields.get("sex", ""),
-                age="",
+                age=fields.get("age", ""),
                 color=fields.get("color", ""),
                 size=fields.get("size", ""),
                 shelter_date=shelter_date or self.SHELTER_DATE_DEFAULT,
                 location=location,
-                phone="",
+                phone=self._CENTER_PHONE,
                 image_urls=self._extract_row_images(row, virtual_url),
                 source_url=virtual_url,
                 category=category,
             )
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
+
+    def _load_header_row(self) -> Tag | None:
+        """キャッシュ HTML からヘッダ <th> を含む最初の行を返す
+
+        SKIP_FIRST_ROW=True で _load_rows からは除外されているため、
+        BeautifulSoup を別途使ってテーブルの 1 行目を取得する。
+        """
+        if not self._html_cache:
+            return None
+        from bs4 import BeautifulSoup
+
+        soup = BeautifulSoup(self._html_cache, "html.parser")
+        for row in soup.select(self.ROW_SELECTOR):
+            if not isinstance(row, Tag):
+                continue
+            if row.find_all("th"):
+                return row
+        return None
+
+    @classmethod
+    def _build_header_map_from_row(cls, header_row: Tag | None) -> dict[str, int]:
+        """ヘッダ行からフィールド名 → 列インデックスを返す
+
+        ヘッダが見つからない場合は空 dict (フィールドは抽出されず空文字)。
+        マッピング外のラベル (「収容日・収容場所」「写真」「掲載日」「その他」)
+        は無視する。
+        """
+        if not isinstance(header_row, Tag):
+            return {}
+        ths = header_row.find_all("th")
+        mapping: dict[str, int] = {}
+        for i, th in enumerate(ths):
+            label = th.get_text(separator=" ", strip=True)
+            field = cls._HEADER_LABEL_TO_FIELD.get(label)
+            if field and field not in mapping:
+                mapping[field] = i
+        return mapping
+
+    @classmethod
+    def _find_shelter_location_column_from_row(cls, header_row: Tag | None) -> int | None:
+        """ヘッダから「収容日・収容場所」列のインデックスを返す"""
+        if not isinstance(header_row, Tag):
+            return None
+        for i, th in enumerate(header_row.find_all("th")):
+            label = th.get_text(separator=" ", strip=True)
+            if "収容日" in label and "収容場所" in label:
+                return i
+        return None
 
     # ─────────────────── ヘルパー ───────────────────
 
