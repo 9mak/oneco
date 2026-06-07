@@ -33,6 +33,15 @@ jobs:
           pip install -e .
           playwright install chromium --with-deps
 
+      # 本番 DB スキーマを最新に揃える。data-collector はデプロイ経路を介さず
+      # 直接 production DB を触るため、ここで alembic を打たないと「コードは
+      # 最新だが本番 DB に新カラムが無い」状態で全件 INSERT 失敗する
+      # (PR #138 source_site 追加時に発生)。idempotent なので毎回実行で安全。
+      - name: Run database migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: alembic upgrade head
+
       - name: Run data collector
         env:
           NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}

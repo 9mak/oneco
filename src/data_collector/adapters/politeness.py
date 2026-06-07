@@ -7,8 +7,11 @@
 import time
 
 # 全 HTTP 取得経路で共有する User-Agent。連絡先（GitHub Issues）を明記。
+# HTTP/1.1 ヘッダーは Latin-1 互換でなければならない (http.client.putheader が
+# 厳格に latin-1 エンコードする)。日本語を含めると本番収集が UnicodeEncodeError で
+# 全サイト失敗するため、内容は ASCII のみで構成する。
 ONECO_USER_AGENT = (
-    "oneco-collector/1.0 (+https://github.com/9mak/oneco; 停止・削除のご依頼は同 Issues へ)"
+    "oneco-collector/1.0 (+https://github.com/9mak/oneco; stop/removal requests via GitHub Issues)"
 )
 
 # request_interval 未指定の経路のフォールバック最小間隔（秒）。
