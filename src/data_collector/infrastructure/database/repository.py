@@ -17,6 +17,17 @@ from src.data_collector.domain.status_transition import (
 from src.data_collector.infrastructure.database.models import Animal, AnimalStatusHistory
 
 
+def _escape_like(value: str) -> str:
+    r"""LIKE/ILIKE のワイルドカード (\\ % _) をエスケープし、ユーザー入力を
+    リテラルな部分一致として扱う。``escape="\\"`` と併用する。
+
+    これが無いと ``location=%`` で全件マッチ、``q=A_B`` の ``_`` が任意 1 文字
+    に化ける。SQLi は SQLAlchemy のバインド変数で防御されているため、
+    本関数は意味論的正しさ (部分一致のリテラル化) を担う。
+    """
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 class NotFoundError(Exception):
     """リソースが見つからない場合のエラー"""
 
@@ -254,7 +265,7 @@ class AnimalRepository:
         if sex:
             filters.append(Animal.sex == sex)
         if location:
-            filters.append(Animal.location.like(f"%{location}%"))
+            filters.append(Animal.location.like(f"%{_escape_like(location)}%", escape="\\"))
         if prefecture:
             filters.append(Animal.prefecture == prefecture)
         if category:
@@ -271,14 +282,14 @@ class AnimalRepository:
             # species/color/size/location/prefecture を横断検索
             from sqlalchemy import or_
 
-            keyword = f"%{q}%"
+            keyword = f"%{_escape_like(q)}%"
             filters.append(
                 or_(
-                    Animal.species.ilike(keyword),
-                    Animal.color.ilike(keyword),
-                    Animal.size.ilike(keyword),
-                    Animal.location.ilike(keyword),
-                    Animal.prefecture.ilike(keyword),
+                    Animal.species.ilike(keyword, escape="\\"),
+                    Animal.color.ilike(keyword, escape="\\"),
+                    Animal.size.ilike(keyword, escape="\\"),
+                    Animal.location.ilike(keyword, escape="\\"),
+                    Animal.prefecture.ilike(keyword, escape="\\"),
                 )
             )
 
@@ -345,7 +356,7 @@ class AnimalRepository:
         if sex:
             filters.append(Animal.sex == sex)
         if location:
-            filters.append(Animal.location.like(f"%{location}%"))
+            filters.append(Animal.location.like(f"%{_escape_like(location)}%", escape="\\"))
         if prefecture:
             filters.append(Animal.prefecture == prefecture)
         if category:
@@ -359,14 +370,14 @@ class AnimalRepository:
         if q:
             from sqlalchemy import or_
 
-            keyword = f"%{q}%"
+            keyword = f"%{_escape_like(q)}%"
             filters.append(
                 or_(
-                    Animal.species.ilike(keyword),
-                    Animal.color.ilike(keyword),
-                    Animal.size.ilike(keyword),
-                    Animal.location.ilike(keyword),
-                    Animal.prefecture.ilike(keyword),
+                    Animal.species.ilike(keyword, escape="\\"),
+                    Animal.color.ilike(keyword, escape="\\"),
+                    Animal.size.ilike(keyword, escape="\\"),
+                    Animal.location.ilike(keyword, escape="\\"),
+                    Animal.prefecture.ilike(keyword, escape="\\"),
                 )
             )
 
