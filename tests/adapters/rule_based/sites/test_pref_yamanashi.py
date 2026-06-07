@@ -198,12 +198,15 @@ class TestPrefYamanashiAdapter:
         assert raw.size == "小型", f"注記付き token から size 抽出されるべき: got {raw.size!r}"
 
     def test_extract_animal_details_size_kind_only_returns_empty(self, fixture_html):
-        """「雑種」のみで体格欄無しは構造的に取得不可で空文字"""
+        """「雑種」のみで体格欄無し、かつ その他の情報 にもサイズ手掛かりが
+        無い場合は構造的に取得不可で空文字"""
         list_html = _load_yamanashi_html(fixture_html)
         detail_html = """
         <html><body>
           <h2>種類・体格</h2>
           <p>雑種</p>
+          <h2>その他の情報</h2>
+          <p>首輪なし、人慣れしている</p>
         </body></html>
         """
         adapter = PrefYamanashiAdapter(_site())
@@ -218,6 +221,113 @@ class TestPrefYamanashiAdapter:
             raw = adapter.extract_animal_details(urls[0][0], category="lost")
 
         assert raw.size == ""
+
+    def test_extract_animal_details_size_from_other_info_size_word(self, fixture_html):
+        """「種類・体格」欄に size がない場合でも
+        その他の情報の自由記述に「中型」「小型」等の体格語があれば拾う
+
+        実サイト (2026-06 観測):
+            種類・体格: 雑種
+            その他の情報: 去勢済み、首輪無し、中型(5kg位) 3才
+        69% の size 欠損のうち相当数がこのパターン。
+        """
+        list_html = _load_yamanashi_html(fixture_html)
+        detail_html = """
+        <html><body>
+          <h2>種類・体格</h2>
+          <p>雑</p>
+          <h2>その他の情報</h2>
+          <p>去勢済み、首輪無し、中型(5kg位) 3才</p>
+        </body></html>
+        """
+        adapter = PrefYamanashiAdapter(_site())
+
+        def _http_side_effect(url):
+            if url.endswith("index.html"):
+                return list_html
+            return detail_html
+
+        with patch.object(adapter, "_http_get", side_effect=_http_side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+
+        assert raw.size == "中型", f"その他の情報から size 抽出されるべき: got {raw.size!r}"
+
+    def test_extract_animal_details_size_from_other_info_weight_kg(self, fixture_html):
+        """その他の情報に体重表記しかない場合、5/15kg 境界で size 推定する"""
+        list_html = _load_yamanashi_html(fixture_html)
+        detail_html = """
+        <html><body>
+          <h2>種類・体格</h2>
+          <p>雑種</p>
+          <h2>その他の情報</h2>
+          <p>首輪あり 体重2.3kg（逸走時）</p>
+        </body></html>
+        """
+        adapter = PrefYamanashiAdapter(_site())
+
+        def _http_side_effect(url):
+            if url.endswith("index.html"):
+                return list_html
+            return detail_html
+
+        with patch.object(adapter, "_http_get", side_effect=_http_side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+
+        assert raw.size == "小", f"体重 → size 推定されるべき: got {raw.size!r}"
+
+    def test_extract_animal_details_size_from_other_info_fullwidth_weight(self, fixture_html):
+        """全角数字と U+339F「㎏」記号の体重表記も拾う
+
+        例: その他の情報「９才、体重６ｋｇ 去勢手術済」
+        例: その他の情報「大型5㎏くらい」
+        """
+        list_html = _load_yamanashi_html(fixture_html)
+        detail_html = """
+        <html><body>
+          <h2>種類・体格</h2>
+          <p>雑種</p>
+          <h2>その他の情報</h2>
+          <p>９才、体重６ｋｇ 去勢手術済</p>
+        </body></html>
+        """
+        adapter = PrefYamanashiAdapter(_site())
+
+        def _http_side_effect(url):
+            if url.endswith("index.html"):
+                return list_html
+            return detail_html
+
+        with patch.object(adapter, "_http_get", side_effect=_http_side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+
+        assert raw.size == "中", f"全角数字の体重 → size 推定されるべき: got {raw.size!r}"
+
+    def test_extract_animal_details_size_kind_takes_priority_over_other_info(self, fixture_html):
+        """「種類・体格」に size があれば その他の情報 より優先する"""
+        list_html = _load_yamanashi_html(fixture_html)
+        detail_html = """
+        <html><body>
+          <h2>種類・体格</h2>
+          <p>雑種　大型</p>
+          <h2>その他の情報</h2>
+          <p>体重2kg 小型</p>
+        </body></html>
+        """
+        adapter = PrefYamanashiAdapter(_site())
+
+        def _http_side_effect(url):
+            if url.endswith("index.html"):
+                return list_html
+            return detail_html
+
+        with patch.object(adapter, "_http_get", side_effect=_http_side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+
+        assert raw.size == "大型", f"種類・体格を優先すべき: got {raw.size!r}"
 
     def test_extract_animal_details_enriches_age_from_other_info(self, fixture_html):
         """detail ページの「その他の情報」欄から「年齢：3才」等を抽出する
