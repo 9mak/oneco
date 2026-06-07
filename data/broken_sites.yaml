@@ -1,10 +1,22 @@
 三重県動物愛護管理センター（迷い犬情報）:
-  consecutive_failures: 1
+  consecutive_failures: 0
   last_error: 'ネットワークエラー: HTTPConnectionPool(host=''mie-dakc.server-shared.com'',
     port=80): Max retries exceeded with url: /maigoinujyouhou.html (Caused by ConnectTimeoutError(<HTTPConnection(host=''mie-dakc.server-shared.com'',
     port=80) at 0x7fb46cc0c210>, ''Connection to mie-dakc.server-shared.com timed
     out. (connect timeout=30)''))'
   last_failed_at: '2026-06-07T10:04:00+00:00'
+名古屋市（譲渡犬）:
+  consecutive_failures: 1
+  last_error: 'HTTP エラー: 403 Client Error: Forbidden for url: https://www.city.nagoya.jp/kurashi/pet/1015473/1015483/1015484.html'
+  last_failed_at: '2026-06-07T16:19:28+00:00'
+名古屋市（譲渡猫）:
+  consecutive_failures: 1
+  last_error: 'HTTP エラー: 403 Client Error: Forbidden for url: https://www.city.nagoya.jp/kurashi/pet/1015473/1015483/1015488.html'
+  last_failed_at: '2026-06-07T16:19:28+00:00'
+名古屋市（飼主不明動物）:
+  consecutive_failures: 1
+  last_error: 'HTTP エラー: 403 Client Error: Forbidden for url: https://www.city.nagoya.jp/kurashi/pet/1015473/1015489/1015493.html'
+  last_failed_at: '2026-06-07T16:19:28+00:00'
 山梨県（探している猫）:
   consecutive_failures: 0
   last_error: 'site collection timed out after 240s: 山梨県（探している猫）'
