@@ -197,6 +197,59 @@ class TestNormalizeAge:
         assert DataNormalizer._normalize_age("1歳 (2025/4/1 収容)") == 12
         assert DataNormalizer._normalize_age("6ヶ月 / 令和7年5月10日収容") == 6
 
+    def test_normalize_age_weeks(self):
+        """'N週齢' / '推定N週齢' は 4 週 = 1ヶ月で月数化 (koshigaya 譲渡動物表)"""
+        assert DataNormalizer._normalize_age("8週齢") == 2
+        assert DataNormalizer._normalize_age("推定12週齢") == 3
+        assert DataNormalizer._normalize_age("推定６週齢") == 1  # 全角数字
+        assert DataNormalizer._normalize_age("3週齢") == 0  # 端数切り捨て
+
+    def test_normalize_age_qualitative_class(self):
+        """定性的年齢表記 (幼齢/若齢/中齢/高齢) を環境省ガイドライン目安で月数化"""
+        assert DataNormalizer._normalize_age("幼齢") == 3
+        assert DataNormalizer._normalize_age("若齢") == 12
+        assert DataNormalizer._normalize_age("中齢") == 60
+        assert DataNormalizer._normalize_age("高齢") == 120
+
+    def test_normalize_age_yyyy_year_only(self, monkeypatch):
+        """'YYYY年' / 'YYYY年生まれ' (4桁年号のみ、日なし) は 1/1 仮定で月数化。
+
+        kitakyushu 譲渡犬テーブルが raw age = "2017年" のみで日が無いケース。
+        旧実装は 4桁年号を除外していたため None になり age_months=0% の真因。
+        """
+        from datetime import date
+
+        monkeypatch.setattr(DataNormalizer, "_today", staticmethod(lambda: date(2026, 6, 1)))
+
+        # 2017-01-01 〜 2026-06-01 = 9 年 5 ヶ月 = 113 ヶ月
+        assert DataNormalizer._normalize_age("2017年") == 113
+        # 2024-01-01 〜 2026-06-01 = 2 年 5 ヶ月 = 29 ヶ月
+        assert DataNormalizer._normalize_age("2024年生まれ") == 29
+        # 30 歳超の異常値は実装上限で棄却
+        assert DataNormalizer._normalize_age("1900年") is None
+        # 未来日付は無視
+        assert DataNormalizer._normalize_age("2030年") is None
+
+    def test_normalize_age_yyyy_year_month_no_day(self, monkeypatch):
+        """'YYYY年M月生まれ' (日なし、月だけ) は日 1 仮定で月数化"""
+        from datetime import date
+
+        monkeypatch.setattr(DataNormalizer, "_today", staticmethod(lambda: date(2026, 6, 1)))
+
+        # 2025-05-01 〜 2026-06-01 = 13 ヶ月
+        assert DataNormalizer._normalize_age("2025年5月生まれ") == 13
+        assert DataNormalizer._normalize_age("2025年5月頃") == 13
+
+    def test_normalize_age_reiwa_year_month_no_day(self, monkeypatch):
+        """'令和N年M月' (日なし、月だけ) も日 1 仮定で月数化"""
+        from datetime import date
+
+        monkeypatch.setattr(DataNormalizer, "_today", staticmethod(lambda: date(2026, 6, 1)))
+
+        # 令和7年5月 = 2025-05-01 → 13 ヶ月
+        assert DataNormalizer._normalize_age("令和7年5月") == 13
+        assert DataNormalizer._normalize_age("令和7年5月頃生まれ") == 13
+
     def test_normalize_age_rejects_implausible_upper_bound(self):
         """生物学的に有り得ない高齢 (30歳超) は誤パースなので None にする
 
