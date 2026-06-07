@@ -14,6 +14,17 @@ def test_user_agent_contains_contact() -> None:
     assert "github.com/9mak/oneco" in ONECO_USER_AGENT
 
 
+def test_user_agent_is_ascii_only() -> None:
+    """User-Agent は ASCII のみ。
+
+    HTTP/1.1 ヘッダーは Latin-1 互換でなければならず、Python の
+    http.client.putheader は厳格に latin-1 エンコードする。日本語等を
+    含めると本番 HTTP 取得が UnicodeEncodeError で全件失敗するため、
+    ASCII 限定を契約として固定する。
+    """
+    ONECO_USER_AGENT.encode("ascii")  # raises UnicodeEncodeError if non-ASCII
+
+
 def test_default_min_interval_is_at_least_one_second() -> None:
     """フォールバック間隔は1秒以上（負荷配慮の下限）。"""
     assert DEFAULT_MIN_INTERVAL_SEC >= 1.0
