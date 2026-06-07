@@ -32,6 +32,16 @@ class DataNormalizer:
 
     _UNKNOWN_PATTERNS = ["不明", "?", "？", "unknown", ""]
 
+    # 定性的年齢表記 → 代表月数 (環境省ガイドライン目安)。
+    # koshigaya 等の譲渡動物表で「中齢」「若齢」のような独自分類が出現する。
+    # 範囲の中央値を採用し、誤差は許容 (ID 等の誤抽出ではないので保持を優先)。
+    _AGE_CLASS_MONTHS: dict[str, int] = {
+        "幼齢": 3,  # 〜半年
+        "若齢": 12,  # 0.5〜2歳
+        "中齢": 60,  # 2〜7歳
+        "高齢": 120,  # 7歳〜
+    }
+
     @staticmethod
     def normalize(raw_data: RawAnimalData) -> AnimalData:
         """
@@ -324,6 +334,9 @@ class DataNormalizer:
         if age_str in DataNormalizer._UNKNOWN_PATTERNS:
             return None
 
+        # 全角数字を半角に正規化 (推定６週齢, ２歳 等)
+        age_str = age_str.translate(str.maketrans("０１２３４５６７８９", "0123456789"))
+
         # "才" は "歳" の代用字 (長崎・和歌山・旭川あにまある 等で多用)。
         # 歳に正規化して以降の年齢パターンに乗せる。"13才くらい"/"１０才以上"
         # のような付随表現は re.search が数値+歳を拾うため自然に無視される。
@@ -334,7 +347,7 @@ class DataNormalizer:
 
         today = DataNormalizer._today()
 
-        # 1. 明示的な年齢表記 (N歳M月 / N歳 / Nヶ月) を最優先する。
+        # 1. 明示的な年齢表記 (N歳M月 / N歳 / Nヶ月 / N週齢 / 定性表記) を最優先する。
         #    収容日・掲載日 (例: "3歳 2026-05-01収容") が併記されていても、
         #    その日付を生年月日と誤認して月齢を再計算しない (旧実装の age 化けバグ)。
         if match := re.search(r"(\d+)\s*歳\s*(\d+)\s*[ヶかカケヵ]月", age_str):
@@ -343,13 +356,49 @@ class DataNormalizer:
             months = int(match.group(1)) * 12
         elif match := re.search(r"(\d+)\s*[ヶかカケヵ]月", age_str):
             months = int(match.group(1))
+        # 2. "N週齢" / "推定N週齢" (koshigaya 等の譲渡動物表)
+        #    1ヶ月 ≈ 4週として整数除算 (端数切り捨て)
+        elif match := re.search(r"(\d+)\s*週齢", age_str):
+            months = int(match.group(1)) // 4
+        # 3. 定性的年齢表記 (幼齢/若齢/中齢/高齢) — 環境省ガイドライン目安
+        elif months_qualitative := DataNormalizer._AGE_CLASS_MONTHS.get(age_str):
+            months = months_qualitative
         else:
-            # 2. 明示年齢が無い場合のみ生年月日から月齢を計算する。
+            # 4. 明示年齢が無い場合のみ生年月日から月齢を計算する。
             #    "令和N年M月D日" の "N年" を Nヶ月と誤マッチさせない。
             birth = DataNormalizer._parse_birth_date(age_str)
             if birth is not None:
                 months = DataNormalizer._months_between(birth, today)
-            # 3. "N年" のパターン (4桁年号 "YYYY年" や "令和N年" を除外)
+            # 5. "YYYY年M月" / "YYYY年M月頃[生まれ]" (日なし) — 日を 1 仮定
+            elif match := re.search(r"(\d{4})年(\d{1,2})月", age_str):
+                try:
+                    birth_year_month = date(int(match.group(1)), int(match.group(2)), 1)
+                except ValueError:
+                    pass
+                else:
+                    if birth_year_month <= today:
+                        months = DataNormalizer._months_between(birth_year_month, today)
+            # 6. "令和N年M月" (日なし、頃つき可) も日 1 仮定
+            elif match := re.search(r"令和(\d+)年(\d{1,2})月", age_str):
+                try:
+                    year = 2018 + int(match.group(1))
+                    birth_reiwa_month = date(year, int(match.group(2)), 1)
+                except ValueError:
+                    pass
+                else:
+                    if birth_reiwa_month <= today:
+                        months = DataNormalizer._months_between(birth_reiwa_month, today)
+            # 7. "YYYY年" のみ (4桁年号、月日なし) — 1月1日仮定で月数化
+            #    kitakyushu 譲渡犬テーブルが「2017年」のみで日が無いケースの救済。
+            elif match := re.search(r"(\d{4})年", age_str):
+                try:
+                    birth_year_only = date(int(match.group(1)), 1, 1)
+                except ValueError:
+                    pass
+                else:
+                    if birth_year_only <= today:
+                        months = DataNormalizer._months_between(birth_year_only, today)
+            # 8. "N年" のパターン (4桁年号 "YYYY年" や "令和N年" を除外)
             elif not re.search(r"\d{4}年|令和\d+年", age_str):
                 if match := re.search(r"(\d+)\s*年", age_str):
                     months = int(match.group(1)) * 12
