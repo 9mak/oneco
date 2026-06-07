@@ -454,6 +454,41 @@ class TestCapColor:
         assert DataNormalizer._cap_color(None) is None
         assert DataNormalizer._cap_color("   ") is None
 
+    def test_cap_color_redacts_phone_pii(self):
+        """color フィールド内に混入した電話番号を ███ に置換する
+
+        自治体サイトの自由記述 (「特徴」「コメント」) に飼い主や保護者の
+        個人連絡先 (例: "首輪に電話番号 090-1234-5678 記載") が記載される
+        ケースがあり、リリース後に個人情報が公開リスクになる。
+        adapter 層では取り切れないため normalizer の PII フィルタで防御する。
+        """
+        # 半角ハイフン
+        assert "090-1234-5678" not in (
+            DataNormalizer._cap_color("黒、首輪に電話 090-1234-5678 記載") or ""
+        )
+        # 全角ハイフン
+        assert "０９０－１２３４－５６７８" not in (
+            DataNormalizer._cap_color("茶、連絡先０９０－１２３４－５６７８") or ""
+        )
+        # 市外局番なしハイフンなしの 10/11 桁連続
+        assert "09012345678" not in (
+            DataNormalizer._cap_color("白、首輪に連絡先 09012345678 と記載") or ""
+        )
+
+    def test_cap_color_redacts_email_pii(self):
+        """color フィールド内のメールアドレスを ███ に置換する"""
+        result = DataNormalizer._cap_color("茶白、owner@example.com に連絡を")
+        assert result is not None
+        assert "owner@example.com" not in result
+        assert "@" not in result
+
+    def test_cap_color_preserves_non_pii(self):
+        """PII でない普通の毛色テキストは温存される"""
+        # サイズ感の言及 (3kg) は PII ではない
+        assert DataNormalizer._cap_color("茶、3kg") == "茶、3kg"
+        # 鼻黒・耳茶等の通常記述
+        assert DataNormalizer._cap_color("白に黒斑、鼻黒") == "白に黒斑、鼻黒"
+
     def test_cap_color_truncates_at_100_chars(self):
         """100 文字超の color は 100 文字に切り詰めて DB 制約違反を防ぐ"""
         long_text = "あ" * 150
