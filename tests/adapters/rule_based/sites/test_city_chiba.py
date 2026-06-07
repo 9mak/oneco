@@ -191,6 +191,39 @@ class TestCityChibaAdapter:
         assert raw.source_url == first_url
         assert raw.category == "lost"
 
+    def test_extract_animal_details_extracts_page_common_phone(self, fixture_html):
+        """ページ本文中の「電話：043-258-7817」を抽出して phone に格納する
+
+        千葉市の動物保護ページは各動物ブロックには電話番号が無く、ページ
+        共通フッタに保健所の電話番号が記載されている。snapshot で 13件中
+        phone=0% の真因。
+        """
+        html = _load_chiba_html(fixture_html)
+        # フィクスチャに電話表記が含まれていない場合は注入
+        if "043-258-7817" not in html and "電話" not in html:
+            html = html.replace("</body>", "<p>電話：043-258-7817</p></body>")
+
+        adapter = CityChibaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+
+        assert raw.phone == "043-258-7817", f"phone 抽出されるべき: got {raw.phone!r}"
+
+    def test_extract_animal_details_phone_falls_back_when_absent(self, fixture_html):
+        """ページに電話番号表記が無い場合は空文字 (バリデーション失敗を起こさない)"""
+        html = _load_chiba_html(fixture_html)
+        # 電話表記が含まれていれば除去 (テスト分離)
+        import re as _re
+
+        html_no_phone = _re.sub(r"電話\s*[：:]\s*[\d\-（）()]+", "", html)
+        adapter = CityChibaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html_no_phone):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+
+        assert raw.phone == ""
+
     def test_all_six_sites_registered(self):
         """6 つの千葉市サイト名すべてが Registry に登録されている"""
         expected = [
