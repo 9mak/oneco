@@ -47,8 +47,22 @@ PROVIDER_REGISTRY = {
 # サイト別収集のタイムアウト（秒）
 # 209+ サイトを GitHub Actions の 6 時間以内に収まらせるため、ハングしたサイトを
 # 切り捨てて次に進む。requires_js=True サイトは Playwright 起動が重いので長め。
-SITE_TIMEOUT_SEC = int(os.getenv("SITE_TIMEOUT_SEC", "120"))
-SITE_TIMEOUT_JS_SEC = int(os.getenv("SITE_TIMEOUT_JS_SEC", "180"))
+# 既定は 300s: 件数増加 (例: 山梨/高知の 100+ 件 detail 取得) で 120s では
+# 不十分なケースが頻発したため。サイト個別の override (timeout_sec) で上書き可。
+SITE_TIMEOUT_SEC = int(os.getenv("SITE_TIMEOUT_SEC", "300"))
+SITE_TIMEOUT_JS_SEC = int(os.getenv("SITE_TIMEOUT_JS_SEC", "360"))
+
+# 並列収集の同時実行ワーカー数。ドメイン単位でグルーピングし、異なるドメインは
+# 同時に処理する (同一ドメインは politeness のため引き続きシーケンシャル)。
+# 91 unique host あるので 10 workers で十分な並列度を確保しつつ、GitHub Actions
+# Linux ランナーの 2 cpu と requests の I/O 待ちのバランスを取る。
+COLLECT_MAX_WORKERS = int(os.getenv("ONECO_COLLECT_MAX_WORKERS", "10"))
+
+# ソフトデッドライン: site_timeout 全体の何 % を超えたら adapter に早期終了を促すか。
+# 例: timeout=300s, soft=0.8 → 240s 経過時点で「残りの detail 取得をスキップして
+# これまでの収集物を返す」フォールバック動作。タイムアウト失敗で全件破棄するより、
+# 部分的にでも保存できた方がユーザー価値が高いため。
+COLLECT_SOFT_DEADLINE_RATIO = float(os.getenv("ONECO_SOFT_DEADLINE_RATIO", "0.8"))
 
 # 連続失敗回数の自動スキップ閾値（Requirement 6.4 系）
 # broken_sites.yaml の consecutive_failures がこの値以上のサイトは、毎回の収集で
@@ -253,11 +267,22 @@ def run_rule_based_sites(
     broken_tracker: BrokenSitesTracker | None = None,
     previous_site_counts: dict[str, int] | None = None,
 ) -> tuple[int, int, list[str]]:
-    """rule-based 抽出方式でサイト群を収集
+    """rule-based 抽出方式でサイト群をドメイン単位の並列で収集
 
     SiteAdapterRegistry に登録された adapter のみ rule-based 経路で実行。
     未登録サイトは run_llm_sites 側で拾われる（混在運用を前提）。
     rule 失敗 + fallback_to_llm=True のサイトは LLM 抽出で再試行する。
+
+    並列化方針 (Phase 1):
+    - sites を list_url のドメイン単位でグルーピング
+    - 異なるドメインは ThreadPoolExecutor で並列処理
+    - 同一ドメインはシーケンシャル (politeness throttle / 偽計業務妨害リスク低減)
+    - 1 サイトの timeout は future.result(timeout=) で実装 (SIGALRM 非依存で worker
+      thread でも動作)
+
+    フォールバック (Phase 3):
+    - ハード timeout の手前で SoftDeadline.should_soft_stop() が True になる
+    - CollectorService の detail ループがそれを見て早期 break → 既収集分を保存
 
     Args:
         previous_site_counts: `{site_name: 前回件数}` の dict。snapshot_store
@@ -269,16 +294,17 @@ def run_rule_based_sites(
     Returns:
         (成功サイト数, 失敗サイト数, 0件で完了したサイト名一覧)。
     """
-    succeeded = 0
-    failed = 0
-    zero_count_sites: list[str] = []
+    from .orchestration.parallel_runner import run_sites_parallel
+    from .orchestration.soft_deadline import SoftDeadline
+
     if previous_site_counts is None:
         previous_site_counts = {}
 
+    # 並列対象を絞り込み: rule-based & adapter 登録あり & 未スキップ
+    eligible_sites = []
     for site in config.sites:
         if _effective_extraction(site, config) != "rule-based":
             continue
-
         adapter_cls = SiteAdapterRegistry.get(site.name)
         if adapter_cls is None:
             logger.warning(
@@ -286,7 +312,6 @@ def run_rule_based_sites(
                 f"(run_llm_sites 側で fallback)"
             )
             continue
-
         if broken_tracker and broken_tracker.should_skip(
             site.name,
             threshold=BROKEN_SITE_SKIP_THRESHOLD,
@@ -299,120 +324,137 @@ def run_rule_based_sites(
                 f"再チェック猶予={BROKEN_SITE_RECHECK_DAYS}日)"
             )
             continue
+        eligible_sites.append(site)
 
-        site_start = time.time()
-        logger.info(f"=== rule-based 収集開始: {site.name} ===")
-        # タイムアウト解決優先順位: サイト個別 (sites.yaml の timeout_sec) > requires_js 既定 > 通常既定
-        # ※ run_llm_sites と同じロジック。過去 run で `run_rule_based_sites` だけ
-        # `site.timeout_sec` を読まず、高知 (timeout_sec=240 設定済) が常に 120s で
-        # timeout していたため修正。
+    def _resolve_timeout(site) -> float:
         if site.timeout_sec is not None:
-            timeout = site.timeout_sec
-        elif getattr(site, "requires_js", False):
-            timeout = SITE_TIMEOUT_JS_SEC
-        else:
-            timeout = SITE_TIMEOUT_SEC
+            return float(site.timeout_sec)
+        if getattr(site, "requires_js", False):
+            return float(SITE_TIMEOUT_JS_SEC)
+        return float(SITE_TIMEOUT_SEC)
 
-        try:
-            adapter = adapter_cls(site)
-            service = CollectorService(
-                adapter=adapter,
-                diff_detector=diff_detector,
-                output_writer=output_writer,
-                notification_client=notification_client,
-                snapshot_store=snapshot_store,
-                db_connection=db_connection,
-            )
+    def _collect_one(site, timeout_seconds: float):
+        """worker thread から呼ばれる 1 サイトの収集処理。
 
-            with site_timeout(timeout, site.name):
-                result = service.run_collection()
+        戻り値は (result, fallback_result, prev_count) のタプル。outcome.data に
+        入って main thread で集計される。例外は parallel_runner が outcome.error
+        に詰めてくれるため、ここでは握り潰さない。
+        """
+        logger.info(f"=== rule-based 収集開始: {site.name} ===")
+        soft = SoftDeadline(seconds=timeout_seconds, soft_ratio=COLLECT_SOFT_DEADLINE_RATIO)
+        adapter_cls_local = SiteAdapterRegistry.get(site.name)
+        assert adapter_cls_local is not None  # eligible_sites フィルタで保証済
+        adapter = adapter_cls_local(site)
+        service = CollectorService(
+            adapter=adapter,
+            diff_detector=diff_detector,
+            output_writer=output_writer,
+            notification_client=notification_client,
+            snapshot_store=snapshot_store,
+            db_connection=db_connection,
+        )
+        result = service.run_collection(soft_deadline=soft)
+        prev_count = previous_site_counts.get(site.name, 0)
 
-            elapsed = time.time() - site_start
-
-            # 件数低下: result.success かつ 今回 0 件 かつ 前回 ≥ 1 件。
-            # かつては「adapter 破損」として record_failure し自動スキップ
-            # 対象にしていたが、result.success=True は adapter が正常終了した
-            # 証左であり、0 件の大半は在庫はけ (真の 0 件) の誤検知だった。
-            # 在庫 0 が続くと 3 回でスキップされ、動物が戻っても grace 期間
-            # (既定 7 日) は再収集されない副作用があったため、ここでは監視
-            # ログ + zero_count_sites 記録のみとし、スキップ対象化はしない。
-            # 本物の破損は list_error/detail_error/timeout で別途 record_failure
-            # される。
-            prev_count = previous_site_counts.get(site.name, 0)
-            is_zero_count_drop = result.success and result.total_collected == 0 and prev_count >= 1
-
-            if result.success:
-                logger.info(
-                    f"[{site.name}] rule-based 収集完了: "
-                    f"{result.total_collected}件, "
-                    f"新規{result.new_count}, "
-                    f"更新{result.updated_count}, "
-                    f"処理時間{elapsed:.1f}秒"
+        # fallback_to_llm: rule-based 失敗時に LLM 経路で再試行
+        fallback_result = None
+        if not result.success and getattr(site, "fallback_to_llm", False):
+            logger.info(f"[{site.name}] fallback_to_llm 有効 — LLM 抽出で再試行")
+            try:
+                provider_name, model = SiteConfigLoader.resolve_provider(site, config)
+                provider = create_provider(provider_name, model)
+                llm_adapter = LlmAdapter(
+                    site_config=site,
+                    provider=provider,
+                    preprocessor=HtmlPreprocessor(),
                 )
-                if broken_tracker:
-                    broken_tracker.record_success(site.name)
-                succeeded += 1
-                if result.total_collected == 0:
-                    zero_count_sites.append(site.name)
-                    if is_zero_count_drop:
-                        logger.warning(
-                            f"[{site.name}] 件数低下: 前回 {prev_count} 件 → 今回 0 件 "
-                            f"(在庫 0 の可能性。adapter は正常終了したためスキップ対象化"
-                            f"はしない。構造変更が疑わしい場合は手動確認)"
-                        )
-            else:
-                err_msg = "; ".join(result.errors)
-                logger.error(f"[{site.name}] rule-based 収集失敗: {err_msg}")
-                if broken_tracker:
-                    broken_tracker.record_failure(site.name, err_msg)
-                # fallback_to_llm: True ならLLM経路で再試行
-                if getattr(site, "fallback_to_llm", False):
-                    logger.info(f"[{site.name}] fallback_to_llm 有効 — LLM 抽出で再試行")
-                    try:
-                        provider_name, model = SiteConfigLoader.resolve_provider(site, config)
-                        provider = create_provider(provider_name, model)
-                        llm_adapter = LlmAdapter(
-                            site_config=site,
-                            provider=provider,
-                            preprocessor=HtmlPreprocessor(),
-                        )
-                        llm_service = CollectorService(
-                            adapter=llm_adapter,
-                            diff_detector=diff_detector,
-                            output_writer=output_writer,
-                            notification_client=notification_client,
-                            snapshot_store=snapshot_store,
-                            db_connection=db_connection,
-                        )
-                        with site_timeout(timeout, site.name):
-                            llm_result = llm_service.run_collection()
-                        if llm_result.success:
-                            logger.info(
-                                f"[{site.name}] LLM フォールバック成功: "
-                                f"{llm_result.total_collected}件"
-                            )
-                            succeeded += 1
-                            if llm_result.total_collected == 0:
-                                zero_count_sites.append(site.name)
-                            continue
-                    except Exception as fb_e:
-                        logger.error(f"[{site.name}] LLM フォールバックも失敗: {fb_e}")
-                failed += 1
+                llm_service = CollectorService(
+                    adapter=llm_adapter,
+                    diff_detector=diff_detector,
+                    output_writer=output_writer,
+                    notification_client=notification_client,
+                    snapshot_store=snapshot_store,
+                    db_connection=db_connection,
+                )
+                # フォールバック側も soft deadline を共有 (残り時間で打ち切り)
+                fallback_result = llm_service.run_collection(soft_deadline=soft)
+            except Exception as fb_e:
+                logger.error(f"[{site.name}] LLM フォールバックも失敗: {fb_e}")
+        return result, fallback_result, prev_count
 
-        except SiteCollectionTimeoutError as e:
-            elapsed = time.time() - site_start
-            logger.warning(f"[{site.name}] タイムアウト ({elapsed:.1f}秒, limit={timeout}秒): {e}")
+    succeeded = 0
+    failed = 0
+    zero_count_sites: list[str] = []
+
+    def _on_outcome(outcome) -> None:
+        nonlocal succeeded, failed
+        site_name = outcome.site_name
+        if outcome.status == "timeout":
+            logger.warning(
+                f"[{site_name}] タイムアウト ({outcome.elapsed_seconds:.1f}秒): {outcome.error}"
+            )
             if broken_tracker:
-                broken_tracker.record_failure(site.name, f"timeout: {e}")
+                broken_tracker.record_failure(site_name, f"timeout: {outcome.error}")
             failed += 1
-            continue
-        except Exception as e:
-            elapsed = time.time() - site_start
-            logger.error(f"[{site.name}] エラー発生 ({elapsed:.1f}秒): {e}", exc_info=True)
+            return
+        if outcome.status == "failure":
+            logger.error(
+                f"[{site_name}] エラー発生 ({outcome.elapsed_seconds:.1f}秒): {outcome.error}",
+                exc_info=outcome.error,
+            )
             if broken_tracker:
-                broken_tracker.record_failure(site.name, str(e))
+                broken_tracker.record_failure(site_name, str(outcome.error))
             failed += 1
-            continue
+            return
+
+        # success path
+        result, fallback_result, prev_count = outcome.data
+        elapsed = outcome.elapsed_seconds
+        is_zero_count_drop = result.success and result.total_collected == 0 and prev_count >= 1
+
+        if result.success:
+            logger.info(
+                f"[{site_name}] rule-based 収集完了: "
+                f"{result.total_collected}件, "
+                f"新規{result.new_count}, "
+                f"更新{result.updated_count}, "
+                f"処理時間{elapsed:.1f}秒"
+            )
+            if broken_tracker:
+                broken_tracker.record_success(site_name)
+            succeeded += 1
+            if result.total_collected == 0:
+                zero_count_sites.append(site_name)
+                if is_zero_count_drop:
+                    logger.warning(
+                        f"[{site_name}] 件数低下: 前回 {prev_count} 件 → 今回 0 件 "
+                        f"(在庫 0 の可能性。adapter は正常終了したためスキップ対象化"
+                        f"はしない。構造変更が疑わしい場合は手動確認)"
+                    )
+            return
+
+        # rule-based 失敗 → fallback 結果を見る
+        err_msg = "; ".join(result.errors)
+        logger.error(f"[{site_name}] rule-based 収集失敗: {err_msg}")
+        if broken_tracker:
+            broken_tracker.record_failure(site_name, err_msg)
+        if fallback_result is not None and fallback_result.success:
+            logger.info(
+                f"[{site_name}] LLM フォールバック成功: {fallback_result.total_collected}件"
+            )
+            succeeded += 1
+            if fallback_result.total_collected == 0:
+                zero_count_sites.append(site_name)
+        else:
+            failed += 1
+
+    run_sites_parallel(
+        sites=eligible_sites,
+        collect_fn=_collect_one,
+        timeout_resolver=_resolve_timeout,
+        max_workers=COLLECT_MAX_WORKERS,
+        on_outcome=_on_outcome,
+    )
 
     return succeeded, failed, zero_count_sites
 

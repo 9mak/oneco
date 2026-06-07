@@ -50,26 +50,32 @@ class TestRuleBasedTimeoutResolution:
     """run_rule_based_sites の timeout 解決"""
 
     def _run_one_site(self, site, monkeypatch):
-        """1 サイトを run_rule_based_sites に流し、site_timeout に渡された秒数を返す"""
+        """1 サイトを run_rule_based_sites に流し、parallel_runner に渡された timeout を返す。
+
+        並列化後は `site_timeout` (SIGALRM) を廃止し、`parallel_runner.run_sites_parallel`
+        が `timeout_resolver(site) -> float` を呼んでサイト個別の秒数を解決する。
+        ここでは run_sites_parallel をフックして timeout_resolver の戻り値を捕捉する。
+        """
         from src.data_collector import __main__ as main_mod
 
-        captured = {}
+        captured: dict = {}
 
-        def fake_site_timeout(seconds, site_name):
-            captured["seconds"] = seconds
+        def fake_run_sites_parallel(
+            sites, collect_fn, timeout_resolver, max_workers=10, on_outcome=None
+        ):
+            # 各 site に対する timeout_resolver の解決結果を記録
+            for s in sites:
+                captured["seconds"] = timeout_resolver(s)
+            return []
 
-            class _Ctx:
-                def __enter__(self):
-                    return self
+        # parallel_runner は `__main__` 内で関数ローカル import されるため、
+        # モジュール側の関数を差し替える。
+        monkeypatch.setattr(
+            "src.data_collector.orchestration.parallel_runner.run_sites_parallel",
+            fake_run_sites_parallel,
+        )
 
-                def __exit__(self, *args):
-                    return False
-
-            return _Ctx()
-
-        monkeypatch.setattr(main_mod, "site_timeout", fake_site_timeout)
-
-        # adapter / service の動作はテスト対象外なので Mock 化
+        # adapter 登録は eligible_sites フィルタを通過させるためだけに必要
         adapter_cls = MagicMock()
         adapter_instance = MagicMock()
         adapter_cls.return_value = adapter_instance
@@ -77,25 +83,9 @@ class TestRuleBasedTimeoutResolution:
             main_mod.SiteAdapterRegistry, "get", MagicMock(return_value=adapter_cls)
         )
 
-        # CollectorService.run_collection が呼ばれる時点まで進めば timeout 解決済
-        service_mock = MagicMock()
-        service_result = MagicMock()
-        service_result.success = True
-        service_result.total_collected = 0
-        service_result.new_count = 0
-        service_result.updated_count = 0
-        service_mock.run_collection.return_value = service_result
-        monkeypatch.setattr(main_mod, "CollectorService", MagicMock(return_value=service_mock))
-
-        # robots checker を許可で固定
-        robots_mock = MagicMock()
-        robots_mock.is_allowed.return_value = True
-        monkeypatch.setattr(main_mod, "RobotsChecker", MagicMock(return_value=robots_mock))
-
         config = MagicMock()
         config.sites = [site]
         config.extraction.default_extraction = "rule-based"
-        # _effective_extraction が site.extraction を返すよう設定
         site.extraction = "rule-based"
 
         run_rule_based_sites(
