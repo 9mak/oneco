@@ -5,6 +5,10 @@
     port=80) at 0x7fca95966c90>, ''Connection to mie-dakc.server-shared.com timed
     out. (connect timeout=30)''))'
   last_failed_at: '2026-05-27T04:05:13+00:00'
+山梨県（探している猫）:
+  consecutive_failures: 1
+  last_error: 'site collection timed out after 240s: 山梨県（探している猫）'
+  last_failed_at: '2026-06-07T07:45:52+00:00'
 東京都収容動物情報（犬）:
   consecutive_failures: 0
   last_error: '件数低下異常: 前回 2 件 → 今回 0 件 (adapter 破損 or サイト構造変更の可能性)'
@@ -34,9 +38,9 @@
   last_error: '件数低下異常: 前回 3 件 → 今回 0 件 (adapter 破損 or サイト構造変更の可能性)'
   last_failed_at: '2026-05-27T04:06:07+00:00'
 高知県動物愛護センター:
-  consecutive_failures: 0
-  last_error: 'site collection timed out after 120s: 高知県動物愛護センター'
-  last_failed_at: '2026-05-26T01:13:10+00:00'
+  consecutive_failures: 1
+  last_error: 'site collection timed out after 240s: 高知県動物愛護センター'
+  last_failed_at: '2026-06-07T07:56:24+00:00'
 鹿児島市（保護犬）:
   consecutive_failures: 0
   last_error: '件数低下異常: 前回 2 件 → 今回 0 件 (adapter 破損 or サイト構造変更の可能性)'
