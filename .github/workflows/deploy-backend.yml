@@ -1,0 +1,116 @@
+# Backend (FastAPI) を Cloud Run にデプロイするワークフロー（雛形）。
+#
+# 現状 backend は手動 `gcloud run deploy` でデプロイしているため、これを
+# レビュー可能・再現可能な GitHub Actions に置き換える。Workload Identity
+# Federation（WIF, キーレス。GCP 推奨）で認証する。
+#
+# ⚠️ 有効化の前提（未設定だと job は安全にスキップされる）:
+#   1. GCP 側で WIF プールとプロバイダを作成し、デプロイ用サービスアカウント
+#      （Cloud Run Admin / Artifact Registry Writer / Cloud Build Editor /
+#       Service Account User 相当）にこのリポジトリからの借用を許可する。
+#   2. リポジトリ Variables（Settings > Secrets and variables > Actions > Variables）:
+#        GCP_PROJECT_ID   … GCP プロジェクト ID（これが空なら job はスキップ）
+#        GCP_REGION       … 例 asia-northeast1（未設定時は下記 default）
+#        GCP_AR_REPO      … Artifact Registry リポジトリ名（未設定時 oneco）
+#        GCP_SERVICE      … Cloud Run サービス名（未設定時 oneco-api）
+#        CORS_ORIGINS     … 本番フロントの URL（例 https://oneco.vercel.app）
+#   3. リポジトリ Secrets:
+#        GCP_WIF_PROVIDER     … projects/<num>/locations/global/workloadIdentityPools/<pool>/providers/<provider>
+#        GCP_SERVICE_ACCOUNT  … deploy-bot@<project>.iam.gserviceaccount.com
+#        DATABASE_URL         … Supabase 接続 URL（既存。収集用と共用可）
+#        INTERNAL_API_TOKEN   … 内部 API 認証トークン（Vercel 側と同一値）
+#
+# 初回は手動デプロイでも公開可能。本ワークフローは段階導入のため
+# workflow_dispatch（手動トリガー）のみ。安定後に push トリガーを有効化する。
+
+name: Deploy Backend (Cloud Run)
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_migration:
+        description: 'デプロイ前に alembic upgrade head を実行する'
+        type: boolean
+        default: false
+  # 安定後に有効化すると src/Dockerfile 変更時に自動デプロイされる:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - 'src/**'
+  #     - 'Dockerfile'
+  #     - 'requirements.txt'
+  #     - 'alembic/**'
+
+# WIF にはこの 2 つの権限が必須
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  GCP_REGION: ${{ vars.GCP_REGION || 'asia-northeast1' }}
+  GCP_AR_REPO: ${{ vars.GCP_AR_REPO || 'oneco' }}
+  GCP_SERVICE: ${{ vars.GCP_SERVICE || 'oneco-api' }}
+
+jobs:
+  deploy:
+    name: Build & Deploy to Cloud Run
+    runs-on: ubuntu-latest
+    # GCP 未設定のリポジトリでは安全にスキップ（赤くならない）
+    if: ${{ vars.GCP_PROJECT_ID != '' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud (WIF)
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Set up Python (for migration)
+        if: ${{ inputs.run_migration }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run database migration (任意)
+        if: ${{ inputs.run_migration }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+          alembic upgrade head
+
+      - name: Build & push image (Cloud Build)
+        run: |
+          IMAGE="${GCP_REGION}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${GCP_AR_REPO}/${GCP_SERVICE}:${GITHUB_SHA}"
+          echo "IMAGE=${IMAGE}" >> "$GITHUB_ENV"
+          gcloud builds submit --tag "${IMAGE}" --project "${{ vars.GCP_PROJECT_ID }}" .
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy "${GCP_SERVICE}" \
+            --image "${IMAGE}" \
+            --project "${{ vars.GCP_PROJECT_ID }}" \
+            --region "${GCP_REGION}" \
+            --platform managed \
+            --allow-unauthenticated \
+            --set-env-vars "DATABASE_URL=${{ secrets.DATABASE_URL }},CORS_ORIGINS=${{ vars.CORS_ORIGINS }},INTERNAL_API_TOKEN=${{ secrets.INTERNAL_API_TOKEN }},LOG_LEVEL=INFO"
+          # 注: シークレットを --set-env-vars で渡しているが、本番堅牢化として
+          # Secret Manager + `--set-secrets` への移行を推奨。
+
+      - name: Health check
+        run: |
+          URL="$(gcloud run services describe "${GCP_SERVICE}" --project "${{ vars.GCP_PROJECT_ID }}" --region "${GCP_REGION}" --format='value(status.url)')"
+          echo "Deployed: ${URL}"
+          for i in 1 2 3 4 5; do
+            if curl -fsS "${URL}/health"; then echo "OK"; exit 0; fi
+            echo "retry ${i}..."; sleep 5
+          done
+          echo "::error::health check failed"; exit 1
