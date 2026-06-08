@@ -6,15 +6,15 @@
     out. (connect timeout=30)''))'
   last_failed_at: '2026-06-07T10:04:00+00:00'
 名古屋市（譲渡犬）:
-  consecutive_failures: 1
+  consecutive_failures: 0
   last_error: 'HTTP エラー: 403 Client Error: Forbidden for url: https://www.city.nagoya.jp/kurashi/pet/1015473/1015483/1015484.html'
   last_failed_at: '2026-06-07T16:19:28+00:00'
 名古屋市（譲渡猫）:
-  consecutive_failures: 1
+  consecutive_failures: 0
   last_error: 'HTTP エラー: 403 Client Error: Forbidden for url: https://www.city.nagoya.jp/kurashi/pet/1015473/1015483/1015488.html'
   last_failed_at: '2026-06-07T16:19:28+00:00'
 名古屋市（飼主不明動物）:
-  consecutive_failures: 1
+  consecutive_failures: 0
   last_error: 'HTTP エラー: 403 Client Error: Forbidden for url: https://www.city.nagoya.jp/kurashi/pet/1015473/1015489/1015493.html'
   last_failed_at: '2026-06-07T16:19:28+00:00'
 山梨県（探している猫）:
