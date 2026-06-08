@@ -345,3 +345,95 @@ class TestCityKashiwaAdapter:
             if SiteAdapterRegistry.get(name) is None:
                 SiteAdapterRegistry.register(name, CityKashiwaAdapter)
             assert SiteAdapterRegistry.get(name) is CityKashiwaAdapter
+
+
+class TestCityKashiwaFreetextFormat:
+    """形式 B (satoya.html 2026-06 改装) — カード直後の兄弟 <p> 自由文形式
+
+    属性が col2R ラベルではなく、カード直後の兄弟 <p> に
+    「オス(去勢手術済み)　R6.9月生(推定)」のような自由文で並ぶ新形式。
+    旧 adapter はラベルが無いと全カードを除外し
+    「行要素が見つかりません」ParsingError で auto-skip されていた (回帰防止)。
+    """
+
+    def test_fetch_animal_list_finds_freetext_cards(self, fixture_html):
+        """自由文形式でも性別マーカーを持つカードを抽出できる (装飾カードは除外)"""
+        html = fixture_html("city_kashiwa_satoya")
+        adapter = CityKashiwaAdapter(_site_satoya())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+        # コッタ / あんにん / トロワ の 3 頭。「センターの様子」装飾カードは除外。
+        assert len(urls) == 3
+        for url, cat in urls:
+            assert "#row=" in url
+            assert cat == "adoption"
+
+    def test_freetext_sex_and_age_parsed(self, fixture_html, assert_raw_animal):
+        """自由文から sex (オス/メス) と age (元号略記/N才) を抽出する"""
+        html = fixture_html("city_kashiwa_satoya")
+        adapter = CityKashiwaAdapter(_site_satoya())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
+
+        # コッタ: オス, R6.9月生 → 令和6年 = 2024年9月
+        assert_raw_animal(raws[0], species="猫", sex="オス", age="2024年9月")
+        # あんにん: メス, 1才
+        assert_raw_animal(raws[1], species="猫", sex="メス", age="1才")
+        # トロワ: 名前と属性が同一 <p> でも抽出できる。H28.4月生 → 平成28年 = 2016年4月
+        assert_raw_animal(raws[2], species="猫", sex="オス", age="2016年4月")
+
+    def test_freetext_age_normalizes_to_months(self, fixture_html):
+        """抽出した age が DataNormalizer で月数化できる (元号略記の西暦変換確認)"""
+        from datetime import date
+
+        from data_collector.domain.normalizer import DataNormalizer
+
+        html = fixture_html("city_kashiwa_satoya")
+        adapter = CityKashiwaAdapter(_site_satoya())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
+
+        with patch.object(DataNormalizer, "_today", staticmethod(lambda: date(2026, 6, 1))):
+            # R6.9月生 = 2024-09 → 2026-06 まで 21 ヶ月
+            assert DataNormalizer._normalize_age(raws[0].age) == 21
+            # 1才 → 12 ヶ月
+            assert DataNormalizer._normalize_age(raws[1].age) == 12
+            # H28.4月生 = 2016-04 → 2026-06 まで 122 ヶ月
+            assert DataNormalizer._normalize_age(raws[2].age) == 122
+
+    def test_freetext_images_extracted(self, fixture_html):
+        """自由文形式でもカード内の写真 (col2L img) を絶対 URL で抽出する"""
+        html = fixture_html("city_kashiwa_satoya")
+        adapter = CityKashiwaAdapter(_site_satoya())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[1][0], category="adoption")
+        # あんにんは写真 2 枚
+        assert len(raw.image_urls) == 2
+        assert all(u.startswith("https://www.city.kashiwa.lg.jp/") for u in raw.image_urls)
+
+    def test_freetext_empty_state_returns_empty_list(self):
+        """自由文形式の 0 件告知ページは ParsingError でなく空リスト"""
+        html = (
+            "<html><body><main><div id='tmp_contents'>"
+            "<h2>譲渡可能な動物の情報</h2><h3>猫</h3>"
+            "<p>現在、譲渡対象の動物はおりません。</p>"
+            "</div></main></body></html>"
+        )
+        adapter = CityKashiwaAdapter(_site_satoya())
+        with patch.object(adapter, "_http_get", return_value=html):
+            assert adapter.fetch_animal_list() == []
+
+    def test_era_conversion_helper(self):
+        """元号略記 → 西暦変換ヘルパーの単体検証"""
+        f = CityKashiwaAdapter._extract_age_from_freetext
+        assert f("オス(去勢手術済み)　R6.9月生(推定)") == "2024年9月"
+        assert f("メス(不妊手術済み)　H28.4月生(推定)") == "2016年4月"
+        assert f("オス　S60.1月生") == "1985年1月"
+        # 元号生年月が無ければ直接年齢表記を拾う
+        assert f("メス(不妊手術済み)　1才(推定)") == "1才"
+        assert f("6ヶ月") == "6ヶ月"
+        # 性別だけで年齢情報が無ければ空
+        assert f("オス(去勢手術済み)　ワクチン接種済み") == ""
