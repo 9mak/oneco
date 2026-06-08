@@ -88,6 +88,12 @@ class KochiAdapter(MunicipalityAdapter):
         # 【高知県特別ルール】一覧ページから取得した犬/猫種別情報を保持
         # key: detail_url, value: "犬" or "猫"
         self._species_from_list: dict = {}
+        # 並列収集時に同一ドメイン (kochi-apc.com) の throttle を rule-based
+        # adapter と共有する。サイト切り替えで throttle がリセットされてサーバ
+        # WAF にバースト判定されるのを防ぐ (PR #154 と同じ意図)。
+        from .politeness import get_throttle_for_url
+
+        self._throttle = get_throttle_for_url(self.BASE_URL)
 
     def fetch_animal_list(self) -> list[tuple[str, str]]:
         """
