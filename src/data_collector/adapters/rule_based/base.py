@@ -56,6 +56,14 @@ class RuleBasedAdapter(MunicipalityAdapter):
             municipality_name=site_config.name,
         )
         self.site_config = site_config
+        # 並列収集時に同一ドメインの site adapter 間で politeness throttle を
+        # 共有する。MunicipalityAdapter.__init__ がインスタンスローカルな
+        # RequestThrottle を生成するが、サイト切り替えでリセットされると
+        # サーバ WAF にバースト判定される (実例: 名古屋市 3 サイト 403)。
+        # 同一 list_url ホスト全体で 1 つの throttle を共有して順序保証。
+        from ..politeness import get_throttle_for_url
+
+        self._throttle = get_throttle_for_url(site_config.list_url)
 
     # ─────────────────── HTTP ヘルパー ───────────────────
 
