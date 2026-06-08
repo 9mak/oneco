@@ -30,8 +30,8 @@
   last_error: '件数低下異常: 前回 2 件 → 今回 0 件 (adapter 破損 or サイト構造変更の可能性)'
   last_failed_at: '2026-05-26T18:27:21+00:00'
 柏市（譲渡対象動物）:
-  consecutive_failures: 3
-  last_error: 行要素が見つかりません
+  consecutive_failures: 0
+  last_error: 'satoya.html 新フォーマット対応で復旧 (auto-skip リセット)'
   last_failed_at: '2026-06-01T01:03:36+00:00'
 横浜市（収容その他動物）:
   consecutive_failures: 0
