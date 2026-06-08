@@ -3,38 +3,39 @@
 対象ドメイン: https://www.city.kashiwa.lg.jp/dobutsuaigo/
 
 特徴:
-- 同一テンプレート上で 2 サイトが運用されている:
-    - .../mainmenu/dobutsu/hogo/hogo.html   (柏市（保護動物）)
-    - .../mainmenu/dobutsu/hogo/satoya.html (柏市（譲渡対象動物）)
-- 1 ページに複数動物がカード形式 (`div.col2_sp2_wrap`) で並ぶ single_page 形式。
-  個別 detail ページは存在しないため一覧から直接抽出する。
-- 各動物カードの内部構造:
+- 同一テンプレート上で 2 サイトが運用されているが、2026-06 時点で
+  **2 つの異なる HTML フォーマット**が混在する:
+
+  (A) ラベル形式 — 主に hogo.html (柏市（保護動物）)
     <h3>{犬|猫}</h3>          ← 直前の見出しで species を表現
     <div class="col2_sp2_wrap">
       <div class="col2">
-        <div class="col2L">      ← 写真 (or 「写真なし」)
-          <p><img src="..."></p>
-          ...
-        </div>
-        <div class="col2R">      ← 属性
-          <p>番号：051101</p>
-          <p>種類：雑種</p>
-          <p>毛色：茶トラ</p>
-          <p>収容：5月11日</p>
-          <p>性別：メス</p>
-          <p>場所：豊四季台</p>
-          <p>特徴：...</p>
+        <div class="col2L"><p><img src="..."></p></div>  ← 写真
+        <div class="col2R">      ← 属性 (ラベル：値)
+          <p>番号：051101</p><p>種類：雑種</p><p>毛色：茶トラ</p>
+          <p>収容：5月11日</p><p>性別：メス</p><p>場所：豊四季台</p>
         </div>
       </div>
     </div>
-- テーブル形式ではなく `<p>ラベル：値</p>` の並びで構造化されているため、
-  `SinglePageTableAdapter` の `td/th` ベース既定実装ではなく
-  `extract_animal_details` をオーバーライドして属性を取得する。
-- species は HTML の「種類：雑種」のような具体名ではなく、カードの直前に
-  ある `<h3>犬</h3>` `<h3>猫</h3>` の見出しから推定する
-  (見出しが取れない場合は「種類」値や「その他」にフォールバック)。
-- 動物が 0 件のとき (告知のみのページ) は ParsingError ではなく空リストを
-  返す (CityMachidaAdapter と同様の方針)。
+
+  (B) 自由テキスト形式 — 主に satoya.html (柏市（譲渡対象動物）)
+    <h3>{犬|猫}</h3>
+    <div class="col2_sp2_wrap"> ...写真と名前キャプションのみ... </div>
+    <p>コッタ （031001）</p>                            ← 名前（番号）
+    <p>オス(去勢手術済み)　R6.9月生(推定)　ワクチン...</p>  ← 性別・年齢・医療
+    <p>...性格・特徴の自由文...</p>
+    <hr>                                              ← 個体の区切り
+  (属性が col2R 内のラベルではなく、カード直後の兄弟 <p> に自由文で並ぶ。
+   年齢は「N才(推定)」「R6.9月生(推定)」「H28.4月生(推定)」の 3 形式。)
+
+実装方針:
+- いずれの形式でも `div.col2_sp2_wrap` をカード起点 (ROW_SELECTOR) とする。
+- カードが (A) ラベル付き col2R を持てばラベル形式でパース、無ければ
+  カード直後の兄弟 <p> 群 (B) から性別・年齢を抽出する dual-mode。
+- species はカード直前の `<h3>犬</h3>`/`<h3>猫</h3>` 見出しから推定する。
+- 動物が 0 件のとき (告知のみのページ) は ParsingError ではなく空リストを返す。
+- 写真と名前キャプションだけで属性 (ラベルも兄弟 <p> 性別も) を持たない
+  装飾カードは除外する。
 """
 
 from __future__ import annotations
@@ -111,29 +112,47 @@ class CityKashiwaAdapter(SinglePageTableAdapter):
         r"体重\s*[:：]?\s*約?\s*(\d+(?:\.\d+)?)\s*[kK][gG]"
     )
 
-    # 「現在、保護動物はおりません」「収容動物はいません」等の 0 件告知
+    # 「現在、保護動物はおりません」「収容動物はいません」
+    # 「譲渡対象の動物はおりません」「譲渡対象の犬はおりません」等の 0 件告知。
+    # 「譲渡対象(の)動物」のように助詞「の」が挟まる表記も許容する。
     _EMPTY_STATE_PATTERN: ClassVar[re.Pattern[str]] = re.compile(
-        r"(?:収容|保護|譲渡(?:対象)?)(?:動物|犬|猫)[^。]*?"
+        r"(?:収容|保護|譲渡(?:対象)?)(?:の)?(?:動物|犬|猫)[^。]*?"
         r"(?:おりません|ありません|いません)"
     )
+
+    # ── 自由テキスト形式 (B / satoya.html) 用 ──
+    # 性別マーカー。「オス(去勢手術済み)」「メス(不妊手術済み)」等の自由文から拾う。
+    _SEX_RE: ClassVar[re.Pattern[str]] = re.compile(r"(オス|メス)")
+    # 元号略記の生年月 (R6.9月生 / H28.4月生 / S60.1月生)。日の記載は無い。
+    _ERA_BIRTH_RE: ClassVar[re.Pattern[str]] = re.compile(r"([RHS])\s*(\d+)\s*\.\s*(\d+)\s*月")
+    # 元号略記 → 西暦元年。year = base + N (例: R6 → 2018 + 6 = 2024)。
+    _ERA_BASE_YEAR: ClassVar[dict[str, int]] = {
+        "R": 2018,  # 令和元年 = 2019
+        "H": 1988,  # 平成元年 = 1989
+        "S": 1925,  # 昭和元年 = 1926
+    }
+    # 「1才(推定)」「2歳」「6ヶ月」等の直接年齢表記
+    _DIRECT_AGE_RE: ClassVar[re.Pattern[str]] = re.compile(r"(\d+)\s*(?:才|歳|[ヶかカケヵ]月)")
 
     # ─────────────────── オーバーライド ───────────────────
 
     def _load_rows(self) -> list[Tag]:
-        """ROW_SELECTOR で取得した行から「ラベル付きカード」のみを残す
+        """ROW_SELECTOR で取得した行から「動物データを持つカード」のみを残す
 
-        柏市の譲渡対象動物ページ (satoya.html) には、写真と名前テキストだけで
-        「種類：xxx」「毛色：xxx」のような構造化情報を持たないカードが
-        混在する。それらを動物データとして取り込むと species/age/color/size が
-        すべて空の無意味なレコードが snapshot に並ぶため、ラベル付きの
-        カードだけを採用するようフィルタする。
+        柏市には、写真と名前キャプションだけで属性 (ラベルも兄弟 <p> 性別も)
+        を持たない装飾カードが混在する。それらを取り込むと species/age/color
+        がすべて空の無意味なレコードが snapshot に並ぶため除外する。
+
+        カードを採用する条件 (いずれか):
+        - (A) col2R に「種類：」「毛色：」等のラベル付きフィールドがある
+        - (B) カード直後の兄弟 <p> 群に性別マーカー (オス/メス) がある
         """
         if self._rows_cache is not None:
             return self._rows_cache
 
         # 親実装で取得 → 親が _rows_cache に保存するので上書きする
         raw_rows = super()._load_rows()
-        valid = [r for r in raw_rows if self._has_labeled_field(r)]
+        valid = [r for r in raw_rows if self._has_labeled_field(r) or self._has_following_attr(r)]
         self._rows_cache = valid
         return valid
 
@@ -154,6 +173,38 @@ class CityKashiwaAdapter(SinglePageTableAdapter):
                         return True
                     break
         return False
+
+    @classmethod
+    def _collect_following_attr_paragraphs(cls, card: Tag) -> list[str]:
+        """カード直後の兄弟 <p> テキストを <hr> / 次カードまで収集する (形式 B)
+
+        satoya.html では属性がカード内ではなく、カードの後続兄弟 <p> に
+        自由文で並ぶ。区切りは <hr> または次の col2_sp2_wrap カード。
+        """
+        paragraphs: list[str] = []
+        sib = card
+        while True:
+            sib = sib.find_next_sibling()
+            if sib is None or not isinstance(sib, Tag):
+                if sib is None:
+                    break
+                continue
+            if sib.name == "hr":
+                break
+            cls_list = sib.get("class") or []
+            if sib.name == "div" and "col2_sp2_wrap" in cls_list:
+                break
+            if sib.name == "p":
+                text = sib.get_text(separator=" ", strip=True)
+                if text:
+                    paragraphs.append(text)
+        return paragraphs
+
+    @classmethod
+    def _has_following_attr(cls, card: Tag) -> bool:
+        """カード直後の兄弟 <p> 群に性別マーカー (オス/メス) があれば True (形式 B)"""
+        joined = " ".join(cls._collect_following_attr_paragraphs(card))
+        return bool(cls._SEX_RE.search(joined))
 
     def fetch_animal_list(self) -> list[tuple[str, str]]:
         """一覧ページから動物の仮想 URL を返す
@@ -195,26 +246,11 @@ class CityKashiwaAdapter(SinglePageTableAdapter):
             )
         card = rows[idx]
 
-        # 属性ブロック col2R 内の <p> をスキャン
-        col2r = card.select_one("div.col2R")
-        fields: dict[str, str] = {}
-        if isinstance(col2r, Tag):
-            for p in col2r.find_all("p"):
-                if not isinstance(p, Tag):
-                    continue
-                text = p.get_text(separator=" ", strip=True)
-                if not text:
-                    continue
-                # 全角コロン「：」または半角「:」の最初の出現で 2 分割
-                for sep in ("：", ":"):
-                    if sep in text:
-                        label, value = text.split(sep, 1)
-                        label = label.strip()
-                        value = value.strip()
-                        field = self._LABEL_TO_FIELD.get(label)
-                        if field and value and field not in fields:
-                            fields[field] = value
-                        break
+        # 形式 A (ラベル) を優先。col2R にラベルが無ければ形式 B (自由テキスト)。
+        if self._has_labeled_field(card):
+            fields = self._parse_labeled_card(card)
+        else:
+            fields = self._parse_freetext_card(card)
 
         # species: 直前の <h3>犬</h3>/<h3>猫</h3> を最優先
         species = self._infer_species_from_heading(card)
@@ -247,6 +283,81 @@ class CityKashiwaAdapter(SinglePageTableAdapter):
             )
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
+
+    def _parse_labeled_card(self, card: Tag) -> dict[str, str]:
+        """形式 A: col2R 内の「ラベル：値」<p> 群をパースする (hogo.html)"""
+        col2r = card.select_one("div.col2R")
+        fields: dict[str, str] = {}
+        if not isinstance(col2r, Tag):
+            return fields
+        for p in col2r.find_all("p"):
+            if not isinstance(p, Tag):
+                continue
+            text = p.get_text(separator=" ", strip=True)
+            if not text:
+                continue
+            # 全角コロン「：」または半角「:」の最初の出現で 2 分割
+            for sep in ("：", ":"):
+                if sep in text:
+                    label, value = text.split(sep, 1)
+                    label = label.strip()
+                    value = value.strip()
+                    field = self._LABEL_TO_FIELD.get(label)
+                    if field and value and field not in fields:
+                        fields[field] = value
+                    break
+        return fields
+
+    def _parse_freetext_card(self, card: Tag) -> dict[str, str]:
+        """形式 B: カード直後の兄弟 <p> 群 (自由文) から属性を抽出する (satoya.html)
+
+        例: "オス(去勢手術済み)　R6.9月生(推定)　ワクチン接種済み、FeLV(-)、FIV(-)"
+        - sex:  オス / メス を拾う
+        - age:  「N才」「R6.9月生」「H28.4月生」を normalizer 可読形式に変換
+        - color/location/shelter_date は本形式に存在しないため空 (= 不明扱い)
+        - 全 <p> を連結したものを _features として保持し、後段で size/age 補完に使う
+        """
+        paragraphs = self._collect_following_attr_paragraphs(card)
+        joined = " ".join(paragraphs)
+        fields: dict[str, str] = {}
+
+        sex_match = self._SEX_RE.search(joined)
+        if sex_match:
+            fields["sex"] = sex_match.group(1)
+
+        age = self._extract_age_from_freetext(joined)
+        if age:
+            fields["age"] = age
+
+        # 自由文全体を特徴として残す (size 推定の体重ヒント等に使う)
+        if joined:
+            fields["_features"] = joined
+        return fields
+
+    @classmethod
+    def _extract_age_from_freetext(cls, text: str) -> str:
+        """自由文から normalizer が解釈できる年齢文字列を抽出する (形式 B)
+
+        - "R6.9月生(推定)"  → "2024年9月" (令和6年 = 2024)
+        - "H28.4月生(推定)" → "2016年4月" (平成28年 = 2016)
+        - "1才(推定)"       → "1才"
+        いずれも DataNormalizer 側で月数換算される (才→歳 / YYYY年M月 対応済)。
+        生年月の表記を直接年齢表記より優先する (より正確なため)。
+        """
+        if not text:
+            return ""
+        # 元号略記の生年月 (R6.9月生 等) を西暦 "YYYY年M月" に変換
+        era = cls._ERA_BIRTH_RE.search(text)
+        if era:
+            prefix, year_n, month = era.group(1), int(era.group(2)), int(era.group(3))
+            base = cls._ERA_BASE_YEAR.get(prefix)
+            if base is not None and 1 <= month <= 12:
+                return f"{base + year_n}年{month}月"
+        # 直接年齢表記 (1才 / 2歳 / 6ヶ月)
+        direct = cls._DIRECT_AGE_RE.search(text)
+        if direct:
+            return direct.group(0)
+        return ""
 
     # ─────────────────── ヘルパー ───────────────────
 
