@@ -235,6 +235,7 @@ class AnimalRepository:
         shelter_date_to: date | None = None,
         status: AnimalStatus | None = None,
         q: str | None = None,
+        include_non_public: bool = False,
         limit: int = 50,
         offset: int = 0,
     ) -> tuple[list[AnimalData], int]:
@@ -276,6 +277,10 @@ class AnimalRepository:
             filters.append(Animal.shelter_date <= shelter_date_to)
         if status:
             filters.append(Animal.status == status.value)
+        if not include_non_public:
+            # 死亡(deceased)個体は公開対象から除外する（データ境界での強制）。
+            # NULL status の行を誤って落とさないよう is_distinct_from で null-safe に比較。
+            filters.append(Animal.status.is_distinct_from(AnimalStatus.DECEASED.value))
         if q:
             # キーワード検索: 複数フィールドを OR で部分一致（ILIKE）
             # 「茶白」「人懐っこい」「子犬」など自由テキストで
@@ -325,6 +330,7 @@ class AnimalRepository:
         shelter_date_to: date | None = None,
         status: AnimalStatus | None = None,
         q: str | None = None,
+        include_non_public: bool = False,
         sort: str = "newest",
         limit: int = 50,
         offset: int = 0,
@@ -367,6 +373,10 @@ class AnimalRepository:
             filters.append(Animal.shelter_date <= shelter_date_to)
         if status:
             filters.append(Animal.status == status.value)
+        if not include_non_public:
+            # 死亡(deceased)個体は公開対象から除外する（データ境界での強制）。
+            # NULL status の行を誤って落とさないよう is_distinct_from で null-safe に比較。
+            filters.append(Animal.status.is_distinct_from(AnimalStatus.DECEASED.value))
         if q:
             from sqlalchemy import or_
 
@@ -402,17 +412,24 @@ class AnimalRepository:
 
         return orm_animals, total_count
 
-    async def get_animal_by_id_orm(self, animal_id: int) -> Animal | None:
+    async def get_animal_by_id_orm(
+        self, animal_id: int, include_non_public: bool = False
+    ) -> Animal | None:
         """
         IDで動物データを取得（ORMモデルとして）
 
         Args:
             animal_id: 動物ID
+            include_non_public: True なら死亡(deceased)個体も返す（内部の status 更新・
+                画像パス更新・削除フロー用）。False（既定/公開）は deceased を None 扱いに
+                して、ルート層で 404 を返させる。
 
         Returns:
-            Optional[Animal]: 動物ORMモデル、存在しない場合は None
+            Optional[Animal]: 動物ORMモデル、存在しない/非公開の場合は None
         """
         stmt = select(Animal).where(Animal.id == animal_id)
+        if not include_non_public:
+            stmt = stmt.where(Animal.status.is_distinct_from(AnimalStatus.DECEASED.value))
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -442,7 +459,8 @@ class AnimalRepository:
             NotFoundError: 動物が存在しない
         """
         # 動物を取得
-        orm_animal = await self.get_animal_by_id_orm(animal_id)
+        # 内部管理フロー（status 更新・画像パス更新・削除）は deceased も対象にする。
+        orm_animal = await self.get_animal_by_id_orm(animal_id, include_non_public=True)
         if orm_animal is None:
             raise NotFoundError("Animal", animal_id)
 
@@ -518,7 +536,8 @@ class AnimalRepository:
             NotFoundError: 動物が存在しない
         """
         # 動物を取得
-        orm_animal = await self.get_animal_by_id_orm(animal_id)
+        # 内部管理フロー（status 更新・画像パス更新・削除）は deceased も対象にする。
+        orm_animal = await self.get_animal_by_id_orm(animal_id, include_non_public=True)
         if orm_animal is None:
             raise NotFoundError("Animal", animal_id)
 
@@ -578,7 +597,8 @@ class AnimalRepository:
         Raises:
             NotFoundError: 動物が存在しない
         """
-        orm_animal = await self.get_animal_by_id_orm(animal_id)
+        # 内部管理フロー（status 更新・画像パス更新・削除）は deceased も対象にする。
+        orm_animal = await self.get_animal_by_id_orm(animal_id, include_non_public=True)
         if orm_animal is None:
             raise NotFoundError("Animal", animal_id)
 
