@@ -96,8 +96,9 @@ class SinglePageTableAdapter(RuleBasedAdapter):
                 image_urls=self._extract_row_images(row, virtual_url),
                 source_url=virtual_url,
                 category=category,
-                # 個体識別: 派生が COLUMN_FIELDS に "breed" を足せば品種が開通する
+                # 個体識別: 派生が COLUMN_FIELDS にキーを足せば開通する
                 breed=fields.get("breed", ""),
+                description=fields.get("description", ""),
             )
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e

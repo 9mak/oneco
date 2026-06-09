@@ -126,6 +126,8 @@ class DataNormalizer:
             category=raw_data.category,
             # 個体識別: 品種 (Slice 1)。トリム+長さ丸めのみ (PII 非適用の構造化値)。
             breed=DataNormalizer._cap_text(raw_data.breed, DataNormalizer._BREED_MAX_LEN),
+            # 個体識別: 性格・特徴 (Slice 2)。自由文のため電話/メールを伏字化 + 長さ丸め。
+            description=DataNormalizer._normalize_description(raw_data.description),
         )
 
     @staticmethod
@@ -247,6 +249,8 @@ class DataNormalizer:
     _BREED_MAX_LEN: int = 50
     _NAME_MAX_LEN: int = 100
     _MANAGEMENT_NUMBER_MAX_LEN: int = 50
+    # description は Text 列だが、自由文の暴走防止に上限を設ける
+    _DESCRIPTION_MAX_LEN: int = 2000
 
     # PII (個人情報) 検出パターン。自治体サイトの「特徴」「コメント」自由記述に
     # 飼い主や保護者の個人連絡先が混入するケースがあり、公開リスクとなる。
@@ -282,6 +286,24 @@ class DataNormalizer:
             return None
         if len(text) > max_len:
             return text[:max_len]
+        return text
+
+    @staticmethod
+    def _normalize_description(raw: str | None) -> str | None:
+        """性格・特徴の自由記述を正規化する。
+
+        空は None、電話番号/メールを _redact_pii で伏字化し、上限超過は丸める。
+        氏名(人名)は伏字対象外（形態素解析を要するため本仕様の非対象）。
+        伏字を丸めの前に行い、伏字後の文字数で上限判定する。
+        """
+        if not raw:
+            return None
+        text = raw.strip()
+        if not text:
+            return None
+        text = DataNormalizer._redact_pii(text)
+        if len(text) > DataNormalizer._DESCRIPTION_MAX_LEN:
+            return text[: DataNormalizer._DESCRIPTION_MAX_LEN]
         return text
 
     @staticmethod
