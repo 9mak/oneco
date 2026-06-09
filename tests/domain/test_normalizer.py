@@ -1060,3 +1060,52 @@ class TestBreedNormalization:
     def test_breed_max_len_matches_column(self):
         """品種の長さ上限は ORM の VARCHAR(50) と一致していること（不一致は INSERT 全損）。"""
         assert DataNormalizer._BREED_MAX_LEN == 50
+
+
+class TestDescriptionNormalization:
+    """Slice 2: 性格・特徴(description) の正規化（PII伏字+長さ丸め）"""
+
+    def test_normalize_description_redacts_phone_and_email(self):
+        # 電話(ハイフン有/無/全角)・メールが伏字化される
+        out = DataNormalizer._normalize_description(
+            "人懐っこい子です。連絡は 090-1234-5678 か foo@example.com まで。"
+        )
+        assert out is not None
+        assert "090-1234-5678" not in out
+        assert "foo@example.com" not in out
+        assert "███" in out
+        # 非PIIは温存
+        assert "人懐っこい子です" in out
+
+    def test_normalize_description_redacts_hyphenless_phone(self):
+        out = DataNormalizer._normalize_description("やんちゃ。電話09012345678")
+        assert "09012345678" not in out
+        assert "やんちゃ" in out
+
+    def test_normalize_description_blank_to_none(self):
+        assert DataNormalizer._normalize_description("   ") is None
+        assert DataNormalizer._normalize_description("") is None
+        assert DataNormalizer._normalize_description(None) is None
+
+    def test_normalize_description_caps_length(self):
+        long_text = "あ" * 3000
+        out = DataNormalizer._normalize_description(long_text)
+        assert out is not None
+        assert len(out) <= DataNormalizer._DESCRIPTION_MAX_LEN
+
+    def test_normalize_populates_description_via_pipeline(self):
+        raw = RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="2歳",
+            color="茶色",
+            size="中型",
+            shelter_date="2026-01-05",
+            location="高知県",
+            phone="0881234567",
+            image_urls=[],
+            source_url="https://example.com/desc",
+            category="adoption",
+            description="シャイだけど甘えん坊。",
+        )
+        assert DataNormalizer.normalize(raw).description == "シャイだけど甘えん坊。"

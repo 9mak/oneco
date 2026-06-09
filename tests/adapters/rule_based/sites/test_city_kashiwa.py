@@ -123,6 +123,9 @@ class TestCityKashiwaAdapter:
         # source_url は仮想 URL
         assert raw.source_url == first_url
         assert raw.category == "sheltered"
+        # 「特徴」自由文が性格・特徴(description)として保存される (Slice 2)
+        assert raw.description
+        assert isinstance(raw.description, str)
 
     def test_extract_animal_details_no_image(self, fixture_html):
         """写真なしカード (col2L が「写真なし」テキストのみ) でも例外を投げない"""

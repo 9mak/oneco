@@ -151,6 +151,8 @@ class LlmAdapter(MunicipalityAdapter):
             category=category,
             # 個体識別: 品種 (Slice 1)。LLM が抽出した犬種猫種名を保存
             breed=fields.get("breed", ""),
+            # 個体識別: 性格・特徴 (Slice 2)。LLM の features を description に統一マッピング。
+            description=fields.get("features", ""),
         )
 
     def normalize(self, raw_data: RawAnimalData) -> AnimalData:
@@ -232,6 +234,11 @@ class LlmAdapter(MunicipalityAdapter):
                         image_urls=fields.get("image_urls", []),
                         source_url=virtual_url,
                         category=category,
+                        # 取りこぼし修正: MULTI スキーマが持つ features/management_number を
+                        # 受け皿へ渡す（旧実装はドロップしていた）。features は description に統一。
+                        breed=fields.get("breed", ""),
+                        description=fields.get("features", ""),
+                        management_number=fields.get("management_number", ""),
                     )
                 )
 

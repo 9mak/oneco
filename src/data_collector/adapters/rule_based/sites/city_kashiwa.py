@@ -280,6 +280,9 @@ class CityKashiwaAdapter(SinglePageTableAdapter):
                 image_urls=self._extract_row_images(card, virtual_url),
                 source_url=virtual_url,
                 category=category,
+                # 「特徴」自由文を性格・特徴(description)として保存（年齢/体重補完だけに
+                # 使い捨てていたものを識別情報として残す。PII伏字は normalizer 側で実施）
+                description=features,
             )
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e

@@ -36,6 +36,7 @@ class MockProvider(LlmProvider):
                 "location": "テスト県テスト市",
                 "phone": "088-123-4567",
                 "image_urls": ["https://example.com/dog.jpg"],
+                "features": "人懐っこい",
             },
             input_tokens=1000,
             output_tokens=200,
@@ -216,6 +217,7 @@ class TestExtractAnimalDetails:
         assert isinstance(result, RawAnimalData)
         assert result.species == "犬"
         assert result.breed == "柴犬"  # LLM 抽出した品種が生データへ渡る (Slice 1)
+        assert result.description == "人懐っこい"  # features→description 統一 (Slice 2)
         assert result.source_url == "https://example.com/detail/1"
         assert result.category == "adoption"
         assert mock_provider.extract_calls == 1

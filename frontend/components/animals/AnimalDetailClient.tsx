@@ -170,6 +170,16 @@ export function AnimalDetailClient({ animal }: AnimalDetailClientProps) {
             </dl>
           </section>
 
+          {/* 性格・特徴 (自由文。改行を保持し、テキストとして描画して HTML を解釈させない) */}
+          {animal.description && (
+            <section className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+              <h2 className="text-xl font-semibold text-gray-900 mb-3">性格・特徴</h2>
+              <p className="whitespace-pre-line text-base leading-relaxed text-gray-900">
+                {animal.description}
+              </p>
+            </section>
+          )}
+
           {/* 連絡先情報 */}
           <ContactInfo
             location={animal.location}
