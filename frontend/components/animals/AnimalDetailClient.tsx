@@ -167,6 +167,16 @@ export function AnimalDetailClient({ animal }: AnimalDetailClientProps) {
                 <dt className="text-sm font-medium text-gray-500">収容日</dt>
                 <dd className="text-base text-gray-900">{formatDate(animal.shelter_date)}</dd>
               </div>
+
+              {animal.management_number && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">管理番号</dt>
+                  <dd className="text-base text-gray-900">
+                    {animal.management_number}
+                    <span className="ml-1 text-xs text-gray-400">（お問い合わせ時の照会番号）</span>
+                  </dd>
+                </div>
+              )}
             </dl>
           </section>
 
