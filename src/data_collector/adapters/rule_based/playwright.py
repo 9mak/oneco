@@ -35,7 +35,10 @@ class PlaywrightFetchMixin:
         extra_headers: dict[str, str] | None = None,
     ) -> str:
         """Playwright で JavaScript 実行後の HTML を取得"""
-        # extra_headers は無視（Playwright は default User-Agent を内部で設定）
+        # extra_headers は無視（PlaywrightFetcher が ONECO_USER_AGENT を設定する）。
+        # base._http_get と同様にアクセス間隔を保証する。override でこの待機を
+        # 飛ばすと JS サイトへ間隔なしでバースト送信してしまう（偽計業務妨害リスク）。
+        self._polite_wait(getattr(self.site_config, "request_interval", None))
         try:
             fetcher = PlaywrightFetcher(
                 wait_selector=self.WAIT_SELECTOR,

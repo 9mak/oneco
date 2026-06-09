@@ -124,6 +124,34 @@ def _effective_extraction(site, config: SitesConfig) -> str:
     return config.extraction.default_extraction
 
 
+def _apply_robots_policy(site, robots: RobotsChecker, logger: logging.Logger) -> bool:
+    """robots.txt を尊重して 1 サイトの収集可否を判定する（LLM/rule-based 経路で共有）。
+
+    - disallow なサイトは警告ログを出して False を返す（呼び出し側で continue させる）。
+    - allow なら robots.txt の Crawl-delay を site.request_interval に反映し
+      （指定があり既存間隔より大きい場合のみ）、True を返す。
+
+    判定不能（非 http / fetch 失敗 / robots.txt 未配置）は is_allowed が True を返す
+    best-effort。従来 LLM 経路にのみ存在したこのロジックを共通化し、本番主力の
+    rule-based 経路でも robots を尊重させる（terms の「robots を尊重」との言行一致）。
+    """
+    if not robots.is_allowed(site.list_url):
+        logger.warning(
+            f"[{site.name}] robots.txt により disallow されています。スキップします: "
+            f"{site.list_url}"
+        )
+        return False
+
+    crawl_delay = robots.crawl_delay(site.list_url)
+    if crawl_delay is not None and crawl_delay > site.request_interval:
+        logger.info(
+            f"[{site.name}] robots.txt Crawl-delay={crawl_delay}s を採用 "
+            f"(request_interval={site.request_interval}s)"
+        )
+        site.request_interval = crawl_delay
+    return True
+
+
 def run_llm_sites(
     config: SitesConfig,
     snapshot_store: SnapshotStore,
@@ -166,23 +194,10 @@ def run_llm_sites(
         site_start = time.time()
         logger.info(f"=== LLM収集開始: {site.name} ===")
 
-        # robots.txt を尊重: disallow なサイトはスキップ（成功・失敗どちらにもカウントしない）
-        if not robots.is_allowed(site.list_url):
-            logger.warning(
-                f"[{site.name}] robots.txt により disallow されています。スキップします: "
-                f"{site.list_url}"
-            )
+        # robots.txt を尊重: disallow ならスキップ、allow なら Crawl-delay を反映
+        # （成功・失敗どちらにもカウントしない）。rule-based 経路と共有する。
+        if not _apply_robots_policy(site, robots, logger):
             continue
-
-        # robots.txt の Crawl-delay を尊重: 指定があれば request_interval の
-        # 大きい方を最小アクセス間隔として採用（偽計業務妨害リスク低減）
-        crawl_delay = robots.crawl_delay(site.list_url)
-        if crawl_delay is not None and crawl_delay > site.request_interval:
-            logger.info(
-                f"[{site.name}] robots.txt Crawl-delay={crawl_delay}s を採用 "
-                f"(request_interval={site.request_interval}s)"
-            )
-            site.request_interval = crawl_delay
 
         # タイムアウト解決優先順位: サイト個別 (sites.yaml の timeout_sec) > requires_js 既定 > 通常既定
         if site.timeout_sec is not None:
@@ -300,7 +315,8 @@ def run_rule_based_sites(
     if previous_site_counts is None:
         previous_site_counts = {}
 
-    # 並列対象を絞り込み: rule-based & adapter 登録あり & 未スキップ
+    # 並列対象を絞り込み: rule-based & adapter 登録あり & 未スキップ & robots allow
+    robots = RobotsChecker()
     eligible_sites = []
     for site in config.sites:
         if _effective_extraction(site, config) != "rule-based":
@@ -323,6 +339,10 @@ def run_rule_based_sites(
                 f"自動スキップ (閾値={BROKEN_SITE_SKIP_THRESHOLD}, "
                 f"再チェック猶予={BROKEN_SITE_RECHECK_DAYS}日)"
             )
+            continue
+        # robots.txt を尊重: disallow ならスキップ、allow なら Crawl-delay を反映。
+        # 逐次実行のこのフィルタ段で評価する（並列収集前なのでスレッド安全）。
+        if not _apply_robots_policy(site, robots, logger):
             continue
         eligible_sites.append(site)
 

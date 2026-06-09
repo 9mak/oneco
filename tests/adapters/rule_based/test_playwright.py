@@ -56,6 +56,28 @@ class TestPlaywrightFetchMixin:
         assert kwargs.get("wait_selector") == ".animals"
         mock_fetcher.fetch.assert_called_once_with("https://example.com/page")
 
+    def test_http_get_applies_polite_wait_before_fetch(self):
+        """_http_get が取得前に _polite_wait を呼び送信間隔を守ること(throttle バイパス防止)。
+
+        旧実装は base._http_get の throttle を override で素通りし、JS サイトへ間隔保証
+        なしでバースト送信していた（偽計業務妨害リスク）。
+        """
+        adapter = _SamplePlaywrightAdapter(_site())
+
+        mock_fetcher = MagicMock()
+        mock_fetcher.fetch.return_value = "<html>ok</html>"
+
+        with (
+            patch(
+                "data_collector.adapters.rule_based.playwright.PlaywrightFetcher",
+                return_value=mock_fetcher,
+            ),
+            patch.object(adapter, "_polite_wait") as mock_wait,
+        ):
+            adapter._http_get("https://example.com/page")
+
+        mock_wait.assert_called_once()
+
     def test_works_with_wordpress_list_adapter(self):
         """WordPressListAdapter と組み合わせて fetch_animal_list が動くこと"""
         adapter = _SamplePlaywrightAdapter(_site())

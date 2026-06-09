@@ -342,3 +342,58 @@ class TestZeroCountAnomalyDetection:
         assert (succeeded, failed) == (1, 0)
         assert "テスト_前回情報なし" in zero
         assert tracker.consecutive_failures("テスト_前回情報なし") == 0
+
+
+class TestApplyRobotsPolicy:
+    """_apply_robots_policy: robots.txt の allow/Crawl-delay を LLM/rule-based 両経路で共有。
+
+    従来 robots チェックは LLM 経路のみで、本番主力の rule-based 経路は素通りだった
+    （terms の「robots を尊重」と乖離＝言行不一致）。共有ヘルパーで両経路に適用する。
+    """
+
+    @staticmethod
+    def _robots(allowed: bool = True, delay: float | None = None):
+        from unittest.mock import Mock
+
+        r = Mock()
+        r.is_allowed.return_value = allowed
+        r.crawl_delay.return_value = delay
+        return r
+
+    def test_disallowed_site_returns_false(self):
+        import logging
+
+        from data_collector.__main__ import _apply_robots_policy
+
+        site = _site()
+        result = _apply_robots_policy(site, self._robots(allowed=False), logging.getLogger("t"))
+        assert result is False
+
+    def test_allowed_site_returns_true(self):
+        import logging
+
+        from data_collector.__main__ import _apply_robots_policy
+
+        site = _site()
+        result = _apply_robots_policy(site, self._robots(allowed=True), logging.getLogger("t"))
+        assert result is True
+
+    def test_crawl_delay_larger_than_interval_is_applied(self):
+        import logging
+
+        from data_collector.__main__ import _apply_robots_policy
+
+        site = _site()
+        site.request_interval = 1.0
+        _apply_robots_policy(site, self._robots(allowed=True, delay=5.0), logging.getLogger("t"))
+        assert site.request_interval == 5.0
+
+    def test_crawl_delay_not_larger_is_ignored(self):
+        import logging
+
+        from data_collector.__main__ import _apply_robots_policy
+
+        site = _site()
+        site.request_interval = 10.0
+        _apply_robots_policy(site, self._robots(allowed=True, delay=2.0), logging.getLogger("t"))
+        assert site.request_interval == 10.0
