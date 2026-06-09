@@ -77,6 +77,11 @@ class AnimalRepository:
             image_urls=[str(url) for url in animal_data.image_urls],
             source_url=str(animal_data.source_url),
             category=animal_data.category,
+            # 個体識別フィールド
+            breed=animal_data.breed,
+            name=animal_data.name,
+            management_number=animal_data.management_number,
+            description=animal_data.description,
             # 拡張フィールド
             status=animal_data.status.value if animal_data.status else "sheltered",
             status_changed_at=animal_data.status_changed_at,
@@ -107,6 +112,11 @@ class AnimalRepository:
             image_urls=orm_animal.image_urls or [],
             source_url=orm_animal.source_url,
             category=orm_animal.category,
+            # 個体識別フィールド
+            breed=orm_animal.breed,
+            name=orm_animal.name,
+            management_number=orm_animal.management_number,
+            description=orm_animal.description,
             # 拡張フィールド
             status=AnimalStatus(orm_animal.status) if orm_animal.status else None,
             status_changed_at=orm_animal.status_changed_at,
@@ -152,6 +162,12 @@ class AnimalRepository:
             existing_animal.phone = animal_data.phone
             existing_animal.image_urls = [str(url) for url in animal_data.image_urls]
             existing_animal.category = animal_data.category
+            # 個体識別フィールドは category 同様に無条件上書き
+            # (ソースから値が消えたら None で上書きし、古い値を残留させない)
+            existing_animal.breed = animal_data.breed
+            existing_animal.name = animal_data.name
+            existing_animal.management_number = animal_data.management_number
+            existing_animal.description = animal_data.description
             # 拡張フィールドは明示的に設定された場合のみ更新
             if animal_data.status is not None:
                 existing_animal.status = animal_data.status.value

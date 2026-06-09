@@ -1339,3 +1339,70 @@ async def test_get_status_counts_returns_counts_by_status(repository, async_sess
     assert result["adopted"] == 1
     assert result["deceased"] == 1
     assert result.get("returned", 0) == 0
+
+
+# === animal-identity-fields Slice 0: 個体識別4フィールドの空配線 ===
+
+
+@pytest.mark.asyncio
+async def test_save_and_get_preserves_identity_fields(repository):
+    """breed/name/description/management_number が保存→取得で保持される（往復）。"""
+    data = AnimalData(
+        species="犬",
+        sex="男の子",
+        shelter_date=date(2026, 1, 5),
+        location="高知県",
+        source_url="https://example.com/identity1",
+        category="adoption",
+        breed="柴犬",
+        name="ポチ",
+        description="人懐っこい性格です。",
+        management_number="R7-249",
+    )
+
+    saved = await repository.save_animal(data)
+
+    assert saved.breed == "柴犬"
+    assert saved.name == "ポチ"
+    assert saved.description == "人懐っこい性格です。"
+    assert saved.management_number == "R7-249"
+
+
+@pytest.mark.asyncio
+async def test_identity_fields_default_to_none(repository):
+    """個体識別フィールドを省略すると None で保存・取得される（後方互換）。"""
+    data = AnimalData(
+        species="猫",
+        sex="不明",
+        shelter_date=date(2026, 1, 6),
+        location="高知県",
+        source_url="https://example.com/identity2",
+        category="adoption",
+    )
+
+    saved = await repository.save_animal(data)
+
+    assert saved.breed is None
+    assert saved.name is None
+    assert saved.description is None
+    assert saved.management_number is None
+
+
+@pytest.mark.asyncio
+async def test_identity_fields_overwrite_on_resave(repository):
+    """再収集で個体識別フィールドは無条件上書きされる（ソースから消えた値が残留しない）。"""
+    base = {
+        "species": "犬",
+        "sex": "男の子",
+        "shelter_date": date(2026, 1, 5),
+        "location": "高知県",
+        "source_url": "https://example.com/identity3",
+        "category": "adoption",
+    }
+    await repository.save_animal(AnimalData(**base, breed="チワワ", name="チャチャ"))
+
+    # 次回収集で breed/name がソースから消えた → None で上書きされる
+    resaved = await repository.save_animal(AnimalData(**base))
+
+    assert resaved.breed is None
+    assert resaved.name is None
