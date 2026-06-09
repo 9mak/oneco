@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { PREFECTURES } from '@/lib/prefectures';
 import { getSiteUrl } from '@/lib/site-url';
 
 const SITE_URL = getSiteUrl();
@@ -63,6 +64,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
+  // 都道府県別ランディング（地域×保護動物のローカル検索の受け皿）
+  const areaRoutes: MetadataRoute.Sitemap = PREFECTURES.map((p) => ({
+    url: `${SITE_URL}/areas/${encodeURIComponent(p)}`,
+    lastModified: new Date(),
+    changeFrequency: 'daily',
+    priority: 0.7,
+  }));
+
   const animalRoutes: MetadataRoute.Sitemap = animals.map((a) => ({
     url: `${SITE_URL}/animals/${a.id}`,
     lastModified: new Date(a.status_changed_at ?? a.shelter_date),
@@ -70,5 +79,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticRoutes, ...animalRoutes];
+  return [...staticRoutes, ...areaRoutes, ...animalRoutes];
 }
