@@ -115,6 +115,16 @@ describe('AnimalDetailClient', () => {
     expect(screen.queryByRole('heading', { level: 2, name: '性格・特徴' })).not.toBeInTheDocument();
   });
 
+  it('管理番号(management_number)があれば照会番号として表示し、無ければ表示しない', () => {
+    const withMgmt = { ...mockAnimal, management_number: 'R7-249' };
+    const { rerender } = render(<AnimalDetailClient animal={withMgmt} />);
+    expect(screen.getByText('管理番号')).toBeInTheDocument();
+    expect(screen.getByText('R7-249')).toBeInTheDocument();
+
+    rerender(<AnimalDetailClient animal={mockAnimal} />);
+    expect(screen.queryByText('管理番号')).not.toBeInTheDocument();
+  });
+
   it('推定年齢が正しくフォーマットされる (2年6ヶ月)', () => {
     render(<AnimalDetailClient animal={mockAnimal} />);
     expect(screen.getByText('約2歳6ヶ月')).toBeInTheDocument();

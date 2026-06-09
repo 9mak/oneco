@@ -62,6 +62,11 @@ export function AnimalCard({ animal }: AnimalCardProps) {
           <StaleDataBadge shelterDate={animal.shelter_date} />
         </div>
 
+        {/* 仮名・愛称（あれば見出し下に控えめに表示） */}
+        {animal.name && (
+          <p className="text-sm font-medium text-[var(--color-primary-700)]">{animal.name}</p>
+        )}
+
         <dl className="grid grid-cols-2 gap-2 text-sm">
           <div>
             <dt className="text-[var(--color-text-secondary)]">推定年齢</dt>
