@@ -149,6 +149,8 @@ class LlmAdapter(MunicipalityAdapter):
             image_urls=fields.get("image_urls", []),
             source_url=detail_url,
             category=category,
+            # 個体識別: 品種 (Slice 1)。LLM が抽出した犬種猫種名を保存
+            breed=fields.get("breed", ""),
         )
 
     def normalize(self, raw_data: RawAnimalData) -> AnimalData:

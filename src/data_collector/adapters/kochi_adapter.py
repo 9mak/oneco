@@ -342,6 +342,8 @@ class KochiAdapter(MunicipalityAdapter):
             image_urls=image_urls,
             source_url=detail_url,
             category=category,
+            # 品種 (species 判定で既に抽出済みの値を識別情報として保存)
+            breed=breed,
         )
 
     def normalize(self, raw_data: RawAnimalData) -> AnimalData:

@@ -1406,3 +1406,44 @@ async def test_identity_fields_overwrite_on_resave(repository):
 
     assert resaved.breed is None
     assert resaved.name is None
+
+
+@pytest.mark.asyncio
+async def test_breed_search_absorbs_kana_variants(repository, async_session):
+    """品種(breed)検索はカタカナ↔ひらがなの揺れを吸収する（Slice 1）。"""
+    async_session.add(
+        Animal(
+            species="犬",
+            shelter_date=date(2026, 1, 5),
+            location="高知県",
+            source_url="https://example.com/breed-search1",
+            category="adoption",
+            breed="チワワ",
+        )
+    )
+    async_session.add(
+        Animal(
+            species="犬",
+            shelter_date=date(2026, 1, 6),
+            location="高知県",
+            source_url="https://example.com/breed-search2",
+            category="adoption",
+            breed="しばいぬ",
+        )
+    )
+    await async_session.commit()
+
+    # ひらがな検索 → カタカナ保存にヒット
+    res, total = await repository.list_animals_orm(q="ちわわ")
+    assert total == 1
+    assert res[0].breed == "チワワ"
+
+    # カタカナ検索 → ひらがな保存にヒット
+    res2, total2 = await repository.list_animals_orm(q="シバイヌ")
+    assert total2 == 1
+    assert res2[0].breed == "しばいぬ"
+
+    # 部分一致も効く
+    res3, total3 = await repository.list_animals_orm(q="チワ")
+    assert total3 == 1
+    assert res3[0].breed == "チワワ"

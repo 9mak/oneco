@@ -174,6 +174,8 @@ class CityWakayamaAdapter(SinglePageTableAdapter):
                 image_urls=self._extract_row_images(card, virtual_url),
                 source_url=virtual_url,
                 category=category,
+                # 品種 (種類カラム。例: 雑種)。species 判定とは別の個体識別値として保存
+                breed=breed,
             )
         except Exception as e:
             raise ParsingError(

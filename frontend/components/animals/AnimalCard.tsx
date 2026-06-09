@@ -67,6 +67,12 @@ export function AnimalCard({ animal }: AnimalCardProps) {
             <dt className="text-[var(--color-text-secondary)]">推定年齢</dt>
             <dd className="text-[var(--color-text-primary)] font-medium">{ageDisplay}</dd>
           </div>
+          {animal.breed && (
+            <div>
+              <dt className="text-[var(--color-text-secondary)]">品種</dt>
+              <dd className="text-[var(--color-text-primary)] font-medium">{animal.breed}</dd>
+            </div>
+          )}
           {animal.color && (
             <div>
               <dt className="text-[var(--color-text-secondary)]">毛色</dt>
