@@ -106,6 +106,7 @@ def create_app() -> FastAPI:
     from src.syndication_service.api.health import create_health_router
     from src.syndication_service.api.routes import create_syndication_router
     from src.syndication_service.middleware.rate_limiter import (
+        PUBLIC_API_DEFAULT_RATE_LIMIT,
         create_limiter,
         rate_limit_error_handler,
     )
@@ -118,8 +119,14 @@ def create_app() -> FastAPI:
     cache_manager = CacheManager(redis_url=redis_url)
     metrics_collector = MetricsCollector()
 
-    # Rate limiter 初期化（Redis 障害時は None → graceful degradation）
-    limiter = create_limiter(redis_url=redis_url)
+    # Rate limiter 初期化。default_limits で公開GET API(/animals 等のデコレータ無し
+    # ルート)も一括スロットルし、Redis 不在でも per-instance の in-memory 制限に
+    # フォールバックして「制限が丸ごと無効」になるのを防ぐ（補足監査 セキュリティ）。
+    limiter = create_limiter(
+        redis_url=redis_url,
+        default_limits=[PUBLIC_API_DEFAULT_RATE_LIMIT],
+        fallback_to_memory=True,
+    )
     if limiter:
         app.state.limiter = limiter
         app.add_exception_handler(RateLimitExceeded, rate_limit_error_handler)
