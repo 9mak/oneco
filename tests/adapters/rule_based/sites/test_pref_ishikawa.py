@@ -119,6 +119,8 @@ class TestPrefIshikawaAdapter:
         assert isinstance(raw, RawAnimalData)
         # ラベル → フィールドのマップが効いていることを確認
         assert raw.species == "柴犬"
+        # 種類(柴犬)が品種(breed)としても保存される (Slice 1 横展開)
+        assert raw.breed == "柴犬"
         assert raw.sex == "オス"
         assert raw.color == "茶"
         assert raw.size == "中"
