@@ -56,6 +56,12 @@ describe('AnimalCard', () => {
     expect(screen.queryByText('品種')).not.toBeInTheDocument();
   });
 
+  it('仮名(name)があれば見出し付近に表示される', () => {
+    const withName = { ...mockAnimal, name: 'ポチ' };
+    render(<AnimalCard animal={withName} />);
+    expect(screen.getByText('ポチ')).toBeInTheDocument();
+  });
+
   it('推定年齢が月から年に変換されて表示される (12ヶ月以上)', () => {
     render(<AnimalCard animal={mockAnimal} />);
     expect(screen.getByText('2歳')).toBeInTheDocument();
