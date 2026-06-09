@@ -132,3 +132,54 @@ class TestClientIpKey:
 
         req = SimpleNamespace(headers={}, client=SimpleNamespace(host="10.0.0.5"))
         assert client_ip_key(req) == "10.0.0.5"
+
+
+class TestDefaultLimitsAndFallback:
+    """公開GET API 全体に default_limits を効かせ、Redis 不在でも per-instance で制限する。
+
+    従来 create_limiter は default_limits を設定せず、@limiter.limit デコレータの無い
+    公開GET(/animals 等)は完全に未スロットルだった。さらに Redis 不到達では None を
+    返し制限が丸ごと無効化されていた（補足監査 セキュリティ）。
+    """
+
+    def test_fallback_to_memory_returns_limiter_when_redis_unreachable(self):
+        """fallback_to_memory=True なら Redis 不到達でも memory backend で Limiter を返す"""
+        from src.syndication_service.middleware.rate_limiter import create_limiter
+
+        limiter = create_limiter("redis://10.255.255.1:6379/0", fallback_to_memory=True)
+        assert limiter is not None
+
+    def test_without_fallback_still_returns_none_on_unreachable_redis(self):
+        """既定（fallback_to_memory=False）は従来通り None を返す（後方互換）"""
+        from src.syndication_service.middleware.rate_limiter import create_limiter
+
+        assert create_limiter("redis://10.255.255.1:6379/0") is None
+
+    def test_default_limits_enforced_on_undecorated_route(self):
+        """default_limits がデコレータ無しのルートにも middleware 経由で効くこと"""
+        from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+        from slowapi.errors import RateLimitExceeded
+        from slowapi.middleware import SlowAPIMiddleware
+
+        from src.syndication_service.middleware.rate_limiter import (
+            create_limiter,
+            rate_limit_error_handler,
+        )
+
+        limiter = create_limiter("memory://", default_limits=["3/minute"])
+        assert limiter is not None
+
+        app = FastAPI()
+        app.state.limiter = limiter
+        app.add_exception_handler(RateLimitExceeded, rate_limit_error_handler)
+        app.add_middleware(SlowAPIMiddleware)
+
+        @app.get("/animals")
+        def animals():
+            return {"ok": True}
+
+        client = TestClient(app)
+        statuses = [client.get("/animals").status_code for _ in range(5)]
+        assert statuses[:3] == [200, 200, 200]
+        assert 429 in statuses[3:]

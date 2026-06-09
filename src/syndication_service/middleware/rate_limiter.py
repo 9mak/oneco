@@ -35,18 +35,28 @@ def client_ip_key(request: Request) -> str:
     return get_remote_address(request)
 
 
-def create_limiter(redis_url: str | None = None) -> Limiter | None:
+def create_limiter(
+    redis_url: str | None = None,
+    default_limits: list[str] | None = None,
+    fallback_to_memory: bool = False,
+) -> Limiter | None:
     """
     Create a slowapi Limiter instance.
 
     Args:
         redis_url: Redis connection URL for rate limit storage.
                    If None, uses REDIS_URL environment variable.
-                   If Redis is unavailable, returns None (graceful degradation).
                    テスト用 ``memory://`` の場合は ping をスキップして即返す。
+        default_limits: デコレータの無いルートにも middleware 経由で適用する既定の
+                   レート制限（例: ``["120/minute"]``）。公開 GET API を一括で
+                   スロットルするために使う。None なら従来通り既定制限なし。
+        fallback_to_memory: Redis 不到達のとき、None（制限完全無効）ではなく
+                   ``memory://``（per-instance の in-memory 制限）にフォールバック
+                   するか。本番で Redis 未設定でも最低限の制限を効かせるために使う。
+                   既定 False は従来どおり None を返す（後方互換）。
 
     Returns:
-        Limiter instance or None if Redis is unavailable.
+        Limiter instance, or None if Redis is unavailable and fallback_to_memory=False.
     """
     try:
         if redis_url is None:
@@ -56,8 +66,8 @@ def create_limiter(redis_url: str | None = None) -> Limiter | None:
         is_memory_backend = redis_url.startswith("memory://")
 
         # 本番では Redis 不到達でも Limiter を生成しておくとリクエスト時に
-        # 内部で connection error を投げて 500 になる。事前 ping でフェイル
-        # オープン化（Limiter なしの no-op 動作）する。
+        # 内部で connection error を投げて 500 になる。事前 ping で到達性を確認し、
+        # 不到達なら fallback_to_memory に応じて memory:// 化 or フェイルオープン。
         if not is_memory_backend:
             import redis as _redis
 
@@ -66,11 +76,21 @@ def create_limiter(redis_url: str | None = None) -> Limiter | None:
                 client.ping()
                 client.close()
             except Exception as ping_error:
-                logger.warning(
-                    f"Redis ping failed ({redis_url}): {ping_error}. "
-                    "Rate limiting will be disabled (graceful degradation)."
-                )
-                return None
+                if fallback_to_memory:
+                    # per-instance の in-memory バケットで制限を効かせる。複数
+                    # インスタンス間では共有されないが、None（完全無効）より確実な緩和。
+                    logger.warning(
+                        f"Redis ping failed ({redis_url}): {ping_error}. "
+                        "Falling back to in-memory rate limiting (per-instance)."
+                    )
+                    redis_url = "memory://"
+                    is_memory_backend = True
+                else:
+                    logger.warning(
+                        f"Redis ping failed ({redis_url}): {ping_error}. "
+                        "Rate limiting will be disabled (graceful degradation)."
+                    )
+                    return None
 
         # Create limiter with Redis (or memory) storage
         limiter = Limiter(
@@ -78,9 +98,12 @@ def create_limiter(redis_url: str | None = None) -> Limiter | None:
             storage_uri=redis_url,
             strategy="fixed-window",
             headers_enabled=True,  # Enable X-RateLimit-* headers
+            default_limits=default_limits or [],
         )
 
-        logger.info(f"Rate limiter initialized: {redis_url}")
+        logger.info(
+            f"Rate limiter initialized: {redis_url} (default_limits={default_limits or []})"
+        )
         return limiter
 
     except Exception as e:
@@ -116,3 +139,7 @@ def rate_limit_error_handler(request: Request, exc: RateLimitExceeded) -> JSONRe
 
 # Default rate limit: 60 requests per minute
 DEFAULT_RATE_LIMIT = "60/minute"
+
+# 公開GET API 全体に適用する既定レート制限（per-IP, per-route）。
+# 通常の閲覧では超えない値だが、全件高速吸い出し/L7 フラッドはこれで抑える。
+PUBLIC_API_DEFAULT_RATE_LIMIT = os.getenv("ONECO_PUBLIC_API_RATE_LIMIT", "120/minute")
