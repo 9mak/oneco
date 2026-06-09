@@ -380,6 +380,38 @@ class TestNormalizePhone:
         assert DataNormalizer._normalize_phone("088-123-4567") == "088-123-4567"
         assert DataNormalizer._normalize_phone("090-1234-5678") == "090-1234-5678"
 
+    def test_normalize_phone_3digit_area_code_not_split_as_2digit(self):
+        """3桁市外局番 (044/045/048/052 等) を 2桁市外局番として誤分割しない。
+
+        実際の2桁市外局番は 03(東京23区)・06(大阪市)のみ。04x/05x で始まる
+        044(川崎)/045(横浜)/048(さいたま)/052(名古屋) 等は3桁市外局番であり、
+        旧実装は digits[0:2] in [.., "04", "05", ..] でこれらを誤って 2桁扱いし
+        '045-211-2000' を '04-5211-2000' のような誤番号に変換していた。利用者が
+        タップして誤った窓口へ発信する重大バグ。ハイフン無しの生数字でも正す。
+        """
+        assert DataNormalizer._normalize_phone("0452112000") == "045-211-2000"
+        assert DataNormalizer._normalize_phone("0442002000") == "044-200-2000"
+        assert DataNormalizer._normalize_phone("0488303000") == "048-830-3000"
+        assert DataNormalizer._normalize_phone("0529721111") == "052-972-1111"
+
+    def test_normalize_phone_preserves_valid_existing_hyphens(self):
+        """既に妥当な区切りでハイフン済みの入力は、剥がして再分割せず温存する。
+
+        本番データの多くは正しくハイフン済み ('045-211-2000')。これを数字に潰して
+        市外局番長を推定し直すと 04x の 2桁/3桁の区別がつかず誤番号になるため、
+        妥当な3分割 (各部数字・先頭0・合計10/11桁) はそのまま返す。
+        """
+        assert DataNormalizer._normalize_phone("045-211-2000") == "045-211-2000"
+        assert DataNormalizer._normalize_phone("044-200-2000") == "044-200-2000"
+        assert DataNormalizer._normalize_phone("052-972-1111") == "052-972-1111"
+        # 04 を2桁市外局番として使う地域 (柏 04-7190 等) もハイフン温存で正しく残る
+        assert DataNormalizer._normalize_phone("04-7190-1234") == "04-7190-1234"
+
+    def test_normalize_phone_2digit_area_code_still_works(self):
+        """2桁市外局番 03/06 は引き続き正しく分割する (リグレッション)。"""
+        assert DataNormalizer._normalize_phone("0312345678") == "03-1234-5678"
+        assert DataNormalizer._normalize_phone("0662311234") == "06-6231-1234"
+
     def test_normalize_phone_with_parentheses(self):
         """括弧付き電話番号を変換"""
         assert DataNormalizer._normalize_phone("(088)123-4567") == "088-123-4567"
@@ -567,6 +599,88 @@ class TestCapColor:
         result = DataNormalizer.normalize(raw)
         assert result.color is not None
         assert len(result.color) <= 100
+
+
+class TestPiiProtection:
+    """第三者(発見者・飼い主)の個人情報を公開ポータルに載せないための保護"""
+
+    def test_sanitize_public_phone_drops_personal_mobile(self):
+        """携帯(070/080/090)・IP(050)番号は個人の番号の可能性が高く公開しない"""
+        assert DataNormalizer._sanitize_public_phone("090-1234-5678") == ""
+        assert DataNormalizer._sanitize_public_phone("080-1234-5678") == ""
+        assert DataNormalizer._sanitize_public_phone("070-1234-5678") == ""
+        assert DataNormalizer._sanitize_public_phone("050-1234-5678") == ""
+
+    def test_sanitize_public_phone_keeps_landline(self):
+        """施設の固定電話 (2桁/3桁市外局番) はそのまま公開する"""
+        assert DataNormalizer._sanitize_public_phone("088-123-4567") == "088-123-4567"
+        assert DataNormalizer._sanitize_public_phone("03-1234-5678") == "03-1234-5678"
+        assert DataNormalizer._sanitize_public_phone("045-211-2000") == "045-211-2000"
+
+    def test_coarsen_location_truncates_chome_and_landmark(self):
+        """丁目以下・付近/交差点/住宅街等のブロックレベル詳細を除去する"""
+        assert DataNormalizer._coarsen_location("東区長嶺東5丁目") == "東区長嶺東"
+        assert DataNormalizer._coarsen_location("大村市東大村２丁目付近") == "大村市東大村"
+        assert (
+            DataNormalizer._coarsen_location("福岡市中央区高砂二丁目住宅街") == "福岡市中央区高砂"
+        )
+        assert DataNormalizer._coarsen_location("宮崎市恒久5丁目　付近") == "宮崎市恒久"
+        assert DataNormalizer._coarsen_location("西区　上熊本1丁目") == "西区　上熊本"
+        assert DataNormalizer._coarsen_location("吾妻町牧場の里付近") == "吾妻町牧場の里"
+
+    def test_coarsen_location_leaves_non_address_untouched(self):
+        """住所マーカー(丁目/付近等)が無い値は壊さない(管理番号・施設名・市区町村)"""
+        # 管理番号+状態テキスト (lost に混入する実データ) は誤って削らない
+        assert (
+            DataNormalizer._coarsen_location("R7No.249-250 新しい飼い主募集中")
+            == "R7No.249-250 新しい飼い主募集中"
+        )
+        assert (
+            DataNormalizer._coarsen_location("高知県動物愛護センター") == "高知県動物愛護センター"
+        )
+        assert DataNormalizer._coarsen_location("東京都新宿区") == "東京都新宿区"
+        assert DataNormalizer._coarsen_location("不明") == "不明"
+
+    def test_normalize_drops_mobile_phone_for_public(self):
+        """normalize() は携帯番号を phone に載せない (発見者の個人携帯対策)"""
+        raw = RawAnimalData(
+            species="猫",
+            sex="メス",
+            age="不明",
+            color="黒",
+            size="小型",
+            shelter_date="2026-01-05",
+            location="北海道",
+            phone="090-6269-8068",
+            image_urls=[],
+            source_url="https://example.com/other-animal/1",
+            category="sheltered",
+        )
+        result = DataNormalizer.normalize(raw)
+        assert result.phone is None
+
+    def test_normalize_coarsens_lost_location_only(self):
+        """lost の location は粗粒度化し、sheltered の所在地はそのまま残す"""
+        lost = RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="不明",
+            color="茶",
+            size="中型",
+            shelter_date="2026-01-05",
+            location="東区長嶺東5丁目",
+            phone="",
+            image_urls=[],
+            source_url="https://example.com/lost/1",
+            category="lost",
+        )
+        assert DataNormalizer.normalize(lost).location == "東区長嶺東"
+
+        sheltered = lost.model_copy(
+            update={"category": "sheltered", "source_url": "https://example.com/shel/1"}
+        )
+        # 収容(迷子でない)個体の発見場所は再会の手掛かりになるため粗粒度化しない
+        assert DataNormalizer.normalize(sheltered).location == "東区長嶺東5丁目"
 
 
 class TestNormalizerIntegration:

@@ -256,6 +256,66 @@ class TestCollectorService:
         result = collector_service._collect_with_retry()
         assert len(result) == 5
 
+    def test_collection_complete_true_on_full_clean_run(
+        self, collector_service, mock_adapter, sample_animal_data
+    ):
+        """全件を失敗なく処理しきった run は _collection_complete=True（prune 許可）。"""
+        urls = [(f"https://x/{i}", "adoption") for i in range(5)]
+        mock_adapter.fetch_animal_list.return_value = urls
+        mock_adapter.extract_animal_details.return_value = Mock()
+        mock_adapter.normalize.return_value = sample_animal_data[0]
+
+        collector_service._collect_with_retry()
+        assert collector_service._collection_complete is True
+
+    def test_collection_incomplete_on_soft_deadline(
+        self, collector_service, mock_adapter, sample_animal_data
+    ):
+        """soft-stop で部分取得した run は _collection_complete=False（prune 禁止）。
+
+        部分集合で prune すると、未取得の実在個体を誤って公開から削除してしまう。
+        """
+        urls = [(f"https://x/{i}", "adoption") for i in range(100)]
+        mock_adapter.fetch_animal_list.return_value = urls
+        mock_adapter.extract_animal_details.return_value = Mock()
+        mock_adapter.normalize.return_value = sample_animal_data[0]
+
+        call_count = {"n": 0}
+
+        class TripAfterN:
+            def __init__(self, n: int) -> None:
+                self._n = n
+
+            def should_soft_stop(self) -> bool:
+                triggered = call_count["n"] >= self._n
+                call_count["n"] += 1
+                return triggered
+
+        collector_service._collect_with_retry(soft_deadline=TripAfterN(3))
+        assert collector_service._collection_complete is False
+
+    def test_collection_incomplete_on_detail_failure(
+        self, collector_service, mock_adapter, sample_animal_data
+    ):
+        """detail 抽出が一部失敗した run も _collection_complete=False（prune 禁止）。
+
+        失敗した URL はサイト上に実在するが collected_data に入らないため、その集合で
+        prune すると実在個体を削除してしまう。
+        """
+        urls = [(f"https://x/{i}", "adoption") for i in range(3)]
+        mock_adapter.fetch_animal_list.return_value = urls
+        # 2 件目の extract を失敗させる（ベストエフォートでスキップされる）
+        mock_adapter.extract_animal_details.side_effect = [
+            Mock(),
+            NetworkError("detail fetch failed"),
+            Mock(),
+        ]
+        mock_adapter.normalize.return_value = sample_animal_data[0]
+
+        result = collector_service._collect_with_retry()
+        assert len(result) == 2  # 失敗1件はスキップ
+        assert collector_service._collection_complete is False
+
     def test_collect_with_retry_retries_on_network_error(
         self, collector_service, mock_adapter, sample_animal_data
     ):
