@@ -105,6 +105,16 @@ describe('AnimalDetailClient', () => {
     expect(screen.getByText('収容日')).toBeInTheDocument();
   });
 
+  it('性格・特徴(description)があれば段落表示し、無ければ表示しない', () => {
+    const withDesc = { ...mockAnimal, description: '人懐っこい\n甘えん坊' };
+    const { rerender } = render(<AnimalDetailClient animal={withDesc} />);
+    expect(screen.getByRole('heading', { level: 2, name: '性格・特徴' })).toBeInTheDocument();
+    expect(screen.getByText(/人懐っこい/)).toBeInTheDocument();
+
+    rerender(<AnimalDetailClient animal={mockAnimal} />);
+    expect(screen.queryByRole('heading', { level: 2, name: '性格・特徴' })).not.toBeInTheDocument();
+  });
+
   it('推定年齢が正しくフォーマットされる (2年6ヶ月)', () => {
     render(<AnimalDetailClient animal={mockAnimal} />);
     expect(screen.getByText('約2歳6ヶ月')).toBeInTheDocument();

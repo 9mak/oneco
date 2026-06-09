@@ -126,8 +126,9 @@ class WordPressListAdapter(RuleBasedAdapter):
                 image_urls=image_urls,
                 source_url=detail_url,
                 category=category,
-                # 個体識別: 派生が FIELD_SELECTORS に "breed" を足せば品種が開通する
+                # 個体識別: 派生が FIELD_SELECTORS にキーを足せば開通する
                 breed=fields.get("breed", ""),
+                description=fields.get("description", ""),
             )
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=detail_url) from e
