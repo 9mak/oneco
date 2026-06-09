@@ -12,7 +12,7 @@
 - 4フィールドを ORM・ドメインモデル・公開API・フロントエンド型に additive nullable で追加し、既存スイートを Green に保つ。
 - 既に解析済みで破棄している値（高知の品種、柏の特徴等）を対応フィールドへ配線し、代表アダプターと LLM 経路で実値を保存する。
 - `description` に PII 伏字（電話・メール）を適用し、伏字済みのみ公開する。
-- `q` 検索の対象に `breed`/`name`/`description` を追加する。
+- `q` 検索の対象に `breed` を追加する（カタカナ↔ひらがなを正規化して照合）。name/description/management_number は検索対象に含めない（表示のみ）。
 - breed → description → name/management_number の順でスライス実装・PR 分割できる構造にする。
 
 ### Non-Goals
@@ -113,17 +113,19 @@ Key decisions: 伏字は**丸めの前**に行い、伏字後の文字数で `_D
 | 2.2 | 長さ上限で丸め | DataNormalizer | `_cap_text` / `_normalize_description` |
 | 2.3 | 空→None | DataNormalizer | helpers |
 | 2.4 | breed/name/mgmt をトリム | DataNormalizer | `_cap_text` |
-| 2.5 | 第三者PII除去 | DataNormalizer | `_redact_pii`（電話/メール、氏名は非対象） |
+| 2.5 | description は電話/メール伏字（氏名は非対象） | DataNormalizer | `_redact_pii` |
+| 2.6 | mgmt に PII 非適用 | DataNormalizer | `_cap_text`（伏字なし） |
 | 3.1 | 既存解析値を配線 | rule-based adapters | RawAnimalData 配線 |
 | 3.2 | LLM スキーマで4項目取得 | GroqProvider, LlmAdapter | extraction tool |
 | 3.3 | 欠損は None で継続 | adapters, LlmAdapter | defaults |
 | 3.4 | 代表アダプターで実値 | kochi, kashiwa, wakayama, sendai | adapter wiring |
 | 3.5 | 既存収集を悪化させない | adapters | species ロジック不変 |
 | 4.1 | 値があれば応答に含める | AnimalPublic | from_attributes |
-| 4.2 | q に breed/name/description 追加 | AnimalRepository | OR句2箇所 |
-| 4.3 | None は省略/null・検索無視 | AnimalPublic, repository | nullable |
-| 4.4 | LIKE エスケープ・max_length 踏襲 | routes, repository | `_escape_like` |
-| 4.5 | 伏字済みのみ返す | DataNormalizer, AnimalPublic | 正規化時点で伏字 |
+| 4.2 | q に breed のみ追加（name/desc/mgmtは非検索） | AnimalRepository | OR句2箇所 |
+| 4.3 | breed のカナ正規化照合（漢字読みは非対象） | AnimalRepository | translate + Python正規化 |
+| 4.4 | None は省略/null・検索無視 | AnimalPublic, repository | nullable |
+| 4.5 | LIKE エスケープ・max_length 踏襲 | routes, repository | `_escape_like` |
+| 4.6 | 伏字済みのみ返す | DataNormalizer, AnimalPublic | 正規化時点で伏字 |
 | 5.1 | カードに name/breed | AnimalCard | 条件描画 |
 | 5.2 | 詳細に description | AnimalDetailClient | pre-line 段落 |
 | 5.3 | 詳細に management_number | AnimalDetailClient | dl 行 |
@@ -187,7 +189,8 @@ class DataNormalizer:
 
 **Responsibilities & Constraints**
 - `_to_orm` / `_to_pydantic` / `save_animal` 更新ブロックの**3箇所**に4フィールドを追加。更新は category 同様**無条件上書き**（再収集で自然充填、6.4 と整合）。
-- q 検索 OR句の**2箇所**（`list_animals`:285-294 / `list_animals_orm`:373-382）に `breed`/`name`/`description` の `ilike(keyword, escape="\\")` を追加。`management_number` は対象外。
+- q 検索 OR句の**2箇所**（`list_animals`:285-294 / `list_animals_orm`:373-382）に **breed のみ**を追加。`name`/`description`/`management_number` は検索対象外（表示のみ）。
+- **breed のカナ正規化検索**: カタカナとひらがなは Unicode コードポイントが規則的に対応する（オフセット一定）。SQL 式 `translate(Animal.breed, <カタカナ列>, <ひらがな列>)` で保存値を全てひらがなに正規化し、検索語も Python 側で同じ正規化を施した上で `ilike(f"%{正規化済みq}%")` で照合する。これにより「チワワ」と「ちわわ」が相互ヒットする。漢字↔読みは非対象（4.3）。専用カラム追加は不要（式ベース・breed は短値で件数規模も小さくフルスキャン許容）。
 
 **Contracts**: Service [x]
 

@@ -56,11 +56,12 @@ DBスキーマ（Alembic migration・本番Supabase、nullable追加で後方互
 **Objective:** 運営者として、保存前に個体識別情報を安全な形に正規化したい。そうすれば、自由記述に混入する第三者の個人情報を公開せず、DB制約も超えない。
 
 #### Acceptance Criteria
-1. When DataNormalizer が description を正規化する, the DataNormalizer shall 既存の PII 伏字処理（電話番号・メール等を伏字化）を description に適用する。
+1. When DataNormalizer が description を正規化する, the DataNormalizer shall 既存の PII 伏字処理（電話番号・メールアドレスを伏字化）を description に適用する。
 2. If 正規化後のフィールド値が DB の長さ上限を超える, then the DataNormalizer shall 上限内に丸めて保存可能な形にする。
 3. If 入力フィールドが空文字または空白のみである, then the DataNormalizer shall そのフィールドを None として扱う。
 4. The DataNormalizer shall breed / name / management_number を表示用に過不足なくトリム（前後空白除去）した値で返す。
-5. Where description に飼い主・発見者の個人情報が含まれる, the DataNormalizer shall 迷子情報の location 粗粒度化方針と整合する形で当該 PII を除去する。
+5. The DataNormalizer shall description 内の電話番号・メールアドレスを伏字化する。ただし第三者の氏名（人名）は伏字対象外とする（形態素解析を要するため本仕様の非対象。高リスクの電話/メールはカバーする）。
+6. The DataNormalizer shall management_number に PII 伏字を適用しない（番号の誤伏字を避けるため）。
 
 ### Requirement 3: 収集経路での個体識別情報の取得
 **Objective:** 里親希望者・迷子の飼い主として、サイトに載っている品種や性格が oneco にも反映されてほしい。そうすれば、探している子をより正確に見つけられる。
@@ -73,14 +74,15 @@ DBスキーマ（Alembic migration・本番Supabase、nullable追加で後方互
 5. The データ収集システム shall 既存フィールド（species/sex/age/color/size/location/phone）の収集結果を本変更によって悪化させない。
 
 ### Requirement 4: 公開APIでの提供と検索
-**Objective:** 里親希望者として、品種や性格のキーワードで動物を横断検索したい。そうすれば、「チワワ」「人懐っこい」のような条件で目的の子に辿り着ける。
+**Objective:** 里親希望者として、品種のキーワードで動物を横断検索したい。そうすれば、「チワワ」「柴犬」のような条件で目的の子に辿り着ける。name/description は表示で確認する。
 
 #### Acceptance Criteria
 1. When 公開API が動物データを返す, the 公開API shall 値が存在する場合に breed / name / description / management_number を応答に含める。
-2. When `GET /animals?q=<キーワード>` が呼ばれる, the 公開API shall breed / name / description を既存の検索対象（species/color/size/location/prefecture）に加えた OR 部分一致で検索する。
-3. While あるフィールドが None である, the 公開API shall そのフィールドを応答から省略するか null として返し、検索のヒット判定では無視する。
-4. The 公開API shall 個体識別フィールドに対する入力（検索キーワード）について、既存の LIKE エスケープと最大長の方針を踏襲する。
-5. If description が公開対象として保存されている, then the 公開API shall PII 伏字済みの値のみを返す（伏字前の原文を返さない）。
+2. When `GET /animals?q=<キーワード>` が呼ばれる, the 公開API shall breed を既存の検索対象（species/color/size/location/prefecture）に加えた OR 部分一致で検索する。name / description / management_number は検索対象に含めない（表示のみ）。
+3. When breed をキーワード検索する, the 公開API shall カタカナとひらがなの差異を無視して照合する（保存値と検索語を片方の仮名に正規化して比較。例: 「チワワ」と「ちわわ」が相互にヒット）。漢字の読み変換（例: 「柴犬」と「しばいぬ」）は本仕様の非対象とする。
+4. While あるフィールドが None である, the 公開API shall そのフィールドを応答から省略するか null として返し、検索のヒット判定では無視する。
+5. The 公開API shall 検索キーワードについて、既存の LIKE エスケープと最大長の方針を踏襲する。
+6. If description が公開対象として保存されている, then the 公開API shall PII 伏字済みの値のみを返す（伏字前の原文を返さない）。
 
 ### Requirement 5: フロントエンドでの表示
 **Objective:** 里親希望者・迷子の飼い主として、一覧と詳細で品種・仮名・性格・管理番号を見たい。そうすれば、この子の魅力や同定の手掛かりが分かる。
