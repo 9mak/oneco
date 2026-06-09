@@ -660,20 +660,34 @@ class DataNormalizer:
         # 数字のみを抽出
         digits = re.sub(r"\D", "", phone_str)
 
-        # 10桁の場合: 市外局番に応じて分割
-        if len(digits) == 10:
-            # 2桁市外局番 (03, 04, 05, 06 など)
-            if digits[0:2] in ["03", "04", "05", "06"]:
-                return f"{digits[0:2]}-{digits[2:6]}-{digits[6:10]}"
-            # 3桁市外局番 (088, 090 など)
-            else:
-                return f"{digits[0:3]}-{digits[3:6]}-{digits[6:10]}"
-
-        # 11桁の場合: 0XX-XXXX-XXXX
-        if len(digits) == 11:
-            return f"{digits[0:3]}-{digits[3:7]}-{digits[7:11]}"
-
         # 桁数が想定外 (9桁以下や12桁以上) は空文字。
         # 旧実装は digits[:20] で部分文字列を返していたが、これは内線混入時の
         # 13桁化等の不正データの原因。Codex リリースレビュー I-10 で指摘。
-        return ""
+        if len(digits) not in (10, 11):
+            return ""
+
+        # 入力が既に妥当な区切りでハイフン済みなら、剥がして再分割せず温存する。
+        # 実データの多くは正しくハイフン済み ('045-211-2000')。数字に潰して市外局番
+        # 長を推定し直すと 04x の 2桁(柏 04-7190)/3桁(横浜 045) の区別がつかず誤番号に
+        # なる。各部が数字・先頭 0・連結が digits と一致する 3 分割は原本の区切りを信頼する。
+        hyphen_parts = phone_str.split("-")
+        if (
+            len(hyphen_parts) == 3
+            and all(p.isdigit() for p in hyphen_parts)
+            and hyphen_parts[0].startswith("0")
+            and "".join(hyphen_parts) == digits
+        ):
+            return "-".join(hyphen_parts)
+
+        # ハイフン無し / 不正な区切り → 桁数と市外局番から分割を推定する。
+        if len(digits) == 10:
+            # 実際の 2桁市外局番は 03(東京23区)・06(大阪市) のみ。04x/05x で始まる
+            # 川崎044・横浜045・さいたま048・名古屋052 等は 3桁市外局番なので、
+            # ここで 2桁扱いしてはいけない（旧実装はこれらを誤分割していた）。
+            if digits[0:2] in ("03", "06"):
+                return f"{digits[0:2]}-{digits[2:6]}-{digits[6:10]}"
+            # それ以外の10桁固定電話は3桁市外局番として分割 (0XX-XXX-XXXX)
+            return f"{digits[0:3]}-{digits[3:6]}-{digits[6:10]}"
+
+        # 11桁 (携帯/IP/一部固定): 0XX-XXXX-XXXX
+        return f"{digits[0:3]}-{digits[3:7]}-{digits[7:11]}"

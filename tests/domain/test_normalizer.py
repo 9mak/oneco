@@ -380,6 +380,38 @@ class TestNormalizePhone:
         assert DataNormalizer._normalize_phone("088-123-4567") == "088-123-4567"
         assert DataNormalizer._normalize_phone("090-1234-5678") == "090-1234-5678"
 
+    def test_normalize_phone_3digit_area_code_not_split_as_2digit(self):
+        """3桁市外局番 (044/045/048/052 等) を 2桁市外局番として誤分割しない。
+
+        実際の2桁市外局番は 03(東京23区)・06(大阪市)のみ。04x/05x で始まる
+        044(川崎)/045(横浜)/048(さいたま)/052(名古屋) 等は3桁市外局番であり、
+        旧実装は digits[0:2] in [.., "04", "05", ..] でこれらを誤って 2桁扱いし
+        '045-211-2000' を '04-5211-2000' のような誤番号に変換していた。利用者が
+        タップして誤った窓口へ発信する重大バグ。ハイフン無しの生数字でも正す。
+        """
+        assert DataNormalizer._normalize_phone("0452112000") == "045-211-2000"
+        assert DataNormalizer._normalize_phone("0442002000") == "044-200-2000"
+        assert DataNormalizer._normalize_phone("0488303000") == "048-830-3000"
+        assert DataNormalizer._normalize_phone("0529721111") == "052-972-1111"
+
+    def test_normalize_phone_preserves_valid_existing_hyphens(self):
+        """既に妥当な区切りでハイフン済みの入力は、剥がして再分割せず温存する。
+
+        本番データの多くは正しくハイフン済み ('045-211-2000')。これを数字に潰して
+        市外局番長を推定し直すと 04x の 2桁/3桁の区別がつかず誤番号になるため、
+        妥当な3分割 (各部数字・先頭0・合計10/11桁) はそのまま返す。
+        """
+        assert DataNormalizer._normalize_phone("045-211-2000") == "045-211-2000"
+        assert DataNormalizer._normalize_phone("044-200-2000") == "044-200-2000"
+        assert DataNormalizer._normalize_phone("052-972-1111") == "052-972-1111"
+        # 04 を2桁市外局番として使う地域 (柏 04-7190 等) もハイフン温存で正しく残る
+        assert DataNormalizer._normalize_phone("04-7190-1234") == "04-7190-1234"
+
+    def test_normalize_phone_2digit_area_code_still_works(self):
+        """2桁市外局番 03/06 は引き続き正しく分割する (リグレッション)。"""
+        assert DataNormalizer._normalize_phone("0312345678") == "03-1234-5678"
+        assert DataNormalizer._normalize_phone("0662311234") == "06-6231-1234"
+
     def test_normalize_phone_with_parentheses(self):
         """括弧付き電話番号を変換"""
         assert DataNormalizer._normalize_phone("(088)123-4567") == "088-123-4567"
