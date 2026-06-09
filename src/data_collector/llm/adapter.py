@@ -153,6 +153,9 @@ class LlmAdapter(MunicipalityAdapter):
             breed=fields.get("breed", ""),
             # 個体識別: 性格・特徴 (Slice 2)。LLM の features を description に統一マッピング。
             description=fields.get("features", ""),
+            # 個体識別: 仮名・管理番号 (Slice 3)
+            name=fields.get("name", ""),
+            management_number=fields.get("management_number", ""),
         )
 
     def normalize(self, raw_data: RawAnimalData) -> AnimalData:
@@ -238,6 +241,7 @@ class LlmAdapter(MunicipalityAdapter):
                         # 受け皿へ渡す（旧実装はドロップしていた）。features は description に統一。
                         breed=fields.get("breed", ""),
                         description=fields.get("features", ""),
+                        name=fields.get("name", ""),
                         management_number=fields.get("management_number", ""),
                     )
                 )

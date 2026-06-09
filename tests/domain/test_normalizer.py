@@ -1109,3 +1109,41 @@ class TestDescriptionNormalization:
             description="シャイだけど甘えん坊。",
         )
         assert DataNormalizer.normalize(raw).description == "シャイだけど甘えん坊。"
+
+
+class TestNameAndManagementNumberNormalization:
+    """Slice 3: 仮名(name)・管理番号(management_number) の正規化（トリム・長さ丸め、PII非適用）"""
+
+    @staticmethod
+    def _raw(name: str = "", management_number: str = "") -> RawAnimalData:
+        return RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="2歳",
+            color="茶色",
+            size="中型",
+            shelter_date="2026-01-05",
+            location="高知県",
+            phone="0881234567",
+            image_urls=[],
+            source_url="https://example.com/nm",
+            category="adoption",
+            name=name,
+            management_number=management_number,
+        )
+
+    def test_normalize_populates_name_and_management_number(self):
+        result = DataNormalizer.normalize(self._raw(name="  ポチ  ", management_number=" R7-249 "))
+        assert result.name == "ポチ"
+        assert result.management_number == "R7-249"
+
+    def test_blank_name_and_mgmt_to_none(self):
+        result = DataNormalizer.normalize(self._raw(name="   ", management_number=""))
+        assert result.name is None
+        assert result.management_number is None
+
+    def test_management_number_is_not_pii_redacted(self):
+        # 数字ハイフン列の管理番号を PII 伏字してはいけない（誤伏字回避）
+        result = DataNormalizer.normalize(self._raw(management_number="2026-001"))
+        assert result.management_number == "2026-001"
+        assert "███" not in result.management_number
