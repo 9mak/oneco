@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FilterState } from '@/types/animal';
 
@@ -18,7 +18,6 @@ const PREFECTURES = [
 
 interface FilterPanelProps {
   filters: FilterState;
-  resultCount: number;
 }
 
 /**
@@ -62,9 +61,13 @@ function activeChips(filters: FilterState): { key: keyof FilterState; label: str
   return chips;
 }
 
-export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
+export function FilterPanel({ filters }: FilterPanelProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  // フィルタ変更を transition で包むと、Suspense の再サスペンドを待つ間も
+  // 前のグリッドを保持したまま裏で差し替えられる（全消しスケルトンのチラつき防止）。
+  // isPending を「更新中」インジケータに使う。
+  const [isPending, startTransition] = useTransition();
 
   const updateParam = (key: keyof FilterState, value: string | undefined) => {
     const newParams = new URLSearchParams(searchParams.toString());
@@ -74,13 +77,14 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
       newParams.delete(key);
     }
     const qs = newParams.toString();
-    router.replace(qs ? `?${qs}` : '/', { scroll: false });
+    startTransition(() => {
+      router.replace(qs ? `?${qs}` : '/', { scroll: false });
+    });
   };
 
   // キーワード検索はキーストローク毎のナビゲーションを避けるため debounce する。
-  // また IME 変換中 (Composition) は同期しない — router.replace で親
-  // <Suspense key={filters}> が再マウントすると、変換中の文字とフォーカスが
-  // 失われ日本語入力が実用に耐えない。確定 (onCompositionEnd) で初めて同期する。
+  // また IME 変換中 (Composition) は URL 同期しない — 変換中に router.replace が
+  // 走ると確定前の文字で検索してしまうため。確定 (onCompositionEnd) で同期する。
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isComposingRef = useRef(false);
   useEffect(() => {
@@ -88,6 +92,19 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
       if (searchTimer.current) clearTimeout(searchTimer.current);
     };
   }, []);
+
+  // 入力欄は controlled。自分のキー入力では searchValue を即時更新し、URL 更新だけを
+  // debounce する。外部要因（クリア / チップ解除）で filters.q が変わったときだけ
+  // 入力欄へ同期する。input に key={filters.q} を付ける方式は debounce 確定のたびに
+  // input が再マウントされフォーカス・カーソルを失うため採らない。
+  // 同期はレンダー中に前回 prop と比較する React 公式パターンで行い、
+  // setState-in-effect を避ける（自分の確定では値が一致するためフォーカスは保たれる）。
+  const [searchValue, setSearchValue] = useState(filters.q ?? '');
+  const [prevQ, setPrevQ] = useState(filters.q);
+  if (filters.q !== prevQ) {
+    setPrevQ(filters.q);
+    setSearchValue(filters.q ?? '');
+  }
 
   const handleSearchChange = (value: string) => {
     if (searchTimer.current) clearTimeout(searchTimer.current);
@@ -97,7 +114,9 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
   };
 
   const clearAll = () => {
-    router.replace('/', { scroll: false });
+    startTransition(() => {
+      router.replace('/', { scroll: false });
+    });
   };
 
   // 'sheltered' タブは default 状態。category 未指定 = 'sheltered' タブ active と等価。
@@ -152,13 +171,21 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
       </div>
 
       <div className="p-6 space-y-4">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4 min-h-[1.75rem]">
           <span
             className="text-sm text-[var(--color-text-secondary)]"
             aria-live="polite"
             aria-atomic="true"
           >
-            {resultCount}件の動物
+            {isPending && (
+              <span className="inline-flex items-center gap-2">
+                <span
+                  className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"
+                  aria-hidden="true"
+                />
+                更新中…
+              </span>
+            )}
           </span>
           <div className="flex items-center gap-2">
             <label
@@ -216,9 +243,10 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
             <input
               id="q-search"
               type="search"
-              defaultValue={filters.q || ''}
+              value={searchValue}
               onChange={(e) => {
-                // IME 変換確定前は同期しない (確定文字だけを検索語にする)
+                setSearchValue(e.target.value);
+                // IME 変換確定前は URL 同期しない (確定文字だけを検索語にする)
                 if (!isComposingRef.current) {
                   handleSearchChange(e.target.value);
                 }
@@ -228,7 +256,9 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
               }}
               onCompositionEnd={(e) => {
                 isComposingRef.current = false;
-                handleSearchChange((e.target as HTMLInputElement).value);
+                const value = (e.target as HTMLInputElement).value;
+                setSearchValue(value);
+                handleSearchChange(value);
               }}
               placeholder="例: 茶白、子犬、四万十町..."
               maxLength={100}

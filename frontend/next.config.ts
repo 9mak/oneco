@@ -23,6 +23,8 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'douai-tokushima.com' },
       { protocol: 'https', hostname: 'kochi-apc.com' },
       { protocol: 'https', hostname: 'kyoto-ani-love.com' },
+      { protocol: 'https', hostname: 'oita-aigo.com' },
+      { protocol: 'https', hostname: 'mie-dakc.server-shared.com' },
       { protocol: 'https', hostname: 'www.yokosuka-doubutu.com' },
     ],
     formats: ['image/webp', 'image/avif'], // WebP/AVIF自動変換
