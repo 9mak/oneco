@@ -183,6 +183,8 @@ class TestCityWakayamaAdapter:
             assert u.startswith("https://www.city.wakayama.wakayama.jp/")
         assert raw.source_url == urls[0][0]
         assert raw.category == "adoption"
+        # 種類カラム (雑種) が品種(breed)として保存される (Slice 1)
+        assert raw.breed == "雑種"
 
     def test_extract_animal_details_synthetic_cat(self):
         """合成 HTML 1 件 (猫) で各フィールドが正しく抽出される"""

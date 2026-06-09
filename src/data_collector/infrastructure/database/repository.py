@@ -28,6 +28,26 @@ def _escape_like(value: str) -> str:
     return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
+# カタカナ ァ..ン (U+30A1..U+30F3) と ひらがな ぁ..ん (U+3041..U+3093) は
+# コードポイントが 0x60 オフセットで規則対応する。SQLite には translate() が無いため
+# (PostgreSQL にはある)、保存値を SQL で正規化せず「検索語を両仮名へ展開して OR」する。
+_KATA_TO_HIRA = {c: c - 0x60 for c in range(0x30A1, 0x30F4)}
+_HIRA_TO_KATA = {c: c + 0x60 for c in range(0x3041, 0x3094)}
+
+
+def _kana_search_variants(q: str) -> list[str]:
+    """検索語をカタカナ/ひらがな両方へ正規化した重複なし候補を返す。
+
+    品種(breed)のカナ表記揺れ（例: 「チワワ」と「ちわわ」）を吸収するため、
+    元の語・全ひらがな化・全カタカナ化の3候補で OR 検索する。漢字↔読み変換は非対象。
+    """
+    variants: list[str] = []
+    for v in (q, q.translate(_KATA_TO_HIRA), q.translate(_HIRA_TO_KATA)):
+        if v not in variants:
+            variants.append(v)
+    return variants
+
+
 class NotFoundError(Exception):
     """リソースが見つからない場合のエラー"""
 
@@ -304,6 +324,11 @@ class AnimalRepository:
             from sqlalchemy import or_
 
             keyword = f"%{_escape_like(q)}%"
+            # 品種はカタカナ↔ひらがなの揺れを吸収するため検索語を両仮名へ展開して照合
+            breed_clauses = [
+                Animal.breed.ilike(f"%{_escape_like(v)}%", escape="\\")
+                for v in _kana_search_variants(q)
+            ]
             filters.append(
                 or_(
                     Animal.species.ilike(keyword, escape="\\"),
@@ -311,6 +336,7 @@ class AnimalRepository:
                     Animal.size.ilike(keyword, escape="\\"),
                     Animal.location.ilike(keyword, escape="\\"),
                     Animal.prefecture.ilike(keyword, escape="\\"),
+                    *breed_clauses,
                 )
             )
 
@@ -397,6 +423,11 @@ class AnimalRepository:
             from sqlalchemy import or_
 
             keyword = f"%{_escape_like(q)}%"
+            # 品種はカタカナ↔ひらがなの揺れを吸収するため検索語を両仮名へ展開して照合
+            breed_clauses = [
+                Animal.breed.ilike(f"%{_escape_like(v)}%", escape="\\")
+                for v in _kana_search_variants(q)
+            ]
             filters.append(
                 or_(
                     Animal.species.ilike(keyword, escape="\\"),
@@ -404,6 +435,7 @@ class AnimalRepository:
                     Animal.size.ilike(keyword, escape="\\"),
                     Animal.location.ilike(keyword, escape="\\"),
                     Animal.prefecture.ilike(keyword, escape="\\"),
+                    *breed_clauses,
                 )
             )
 

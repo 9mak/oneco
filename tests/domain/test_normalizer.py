@@ -1022,3 +1022,41 @@ class TestIdentityFieldDefaults:
         assert result.name is None
         assert result.description is None
         assert result.management_number is None
+
+
+class TestBreedNormalization:
+    """Slice 1: 品種(breed) の正規化（トリム・空→None・長さ丸め、PII非適用）"""
+
+    def test_cap_text_trims_empties_and_caps(self):
+        assert DataNormalizer._cap_text("  柴犬  ", 50) == "柴犬"
+        assert DataNormalizer._cap_text("", 50) is None
+        assert DataNormalizer._cap_text("   ", 50) is None
+        assert DataNormalizer._cap_text(None, 50) is None
+        assert DataNormalizer._cap_text("あ" * 60, 50) == "あ" * 50
+
+    @staticmethod
+    def _raw(breed: str) -> RawAnimalData:
+        return RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="2歳",
+            color="茶色",
+            size="中型",
+            shelter_date="2026-01-05",
+            location="高知県",
+            phone="0881234567",
+            image_urls=[],
+            source_url="https://example.com/breed",
+            category="adoption",
+            breed=breed,
+        )
+
+    def test_normalize_populates_breed(self):
+        assert DataNormalizer.normalize(self._raw("チワワ")).breed == "チワワ"
+
+    def test_normalize_breed_blank_to_none(self):
+        assert DataNormalizer.normalize(self._raw("   ")).breed is None
+
+    def test_breed_max_len_matches_column(self):
+        """品種の長さ上限は ORM の VARCHAR(50) と一致していること（不一致は INSERT 全損）。"""
+        assert DataNormalizer._BREED_MAX_LEN == 50

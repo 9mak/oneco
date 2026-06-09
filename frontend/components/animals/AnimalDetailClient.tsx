@@ -142,6 +142,13 @@ export function AnimalDetailClient({ animal }: AnimalDetailClientProps) {
                 <dd className="text-base text-gray-900">{formatAge(animal.age_months)}</dd>
               </div>
 
+              {animal.breed && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">品種</dt>
+                  <dd className="text-base text-gray-900">{animal.breed}</dd>
+                </div>
+              )}
+
               {animal.color && (
                 <div>
                   <dt className="text-sm font-medium text-gray-500">毛色</dt>

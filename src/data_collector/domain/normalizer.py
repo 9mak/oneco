@@ -124,6 +124,8 @@ class DataNormalizer:
             image_urls=image_urls_raw,
             source_url=raw_data.source_url,
             category=raw_data.category,
+            # 個体識別: 品種 (Slice 1)。トリム+長さ丸めのみ (PII 非適用の構造化値)。
+            breed=DataNormalizer._cap_text(raw_data.breed, DataNormalizer._BREED_MAX_LEN),
         )
 
     @staticmethod
@@ -239,6 +241,13 @@ class DataNormalizer:
     # animals.phone VARCHAR(20)
     _PHONE_MAX_LEN: int = 20
 
+    # 個体識別フィールドの長さ上限。ORM の VARCHAR と厳密一致させること
+    # (不一致は丸めをすり抜けて INSERT 失敗 → 1 サイト全損)。
+    # animals.breed VARCHAR(50) / name VARCHAR(100) / management_number VARCHAR(50)
+    _BREED_MAX_LEN: int = 50
+    _NAME_MAX_LEN: int = 100
+    _MANAGEMENT_NUMBER_MAX_LEN: int = 50
+
     # PII (個人情報) 検出パターン。自治体サイトの「特徴」「コメント」自由記述に
     # 飼い主や保護者の個人連絡先が混入するケースがあり、公開リスクとなる。
     # color など自由テキスト由来のフィールドで以下を ███ に置換する:
@@ -257,6 +266,22 @@ class DataNormalizer:
         """テキストから電話番号・メールアドレスを ███ に置換する"""
         text = DataNormalizer._PII_PHONE_RE.sub(DataNormalizer._PII_REPLACEMENT, text)
         text = DataNormalizer._PII_EMAIL_RE.sub(DataNormalizer._PII_REPLACEMENT, text)
+        return text
+
+    @staticmethod
+    def _cap_text(raw: str | None, max_len: int) -> str | None:
+        """自由値フィールドをトリムし、空は None、上限超過は丸めて返す（PII 非適用）。
+
+        breed / name / management_number 等の短い識別値に使う
+        （_cap_color から PII 伏字行を除いた汎用版）。
+        """
+        if not raw:
+            return None
+        text = raw.strip()
+        if not text:
+            return None
+        if len(text) > max_len:
+            return text[:max_len]
         return text
 
     @staticmethod
