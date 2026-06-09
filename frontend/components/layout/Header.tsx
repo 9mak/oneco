@@ -86,7 +86,8 @@ export function Header() {
           {/* ナビゲーション */}
           <nav aria-label="メインナビゲーション" className="shrink-0">
             <ul className="flex items-center gap-3 sm:gap-4">
-              <li>
+              {/* 「動物一覧」はロゴと同じ / へのリンクなのでモバイルでは省略 */}
+              <li className="hidden sm:block">
                 <Link
                   href="/"
                   className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary-700)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 rounded px-1"
@@ -99,7 +100,9 @@ export function Header() {
                   href="/archive"
                   className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary-700)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 rounded px-1"
                 >
-                  卒業した子たち
+                  {/* モバイルでは短縮表示して横幅を節約 */}
+                  <span className="sm:hidden">卒業</span>
+                  <span className="hidden sm:inline">卒業した子たち</span>
                 </Link>
               </li>
               <li>

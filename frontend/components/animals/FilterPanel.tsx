@@ -231,6 +231,7 @@ export function FilterPanel({ filters }: FilterPanelProps) {
             <input
               id="q-search"
               type="search"
+              key={filters.q ?? ''}
               defaultValue={filters.q || ''}
               onChange={(e) => {
                 // IME 変換確定前は同期しない (確定文字だけを検索語にする)
