@@ -8,8 +8,9 @@ import { notFound } from 'next/navigation';
 import { AnimalPublic } from '@/types/animal';
 import { AnimalDetailClient } from '@/components/animals/AnimalDetailClient';
 import { PetSchema } from '@/components/animals/PetSchema';
+import { getSiteUrl } from '@/lib/site-url';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+const SITE_URL = getSiteUrl();
 
 interface AnimalDetailPageProps {
   params: Promise<{
