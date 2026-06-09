@@ -50,7 +50,7 @@ export default async function ArchivePage() {
         </p>
         {totalCount > 0 && (
           <p className="mt-4 text-sm text-[var(--color-accent-700)] font-medium">
-            これまでに {totalCount} 件の出会いが生まれました
+            これまでに {totalCount.toLocaleString('ja-JP')} 件の出会いが生まれました
           </p>
         )}
       </section>

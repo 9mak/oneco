@@ -34,11 +34,6 @@ export function AnimalCard({ animal }: AnimalCardProps) {
   // <article> を外枠にして Link と FavoriteButton を兄弟要素に分離する。
   return (
     <article className="relative bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden">
-      {/* お気に入りボタン: Link の外に置き a-button ネストを解消 */}
-      <div className="absolute top-2 left-2 z-10">
-        <FavoriteButton animalId={animal.id} size="sm" />
-      </div>
-
       <Link
         href={`/animals/${animal.id}`}
         className="block focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 rounded-lg"
@@ -95,6 +90,12 @@ export function AnimalCard({ animal }: AnimalCardProps) {
           </dl>
         </div>
       </Link>
+
+      {/* お気に入りボタン: Link の兄弟として後ろに置き、a>button ネストを避けつつ
+          タブ順を「カード本体 → お気に入り」にする。視覚配置は absolute で左上に固定。 */}
+      <div className="absolute top-2 left-2 z-10">
+        <FavoriteButton animalId={animal.id} size="sm" />
+      </div>
     </article>
   );
 }

@@ -98,10 +98,11 @@ export function Header() {
               <li>
                 <Link
                   href="/archive"
+                  aria-label="卒業した子たち"
                   className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary-700)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 rounded px-1"
                 >
-                  {/* モバイルでは短縮表示して横幅を節約 */}
-                  <span className="sm:hidden">卒業</span>
+                  {/* モバイルでは短縮表示して横幅を節約。SR には aria-label で常にフルラベルを伝える */}
+                  <span className="sm:hidden" aria-hidden="true">卒業</span>
                   <span className="hidden sm:inline">卒業した子たち</span>
                 </Link>
               </li>

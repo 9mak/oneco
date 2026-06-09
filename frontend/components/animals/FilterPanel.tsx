@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FilterState } from '@/types/animal';
 
@@ -83,9 +83,8 @@ export function FilterPanel({ filters }: FilterPanelProps) {
   };
 
   // キーワード検索はキーストローク毎のナビゲーションを避けるため debounce する。
-  // また IME 変換中 (Composition) は同期しない — router.replace で親
-  // <Suspense key={filters}> が再マウントすると、変換中の文字とフォーカスが
-  // 失われ日本語入力が実用に耐えない。確定 (onCompositionEnd) で初めて同期する。
+  // また IME 変換中 (Composition) は URL 同期しない — 変換中に router.replace が
+  // 走ると確定前の文字で検索してしまうため。確定 (onCompositionEnd) で同期する。
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isComposingRef = useRef(false);
   useEffect(() => {
@@ -93,6 +92,19 @@ export function FilterPanel({ filters }: FilterPanelProps) {
       if (searchTimer.current) clearTimeout(searchTimer.current);
     };
   }, []);
+
+  // 入力欄は controlled。自分のキー入力では searchValue を即時更新し、URL 更新だけを
+  // debounce する。外部要因（クリア / チップ解除）で filters.q が変わったときだけ
+  // 入力欄へ同期する。input に key={filters.q} を付ける方式は debounce 確定のたびに
+  // input が再マウントされフォーカス・カーソルを失うため採らない。
+  // 同期はレンダー中に前回 prop と比較する React 公式パターンで行い、
+  // setState-in-effect を避ける（自分の確定では値が一致するためフォーカスは保たれる）。
+  const [searchValue, setSearchValue] = useState(filters.q ?? '');
+  const [prevQ, setPrevQ] = useState(filters.q);
+  if (filters.q !== prevQ) {
+    setPrevQ(filters.q);
+    setSearchValue(filters.q ?? '');
+  }
 
   const handleSearchChange = (value: string) => {
     if (searchTimer.current) clearTimeout(searchTimer.current);
@@ -231,10 +243,10 @@ export function FilterPanel({ filters }: FilterPanelProps) {
             <input
               id="q-search"
               type="search"
-              key={filters.q ?? ''}
-              defaultValue={filters.q || ''}
+              value={searchValue}
               onChange={(e) => {
-                // IME 変換確定前は同期しない (確定文字だけを検索語にする)
+                setSearchValue(e.target.value);
+                // IME 変換確定前は URL 同期しない (確定文字だけを検索語にする)
                 if (!isComposingRef.current) {
                   handleSearchChange(e.target.value);
                 }
@@ -244,7 +256,9 @@ export function FilterPanel({ filters }: FilterPanelProps) {
               }}
               onCompositionEnd={(e) => {
                 isComposingRef.current = false;
-                handleSearchChange((e.target as HTMLInputElement).value);
+                const value = (e.target as HTMLInputElement).value;
+                setSearchValue(value);
+                handleSearchChange(value);
               }}
               placeholder="例: 茶白、子犬、四万十町..."
               maxLength={100}
