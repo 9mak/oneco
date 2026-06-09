@@ -4,13 +4,14 @@ import type { Metadata } from 'next';
 import { fetchAnimals } from '@/lib/animals';
 import { AnimalGrid } from '@/components/animals/AnimalGrid';
 import { PREFECTURES, isValidPrefecture } from '@/lib/prefectures';
+import { getSiteUrl } from '@/lib/site-url';
 import type { AnimalPublic, FilterState } from '@/types/animal';
 
 // 各都道府県ページは ISR。事前生成 + 5 分ごとに再検証する。
 export const revalidate = 300;
 
 const PAGE_SIZE = 20;
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+const SITE_URL = getSiteUrl();
 
 interface PrefecturePageProps {
   params: Promise<{ prefecture: string }>;

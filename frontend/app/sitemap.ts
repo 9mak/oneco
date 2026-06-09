@@ -1,7 +1,8 @@
 import type { MetadataRoute } from 'next';
 import { PREFECTURES } from '@/lib/prefectures';
+import { getSiteUrl } from '@/lib/site-url';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+const SITE_URL = getSiteUrl();
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000';
 
 interface SitemapAnimal {
