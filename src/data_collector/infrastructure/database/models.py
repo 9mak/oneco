@@ -55,6 +55,13 @@ class Animal(Base):
     size: str = Column(String(50), nullable=True)
     phone: str = Column(String(20), nullable=True)
 
+    # 個体識別フィールド (animal-identity-fields)。全て任意。breed は検索で使うため索引。
+    # 列長は DataNormalizer の長さ定数と厳密に一致させること (不一致は INSERT 失敗で全損)。
+    breed: str | None = Column(String(50), nullable=True, index=True)
+    name: str | None = Column(String(100), nullable=True)
+    management_number: str | None = Column(String(50), nullable=True)
+    description: str | None = Column(Text, nullable=True)
+
     # JSON配列（PostgreSQLではJSONB、SQLiteではJSONとして扱う）
     image_urls: list[str] = Column(
         JSON().with_variant(JSONB, "postgresql"),

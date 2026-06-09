@@ -73,6 +73,10 @@ async def test_animals_table_columns(migration_engine):
             "size",
             "phone",
             "image_urls",
+            "breed",
+            "name",
+            "management_number",
+            "description",
         ]
 
         for col in expected_columns:

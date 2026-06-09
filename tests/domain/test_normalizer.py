@@ -977,3 +977,48 @@ class TestNormalizeCategory:
         animal_data = DataNormalizer.normalize(raw_data)
 
         assert animal_data.category == "lost"
+
+
+class TestIdentityFieldDefaults:
+    """個体識別フィールドの既定値（Slice 0: 省略時に未設定。スライス可能性の根拠）"""
+
+    def test_raw_animal_data_defaults_identity_fields_to_empty(self):
+        """RawAnimalData は4フィールドを省略すると空文字（収集側の後方互換）。"""
+        raw = RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="2歳",
+            color="茶色",
+            size="中型",
+            shelter_date="2026-01-05",
+            location="高知県",
+            phone="0881234567",
+            image_urls=[],
+            source_url="https://example.com/a",
+            category="adoption",
+        )
+        assert raw.breed == ""
+        assert raw.name == ""
+        assert raw.description == ""
+        assert raw.management_number == ""
+
+    def test_normalize_omits_identity_fields_as_none(self):
+        """品種等を持たない生データを正規化すると個体識別は None（Slice 0 は値を入れない）。"""
+        raw = RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="2歳",
+            color="茶色",
+            size="中型",
+            shelter_date="2026-01-05",
+            location="高知県",
+            phone="0881234567",
+            image_urls=[],
+            source_url="https://example.com/b",
+            category="adoption",
+        )
+        result = DataNormalizer.normalize(raw)
+        assert result.breed is None
+        assert result.name is None
+        assert result.description is None
+        assert result.management_number is None

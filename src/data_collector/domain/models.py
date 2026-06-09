@@ -49,6 +49,13 @@ class RawAnimalData(BaseModel):
     image_urls: list[str] = Field(..., description="画像URL一覧")
     source_url: str = Field(..., description="元ページURL")
     category: str = Field(..., description="カテゴリ ('adoption' or 'lost')")
+    # 個体識別フィールド (任意。サイトにより取得可否が異なるため既定は空文字。
+    # 必須にすると全アダプター/LLM の構築呼び出しが ValidationError で全壊するため
+    # 必ず default 付き任意にする)
+    breed: str = Field(default="", description="品種 (正規化前。例: 柴犬, チワワ, 雑種)")
+    name: str = Field(default="", description="仮名・愛称 (正規化前。例: ポチ)")
+    description: str = Field(default="", description="性格・特徴の自由記述 (正規化前)")
+    management_number: str = Field(default="", description="収容番号・管理番号 (正規化前)")
 
 
 class AnimalData(BaseModel):
@@ -74,6 +81,12 @@ class AnimalData(BaseModel):
     size: str | None = Field(default=None, description="体格")
     phone: str | None = Field(default=None, description="電話番号 (ハイフン含む)")
     image_urls: list[HttpUrl] = Field(default_factory=list, description="画像URL一覧")
+
+    # 個体識別フィールド (全て任意。サイトにより取得可否が異なり欠損を許容する)
+    breed: str | None = Field(default=None, description="品種 (例: 柴犬, チワワ)")
+    name: str | None = Field(default=None, description="仮名・愛称 (例: ポチ)")
+    description: str | None = Field(default=None, description="性格・特徴 (PII伏字済み)")
+    management_number: str | None = Field(default=None, description="収容番号・管理番号")
 
     # 拡張フィールド (全てオプショナルで後方互換性を確保)
     status: AnimalStatus | None = Field(

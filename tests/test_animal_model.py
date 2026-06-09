@@ -97,6 +97,44 @@ async def test_animal_optional_fields(async_session):
 
 
 @pytest.mark.asyncio
+async def test_animal_identity_fields_exist_and_nullable(async_session):
+    """個体識別4フィールド (breed/name/management_number/description) が任意で保存できる。"""
+    animal = Animal(
+        species="犬",
+        shelter_date=date(2026, 1, 5),
+        location="高知県",
+        source_url="https://example.com/animal/identity",
+        breed="柴犬",
+        name="ポチ",
+        management_number="R7-249",
+        description="人懐っこい性格です。",
+    )
+    async_session.add(animal)
+    await async_session.commit()
+    await async_session.refresh(animal)
+
+    assert animal.breed == "柴犬"
+    assert animal.name == "ポチ"
+    assert animal.management_number == "R7-249"
+    assert animal.description == "人懐っこい性格です。"
+
+    # 省略時は None（nullable）
+    bare = Animal(
+        species="猫",
+        shelter_date=date(2026, 1, 6),
+        location="高知県",
+        source_url="https://example.com/animal/identity-bare",
+    )
+    async_session.add(bare)
+    await async_session.commit()
+    await async_session.refresh(bare)
+    assert bare.breed is None
+    assert bare.name is None
+    assert bare.management_number is None
+    assert bare.description is None
+
+
+@pytest.mark.asyncio
 async def test_animal_default_values(async_session):
     """デフォルト値（sex='不明', image_urls=[]）が適用されるか"""
     animal = Animal(

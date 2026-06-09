@@ -33,6 +33,15 @@ export interface AnimalPublic {
   source_url: string;
   /** カテゴリ ("adoption": 譲渡対象, "lost": 迷子, "sheltered": 収容中) */
   category: 'adoption' | 'lost' | 'sheltered';
+  // 個体識別フィールド（任意。サイトにより取得可否が異なり欠損を許容する）
+  /** 品種 (例: 柴犬, チワワ) */
+  breed?: string | null;
+  /** 仮名・愛称 (例: ポチ) */
+  name?: string | null;
+  /** 性格・特徴 (PII伏字済み) */
+  description?: string | null;
+  /** 収容番号・管理番号 */
+  management_number?: string | null;
 }
 
 /**
