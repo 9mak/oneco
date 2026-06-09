@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FilterState } from '@/types/animal';
 
@@ -18,7 +18,6 @@ const PREFECTURES = [
 
 interface FilterPanelProps {
   filters: FilterState;
-  resultCount: number;
 }
 
 /**
@@ -62,9 +61,13 @@ function activeChips(filters: FilterState): { key: keyof FilterState; label: str
   return chips;
 }
 
-export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
+export function FilterPanel({ filters }: FilterPanelProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  // フィルタ変更を transition で包むと、Suspense の再サスペンドを待つ間も
+  // 前のグリッドを保持したまま裏で差し替えられる（全消しスケルトンのチラつき防止）。
+  // isPending を「更新中」インジケータに使う。
+  const [isPending, startTransition] = useTransition();
 
   const updateParam = (key: keyof FilterState, value: string | undefined) => {
     const newParams = new URLSearchParams(searchParams.toString());
@@ -74,7 +77,9 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
       newParams.delete(key);
     }
     const qs = newParams.toString();
-    router.replace(qs ? `?${qs}` : '/', { scroll: false });
+    startTransition(() => {
+      router.replace(qs ? `?${qs}` : '/', { scroll: false });
+    });
   };
 
   // キーワード検索はキーストローク毎のナビゲーションを避けるため debounce する。
@@ -97,7 +102,9 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
   };
 
   const clearAll = () => {
-    router.replace('/', { scroll: false });
+    startTransition(() => {
+      router.replace('/', { scroll: false });
+    });
   };
 
   // 'sheltered' タブは default 状態。category 未指定 = 'sheltered' タブ active と等価。
@@ -152,13 +159,21 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
       </div>
 
       <div className="p-6 space-y-4">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4 min-h-[1.75rem]">
           <span
             className="text-sm text-[var(--color-text-secondary)]"
             aria-live="polite"
             aria-atomic="true"
           >
-            {resultCount}件の動物
+            {isPending && (
+              <span className="inline-flex items-center gap-2">
+                <span
+                  className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"
+                  aria-hidden="true"
+                />
+                更新中…
+              </span>
+            )}
           </span>
           <div className="flex items-center gap-2">
             <label

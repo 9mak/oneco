@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { FilterPanel } from './FilterPanel';
 import { FilterState } from '@/types/animal';
 
@@ -22,16 +22,15 @@ describe('FilterPanel', () => {
   const defaultFilters: FilterState = {};
 
   it('フィルタパネルが正しくレンダリングされる', () => {
-    render(<FilterPanel filters={defaultFilters} resultCount={42} />);
+    render(<FilterPanel filters={defaultFilters} />);
 
     expect(screen.getByRole('tab', { name: '収容中の子を探す' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '家族を迎える' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '迷子情報' })).toBeInTheDocument();
-    expect(screen.getByText('42件の動物')).toBeInTheDocument();
   });
 
   it('迷子情報タブをクリックするとURLが更新される', () => {
-    render(<FilterPanel filters={defaultFilters} resultCount={42} />);
+    render(<FilterPanel filters={defaultFilters} />);
 
     fireEvent.click(screen.getByRole('tab', { name: '迷子情報' }));
 
@@ -39,7 +38,7 @@ describe('FilterPanel', () => {
   });
 
   it('カテゴリタブをクリックするとURLが更新される', () => {
-    render(<FilterPanel filters={defaultFilters} resultCount={42} />);
+    render(<FilterPanel filters={defaultFilters} />);
 
     fireEvent.click(screen.getByRole('tab', { name: '家族を迎える' }));
 
@@ -47,7 +46,7 @@ describe('FilterPanel', () => {
   });
 
   it('種別フィルタを変更するとURLが更新される', () => {
-    render(<FilterPanel filters={defaultFilters} resultCount={42} />);
+    render(<FilterPanel filters={defaultFilters} />);
 
     fireEvent.change(screen.getByLabelText('種別'), { target: { value: '犬' } });
 
@@ -57,7 +56,7 @@ describe('FilterPanel', () => {
   it('キーワード検索はdebounce後にURLを更新する', () => {
     vi.useFakeTimers();
     try {
-      render(<FilterPanel filters={defaultFilters} resultCount={42} />);
+      render(<FilterPanel filters={defaultFilters} />);
 
       fireEvent.change(screen.getByLabelText('キーワード検索'), {
         target: { value: 'shiba' },
@@ -65,7 +64,7 @@ describe('FilterPanel', () => {
       // debounce 経過前は更新しない
       expect(mockReplace).not.toHaveBeenCalled();
 
-      vi.advanceTimersByTime(400);
+      act(() => { vi.advanceTimersByTime(400); });
       expect(mockReplace).toHaveBeenCalledWith('?q=shiba', { scroll: false });
     } finally {
       vi.useRealTimers();
@@ -75,15 +74,15 @@ describe('FilterPanel', () => {
   it('連続入力では最後の値のみで一度だけ更新する', () => {
     vi.useFakeTimers();
     try {
-      render(<FilterPanel filters={defaultFilters} resultCount={42} />);
+      render(<FilterPanel filters={defaultFilters} />);
       const input = screen.getByLabelText('キーワード検索');
 
       fireEvent.change(input, { target: { value: 's' } });
-      vi.advanceTimersByTime(100);
+      act(() => { vi.advanceTimersByTime(100); });
       fireEvent.change(input, { target: { value: 'shi' } });
-      vi.advanceTimersByTime(100);
+      act(() => { vi.advanceTimersByTime(100); });
       fireEvent.change(input, { target: { value: 'shiba' } });
-      vi.advanceTimersByTime(400);
+      act(() => { vi.advanceTimersByTime(400); });
 
       expect(mockReplace).toHaveBeenCalledTimes(1);
       expect(mockReplace).toHaveBeenCalledWith('?q=shiba', { scroll: false });
@@ -95,7 +94,7 @@ describe('FilterPanel', () => {
   it('適用中フィルタがチップとして表示される', () => {
     currentSearchParams = new URLSearchParams('species=犬&prefecture=東京都');
     render(
-      <FilterPanel filters={{ species: '犬', prefecture: '東京都' }} resultCount={5} />,
+      <FilterPanel filters={{ species: '犬', prefecture: '東京都' }} />,
     );
 
     expect(
@@ -108,7 +107,7 @@ describe('FilterPanel', () => {
 
   it('チップの解除ボタンで該当フィルタが外れる', () => {
     currentSearchParams = new URLSearchParams('species=犬');
-    render(<FilterPanel filters={{ species: '犬' }} resultCount={5} />);
+    render(<FilterPanel filters={{ species: '犬' }} />);
 
     fireEvent.click(screen.getByRole('button', { name: /犬 の絞り込みを解除/ }));
 
@@ -116,7 +115,7 @@ describe('FilterPanel', () => {
   });
 
   it('並び替えを「古い順」に変更するとURLが更新される', () => {
-    render(<FilterPanel filters={defaultFilters} resultCount={42} />);
+    render(<FilterPanel filters={defaultFilters} />);
 
     fireEvent.change(screen.getByLabelText('並び替え'), { target: { value: 'oldest' } });
 
@@ -125,7 +124,7 @@ describe('FilterPanel', () => {
 
   it('並び替えを「新着順」に戻すとsortパラメータが消える', () => {
     currentSearchParams = new URLSearchParams('sort=oldest');
-    render(<FilterPanel filters={{ sort: 'oldest' }} resultCount={42} />);
+    render(<FilterPanel filters={{ sort: 'oldest' }} />);
 
     fireEvent.change(screen.getByLabelText('並び替え'), { target: { value: 'newest' } });
 
@@ -133,7 +132,7 @@ describe('FilterPanel', () => {
   });
 
   it('性別フィルタを変更するとURLが更新される', () => {
-    render(<FilterPanel filters={defaultFilters} resultCount={42} />);
+    render(<FilterPanel filters={defaultFilters} />);
 
     fireEvent.change(screen.getByLabelText('性別'), { target: { value: '男の子' } });
 
@@ -144,7 +143,7 @@ describe('FilterPanel', () => {
   });
 
   it('地域フィルタを変更するとURLが更新される', () => {
-    render(<FilterPanel filters={defaultFilters} resultCount={42} />);
+    render(<FilterPanel filters={defaultFilters} />);
 
     fireEvent.change(screen.getByLabelText('地域'), { target: { value: '高知県' } });
 
@@ -155,7 +154,7 @@ describe('FilterPanel', () => {
   });
 
   it('フィルタが空のときはクリアボタンが表示されない', () => {
-    render(<FilterPanel filters={defaultFilters} resultCount={42} />);
+    render(<FilterPanel filters={defaultFilters} />);
     expect(
       screen.queryByRole('button', { name: 'フィルタをクリア' }),
     ).not.toBeInTheDocument();
@@ -164,7 +163,7 @@ describe('FilterPanel', () => {
   it('フィルタが適用されている時にクリアボタンが表示される', () => {
     const filters: FilterState = { species: '犬' };
     currentSearchParams = new URLSearchParams({ species: '犬' });
-    render(<FilterPanel filters={filters} resultCount={42} />);
+    render(<FilterPanel filters={filters} />);
 
     const clearButton = screen.getByRole('button', { name: 'フィルタをクリア' });
     expect(clearButton).toBeInTheDocument();
@@ -176,7 +175,7 @@ describe('FilterPanel', () => {
   it('「収容中の子を探す」タブをクリックするとカテゴリ制約が外れる', () => {
     const filters: FilterState = { category: 'adoption' };
     currentSearchParams = new URLSearchParams({ category: 'adoption' });
-    render(<FilterPanel filters={filters} resultCount={42} />);
+    render(<FilterPanel filters={filters} />);
 
     fireEvent.click(screen.getByRole('tab', { name: '収容中の子を探す' }));
 
@@ -185,7 +184,7 @@ describe('FilterPanel', () => {
   });
 
   it('デフォルト状態では「収容中の子を探す」タブが active', () => {
-    render(<FilterPanel filters={{ status: 'sheltered' }} resultCount={42} />);
+    render(<FilterPanel filters={{ status: 'sheltered' }} />);
 
     const shelteredTab = screen.getByRole('tab', { name: '収容中の子を探す' });
     expect(shelteredTab).toHaveAttribute('aria-selected', 'true');
@@ -195,7 +194,6 @@ describe('FilterPanel', () => {
     render(
       <FilterPanel
         filters={{ status: 'sheltered', category: 'adoption' }}
-        resultCount={42}
       />,
     );
 
@@ -206,7 +204,7 @@ describe('FilterPanel', () => {
   it('種別を空に戻すとパラメータが削除される', () => {
     const filters: FilterState = { species: '犬' };
     currentSearchParams = new URLSearchParams({ species: '犬' });
-    render(<FilterPanel filters={filters} resultCount={42} />);
+    render(<FilterPanel filters={filters} />);
 
     fireEvent.change(screen.getByLabelText('種別'), { target: { value: '' } });
 

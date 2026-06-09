@@ -83,21 +83,14 @@ async function AnimalsSection({ filters }: { filters: FilterState }) {
   }
 
   return (
-    <>
-      <FilterPanel filters={filters} resultCount={totalCount} />
-      <AnimalGrid
-        initialItems={items}
-        totalCount={totalCount}
-        filters={filters}
-        pageSize={PAGE_SIZE}
-        fetchFailed={fetchFailed}
-      />
-    </>
+    <AnimalGrid
+      initialItems={items}
+      totalCount={totalCount}
+      filters={filters}
+      pageSize={PAGE_SIZE}
+      fetchFailed={fetchFailed}
+    />
   );
-}
-
-function FilterPanelSkeleton({ filters }: { filters: FilterState }) {
-  return <FilterPanel filters={filters} resultCount={0} />;
 }
 
 async function PrefectureMapSection() {
@@ -152,15 +145,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         </Suspense>
       )}
 
-      <Suspense
-        key={JSON.stringify(filters)}
-        fallback={
-          <>
-            <FilterPanelSkeleton filters={filters} />
-            <AnimalGridSkeleton />
-          </>
-        }
-      >
+      {/* フィルタUIは Suspense の外に常駐させる。グリッドだけが裏で差し替わり、
+          フィルタ変更のたびにフィルタUIが消えてチラつく問題を解消する。 */}
+      <FilterPanel filters={filters} />
+
+      {/* key を付けないことで、フィルタ変更（FilterPanel の startTransition 経由）中も
+          前のグリッドを保持したまま新データに差し替える（全消しスケルトンを出さない）。
+          初回マウント時のみ AnimalGridSkeleton を表示する。 */}
+      <Suspense fallback={<AnimalGridSkeleton />}>
         <AnimalsSection filters={filters} />
       </Suspense>
     </div>
