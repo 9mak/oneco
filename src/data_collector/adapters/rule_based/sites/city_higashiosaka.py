@@ -149,6 +149,8 @@ class CityHigashiosakaAdapter(SinglePageTableAdapter):
         full_text = "\n".join(paragraph_texts)
 
         species = self._infer_species_from_text(full_text)
+        # 「種類:」欄は犬種名等が書かれるため品種(breed)として保存する
+        breed = _extract_field(full_text, "種類")
         sex = _extract_field(full_text, "性別")
         color = _extract_field(full_text, "毛色")
         size = _extract_field(full_text, "体格")
@@ -159,6 +161,7 @@ class CityHigashiosakaAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                breed=breed,
                 sex=sex,
                 age=age,
                 color=color,

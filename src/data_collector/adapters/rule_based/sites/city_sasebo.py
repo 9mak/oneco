@@ -139,7 +139,10 @@ class CitySaseboAdapter(SinglePageTableAdapter):
         link = rows[idx]
         text = link.get_text(separator=" ", strip=True)
 
-        species, sex = self._parse_species_and_sex(text)
+        # 末尾括弧 `（雑種、オス）` から取り出した種別は品種名 (雑種/柴犬等)。
+        # これを品種(breed)として保存し、species はサイト名から犬/猫を推定する。
+        breed, sex = self._parse_species_and_sex(text)
+        species = breed
         if not species:
             # サイト名から動物種別をフォールバック推定
             species = self._infer_species_from_site_name(self.site_config.name)
@@ -151,6 +154,7 @@ class CitySaseboAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                breed=breed,
                 sex=sex,
                 age="",
                 color="",

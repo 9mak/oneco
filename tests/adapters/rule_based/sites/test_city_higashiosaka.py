@@ -129,6 +129,8 @@ class TestCityHigashiosakaAdapter:
         assert isinstance(raw, RawAnimalData)
         # テキストに「犬」が含まれるので犬と推定される
         assert raw.species == "犬"
+        # 「種類:」欄 (雑種(犬)) は品種(breed)として保存される
+        assert raw.breed == "雑種(犬)"
         assert raw.sex == "オス"
         assert raw.color == "茶白"
         assert raw.size == "中"

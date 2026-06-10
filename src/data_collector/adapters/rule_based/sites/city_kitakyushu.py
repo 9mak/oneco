@@ -190,6 +190,8 @@ class CityKitakyushuAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                # 「種類」列 (柴/雑 等) は species 本体に使わず品種として保存する
+                breed=fields.get("species", ""),
                 sex=fields.get("sex", ""),
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),
