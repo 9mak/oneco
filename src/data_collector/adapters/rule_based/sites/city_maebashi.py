@@ -184,6 +184,7 @@ class CityMaebashiAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                breed=breed,
                 sex=sex,
                 age="",
                 color="",

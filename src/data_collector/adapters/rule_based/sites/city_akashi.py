@@ -55,6 +55,7 @@ class CityAkashiAdapter(SinglePageTableAdapter):
     # - 列 6: その他 (場所が含まれる場合あり) → location として扱う
     COLUMN_FIELDS: ClassVar[dict[int, str]] = {
         0: "shelter_date",
+        2: "breed",  # 種類 (犬種名等)。species はサイト名推定、HTML 値は品種として保存
         3: "sex",
         4: "color",
         5: "size",
@@ -120,6 +121,7 @@ class CityAkashiAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                breed=fields.get("breed", ""),
                 sex=fields.get("sex", ""),
                 age="",
                 color=fields.get("color", ""),
