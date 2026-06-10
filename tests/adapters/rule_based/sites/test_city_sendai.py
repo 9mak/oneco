@@ -146,6 +146,11 @@ class TestCitySendaiAdapter:
         assert raw.age == "10歳"
         assert raw.color == "茶"
         assert raw.size == "約16kg"
+        # h3「管理番号　D24018（愛称：平助）」から管理番号と仮名(愛称)を抽出
+        assert raw.management_number == "D24018"
+        assert raw.name == "平助"
+        # 「種類：柴犬」は species 推定には使わず品種(breed)として保存する
+        assert raw.breed == "柴犬"
         # 画像 URL が絶対 URL に変換されている
         assert raw.image_urls
         for u in raw.image_urls:
@@ -172,6 +177,9 @@ class TestCitySendaiAdapter:
         assert raw.age == "10歳"
         assert "茶" in raw.color
         assert "16" in raw.size
+        # 実フィクスチャの h3 からも管理番号・品種が取れる (愛称は記載があれば)
+        assert raw.management_number == "D24018"
+        assert raw.breed == "柴犬"
         # 画像 URL (d24018) が絶対化されて含まれる
         assert any("d24018" in u for u in raw.image_urls)
         for u in raw.image_urls:
