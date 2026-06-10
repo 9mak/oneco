@@ -92,6 +92,8 @@ class TestCitySaseboAdapter:
         assert isinstance(raw, RawAnimalData)
         # 末尾括弧 "（雑種、オス）" から犬種と性別を取得
         assert raw.species == "雑種"
+        # 犬種 (雑種) は品種(breed)としても保存される
+        assert raw.breed == "雑種"
         assert raw.sex == "オス"
         # 場所は曜日括弧の後から末尾括弧の手前まで
         assert raw.location == "山祇町"
