@@ -216,6 +216,8 @@ class TestCityMachidaAdapterExtractFields:
             raw = adapter.extract_animal_details(urls[0][0], category=urls[0][1])
 
         assert raw.species == "犬"
+        # 種類(柴犬)は species 推定には使わず breed として保存する
+        assert raw.breed == "柴犬"
         assert raw.sex == "メス"
         assert "町田市本町田" in raw.location
         assert "2025年10月1日" in raw.shelter_date

@@ -215,6 +215,7 @@ class CityMachidaAdapter(RuleBasedAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                breed=species_detail,
                 sex=sex,
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),

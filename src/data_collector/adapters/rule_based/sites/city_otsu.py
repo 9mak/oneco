@@ -177,10 +177,13 @@ class CityOtsuAdapter(SinglePageTableAdapter):
         # サイト名は "大津市動物愛護センター（迷い犬猫）" で犬猫いずれもありうる
         # ため "その他" 扱い (越谷市 "個人保護犬猫" と同じ方針)。
         species = self._infer_species_from_site_name(self.site_config.name)
+        # 列 0 の「種類」(柴犬等) は species 推定には使わないが、品種(breed)として保存する。
+        breed = _cell_text(0)
 
         try:
             return RawAnimalData(
                 species=species,
+                breed=breed,
                 sex=sex,
                 age="",
                 color=color,

@@ -123,6 +123,8 @@ class TestCityOtsuAdapter:
         assert isinstance(raw, RawAnimalData)
         # サイト名 "迷い犬猫" は犬猫いずれもありうるため "その他" 推定
         assert raw.species == "その他"
+        # 列 0 の「種類」(柴犬) は species 推定に使わず breed として保存する
+        assert raw.breed == "柴犬"
         assert raw.sex == "オス"
         assert raw.color == "茶"
         assert raw.size == "中"
