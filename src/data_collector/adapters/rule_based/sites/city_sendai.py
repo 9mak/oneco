@@ -52,6 +52,12 @@ from ..single_page_table import SinglePageTableAdapter
 # 全角/半角スペース・括弧揺れを許容する。
 _KANRI_BANGO_RE = re.compile(r"管理番号")
 
+# h3 から管理番号 (例: D24018) を抽出するパターン。英数字・ハイフン類を許容。
+_MGMT_NUMBER_RE = re.compile(r"管理番号[\s　]*([A-Za-z0-9\-―ー‐]+)")
+# h3 の「（愛称：平助）」から仮名 (愛称) を抽出するパターン。
+# 値は閉じ括弧 / 全角空白 / 文字列終端の手前まで。
+_NICKNAME_RE = re.compile(r"愛称[：:\s　]*([^）)　]+)")
+
 # 基本情報テーブルセル内の "種類：柴犬" のようなラベル行を分割するパターン。
 # 行頭の全角スペース等は事前に strip しておく。
 _FIELD_LABEL_RE = re.compile(r"^[\s　]*([^：:]+?)[：:]\s*(.*)$")
@@ -91,6 +97,9 @@ class CitySendaiAdapter(SinglePageTableAdapter):
         self._page_phone_cache: str | None = None
         # ページ全体の「（令和X年Y月Z日更新）」を shelter_date フォールバックに使う。
         self._page_update_date_cache: str = ""
+        # 各動物テーブルに対応する h3 テキスト (管理番号・愛称の抽出元)。
+        # `_load_rows` で rows と同じ順序・件数で構築する。
+        self._h3_text_by_row: list[str] = []
 
     # ─────────────────── fetch_animal_list オーバーライド ───────────────────
 
@@ -122,6 +131,7 @@ class CitySendaiAdapter(SinglePageTableAdapter):
         soup = BeautifulSoup(self._html_cache, "html.parser")
 
         rows: list[Tag] = []
+        h3_texts: list[str] = []
         for h3 in soup.find_all("h3"):
             if not isinstance(h3, Tag):
                 continue
@@ -131,6 +141,9 @@ class CitySendaiAdapter(SinglePageTableAdapter):
             table = h3.find_next("table")
             if isinstance(table, Tag):
                 rows.append(table)
+                # 管理番号・愛称の抽出元として h3 テキストを行と同順で保持する
+                h3_texts.append(text)
+        self._h3_text_by_row = h3_texts
 
         # ページ全体から問い合わせ電話番号と「更新日」を 1 度だけ抽出してキャッシュ。
         page_text = soup.get_text(" ", strip=True)
@@ -174,12 +187,24 @@ class CitySendaiAdapter(SinglePageTableAdapter):
         # (HTML の「種類」列は犬種名など具体名のため、犬/猫/その他の判別には不向き。)
         species = self._infer_species_from_site_name(self.site_config.name)
 
+        # 管理番号・仮名(愛称) は h3「管理番号 D24018（愛称：平助）」から抽出する。
+        # 「種類：柴犬」は犬種名のため品種(breed)として保存する。
+        h3_text = self._h3_text_by_row[idx] if idx < len(self._h3_text_by_row) else ""
+        mgmt_match = _MGMT_NUMBER_RE.search(h3_text)
+        management_number = mgmt_match.group(1) if mgmt_match else ""
+        name_match = _NICKNAME_RE.search(h3_text)
+        name = name_match.group(1).strip().strip("　") if name_match else ""
+        breed = fields.get("species", "")
+
         # 仙台市のページには動物個別の収容日表記が無いため、ページの「更新日」を
         # shelter_date のフォールバックに使う (掲載が始まった日として最も近い情報)。
         shelter_date = self._page_update_date_cache or self.SHELTER_DATE_DEFAULT
         try:
             return RawAnimalData(
                 species=species,
+                breed=breed,
+                name=name,
+                management_number=management_number,
                 sex=fields.get("sex", ""),
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),
