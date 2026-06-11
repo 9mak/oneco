@@ -96,9 +96,13 @@ class SinglePageTableAdapter(RuleBasedAdapter):
                 image_urls=self._extract_row_images(row, virtual_url),
                 source_url=virtual_url,
                 category=category,
-                # 個体識別: 派生が COLUMN_FIELDS にキーを足せば開通する
+                # 個体識別: 派生が COLUMN_FIELDS にキーを足せば開通する。
+                # name/management_number は監査(2026-06-11)指摘で追加(将来の派生
+                # が COLUMN_FIELDS だけで足したときの kochi 同型サイレントドロップを予防)。
                 breed=fields.get("breed", ""),
                 description=fields.get("description", ""),
+                name=fields.get("name", ""),
+                management_number=fields.get("management_number", ""),
             )
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e

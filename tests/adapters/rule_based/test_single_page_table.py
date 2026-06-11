@@ -92,3 +92,40 @@ class TestSinglePageTableAdapter:
         with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             result = adapter.fetch_animal_list()
         assert result == []
+
+    def test_identity_fields_passthrough_via_column_fields(self):
+        """COLUMN_FIELDS で個体識別キーを宣言すれば RawAnimalData に転写される
+
+        kochi 同型のサイレントドロップ予防の回帰防止テスト。
+        基底経路が breed/description/name/management_number の4キーを
+        構築子に渡していることを直接検証する。
+        """
+
+        class _IdentityAdapter(SinglePageTableAdapter):
+            ROW_SELECTOR = "table tr"
+            SKIP_FIRST_ROW = True
+            # 派生は COLUMN_FIELDS にキーを足すだけで開通する
+            COLUMN_FIELDS = {
+                0: "name",  # 仮名
+                1: "species",
+                2: "breed",  # 品種
+                3: "management_number",
+                4: "description",  # 性格・特徴
+            }
+            LOCATION_COLUMN = None
+            SHELTER_DATE_DEFAULT = "2026-04-01"
+
+        html = (
+            "<html><body><table>"
+            "<tr><th>名前</th><th>種別</th><th>品種</th><th>管理番号</th><th>特徴</th></tr>"
+            "<tr><td>ポチ</td><td>犬</td><td>柴犬</td><td>2026-001</td><td>人懐っこい</td></tr>"
+            "</table></body></html>"
+        )
+        adapter = _IdentityAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details("https://example.com/list/#row=0", category="lost")
+        assert raw.name == "ポチ"
+        assert raw.breed == "柴犬"
+        assert raw.management_number == "2026-001"
+        assert raw.description == "人懐っこい"
