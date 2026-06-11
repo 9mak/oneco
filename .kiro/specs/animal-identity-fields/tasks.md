@@ -56,10 +56,14 @@
 - [x] 2.3 品種を種別に潰していたサイト群へ横展開
   - 「種類」を種別判定だけに使い品種名を捨てていたサイト群に、品種フィールドへの受け渡しを段階的に追加する
   - 充填はサイト依存・未設定許容のため、未対応サイトが残っても破綻しないことを確認する
-  - 横展開済み（計17サイト）:
+  - 横展開済み（計24サイト）:
     - 種類→species マップの9サイト (#168): pref_ishikawa/city_nagoya/city_nara/city_hirakata/city_takatsuki/pref_iwate/pref_toyama/city_saitama/hama_aikyou
     - species_detail マップの3サイト (#169): city_machida/city_otsu/kyoto_ani_love
     - 犬種フィールドの5サイト (#170): city_maebashi/city_akashi/city_kitakyushu/city_higashiosaka/city_sasebo
+    - 監査(2026-06-11)で発見した転記漏れ7サイト (#176): pref_okayama/pref_osaka/city_osaka/city_kawasaki/pref_tottori/pref_shimane/pref_chiba
+  - 監査(2026-06-11)補強: 基底クラス3経路 (single_page_table/wordpress_list/pdf_table) に
+    name/management_number/breed/description のうち未配線分を追加し、将来の派生サブクラスが
+    宣言だけで個体識別フィールドを開通できる土台を完成 (#177)
   - 見送り: pref_yamanashi は詳細ページの「種類・体格」が単一フィールドで品種・体格・
     体重注記・括弧内speciesが混在し、堅牢な分離が困難なため未対応（充填は任意のため破綻しない）
   - _Requirements: 3.1_
@@ -88,6 +92,12 @@
   - 性格特徴に既存のPII伏字（電話番号・メールアドレスの伏字化）を適用し、伏字後に保存上限へ丸める
   - 空入力は未設定化する。第三者の氏名は伏字対象外とする（本仕様の非対象）。管理番号にはPII伏字を適用しない
   - 電話番号（全角/半角/ハイフン無し含む）・メールが伏字化され、非PIIが温存され、伏字済みのみ保存されることを検証するテストを追加する
+  - 監査(2026-06-11)補強 (#175): description の電話番号取りこぼしを拡張。
+    - 追加: 括弧つき市外局番 `(03)1234-5678`/`（090）1234-5678`、ドット区切り `090.1234.5678`、
+      スペース区切り `090 1234 5678`、国際表記 `+81-90-1234-5678`/`+819012345678`
+    - 誤検知防止: 管理番号 `2026-001` / `D24018`、体重 `5.5kg`、年号 `2026年` は伏字されない
+  - 監査(2026-06-11)補強 (#178): description の HTML タグストリップを ingestion 時点に追加。
+    フロントの React 自動エスケープに頼った単一防御から多層防御へ。将来の別UI流入時の XSS 脆弱化を予防
   - _Requirements: 2.1, 2.2, 2.5, 2.6, 4.6_
 
 - [x] 3.2 収集アダプターで性格特徴を配線
