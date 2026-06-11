@@ -1093,6 +1093,74 @@ class TestDescriptionNormalization:
         assert out is not None
         assert len(out) <= DataNormalizer._DESCRIPTION_MAX_LEN
 
+    # --- HTML/XSS 多層防御: ingest 時にタグを除去 ---
+    # description は自由記述で、自治体サイトの HTML が原文に混入し得る。
+    # フロントは React テキストノード描画で XSS 安全だが、将来 別UI（管理画面、
+    # dangerouslySetInnerHTML、メール本文、第三者 API 消費）に流入したときに
+    # 防御線が消える単一防御問題を解消する。
+
+    def test_normalize_description_strips_script_tags(self):
+        """<script> タグとその中身は完全除去される (XSS の根元)"""
+        out = DataNormalizer._normalize_description(
+            "やんちゃ<script>alert('xss')</script>な子です"
+        )
+        assert out is not None
+        assert "<script>" not in out
+        assert "</script>" not in out
+        assert "alert(" not in out  # 中身ごと除去
+        # 通常テキストは保持
+        assert "やんちゃ" in out
+        assert "な子です" in out
+
+    def test_normalize_description_strips_event_handlers(self):
+        """イベントハンドラ属性付きタグの src/onerror は除去される"""
+        out = DataNormalizer._normalize_description(
+            "<img src=x onerror=alert(1)>かわいい"
+        )
+        assert out is not None
+        assert "<img" not in out
+        assert "onerror" not in out
+        assert "alert(1)" not in out
+        # テキストは保持
+        assert "かわいい" in out
+
+    def test_normalize_description_strips_generic_html(self):
+        """通常の HTML タグ (<b>, <a href>, <br>) もテキストのみ残して除去"""
+        out = DataNormalizer._normalize_description(
+            "<p>人懐っこい<b>とても</b>かわいい<br>子です</p>"
+        )
+        assert out is not None
+        assert "<" not in out  # タグは全て除去
+        assert ">" not in out
+        assert "人懐っこい" in out
+        assert "とても" in out
+        assert "かわいい" in out
+        assert "子です" in out
+
+    def test_normalize_description_html_entity_decoded(self):
+        """HTML エンティティ (&amp; &lt; 等) は実文字にデコードされる"""
+        out = DataNormalizer._normalize_description(
+            "おとなしい&amp;やさしい子&lt;3"
+        )
+        assert out is not None
+        assert "&amp;" not in out
+        assert "&lt;" not in out
+        assert "おとなしい&やさしい子" in out
+
+    def test_normalize_description_strips_html_before_pii_redaction(self):
+        """タグ除去とPII伏字が独立に動作する (順序依存しない)"""
+        out = DataNormalizer._normalize_description(
+            "<p>連絡先 <a href=\"tel:090-1234-5678\">090-1234-5678</a></p>"
+        )
+        assert out is not None
+        # タグ除去
+        assert "<a" not in out
+        assert "tel:" not in out
+        assert "</a>" not in out
+        # PII 伏字
+        assert "090-1234-5678" not in out
+        assert "███" in out
+
     def test_normalize_populates_description_via_pipeline(self):
         raw = RawAnimalData(
             species="犬",

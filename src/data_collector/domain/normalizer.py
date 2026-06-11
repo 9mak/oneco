@@ -8,6 +8,9 @@
 import logging
 import re
 from datetime import date, datetime
+from html import unescape as _html_unescape
+
+from bs4 import BeautifulSoup
 
 from ..utils.prefecture import infer_prefecture_from_url
 from .models import AnimalData, RawAnimalData
@@ -295,16 +298,50 @@ class DataNormalizer:
         return text
 
     @staticmethod
+    def _strip_html(text: str) -> str:
+        """description 自由記述から HTML タグを除去しエンティティをデコードする。
+
+        ingestion 時の多層防御 (XSS) 用ヘルパー。
+        - <script>/<style> はタグごと中身を破棄
+        - その他のタグ (<p>/<b>/<a>/<img> 等) はタグだけ除去しテキストを保持
+        - HTML エンティティ (&amp; &lt; 等) は実文字へデコード
+        - タグ間のテキストは連続スペースを 1 つに圧縮
+
+        フロントは React テキストノードで描画するため XSS は構造的に防がれて
+        いるが、将来別UI (管理画面・dangerouslySetInnerHTML・メール本文・
+        第三者APIコンシューマー) へ description が流入した際の単一防御問題を
+        ingestion 側でも閉じる。
+        """
+        # 簡易判定: '<' を含まなければ HTML パース不要
+        if "<" not in text:
+            # エンティティだけはデコード (例: 「&amp;」)
+            return _html_unescape(text)
+        # BeautifulSoup でパース。<script>/<style> は中身ごと破棄する。
+        soup = BeautifulSoup(text, "html.parser")
+        for tag in soup(["script", "style"]):
+            tag.decompose()
+        # 残りはテキストのみ抽出 (separator='' で連続文字を保持)
+        stripped = soup.get_text(separator="")
+        # 連続空白の圧縮 (HTML の改行・タブ等が text として残る場合)
+        stripped = re.sub(r"\s+", " ", stripped).strip()
+        return stripped
+
+    @staticmethod
     def _normalize_description(raw: str | None) -> str | None:
         """性格・特徴の自由記述を正規化する。
 
-        空は None、電話番号/メールを _redact_pii で伏字化し、上限超過は丸める。
+        空は None、HTML タグを除去 (XSS 多層防御)、電話番号/メールを
+        _redact_pii で伏字化し、上限超過は丸める。
         氏名(人名)は伏字対象外（形態素解析を要するため本仕様の非対象）。
         伏字を丸めの前に行い、伏字後の文字数で上限判定する。
         """
         if not raw:
             return None
         text = raw.strip()
+        if not text:
+            return None
+        # XSS 多層防御: フロントの React 自動エスケープに依らず ingest 時にも除去
+        text = DataNormalizer._strip_html(text)
         if not text:
             return None
         text = DataNormalizer._redact_pii(text)

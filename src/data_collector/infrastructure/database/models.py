@@ -57,7 +57,11 @@ class Animal(Base):
 
     # 個体識別フィールド (animal-identity-fields)。全て任意。breed は検索で使うため索引。
     # 列長は DataNormalizer の長さ定数と厳密に一致させること (不一致は INSERT 失敗で全損)。
-    breed: str | None = Column(String(50), nullable=True, index=True)
+    # breed の索引は __table_args__ で明示命名 (idx_animals_breed)。
+    # `index=True` を使うと SQLAlchemy 自動命名 ix_animals_breed になり、
+    # migration b8c9d0e1f2a3 の名前 (idx_animals_breed) と不一致で
+    # autogenerate ノイズ (drop/recreate) が出るのを避ける。
+    breed: str | None = Column(String(50), nullable=True)
     name: str | None = Column(String(100), nullable=True)
     management_number: str | None = Column(String(50), nullable=True)
     description: str | None = Column(Text, nullable=True)
@@ -115,6 +119,9 @@ class Animal(Base):
         Index("idx_animals_status", "status"),
         Index("idx_animals_status_changed", "status_changed_at"),
         Index("idx_animals_outcome_date", "outcome_date"),
+        # 個体識別 breed のキーワード検索用 (カナ正規化 ilike)。
+        # 名前は migration b8c9d0e1f2a3 と一致させる (autogenerate ノイズ防止)。
+        Index("idx_animals_breed", "breed"),
     )
 
     def __repr__(self) -> str:
