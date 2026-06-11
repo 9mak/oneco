@@ -239,6 +239,10 @@ class TestKochiAdapterExtractAnimalDetails:
         assert raw_data.phone == "088-123-4567"
         assert len(raw_data.image_urls) == 2
         assert raw_data.source_url == "https://example.com/animals/detail/001"
+        # 個体識別フィールド: 品種・仮名・管理番号を詳細ページから抽出する
+        assert raw_data.breed == "柴犬"
+        assert raw_data.name == "ポチ"
+        assert raw_data.management_number == "26ADM260101"
 
     @patch("src.data_collector.adapters.kochi_adapter.requests.get")
     def test_extract_animal_details_network_error(self, mock_get):
@@ -584,6 +588,12 @@ class TestKochiAdapterIntegration:
         raw_data = adapter.extract_animal_details(url, category=category)
         animal_data = adapter.normalize(raw_data)
         assert isinstance(animal_data, AnimalData)
+        # 個体識別フィールドが normalize() を経て AnimalData まで脱落せず到達する
+        # (旧実装は normalize 内の RawAnimalData 再構築で breed/name/management_number を
+        #  取りこぼしていた。回帰防止のため end-to-end で検証する。)
+        assert animal_data.breed == "柴犬"
+        assert animal_data.name == "ポチ"
+        assert animal_data.management_number == "26ADM260101"
 
     @patch("src.data_collector.adapters.kochi_adapter.requests.get")
     def test_fetch_animal_list_returns_url_category_pairs(self, mock_get):

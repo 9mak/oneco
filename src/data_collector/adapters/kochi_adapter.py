@@ -307,6 +307,12 @@ class KochiAdapter(MunicipalityAdapter):
         if not species:
             # フォールバック: 品種名に犬/猫が含まれているか、ページ内テキストから推定
             species = self._detect_species_from_content(entry_content, breed)
+        # 個体識別情報: 管理番号・仮名は詳細ページに「管理番号: ...」「仮名: ...」形式で
+        # 掲載される。管理番号には PII 伏字を適用しない (本仕様の非対象)。
+        management_number = self._extract_from_structured_data(
+            entry_content, ["管理番号", "個体番号"]
+        )
+        name = self._extract_from_structured_data(entry_content, ["仮名", "愛称", "お名前"])
         sex = self._extract_from_structured_data(entry_content, ["性別", "せいべつ"])
         age = self._extract_from_structured_data(
             entry_content, ["年齢", "推定年齢", "ねんれい", "月齢"]
@@ -344,6 +350,8 @@ class KochiAdapter(MunicipalityAdapter):
             category=category,
             # 品種 (species 判定で既に抽出済みの値を識別情報として保存)
             breed=breed,
+            name=name,
+            management_number=management_number,
         )
 
     def normalize(self, raw_data: RawAnimalData) -> AnimalData:
@@ -381,6 +389,9 @@ class KochiAdapter(MunicipalityAdapter):
             shelter_date = date.today().strftime("%Y-%m-%d")
 
         # locationが空の場合は「高知県」をフォールバック値として設定
+        # 個体識別フィールド (breed/name/management_number/description) は
+        # 高知県特別ルールの対象外だが、ここで RawAnimalData を再構築するため
+        # 明示的に引き継がないと正規化前に取りこぼす (= AnimalData まで届かない)。
         raw_data = RawAnimalData(
             species=raw_data.species,
             sex=raw_data.sex,
@@ -393,6 +404,10 @@ class KochiAdapter(MunicipalityAdapter):
             image_urls=filtered_images,
             source_url=raw_data.source_url,
             category=raw_data.category,
+            breed=raw_data.breed,
+            name=raw_data.name,
+            management_number=raw_data.management_number,
+            description=raw_data.description,
         )
         return DataNormalizer.normalize(raw_data)
 
