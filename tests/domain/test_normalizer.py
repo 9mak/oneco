@@ -1101,9 +1101,7 @@ class TestDescriptionNormalization:
 
     def test_normalize_description_strips_script_tags(self):
         """<script> タグとその中身は完全除去される (XSS の根元)"""
-        out = DataNormalizer._normalize_description(
-            "やんちゃ<script>alert('xss')</script>な子です"
-        )
+        out = DataNormalizer._normalize_description("やんちゃ<script>alert('xss')</script>な子です")
         assert out is not None
         assert "<script>" not in out
         assert "</script>" not in out
@@ -1114,9 +1112,7 @@ class TestDescriptionNormalization:
 
     def test_normalize_description_strips_event_handlers(self):
         """イベントハンドラ属性付きタグの src/onerror は除去される"""
-        out = DataNormalizer._normalize_description(
-            "<img src=x onerror=alert(1)>かわいい"
-        )
+        out = DataNormalizer._normalize_description("<img src=x onerror=alert(1)>かわいい")
         assert out is not None
         assert "<img" not in out
         assert "onerror" not in out
@@ -1139,9 +1135,7 @@ class TestDescriptionNormalization:
 
     def test_normalize_description_html_entity_decoded(self):
         """HTML エンティティ (&amp; &lt; 等) は実文字にデコードされる"""
-        out = DataNormalizer._normalize_description(
-            "おとなしい&amp;やさしい子&lt;3"
-        )
+        out = DataNormalizer._normalize_description("おとなしい&amp;やさしい子&lt;3")
         assert out is not None
         assert "&amp;" not in out
         assert "&lt;" not in out
@@ -1150,7 +1144,7 @@ class TestDescriptionNormalization:
     def test_normalize_description_strips_html_before_pii_redaction(self):
         """タグ除去とPII伏字が独立に動作する (順序依存しない)"""
         out = DataNormalizer._normalize_description(
-            "<p>連絡先 <a href=\"tel:090-1234-5678\">090-1234-5678</a></p>"
+            '<p>連絡先 <a href="tel:090-1234-5678">090-1234-5678</a></p>'
         )
         assert out is not None
         # タグ除去
