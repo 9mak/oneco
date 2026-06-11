@@ -410,6 +410,8 @@ class TestCityKitakyushuAdoptionTable:
         assert raw.shelter_date == ""
         # サイト名から species=犬 と推定する既存挙動は維持
         assert raw.species == "犬"
+        # 「種類」列 (雑種, col=1) は species ではなく品種(breed)として保存される
+        assert raw.breed == "雑種"
         # phone は引き続き共通の代表電話
         assert raw.phone == "093-581-1800"
 
