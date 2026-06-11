@@ -124,9 +124,7 @@ class TestSinglePageTableAdapter:
         adapter = _IdentityAdapter(_site())
         with patch.object(adapter, "_http_get", return_value=html):
             adapter.fetch_animal_list()
-            raw = adapter.extract_animal_details(
-                "https://example.com/list/#row=0", category="lost"
-            )
+            raw = adapter.extract_animal_details("https://example.com/list/#row=0", category="lost")
         assert raw.name == "ポチ"
         assert raw.breed == "柴犬"
         assert raw.management_number == "2026-001"
