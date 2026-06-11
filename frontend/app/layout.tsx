@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { OrganizationSchema } from "@/components/animals/PetSchema";
 import { getSiteUrl } from "@/lib/site-url";
+
+// GA4 Measurement ID (G-XXXXXXXXXX 形式)。
+// 未設定 (preview/local 等) では GA4 を埋め込まない設計。
+// 本番のみ Vercel 環境変数 NEXT_PUBLIC_GA_MEASUREMENT_ID で注入する。
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -78,6 +84,7 @@ export default function RootLayout({
           <Footer />
         </div>
       </body>
+      {GA_MEASUREMENT_ID && <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />}
     </html>
   );
 }

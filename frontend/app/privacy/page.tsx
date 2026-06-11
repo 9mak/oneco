@@ -12,7 +12,7 @@ export default function PrivacyPage() {
     <article className="container mx-auto px-4 py-12 max-w-3xl prose prose-sm md:prose-base">
       <h1 className="text-2xl md:text-3xl font-bold mb-6">プライバシーポリシー</h1>
       <p className="text-sm text-[var(--color-text-secondary)] mb-8">
-        最終更新日: 2026年5月6日
+        最終更新日: 2026年6月11日
       </p>
 
       <section className="mb-8">
@@ -60,6 +60,19 @@ export default function PrivacyPage() {
           <li>Vercel（ホスティング）</li>
           <li>Google Cloud Platform（API バックエンド）</li>
           <li>Supabase（データベース）</li>
+          <li>
+            Google Analytics 4（アクセス解析）。Cookie を用いて利用状況を匿名で集計します。
+            Cookie 情報の収集を拒否したい場合は、ブラウザの設定または
+            <a
+              href="https://tools.google.com/dlpage/gaoptout?hl=ja"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[var(--color-primary-700)] hover:underline mx-1"
+            >
+              Google Analytics オプトアウト アドオン
+            </a>
+            をご利用ください。
+          </li>
         </ul>
       </section>
 
