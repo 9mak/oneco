@@ -57,6 +57,11 @@ class ArchiveRepository:
             status_changed_at=archived.status_changed_at,
             outcome_date=archived.outcome_date,
             local_image_paths=archived.local_image_paths or None,
+            # 個体識別フィールド
+            breed=archived.breed,
+            name=archived.name,
+            management_number=archived.management_number,
+            description=archived.description,
         )
 
     async def get_archived_by_id(
@@ -185,6 +190,11 @@ class ArchiveRepository:
             shelter_date=animal.shelter_date,
             location=animal.location,
             phone=animal.phone,
+            # 個体識別フィールドも引き継ぐ (将来の参照・運営用)
+            breed=animal.breed,
+            name=animal.name,
+            management_number=animal.management_number,
+            description=animal.description,
             image_urls=animal.image_urls or [],
             local_image_paths=animal.local_image_paths or [],
             source_url=animal.source_url,

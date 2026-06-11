@@ -71,6 +71,11 @@ export interface ArchivedAnimalPublic {
   /** 譲渡/返還が成立した日 */
   outcome_date: string | null;
   archived_at: string;
+  // 個体識別フィールド (animal-identity-fields)。すべて任意。
+  breed?: string | null;
+  name?: string | null;
+  management_number?: string | null;
+  description?: string | null;
 }
 
 /**
