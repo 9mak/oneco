@@ -39,6 +39,19 @@ Kiro-style Spec Driven Development implementation on AI-DLC (AI Development Life
 - Keep steering current and verify alignment with `/kiro:spec-status`
 - Follow the user's instructions precisely, and within that scope act autonomously: gather the necessary context and complete the requested work end-to-end in this run, asking questions only when essential information is missing or the instructions are critically ambiguous.
 
+## Repository-specific Rules (避けたい再発バグ)
+
+### Animal / 個体識別フィールドを触る変更
+過去 6 回連続で `breed/name/management_number/description` のサイレントドロップを踏んだ (PR #171/#173/#176/#177/#180)。`Animal` / `RawAnimalData` / `AnimalData` / `AnimalArchive` のいずれかを変更する PR は `.github/pull_request_template.md` のチェックリストに必ず従うこと。最重要は:
+
+1. **新規 adapter テストは `adapter.normalize(raw)` の戻り値 `AnimalData` でアサーションする** (`raw.breed == "..."` だけは不十分。模範: `tests/adapters/test_kochi_adapter.py::test_full_scraping_flow`)
+2. **`Animal` に新カラム追加時は `AnimalArchive` も同時に追加する** (active から消えたら取り戻せないため、後付け移行不可)
+3. **adapter で `normalize()` を override したら、RawAnimalData 再構築時に全フィールドを名前付き引数で明示的に引き継ぐ** (可能なら `_default_normalize` 委譲)
+
+### CI が強制するチェック
+- `tests/test_image_remote_patterns.py`: `sites.yaml` のホストが `frontend/next.config.ts` の `remotePatterns` に一致することを担保 (列挙漏れで silent failure 経験あり、PR #179)
+- `ruff check src/ tests/` + `ruff format --check src/ tests/`: 個別ファイル単位の format 確認だけでは不十分。**全体で format 通っているか必ず確認** (PR #177/#178 でCI落ち再発)
+
 ## Steering Configuration
 - Load entire `.kiro/steering/` as project memory
 - Default files: `product.md`, `tech.md`, `structure.md`
