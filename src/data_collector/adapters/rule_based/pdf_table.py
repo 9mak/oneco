@@ -108,6 +108,12 @@ class PdfTableAdapter(RuleBasedAdapter):
                 image_urls=record.get("image_urls", []),
                 source_url=virtual_url,
                 category=category,
+                # 個体識別: 派生 PDF サブクラスが records に該当キーを生成すれば開通する。
+                # 監査(2026-06-11)指摘で追加 (kochi 同型サイレントドロップを予防)。
+                breed=record.get("breed", ""),
+                description=record.get("description", ""),
+                name=record.get("name", ""),
+                management_number=record.get("management_number", ""),
             )
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e

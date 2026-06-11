@@ -134,6 +134,9 @@ class NyantomoAdapter(SinglePageTableAdapter):
                 image_urls=self._extract_row_images(card, virtual_url),
                 source_url=virtual_url,
                 category=category,
+                # 個体識別: 「名前」(仮名) を name に保存
+                # (location フォールバック先と兼ねる)
+                name=fields.get("name", ""),
             )
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
