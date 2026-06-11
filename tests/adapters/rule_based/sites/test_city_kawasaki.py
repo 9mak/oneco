@@ -225,6 +225,8 @@ class TestCityKawasakiAdapter:
         assert "黒白" in a.color
         assert "中原区木月" in a.location
         assert a.shelter_date == "2026-05-21"
+        # 個体識別フィールド (2.3 横展開): 「種類」(雑種) は species ではなく breed に保存
+        assert a.breed == "雑種"
 
     def test_species_inference_from_site_name(self):
         """サイト名で species が決まる (収容犬→犬 / 収容猫→猫 / その他→その他)"""
