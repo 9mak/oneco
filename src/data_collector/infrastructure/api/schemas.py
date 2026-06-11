@@ -142,5 +142,10 @@ class ArchivedAnimalPublic(BaseModel):
     outcome_date: date | None = None
     local_image_paths: list[str] | None = None
     archived_at: datetime
+    # 個体識別フィールド (animal-identity-fields)。すべて任意。
+    breed: str | None = None
+    name: str | None = None
+    management_number: str | None = None
+    description: str | None = None
 
     model_config = ConfigDict(from_attributes=True)

@@ -233,6 +233,13 @@ class AnimalArchive(Base):
     shelter_date: date = Column(Date, nullable=False)
     location: str = Column(Text, nullable=False)
     phone: str | None = Column(String(20), nullable=True)
+    # 個体識別フィールド (animal-identity-fields)。全て任意。
+    # アーカイブは公開しないが将来の参照・運営用に元レコードから引き継ぐ。
+    # 列長は active 側 (Animal) と DataNormalizer の長さ定数と厳密一致させること。
+    breed: str | None = Column(String(50), nullable=True)
+    name: str | None = Column(String(100), nullable=True)
+    management_number: str | None = Column(String(50), nullable=True)
+    description: str | None = Column(Text, nullable=True)
     image_urls: list[str] = Column(
         JSON().with_variant(JSONB, "postgresql"),
         nullable=False,
