@@ -103,6 +103,46 @@ class TestPdfTableAdapter:
             result = adapter.fetch_animal_list()
         assert result == []
 
+    def test_identity_fields_passthrough_via_records(self):
+        """サブクラスの records に個体識別キーがあれば RawAnimalData に転写される
+
+        kochi 同型のサイレントドロップ予防の回帰防止テスト。
+        基底経路が breed/description/name/management_number の4キーを
+        構築子に渡していることを直接検証する。
+        """
+
+        class _IdentityPdfAdapter(PdfTableAdapter):
+            PDF_LINK_SELECTOR = "a[href$='.pdf']"
+
+            def _parse_pdf_text(self, pdf_text: str) -> list[dict]:
+                # 派生は records に該当キーを生成すれば開通する
+                return [
+                    {
+                        "species": "犬",
+                        "name": "ポチ",
+                        "breed": "柴犬",
+                        "management_number": "2026-001",
+                        "description": "人懐っこい",
+                        "shelter_date": "2026-05-01",
+                    }
+                ]
+
+        adapter = _IdentityPdfAdapter(_site())
+        with (
+            patch.object(adapter, "_http_get", return_value=LIST_HTML),
+            patch.object(adapter, "_download_pdf", return_value=b"fake-pdf"),
+            patch.object(adapter, "_extract_pdf_text", return_value="dummy"),
+        ):
+            adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(
+                "https://example.com/files/animals_2026_05.pdf#row=0",
+                category="lost",
+            )
+        assert raw.name == "ポチ"
+        assert raw.breed == "柴犬"
+        assert raw.management_number == "2026-001"
+        assert raw.description == "人懐っこい"
+
 
 class TestPdfTableAdapterDownloadSizeLimit:
     """`_download_pdf` のサイズ上限ガード (OOM / DoS 防止)"""
