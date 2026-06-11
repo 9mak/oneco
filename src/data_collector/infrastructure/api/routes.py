@@ -74,7 +74,10 @@ async def list_animals(
     ),
     q: str | None = Query(
         None,
-        description="キーワード検索（species/color/size/location/prefecture を OR 部分一致）",
+        description=(
+            "キーワード検索（species/color/size/location/prefecture/breed を OR 部分一致。"
+            "breed のみカタカナ↔ひらがなを相互ヒットさせる正規化あり）"
+        ),
         max_length=100,
     ),
     sort: str = Query(
