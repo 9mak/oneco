@@ -75,6 +75,11 @@ class TestPrefChibaAdapter:
         assert raw.sex == "オス"
         assert raw.size == "中"
         assert raw.age == "成犬"
+        # 個体識別フィールド (2.3 横展開):
+        #   【管理番号】kt260512-01 → management_number
+        #   「雑種・白黒茶・…」の先頭要素 → breed
+        assert raw.management_number == "kt260512-01"
+        assert raw.breed == "雑種"
         # 画像 URL が絶対 URL として取得される
         assert raw.image_urls
         assert all(u.startswith("http") for u in raw.image_urls)

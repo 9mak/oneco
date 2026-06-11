@@ -161,13 +161,15 @@ class PrefOkayamaAdapter(SinglePageTableAdapter):
             return cells[i].get_text(strip=True) if i < len(cells) else ""
 
         shelter_date = _cell_text(0)
-        # _cell_text(1) は管理番号 (現時点では RawAnimalData に保存先が無い)
-        # _cell_text(2) は種類 (breed) — RawAnimalData の species とは別概念
+        # 個体識別フィールド: management_number / breed / description
+        # (旧コメント「RawAnimalData に保存先が無い」は古い前提。models.py に追加済み)
+        management_number = _cell_text(1)
+        breed = _cell_text(2)  # 種類 (雑種・柴犬等)。species 推定とは別概念
         age = _cell_text(3)
         color = _cell_text(4)
         sex = self._normalize_sex_token(_cell_text(5))
         size = _cell_text(6)
-        # _cell_text(7) は特徴 (首輪等) — 現状の RawAnimalData には保存先が無い
+        description = _cell_text(7)  # 特徴 (首輪等)
         location = _cell_text(8)
 
         assert self._row_species_cache is not None  # _load_rows で必ずセット
@@ -178,6 +180,9 @@ class PrefOkayamaAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                breed=breed,
+                management_number=management_number,
+                description=description,
                 sex=sex,
                 age=age,
                 color=color,

@@ -195,6 +195,9 @@ class PrefOsakaAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                # 「種類: 雑種」「受付番号: ...」を _DETAIL/_ROW_LABEL_TO_FIELD で fields に格納済み
+                breed=fields.get("breed", ""),
+                management_number=fields.get("management_number", ""),
                 sex=fields.get("sex", ""),
                 age="",
                 color=fields.get("color", ""),

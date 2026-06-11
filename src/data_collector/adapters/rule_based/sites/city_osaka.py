@@ -164,6 +164,9 @@ class CityOsakaAdapter(SinglePageTableAdapter):
             )
         h3 = rows[idx]
 
+        # 管理番号は h3 「識別番号／A2605120001」から抽出
+        management_number = self._extract_management_number(h3.get_text(strip=True))
+
         # h3 直後の <div class="mol_imageblock"> を取得
         imageblock = self._find_imageblock_after(h3)
 
@@ -213,6 +216,9 @@ class CityOsakaAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                # 「種類」(雑種・柴等) は _LABEL_TO_FIELD で breed として fields に格納済み
+                breed=fields.get("breed", ""),
+                management_number=management_number,
                 sex=fields.get("sex", ""),
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),

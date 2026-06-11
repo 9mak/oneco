@@ -203,6 +203,8 @@ class PrefTottoriAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                # 「種類/犬種」列は COLUMN_FIELDS[3]=breed として fields に格納済み
+                breed=fields.get("breed", ""),
                 sex=fields.get("sex", ""),
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),

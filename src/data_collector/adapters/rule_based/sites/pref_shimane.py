@@ -134,10 +134,11 @@ class PrefShimaneAdapter(SinglePageTableAdapter):
                 return ""
             return cells[i].get_text(separator=" ", strip=True)
 
+        management_number = cell_text(0)
         shelter_date = self._parse_shelter_date(cell_text(2))
         location = cell_text(3)
         species_cell = cell_text(4)
-        cell_text(5)
+        breed = cell_text(5)  # 「種類」(品種名)。species 推定とは別概念
         sex = cell_text(6)
 
         # species 推定: caption -> 動物種別列 -> サイト名 の順
@@ -158,6 +159,8 @@ class PrefShimaneAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                breed=breed,
+                management_number=management_number,
                 sex=sex,
                 age="",
                 color="",

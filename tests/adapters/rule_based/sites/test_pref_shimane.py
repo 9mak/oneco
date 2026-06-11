@@ -145,6 +145,10 @@ class TestPrefShimaneAdapter:
         assert raw.location == "松江市"
         assert raw.sex == "オス"
         assert raw.category == "sheltered"
+        # 個体識別フィールド (2.3 横展開):
+        #   cells[0]=管理番号 (2026-0001), cells[5]=種類=雑種 (breed)
+        assert raw.management_number == "2026-0001"
+        assert raw.breed == "雑種"
         # 画像 URL は絶対 URL に変換される
         assert raw.image_urls
         assert all(u.startswith("http") for u in raw.image_urls)
