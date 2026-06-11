@@ -1082,6 +1082,78 @@ class TestDescriptionNormalization:
         assert "09012345678" not in out
         assert "やんちゃ" in out
 
+    # --- 追加カバレッジ: 監査(2026-06-11)で発見された取りこぼしフォーマット ---
+    # description は自由記述で、所有者/発見者の個人連絡先が混入しやすい。
+    # 仕様(要件2.5/4.6)上、電話番号フォーマットの除外宣言は無く、
+    # 括弧つき市外局番・スペース/ドット区切り・国際表記いずれも一般的に使われる。
+
+    def test_normalize_description_redacts_parens_area_code_landline(self):
+        """固定電話の括弧つき市外局番: (03)1234-5678 / (045)123-4567"""
+        out = DataNormalizer._normalize_description("お問合せは(03)1234-5678まで")
+        assert "(03)1234-5678" not in out
+        assert "███" in out
+        out2 = DataNormalizer._normalize_description("お電話 (045)123-4567")
+        assert "(045)123-4567" not in out2
+        assert "███" in out2
+
+    def test_normalize_description_redacts_parens_area_code_mobile(self):
+        """携帯の括弧つき表記: (090)1234-5678"""
+        out = DataNormalizer._normalize_description("発見者 (090)1234-5678")
+        assert "(090)1234-5678" not in out
+        assert "███" in out
+
+    def test_normalize_description_redacts_fullwidth_parens(self):
+        """全角括弧つき市外局番: （03）1234-5678"""
+        out = DataNormalizer._normalize_description("連絡先（03）1234-5678")
+        assert "（03）1234-5678" not in out
+        assert "███" in out
+
+    def test_normalize_description_redacts_dot_separated_mobile(self):
+        """ドット区切り携帯: 090.1234.5678"""
+        out = DataNormalizer._normalize_description("連絡 090.1234.5678 まで")
+        assert "090.1234.5678" not in out
+        assert "███" in out
+
+    def test_normalize_description_redacts_space_separated_mobile(self):
+        """スペース区切り携帯: 090 1234 5678"""
+        out = DataNormalizer._normalize_description("発見者TEL 090 1234 5678")
+        assert "090 1234 5678" not in out
+        assert "███" in out
+
+    def test_normalize_description_redacts_intl_e164_jp(self):
+        """国際表記(先頭0省略+81): +81 90 1234 5678 / +819012345678 / +81-90-1234-5678"""
+        for raw in (
+            "Tel: +81 90 1234 5678 (Eng OK)",
+            "問合せ +819012345678",
+            "Contact +81-90-1234-5678",
+        ):
+            out = DataNormalizer._normalize_description(raw)
+            # +81 始まりの番号フラグメントは全て伏字されるべき(末尾4桁の部分残しは漏えい)
+            assert "9012345678" not in (out or "")
+            assert "1234-5678" not in (out or "")
+            assert "1234 5678" not in (out or "")
+            assert "1234.5678" not in (out or "")
+            assert "███" in (out or "")
+
+    def test_normalize_description_does_not_redact_management_number(self):
+        """誤検知防止: 管理番号フォーマット 2026-001 (4-3) / D24018 / R8-12 等は伏字されない"""
+        for raw in (
+            "管理番号: 2026-001 の柴犬",
+            "個体番号 D24018 (愛称：平助)",
+            "受付 R8-12 / 2026年保護",
+        ):
+            out = DataNormalizer._normalize_description(raw)
+            assert out is not None
+            # 番号本体が残っている(電話と誤判定されていない)
+            assert ("2026-001" in out) or ("D24018" in out) or ("R8-12" in out)
+
+    def test_normalize_description_does_not_redact_weight_or_year(self):
+        """誤検知防止: 体重 5.5kg / 年号 2026年 等は伏字されない"""
+        out = DataNormalizer._normalize_description("体重5.5kgの中型犬、2026年5月保護")
+        assert out is not None
+        assert "5.5" in out
+        assert "2026年" in out
+
     def test_normalize_description_blank_to_none(self):
         assert DataNormalizer._normalize_description("   ") is None
         assert DataNormalizer._normalize_description("") is None
