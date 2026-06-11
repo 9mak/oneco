@@ -19,10 +19,15 @@ const nextConfig: NextConfig = {
       // .jp/.okinawa 以外なら下の例外リストに追加する。
       { protocol: 'https', hostname: '**.jp' },
       { protocol: 'https', hostname: '**.okinawa' },
-      // .com / 特殊 TLD の例外列挙 (sites.yaml に新規追加時はここも更新)
+      // .com / 特殊 TLD の例外列挙 (sites.yaml に新規追加時はここも更新)。
+      // 2026-06-11 監査: sites.yaml 全 91 host のうち .jp/.okinawa 以外は 6 host。
+      // 列挙漏れがあると画像最適化が失敗し /_next/image でその host の画像が
+      // 表示不可になる (実害)。yaml と一致しているか定期確認すること。
       { protocol: 'https', hostname: 'douai-tokushima.com' },
       { protocol: 'https', hostname: 'kochi-apc.com' },
       { protocol: 'https', hostname: 'kyoto-ani-love.com' },
+      { protocol: 'https', hostname: 'mie-dakc.server-shared.com' },
+      { protocol: 'https', hostname: 'oita-aigo.com' },
       { protocol: 'https', hostname: 'www.yokosuka-doubutu.com' },
     ],
     formats: ['image/webp', 'image/avif'], // WebP/AVIF自動変換
