@@ -239,6 +239,8 @@ class CityKawasakiAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                # 「種類/品種/犬種」は _set_field_by_label で breed として fields に格納される
+                breed=fields.get("breed", ""),
                 sex=fields.get("sex", ""),
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),
@@ -441,11 +443,6 @@ class CityKawasakiAdapter(SinglePageTableAdapter):
                     target = v
                     break
         if target is None:
-            return
-        if target == "breed":
-            # breed は species と区別するが現状の RawAnimalData では
-            # species フィールドのみ。サイト名推定値を優先するため
-            # ここでは無視する (将来 features 等への格納に拡張可)。
             return
         # 既存値があれば上書きしない (h3 自体のテキスト等を優先)
         if not fields.get(target):

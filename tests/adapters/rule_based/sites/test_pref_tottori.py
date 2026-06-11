@@ -206,6 +206,8 @@ class TestPrefTottoriAdapter:
         assert mock_get.call_count == 1
         assert isinstance(raw, RawAnimalData)
         assert raw.species == "犬"
+        # 個体識別フィールド (2.3 横展開): COLUMN_FIELDS[3]=breed (雑種)
+        assert raw.breed == "雑種"
         assert raw.location == "倉吉市"
         assert raw.color == "茶白"
         assert raw.sex == "オス"
