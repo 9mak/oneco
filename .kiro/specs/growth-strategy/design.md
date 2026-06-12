@@ -206,9 +206,9 @@ description: `${prefecture}${city}で保護されている${species}。${truncat
 | プラットフォーム | API 自動投稿 | コスト | 役割 |
 |---|---|---|---|
 | **Threads (Meta)** | Graph API、無料、250 投稿/24h | 0 円 | **自動投稿の本命** |
-| **X (Twitter)** | API v2、新規 Free 不可、Pay-per-use $0.20/投稿 (URL あり) | 0 円 を目指す | for-good 申請 → 通れば自動、否決なら **半手動 (Claude 文案 + 運用者コピペ)** |
+| **X (Twitter)** | API v2、新規 Free 不可、Pay-per-use $0.20/投稿 (URL あり) | 0 円 を目指す | for-good 申請 → 通れば自動、**否決なら本 spec の範囲外（休眠、半手動コピペ運用は行わない）** |
 
-**設計原則**: 月額固定費はかけない。Threads パイプラインを先行実装し、X は for-good 結果を待つ。
+**設計原則**: 月額固定費・手動運用負担をかけない。Threads パイプラインを先行実装し、X は for-good 結果を待ってから自動化判断。否決時は X を spec から外す。
 
 ### 5.1 アカウント開設 (ユーザー作業)
 
@@ -295,17 +295,16 @@ LLM 選定: [[project_extraction_strategy]] と [[feedback_llm_provider_selectio
 - シークレット保管: `.envrc` + Keychain (`oneco-x-api-key`, `oneco-x-api-secret`, `oneco-x-access-token`, `oneco-x-access-secret`)
 - レート制限: for-good で承認された投稿数上限を踏まえる (申請時に明示)
 
-### 5.7 X 半手動運用 (for-good 否決時のフォールバック)
+### 5.7 X for-good 否決時のフェイルセーフ
 
-X for-good 申請が否決された場合、自動投稿パイプラインから X クライアントを除外し、**Claude が生成した投稿文を「投稿候補リスト」として運用者に毎日提示** する。
+X for-good 申請が否決された場合の挙動:
 
-提示先の選択肢 (ユーザー判断項目):
+- 自動投稿パイプラインから X クライアントを除外（フィーチャーフラグで OFF 固定）
+- **半手動コピペ運用は行わない**（運用者の継続負担を作らない方針）
+- X アカウントは取得済みのまま休眠状態（プロフィールは残す、自動投稿しない）
+- 月間 PV 1,000 を超えた時点で「Pay-per-use 採用 ($6/月～)」を再評価（要件 6 のドメイン取得トリガーと同レベル）
 
-- **GitHub Issue** に毎日 1 件作成 (label: `daily-x-post`)
-- **メール下書き** に毎日 1 件作成
-- **Notion ページ** に毎日 1 件追記
-
-運用者は朝晩のどちらかでこのリストを開いて、本文をコピペで X 投稿。所要時間 1-2 分/日。
+実装上は環境変数 `X_PUBLISH_ENABLED=false`（デフォルト false）で完全 OFF。for-good 通過時に true に切替。
 
 ### 5.8 投稿前モデレーション
 
@@ -324,11 +323,11 @@ X for-good 申請が否決された場合、自動投稿パイプラインから
 ### 5.10 Phase 4 完了条件
 
 - [ ] Threads アカウント開設 + App Review 通過
-- [ ] X アカウント開設 + for-good 申請完了 (結果待ちでも可)
-- [ ] 自動投稿パイプライン実装 (Threads は必ず稼働、X はフィーチャーフラグで条件分岐)
-- [ ] X for-good 否決時の半手動フォールバック (GitHub Issue / メール / Notion から選択して実装)
+- [ ] X アカウント開設 + for-good 申請送信（結果待ちでも Phase 完了とみなす）
+- [ ] 自動投稿パイプライン実装（Threads は稼働、X は `X_PUBLISH_ENABLED` フラグで OFF 起動）
 - [ ] 投稿前モデレーション (PII / deceased / 文字数)
-- [ ] GA4 で `utm_source=threads` が計測される (X 自動化通過時は `utm_source=x` も)
+- [ ] GA4 で `utm_source=threads` が計測される
+- [ ] X for-good の合否を待つ運用ドキュメント (`runbooks/x-for-good-followup.md`) を作成し、否決時は X セクションをそのまま閉じる手順を明示
 
 ---
 
@@ -428,7 +427,7 @@ CI / Cloud Run 本番側は GitHub Actions Secrets / Secret Manager に同名で
 |---|---|---|
 | SNS 投稿で誤った情報を発信 | 高 | dry-run モード必須、初週は手動レビューで本番投稿、PII 二重 grep |
 | 自治体からの撤去要請対応遅延 | 高 | SLA 7 営業日明記、GitHub Issue 自動 label でアラート |
-| **X for-good 申請が否決される** | 中 | Threads が本命なので運用は止まらない。X は半手動 (Claude 文案 + 運用者コピペ) で対応 |
+| **X for-good 申請が否決される** | 中 | Threads が本命なので運用は止まらない。X は本 spec 範囲外として休眠、月間 PV 1,000 超で Pay-per-use 採用を再評価 |
 | **Threads App Review が長引く** | 中 | 申請中は手動投稿で立ち上げ、API 通過後に自動化に切替 |
 | **X API 価格改定 (再度値上げ)** | 中 | for-good 通過 = 影響なし。Pay-per-use に降りる場合は月額上限を設けて Cloud Run Job 側で件数制御 |
 | GA4 計測の精度不足 | 中 | カスタムイベント実装後リアルタイムで確認、外部遷移率 < 1% なら計測不備を疑う |
