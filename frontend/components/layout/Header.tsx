@@ -30,7 +30,7 @@ function FavoritesLink() {
       >
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
       </svg>
-      <span>お気に入り</span>
+      <span className="hidden sm:inline">お気に入り</span>
       {favorites.length > 0 && (
         <span className="ml-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1 text-xs font-semibold bg-red-500 text-white rounded-full">
           {favorites.length}
@@ -86,7 +86,8 @@ export function Header() {
           {/* ナビゲーション */}
           <nav aria-label="メインナビゲーション" className="shrink-0">
             <ul className="flex items-center gap-3 sm:gap-4">
-              <li>
+              <li className="hidden sm:block">
+                {/* 動物一覧はロゴと同じ機能 (href="/") のため、スマホでは非表示にして重なりを防ぐ */}
                 <Link
                   href="/"
                   className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary-700)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 rounded px-1"
@@ -99,7 +100,8 @@ export function Header() {
                   href="/archive"
                   className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary-700)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 rounded px-1"
                 >
-                  卒業した子たち
+                  <span className="sm:hidden">卒業</span>
+                  <span className="hidden sm:inline">卒業した子たち</span>
                 </Link>
               </li>
               <li>
