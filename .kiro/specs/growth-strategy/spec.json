@@ -1,7 +1,7 @@
 {
   "feature_name": "growth-strategy",
   "created_at": "2026-06-12T09:50:00+09:00",
-  "updated_at": "2026-06-12T10:30:00+09:00",
+  "updated_at": "2026-06-12T11:00:00+09:00",
   "language": "ja",
   "phase": "design",
   "approvals": {
@@ -10,7 +10,7 @@
       "approved": true
     },
     "design": {
-      "generated": false,
+      "generated": true,
       "approved": false
     },
     "tasks": {
