@@ -1,0 +1,79 @@
+name: 撤去・修正依頼 (Takedown / Correction Request)
+description: 掲載動物情報の撤去・修正・著作権主張のための窓口です（自治体・保護団体・個人どなたでも）
+title: "[Takedown] "
+labels: ["takedown"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ご連絡ありがとうございます。掲載内容に関するご懸念をお伺いし、適切に対応します。
+        申し立てから **7 営業日以内** に状況をご返答します。
+
+        **個人情報・機微情報を含む場合**: 公開 Issue でなく、運営者の GitHub プロフィール経由でメールにて直接ご連絡いただけます。
+
+  - type: dropdown
+    id: requester_type
+    attributes:
+      label: ご連絡者の種別
+      options:
+        - 自治体（動物愛護センター等）
+        - 保護団体・NPO
+        - 個人（飼い主・関係者）
+        - その他
+    validations:
+      required: true
+
+  - type: input
+    id: organization
+    attributes:
+      label: 所属組織名（任意）
+      placeholder: ○○県動物愛護管理センター
+    validations:
+      required: false
+
+  - type: input
+    id: target_url
+    attributes:
+      label: 対象 URL（撤去・修正してほしいページ）
+      placeholder: https://frontend-psi-ten-73.vercel.app/animals/...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: request_type
+    attributes:
+      label: ご依頼内容
+      options:
+        - 撤去依頼（該当データの非公開化）
+        - 情報修正依頼（誤った情報の訂正）
+        - 著作権・利用許諾に関するご相談
+        - その他
+    validations:
+      required: true
+
+  - type: textarea
+    id: reason
+    attributes:
+      label: 理由・詳細
+      description: 撤去・修正をご希望される具体的な理由・経緯をお書きください。
+      placeholder: 例) 該当動物は既に譲渡成立しており、自治体公式サイトからも削除済みのため。
+    validations:
+      required: true
+
+  - type: input
+    id: contact_email
+    attributes:
+      label: 連絡先メールアドレス
+      description: 対応結果をご連絡するためのメールアドレス。公開 Issue に出ます。機微情報の場合は GitHub プロフィール経由でメール直送をご利用ください。
+      placeholder: contact@example.lg.jp
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: 確認事項
+      options:
+        - label: ご連絡内容と連絡先メールアドレスを公開 Issue に投稿することに同意します（メール直送を希望する場合はチェック不要）。
+          required: false

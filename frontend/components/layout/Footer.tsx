@@ -37,6 +37,18 @@ export function Footer() {
           aria-label="フッターナビゲーション"
         >
           <Link
+            href="/about"
+            className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary-500)] hover:underline"
+          >
+            このサイトについて
+          </Link>
+          <Link
+            href="/transparency"
+            className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary-500)] hover:underline"
+          >
+            運営方針・撤去依頼
+          </Link>
+          <Link
             href="/privacy"
             className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary-500)] hover:underline"
           >
