@@ -102,11 +102,28 @@ export async function generateMetadata({ params }: AnimalDetailPageProps) {
         : animal.category === 'lost'
           ? '迷子情報'
           : '収容中';
-    const prefix = animal.prefecture ? `${animal.prefecture} ` : '';
-    const title = `${prefix}${animal.location}の${animal.species}（${categoryLabel}）`;
-    const sizeText = animal.size ? `・${animal.size}` : '';
-    const ageText = animal.age_months ? `・推定${animal.age_months}ヶ月` : '';
-    const description = `${animal.location}で保護された${animal.species}（${animal.sex}${sizeText}${ageText}）の詳細情報。${categoryLabel}として登録されています。`;
+    const region = animal.prefecture
+      ? `${animal.prefecture}${animal.location && animal.location !== animal.prefecture ? ` ${animal.location}` : ''}`
+      : animal.location;
+    const identifier = animal.name
+      ? `「${animal.name}」`
+      : animal.management_number
+        ? `（管理番号: ${animal.management_number}）`
+        : '';
+    const title = `${animal.species}${identifier} - ${region}の${categoryLabel}`;
+
+    const traits: string[] = [];
+    if (animal.breed) traits.push(animal.breed);
+    if (animal.sex && animal.sex !== '不明') traits.push(animal.sex);
+    if (animal.size) traits.push(animal.size);
+    if (animal.color) traits.push(`毛色: ${animal.color}`);
+    if (animal.age_months !== null && animal.age_months !== undefined) {
+      const years = Math.floor(animal.age_months / 12);
+      traits.push(years > 0 ? `推定${years}歳` : `推定${animal.age_months}ヶ月`);
+    }
+    const traitText = traits.length ? traits.join('・') : animal.sex;
+    const tail = animal.prefecture ? `${animal.prefecture}公式情報の集約。` : '公式情報の集約。';
+    const description = `${region}で保護されている${animal.species}（${traitText}）。${tail} ${categoryLabel}として登録されています。`;
 
     const canonicalPath = `/animals/${animal.id}`;
 
