@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FilterState } from '@/types/animal';
+import { trackSearchUsed } from '@/lib/analytics';
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -20,6 +21,8 @@ interface FilterPanelProps {
   filters: FilterState;
   resultCount: number;
 }
+
+const SEARCH_TRACK_DEBOUNCE_MS = 1000;
 
 /**
  * UI タブ ＝ ユーザーの意図
@@ -82,10 +85,13 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
   // <Suspense key={filters}> が再マウントすると、変換中の文字とフォーカスが
   // 失われ日本語入力が実用に耐えない。確定 (onCompositionEnd) で初めて同期する。
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const trackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTrackedQuery = useRef<string>('');
   const isComposingRef = useRef(false);
   useEffect(() => {
     return () => {
       if (searchTimer.current) clearTimeout(searchTimer.current);
+      if (trackTimer.current) clearTimeout(trackTimer.current);
     };
   }, []);
 
@@ -94,6 +100,18 @@ export function FilterPanel({ filters, resultCount }: FilterPanelProps) {
     searchTimer.current = setTimeout(() => {
       updateParam('q', value.trim() || undefined);
     }, SEARCH_DEBOUNCE_MS);
+
+    if (trackTimer.current) clearTimeout(trackTimer.current);
+    trackTimer.current = setTimeout(() => {
+      const trimmed = value.trim();
+      if (!trimmed) return;
+      if (trimmed === lastTrackedQuery.current) return;
+      lastTrackedQuery.current = trimmed;
+      trackSearchUsed({
+        queryLength: trimmed.length,
+        hasResults: resultCount > 0,
+      });
+    }, SEARCH_TRACK_DEBOUNCE_MS);
   };
 
   const clearAll = () => {
