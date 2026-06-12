@@ -63,6 +63,12 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  // Google Search Console 所有権確認用メタタグ。
+  // Search Console 経由で 2026-06-12 に発行された値を恒久的に <head> に出力する。
+  // 確認状態維持のためタグを削除しないこと (Search Console は再確認時にも参照する)。
+  verification: {
+    google: 'ufKu9iul0LIV0gySiea-ULneLToLgFil3dgBtS2Icjs',
+  },
 };
 
 export default function RootLayout({
