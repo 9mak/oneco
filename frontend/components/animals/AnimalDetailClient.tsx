@@ -198,7 +198,11 @@ export function AnimalDetailClient({ animal }: AnimalDetailClientProps) {
           />
 
           {/* 元のページを見るボタン */}
-          <ExternalLink sourceUrl={animal.source_url} />
+          <ExternalLink
+            sourceUrl={animal.source_url}
+            prefecture={animal.prefecture ?? undefined}
+            animalId={String(animal.id)}
+          />
         </div>
       </div>
     </div>

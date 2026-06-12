@@ -6,19 +6,36 @@
 
 'use client';
 
+import { trackExternalLinkClick } from '@/lib/analytics';
+
 interface ExternalLinkProps {
   /** 元のページURL */
   sourceUrl: string;
   /** ボタンラベル (デフォルト: "元のページを見る") */
   label?: string;
+  /** 計測用: 動物の都道府県 */
+  prefecture?: string;
+  /** 計測用: 動物 ID */
+  animalId?: string;
 }
 
-export function ExternalLink({ sourceUrl, label = '元のページを見る' }: ExternalLinkProps) {
+export function ExternalLink({
+  sourceUrl,
+  label = '元のページを見る',
+  prefecture,
+  animalId,
+}: ExternalLinkProps) {
+  const handleClick = () => {
+    trackExternalLinkClick({ linkUrl: sourceUrl, prefecture, animalId });
+  };
+
   return (
     <a
       href={sourceUrl}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={handleClick}
+      onAuxClick={handleClick}
       className="inline-flex items-center justify-center px-6 py-3 text-base font-medium text-[var(--color-primary-700)] bg-white border-2 border-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary-500)] min-h-[44px] min-w-[44px]"
       aria-label={`${label}（新しいタブで開きます）`}
     >
