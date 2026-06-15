@@ -1359,3 +1359,30 @@ class TestFilterJunkImages:
         assert DataNormalizer._filter_valid_image_urls(urls) == [
             "https://example.com/files/p1.jpg",
         ]
+
+    def test_pdf_is_excluded_with_real_photo(self):
+        """PDF を画像欄に混入させるサイト(香川県)対策: PDF を落とし実写真を残す。"""
+        urls = [
+            "https://www.pref.kagawa.lg.jp/documents/6103/0614cat.pdf",
+            "https://www.pref.kagawa.lg.jp/files/photo/real.jpg",
+        ]
+        assert DataNormalizer._filter_valid_image_urls(urls) == [
+            "https://www.pref.kagawa.lg.jp/files/photo/real.jpg",
+        ]
+
+    def test_pdf_only_returns_empty_not_failsafe(self):
+        """唯一の画像が PDF の場合は空を返す(フェイルセーフで PDF を戻さない)。"""
+        urls = ["https://www.pref.kagawa.lg.jp/documents/6103/micro.pdf"]
+        assert DataNormalizer._filter_valid_image_urls(urls) == []
+
+    def test_other_non_image_documents_excluded(self):
+        """PDF 以外の文書ファイル(doc/xls/zip 等)も除外する。"""
+        urls = [
+            "https://example.com/files/a.docx",
+            "https://example.com/files/b.xlsx",
+            "https://example.com/files/c.zip?ver=2",
+            "https://example.com/files/photo.png",
+        ]
+        assert DataNormalizer._filter_valid_image_urls(urls) == [
+            "https://example.com/files/photo.png",
+        ]
