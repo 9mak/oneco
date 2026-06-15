@@ -112,10 +112,13 @@ jobs:
             --region "${GCP_REGION}" \
             --platform managed \
             --allow-unauthenticated \
-            --set-env-vars "DATABASE_URL=${{ secrets.DATABASE_URL }},CORS_ORIGINS=${{ vars.CORS_ORIGINS }},INTERNAL_API_TOKEN=${{ secrets.INTERNAL_API_TOKEN }},SITE_URL=${{ vars.SITE_URL }},LOG_LEVEL=INFO"
+            --set-env-vars "^;^DATABASE_URL=${{ secrets.DATABASE_URL }};CORS_ORIGINS=${{ vars.CORS_ORIGINS }};INTERNAL_API_TOKEN=${{ secrets.INTERNAL_API_TOKEN }};SITE_URL=${{ vars.SITE_URL }};LOG_LEVEL=INFO"
           # 注: --set-env-vars は既存 env を全置換するため、本番で稼働中の
           #     全変数を列挙する必要がある。SITE_URL はフィード BASE_URL に
           #     使われており、欠落すると本番設定が消える (2026-06-15 監査で発覚)。
+          # 注: 先頭 "^;^" は区切り文字を ; に変更する gcloud 構文。CORS_ORIGINS が
+          #     カンマ区切りの複数 URL を持つため、既定のカンマ区切りだと dict
+          #     パースが壊れる (2026-06-15 確認)。値に ; を含まないため安全。
           # 注: シークレットを --set-env-vars で渡しているが、本番堅牢化として
           # Secret Manager + `--set-secrets` への移行を推奨。
 
