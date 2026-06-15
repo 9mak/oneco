@@ -95,11 +95,11 @@ jobs:
         run: |
           IMAGE="${GCP_REGION}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${GCP_AR_REPO}/${GCP_SERVICE}:${GITHUB_SHA}"
           echo "IMAGE=${IMAGE}" >> "$GITHUB_ENV"
-          # --logging=CLOUD_LOGGING_ONLY: WIF の deploy SA はデフォルトログ
-          # バケットをストリームできず、ビルド成功でも gcloud が exit 1 になる
-          # (2026-06-15 偽陰性を確認)。Cloud Logging のみにして回避する。
+          # --suppress-logs: WIF の deploy SA はデフォルトログバケットを
+          # ストリームできず、ビルド成功でも gcloud がログ取得で exit 1 になる
+          # (2026-06-15 偽陰性を確認)。ログ追尾を抑止しビルド結果のみで判定する。
           gcloud builds submit --tag "${IMAGE}" --project "${{ vars.GCP_PROJECT_ID }}" \
-            --logging=CLOUD_LOGGING_ONLY .
+            --suppress-logs .
 
       - name: Deploy to Cloud Run
         run: |
