@@ -1281,3 +1281,81 @@ class TestNameAndManagementNumberNormalization:
         result = DataNormalizer.normalize(self._raw(management_number="2026-001"))
         assert result.management_number == "2026-001"
         assert "███" not in result.management_number
+
+
+class TestFilterJunkImages:
+    """画像URLのジャンク除外（ロゴ/アイコン/ナビ等）のテスト。
+
+    2026-06-15 本番で、全adapter共通の画像チョークポイント
+    _filter_valid_image_urls がジャンク除外をせず、logo.svg/ico_nav 等が
+    動物写真として公開されていた（JSON-LD・一覧サムネも汚染）。
+    """
+
+    def test_kumamoto_doubutuaigo_real_photos_only(self):
+        """id=1134 実データ相当: ジャンク10件を落とし実写真3件のみ残す。"""
+        base = "https://www.kumamoto-doubutuaigo.jp"
+        urls = [
+            f"{base}/img/common/logo.svg",
+            f"{base}/img/common/ico-insta.png",
+            f"{base}/img/common/ico_nav01.png",
+            f"{base}/img/common/ico_nav02.png",
+            f"{base}/img/common/ico_nav03.png",
+            f"{base}/img/common/ico_nav04.png",
+            f"{base}/img/common/ico_nav05.png",
+            f"{base}/img/common/ico_nav06.png",
+            f"{base}/img/common/ico_nav07.png",
+            f"{base}/files/cache/abc123.png",
+            f"{base}/files/cache/def456.png",
+            f"{base}/files/cache/ghi789.png",
+        ]
+        result = DataNormalizer._filter_valid_image_urls(urls)
+        assert result == [
+            f"{base}/files/cache/abc123.png",
+            f"{base}/files/cache/def456.png",
+            f"{base}/files/cache/ghi789.png",
+        ]
+
+    def test_real_photos_are_not_dropped(self):
+        """一般的な実写真URL（uploads/番号/種別パス）は維持する。"""
+        urls = [
+            "https://example.com/wp-content/uploads/2026/06/dog01.jpg",
+            "https://example.com/files/animal/12345.jpg",
+            "https://example.com/images/photo_2026.jpeg",
+            "https://example.com/media/cat-photo.webp",
+        ]
+        assert DataNormalizer._filter_valid_image_urls(urls) == urls
+
+    def test_failsafe_returns_original_when_all_junk(self):
+        """全てジャンク判定でも空配列にせず元の有効URLを返す（誤殺回避）。"""
+        urls = [
+            "https://example.com/common/logo.svg",
+            "https://example.com/assets/icon.png",
+        ]
+        assert DataNormalizer._filter_valid_image_urls(urls) == urls
+
+    def test_junk_patterns_detected(self):
+        """代表的なジャンクパターンを除外する。"""
+        junk = [
+            "https://x.jp/img/common/logo.svg",
+            "https://x.jp/assets/icon-search.png",
+            "https://x.jp/themes/default/header.png",
+            "https://x.jp/img/btn_next.gif",
+            "https://x.jp/share/sns_line.png",
+            "https://x.jp/img/noimage.png",
+            "https://x.jp/img/banner_event.jpg",
+        ]
+        real = ["https://x.jp/files/cache/real_photo.jpg"]
+        result = DataNormalizer._filter_valid_image_urls(junk + real)
+        assert result == real
+
+    def test_scheme_and_dedupe_still_apply(self):
+        """既存のスキーム検証・重複排除は維持する。"""
+        urls = [
+            "data:image/png;base64,xxxx",
+            "/relative/path.jpg",
+            "https://example.com/files/p1.jpg",
+            "https://example.com/files/p1.jpg",
+        ]
+        assert DataNormalizer._filter_valid_image_urls(urls) == [
+            "https://example.com/files/p1.jpg",
+        ]
