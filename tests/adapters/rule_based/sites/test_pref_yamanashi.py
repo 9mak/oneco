@@ -168,6 +168,62 @@ class TestPrefYamanashiAdapter:
         assert cls._extract_size_from_kind_size("柴犬") == ""
         assert cls._extract_size_from_kind_size("ポメラニアンとチワワのミックス") == ""
 
+    def test_extract_breed_from_kind_size_variants(self):
+        """「種類・体格」テキストから犬種/品種を抽出する単体テスト (2026-06-15)。
+
+        旧実装は size のみ抽出し犬種を破棄していた (222 件で breed 欠損)。
+        体格/体重/年齢語を除いた残りを breed とし、判定不能なら空を返す
+        (誤った breed を作らない)。
+        """
+        cls = PrefYamanashiAdapter
+        assert cls._extract_breed_from_kind_size("トイプードル 中型") == "トイプードル"
+        assert cls._extract_breed_from_kind_size("雑種 小型（3.5kg）") == "雑種"
+        assert cls._extract_breed_from_kind_size("猫（雑種）大型") == "雑種"
+        assert cls._extract_breed_from_kind_size("猫（雑種）・中型") == "雑種"
+        assert cls._extract_breed_from_kind_size("雑種、体重約4kg") == "雑種"
+        assert cls._extract_breed_from_kind_size("柴犬") == "柴犬"
+        assert cls._extract_breed_from_kind_size("雑種") == "雑種"
+        assert (
+            cls._extract_breed_from_kind_size("ポメラニアンとチワワのミックス")
+            == "ポメラニアンとチワワのミックス"
+        )
+        # 品種情報なし → 空 (size 語・体重・年齢語のみ)
+        assert cls._extract_breed_from_kind_size("3kgくらい") == ""
+        assert cls._extract_breed_from_kind_size("子猫") == ""
+        assert cls._extract_breed_from_kind_size("中型") == ""
+        assert cls._extract_breed_from_kind_size("") == ""
+
+    def test_extract_animal_details_breed_via_normalize(self, fixture_html):
+        """「種類・体格」から breed を抽出し normalize() 戻り値に乗ること。
+
+        CLAUDE.md サイレントドロップ規約: raw でなく adapter.normalize(raw) の
+        AnimalData.breed をアサートする (個体識別フィールドの恒久欠損防止)。
+        """
+        list_html = _load_yamanashi_html(fixture_html)
+        detail_html = """
+        <html><body>
+          <h2>種類・体格</h2>
+          <p>トイプードル 中型</p>
+          <h2>管轄保健所の連絡先</h2>
+          <p>峡東保健所TEL:0553-20-2751</p>
+        </body></html>
+        """
+        adapter = PrefYamanashiAdapter(_site())
+
+        def _http_side_effect(url):
+            if url.endswith("index.html"):
+                return list_html
+            return detail_html
+
+        with patch.object(adapter, "_http_get", side_effect=_http_side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+            animal = adapter.normalize(raw)
+
+        assert raw.breed == "トイプードル"
+        assert animal.breed == "トイプードル"
+        assert animal.size == "中型"
+
     def test_extract_animal_details_size_with_annotation(self, fixture_html):
         """「雑種 小型（3.5kg）」のように体格 token に注記が続くケースも拾う
 
