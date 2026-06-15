@@ -58,6 +58,22 @@ _JUNK_IMAGE_FILENAME_TOKENS = (
     "facebook",
     "youtube",
 )
+# 画像でないファイル (PDF/Office/アーカイブ等)。一部自治体は収容情報の
+# 添付 PDF を画像欄に混入させる (香川県など)。これを image_urls に通すと
+# frontend の /_next/image が 400、JSON-LD image も汚染される。
+_NON_IMAGE_FILE_EXTENSIONS = (
+    ".pdf",
+    ".doc",
+    ".docx",
+    ".xls",
+    ".xlsx",
+    ".ppt",
+    ".pptx",
+    ".csv",
+    ".txt",
+    ".zip",
+    ".rtf",
+)
 
 
 class DataNormalizer:
@@ -197,14 +213,21 @@ class DataNormalizer:
         return any(tok in filename for tok in _JUNK_IMAGE_FILENAME_TOKENS)
 
     @staticmethod
+    def _is_non_image_file(url: str) -> bool:
+        """PDF/Office 等、画像でないファイルの URL かを判定する。"""
+        path = url.lower().split("?", 1)[0].split("#", 1)[0]
+        return path.endswith(_NON_IMAGE_FILE_EXTENSIONS)
+
+    @staticmethod
     def _filter_valid_image_urls(urls: list[str] | None) -> list[str]:
         """http(s) スキームの画像 URL のみを残し、ジャンクを除外し、重複を順序保ち除去する。
 
         AnimalData.image_urls は HttpUrl 制約。data:/javascript:/相対パス等を
         Pydantic に渡すと ValidationError でレコードごと欠落するため、ここで
-        防御する (全アダプター共通)。あわせてロゴ/アイコン/ナビ等のジャンク画像を
-        除外する (全 adapter + LLM 経路が必ず通る唯一のチョークポイント)。
-        ジャンク除外で全滅した場合は誤殺を避けるため有効 URL をそのまま返す。
+        防御する (全アダプター共通)。あわせてロゴ/アイコン/ナビ等のジャンク画像と
+        PDF 等の非画像ファイルを除外する (全 adapter + LLM 経路が必ず通る唯一の
+        チョークポイント)。ジャンク除外で全滅した場合は誤殺を避けるため画像候補を
+        そのまま返すが、非画像ファイル(PDF等)はフェイルセーフ対象外で確実に除く。
         """
         if not urls:
             return []
@@ -220,9 +243,11 @@ class DataNormalizer:
                 continue
             seen.add(candidate)
             valid.append(candidate)
-        non_junk = [u for u in valid if not DataNormalizer._is_junk_image_url(u)]
-        # フェイルセーフ: 全てジャンク判定なら誤殺より混入を選び有効 URL を返す
-        return non_junk if non_junk else valid
+        # 非画像ファイル(PDF等)は確実に除外 (フェイルセーフで戻さない)
+        image_candidates = [u for u in valid if not DataNormalizer._is_non_image_file(u)]
+        non_junk = [u for u in image_candidates if not DataNormalizer._is_junk_image_url(u)]
+        # フェイルセーフ: 全てジャンク判定なら誤殺より混入を選び画像候補を返す
+        return non_junk if non_junk else image_candidates
 
     @staticmethod
     def _normalize_species(raw_species: str) -> str:
