@@ -25,6 +25,13 @@ dependencies = [
     "playwright>=1.40.0",
     "pdfplumber>=0.10.0",
     "python-dotenv>=1.0.0",
+    # 配信API(syndication)のランタイム依存。requirements.txt には存在したが
+    # Dockerfile が `pip install -e .`(pyproject 単一源泉)へ移行した際に未同期で、
+    # 本番イメージから欠落していた (slowapi 欠落で 2026-06-15 デプロイがクラッシュ)。
+    "feedgen>=1.0.0",          # RSS/Atom フィード生成 (feed_generator)
+    "redis[asyncio]>=5.0.0",   # レート制限/キャッシュ (rate_limiter, cache_manager)
+    "slowapi>=0.1.9",          # 公開API レート制限 (app.py)
+    "numpy>=1.24.0",           # 公開メトリクス集計 (metrics_collector)
 ]
 
 [tool.setuptools]
