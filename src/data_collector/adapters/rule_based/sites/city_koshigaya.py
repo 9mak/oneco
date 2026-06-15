@@ -271,8 +271,17 @@ class CityKoshigayaAdapter(SinglePageTableAdapter):
                 for tr in table.find_all("tr")
                 if isinstance(tr, Tag) and tr.find("td") is not None
             ]
+        # "収容期限" は場所テーブルのヘッダ3列目 (収容場所/収容日/収容期限)。
+        # これを header_labels に含めないと場所テーブルのヘッダ行が all-header
+        # 判定を通過できず「データ行」として残り、動物テーブル(3行)と件数が
+        # ずれて location='収容場所'・shelter_date='収容日' の汚染レコードを
+        # 生む (2026-06-15 越谷市保護猫で発覚)。検出用の
+        # _LOCATION_TABLE_HEADER_KEYWORDS には足さない (テーブル検出条件を
+        # 厳しくすると 収容期限 欠落ページで location テーブルを取りこぼすため)。
         header_labels = (
-            set(_ANIMAL_TABLE_HEADER_KEYWORDS) | set(_LOCATION_TABLE_HEADER_KEYWORDS) | {"備考"}
+            set(_ANIMAL_TABLE_HEADER_KEYWORDS)
+            | set(_LOCATION_TABLE_HEADER_KEYWORDS)
+            | {"備考", "収容期限"}
         )
         result: list[Tag] = []
         for tr in trs:
