@@ -1,0 +1,28 @@
+# Cloud Build にアップロードするビルドコンテキストから除外する。
+# backend Dockerfile が COPY するのは setup.py/pyproject.toml/README.md/
+# src/・alembic/・alembic.ini・run_server.py のみ。それ以外は不要。
+.git/
+.gitignore
+.venv/
+venv/
+node_modules/
+**/node_modules/
+frontend/
+.next/
+# ローカル DB・スクリーンショット等（データ衛生・サイズ削減）
+*.db
+oneco_local.db
+*.png
+*.log
+# Python キャッシュ
+__pycache__/
+**/__pycache__/
+*.pyc
+*.egg-info/
+# 収集アーティファクト・開発設定（イメージに不要）
+output/
+snapshots/
+.mcp.json
+.kiro/
+docs/
+.claude/
