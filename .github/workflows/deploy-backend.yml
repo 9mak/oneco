@@ -33,14 +33,17 @@ on:
         description: 'デプロイ前に alembic upgrade head を実行する'
         type: boolean
         default: false
-  # 安定後に有効化すると src/Dockerfile 変更時に自動デプロイされる:
-  # push:
-  #   branches: [main]
-  #   paths:
-  #     - 'src/**'
-  #     - 'Dockerfile'
-  #     - 'requirements.txt'
-  #     - 'alembic/**'
+  # src/Dockerfile 等のバックエンド変更が main に入ると自動デプロイ。
+  # (2026-06-15 WIF 配線完了・workflow_dispatch で end-to-end 検証済みのため有効化)
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'Dockerfile'
+      - 'requirements.txt'
+      - 'pyproject.toml'
+      - 'alembic/**'
+      - '.github/workflows/deploy-backend.yml'
 
 # WIF にはこの 2 つの権限が必須
 permissions:
@@ -92,7 +95,11 @@ jobs:
         run: |
           IMAGE="${GCP_REGION}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${GCP_AR_REPO}/${GCP_SERVICE}:${GITHUB_SHA}"
           echo "IMAGE=${IMAGE}" >> "$GITHUB_ENV"
-          gcloud builds submit --tag "${IMAGE}" --project "${{ vars.GCP_PROJECT_ID }}" .
+          # --logging=CLOUD_LOGGING_ONLY: WIF の deploy SA はデフォルトログ
+          # バケットをストリームできず、ビルド成功でも gcloud が exit 1 になる
+          # (2026-06-15 偽陰性を確認)。Cloud Logging のみにして回避する。
+          gcloud builds submit --tag "${IMAGE}" --project "${{ vars.GCP_PROJECT_ID }}" \
+            --logging=CLOUD_LOGGING_ONLY .
 
       - name: Deploy to Cloud Run
         run: |
