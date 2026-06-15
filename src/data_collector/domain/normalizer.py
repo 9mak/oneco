@@ -17,6 +17,48 @@ from .models import AnimalData, RawAnimalData
 
 logger = logging.getLogger(__name__)
 
+# ジャンク画像 (ロゴ/アイコン/ナビ/装飾) を動物写真から除外するためのパターン。
+# 共通サイト資産は /common/・/assets/ 等に置かれ、動物写真は /files/・/uploads/・
+# /cache/ 等に置かれるため、パス断片とファイル名トークンの双方で判定する。
+_JUNK_IMAGE_PATH_SEGMENTS = (
+    "/common/",
+    "/assets/",
+    "/theme/",
+    "/themes/",
+    "/template",
+    "/layout/",
+    "/design/",
+    "/parts/",
+    "/share/",
+    "/sns/",
+)
+_JUNK_IMAGE_FILENAME_TOKENS = (
+    "logo",
+    "icon",
+    "ico_",
+    "ico-",
+    "nav",
+    "btn",
+    "button",
+    "banner",
+    "arrow",
+    "bullet",
+    "spacer",
+    "blank",
+    "dummy",
+    "noimage",
+    "no-image",
+    "no_image",
+    "placeholder",
+    "header",
+    "footer",
+    "sns",
+    "insta",
+    "twitter",
+    "facebook",
+    "youtube",
+)
+
 
 class DataNormalizer:
     """
@@ -140,12 +182,29 @@ class DataNormalizer:
         )
 
     @staticmethod
+    def _is_junk_image_url(url: str) -> bool:
+        """ロゴ/アイコン/ナビ等のジャンク画像 URL かを判定する。
+
+        SVG は装飾・ロゴが大半で動物写真にはまず使われないため一律ジャンク扱い。
+        それ以外はパス断片 (共通資産ディレクトリ) とファイル名トークンで判定する。
+        """
+        path = url.lower().split("?", 1)[0].split("#", 1)[0]
+        filename = path.rsplit("/", 1)[-1]
+        if filename.endswith(".svg"):
+            return True
+        if any(seg in path for seg in _JUNK_IMAGE_PATH_SEGMENTS):
+            return True
+        return any(tok in filename for tok in _JUNK_IMAGE_FILENAME_TOKENS)
+
+    @staticmethod
     def _filter_valid_image_urls(urls: list[str] | None) -> list[str]:
-        """http(s) スキームの画像 URL のみを残し、重複を順序保ち除去する。
+        """http(s) スキームの画像 URL のみを残し、ジャンクを除外し、重複を順序保ち除去する。
 
         AnimalData.image_urls は HttpUrl 制約。data:/javascript:/相対パス等を
         Pydantic に渡すと ValidationError でレコードごと欠落するため、ここで
-        防御する (全アダプター共通)。
+        防御する (全アダプター共通)。あわせてロゴ/アイコン/ナビ等のジャンク画像を
+        除外する (全 adapter + LLM 経路が必ず通る唯一のチョークポイント)。
+        ジャンク除外で全滅した場合は誤殺を避けるため有効 URL をそのまま返す。
         """
         if not urls:
             return []
@@ -161,7 +220,9 @@ class DataNormalizer:
                 continue
             seen.add(candidate)
             valid.append(candidate)
-        return valid
+        non_junk = [u for u in valid if not DataNormalizer._is_junk_image_url(u)]
+        # フェイルセーフ: 全てジャンク判定なら誤殺より混入を選び有効 URL を返す
+        return non_junk if non_junk else valid
 
     @staticmethod
     def _normalize_species(raw_species: str) -> str:
