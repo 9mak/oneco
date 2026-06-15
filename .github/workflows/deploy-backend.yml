@@ -95,10 +95,13 @@ jobs:
         run: |
           IMAGE="${GCP_REGION}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${GCP_AR_REPO}/${GCP_SERVICE}:${GITHUB_SHA}"
           echo "IMAGE=${IMAGE}" >> "$GITHUB_ENV"
-          # --suppress-logs: WIF の deploy SA はデフォルトログバケットを
-          # ストリームできず、ビルド成功でも gcloud がログ取得で exit 1 になる
-          # (2026-06-15 偽陰性を確認)。ログ追尾を抑止しビルド結果のみで判定する。
+          # WIF の deploy SA は Cloud Build の「デフォルトログバケット」を
+          # 読めず (Viewer/Owner 必須)、ビルド成功でも gcloud が exit 1 になる
+          # 偽陰性が出る (2026-06-15 確認)。--gcs-log-dir で deploy SA が
+          # storage.admin を持つ自前バケットにログを書かせ、--suppress-logs で
+          # 追尾も止めてビルド結果のみで判定する。
           gcloud builds submit --tag "${IMAGE}" --project "${{ vars.GCP_PROJECT_ID }}" \
+            --gcs-log-dir="gs://${{ vars.GCP_PROJECT_ID }}_cloudbuild/build-logs" \
             --suppress-logs .
 
       - name: Deploy to Cloud Run
