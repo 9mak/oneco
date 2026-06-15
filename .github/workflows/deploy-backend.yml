@@ -14,6 +14,7 @@
 #        GCP_AR_REPO      … Artifact Registry リポジトリ名（未設定時 oneco）
 #        GCP_SERVICE      … Cloud Run サービス名（未設定時 oneco-api）
 #        CORS_ORIGINS     … 本番フロントの URL（例 https://oneco.vercel.app）
+#        SITE_URL         … フィード等で使う本番サイト URL（例 https://oneco.vercel.app）
 #   3. リポジトリ Secrets:
 #        GCP_WIF_PROVIDER     … projects/<num>/locations/global/workloadIdentityPools/<pool>/providers/<provider>
 #        GCP_SERVICE_ACCOUNT  … deploy-bot@<project>.iam.gserviceaccount.com
@@ -101,7 +102,10 @@ jobs:
             --region "${GCP_REGION}" \
             --platform managed \
             --allow-unauthenticated \
-            --set-env-vars "DATABASE_URL=${{ secrets.DATABASE_URL }},CORS_ORIGINS=${{ vars.CORS_ORIGINS }},INTERNAL_API_TOKEN=${{ secrets.INTERNAL_API_TOKEN }},LOG_LEVEL=INFO"
+            --set-env-vars "DATABASE_URL=${{ secrets.DATABASE_URL }},CORS_ORIGINS=${{ vars.CORS_ORIGINS }},INTERNAL_API_TOKEN=${{ secrets.INTERNAL_API_TOKEN }},SITE_URL=${{ vars.SITE_URL }},LOG_LEVEL=INFO"
+          # 注: --set-env-vars は既存 env を全置換するため、本番で稼働中の
+          #     全変数を列挙する必要がある。SITE_URL はフィード BASE_URL に
+          #     使われており、欠落すると本番設定が消える (2026-06-15 監査で発覚)。
           # 注: シークレットを --set-env-vars で渡しているが、本番堅牢化として
           # Secret Manager + `--set-secrets` への移行を推奨。
 

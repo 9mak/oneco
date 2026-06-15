@@ -51,6 +51,9 @@ Thumbs.db
 
 # Documentation
 *.md
+# README.md は pyproject.toml の readme = "README.md" が参照するため
+# ビルドコンテキストに必要 (Dockerfile が COPY する)。除外しない。
+!README.md
 docs/
 
 # Data files
