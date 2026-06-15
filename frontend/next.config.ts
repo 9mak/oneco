@@ -48,9 +48,17 @@ const nextConfig: NextConfig = {
     // dev は React Refresh / Fast Refresh で eval が必要、本番は除去して
     // XSS の爆発半径を縮める (R-3: Codex リリースレビュー指摘)。
     const isDev = process.env.NODE_ENV !== 'production';
+    // GA4 / Google Tag Manager。@next/third-parties の <GoogleAnalytics> が
+    // googletagmanager.com から gtag を読み込み、計測ビーコンを
+    // google-analytics.com (リージョン別サブドメイン含む) へ送る。
+    // これらを許可しないと CSP がスクリプト読込とビーコン送信の両方を
+    // ブロックし、計測が完全に死ぬ (2026-06-15 本番で発覚)。
+    const gtm = 'https://www.googletagmanager.com';
+    const gaConnect = 'https://www.google-analytics.com https://*.google-analytics.com';
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
     const scriptSrc = isDev
-      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-      : "script-src 'self' 'unsafe-inline'";
+      ? `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${gtm}`
+      : `script-src 'self' 'unsafe-inline' ${gtm}`;
     return [
       {
         source: '/:path*',
@@ -62,7 +70,7 @@ const nextConfig: NextConfig = {
               scriptSrc,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
-              `connect-src 'self' ${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}`,
+              `connect-src 'self' ${apiBase} ${gtm} ${gaConnect}`,
             ].join('; '),
           },
         ],
