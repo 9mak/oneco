@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { INSTAGRAM_URL } from '@/lib/social';
+
 /**
  * Footer Component
  * ランドマーク要素 <footer> を使用したアクセシブルなフッター
@@ -60,6 +62,14 @@ export function Footer() {
           >
             利用規約
           </Link>
+          <a
+            href={INSTAGRAM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary-500)] hover:underline"
+          >
+            Instagram
+          </a>
           <a
             href="https://github.com/9mak/oneco"
             target="_blank"
