@@ -207,6 +207,22 @@ class TestCityWakayamaAdapter:
         assert raw.source_url == first_url
         assert raw.category == "adoption"
 
+    def test_kariname_extracted_as_name_via_normalize(self):
+        """個体識別: 「仮名：ゆきこ」を name として抽出する。
+
+        2026-06-16: 和歌山市 25件全件で name が欠損していた (仮名を _extract_field
+        で拾っていなかった)。CLAUDE.md 規約に従い normalize() でアサート。
+        """
+        html = _build_html_with_one_card_cat()
+        adapter = CityWakayamaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            first_url, category = urls[0]
+            raw = adapter.extract_animal_details(first_url, category=category)
+            animal = adapter.normalize(raw)
+        assert raw.name == "ゆきこ"
+        assert animal.name == "ゆきこ"
+
     def test_phone_extracted_from_page_footer(self):
         """ページ末尾の「電話：073-488-2032」をページ共通の phone として取得する
 

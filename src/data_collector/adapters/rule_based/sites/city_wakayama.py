@@ -159,6 +159,8 @@ class CityWakayamaAdapter(SinglePageTableAdapter):
         # ドメイン側で扱える値だけマッピングする。
         breed = _extract_field(full_text, "種類")
         age = _extract_field(full_text, "年齢（推定）") or _extract_field(full_text, "年齢")
+        # 個体識別: 仮名 (例 ごえもん)。掲載されているのに未抽出で全件ドロップしていた
+        name = _extract_field(full_text, "仮名")
 
         try:
             return RawAnimalData(
@@ -176,6 +178,7 @@ class CityWakayamaAdapter(SinglePageTableAdapter):
                 category=category,
                 # 品種 (種類カラム。例: 雑種)。species 判定とは別の個体識別値として保存
                 breed=breed,
+                name=name,
             )
         except Exception as e:
             raise ParsingError(
