@@ -137,6 +137,40 @@ class TestPrefSagaAdapter:
         assert raw.age == "2歳"
         assert raw.shelter_date == "令和8年4月5日"
 
+    def test_species_uses_table_marker_when_heading_is_h2(self):
+        """セクション見出しが h2 のページでも、テーブル本文のマーカー
+        (保護犬（番号）/犬の特徴) から犬を確定する。
+
+        旧実装は find_previous('h3') 固定で、見出しが h2 のページ
+        (kiji00334505 等) では無関係なフッタ/サイドバー h3 を拾って
+        species='その他' を返し、`or` 短絡で 種類='ビーグル'(犬) を masking
+        していた (2026-06-16 live 実測)。raw と normalize() の両方でアサート。
+        """
+        html = """
+        <html><body>
+        <h3 class="title">関連情報</h3>
+        <h2 class="title">保護犬の情報</h2>
+        <table class="__wys_table">
+          <tr><td>保護犬（26-9）</td><td colspan="2">保護した場所</td><td>伊万里市</td></tr>
+          <tr><td rowspan="8">備考なし</td><td rowspan="6">犬の特徴</td><td>種類</td><td>ビーグル</td></tr>
+          <tr><td>毛色</td><td>茶白</td></tr>
+          <tr><td>性別</td><td>オス</td></tr>
+          <tr><td>体格</td><td>中型</td></tr>
+          <tr><td>推定年齢</td><td>2歳</td></tr>
+          <tr><td colspan="2">収容日</td><td>令和8年4月5日</td></tr>
+        </table>
+        <h3>ご意見・情報公開・相談窓口</h3>
+        </body></html>
+        """
+        adapter = PrefSagaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            assert len(urls) == 1
+            raw = adapter.extract_animal_details(urls[0][0], category="adoption")
+            animal = adapter.normalize(raw)
+        assert raw.species == "犬"
+        assert animal.species == "犬"
+
     def test_all_six_sites_registered(self):
         """6 つの佐賀県サイト名すべてが Registry に登録されている"""
         expected = [
