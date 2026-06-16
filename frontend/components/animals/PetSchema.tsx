@@ -1,3 +1,4 @@
+import { INSTAGRAM_URL } from '@/lib/social';
 import type { AnimalPublic } from '@/types/animal';
 
 interface PetSchemaProps {
@@ -85,7 +86,7 @@ export function OrganizationSchema({ siteUrl, siteName }: OrganizationSchemaProp
     url: siteUrl,
     description:
       '全国の自治体に保護されている犬・猫の情報を一元化したポータルサイト。譲渡対象動物・迷子情報を都道府県別・条件別に検索できます。',
-    sameAs: ['https://github.com/9mak/oneco'],
+    sameAs: ['https://github.com/9mak/oneco', INSTAGRAM_URL],
   };
 
   return (
