@@ -216,6 +216,108 @@ class TestAnimalNetNagasakiAdapterDetailExtraction:
         assert animal.species == "猫"
 
 
+class TestAnimalNetNagasakiAdapterSpeciesAuthority:
+    """ソース自身の犬猫分類 (?animal-type=dog|cat) による species 権威確定
+
+    detail ページは品種「ミックス（雑種）」のみで犬猫不明だが、一覧を
+    `?animal-type=dog` / `?animal-type=cat` で引くとソースが犬猫を完全分割する
+    (色推測ではなくソース権威分類)。fetch_animal_list でこれを取得し、
+    _postprocess_fields で species を上書きする。
+    全その他191件中、長崎98件 (最大要因) を救済する修正 (2026-06-16)。
+    """
+
+    LIST_DOG = '<div class="list-area"><a href="/animal/no-10001/">A</a></div>'
+    LIST_CAT = '<div class="list-area"><a href="/animal/no-10002/">B</a></div>'
+    LIST_ALL = (
+        '<div class="list-area">'
+        '<a href="/animal/no-10001/">A</a>'
+        '<a href="/animal/no-10002/">B</a>'
+        '<a href="/animal/no-10003/">C</a>'
+        "</div>"
+    )
+
+    def _fake_get(self, url: str) -> str:
+        if "animal-type=dog" in url:
+            return self.LIST_DOG
+        if "animal-type=cat" in url:
+            return self.LIST_CAT
+        if "/animal/no-" in url:
+            return DETAIL_HTML  # 品種=ミックス（雑種）, 犬猫不明
+        return self.LIST_ALL
+
+    def test_animal_type_override_sets_dog_and_cat(self, assert_raw_animal):
+        """dog 一覧に載る個体は犬、cat 一覧に載る個体は猫に確定する。"""
+        adapter = AnimalNetNagasakiAdapter(_site_syuuyou())
+        with patch.object(adapter, "_http_get", side_effect=self._fake_get):
+            adapter.fetch_animal_list()  # _species_by_no を構築
+            raw_dog = adapter.extract_animal_details(
+                "https://animal-net.pref.nagasaki.jp/animal/no-10001/",
+                category="sheltered",
+            )
+            raw_cat = adapter.extract_animal_details(
+                "https://animal-net.pref.nagasaki.jp/animal/no-10002/",
+                category="sheltered",
+            )
+            dog = adapter.normalize(raw_dog)
+            cat = adapter.normalize(raw_cat)
+        # raw だけでなく normalize() 後の AnimalData でアサート (CLAUDE.md 必須)
+        assert raw_dog.species == "犬"
+        assert dog.species == "犬"
+        assert raw_cat.species == "猫"
+        assert cat.species == "猫"
+
+    def test_animal_not_in_dog_or_cat_stays_other(self):
+        """dog/cat いずれの一覧にも載らない個体 (インコ等) は その他 のまま。"""
+        adapter = AnimalNetNagasakiAdapter(_site_syuuyou())
+        with patch.object(adapter, "_http_get", side_effect=self._fake_get):
+            adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(
+                "https://animal-net.pref.nagasaki.jp/animal/no-10003/",
+                category="sheltered",
+            )
+            animal = adapter.normalize(raw)
+        assert animal.species == "その他"
+
+    def test_no_override_when_list_not_fetched(self):
+        """fetch_animal_list を経ずに detail だけ呼ぶ場合は上書きされない
+        (既存呼び出し経路の後方互換)。"""
+        adapter = AnimalNetNagasakiAdapter(_site_syuuyou())
+        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML):
+            raw = adapter.extract_animal_details(
+                "https://animal-net.pref.nagasaki.jp/animal/no-10001/",
+                category="sheltered",
+            )
+        assert raw.species == "ミックス（雑種）"
+
+    def test_cat_only_pattern_with_real_label(self):
+        """実ラベル『模様・柄』(中黒・柄付き) でも猫固有柄から猫に確定する。
+
+        PR #204 は _LI_LABEL_MAP のキーを『模様』で登録したが、live HTML の
+        実ラベルは『模様・柄』のため exact-match で外れ一度も発火していなかった。
+        animal-type 上書きが無い fallback 経路として『模様・柄』を locking する。
+        """
+        html = """
+        <html><body><main>
+          <ul>
+            <li><p>品種</p><p>ミックス（雑種）</p></li>
+            <li><p>性別</p><p>メス</p></li>
+            <li><p>模様・柄</p><p>三毛</p></li>
+            <li><p>収容日</p><p>2026-05-13</p></li>
+            <li><p>収容場所</p><p>長崎県央保健所</p></li>
+          </ul>
+        </main></body></html>
+        """
+        adapter = AnimalNetNagasakiAdapter(_site_jyouto())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://animal-net.pref.nagasaki.jp/animal/no-19999/",
+                category="adoption",
+            )
+            animal = adapter.normalize(raw)
+        assert raw.species == "猫"
+        assert animal.species == "猫"
+
+
 class TestAnimalNetNagasakiAdapterRegistry:
     """registry に 4 サイトすべて登録されていること"""
 
