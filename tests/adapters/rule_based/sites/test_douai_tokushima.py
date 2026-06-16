@@ -97,7 +97,7 @@ STRAY_HTML = """
         </tr>
         <tr><th>種類</th><th>性別</th></tr>
         <tr>
-          <td aria-label="種類">犬</td>
+          <td aria-label="種類">雑種</td>
           <td aria-label="性別">メス</td>
         </tr>
         <tr><th>推定年齢</th><th>体格</th></tr>
@@ -116,7 +116,7 @@ STRAY_HTML = """
       <table class="f_a">
         <tr>
           <td class="photo" rowspan="10">
-            <img src="../list1_1/photo/photo2-17788280720.JPG" alt="">
+            <img src="../list1_2/photo/photo2-17788280720.JPG" alt="">
           </td>
           <th colspan="2">発見日</th>
         </tr>
@@ -125,7 +125,7 @@ STRAY_HTML = """
         <tr><td colspan="2" aria-label="内容情報">徳島市内で保護</td></tr>
         <tr><th>種類</th><th>性別</th></tr>
         <tr>
-          <td aria-label="種類">猫</td>
+          <td aria-label="種類">雑種</td>
           <td aria-label="性別">オス</td>
         </tr>
         <tr><th>推定年齢</th><th>体格</th></tr>
@@ -373,6 +373,43 @@ class TestDouaiTokushimaDetailExtraction:
             age="２０２５年４月１日",
             category="adoption",
         )
+
+    def test_sheltered_species_falls_back_to_age_word_when_no_photo(self):
+        """写真が無い収容中個体は、推定年齢の語 (若犬/若猫) から犬猫を確定する。
+
+        収容中 iframe は種類セルが「雑種」固定で、画像パス (list1_1/list1_2) が
+        一次シグナルだが、写真未掲載の個体ではパスが取れない。その場合は
+        推定年齢の語に含まれる犬/猫で fallback する。normalize() でもアサート。
+        """
+        no_photo_html = """
+        <html><body>
+          <ul class="news">
+            <li>
+              <table class="f_a">
+                <tr><th colspan="2">発見日</th></tr>
+                <tr><td colspan="2" aria-label="発見日">2026/6/15</td></tr>
+                <tr><th>種類</th><th>性別</th></tr>
+                <tr>
+                  <td aria-label="種類">雑種</td>
+                  <td aria-label="性別">不明</td>
+                </tr>
+                <tr><th>推定年齢</th><th>体格</th></tr>
+                <tr>
+                  <td aria-label="推定年齢">若猫</td>
+                  <td aria-label="体格">小</td>
+                </tr>
+              </table>
+            </li>
+          </ul>
+        </body></html>
+        """
+        adapter = DouaiTokushimaAdapter(_stray_site())
+        with patch.object(adapter, "_http_get", return_value=no_photo_html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+            animal = adapter.normalize(raw)
+        assert raw.species == "猫"
+        assert animal.species == "猫"
 
     def test_extract_collects_row_images(self):
         """行内の <img> URL を絶対化して image_urls に格納"""
