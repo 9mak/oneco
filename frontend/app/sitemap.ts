@@ -62,6 +62,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'weekly',
       priority: 0.6,
     },
+    // インデックス対象の静的コンテンツページ (固有の title/description を持つ)。
+    // 列挙漏れで検索に出ていなかった (2026-06-16 発覚)。
+    {
+      url: `${SITE_URL}/stats`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.6,
+    },
+    {
+      url: `${SITE_URL}/about`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
+    {
+      url: `${SITE_URL}/transparency`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.4,
+    },
   ];
 
   // 都道府県別ランディング（地域×保護動物のローカル検索の受け皿）
