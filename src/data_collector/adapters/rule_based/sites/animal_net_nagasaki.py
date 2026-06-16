@@ -88,7 +88,11 @@ class AnimalNetNagasakiAdapter(WordPressListAdapter):
         # 電話番号抽出元
         "問い合わせ先": "_phone_source",
         "連絡先": "_phone_source",
+        # species 補正用: 模様(柄)。三毛/サビ/キジ/トラ は猫固有のため種別確定に使う。
+        "模様": "_pattern",
     }
+    # 猫固有の柄 (三毛・サビは遺伝的に猫のみ、キジトラ/茶トラは猫の慣用)。
+    _CAT_ONLY_PATTERNS: ClassVar[tuple[str, ...]] = ("三毛", "サビ", "キジ", "トラ")
 
     def _postprocess_fields(
         self, fields: dict[str, str], detail_url: str, soup: BeautifulSoup
@@ -122,6 +126,16 @@ class AnimalNetNagasakiAdapter(WordPressListAdapter):
             m = re.search(r"(\d{2,4}-\d{2,4}-\d{3,4})", phone_text)
             if m:
                 fields["phone"] = m.group(1)
+
+        # species が犬猫判定不能でも、模様(柄)が猫固有(三毛/サビ/キジ/トラ)なら
+        # 猫と確定する。長崎犬猫ネットは品種が「ミックス（雑種）」かつサイト名に
+        # 犬猫両方を含むため下のサイト名補正が効かず、その他化していた
+        # (2026-06-16, 全その他191件の最大要因=長崎98件のうち25件を救済)。
+        species = fields.get("species", "")
+        if not any(kw in species for kw in ("犬", "猫", "いぬ", "ねこ", "イヌ", "ネコ")):
+            pattern = extras.get("_pattern", "")
+            if any(p in pattern for p in self._CAT_ONLY_PATTERNS):
+                fields["species"] = "猫"
 
         # species が「ミックス（雑種）」など犬猫判定不能でもサイト名で補正できる場合のみ。
         # サイト名に「犬」「猫」が片方だけ含まれる場合に限定（両方含まれるサイト名
