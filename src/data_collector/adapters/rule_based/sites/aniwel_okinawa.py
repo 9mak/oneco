@@ -93,6 +93,9 @@ class AniwelOkinawaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
         "shelter_date": FieldSpec(label=("収容日", "保護日", "行方不明日")),
         "location": FieldSpec(label="場所"),
         "phone": FieldSpec(label="連絡先"),
+        # 個体識別: 管理番号。収容=「記号」(例 R8-4)、行方不明/迷い込み=「受付番号」。
+        # base が management_number を RawAnimalData に配線済みのためラベル登録で開通。
+        "management_number": FieldSpec(label=("記号", "受付番号")),
     }
 
     # 動物画像。実サイトは `<td class="photo"><ul class="slick-main">...<img></ul></td>`
