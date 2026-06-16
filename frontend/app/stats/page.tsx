@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   title: 'oneco の実績 - 全国保護動物プラットフォーム',
   description:
     'oneco は全国の動物愛護センター情報を横断検索できるプラットフォームです。累計掲載動物数、対応自治体数、対応サイト数を公開しています。',
+  // 明示しないと layout.tsx の既定 canonical '/' を継承し、Google に
+  // 「ホームの重複」と申告されインデックスから外れる (2026-06-16 発覚)。
+  alternates: { canonical: '/stats' },
   openGraph: {
     title: 'oneco の実績',
     description:
