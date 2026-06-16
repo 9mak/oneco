@@ -198,6 +198,21 @@ class TestOitaAigoShelterLocationFallback:
         assert raw.location == "おおいた動物愛護センター"
         assert raw.species == "犬"
 
+    def test_kariname_extracted_as_name_via_normalize(self):
+        """個体識別: 譲渡カードの「仮名」(例 ブロンソン) を name として抽出する。
+
+        2026-06-16: 大分aigo 27件全件で name が欠損していた (LABEL_FIELDS 未登録
+        +RawAnimalData 未配線)。CLAUDE.md 規約に従い normalize() でアサート。
+        """
+        adapter = OitaAigoAdapter(_adoption_dog_site())
+        with patch.object(adapter, "_http_get", return_value=_ADOPTION_CARD_NO_LOCATION):
+            urls = adapter.fetch_animal_list()
+            url, cat = urls[0]
+            raw = adapter.extract_animal_details(url, category=cat)
+            animal = adapter.normalize(raw)
+        assert raw.name == "ブロンソン"
+        assert animal.name == "ブロンソン"
+
     def test_lostchild_keeps_real_location(self, fixture_html):
         """保護地域がある迷子カードはシェルター名で上書きしない (回帰防止)"""
         html = fixture_html("oita_aigo__lostchild")

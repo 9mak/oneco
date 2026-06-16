@@ -449,6 +449,31 @@ class TestAniwelOkinawaRealLabels:
         assert raw.shelter_date == "2026年5月25日"  # 受付月日(5/26)ではなく保護日(5/25)
         assert raw.species == "犬"
 
+    def test_management_number_extracted_via_normalize(self) -> None:
+        """個体識別: 記号(収容)/受付番号(行方不明) を management_number として抽出する。
+
+        2026-06-16: 沖縄aniwel 153件全件で management_number が欠損していた
+        (FIELD_SELECTORS に「記号/受付番号」ラベル未登録)。CLAUDE.md
+        サイレントドロップ規約に従い normalize() 戻り AnimalData でアサートする。
+        """
+        # 収容: ラベル「記号」
+        adapter = AniwelOkinawaAdapter(_site(0))
+        url = f"{_BASE}/animals/accommodate_view/24639"
+        with patch.object(adapter, "_http_get", return_value=_REAL_DETAIL_ACCOMMODATE):
+            raw = adapter.extract_animal_details(url, category="sheltered")
+            animal = adapter.normalize(raw)
+        assert raw.management_number == "2026.5.25＿C-1"
+        assert animal.management_number == "2026.5.25＿C-1"
+
+        # 行方不明: ラベル「受付番号」
+        adapter2 = AniwelOkinawaAdapter(_site(3))
+        url2 = f"{_BASE}/animals/missing_view/24643"
+        with patch.object(adapter2, "_http_get", return_value=_REAL_DETAIL_MISSING):
+            raw2 = adapter2.extract_animal_details(url2, category="lost")
+            animal2 = adapter2.normalize(raw2)
+        assert raw2.management_number == "2026.5.26＿No.53"
+        assert animal2.management_number == "2026.5.26＿No.53"
+
     def test_numeric_only_age_becomes_age_in_years(self) -> None:
         """「推定年齢: 12」のような数値単独表記を「12歳」と解釈する
 

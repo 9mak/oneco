@@ -185,6 +185,36 @@ class TestAnimalNetNagasakiAdapterDetailExtraction:
         assert raw.category == "adoption"
         assert raw.species == "ミックス（雑種）"
 
+    def test_cat_only_pattern_classifies_as_cat(self):
+        """品種が「ミックス（雑種）」かつサイト名が犬猫両方でも、模様が猫固有柄
+        (三毛/サビ/キジ/トラ) なら猫に確定する。
+
+        2026-06-16: 長崎犬猫ネットは品種「ミックス（雑種）」+サイト名に犬猫両方
+        を含むためサイト名補正が効かず species='その他' 化していた (全その他の
+        最大要因)。normalize() 戻り AnimalData.species でアサート。
+        """
+        html = """
+        <html><body><main>
+          <ul>
+            <li><p>品種</p><p>ミックス（雑種）</p></li>
+            <li><p>性別</p><p>メス</p></li>
+            <li><p>模様</p><p>三毛</p></li>
+            <li><p>収容日</p><p>2026-05-13</p></li>
+            <li><p>収容場所</p><p>長崎県央保健所</p></li>
+          </ul>
+        </main></body></html>
+        """
+        # サイト名に犬猫両方を含む（譲渡）= サイト名補正は効かない
+        adapter = AnimalNetNagasakiAdapter(_site_jyouto())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://animal-net.pref.nagasaki.jp/animal/no-19999/",
+                category="adoption",
+            )
+            animal = adapter.normalize(raw)
+        assert raw.species == "猫"
+        assert animal.species == "猫"
+
 
 class TestAnimalNetNagasakiAdapterRegistry:
     """registry に 4 サイトすべて登録されていること"""

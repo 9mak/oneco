@@ -91,6 +91,9 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
         "shelter_date": FieldSpec(label=("保護した日", "収容日")),
         "location": FieldSpec(label=("捕獲場所", "保護場所", "所在地", "場所")),
         "phone": FieldSpec(label=("電話番号", "連絡先")),
+        # 個体識別: 個体管理ナンバー (例 DC00744)。全カードの dl に存在するが
+        # 未登録で全件ドロップしていた (2026-06-16)。
+        "management_number": FieldSpec(label="個体管理ナンバー"),
     }
 
     # 体重 → size 推定の境界 (kg)。oita_aigo._weight_to_size と同基準。
@@ -174,6 +177,7 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
                 shelter_date=fields.get("shelter_date", ""),
                 location=fields.get("location", ""),
                 phone=self._normalize_phone(fields.get("phone", "")),
+                management_number=fields.get("management_number", ""),
                 image_urls=image_urls,
                 source_url=detail_url,
                 category=category,
