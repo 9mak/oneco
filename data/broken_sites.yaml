@@ -22,37 +22,34 @@
   last_error: 'HTTP エラー: 404 Client Error: Not Found for url: https://www.city.wakayama.wakayama.jp/kurashi/kenko_iryo/1009125/1035775/1002096.html'
   last_failed_at: '2026-06-10T18:01:52+00:00'
 山梨県（保護されている他のペット）:
-  consecutive_failures: 1
+  consecutive_failures: 2
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''www.pref.yamanashi.jp'', port=443):
     Max retries exceeded with url: /doubutsu/p_other/index.html (Caused by ConnectTimeoutError(<HTTPSConnection(host=''www.pref.yamanashi.jp'',
-    port=443) at 0x7fa5c8f04c10>, ''Connection to www.pref.yamanashi.jp timed out.
+    port=443) at 0x7f3fc08dcf10>, ''Connection to www.pref.yamanashi.jp timed out.
     (connect timeout=30)''))'
-  last_failed_at: '2026-06-15T19:28:02+00:00'
+  last_failed_at: '2026-06-16T19:19:27+00:00'
 山梨県（保護されている犬）:
-  consecutive_failures: 1
+  consecutive_failures: 2
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''www.pref.yamanashi.jp'', port=443):
     Max retries exceeded with url: /doubutsu/p_dog/index.html (Caused by ConnectTimeoutError(<HTTPSConnection(host=''www.pref.yamanashi.jp'',
-    port=443) at 0x7fa5d8dc0a10>, ''Connection to www.pref.yamanashi.jp timed out.
+    port=443) at 0x7f3fc043ed90>, ''Connection to www.pref.yamanashi.jp timed out.
     (connect timeout=30)''))'
-  last_failed_at: '2026-06-15T19:28:02+00:00'
+  last_failed_at: '2026-06-16T19:19:27+00:00'
 山梨県（保護されている猫）:
-  consecutive_failures: 1
-  last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''www.pref.yamanashi.jp'', port=443):
-    Max retries exceeded with url: /doubutsu/p_cat/index.html (Caused by ConnectTimeoutError(<HTTPSConnection(host=''www.pref.yamanashi.jp'',
-    port=443) at 0x7fa5d870f810>, ''Connection to www.pref.yamanashi.jp timed out.
-    (connect timeout=30)''))'
-  last_failed_at: '2026-06-15T19:28:02+00:00'
+  consecutive_failures: 2
+  last_error: 'timeout: site 山梨県（保護されている猫） timed out after 120.0s'
+  last_failed_at: '2026-06-16T19:19:27+00:00'
 山梨県（探している他のペット）:
-  consecutive_failures: 1
+  consecutive_failures: 2
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''www.pref.yamanashi.jp'', port=443):
     Max retries exceeded with url: /doubutsu/m_other/index.html (Caused by ConnectTimeoutError(<HTTPSConnection(host=''www.pref.yamanashi.jp'',
-    port=443) at 0x7fa5ebbd6810>, ''Connection to www.pref.yamanashi.jp timed out.
+    port=443) at 0x7f3fd39d98d0>, ''Connection to www.pref.yamanashi.jp timed out.
     (connect timeout=30)''))'
-  last_failed_at: '2026-06-15T19:28:02+00:00'
+  last_failed_at: '2026-06-16T19:19:27+00:00'
 山梨県（探している猫）:
-  consecutive_failures: 1
+  consecutive_failures: 2
   last_error: 'timeout: site 山梨県（探している猫） timed out after 600.0s'
-  last_failed_at: '2026-06-15T19:28:02+00:00'
+  last_failed_at: '2026-06-16T19:19:27+00:00'
 東京都収容動物情報（犬）:
   consecutive_failures: 0
   last_error: '件数低下異常: 前回 2 件 → 今回 0 件 (adapter 破損 or サイト構造変更の可能性)'
