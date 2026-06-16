@@ -208,8 +208,25 @@ class TestCityFunabashiAdapter:
         assert raw.size == "小"
 
     def test_adoption_site_uses_correct_category(self):
-        """譲渡可能サイトでは category="adoption" になる"""
-        html = _build_html_with_one_row()
+        """譲渡可能サイト (4列テーブル) では category="adoption" になる"""
+        html = """
+        <html><body>
+          <div class="boxEntryFreeform">
+            <h2>猫がいます！</h2>
+            <table>
+              <caption></caption>
+              <tbody>
+                <tr><th>No.</th><th>毛色</th><th>備考</th><th>画像</th></tr>
+                <tr>
+                  <td>1</td><td>子猫</td>
+                  <td>キジ 年齢：約2ヶ月 性別：オス 募集中です。</td>
+                  <td><img src="./joutoindex_d/img/729_i.jpg"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </body></html>
+        """
         adoption_site = _site(
             name="船橋市（譲渡可能犬猫）",
             list_url=("https://www.city.funabashi.lg.jp/kurashi/doubutsu/003/joutoindex.html"),
@@ -243,26 +260,102 @@ class TestCityFunabashiAdapter:
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()
 
-    def test_adoption_page_with_unrelated_tables_returns_empty(self, fixture_html):
-        """譲渡サイト (joutoindex.html) は構造が異なるテーブル
+    def _adoption_adapter(self) -> CityFunabashiAdapter:
+        return CityFunabashiAdapter(
+            _site(
+                name="船橋市（譲渡可能犬猫）",
+                list_url=("https://www.city.funabashi.lg.jp/kurashi/doubutsu/003/joutoindex.html"),
+                category="adoption",
+            )
+        )
 
-        - 4 列の「犬譲渡情報」「猫譲渡情報」テーブル
-        - 3 列の「譲渡可能団体一覧」テーブル
-        のみで構成されており、11 列の収容公示テーブルは存在しない。
-        この場合は誤って団体一覧などをデータ行として取り込まず、空リストを返す。
+    def test_adoption_page_extracts_cats_and_excludes_unrelated(self, fixture_html):
+        """譲渡サイト (joutoindex.html) は収容の 11 列とは別構造:
+
+        - 4 列の「犬譲渡情報」(在庫0の placeholder)
+        - 4 列の「猫譲渡情報」(実猫データ)
+        - 3 列の「譲渡ボランティア一覧」(動物ではない)
+        が混在する。旧実装は 11 列フィルタで猫の実データごと全て落として 0 件
+        回帰していた。猫の実データ行のみを AnimalData として取得し、団体一覧と
+        犬 placeholder は取り込まないことを normalize() 後でアサートする。
         """
         raw = fixture_html("city_funabashi_jouto")
-        adoption_site = _site(
-            name="船橋市（譲渡可能犬猫）",
-            list_url=("https://www.city.funabashi.lg.jp/kurashi/doubutsu/003/joutoindex.html"),
-            category="adoption",
-        )
-        adapter = CityFunabashiAdapter(adoption_site)
+        adapter = self._adoption_adapter()
 
         with patch.object(adapter, "_http_get", return_value=raw):
             result = adapter.fetch_animal_list()
+            animals = [
+                adapter.normalize(adapter.extract_animal_details(url, category=cat))
+                for url, cat in result
+            ]
 
-        assert result == []
+        # 同梱 fixture の猫テーブルには実猫 2 件 (No.1, No.2) が入っている
+        assert len(animals) == 2
+        for animal in animals:
+            # サイト名フォールバック (犬猫→犬) ではなく文脈から猫を確定
+            assert animal.species == "猫"
+            # 種類列→breed、備考→description を保持 (silent-drop 防止)
+            assert animal.breed == "子猫"
+            assert animal.category == "adoption"
+            # 団体一覧の「名称」(団体名) が紛れ込んでいない
+            assert "ライフボート" not in (animal.description or "")
+            assert "レスキュー" not in (animal.description or "")
+        # 備考の自由文 (毛色/年齢/性別) が description に保持される
+        assert any("年齢" in (a.description or "") for a in animals)
+
+    def test_adoption_skips_adopted_and_placeholder_rows(self):
+        """募集中の個体のみ掲載し、譲渡済 (備考に「見つかりました」) と
+        空 placeholder 行はスキップする。"""
+        html = """
+        <html><body>
+          <div class="boxEntryFreeform">
+            <table>
+              <caption><h2>現在紹介できる犬はいません。</h2></caption>
+              <tbody>
+                <tr><th>No.</th><th>種類</th><th colspan="2">備考</th><th>画像</th></tr>
+                <tr><td></td><td></td><td colspan="2"></td><td></td></tr>
+              </tbody>
+            </table>
+            <h2>猫がいます！</h2>
+            <table>
+              <caption></caption>
+              <tbody>
+                <tr><th>No.</th><th>毛色</th><th>備考</th><th>画像</th></tr>
+                <tr><td colspan="4">成猫の新しい家族を探しています！</td></tr>
+                <tr>
+                  <td>1</td><td>子猫</td>
+                  <td>キジ 年齢：約2ヶ月 性別：オス 募集中です。</td>
+                  <td><a href="./joutoindex_d/img/729.jpg"><img src="./joutoindex_d/img/729_i.jpg"></a></td>
+                </tr>
+                <tr>
+                  <td>2</td><td>子猫</td>
+                  <td>三毛 年齢：約2ヶ月 性別：メス ＊新しい家族が見つかりました！</td>
+                  <td><img src="./joutoindex_d/img/725_i.jpg"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </body></html>
+        """
+        adapter = self._adoption_adapter()
+        with patch.object(adapter, "_http_get", return_value=html):
+            result = adapter.fetch_animal_list()
+            animals = [
+                adapter.normalize(adapter.extract_animal_details(url, category=cat))
+                for url, cat in result
+            ]
+
+        # 募集中の猫 No.1 のみ。譲渡済 No.2・犬 placeholder・導入文はスキップ
+        assert len(animals) == 1
+        animal = animals[0]
+        assert animal.species == "猫"
+        assert animal.breed == "子猫"
+        assert "キジ" in (animal.description or "")
+        # 画像 (サムネ相対パス) が絶対 URL 化されて格納される
+        assert animal.image_urls
+        assert all(
+            str(u).startswith("https://www.city.funabashi.lg.jp/") for u in animal.image_urls
+        )
 
     def test_load_rows_filters_unrelated_tables_by_column_count(self):
         """11 列の収容公示テーブルと別構造の混在ページでは 11 列テーブルのみ採用する"""
