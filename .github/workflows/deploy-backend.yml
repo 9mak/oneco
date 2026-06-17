@@ -30,7 +30,9 @@ on:
   workflow_dispatch:
     inputs:
       run_migration:
-        description: 'デプロイ前に alembic upgrade head を実行する'
+        # push(自動CD)では常に migration を実行するため、このトグルは
+        # workflow_dispatch で手動デプロイするときだけ効く。
+        description: '手動デプロイ時に alembic upgrade head を実行する (push では常に実行)'
         type: boolean
         default: false
   # src/Dockerfile 等のバックエンド変更が main に入ると自動デプロイ。
@@ -76,13 +78,19 @@ jobs:
         uses: google-github-actions/setup-gcloud@v3
 
       - name: Set up Python (for migration)
-        if: ${{ inputs.run_migration }}
+        if: ${{ github.event_name == 'push' || inputs.run_migration }}
         uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
-      - name: Run database migration (任意)
-        if: ${{ inputs.run_migration }}
+      # push(自動CD)では常に alembic upgrade head を実行し、マージした migration が
+      # デプロイと同時に本番へ適用されるようにする (alembic upgrade head は pending が
+      # 無ければ冪等な no-op)。これがないと「コードはデプロイされたが migration は
+      # 未適用」で新コードが旧スキーマに当たる隙間が生じる (2026-06-17 に prefecture
+      # backfill を手動 dispatch せざるを得なかった原因)。workflow_dispatch では
+      # 従来どおり run_migration トグルで明示的に制御する。
+      - name: Run database migration
+        if: ${{ github.event_name == 'push' || inputs.run_migration }}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
