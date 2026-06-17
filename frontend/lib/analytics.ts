@@ -38,11 +38,13 @@ export function trackExternalLinkClick(params: {
 
 export function trackSearchUsed(params: {
   queryLength: number;
-  hasResults: boolean;
+  // 結果件数を知り得ない呼び出し元（Suspense 外に常駐する FilterPanel 等）では
+  // 省略可能。省略時は has_results を送らない。
+  hasResults?: boolean;
 }): void {
   send('search_used', {
     query_length: params.queryLength,
-    has_results: params.hasResults,
+    ...(params.hasResults !== undefined ? { has_results: params.hasResults } : {}),
   });
 }
 

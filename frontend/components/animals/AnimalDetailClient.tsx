@@ -190,19 +190,30 @@ export function AnimalDetailClient({ animal }: AnimalDetailClientProps) {
             </section>
           )}
 
-          {/* 連絡先情報 */}
-          <ContactInfo
-            location={animal.location}
-            phone={animal.phone}
-            category={animal.category}
-          />
+          {/* 卒業済み(譲渡済/返還済/死亡)の場合は問い合わせ導線を出さない */}
+          {animal.status && animal.status !== 'sheltered' ? (
+            <div className="rounded-lg border border-[var(--color-accent-100)] bg-[var(--color-accent-50)] p-4 text-sm text-[var(--color-accent-700)]">
+              {animal.status === 'deceased'
+                ? 'この子の最新情報は公開を終了しています。お問い合わせは受け付けていません。'
+                : 'この子はすでに新しい家族のもとへ旅立ちました。お問い合わせは受け付けていません。'}
+            </div>
+          ) : (
+            <>
+              {/* 連絡先情報 */}
+              <ContactInfo
+                location={animal.location}
+                phone={animal.phone}
+                category={animal.category}
+              />
 
-          {/* 元のページを見るボタン */}
-          <ExternalLink
-            sourceUrl={animal.source_url}
-            prefecture={animal.prefecture ?? undefined}
-            animalId={String(animal.id)}
-          />
+              {/* 元のページを見るボタン */}
+              <ExternalLink
+                sourceUrl={animal.source_url}
+                prefecture={animal.prefecture ?? undefined}
+                animalId={String(animal.id)}
+              />
+            </>
+          )}
         </div>
       </div>
     </div>

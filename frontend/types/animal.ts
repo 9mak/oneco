@@ -33,6 +33,8 @@ export interface AnimalPublic {
   source_url: string;
   /** カテゴリ ("adoption": 譲渡対象, "lost": 迷子, "sheltered": 収容中) */
   category: 'adoption' | 'lost' | 'sheltered';
+  /** 現在ステータス。API が返す場合のみ存在（未定義 = sheltered 扱い） */
+  status?: AnimalStatus;
   // 個体識別フィールド（任意。サイトにより取得可否が異なり欠損を許容する）
   /** 品種 (例: 柴犬, チワワ) */
   breed?: string | null;
