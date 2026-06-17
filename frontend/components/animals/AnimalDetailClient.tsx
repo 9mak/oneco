@@ -142,6 +142,13 @@ export function AnimalDetailClient({ animal }: AnimalDetailClientProps) {
                 <dd className="text-base text-gray-900">{formatAge(animal.age_months)}</dd>
               </div>
 
+              {animal.breed && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">品種</dt>
+                  <dd className="text-base text-gray-900">{animal.breed}</dd>
+                </div>
+              )}
+
               {animal.color && (
                 <div>
                   <dt className="text-sm font-medium text-gray-500">毛色</dt>
@@ -160,8 +167,28 @@ export function AnimalDetailClient({ animal }: AnimalDetailClientProps) {
                 <dt className="text-sm font-medium text-gray-500">収容日</dt>
                 <dd className="text-base text-gray-900">{formatDate(animal.shelter_date)}</dd>
               </div>
+
+              {animal.management_number && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">管理番号</dt>
+                  <dd className="text-base text-gray-900">
+                    {animal.management_number}
+                    <span className="ml-1 text-xs text-gray-400">（お問い合わせ時の照会番号）</span>
+                  </dd>
+                </div>
+              )}
             </dl>
           </section>
+
+          {/* 性格・特徴 (自由文。改行を保持し、テキストとして描画して HTML を解釈させない) */}
+          {animal.description && (
+            <section className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+              <h2 className="text-xl font-semibold text-gray-900 mb-3">性格・特徴</h2>
+              <p className="whitespace-pre-line text-base leading-relaxed text-gray-900">
+                {animal.description}
+              </p>
+            </section>
+          )}
 
           {/* 卒業済み(譲渡済/返還済/死亡)の場合は問い合わせ導線を出さない */}
           {animal.status && animal.status !== 'sheltered' ? (
@@ -180,7 +207,11 @@ export function AnimalDetailClient({ animal }: AnimalDetailClientProps) {
               />
 
               {/* 元のページを見るボタン */}
-              <ExternalLink sourceUrl={animal.source_url} />
+              <ExternalLink
+                sourceUrl={animal.source_url}
+                prefecture={animal.prefecture ?? undefined}
+                animalId={String(animal.id)}
+              />
             </>
           )}
         </div>

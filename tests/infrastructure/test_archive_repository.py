@@ -371,6 +371,11 @@ class TestInsertArchive:
             status="returned",
             status_changed_at=datetime(2025, 5, 20, tzinfo=UTC),
             outcome_date=date(2025, 5, 20),
+            # 個体識別フィールド (animal-identity-fields)
+            breed="ミックス",
+            name="シロ",
+            management_number="2025-501",
+            description="人懐っこい子です",
         )
         async_session.add(animal)
         await async_session.commit()
@@ -397,6 +402,11 @@ class TestInsertArchive:
         assert archived.category == "lost"
         assert archived.status == "returned"
         assert archived.outcome_date == date(2025, 5, 20)
+        # 個体識別フィールド (animal-identity-fields) も引き継がれる
+        assert archived.breed == "ミックス"
+        assert archived.name == "シロ"
+        assert archived.management_number == "2025-501"
+        assert archived.description == "人懐っこい子です"
 
 
 class TestReadOnlyConstraint:

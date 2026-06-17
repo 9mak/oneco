@@ -44,6 +44,24 @@ describe('AnimalCard', () => {
     expect(screen.queryByText('体格')).not.toBeInTheDocument();
   });
 
+  it('品種が存在すれば表示される', () => {
+    const withBreed = { ...mockAnimal, breed: '柴犬' };
+    render(<AnimalCard animal={withBreed} />);
+    expect(screen.getByText('品種')).toBeInTheDocument();
+    expect(screen.getByText('柴犬')).toBeInTheDocument();
+  });
+
+  it('品種が無い場合は品種を表示しない', () => {
+    render(<AnimalCard animal={mockAnimal} />);
+    expect(screen.queryByText('品種')).not.toBeInTheDocument();
+  });
+
+  it('仮名(name)があれば見出し付近に表示される', () => {
+    const withName = { ...mockAnimal, name: 'ポチ' };
+    render(<AnimalCard animal={withName} />);
+    expect(screen.getByText('ポチ')).toBeInTheDocument();
+  });
+
   it('推定年齢が月から年に変換されて表示される (12ヶ月以上)', () => {
     render(<AnimalCard animal={mockAnimal} />);
     expect(screen.getByText('2歳')).toBeInTheDocument();

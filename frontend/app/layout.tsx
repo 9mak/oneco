@@ -1,9 +1,16 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { OrganizationSchema } from "@/components/animals/PetSchema";
+import { getSiteUrl } from "@/lib/site-url";
+
+// GA4 Measurement ID (G-XXXXXXXXXX 形式)。
+// 未設定 (preview/local 等) では GA4 を埋め込まない設計。
+// 本番のみ Vercel 環境変数 NEXT_PUBLIC_GA_MEASUREMENT_ID で注入する。
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,7 +22,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+const SITE_URL = getSiteUrl();
 const SITE_NAME = 'oneco';
 const SITE_DESCRIPTION =
   '全国の自治体に保護されている犬・猫の情報を一元化したポータルサイト。譲渡対象動物・迷子情報を都道府県別・条件別に検索できます。';
@@ -56,6 +63,12 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  // Google Search Console 所有権確認用メタタグ。
+  // Search Console 経由で 2026-06-12 に発行された値を恒久的に <head> に出力する。
+  // 確認状態維持のためタグを削除しないこと (Search Console は再確認時にも参照する)。
+  verification: {
+    google: 'ufKu9iul0LIV0gySiea-ULneLToLgFil3dgBtS2Icjs',
+  },
 };
 
 export default function RootLayout({
@@ -77,6 +90,7 @@ export default function RootLayout({
           <Footer />
         </div>
       </body>
+      {GA_MEASUREMENT_ID && <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />}
     </html>
   );
 }

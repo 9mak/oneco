@@ -86,6 +86,10 @@ class CollectorService:
         self.notification_manager_client = notification_manager_client
         self.logger = logging.getLogger(__name__)
         self._structure_changed = False
+        # 収集が「サイト全件を失敗なく列挙できた」かどうか。soft-stop や detail 抽出
+        # 失敗で部分取得になった run では prune_disappeared をスキップする
+        # （部分集合で消滅判定すると、まだ実在する個体を誤って削除してしまうため）。
+        self._collection_complete = True
         # 並列収集 (parallel_runner) でサイト間の lock 衝突を避けるため、
         # adapter.municipality_name のハッシュでユニーク化したインスタンス
         # lock を持つ。日本語名同士でも衝突せず、ファイル名として安全。
@@ -250,6 +254,7 @@ class CollectorService:
                 collected_data = []
                 skipped = 0
                 soft_stopped_at: int | None = None
+                detail_failures = 0
                 for idx, (url, category) in enumerate(detail_url_category_pairs):
                     # ソフトデッドラインチェック: detail ループは politeness throttle で
                     # 件数に比例して時間が伸びる。ハード timeout 直前で残り detail を
@@ -267,13 +272,16 @@ class CollectorService:
                         normalized_data = self.adapter.normalize(raw_data)
                         collected_data.append(normalized_data)
                     except NetworkError as e:
-                        # 個別ページのネットワークエラーはスキップ
+                        # 個別ページのネットワークエラーはスキップ。URL はサイト上に実在
+                        # するが collected_data に入らないため、prune 不可の部分取得とみなす。
+                        detail_failures += 1
                         self.logger.warning(
                             f"Failed to fetch detail page: {url} (category: {category})",
                             extra={"error": str(e)},
                         )
                     except Exception as e:
-                        # その他のエラーもスキップ（ベストエフォート）
+                        # その他のエラーもスキップ（ベストエフォート）。同上、部分取得扱い。
+                        detail_failures += 1
                         self.logger.warning(
                             f"Failed to process detail page: {url} (category: {category})",
                             extra={"error": str(e)},
@@ -298,6 +306,10 @@ class CollectorService:
                         f"skipped {skipped}, extracted {extracted}",
                         extra={"skipped": skipped, "extracted": extracted},
                     )
+
+                # この run がサイト全件を失敗なく列挙できたか。soft-stop でも detail
+                # 失敗でも無い場合のみ「完全」とし、prune_disappeared を許可する。
+                self._collection_complete = soft_stopped_at is None and detail_failures == 0
 
                 return collected_data
 
@@ -413,15 +425,22 @@ class CollectorService:
 
                     # ソースから消えた動物を同期削除する（このサイトで今回見つからなかった
                     # = もういない）。0 件時は prune_disappeared 側で無効化（全消し防止）。
-                    try:
-                        seen_urls = {str(a.source_url) for a in collected_data}
-                        removed = await repo.prune_disappeared(site_name, seen_urls)
-                        if removed:
-                            self.logger.info(
-                                f"[{site_name}] ソースから消えた {removed} 件を削除（同期）"
-                            )
-                    except Exception as e:
-                        self.logger.warning(f"[{site_name}] 消滅同期削除に失敗: {e}")
+                    # ただし soft-stop / detail 失敗で部分取得になった run では、未取得の
+                    # 実在個体を誤削除する恐れがあるため prune をスキップする。
+                    if not self._collection_complete:
+                        self.logger.info(
+                            f"[{site_name}] 部分取得のため消滅同期削除(prune)をスキップ"
+                        )
+                    else:
+                        try:
+                            seen_urls = {str(a.source_url) for a in collected_data}
+                            removed = await repo.prune_disappeared(site_name, seen_urls)
+                            if removed:
+                                self.logger.info(
+                                    f"[{site_name}] ソースから消えた {removed} 件を削除（同期）"
+                                )
+                        except Exception as e:
+                            self.logger.warning(f"[{site_name}] 消滅同期削除に失敗: {e}")
             finally:
                 await db.close()
             return saved, errors

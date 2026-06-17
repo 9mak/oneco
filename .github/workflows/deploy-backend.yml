@@ -14,6 +14,7 @@
 #        GCP_AR_REPO      … Artifact Registry リポジトリ名（未設定時 oneco）
 #        GCP_SERVICE      … Cloud Run サービス名（未設定時 oneco-api）
 #        CORS_ORIGINS     … 本番フロントの URL（例 https://oneco.vercel.app）
+#        SITE_URL         … フィード等で使う本番サイト URL（例 https://oneco.vercel.app）
 #   3. リポジトリ Secrets:
 #        GCP_WIF_PROVIDER     … projects/<num>/locations/global/workloadIdentityPools/<pool>/providers/<provider>
 #        GCP_SERVICE_ACCOUNT  … deploy-bot@<project>.iam.gserviceaccount.com
@@ -32,14 +33,17 @@ on:
         description: 'デプロイ前に alembic upgrade head を実行する'
         type: boolean
         default: false
-  # 安定後に有効化すると src/Dockerfile 変更時に自動デプロイされる:
-  # push:
-  #   branches: [main]
-  #   paths:
-  #     - 'src/**'
-  #     - 'Dockerfile'
-  #     - 'requirements.txt'
-  #     - 'alembic/**'
+  # src/Dockerfile 等のバックエンド変更が main に入ると自動デプロイ。
+  # (2026-06-15 WIF 配線完了・workflow_dispatch で end-to-end 検証済みのため有効化)
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'Dockerfile'
+      - 'requirements.txt'
+      - 'pyproject.toml'
+      - 'alembic/**'
+      - '.github/workflows/deploy-backend.yml'
 
 # WIF にはこの 2 つの権限が必須
 permissions:
@@ -59,21 +63,21 @@ jobs:
     if: ${{ vars.GCP_PROJECT_ID != '' }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Authenticate to Google Cloud (WIF)
         id: auth
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+        uses: google-github-actions/setup-gcloud@v3
 
       - name: Set up Python (for migration)
         if: ${{ inputs.run_migration }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
@@ -91,7 +95,14 @@ jobs:
         run: |
           IMAGE="${GCP_REGION}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${GCP_AR_REPO}/${GCP_SERVICE}:${GITHUB_SHA}"
           echo "IMAGE=${IMAGE}" >> "$GITHUB_ENV"
-          gcloud builds submit --tag "${IMAGE}" --project "${{ vars.GCP_PROJECT_ID }}" .
+          # WIF の deploy SA は Cloud Build の「デフォルトログバケット」を
+          # 読めず (Viewer/Owner 必須)、ビルド成功でも gcloud が exit 1 になる
+          # 偽陰性が出る (2026-06-15 確認)。--gcs-log-dir で deploy SA が
+          # storage.admin を持つ自前バケットにログを書かせ、--suppress-logs で
+          # 追尾も止めてビルド結果のみで判定する。
+          gcloud builds submit --tag "${IMAGE}" --project "${{ vars.GCP_PROJECT_ID }}" \
+            --gcs-log-dir="gs://${{ vars.GCP_PROJECT_ID }}_cloudbuild/build-logs" \
+            --suppress-logs .
 
       - name: Deploy to Cloud Run
         run: |
@@ -101,7 +112,13 @@ jobs:
             --region "${GCP_REGION}" \
             --platform managed \
             --allow-unauthenticated \
-            --set-env-vars "DATABASE_URL=${{ secrets.DATABASE_URL }},CORS_ORIGINS=${{ vars.CORS_ORIGINS }},INTERNAL_API_TOKEN=${{ secrets.INTERNAL_API_TOKEN }},LOG_LEVEL=INFO"
+            --set-env-vars "^;^DATABASE_URL=${{ secrets.DATABASE_URL }};CORS_ORIGINS=${{ vars.CORS_ORIGINS }};INTERNAL_API_TOKEN=${{ secrets.INTERNAL_API_TOKEN }};SITE_URL=${{ vars.SITE_URL }};LOG_LEVEL=INFO"
+          # 注: --set-env-vars は既存 env を全置換するため、本番で稼働中の
+          #     全変数を列挙する必要がある。SITE_URL はフィード BASE_URL に
+          #     使われており、欠落すると本番設定が消える (2026-06-15 監査で発覚)。
+          # 注: 先頭 "^;^" は区切り文字を ; に変更する gcloud 構文。CORS_ORIGINS が
+          #     カンマ区切りの複数 URL を持つため、既定のカンマ区切りだと dict
+          #     パースが壊れる (2026-06-15 確認)。値に ; を含まないため安全。
           # 注: シークレットを --set-env-vars で渡しているが、本番堅牢化として
           # Secret Manager + `--set-secrets` への移行を推奨。
 

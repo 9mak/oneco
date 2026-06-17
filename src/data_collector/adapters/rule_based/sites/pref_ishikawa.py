@@ -210,6 +210,7 @@ class PrefIshikawaAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=fields.get("species", ""),
+                breed=fields.get("species", ""),
                 sex=fields.get("sex", ""),
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),

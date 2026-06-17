@@ -74,7 +74,10 @@ async def list_animals(
     ),
     q: str | None = Query(
         None,
-        description="キーワード検索（species/color/size/location/prefecture を OR 部分一致）",
+        description=(
+            "キーワード検索（species/color/size/location/prefecture/breed を OR 部分一致。"
+            "breed のみカタカナ↔ひらがなを相互ヒットさせる正規化あり）"
+        ),
         max_length=100,
     ),
     sort: str = Query(
@@ -215,8 +218,9 @@ async def update_animal_status(
             outcome_date=request.outcome_date,
         )
 
-        # ORM モデルを取得して AnimalPublic に変換
-        orm_animal = await repository.get_animal_by_id_orm(animal_id)
+        # ORM モデルを取得して AnimalPublic に変換（更新直後は deceased への遷移も
+        # あり得るため、内部フローとして include_non_public=True で取得する）
+        orm_animal = await repository.get_animal_by_id_orm(animal_id, include_non_public=True)
         animal_public = AnimalPublic.model_validate(orm_animal)
 
         return StatusUpdateResponse(success=True, animal=animal_public)

@@ -196,6 +196,8 @@ class TestCityKitakyushuAdapter:
 
         assert raw.species == "犬"
         # フィクスチャの 1 行目: 5月11日 / 小倉南区 / 柴 / 茶・白 / メス / 小
+        # 「種類」列 (柴) は species ではなく品種(breed)として保存される
+        assert raw.breed == "柴"
         assert "5月11日" in raw.shelter_date
         assert raw.location == "小倉南区"
         assert raw.sex == "メス"
@@ -408,6 +410,8 @@ class TestCityKitakyushuAdoptionTable:
         assert raw.shelter_date == ""
         # サイト名から species=犬 と推定する既存挙動は維持
         assert raw.species == "犬"
+        # 「種類」列 (雑種, col=1) は species ではなく品種(breed)として保存される
+        assert raw.breed == "雑種"
         # phone は引き続き共通の代表電話
         assert raw.phone == "093-581-1800"
 

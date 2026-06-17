@@ -28,6 +28,26 @@ def _escape_like(value: str) -> str:
     return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
+# カタカナ ァ..ン (U+30A1..U+30F3) と ひらがな ぁ..ん (U+3041..U+3093) は
+# コードポイントが 0x60 オフセットで規則対応する。SQLite には translate() が無いため
+# (PostgreSQL にはある)、保存値を SQL で正規化せず「検索語を両仮名へ展開して OR」する。
+_KATA_TO_HIRA = {c: c - 0x60 for c in range(0x30A1, 0x30F4)}
+_HIRA_TO_KATA = {c: c + 0x60 for c in range(0x3041, 0x3094)}
+
+
+def _kana_search_variants(q: str) -> list[str]:
+    """検索語をカタカナ/ひらがな両方へ正規化した重複なし候補を返す。
+
+    品種(breed)のカナ表記揺れ（例: 「チワワ」と「ちわわ」）を吸収するため、
+    元の語・全ひらがな化・全カタカナ化の3候補で OR 検索する。漢字↔読み変換は非対象。
+    """
+    variants: list[str] = []
+    for v in (q, q.translate(_KATA_TO_HIRA), q.translate(_HIRA_TO_KATA)):
+        if v not in variants:
+            variants.append(v)
+    return variants
+
+
 class NotFoundError(Exception):
     """リソースが見つからない場合のエラー"""
 
@@ -77,6 +97,11 @@ class AnimalRepository:
             image_urls=[str(url) for url in animal_data.image_urls],
             source_url=str(animal_data.source_url),
             category=animal_data.category,
+            # 個体識別フィールド
+            breed=animal_data.breed,
+            name=animal_data.name,
+            management_number=animal_data.management_number,
+            description=animal_data.description,
             # 拡張フィールド
             status=animal_data.status.value if animal_data.status else "sheltered",
             status_changed_at=animal_data.status_changed_at,
@@ -107,6 +132,11 @@ class AnimalRepository:
             image_urls=orm_animal.image_urls or [],
             source_url=orm_animal.source_url,
             category=orm_animal.category,
+            # 個体識別フィールド
+            breed=orm_animal.breed,
+            name=orm_animal.name,
+            management_number=orm_animal.management_number,
+            description=orm_animal.description,
             # 拡張フィールド
             status=AnimalStatus(orm_animal.status) if orm_animal.status else None,
             status_changed_at=orm_animal.status_changed_at,
@@ -152,6 +182,12 @@ class AnimalRepository:
             existing_animal.phone = animal_data.phone
             existing_animal.image_urls = [str(url) for url in animal_data.image_urls]
             existing_animal.category = animal_data.category
+            # 個体識別フィールドは category 同様に無条件上書き
+            # (ソースから値が消えたら None で上書きし、古い値を残留させない)
+            existing_animal.breed = animal_data.breed
+            existing_animal.name = animal_data.name
+            existing_animal.management_number = animal_data.management_number
+            existing_animal.description = animal_data.description
             # 拡張フィールドは明示的に設定された場合のみ更新
             if animal_data.status is not None:
                 existing_animal.status = animal_data.status.value
@@ -235,6 +271,7 @@ class AnimalRepository:
         shelter_date_to: date | None = None,
         status: AnimalStatus | None = None,
         q: str | None = None,
+        include_non_public: bool = False,
         limit: int = 50,
         offset: int = 0,
     ) -> tuple[list[AnimalData], int]:
@@ -276,6 +313,10 @@ class AnimalRepository:
             filters.append(Animal.shelter_date <= shelter_date_to)
         if status:
             filters.append(Animal.status == status.value)
+        if not include_non_public:
+            # 死亡(deceased)個体は公開対象から除外する（データ境界での強制）。
+            # NULL status の行を誤って落とさないよう is_distinct_from で null-safe に比較。
+            filters.append(Animal.status.is_distinct_from(AnimalStatus.DECEASED.value))
         if q:
             # キーワード検索: 複数フィールドを OR で部分一致（ILIKE）
             # 「茶白」「人懐っこい」「子犬」など自由テキストで
@@ -283,6 +324,11 @@ class AnimalRepository:
             from sqlalchemy import or_
 
             keyword = f"%{_escape_like(q)}%"
+            # 品種はカタカナ↔ひらがなの揺れを吸収するため検索語を両仮名へ展開して照合
+            breed_clauses = [
+                Animal.breed.ilike(f"%{_escape_like(v)}%", escape="\\")
+                for v in _kana_search_variants(q)
+            ]
             filters.append(
                 or_(
                     Animal.species.ilike(keyword, escape="\\"),
@@ -290,6 +336,7 @@ class AnimalRepository:
                     Animal.size.ilike(keyword, escape="\\"),
                     Animal.location.ilike(keyword, escape="\\"),
                     Animal.prefecture.ilike(keyword, escape="\\"),
+                    *breed_clauses,
                 )
             )
 
@@ -325,6 +372,7 @@ class AnimalRepository:
         shelter_date_to: date | None = None,
         status: AnimalStatus | None = None,
         q: str | None = None,
+        include_non_public: bool = False,
         sort: str = "newest",
         limit: int = 50,
         offset: int = 0,
@@ -367,10 +415,19 @@ class AnimalRepository:
             filters.append(Animal.shelter_date <= shelter_date_to)
         if status:
             filters.append(Animal.status == status.value)
+        if not include_non_public:
+            # 死亡(deceased)個体は公開対象から除外する（データ境界での強制）。
+            # NULL status の行を誤って落とさないよう is_distinct_from で null-safe に比較。
+            filters.append(Animal.status.is_distinct_from(AnimalStatus.DECEASED.value))
         if q:
             from sqlalchemy import or_
 
             keyword = f"%{_escape_like(q)}%"
+            # 品種はカタカナ↔ひらがなの揺れを吸収するため検索語を両仮名へ展開して照合
+            breed_clauses = [
+                Animal.breed.ilike(f"%{_escape_like(v)}%", escape="\\")
+                for v in _kana_search_variants(q)
+            ]
             filters.append(
                 or_(
                     Animal.species.ilike(keyword, escape="\\"),
@@ -378,6 +435,7 @@ class AnimalRepository:
                     Animal.size.ilike(keyword, escape="\\"),
                     Animal.location.ilike(keyword, escape="\\"),
                     Animal.prefecture.ilike(keyword, escape="\\"),
+                    *breed_clauses,
                 )
             )
 
@@ -402,17 +460,24 @@ class AnimalRepository:
 
         return orm_animals, total_count
 
-    async def get_animal_by_id_orm(self, animal_id: int) -> Animal | None:
+    async def get_animal_by_id_orm(
+        self, animal_id: int, include_non_public: bool = False
+    ) -> Animal | None:
         """
         IDで動物データを取得（ORMモデルとして）
 
         Args:
             animal_id: 動物ID
+            include_non_public: True なら死亡(deceased)個体も返す（内部の status 更新・
+                画像パス更新・削除フロー用）。False（既定/公開）は deceased を None 扱いに
+                して、ルート層で 404 を返させる。
 
         Returns:
-            Optional[Animal]: 動物ORMモデル、存在しない場合は None
+            Optional[Animal]: 動物ORMモデル、存在しない/非公開の場合は None
         """
         stmt = select(Animal).where(Animal.id == animal_id)
+        if not include_non_public:
+            stmt = stmt.where(Animal.status.is_distinct_from(AnimalStatus.DECEASED.value))
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -442,7 +507,8 @@ class AnimalRepository:
             NotFoundError: 動物が存在しない
         """
         # 動物を取得
-        orm_animal = await self.get_animal_by_id_orm(animal_id)
+        # 内部管理フロー（status 更新・画像パス更新・削除）は deceased も対象にする。
+        orm_animal = await self.get_animal_by_id_orm(animal_id, include_non_public=True)
         if orm_animal is None:
             raise NotFoundError("Animal", animal_id)
 
@@ -518,7 +584,8 @@ class AnimalRepository:
             NotFoundError: 動物が存在しない
         """
         # 動物を取得
-        orm_animal = await self.get_animal_by_id_orm(animal_id)
+        # 内部管理フロー（status 更新・画像パス更新・削除）は deceased も対象にする。
+        orm_animal = await self.get_animal_by_id_orm(animal_id, include_non_public=True)
         if orm_animal is None:
             raise NotFoundError("Animal", animal_id)
 
@@ -578,7 +645,8 @@ class AnimalRepository:
         Raises:
             NotFoundError: 動物が存在しない
         """
-        orm_animal = await self.get_animal_by_id_orm(animal_id)
+        # 内部管理フロー（status 更新・画像パス更新・削除）は deceased も対象にする。
+        orm_animal = await self.get_animal_by_id_orm(animal_id, include_non_public=True)
         if orm_animal is None:
             raise NotFoundError("Animal", animal_id)
 

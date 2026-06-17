@@ -380,6 +380,38 @@ class TestNormalizePhone:
         assert DataNormalizer._normalize_phone("088-123-4567") == "088-123-4567"
         assert DataNormalizer._normalize_phone("090-1234-5678") == "090-1234-5678"
 
+    def test_normalize_phone_3digit_area_code_not_split_as_2digit(self):
+        """3桁市外局番 (044/045/048/052 等) を 2桁市外局番として誤分割しない。
+
+        実際の2桁市外局番は 03(東京23区)・06(大阪市)のみ。04x/05x で始まる
+        044(川崎)/045(横浜)/048(さいたま)/052(名古屋) 等は3桁市外局番であり、
+        旧実装は digits[0:2] in [.., "04", "05", ..] でこれらを誤って 2桁扱いし
+        '045-211-2000' を '04-5211-2000' のような誤番号に変換していた。利用者が
+        タップして誤った窓口へ発信する重大バグ。ハイフン無しの生数字でも正す。
+        """
+        assert DataNormalizer._normalize_phone("0452112000") == "045-211-2000"
+        assert DataNormalizer._normalize_phone("0442002000") == "044-200-2000"
+        assert DataNormalizer._normalize_phone("0488303000") == "048-830-3000"
+        assert DataNormalizer._normalize_phone("0529721111") == "052-972-1111"
+
+    def test_normalize_phone_preserves_valid_existing_hyphens(self):
+        """既に妥当な区切りでハイフン済みの入力は、剥がして再分割せず温存する。
+
+        本番データの多くは正しくハイフン済み ('045-211-2000')。これを数字に潰して
+        市外局番長を推定し直すと 04x の 2桁/3桁の区別がつかず誤番号になるため、
+        妥当な3分割 (各部数字・先頭0・合計10/11桁) はそのまま返す。
+        """
+        assert DataNormalizer._normalize_phone("045-211-2000") == "045-211-2000"
+        assert DataNormalizer._normalize_phone("044-200-2000") == "044-200-2000"
+        assert DataNormalizer._normalize_phone("052-972-1111") == "052-972-1111"
+        # 04 を2桁市外局番として使う地域 (柏 04-7190 等) もハイフン温存で正しく残る
+        assert DataNormalizer._normalize_phone("04-7190-1234") == "04-7190-1234"
+
+    def test_normalize_phone_2digit_area_code_still_works(self):
+        """2桁市外局番 03/06 は引き続き正しく分割する (リグレッション)。"""
+        assert DataNormalizer._normalize_phone("0312345678") == "03-1234-5678"
+        assert DataNormalizer._normalize_phone("0662311234") == "06-6231-1234"
+
     def test_normalize_phone_with_parentheses(self):
         """括弧付き電話番号を変換"""
         assert DataNormalizer._normalize_phone("(088)123-4567") == "088-123-4567"
@@ -567,6 +599,88 @@ class TestCapColor:
         result = DataNormalizer.normalize(raw)
         assert result.color is not None
         assert len(result.color) <= 100
+
+
+class TestPiiProtection:
+    """第三者(発見者・飼い主)の個人情報を公開ポータルに載せないための保護"""
+
+    def test_sanitize_public_phone_drops_personal_mobile(self):
+        """携帯(070/080/090)・IP(050)番号は個人の番号の可能性が高く公開しない"""
+        assert DataNormalizer._sanitize_public_phone("090-1234-5678") == ""
+        assert DataNormalizer._sanitize_public_phone("080-1234-5678") == ""
+        assert DataNormalizer._sanitize_public_phone("070-1234-5678") == ""
+        assert DataNormalizer._sanitize_public_phone("050-1234-5678") == ""
+
+    def test_sanitize_public_phone_keeps_landline(self):
+        """施設の固定電話 (2桁/3桁市外局番) はそのまま公開する"""
+        assert DataNormalizer._sanitize_public_phone("088-123-4567") == "088-123-4567"
+        assert DataNormalizer._sanitize_public_phone("03-1234-5678") == "03-1234-5678"
+        assert DataNormalizer._sanitize_public_phone("045-211-2000") == "045-211-2000"
+
+    def test_coarsen_location_truncates_chome_and_landmark(self):
+        """丁目以下・付近/交差点/住宅街等のブロックレベル詳細を除去する"""
+        assert DataNormalizer._coarsen_location("東区長嶺東5丁目") == "東区長嶺東"
+        assert DataNormalizer._coarsen_location("大村市東大村２丁目付近") == "大村市東大村"
+        assert (
+            DataNormalizer._coarsen_location("福岡市中央区高砂二丁目住宅街") == "福岡市中央区高砂"
+        )
+        assert DataNormalizer._coarsen_location("宮崎市恒久5丁目　付近") == "宮崎市恒久"
+        assert DataNormalizer._coarsen_location("西区　上熊本1丁目") == "西区　上熊本"
+        assert DataNormalizer._coarsen_location("吾妻町牧場の里付近") == "吾妻町牧場の里"
+
+    def test_coarsen_location_leaves_non_address_untouched(self):
+        """住所マーカー(丁目/付近等)が無い値は壊さない(管理番号・施設名・市区町村)"""
+        # 管理番号+状態テキスト (lost に混入する実データ) は誤って削らない
+        assert (
+            DataNormalizer._coarsen_location("R7No.249-250 新しい飼い主募集中")
+            == "R7No.249-250 新しい飼い主募集中"
+        )
+        assert (
+            DataNormalizer._coarsen_location("高知県動物愛護センター") == "高知県動物愛護センター"
+        )
+        assert DataNormalizer._coarsen_location("東京都新宿区") == "東京都新宿区"
+        assert DataNormalizer._coarsen_location("不明") == "不明"
+
+    def test_normalize_drops_mobile_phone_for_public(self):
+        """normalize() は携帯番号を phone に載せない (発見者の個人携帯対策)"""
+        raw = RawAnimalData(
+            species="猫",
+            sex="メス",
+            age="不明",
+            color="黒",
+            size="小型",
+            shelter_date="2026-01-05",
+            location="北海道",
+            phone="090-6269-8068",
+            image_urls=[],
+            source_url="https://example.com/other-animal/1",
+            category="sheltered",
+        )
+        result = DataNormalizer.normalize(raw)
+        assert result.phone is None
+
+    def test_normalize_coarsens_lost_location_only(self):
+        """lost の location は粗粒度化し、sheltered の所在地はそのまま残す"""
+        lost = RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="不明",
+            color="茶",
+            size="中型",
+            shelter_date="2026-01-05",
+            location="東区長嶺東5丁目",
+            phone="",
+            image_urls=[],
+            source_url="https://example.com/lost/1",
+            category="lost",
+        )
+        assert DataNormalizer.normalize(lost).location == "東区長嶺東"
+
+        sheltered = lost.model_copy(
+            update={"category": "sheltered", "source_url": "https://example.com/shel/1"}
+        )
+        # 収容(迷子でない)個体の発見場所は再会の手掛かりになるため粗粒度化しない
+        assert DataNormalizer.normalize(sheltered).location == "東区長嶺東5丁目"
 
 
 class TestNormalizerIntegration:
@@ -863,3 +977,412 @@ class TestNormalizeCategory:
         animal_data = DataNormalizer.normalize(raw_data)
 
         assert animal_data.category == "lost"
+
+
+class TestIdentityFieldDefaults:
+    """個体識別フィールドの既定値（Slice 0: 省略時に未設定。スライス可能性の根拠）"""
+
+    def test_raw_animal_data_defaults_identity_fields_to_empty(self):
+        """RawAnimalData は4フィールドを省略すると空文字（収集側の後方互換）。"""
+        raw = RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="2歳",
+            color="茶色",
+            size="中型",
+            shelter_date="2026-01-05",
+            location="高知県",
+            phone="0881234567",
+            image_urls=[],
+            source_url="https://example.com/a",
+            category="adoption",
+        )
+        assert raw.breed == ""
+        assert raw.name == ""
+        assert raw.description == ""
+        assert raw.management_number == ""
+
+    def test_normalize_omits_identity_fields_as_none(self):
+        """品種等を持たない生データを正規化すると個体識別は None（Slice 0 は値を入れない）。"""
+        raw = RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="2歳",
+            color="茶色",
+            size="中型",
+            shelter_date="2026-01-05",
+            location="高知県",
+            phone="0881234567",
+            image_urls=[],
+            source_url="https://example.com/b",
+            category="adoption",
+        )
+        result = DataNormalizer.normalize(raw)
+        assert result.breed is None
+        assert result.name is None
+        assert result.description is None
+        assert result.management_number is None
+
+
+class TestBreedNormalization:
+    """Slice 1: 品種(breed) の正規化（トリム・空→None・長さ丸め、PII非適用）"""
+
+    def test_cap_text_trims_empties_and_caps(self):
+        assert DataNormalizer._cap_text("  柴犬  ", 50) == "柴犬"
+        assert DataNormalizer._cap_text("", 50) is None
+        assert DataNormalizer._cap_text("   ", 50) is None
+        assert DataNormalizer._cap_text(None, 50) is None
+        assert DataNormalizer._cap_text("あ" * 60, 50) == "あ" * 50
+
+    @staticmethod
+    def _raw(breed: str) -> RawAnimalData:
+        return RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="2歳",
+            color="茶色",
+            size="中型",
+            shelter_date="2026-01-05",
+            location="高知県",
+            phone="0881234567",
+            image_urls=[],
+            source_url="https://example.com/breed",
+            category="adoption",
+            breed=breed,
+        )
+
+    def test_normalize_populates_breed(self):
+        assert DataNormalizer.normalize(self._raw("チワワ")).breed == "チワワ"
+
+    def test_normalize_breed_blank_to_none(self):
+        assert DataNormalizer.normalize(self._raw("   ")).breed is None
+
+    def test_breed_max_len_matches_column(self):
+        """品種の長さ上限は ORM の VARCHAR(50) と一致していること（不一致は INSERT 全損）。"""
+        assert DataNormalizer._BREED_MAX_LEN == 50
+
+
+class TestDescriptionNormalization:
+    """Slice 2: 性格・特徴(description) の正規化（PII伏字+長さ丸め）"""
+
+    def test_normalize_description_redacts_phone_and_email(self):
+        # 電話(ハイフン有/無/全角)・メールが伏字化される
+        out = DataNormalizer._normalize_description(
+            "人懐っこい子です。連絡は 090-1234-5678 か foo@example.com まで。"
+        )
+        assert out is not None
+        assert "090-1234-5678" not in out
+        assert "foo@example.com" not in out
+        assert "███" in out
+        # 非PIIは温存
+        assert "人懐っこい子です" in out
+
+    def test_normalize_description_redacts_hyphenless_phone(self):
+        out = DataNormalizer._normalize_description("やんちゃ。電話09012345678")
+        assert "09012345678" not in out
+        assert "やんちゃ" in out
+
+    # --- 追加カバレッジ: 監査(2026-06-11)で発見された取りこぼしフォーマット ---
+    # description は自由記述で、所有者/発見者の個人連絡先が混入しやすい。
+    # 仕様(要件2.5/4.6)上、電話番号フォーマットの除外宣言は無く、
+    # 括弧つき市外局番・スペース/ドット区切り・国際表記いずれも一般的に使われる。
+
+    def test_normalize_description_redacts_parens_area_code_landline(self):
+        """固定電話の括弧つき市外局番: (03)1234-5678 / (045)123-4567"""
+        out = DataNormalizer._normalize_description("お問合せは(03)1234-5678まで")
+        assert "(03)1234-5678" not in out
+        assert "███" in out
+        out2 = DataNormalizer._normalize_description("お電話 (045)123-4567")
+        assert "(045)123-4567" not in out2
+        assert "███" in out2
+
+    def test_normalize_description_redacts_parens_area_code_mobile(self):
+        """携帯の括弧つき表記: (090)1234-5678"""
+        out = DataNormalizer._normalize_description("発見者 (090)1234-5678")
+        assert "(090)1234-5678" not in out
+        assert "███" in out
+
+    def test_normalize_description_redacts_fullwidth_parens(self):
+        """全角括弧つき市外局番: （03）1234-5678"""
+        out = DataNormalizer._normalize_description("連絡先（03）1234-5678")
+        assert "（03）1234-5678" not in out
+        assert "███" in out
+
+    def test_normalize_description_redacts_dot_separated_mobile(self):
+        """ドット区切り携帯: 090.1234.5678"""
+        out = DataNormalizer._normalize_description("連絡 090.1234.5678 まで")
+        assert "090.1234.5678" not in out
+        assert "███" in out
+
+    def test_normalize_description_redacts_space_separated_mobile(self):
+        """スペース区切り携帯: 090 1234 5678"""
+        out = DataNormalizer._normalize_description("発見者TEL 090 1234 5678")
+        assert "090 1234 5678" not in out
+        assert "███" in out
+
+    def test_normalize_description_redacts_intl_e164_jp(self):
+        """国際表記(先頭0省略+81): +81 90 1234 5678 / +819012345678 / +81-90-1234-5678"""
+        for raw in (
+            "Tel: +81 90 1234 5678 (Eng OK)",
+            "問合せ +819012345678",
+            "Contact +81-90-1234-5678",
+        ):
+            out = DataNormalizer._normalize_description(raw)
+            # +81 始まりの番号フラグメントは全て伏字されるべき(末尾4桁の部分残しは漏えい)
+            assert "9012345678" not in (out or "")
+            assert "1234-5678" not in (out or "")
+            assert "1234 5678" not in (out or "")
+            assert "1234.5678" not in (out or "")
+            assert "███" in (out or "")
+
+    def test_normalize_description_does_not_redact_management_number(self):
+        """誤検知防止: 管理番号フォーマット 2026-001 (4-3) / D24018 / R8-12 等は伏字されない"""
+        for raw in (
+            "管理番号: 2026-001 の柴犬",
+            "個体番号 D24018 (愛称：平助)",
+            "受付 R8-12 / 2026年保護",
+        ):
+            out = DataNormalizer._normalize_description(raw)
+            assert out is not None
+            # 番号本体が残っている(電話と誤判定されていない)
+            assert ("2026-001" in out) or ("D24018" in out) or ("R8-12" in out)
+
+    def test_normalize_description_does_not_redact_weight_or_year(self):
+        """誤検知防止: 体重 5.5kg / 年号 2026年 等は伏字されない"""
+        out = DataNormalizer._normalize_description("体重5.5kgの中型犬、2026年5月保護")
+        assert out is not None
+        assert "5.5" in out
+        assert "2026年" in out
+
+    def test_normalize_description_blank_to_none(self):
+        assert DataNormalizer._normalize_description("   ") is None
+        assert DataNormalizer._normalize_description("") is None
+        assert DataNormalizer._normalize_description(None) is None
+
+    def test_normalize_description_caps_length(self):
+        long_text = "あ" * 3000
+        out = DataNormalizer._normalize_description(long_text)
+        assert out is not None
+        assert len(out) <= DataNormalizer._DESCRIPTION_MAX_LEN
+
+    # --- HTML/XSS 多層防御: ingest 時にタグを除去 ---
+    # description は自由記述で、自治体サイトの HTML が原文に混入し得る。
+    # フロントは React テキストノード描画で XSS 安全だが、将来 別UI（管理画面、
+    # dangerouslySetInnerHTML、メール本文、第三者 API 消費）に流入したときに
+    # 防御線が消える単一防御問題を解消する。
+
+    def test_normalize_description_strips_script_tags(self):
+        """<script> タグとその中身は完全除去される (XSS の根元)"""
+        out = DataNormalizer._normalize_description("やんちゃ<script>alert('xss')</script>な子です")
+        assert out is not None
+        assert "<script>" not in out
+        assert "</script>" not in out
+        assert "alert(" not in out  # 中身ごと除去
+        # 通常テキストは保持
+        assert "やんちゃ" in out
+        assert "な子です" in out
+
+    def test_normalize_description_strips_event_handlers(self):
+        """イベントハンドラ属性付きタグの src/onerror は除去される"""
+        out = DataNormalizer._normalize_description("<img src=x onerror=alert(1)>かわいい")
+        assert out is not None
+        assert "<img" not in out
+        assert "onerror" not in out
+        assert "alert(1)" not in out
+        # テキストは保持
+        assert "かわいい" in out
+
+    def test_normalize_description_strips_generic_html(self):
+        """通常の HTML タグ (<b>, <a href>, <br>) もテキストのみ残して除去"""
+        out = DataNormalizer._normalize_description(
+            "<p>人懐っこい<b>とても</b>かわいい<br>子です</p>"
+        )
+        assert out is not None
+        assert "<" not in out  # タグは全て除去
+        assert ">" not in out
+        assert "人懐っこい" in out
+        assert "とても" in out
+        assert "かわいい" in out
+        assert "子です" in out
+
+    def test_normalize_description_html_entity_decoded(self):
+        """HTML エンティティ (&amp; &lt; 等) は実文字にデコードされる"""
+        out = DataNormalizer._normalize_description("おとなしい&amp;やさしい子&lt;3")
+        assert out is not None
+        assert "&amp;" not in out
+        assert "&lt;" not in out
+        assert "おとなしい&やさしい子" in out
+
+    def test_normalize_description_strips_html_before_pii_redaction(self):
+        """タグ除去とPII伏字が独立に動作する (順序依存しない)"""
+        out = DataNormalizer._normalize_description(
+            '<p>連絡先 <a href="tel:090-1234-5678">090-1234-5678</a></p>'
+        )
+        assert out is not None
+        # タグ除去
+        assert "<a" not in out
+        assert "tel:" not in out
+        assert "</a>" not in out
+        # PII 伏字
+        assert "090-1234-5678" not in out
+        assert "███" in out
+
+    def test_normalize_populates_description_via_pipeline(self):
+        raw = RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="2歳",
+            color="茶色",
+            size="中型",
+            shelter_date="2026-01-05",
+            location="高知県",
+            phone="0881234567",
+            image_urls=[],
+            source_url="https://example.com/desc",
+            category="adoption",
+            description="シャイだけど甘えん坊。",
+        )
+        assert DataNormalizer.normalize(raw).description == "シャイだけど甘えん坊。"
+
+
+class TestNameAndManagementNumberNormalization:
+    """Slice 3: 仮名(name)・管理番号(management_number) の正規化（トリム・長さ丸め、PII非適用）"""
+
+    @staticmethod
+    def _raw(name: str = "", management_number: str = "") -> RawAnimalData:
+        return RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="2歳",
+            color="茶色",
+            size="中型",
+            shelter_date="2026-01-05",
+            location="高知県",
+            phone="0881234567",
+            image_urls=[],
+            source_url="https://example.com/nm",
+            category="adoption",
+            name=name,
+            management_number=management_number,
+        )
+
+    def test_normalize_populates_name_and_management_number(self):
+        result = DataNormalizer.normalize(self._raw(name="  ポチ  ", management_number=" R7-249 "))
+        assert result.name == "ポチ"
+        assert result.management_number == "R7-249"
+
+    def test_blank_name_and_mgmt_to_none(self):
+        result = DataNormalizer.normalize(self._raw(name="   ", management_number=""))
+        assert result.name is None
+        assert result.management_number is None
+
+    def test_management_number_is_not_pii_redacted(self):
+        # 数字ハイフン列の管理番号を PII 伏字してはいけない（誤伏字回避）
+        result = DataNormalizer.normalize(self._raw(management_number="2026-001"))
+        assert result.management_number == "2026-001"
+        assert "███" not in result.management_number
+
+
+class TestFilterJunkImages:
+    """画像URLのジャンク除外（ロゴ/アイコン/ナビ等）のテスト。
+
+    2026-06-15 本番で、全adapter共通の画像チョークポイント
+    _filter_valid_image_urls がジャンク除外をせず、logo.svg/ico_nav 等が
+    動物写真として公開されていた（JSON-LD・一覧サムネも汚染）。
+    """
+
+    def test_kumamoto_doubutuaigo_real_photos_only(self):
+        """id=1134 実データ相当: ジャンク10件を落とし実写真3件のみ残す。"""
+        base = "https://www.kumamoto-doubutuaigo.jp"
+        urls = [
+            f"{base}/img/common/logo.svg",
+            f"{base}/img/common/ico-insta.png",
+            f"{base}/img/common/ico_nav01.png",
+            f"{base}/img/common/ico_nav02.png",
+            f"{base}/img/common/ico_nav03.png",
+            f"{base}/img/common/ico_nav04.png",
+            f"{base}/img/common/ico_nav05.png",
+            f"{base}/img/common/ico_nav06.png",
+            f"{base}/img/common/ico_nav07.png",
+            f"{base}/files/cache/abc123.png",
+            f"{base}/files/cache/def456.png",
+            f"{base}/files/cache/ghi789.png",
+        ]
+        result = DataNormalizer._filter_valid_image_urls(urls)
+        assert result == [
+            f"{base}/files/cache/abc123.png",
+            f"{base}/files/cache/def456.png",
+            f"{base}/files/cache/ghi789.png",
+        ]
+
+    def test_real_photos_are_not_dropped(self):
+        """一般的な実写真URL（uploads/番号/種別パス）は維持する。"""
+        urls = [
+            "https://example.com/wp-content/uploads/2026/06/dog01.jpg",
+            "https://example.com/files/animal/12345.jpg",
+            "https://example.com/images/photo_2026.jpeg",
+            "https://example.com/media/cat-photo.webp",
+        ]
+        assert DataNormalizer._filter_valid_image_urls(urls) == urls
+
+    def test_failsafe_returns_original_when_all_junk(self):
+        """全てジャンク判定でも空配列にせず元の有効URLを返す（誤殺回避）。"""
+        urls = [
+            "https://example.com/common/logo.svg",
+            "https://example.com/assets/icon.png",
+        ]
+        assert DataNormalizer._filter_valid_image_urls(urls) == urls
+
+    def test_junk_patterns_detected(self):
+        """代表的なジャンクパターンを除外する。"""
+        junk = [
+            "https://x.jp/img/common/logo.svg",
+            "https://x.jp/assets/icon-search.png",
+            "https://x.jp/themes/default/header.png",
+            "https://x.jp/img/btn_next.gif",
+            "https://x.jp/share/sns_line.png",
+            "https://x.jp/img/noimage.png",
+            "https://x.jp/img/banner_event.jpg",
+        ]
+        real = ["https://x.jp/files/cache/real_photo.jpg"]
+        result = DataNormalizer._filter_valid_image_urls(junk + real)
+        assert result == real
+
+    def test_scheme_and_dedupe_still_apply(self):
+        """既存のスキーム検証・重複排除は維持する。"""
+        urls = [
+            "data:image/png;base64,xxxx",
+            "/relative/path.jpg",
+            "https://example.com/files/p1.jpg",
+            "https://example.com/files/p1.jpg",
+        ]
+        assert DataNormalizer._filter_valid_image_urls(urls) == [
+            "https://example.com/files/p1.jpg",
+        ]
+
+    def test_pdf_is_excluded_with_real_photo(self):
+        """PDF を画像欄に混入させるサイト(香川県)対策: PDF を落とし実写真を残す。"""
+        urls = [
+            "https://www.pref.kagawa.lg.jp/documents/6103/0614cat.pdf",
+            "https://www.pref.kagawa.lg.jp/files/photo/real.jpg",
+        ]
+        assert DataNormalizer._filter_valid_image_urls(urls) == [
+            "https://www.pref.kagawa.lg.jp/files/photo/real.jpg",
+        ]
+
+    def test_pdf_only_returns_empty_not_failsafe(self):
+        """唯一の画像が PDF の場合は空を返す(フェイルセーフで PDF を戻さない)。"""
+        urls = ["https://www.pref.kagawa.lg.jp/documents/6103/micro.pdf"]
+        assert DataNormalizer._filter_valid_image_urls(urls) == []
+
+    def test_other_non_image_documents_excluded(self):
+        """PDF 以外の文書ファイル(doc/xls/zip 等)も除外する。"""
+        urls = [
+            "https://example.com/files/a.docx",
+            "https://example.com/files/b.xlsx",
+            "https://example.com/files/c.zip?ver=2",
+            "https://example.com/files/photo.png",
+        ]
+        assert DataNormalizer._filter_valid_image_urls(urls) == [
+            "https://example.com/files/photo.png",
+        ]

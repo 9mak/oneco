@@ -187,6 +187,9 @@ class TestPrefOsakaAdapter:
         assert raw.color == "黒"
         assert raw.sex == "雄"
         assert raw.size == "中"
+        # 個体識別フィールド (2.3 横展開): 種類→breed, 受付番号→management_number
+        assert raw.breed == "雑種"
+        assert raw.management_number == "26-00100"
 
     def test_empty_page_returns_empty_list(self):
         """全テーブルが在庫 0 件のときは空リストを返す (例外を出さない)"""

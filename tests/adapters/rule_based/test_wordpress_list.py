@@ -150,3 +150,39 @@ class TestWordPressListAdapter:
         )
         result = adapter.normalize(raw)
         assert result.species == "犬"
+
+    def test_identity_fields_passthrough_via_field_selectors(self):
+        """FIELD_SELECTORS で個体識別キーを宣言すれば RawAnimalData に転写される
+
+        kochi 同型のサイレントドロップ予防の回帰防止テスト。
+        基底経路が breed/description/name/management_number の4キーを
+        構築子に渡していることを直接検証する。
+        """
+
+        class _IdentityWPAdapter(WordPressListAdapter):
+            LIST_LINK_SELECTOR = "a.more"
+            FIELD_SELECTORS = {
+                "species": FieldSpec(label="種別"),
+                # 派生は FIELD_SELECTORS にキーを足すだけで開通する
+                "name": FieldSpec(label="名前"),
+                "breed": FieldSpec(label="品種"),
+                "management_number": FieldSpec(label="管理番号"),
+                "description": FieldSpec(label="特徴"),
+            }
+
+        html = (
+            "<html><body><div class='info'><dl>"
+            "<dt>種別</dt><dd>犬</dd>"
+            "<dt>名前</dt><dd>ポチ</dd>"
+            "<dt>品種</dt><dd>柴犬</dd>"
+            "<dt>管理番号</dt><dd>2026-001</dd>"
+            "<dt>特徴</dt><dd>人懐っこい</dd>"
+            "</dl></div></body></html>"
+        )
+        adapter = _IdentityWPAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details("https://example.com/animals/1")
+        assert raw.name == "ポチ"
+        assert raw.breed == "柴犬"
+        assert raw.management_number == "2026-001"
+        assert raw.description == "人懐っこい"

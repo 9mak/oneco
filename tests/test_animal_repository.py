@@ -852,9 +852,14 @@ async def test_list_animals_by_status_with_pagination(repository, async_session)
 
 
 @pytest.mark.asyncio
-async def test_list_animals_without_status_returns_all(repository, async_session):
-    """list_animals() で status を省略すると全ステータスが返却されるか"""
-    # テストデータを挿入（異なるステータス）
+async def test_list_animals_excludes_deceased_by_default(repository, async_session):
+    """list_animals() は既定で死亡(deceased)個体を公開対象から除外する。
+
+    deceased の非公開はフロント制御だけでなくデータ境界で強制する。これにより
+    公開API/フィード/直リンクから死亡個体を列挙・閲覧できる穴を塞ぐ（補足監査
+    セキュリティ/誤情報リスク）。adopted/returned はアーカイブで見せるため除外しない。
+    内部用途は include_non_public=True で全件取得できる。
+    """
     async_session.add(
         Animal(
             species="犬",
@@ -887,13 +892,77 @@ async def test_list_animals_without_status_returns_all(repository, async_session
     )
     await async_session.commit()
 
+    # 既定: deceased を除外（sheltered + adopted の 2 件）
     result, total = await repository.list_animals()
-
-    assert total == 3
+    assert total == 2
     statuses = [a.status for a in result]
     assert AnimalStatus.SHELTERED in statuses
     assert AnimalStatus.ADOPTED in statuses
-    assert AnimalStatus.DECEASED in statuses
+    assert AnimalStatus.DECEASED not in statuses
+
+    # 内部用途: include_non_public=True なら deceased も含めて全件返す
+    result_all, total_all = await repository.list_animals(include_non_public=True)
+    assert total_all == 3
+    assert AnimalStatus.DECEASED in [a.status for a in result_all]
+
+
+@pytest.mark.asyncio
+async def test_list_animals_orm_excludes_deceased_by_default(repository, async_session):
+    """list_animals_orm()（公開ポータル一覧の経路）も既定で deceased を除外する。"""
+    async_session.add(
+        Animal(
+            species="犬",
+            shelter_date=date(2026, 1, 5),
+            location="高知県",
+            source_url="https://example.com/orm_sheltered",
+            category="adoption",
+            status="sheltered",
+        )
+    )
+    async_session.add(
+        Animal(
+            species="猫",
+            shelter_date=date(2026, 1, 6),
+            location="高知県",
+            source_url="https://example.com/orm_deceased",
+            category="adoption",
+            status="deceased",
+        )
+    )
+    await async_session.commit()
+
+    result, total = await repository.list_animals_orm()
+    assert total == 1
+    assert all(a.status != "deceased" for a in result)
+
+    _result_all, total_all = await repository.list_animals_orm(include_non_public=True)
+    assert total_all == 2
+
+
+@pytest.mark.asyncio
+async def test_get_animal_by_id_orm_hides_deceased_by_default(repository, async_session):
+    """get_animal_by_id_orm() は既定で deceased を None 扱い（→ルート層で404）。
+
+    内部の status 更新・画像パス更新・削除フローは include_non_public=True で取得する。
+    """
+    animal = Animal(
+        species="犬",
+        shelter_date=date(2026, 1, 5),
+        location="高知県",
+        source_url="https://example.com/orm_by_id_deceased",
+        category="adoption",
+        status="deceased",
+    )
+    async_session.add(animal)
+    await async_session.commit()
+    await async_session.refresh(animal)
+
+    # 公開: deceased は取得不可（None）
+    assert await repository.get_animal_by_id_orm(animal.id) is None
+    # 内部: include_non_public=True で取得可能
+    got = await repository.get_animal_by_id_orm(animal.id, include_non_public=True)
+    assert got is not None
+    assert got.status == "deceased"
 
 
 # === Task 8.1: update_local_image_paths() テスト ===
@@ -1270,3 +1339,111 @@ async def test_get_status_counts_returns_counts_by_status(repository, async_sess
     assert result["adopted"] == 1
     assert result["deceased"] == 1
     assert result.get("returned", 0) == 0
+
+
+# === animal-identity-fields Slice 0: 個体識別4フィールドの空配線 ===
+
+
+@pytest.mark.asyncio
+async def test_save_and_get_preserves_identity_fields(repository):
+    """breed/name/description/management_number が保存→取得で保持される（往復）。"""
+    data = AnimalData(
+        species="犬",
+        sex="男の子",
+        shelter_date=date(2026, 1, 5),
+        location="高知県",
+        source_url="https://example.com/identity1",
+        category="adoption",
+        breed="柴犬",
+        name="ポチ",
+        description="人懐っこい性格です。",
+        management_number="R7-249",
+    )
+
+    saved = await repository.save_animal(data)
+
+    assert saved.breed == "柴犬"
+    assert saved.name == "ポチ"
+    assert saved.description == "人懐っこい性格です。"
+    assert saved.management_number == "R7-249"
+
+
+@pytest.mark.asyncio
+async def test_identity_fields_default_to_none(repository):
+    """個体識別フィールドを省略すると None で保存・取得される（後方互換）。"""
+    data = AnimalData(
+        species="猫",
+        sex="不明",
+        shelter_date=date(2026, 1, 6),
+        location="高知県",
+        source_url="https://example.com/identity2",
+        category="adoption",
+    )
+
+    saved = await repository.save_animal(data)
+
+    assert saved.breed is None
+    assert saved.name is None
+    assert saved.description is None
+    assert saved.management_number is None
+
+
+@pytest.mark.asyncio
+async def test_identity_fields_overwrite_on_resave(repository):
+    """再収集で個体識別フィールドは無条件上書きされる（ソースから消えた値が残留しない）。"""
+    base = {
+        "species": "犬",
+        "sex": "男の子",
+        "shelter_date": date(2026, 1, 5),
+        "location": "高知県",
+        "source_url": "https://example.com/identity3",
+        "category": "adoption",
+    }
+    await repository.save_animal(AnimalData(**base, breed="チワワ", name="チャチャ"))
+
+    # 次回収集で breed/name がソースから消えた → None で上書きされる
+    resaved = await repository.save_animal(AnimalData(**base))
+
+    assert resaved.breed is None
+    assert resaved.name is None
+
+
+@pytest.mark.asyncio
+async def test_breed_search_absorbs_kana_variants(repository, async_session):
+    """品種(breed)検索はカタカナ↔ひらがなの揺れを吸収する（Slice 1）。"""
+    async_session.add(
+        Animal(
+            species="犬",
+            shelter_date=date(2026, 1, 5),
+            location="高知県",
+            source_url="https://example.com/breed-search1",
+            category="adoption",
+            breed="チワワ",
+        )
+    )
+    async_session.add(
+        Animal(
+            species="犬",
+            shelter_date=date(2026, 1, 6),
+            location="高知県",
+            source_url="https://example.com/breed-search2",
+            category="adoption",
+            breed="しばいぬ",
+        )
+    )
+    await async_session.commit()
+
+    # ひらがな検索 → カタカナ保存にヒット
+    res, total = await repository.list_animals_orm(q="ちわわ")
+    assert total == 1
+    assert res[0].breed == "チワワ"
+
+    # カタカナ検索 → ひらがな保存にヒット
+    res2, total2 = await repository.list_animals_orm(q="シバイヌ")
+    assert total2 == 1
+    assert res2[0].breed == "しばいぬ"
+
+    # 部分一致も効く
+    res3, total3 = await repository.list_animals_orm(q="チワ")
+    assert total3 == 1
+    assert res3[0].breed == "チワワ"

@@ -8,11 +8,72 @@
 import logging
 import re
 from datetime import date, datetime
+from html import unescape as _html_unescape
+
+from bs4 import BeautifulSoup
 
 from ..utils.prefecture import infer_prefecture_from_url
 from .models import AnimalData, RawAnimalData
 
 logger = logging.getLogger(__name__)
+
+# ジャンク画像 (ロゴ/アイコン/ナビ/装飾) を動物写真から除外するためのパターン。
+# 共通サイト資産は /common/・/assets/ 等に置かれ、動物写真は /files/・/uploads/・
+# /cache/ 等に置かれるため、パス断片とファイル名トークンの双方で判定する。
+_JUNK_IMAGE_PATH_SEGMENTS = (
+    "/common/",
+    "/assets/",
+    "/theme/",
+    "/themes/",
+    "/template",
+    "/layout/",
+    "/design/",
+    "/parts/",
+    "/share/",
+    "/sns/",
+)
+_JUNK_IMAGE_FILENAME_TOKENS = (
+    "logo",
+    "icon",
+    "ico_",
+    "ico-",
+    "nav",
+    "btn",
+    "button",
+    "banner",
+    "arrow",
+    "bullet",
+    "spacer",
+    "blank",
+    "dummy",
+    "noimage",
+    "no-image",
+    "no_image",
+    "placeholder",
+    "header",
+    "footer",
+    "sns",
+    "insta",
+    "twitter",
+    "facebook",
+    "youtube",
+)
+# 画像でないファイル (PDF/Office/アーカイブ等)。一部自治体は収容情報の
+# 添付 PDF を画像欄に混入させる (香川県など)。これを image_urls に通すと
+# frontend の /_next/image が 400、JSON-LD image も汚染される。
+_NON_IMAGE_FILE_EXTENSIONS = (
+    ".pdf",
+    ".doc",
+    ".docx",
+    ".xls",
+    ".xlsx",
+    ".ppt",
+    ".pptx",
+    ".csv",
+    ".txt",
+    ".zip",
+    ".rtf",
+)
 
 
 class DataNormalizer:
@@ -101,6 +162,11 @@ class DataNormalizer:
                 )
                 shelter_date_str = today.strftime("%Y-%m-%d")
 
+        # 所在地: 迷子(lost)は飼い主の生活圏を番地まで晒さないよう粗粒度化する。
+        location = raw_data.location if raw_data.location else "不明"
+        if raw_data.category == "lost":
+            location = DataNormalizer._coarsen_location(location)
+
         # 正規化処理
         return AnimalData(
             species=DataNormalizer._normalize_species(raw_data.species),
@@ -109,21 +175,59 @@ class DataNormalizer:
             color=DataNormalizer._cap_color(raw_data.color),
             size=DataNormalizer._cap_size(raw_data.size),
             shelter_date=datetime.strptime(shelter_date_str, "%Y-%m-%d").date(),
-            location=raw_data.location if raw_data.location else "不明",
+            location=location,
             prefecture=infer_prefecture_from_url(raw_data.source_url),
-            phone=DataNormalizer._normalize_phone(raw_data.phone) or None,
+            # 携帯/IP 番号(発見者の個人電話)は公開 phone に載せない
+            phone=DataNormalizer._sanitize_public_phone(
+                DataNormalizer._normalize_phone(raw_data.phone)
+            )
+            or None,
             image_urls=image_urls_raw,
             source_url=raw_data.source_url,
             category=raw_data.category,
+            # 個体識別: 品種 (Slice 1)。トリム+長さ丸めのみ (PII 非適用の構造化値)。
+            breed=DataNormalizer._cap_text(raw_data.breed, DataNormalizer._BREED_MAX_LEN),
+            # 個体識別: 性格・特徴 (Slice 2)。自由文のため電話/メールを伏字化 + 長さ丸め。
+            description=DataNormalizer._normalize_description(raw_data.description),
+            # 個体識別: 仮名・管理番号 (Slice 3)。トリム+長さ丸めのみ (PII 非適用)。
+            # management_number に PII 伏字をかけると番号(例 2026-001)を誤伏字するため適用しない。
+            name=DataNormalizer._cap_text(raw_data.name, DataNormalizer._NAME_MAX_LEN),
+            management_number=DataNormalizer._cap_text(
+                raw_data.management_number, DataNormalizer._MANAGEMENT_NUMBER_MAX_LEN
+            ),
         )
 
     @staticmethod
+    def _is_junk_image_url(url: str) -> bool:
+        """ロゴ/アイコン/ナビ等のジャンク画像 URL かを判定する。
+
+        SVG は装飾・ロゴが大半で動物写真にはまず使われないため一律ジャンク扱い。
+        それ以外はパス断片 (共通資産ディレクトリ) とファイル名トークンで判定する。
+        """
+        path = url.lower().split("?", 1)[0].split("#", 1)[0]
+        filename = path.rsplit("/", 1)[-1]
+        if filename.endswith(".svg"):
+            return True
+        if any(seg in path for seg in _JUNK_IMAGE_PATH_SEGMENTS):
+            return True
+        return any(tok in filename for tok in _JUNK_IMAGE_FILENAME_TOKENS)
+
+    @staticmethod
+    def _is_non_image_file(url: str) -> bool:
+        """PDF/Office 等、画像でないファイルの URL かを判定する。"""
+        path = url.lower().split("?", 1)[0].split("#", 1)[0]
+        return path.endswith(_NON_IMAGE_FILE_EXTENSIONS)
+
+    @staticmethod
     def _filter_valid_image_urls(urls: list[str] | None) -> list[str]:
-        """http(s) スキームの画像 URL のみを残し、重複を順序保ち除去する。
+        """http(s) スキームの画像 URL のみを残し、ジャンクを除外し、重複を順序保ち除去する。
 
         AnimalData.image_urls は HttpUrl 制約。data:/javascript:/相対パス等を
         Pydantic に渡すと ValidationError でレコードごと欠落するため、ここで
-        防御する (全アダプター共通)。
+        防御する (全アダプター共通)。あわせてロゴ/アイコン/ナビ等のジャンク画像と
+        PDF 等の非画像ファイルを除外する (全 adapter + LLM 経路が必ず通る唯一の
+        チョークポイント)。ジャンク除外で全滅した場合は誤殺を避けるため画像候補を
+        そのまま返すが、非画像ファイル(PDF等)はフェイルセーフ対象外で確実に除く。
         """
         if not urls:
             return []
@@ -139,7 +243,11 @@ class DataNormalizer:
                 continue
             seen.add(candidate)
             valid.append(candidate)
-        return valid
+        # 非画像ファイル(PDF等)は確実に除外 (フェイルセーフで戻さない)
+        image_candidates = [u for u in valid if not DataNormalizer._is_non_image_file(u)]
+        non_junk = [u for u in image_candidates if not DataNormalizer._is_junk_image_url(u)]
+        # フェイルセーフ: 全てジャンク判定なら誤殺より混入を選び画像候補を返す
+        return non_junk if non_junk else image_candidates
 
     @staticmethod
     def _normalize_species(raw_species: str) -> str:
@@ -230,15 +338,46 @@ class DataNormalizer:
     # animals.phone VARCHAR(20)
     _PHONE_MAX_LEN: int = 20
 
+    # 個体識別フィールドの長さ上限。ORM の VARCHAR と厳密一致させること
+    # (不一致は丸めをすり抜けて INSERT 失敗 → 1 サイト全損)。
+    # animals.breed VARCHAR(50) / name VARCHAR(100) / management_number VARCHAR(50)
+    _BREED_MAX_LEN: int = 50
+    _NAME_MAX_LEN: int = 100
+    _MANAGEMENT_NUMBER_MAX_LEN: int = 50
+    # description は Text 列だが、自由文の暴走防止に上限を設ける
+    _DESCRIPTION_MAX_LEN: int = 2000
+
     # PII (個人情報) 検出パターン。自治体サイトの「特徴」「コメント」自由記述に
     # 飼い主や保護者の個人連絡先が混入するケースがあり、公開リスクとなる。
     # color など自由テキスト由来のフィールドで以下を ███ に置換する:
     # - 電話番号 (半角/全角ハイフン、ハイフン無し 10/11 桁含む)
     # - メールアドレス
+    #
+    # 設計方針 (2026-06-11 強化):
+    #   description は所有者/発見者の個人連絡先が混入しやすい最大リスク面。
+    #   日本国内では括弧つき市外局番・スペース/ドット区切り・国際表記いずれも
+    #   一般的に使われるため、純ハイフン版以外の主要フォーマットを網羅する。
+    #   誤検知 (管理番号 2026-001 / 体重 5.5kg / 年号 2026年 等) を避けるため、
+    #   先頭が 0 (国内)・+81 (国際) で始まる電話番号らしさを必須条件にする。
     _PII_PHONE_RE = re.compile(
+        # (1) 既存: 純ハイフン3分割 (区切りはハイフン類のみ、全角数字許容、市外局番非必須)
         r"(?:\d|[０-９]){2,4}\s*[-－‐ー]\s*(?:\d|[０-９]){2,4}\s*[-－‐ー]\s*(?:\d|[０-９]){3,4}"
-        r"|0[5789]0\d{8}"  # ハイフン無し携帯/IP 11桁
-        r"|0\d{9}"  # ハイフン無し固定電話 10桁
+        # (2) 既存: ハイフン無し連続 携帯/IP 11桁 (070/080/090/050)
+        r"|0[5789]0\d{8}"
+        # (3) 既存: ハイフン無し連続 固定 10桁
+        r"|0\d{9}"
+        # (4) 新: 括弧つき市外局番 + 残部 4-4桁 / 3-4桁 / 4桁-3桁
+        #     例: (03)1234-5678, （045）123-4567, (090)1234-5678
+        #     区切りは ASCII/全角ハイフン類・ドット・空白を許容。
+        r"|[(（]\s*0\d{1,3}\s*[)）]\s*\d{1,4}\s*[-－‐ー.\s]\s*\d{3,4}"
+        # (5) 新: 携帯/IP の非ハイフン区切り3分割 (ドット/空白)
+        #     先頭 070/080/090/050 に固定して年号 (2026.5.12 等) との誤検知を防ぐ。
+        #     例: 090.1234.5678, 090 1234 5678
+        r"|0[5789]0[.\s]\d{4}[.\s]\d{4}"
+        # (6) 新: 国際表記 +81 始まり。次の桁が 0 でないこと (先頭 0 省略形)。
+        #     区切りはハイフン類・空白・無し。連続版 (+819012345678) も含む。
+        #     例: +81 90 1234 5678, +81-90-1234-5678, +819012345678
+        r"|\+81[-－‐ー\s]?[1-9]\d{0,3}[-－‐ー\s.]?\d{1,4}[-－‐ー\s.]?\d{3,4}"
     )
     _PII_EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
     _PII_REPLACEMENT = "███"
@@ -248,6 +387,74 @@ class DataNormalizer:
         """テキストから電話番号・メールアドレスを ███ に置換する"""
         text = DataNormalizer._PII_PHONE_RE.sub(DataNormalizer._PII_REPLACEMENT, text)
         text = DataNormalizer._PII_EMAIL_RE.sub(DataNormalizer._PII_REPLACEMENT, text)
+        return text
+
+    @staticmethod
+    def _cap_text(raw: str | None, max_len: int) -> str | None:
+        """自由値フィールドをトリムし、空は None、上限超過は丸めて返す（PII 非適用）。
+
+        breed / name / management_number 等の短い識別値に使う
+        （_cap_color から PII 伏字行を除いた汎用版）。
+        """
+        if not raw:
+            return None
+        text = raw.strip()
+        if not text:
+            return None
+        if len(text) > max_len:
+            return text[:max_len]
+        return text
+
+    @staticmethod
+    def _strip_html(text: str) -> str:
+        """description 自由記述から HTML タグを除去しエンティティをデコードする。
+
+        ingestion 時の多層防御 (XSS) 用ヘルパー。
+        - <script>/<style> はタグごと中身を破棄
+        - その他のタグ (<p>/<b>/<a>/<img> 等) はタグだけ除去しテキストを保持
+        - HTML エンティティ (&amp; &lt; 等) は実文字へデコード
+        - タグ間のテキストは連続スペースを 1 つに圧縮
+
+        フロントは React テキストノードで描画するため XSS は構造的に防がれて
+        いるが、将来別UI (管理画面・dangerouslySetInnerHTML・メール本文・
+        第三者APIコンシューマー) へ description が流入した際の単一防御問題を
+        ingestion 側でも閉じる。
+        """
+        # 簡易判定: '<' を含まなければ HTML パース不要
+        if "<" not in text:
+            # エンティティだけはデコード (例: 「&amp;」)
+            return _html_unescape(text)
+        # BeautifulSoup でパース。<script>/<style> は中身ごと破棄する。
+        soup = BeautifulSoup(text, "html.parser")
+        for tag in soup(["script", "style"]):
+            tag.decompose()
+        # 残りはテキストのみ抽出 (separator='' で連続文字を保持)
+        stripped = soup.get_text(separator="")
+        # 連続空白の圧縮 (HTML の改行・タブ等が text として残る場合)
+        stripped = re.sub(r"\s+", " ", stripped).strip()
+        return stripped
+
+    @staticmethod
+    def _normalize_description(raw: str | None) -> str | None:
+        """性格・特徴の自由記述を正規化する。
+
+        空は None、HTML タグを除去 (XSS 多層防御)、電話番号/メールを
+        _redact_pii で伏字化し、上限超過は丸める。
+        氏名(人名)は伏字対象外（形態素解析を要するため本仕様の非対象）。
+        伏字を丸めの前に行い、伏字後の文字数で上限判定する。
+        """
+        if not raw:
+            return None
+        text = raw.strip()
+        if not text:
+            return None
+        # XSS 多層防御: フロントの React 自動エスケープに依らず ingest 時にも除去
+        text = DataNormalizer._strip_html(text)
+        if not text:
+            return None
+        text = DataNormalizer._redact_pii(text)
+        if len(text) > DataNormalizer._DESCRIPTION_MAX_LEN:
+            return text[: DataNormalizer._DESCRIPTION_MAX_LEN]
         return text
 
     @staticmethod
@@ -660,20 +867,74 @@ class DataNormalizer:
         # 数字のみを抽出
         digits = re.sub(r"\D", "", phone_str)
 
-        # 10桁の場合: 市外局番に応じて分割
-        if len(digits) == 10:
-            # 2桁市外局番 (03, 04, 05, 06 など)
-            if digits[0:2] in ["03", "04", "05", "06"]:
-                return f"{digits[0:2]}-{digits[2:6]}-{digits[6:10]}"
-            # 3桁市外局番 (088, 090 など)
-            else:
-                return f"{digits[0:3]}-{digits[3:6]}-{digits[6:10]}"
-
-        # 11桁の場合: 0XX-XXXX-XXXX
-        if len(digits) == 11:
-            return f"{digits[0:3]}-{digits[3:7]}-{digits[7:11]}"
-
         # 桁数が想定外 (9桁以下や12桁以上) は空文字。
         # 旧実装は digits[:20] で部分文字列を返していたが、これは内線混入時の
         # 13桁化等の不正データの原因。Codex リリースレビュー I-10 で指摘。
-        return ""
+        if len(digits) not in (10, 11):
+            return ""
+
+        # 入力が既に妥当な区切りでハイフン済みなら、剥がして再分割せず温存する。
+        # 実データの多くは正しくハイフン済み ('045-211-2000')。数字に潰して市外局番
+        # 長を推定し直すと 04x の 2桁(柏 04-7190)/3桁(横浜 045) の区別がつかず誤番号に
+        # なる。各部が数字・先頭 0・連結が digits と一致する 3 分割は原本の区切りを信頼する。
+        hyphen_parts = phone_str.split("-")
+        if (
+            len(hyphen_parts) == 3
+            and all(p.isdigit() for p in hyphen_parts)
+            and hyphen_parts[0].startswith("0")
+            and "".join(hyphen_parts) == digits
+        ):
+            return "-".join(hyphen_parts)
+
+        # ハイフン無し / 不正な区切り → 桁数と市外局番から分割を推定する。
+        if len(digits) == 10:
+            # 実際の 2桁市外局番は 03(東京23区)・06(大阪市) のみ。04x/05x で始まる
+            # 川崎044・横浜045・さいたま048・名古屋052 等は 3桁市外局番なので、
+            # ここで 2桁扱いしてはいけない（旧実装はこれらを誤分割していた）。
+            if digits[0:2] in ("03", "06"):
+                return f"{digits[0:2]}-{digits[2:6]}-{digits[6:10]}"
+            # それ以外の10桁固定電話は3桁市外局番として分割 (0XX-XXX-XXXX)
+            return f"{digits[0:3]}-{digits[3:6]}-{digits[6:10]}"
+
+        # 11桁 (携帯/IP/一部固定): 0XX-XXXX-XXXX
+        return f"{digits[0:3]}-{digits[3:7]}-{digits[7:11]}"
+
+    # 公開ポータルに載せない携帯/IP 電話の市外局番プレフィックス
+    _PERSONAL_PHONE_PREFIXES = ("070", "080", "090", "050")
+
+    @staticmethod
+    def _sanitize_public_phone(phone: str) -> str:
+        """公開ポータルに載せない個人電話を除去する。
+
+        070/080/090(携帯)・050(IP) は個人の番号である可能性が高く、発見者・市民の
+        個人情報を晒すため公開しない（空文字で落とす）。施設の連絡先は固定電話であり、
+        元ページへのリンクは別途残るので連絡手段が完全に失われるわけではない。
+        """
+        digits = re.sub(r"\D", "", phone)
+        if len(digits) == 11 and digits[:3] in DataNormalizer._PERSONAL_PHONE_PREFIXES:
+            return ""
+        return phone
+
+    # 住所のブロックレベル(丁目以下・付近等)を検出する正規表現
+    _CHOME_RE = re.compile(r"[0-9０-９一二三四五六七八九十]+\s*丁目")
+    _LANDMARK_RE = re.compile(r"付近|周辺|地内|交差点|住宅街")
+
+    @staticmethod
+    def _coarsen_location(location: str) -> str:
+        """所在地を町名レベルに粗粒度化し、丁目以下・付近/交差点等のブロックレベル
+        詳細を除去する。迷子(lost)の所在地が飼い主の生活圏を番地まで晒すのを防ぐ。
+
+        住所マーカー(丁目/付近等)が無い値（管理番号・施設名・市区町村のみ）は壊さずに
+        そのまま返す（lost の location に管理番号が混入する実データがあるため）。
+        """
+        cuts = []
+        m = DataNormalizer._CHOME_RE.search(location)
+        if m:
+            cuts.append(m.start())
+        m = DataNormalizer._LANDMARK_RE.search(location)
+        if m:
+            cuts.append(m.start())
+        if not cuts:
+            return location
+        coarse = location[: min(cuts)].rstrip(" 　-－・,、")
+        return coarse.strip() or location

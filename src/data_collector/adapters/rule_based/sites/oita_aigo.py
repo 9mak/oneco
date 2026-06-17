@@ -66,6 +66,7 @@ class OitaAigoAdapter(SinglePageTableAdapter):
         "毛色・長さ": "color",  # 迷子情報詳細ページの揺れ
         "大きさ": "size",  # 詳細ページの体格 (中型/大型)
         "体格": "size",  # 念のための揺れ
+        "仮名": "name",  # 個体識別: 仮名 (例 ぐりこ)。未登録で全件ドロップしていた
     }
 
     # 体重 → size 推定の境界 (kg)。
@@ -146,6 +147,7 @@ class OitaAigoAdapter(SinglePageTableAdapter):
                 shelter_date=shelter_date,
                 location=location,
                 phone=self._CENTER_TEL,
+                name=fields.get("name", ""),
                 image_urls=self._extract_row_images(card, virtual_url),
                 source_url=virtual_url,
                 category=category,

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FilterState } from '@/types/animal';
+import { trackSearchUsed } from '@/lib/analytics';
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -19,6 +20,8 @@ const PREFECTURES = [
 interface FilterPanelProps {
   filters: FilterState;
 }
+
+const SEARCH_TRACK_DEBOUNCE_MS = 1000;
 
 /**
  * UI タブ ＝ ユーザーの意図
@@ -86,10 +89,13 @@ export function FilterPanel({ filters }: FilterPanelProps) {
   // また IME 変換中 (Composition) は URL 同期しない — 変換中に router.replace が
   // 走ると確定前の文字で検索してしまうため。確定 (onCompositionEnd) で同期する。
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const trackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTrackedQuery = useRef<string>('');
   const isComposingRef = useRef(false);
   useEffect(() => {
     return () => {
       if (searchTimer.current) clearTimeout(searchTimer.current);
+      if (trackTimer.current) clearTimeout(trackTimer.current);
     };
   }, []);
 
@@ -111,6 +117,19 @@ export function FilterPanel({ filters }: FilterPanelProps) {
     searchTimer.current = setTimeout(() => {
       updateParam('q', value.trim() || undefined);
     }, SEARCH_DEBOUNCE_MS);
+
+    if (trackTimer.current) clearTimeout(trackTimer.current);
+    trackTimer.current = setTimeout(() => {
+      const trimmed = value.trim();
+      if (!trimmed) return;
+      if (trimmed === lastTrackedQuery.current) return;
+      lastTrackedQuery.current = trimmed;
+      // FilterPanel は Suspense の外に常駐させてチラつきを防ぐため、結果件数を
+      // 受け取らない（件数を待つと再サスペンドする）。よって has_results は送らない。
+      trackSearchUsed({
+        queryLength: trimmed.length,
+      });
+    }, SEARCH_TRACK_DEBOUNCE_MS);
   };
 
   const clearAll = () => {

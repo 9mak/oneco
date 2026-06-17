@@ -133,6 +133,8 @@ class TestCityAkashiAdapter:
         assert isinstance(raw, RawAnimalData)
         # サイト名から犬と推定される
         assert raw.species == "犬"
+        # 列 2 の「種類」(柴犬) は species ではなく品種(breed)として保存される
+        assert raw.breed == "柴犬"
         assert raw.sex == "オス"
         assert raw.color == "茶"
         assert raw.size == "中"

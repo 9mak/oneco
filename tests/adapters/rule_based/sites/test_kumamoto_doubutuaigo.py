@@ -58,6 +58,7 @@ DETAIL_HTML_DOG = """
 <html><body>
 <div class="detail">
   <dl>
+    <dt>個体管理ナンバー</dt><dd>DC00744</dd>
     <dt>種類</dt><dd>雑種</dd>
     <dt>性別</dt><dd>オス</dd>
     <dt>年齢</dt><dd>成犬</dd>
@@ -245,6 +246,21 @@ class TestKumamotoDoubutuAigoAdapterDetailExtraction:
         assert all("/uploads/animal/" in u for u in raw.image_urls)
         # source_url が detail_url と一致
         assert raw.source_url == detail_url
+
+    def test_management_number_extracted_via_normalize(self):
+        """個体識別: 「個体管理ナンバー」(例 DC00744) を抽出する。
+
+        2026-06-16: 熊本105件全件で management_number が欠損していた
+        (FIELD_SELECTORS 未登録 + RawAnimalData 未配線)。CLAUDE.md
+        サイレントドロップ規約に従い normalize() 戻り AnimalData でアサート。
+        """
+        adapter = KumamotoDoubutuAigoAdapter(_site_center_dog())
+        detail_url = "https://www.kumamoto-doubutuaigo.jp/animals/detail/animal_id:101"
+        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_DOG):
+            raw = adapter.extract_animal_details(detail_url, category="adoption")
+            animal = adapter.normalize(raw)
+        assert raw.management_number == "DC00744"
+        assert animal.management_number == "DC00744"
 
     def test_extract_animal_details_from_th_td_table(self, assert_raw_animal):
         """`<th>/<td>` テーブルからも値を抽出できる"""

@@ -73,6 +73,10 @@ async def test_animals_table_columns(migration_engine):
             "size",
             "phone",
             "image_urls",
+            "breed",
+            "name",
+            "management_number",
+            "description",
         ]
 
         for col in expected_columns:
@@ -107,10 +111,36 @@ async def test_animals_table_indexes(migration_engine):
             "ix_animals_shelter_date",
             "ix_animals_location",
             "idx_animals_search",
+            # breed (個体識別カナ正規化検索) の索引も migration b8c9d0e1f2a3 で作成済み
+            "idx_animals_breed",
         ]
 
         for idx_name in expected_indexes:
             assert idx_name in index_names, f"Index {idx_name} should exist"
+
+
+@pytest.mark.asyncio
+async def test_animals_archive_identity_columns_exist(migration_engine):
+    """animals_archive テーブルに個体識別4フィールドが追加されている (c9d0e1f2a3b4)
+
+    アーカイブは公開しないが、譲渡/返還成立時点の breed/name/management_number/
+    description を運営参照のため保持する。
+    """
+    from src.data_collector.infrastructure.database.models import Base
+
+    async with migration_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+        def check_columns(sync_conn):
+            inspector = inspect(sync_conn)
+            columns = inspector.get_columns("animals_archive")
+            return [col["name"] for col in columns]
+
+        column_names = await conn.run_sync(check_columns)
+        for col in ("breed", "name", "management_number", "description"):
+            assert col in column_names, (
+                f"Column {col} should exist in animals_archive table (migration c9d0e1f2a3b4)"
+            )
 
 
 @pytest.mark.asyncio

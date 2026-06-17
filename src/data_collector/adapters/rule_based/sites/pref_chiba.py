@@ -159,6 +159,8 @@ class PrefChibaAdapter(SinglePageTableAdapter):
         sex = ""
         size = ""
         age = ""
+        breed = ""
+        management_number = ""
         attrs_parsed = False  # 最初の "・" 属性段落のみ解析する (付帯情報段落を拾わない)
         image_urls: list[str] = []
 
@@ -185,7 +187,10 @@ class PrefChibaAdapter(SinglePageTableAdapter):
                     label = label_match.group(1)
                     value = label_match.group(2).strip()
                     if label == "管理番号":
-                        pass
+                        # 「kt260512-01（JPG：40.9KB）」のような添付ファイル情報を除去
+                        # (千葉県は管理番号セルに画像リンクの情報を併記する)
+                        value = re.split(r"[（(]", value, maxsplit=1)[0].strip()
+                        management_number = value
                     elif label == "収容場所":
                         location = value
                     elif label == "掲載期限":
@@ -199,8 +204,8 @@ class PrefChibaAdapter(SinglePageTableAdapter):
                 #     "首輪無・鑑札無" のような付帯情報段落も同形式で来る
                 if "・" in text and not attrs_parsed:
                     parts = [s.strip() for s in text.split("・")]
-                    # breed (品種) は species 判定に使わないため破棄
-                    _breed, color, sex, size, age = self._parse_attribute_parts(parts)
+                    # breed (品種) は species 判定とは別概念。breed として保存する。
+                    breed, color, sex, size, age = self._parse_attribute_parts(parts)
                     attrs_parsed = True
 
         # 種別はサイト名から推定 (HTML の breed は品種名のため)
@@ -209,6 +214,8 @@ class PrefChibaAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                breed=breed,
+                management_number=management_number,
                 sex=sex,
                 age=age,
                 color=color,

@@ -218,9 +218,19 @@ class PrefSagaAdapter(SinglePageTableAdapter):
                         fields[field] = value_text
                         break
 
-        # 動物種別は先行する h3.title から推定 (サイト名より確実)
-        species_from_heading = self._infer_species_from_heading(table)
-        species = species_from_heading or fields.get("species", "")
+        # 動物種別の決定 (サイト名より確実な順):
+        # 1. テーブル本文のマーカー (保護犬（番号）/犬の特徴 等)。見出し構造 (h2/h3)
+        #    の揺れに依存せずテーブル内に存在するため最も堅牢。
+        # 2. 先行する見出し (h2/h3/h4)。kiji により犬猫見出しが h2/h3 と揺れる。
+        # 3. テーブル内「種類」セルの値 (例: ビーグル→犬)。
+        # 旧実装は 2 のみ・かつ find_previous('h3') 固定で、見出しが h2 のページでは
+        # 無関係なフッタ h3 を拾って 'その他' を返し、`or` 短絡で 3 の正値 (種類セル)
+        # を masking していた (2026-06-16)。1 を一次ソースに据えて根治する。
+        species = (
+            self._infer_species_from_table(table)
+            or self._infer_species_from_heading(table)
+            or fields.get("species", "")
+        )
 
         try:
             return RawAnimalData(
@@ -242,22 +252,45 @@ class PrefSagaAdapter(SinglePageTableAdapter):
     # ─────────────────── ヘルパー ───────────────────
 
     @staticmethod
+    def _infer_species_from_table(table: Tag) -> str:
+        """テーブル本文のマーカーから動物種別を確定する (一次ソース)
+
+        各セクションのテーブルは本文に種別マーカーを含む:
+        - 犬: "保護犬（番号）" / "犬の特徴" / "譲渡犬"
+        - 猫: "保護猫（番号）" / "猫の特徴" / "譲渡猫"
+        - その他: いずれのマーカーも持たない (→ 空文字を返し見出しにフォールバック)
+
+        見出し (h2/h3) の構造変化に依存せずテーブル内に存在するため、
+        最も堅牢な種別ソースとして優先する。両種のマーカーが混在する
+        想定外ケースでは確定せず空文字を返す。
+        """
+        text = table.get_text(" ", strip=True)
+        has_dog = "保護犬" in text or "犬の特徴" in text or "譲渡犬" in text
+        has_cat = "保護猫" in text or "猫の特徴" in text or "譲渡猫" in text
+        if has_dog and not has_cat:
+            return "犬"
+        if has_cat and not has_dog:
+            return "猫"
+        return ""
+
+    @staticmethod
     def _infer_species_from_heading(table: Tag) -> str:
-        """テーブル直前の `<h3 class="title">` から動物種別を推定する
+        """テーブル直前の見出し (`<h2>`/`<h3>`/`<h4>`) から動物種別を推定する
 
         想定見出し:
         - "保護犬情報" / "譲渡犬情報" → "犬"
         - "保護猫情報" / "譲渡猫情報" → "猫"
         - "その他の保護動物情報" 等 → "その他"
 
+        kiji によってセクション見出しが h2 / h3 と揺れるため複数タグを許容する
+        (h3 固定だと h2 ページで無関係なフッタ h3 を誤って拾っていた)。
         見出しが見つからない場合は空文字を返し、呼出側で
         テーブル内 "種類" セルの値にフォールバックさせる。
         """
-        # `find_previous` でテーブルより前に出現する最初の h3 を探す
-        h3 = table.find_previous("h3")
-        if not isinstance(h3, Tag):
+        heading = table.find_previous(["h2", "h3", "h4"])
+        if not isinstance(heading, Tag):
             return ""
-        text = h3.get_text(strip=True)
+        text = heading.get_text(strip=True)
         if "犬" in text:
             return "犬"
         if "猫" in text:

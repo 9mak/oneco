@@ -209,6 +209,10 @@ class TestPrefOkayamaAdapter:
         assert raw.size == "小"
         assert "岡山市北区" in raw.location
         assert "令和8年5月20日" in raw.shelter_date
+        # 個体識別フィールド (2.3 横展開): cells[1]=管理番号 / cells[2]=種類 / cells[7]=特徴
+        assert raw.management_number == "2610099"
+        assert raw.breed == "柴犬"
+        assert raw.description == "赤色首輪"
         # 画像が 1 件、絶対 URL 化されている
         assert len(raw.image_urls) == 1
         assert raw.image_urls[0].startswith("https://www.pref.okayama.jp/")

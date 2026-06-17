@@ -146,6 +146,11 @@ class TestCityOsakaAdapter:
         # source_url は仮想 URL
         assert raw.source_url == first_url
         assert raw.category == "lost"
+        # 個体識別フィールド (2.3 横展開):
+        #   h3「識別番号／A2605120001」→ management_number
+        #   「・種類／雑種」→ breed
+        assert raw.management_number == "A2605120001"
+        assert raw.breed == "雑種"
 
     def test_extract_second_animal_from_synthetic_html(self):
         """2 件目のフィールド値も期待通りに取れる"""

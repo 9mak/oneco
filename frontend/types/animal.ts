@@ -35,6 +35,15 @@ export interface AnimalPublic {
   category: 'adoption' | 'lost' | 'sheltered';
   /** 現在ステータス。API が返す場合のみ存在（未定義 = sheltered 扱い） */
   status?: AnimalStatus;
+  // 個体識別フィールド（任意。サイトにより取得可否が異なり欠損を許容する）
+  /** 品種 (例: 柴犬, チワワ) */
+  breed?: string | null;
+  /** 仮名・愛称 (例: ポチ) */
+  name?: string | null;
+  /** 性格・特徴 (PII伏字済み) */
+  description?: string | null;
+  /** 収容番号・管理番号 */
+  management_number?: string | null;
 }
 
 /**
@@ -64,6 +73,11 @@ export interface ArchivedAnimalPublic {
   /** 譲渡/返還が成立した日 */
   outcome_date: string | null;
   archived_at: string;
+  // 個体識別フィールド (animal-identity-fields)。すべて任意。
+  breed?: string | null;
+  name?: string | null;
+  management_number?: string | null;
+  description?: string | null;
 }
 
 /**

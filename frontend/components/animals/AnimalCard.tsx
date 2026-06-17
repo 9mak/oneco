@@ -30,72 +30,76 @@ export function AnimalCard({ animal }: AnimalCardProps) {
     day: 'numeric',
   });
 
-  // <a> の中に <button> を置くのは無効な HTML (interactive content モデル違反)。
-  // <article> を外枠にして Link と FavoriteButton を兄弟要素に分離する。
   return (
-    <article className="relative bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden">
-      <Link
-        href={`/animals/${animal.id}`}
-        className="block focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 rounded-lg"
-      >
-        <div className="relative w-full h-48 bg-gray-200">
-          <Image
-            src={imgSrc}
-            alt={`${animal.species}の画像`}
-            fill
-            className="object-cover"
-            sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw"
-            loading="lazy"
-            unoptimized={imgSrc === PLACEHOLDER_IMAGE ? true : undefined}
-            onError={() => setImgSrc(PLACEHOLDER_IMAGE)}
-          />
-          <div className="absolute top-2 right-2">
-            <CategoryBadge category={animal.category} size="sm" />
-          </div>
+    <Link
+      href={`/animals/${animal.id}`}
+      className="block bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2"
+    >
+      <div className="relative w-full h-48 bg-gray-200">
+        <Image
+          src={imgSrc}
+          alt={`${animal.species}の画像`}
+          fill
+          className="object-cover"
+          sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw"
+          loading="lazy"
+          unoptimized={imgSrc === PLACEHOLDER_IMAGE ? true : undefined}
+          onError={() => setImgSrc(PLACEHOLDER_IMAGE)}
+        />
+        <div className="absolute top-2 right-2">
+          <CategoryBadge category={animal.category} size="sm" />
         </div>
-
-        <div className="p-4 space-y-2">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
-              {animal.sex === '不明' ? animal.species : `${animal.species}の${animal.sex}`}
-            </h3>
-            <StaleDataBadge shelterDate={animal.shelter_date} />
-          </div>
-
-          <dl className="grid grid-cols-2 gap-2 text-sm">
-            <div>
-              <dt className="text-[var(--color-text-secondary)]">推定年齢</dt>
-              <dd className="text-[var(--color-text-primary)] font-medium">{ageDisplay}</dd>
-            </div>
-            {animal.color && (
-              <div>
-                <dt className="text-[var(--color-text-secondary)]">毛色</dt>
-                <dd className="text-[var(--color-text-primary)] font-medium">{animal.color}</dd>
-              </div>
-            )}
-            {animal.size && (
-              <div>
-                <dt className="text-[var(--color-text-secondary)]">体格</dt>
-                <dd className="text-[var(--color-text-primary)] font-medium">{animal.size}</dd>
-              </div>
-            )}
-            <div>
-              <dt className="text-[var(--color-text-secondary)]">収容日</dt>
-              <dd className="text-[var(--color-text-primary)] font-medium">{shelterDate}</dd>
-            </div>
-            <div className="col-span-2">
-              <dt className="text-[var(--color-text-secondary)]">収容場所</dt>
-              <dd className="text-[var(--color-text-primary)] font-medium">{animal.location}</dd>
-            </div>
-          </dl>
+        <div className="absolute top-2 left-2">
+          <FavoriteButton animalId={animal.id} size="sm" stopPropagation />
         </div>
-      </Link>
-
-      {/* お気に入りボタン: Link の兄弟として後ろに置き、a>button ネストを避けつつ
-          タブ順を「カード本体 → お気に入り」にする。視覚配置は absolute で左上に固定。 */}
-      <div className="absolute top-2 left-2 z-10">
-        <FavoriteButton animalId={animal.id} size="sm" />
       </div>
-    </article>
+
+      <div className="p-4 space-y-2">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+            {animal.sex === '不明' ? animal.species : `${animal.species}の${animal.sex}`}
+          </h3>
+          <StaleDataBadge shelterDate={animal.shelter_date} />
+        </div>
+
+        {/* 仮名・愛称（あれば見出し下に控えめに表示） */}
+        {animal.name && (
+          <p className="text-sm font-medium text-[var(--color-primary-700)]">{animal.name}</p>
+        )}
+
+        <dl className="grid grid-cols-2 gap-2 text-sm">
+          <div>
+            <dt className="text-[var(--color-text-secondary)]">推定年齢</dt>
+            <dd className="text-[var(--color-text-primary)] font-medium">{ageDisplay}</dd>
+          </div>
+          {animal.breed && (
+            <div>
+              <dt className="text-[var(--color-text-secondary)]">品種</dt>
+              <dd className="text-[var(--color-text-primary)] font-medium">{animal.breed}</dd>
+            </div>
+          )}
+          {animal.color && (
+            <div>
+              <dt className="text-[var(--color-text-secondary)]">毛色</dt>
+              <dd className="text-[var(--color-text-primary)] font-medium">{animal.color}</dd>
+            </div>
+          )}
+          {animal.size && (
+            <div>
+              <dt className="text-[var(--color-text-secondary)]">体格</dt>
+              <dd className="text-[var(--color-text-primary)] font-medium">{animal.size}</dd>
+            </div>
+          )}
+          <div>
+            <dt className="text-[var(--color-text-secondary)]">収容日</dt>
+            <dd className="text-[var(--color-text-primary)] font-medium">{shelterDate}</dd>
+          </div>
+          <div className="col-span-2">
+            <dt className="text-[var(--color-text-secondary)]">収容場所</dt>
+            <dd className="text-[var(--color-text-primary)] font-medium">{animal.location}</dd>
+          </div>
+        </dl>
+      </div>
+    </Link>
   );
 }

@@ -162,6 +162,13 @@ class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
     _SIZE_BOUNDARY_SMALL_KG: ClassVar[float] = 5.0
     _SIZE_BOUNDARY_LARGE_KG: ClassVar[float] = 15.0
 
+    # 収容中 iframe (list1) の photo パスに含まれる種別コード。
+    # ../list1_1/photo/=犬 / ../list1_2/photo/=猫 (譲渡の list4_1/list4_2 と同規約)。
+    _SHELTERED_SPECIES_BY_PATH: ClassVar[tuple[tuple[str, str], ...]] = (
+        ("list1_1", "犬"),
+        ("list1_2", "猫"),
+    )
+
     # ─────────────────── Playwright 設定 ───────────────────
     # iframe 内の `<ul class="news">` が描画されたら抽出可能。
     # baserCMS は jQuery で読み込むため networkidle 待機 + selector 待機の
@@ -224,11 +231,19 @@ class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
         for name, labels in _LABEL_CANDIDATES.items():
             fields[name] = self._extract_by_aria_labels(row, labels)
 
-        # species の補完: サイト名から犬/猫を確定できる場合は使う。
-        if not fields.get("species"):
+        # species の補完。種類セルが犬/猫キーワードを含まない場合 (譲渡カードは
+        # 種類セル自体が無く空、収容中カードは「雑種」固定) に補完する。
+        species_val = fields.get("species", "")
+        if not any(kw in species_val for kw in ("犬", "猫", "いぬ", "ねこ", "イヌ", "ネコ")):
             hint = _SPECIES_HINT.get(self.site_config.name, "")
             if hint:
+                # 譲渡犬/譲渡猫はサイト名で犬猫が確定する。
                 fields["species"] = hint
+            # 収容中ページ (hint="") は種類セルが「雑種」で犬猫不明。ソースは
+            # 犬/猫を画像パス (list1_1=犬 / list1_2=猫) と推定年齢 (若犬/若猫)
+            # で明示分類しているため、これを拾って確定する (色推測ではない)。
+            elif inferred := self._infer_sheltered_species(row, fields.get("age", "")):
+                fields["species"] = inferred
 
         # 譲渡カード (`f_a3`) は所在地セルを持たない。
         # その他センターからの動物はセンター施設に収容されているため、
@@ -370,6 +385,28 @@ class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
         if stripped in _AGE_WORD_TO_MONTHS:
             return f"{_AGE_WORD_TO_MONTHS[stripped]}ヶ月"
         return text
+
+    def _infer_sheltered_species(self, row: Tag, age_text: str) -> str:
+        """収容中カードの犬/猫を画像パス → 推定年齢の順で確定する。
+
+        収容中 iframe (list1) の種類セルは「雑種」固定で犬猫不明だが、ソースは
+        犬/猫を (a) 画像パス (../list1_1/photo=犬 / ../list1_2/photo=猫)、
+        (b) 推定年齢の語 (若犬/成犬=犬, 若猫/幼猫=猫) で明示分類している。
+        いずれも取れなければ空文字を返し、その他 のままにする (誤分類より未分類)。
+        """
+        for img in row.find_all("img"):
+            src = img.get("src")
+            if not isinstance(src, str):
+                continue
+            for marker, species in self._SHELTERED_SPECIES_BY_PATH:
+                if marker in src:
+                    return species
+        # 画像が無い個体の fallback: 推定年齢の語に犬/猫が含まれれば確定する。
+        if "犬" in age_text:
+            return "犬"
+        if "猫" in age_text:
+            return "猫"
+        return ""
 
     @staticmethod
     def _color_from_etcs(text: str) -> str:

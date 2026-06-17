@@ -69,6 +69,8 @@ class TestCityMaebashiAdapter:
         assert isinstance(raw, RawAnimalData)
         # サイト名「保護犬」から犬と推定される
         assert raw.species == "犬"
+        # 「犬種」列 (雑種) は species ではなく品種(breed)として保存される
+        assert raw.breed == "雑種"
         # 1 件目: 収容日 2026-05-02, 場所 市之関町, 性別 オス
         assert raw.shelter_date == "2026-05-02"
         assert "市之関町" in raw.location

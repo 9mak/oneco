@@ -162,7 +162,7 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
 
         # 詳細ページ (`/doubutsu/kt/{section}/{id}.html`) を辿って
         # 一覧カードには無い phone / size / age を補完する。失敗時は空のまま。
-        phone, size, age = self._fetch_phone_size_age_from_detail(card, virtual_url)
+        phone, size, age, breed = self._fetch_phone_size_age_from_detail(card, virtual_url)
 
         try:
             return RawAnimalData(
@@ -171,6 +171,9 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
                 age=age,
                 color=fields.get("color", ""),
                 size=size,
+                # 個体識別: 犬種/品種。「種類・体格」欄から体格語を除いた残り。
+                # 旧実装は size のみ抽出し犬種を捨てていた (222 件 breed 欠損)。
+                breed=breed,
                 shelter_date=self.SHELTER_DATE_DEFAULT,
                 location=location,
                 phone=phone,
@@ -183,8 +186,10 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
 
     # ─────────────────── detail 補完 ───────────────────
 
-    def _fetch_phone_size_age_from_detail(self, card: Tag, base_url: str) -> tuple[str, str, str]:
-        """カードの詳細リンクを辿って phone / size / age を抽出する
+    def _fetch_phone_size_age_from_detail(
+        self, card: Tag, base_url: str
+    ) -> tuple[str, str, str, str]:
+        """カードの詳細リンクを辿って phone / size / age / breed を抽出する
 
         実サイト構造 (2026-05 観測):
             <h2>種類・体格</h2><p>{犬種} {体格}</p>
@@ -193,28 +198,30 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
 
         age は構造化欄が無いため「その他の情報」自由記述から
         正規表現で best-effort 抽出する (記載がないカードでは空文字)。
+        breed は「種類・体格」欄から体格語を除いた残りを採用する。
 
         ネットワーク失敗・HTML 構造変化等は致命的でないため、例外は
         握り潰して空文字を返す。
         """
         link = card.select_one("div.item_link_ttl p.txt a")
         if not isinstance(link, Tag):
-            return "", "", ""
+            return "", "", "", ""
         href = link.get("href")
         if not isinstance(href, str) or not href:
-            return "", "", ""
+            return "", "", "", ""
         detail_url = self._absolute_url(href, base=base_url)
         try:
             html = self._http_get(detail_url)
         except Exception as e:
             _logger.debug("yamanashi detail fetch failed %s: %s", detail_url, e)
-            return "", "", ""
+            return "", "", "", ""
 
         soup = BeautifulSoup(html, "html.parser")
         phone = ""
         phone_fallback = ""
         size = ""
         age = ""
+        breed = ""
         for h2 in soup.find_all("h2"):
             if not isinstance(h2, Tag):
                 continue
@@ -242,6 +249,7 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
                     phone_fallback = extracted
             elif kind == "_kind_size":
                 size = self._extract_size_from_kind_size(value)
+                breed = self._extract_breed_from_kind_size(value)
             elif kind == "_other_info":
                 m = _AGE_PATTERN.search(value)
                 if m:
@@ -251,7 +259,7 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
                 if not size:
                     size = self._extract_size_from_kind_size(value)
         # 「管轄保健所の連絡先」を優先、無ければ「現在の収容場所及び連絡先」で補完
-        return phone or phone_fallback, size, age
+        return phone or phone_fallback, size, age, breed
 
     @staticmethod
     def _extract_phone(value: str) -> str:
@@ -308,6 +316,53 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
             if keyword in value:
                 return size
         return ""
+
+    @classmethod
+    def _extract_breed_from_kind_size(cls, value: str) -> str:
+        """「種類・体格」欄 (`{犬種} {体格}`) から犬種/品種を抽出する。
+
+        体格語・体重・修飾語を除いた残りを breed とみなす。括弧内に品種が入る
+        変種「猫（雑種）大型」は括弧内 (体格/体重でなければ) を採用する。
+        品種が判定できない場合は空文字を返す (誤った breed を作らない)。
+
+            "トイプードル 中型"   → "トイプードル"
+            "雑種 小型（3.5kg）"  → "雑種"
+            "猫（雑種）大型"       → "雑種"
+            "雑種、体重約4kg"     → "雑種"
+            "柴犬"                → "柴犬"
+            "雑種"                → "雑種"
+            "3kgくらい" / "子猫"   → ""   (品種情報なし)
+        """
+        if not value:
+            return ""
+        text = value.translate(_FULLWIDTH_NORMALIZE)
+        text = _WEIGHT_PATTERN.sub("", text)
+        for noise in ("体重", "約", "くらい", "ぐらい", "程度"):
+            text = text.replace(noise, "")
+        candidate = text
+        # 括弧内に品種が入る変種を優先 (中身が体格/体重でなければ)
+        paren = re.search(r"[（(]\s*([^（）()]+?)\s*[）)]", text)
+        if paren:
+            inner = paren.group(1).strip()
+            if (
+                inner
+                and not _SIZE_SEARCH_PATTERN.fullmatch(inner)
+                and not _WEIGHT_PATTERN.search(inner)
+            ):
+                candidate = inner
+        # 体格語の除去: 長い形は全体から、短い形 (大中小) は末尾のみ
+        candidate = re.sub(r"(超大型|超小型|大型|中型|小型|その他)", "", candidate)
+        candidate = re.sub(r"[大中小]$", "", candidate)
+        # 残存する数値・kg・区切り・空白・括弧を除去
+        candidate = re.sub(r"\d+(?:\.\d+)?\s*(?:kg|キロ|キログラム|㎏)?", "", candidate)
+        candidate = re.sub(r"[、。・,\s（）()]", "", candidate)
+        # 先頭の species 語 (犬/猫/その他) を除去 (例「猫雑種」→「雑種」)。
+        # 「柴犬」は 柴 で始まるため影響を受けない。
+        candidate = re.sub(r"^(その他|犬|猫)", "", candidate).strip()
+        # 年齢キーワードや空は品種ではない
+        if not candidate or candidate in ("子犬", "子猫", "成犬", "成猫"):
+            return ""
+        return candidate
 
     # ─────────────────── ヘルパー ───────────────────
 

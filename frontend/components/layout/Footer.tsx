@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { INSTAGRAM_URL } from '@/lib/social';
+
 /**
  * Footer Component
  * ランドマーク要素 <footer> を使用したアクセシブルなフッター
@@ -37,6 +39,18 @@ export function Footer() {
           aria-label="フッターナビゲーション"
         >
           <Link
+            href="/about"
+            className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary-500)] hover:underline"
+          >
+            このサイトについて
+          </Link>
+          <Link
+            href="/transparency"
+            className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary-500)] hover:underline"
+          >
+            運営方針・撤去依頼
+          </Link>
+          <Link
             href="/privacy"
             className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary-500)] hover:underline"
           >
@@ -48,6 +62,14 @@ export function Footer() {
           >
             利用規約
           </Link>
+          <a
+            href={INSTAGRAM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary-500)] hover:underline"
+          >
+            Instagram
+          </a>
           <a
             href="https://github.com/9mak/oneco"
             target="_blank"

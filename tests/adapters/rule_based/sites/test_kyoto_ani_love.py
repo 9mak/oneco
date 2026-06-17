@@ -132,6 +132,8 @@ class TestKyotoAniLoveAdapter:
             category="lost",
         )
         assert raw.age == "成犬"
+        # 品種(ポメラニアン)は species_detail として抽出され breed に保存される
+        assert raw.breed == "ポメラニアン"
 
     def test_species_inferred_for_cat_site(self, fixture_html):
         """猫サイトでは species が "猫" に推定される

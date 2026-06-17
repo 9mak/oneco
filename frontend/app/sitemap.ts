@@ -1,6 +1,8 @@
 import type { MetadataRoute } from 'next';
+import { PREFECTURES } from '@/lib/prefectures';
+import { getSiteUrl } from '@/lib/site-url';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+const SITE_URL = getSiteUrl();
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000';
 
 interface SitemapAnimal {
@@ -60,7 +62,35 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'weekly',
       priority: 0.6,
     },
+    // インデックス対象の静的コンテンツページ (固有の title/description を持つ)。
+    // 列挙漏れで検索に出ていなかった (2026-06-16 発覚)。
+    {
+      url: `${SITE_URL}/stats`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.6,
+    },
+    {
+      url: `${SITE_URL}/about`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
+    {
+      url: `${SITE_URL}/transparency`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.4,
+    },
   ];
+
+  // 都道府県別ランディング（地域×保護動物のローカル検索の受け皿）
+  const areaRoutes: MetadataRoute.Sitemap = PREFECTURES.map((p) => ({
+    url: `${SITE_URL}/areas/${encodeURIComponent(p)}`,
+    lastModified: new Date(),
+    changeFrequency: 'daily',
+    priority: 0.7,
+  }));
 
   const animalRoutes: MetadataRoute.Sitemap = animals.map((a) => ({
     url: `${SITE_URL}/animals/${a.id}`,
@@ -69,5 +99,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticRoutes, ...animalRoutes];
+  return [...staticRoutes, ...areaRoutes, ...animalRoutes];
 }

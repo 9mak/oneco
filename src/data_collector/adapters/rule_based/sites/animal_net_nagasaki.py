@@ -88,7 +88,55 @@ class AnimalNetNagasakiAdapter(WordPressListAdapter):
         # 電話番号抽出元
         "問い合わせ先": "_phone_source",
         "連絡先": "_phone_source",
+        # species 補正用: 模様(柄)。三毛/サビ/キジ/トラ は猫固有のため種別確定に使う。
+        # live HTML の実ラベルは「模様・柄」(中黒・柄付き)。PR #204 は「模様」のみ
+        # 登録し exact-match で外れ不発だったため両表記を登録する。
+        "模様": "_pattern",
+        "模様・柄": "_pattern",
     }
+    # 猫固有の柄 (三毛・サビは遺伝的に猫のみ、キジトラ/茶トラは猫の慣用)。
+    _CAT_ONLY_PATTERNS: ClassVar[tuple[str, ...]] = ("三毛", "サビ", "キジ", "トラ")
+
+    # `/animal/no-12345/` から個体番号 (12345) を取り出す。
+    _NO_RE: ClassVar[re.Pattern[str]] = re.compile(r"/animal/no-(\d+)")
+
+    def fetch_animal_list(self) -> list[tuple[str, str]]:
+        """一覧を取得すると同時に、ソース自身の犬猫分類を権威ソースとして取り込む。
+
+        detail ページは品種「ミックス（雑種）」のみで犬猫を持たず、サイト名にも
+        犬猫両方が含まれるため species が その他 化していた (全その他191件の最大
+        要因=長崎98件)。ソースは list_url に `?animal-type=dog` / `?animal-type=cat`
+        を付けると犬/猫で完全分割するため、これを取得して `{個体番号: 犬|猫}` を
+        構築し _postprocess_fields で上書きする (色推測ではなくソース権威分類)。
+        """
+        urls = super().fetch_animal_list()
+        # 動物が 0 件の種別では分類取得を省略 (無駄なリクエストを避ける)。
+        self._species_by_no: dict[str, str] = self._build_species_by_no() if urls else {}
+        return urls
+
+    def _typed_list_url(self, animal_type: str) -> str:
+        """list_url に `?animal-type=...` を付与する (既存クエリがあれば `&`)。"""
+        base = self.site_config.list_url
+        sep = "&" if "?" in base else "?"
+        return f"{base}{sep}animal-type={animal_type}"
+
+    def _build_species_by_no(self) -> dict[str, str]:
+        """`?animal-type=dog|cat` 一覧から `{個体番号: 犬|猫}` を構築する。"""
+        mapping: dict[str, str] = {}
+        for animal_type, species in (("dog", "犬"), ("cat", "猫")):
+            try:
+                html = self._http_get(self._typed_list_url(animal_type))
+            except Exception:
+                # 分類ソース取得失敗時は通常フロー (品種/模様/サイト名補正) に委ねる。
+                continue
+            soup = BeautifulSoup(html, "html.parser")
+            for link in soup.select(self.LIST_LINK_SELECTOR):
+                href = link.get("href")
+                if not href or not isinstance(href, str):
+                    continue
+                if m := self._NO_RE.search(href):
+                    mapping[m.group(1)] = species
+        return mapping
 
     def _postprocess_fields(
         self, fields: dict[str, str], detail_url: str, soup: BeautifulSoup
@@ -112,6 +160,14 @@ class AnimalNetNagasakiAdapter(WordPressListAdapter):
             elif not fields.get(field):
                 fields[field] = value
 
+        # ソース自身の犬猫分類 (?animal-type=dog|cat) を最優先の権威ソースとして
+        # 適用する。fetch_animal_list 経由で構築済みの場合のみ作動し、detail を
+        # 直接呼ぶ既存経路では未設定 → 従来どおり品種/模様/サイト名補正に委ねる。
+        species_by_no = getattr(self, "_species_by_no", None)
+        if species_by_no and (m := self._NO_RE.search(detail_url)):
+            if authoritative := species_by_no.get(m.group(1)):
+                fields["species"] = authoritative
+
         # location が空なら「地区」を fallback として使う
         if not fields.get("location") and extras.get("_location_fallback"):
             fields["location"] = extras["_location_fallback"]
@@ -122,6 +178,16 @@ class AnimalNetNagasakiAdapter(WordPressListAdapter):
             m = re.search(r"(\d{2,4}-\d{2,4}-\d{3,4})", phone_text)
             if m:
                 fields["phone"] = m.group(1)
+
+        # species が犬猫判定不能でも、模様(柄)が猫固有(三毛/サビ/キジ/トラ)なら
+        # 猫と確定する。長崎犬猫ネットは品種が「ミックス（雑種）」かつサイト名に
+        # 犬猫両方を含むため下のサイト名補正が効かず、その他化していた
+        # (2026-06-16, 全その他191件の最大要因=長崎98件のうち25件を救済)。
+        species = fields.get("species", "")
+        if not any(kw in species for kw in ("犬", "猫", "いぬ", "ねこ", "イヌ", "ネコ")):
+            pattern = extras.get("_pattern", "")
+            if any(p in pattern for p in self._CAT_ONLY_PATTERNS):
+                fields["species"] = "猫"
 
         # species が「ミックス（雑種）」など犬猫判定不能でもサイト名で補正できる場合のみ。
         # サイト名に「犬」「猫」が片方だけ含まれる場合に限定（両方含まれるサイト名
