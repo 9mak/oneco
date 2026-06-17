@@ -24,12 +24,14 @@ const PAGE_SIZE = 24;
 export default async function ArchivePage() {
   let items: ArchivedAnimalPublic[] = [];
   let totalCount = 0;
+  let fetchFailed = false;
   try {
     const data = await fetchArchivedAnimals({ limit: PAGE_SIZE, offset: 0 });
     items = data.items;
     totalCount = data.meta.total_count;
   } catch (error) {
     console.error('Failed to fetch archived animals:', error);
+    fetchFailed = true;
   }
 
   return (
@@ -48,12 +50,17 @@ export default async function ArchivePage() {
         </p>
         {totalCount > 0 && (
           <p className="mt-4 text-sm text-[var(--color-accent-700)] font-medium">
-            これまでに {totalCount} 件の出会いが生まれました
+            これまでに {totalCount.toLocaleString('ja-JP')} 件の出会いが生まれました
           </p>
         )}
       </section>
 
-      {items.length === 0 ? (
+      {fetchFailed ? (
+        <EmptyState
+          message="現在情報を取得できません"
+          suggestion="一時的な障害が発生している可能性があります。少し時間をおいて再度お試しください。"
+        />
+      ) : items.length === 0 ? (
         <EmptyState
           message="まだ卒業した子の記録はありません"
           suggestion="譲渡・返還が成立した動物は、一定期間経過後にこちらへ記録されます。"

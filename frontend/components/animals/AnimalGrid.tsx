@@ -63,6 +63,17 @@ export function AnimalGrid({
 
   return (
     <>
+      <p
+        className="text-sm text-[var(--color-text-secondary)]"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <span className="font-medium text-[var(--color-text-primary)]">
+          {totalCount.toLocaleString('ja-JP')}
+        </span>
+        件の動物
+      </p>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {initialItems.map((animal) => (
           <AnimalCard key={animal.id} animal={animal} />
