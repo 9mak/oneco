@@ -81,6 +81,8 @@ class TestMieDakcAdapter:
         assert "茶" in raw.color
         # 体格 (「体格：中」 → "中")
         assert raw.size == "中"
+        # 犬種 (「種類: 雑種」 → breed)
+        assert raw.breed == "雑種"
         # 収容日 (令和表記のまま raw に保持される。正規化は normalizer 側で実施)
         assert "令和8年5月7日" in raw.shelter_date
         # 電話番号 (ハイフン付き形式に正規化)
@@ -148,6 +150,10 @@ class TestMieDakcAdapter:
         # AnimalData の収容日は date オブジェクト (令和8年5月7日 → 2026-05-07)
         assert normalized.shelter_date == date(2026, 5, 7)
         assert normalized.species == "犬"
+        # breed(犬種)が normalize() 戻り値の AnimalData まで保持される
+        # (CLAUDE.md Rule #1: raw.breed だけでなく normalize() 戻り値で検証する。
+        #  以前は extract_animal_details が breed を RawAnimalData に渡さず欠損していた)
+        assert normalized.breed == "雑種"
         # 電話番号は数字 10 桁が抽出されている (具体的な区切りは normalizer 任せ。
         # 三重県 059 局番に対して normalizer は 05-XXXX-XXXX に分割するが、
         # 桁数 (10 桁) が保持されていることだけ確認する)
