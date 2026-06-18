@@ -227,6 +227,47 @@ class TestEmptyFeed:
         assert "<item>" not in response.text  # アイテムは0件
 
 
+class TestStatusFilterRegression:
+    """回帰防止: status フィルタ指定時に repository へ AnimalStatus enum を渡すこと
+
+    以前は FeedQueryParams.status (str) をそのまま repository.list_animals に
+    渡しており、repository 内の ``status.value`` 参照で AttributeError → 500 と
+    なっていた。AsyncMock は ``.value`` 経路を実行しないため検出できなかった。
+    実 repository の挙動を side_effect で再現してエンドツーエンドで守る。
+    """
+
+    @staticmethod
+    def _fake_list_animals_factory(sample_animals):
+        def fake_list_animals(*, status=None, **kwargs):
+            # 実 AnimalRepository.list_animals と同様に status.value を参照する。
+            # str が渡ると AttributeError になり 500 を誘発する。
+            if status is not None:
+                _ = status.value
+            return (sample_animals, len(sample_animals))
+
+        return fake_list_animals
+
+    def test_rss_status_filter_passes_enum(self, client, mock_animal_repo, sample_animals):
+        mock_animal_repo.list_animals.side_effect = self._fake_list_animals_factory(sample_animals)
+
+        response = client.get("/feeds/rss?status=sheltered")
+
+        assert response.status_code == 200
+        passed = mock_animal_repo.list_animals.call_args.kwargs["status"]
+        assert isinstance(passed, AnimalStatus)
+        assert passed == AnimalStatus.SHELTERED
+
+    def test_atom_status_filter_passes_enum(self, client, mock_animal_repo, sample_animals):
+        mock_animal_repo.list_animals.side_effect = self._fake_list_animals_factory(sample_animals)
+
+        response = client.get("/feeds/atom?status=sheltered")
+
+        assert response.status_code == 200
+        passed = mock_animal_repo.list_animals.call_args.kwargs["status"]
+        assert isinstance(passed, AnimalStatus)
+        assert passed == AnimalStatus.SHELTERED
+
+
 class TestArchiveFeedQueryParams:
     """Task 7.1: ArchiveFeedQueryParams スキーマテスト"""
 

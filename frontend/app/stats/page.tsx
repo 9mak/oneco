@@ -11,7 +11,7 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: 'oneco の実績 - 全国保護動物プラットフォーム',
   description:
-    'oneco は全国の動物愛護センター情報を横断検索できるプラットフォームです。累計掲載動物数、対応自治体数、対応サイト数を公開しています。',
+    'oneco は全国の動物愛護センター情報を横断検索できるプラットフォームです。累計掲載動物数、対応都道府県数、対応サイト数を公開しています。',
   // 明示しないと layout.tsx の既定 canonical '/' を継承し、Google に
   // 「ホームの重複」と申告されインデックスから外れる (2026-06-16 発覚)。
   alternates: { canonical: '/stats' },
@@ -67,7 +67,7 @@ export default async function PublicStatsPage() {
             unit="頭"
           />
           <StatCard
-            label="対応自治体"
+            label="対応都道府県"
             value={stats.municipality_count.toLocaleString('ja-JP')}
             unit="都道府県"
           />

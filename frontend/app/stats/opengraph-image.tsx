@@ -76,7 +76,7 @@ export default async function StatsOpengraphImage() {
           <StatBlock
             value={municipalities.toLocaleString('ja-JP')}
             unit="都道府県"
-            label="対応自治体"
+            label="対応都道府県"
           />
           <StatBlock
             value={siteCount.toLocaleString('ja-JP')}
