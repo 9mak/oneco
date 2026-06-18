@@ -17,6 +17,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response
 from fastapi.responses import Response as FastAPIResponse
 
+from src.data_collector.domain.models import AnimalStatus
 from src.data_collector.infrastructure.database.archive_repository import ArchiveRepository
 from src.data_collector.infrastructure.database.repository import AnimalRepository
 from src.syndication_service.middleware.rate_limiter import DEFAULT_RATE_LIMIT
@@ -153,12 +154,17 @@ def create_syndication_router(
         # キャッシュミス: データ取得
         _metrics_collector.record_cache_miss()
 
+        # status は InputValidator 通過済みなので enum 変換は必ず成功する。
+        # repository.list_animals が status.value を参照するため、str のまま
+        # 渡すと AttributeError → 500 になる（公開 /animals ルートと同じ変換）。
+        status_enum = AnimalStatus(params.status) if params.status else None
+
         # AnimalRepository からデータ取得
         animals, _total = await repository.list_animals(
             species=params.species,
             category=params.category,
             location=params.location,
-            status=params.status,
+            status=status_enum,
             sex=params.sex,
             limit=params.limit,
         )
@@ -241,12 +247,17 @@ def create_syndication_router(
         # キャッシュミス: データ取得
         _metrics_collector.record_cache_miss()
 
+        # status は InputValidator 通過済みなので enum 変換は必ず成功する。
+        # repository.list_animals が status.value を参照するため、str のまま
+        # 渡すと AttributeError → 500 になる（公開 /animals ルートと同じ変換）。
+        status_enum = AnimalStatus(params.status) if params.status else None
+
         # AnimalRepository からデータ取得
         animals, _total = await repository.list_animals(
             species=params.species,
             category=params.category,
             location=params.location,
-            status=params.status,
+            status=status_enum,
             sex=params.sex,
             limit=params.limit,
         )
