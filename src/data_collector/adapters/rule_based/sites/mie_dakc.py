@@ -162,9 +162,15 @@ class MieDakcAdapter(SinglePageTableAdapter):
         # 画像はテーブル内の <img> から取得 (絶対 URL 化)
         image_urls = self._extract_row_images(table, virtual_url)
 
+        # 「種類」セルは犬種名 (例「雑種」「柴犬」) なので breed に渡す。
+        # extract_animal_details を override しており基底の breed 配線を経由しない
+        # ため、ここで明示的に渡さないとサイレントドロップする (PR #171-180 同型)。
+        breed = fields.get("種類", "")
+
         try:
             return RawAnimalData(
                 species=species,
+                breed=breed,
                 sex=sex,
                 age="",
                 color=color,

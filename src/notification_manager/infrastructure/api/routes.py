@@ -10,6 +10,7 @@ Requirements: 2.1-2.5, 6.6, 7.2-7.4
 """
 
 import logging
+import secrets
 from collections.abc import Callable
 from datetime import UTC, datetime
 
@@ -89,7 +90,10 @@ def create_notification_router(deps: NotificationWebhookDeps) -> APIRouter:
             logger.warning("Webhook request without API key")
             raise HTTPException(status_code=401, detail="API key required")
 
-        if x_api_key != deps._api_key:
+        # 定数時間比較でタイミング攻撃を防ぐ（data_collector 側の内部トークン
+        # 認証と同じ secrets.compare_digest に統一）。x_api_key は上の not ガードで
+        # 非空、deps._api_key が None の場合は "" にして型を揃える。
+        if not secrets.compare_digest(x_api_key, deps._api_key or ""):
             logger.warning("Webhook request with invalid API key")
             raise HTTPException(status_code=401, detail="Invalid API key")
 
