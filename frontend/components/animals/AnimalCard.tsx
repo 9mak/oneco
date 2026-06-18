@@ -52,6 +52,15 @@ export function AnimalCard({ animal }: AnimalCardProps) {
         <div className="absolute top-2 left-2">
           <FavoriteButton animalId={animal.id} size="sm" stopPropagation />
         </div>
+        {/* 卒業済み(譲渡/返還)の場合は明示する。トップ/都道府県一覧は sheltered で
+            絞り込むため、これが出るのは主にお気に入り一覧 (status フィルタ非経由)。 */}
+        {(animal.status === 'adopted' || animal.status === 'returned') && (
+          <div className="absolute bottom-2 left-2">
+            <span className="inline-block rounded-full bg-[var(--color-primary-700)] px-2.5 py-1 text-xs font-semibold text-white shadow-md">
+              {animal.status === 'adopted' ? '🏡 里親決定' : '🏡 飼い主のもとへ'}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="p-4 space-y-2">
