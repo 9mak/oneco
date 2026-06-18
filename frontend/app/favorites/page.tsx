@@ -14,15 +14,21 @@ export default function FavoritesPage() {
   const [animals, setAnimals] = useState<AnimalPublic[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notFoundCount, setNotFoundCount] = useState(0);
+  const [transientErrorCount, setTransientErrorCount] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     async function fetchAll() {
       setLoading(true);
       setError(null);
+      setNotFoundCount(0);
+      setTransientErrorCount(0);
       try {
-        // 404 (= 譲渡済み/削除で元データ消失) と、fetch 自体の失敗 (= サーバー
-        // 到達不可) を区別する。前者は「譲渡済み等」の注記、後者はエラー表示。
+        // 取得結果を3分類する:
+        // - 404 (= 譲渡済み/削除で元データ消失) → 「譲渡済み等」の注記
+        // - その他の非2xx (5xx 等) / fetch 自体の失敗 (= サーバー到達不可)
+        //   → 一時障害。譲渡済みと混同せず「読み込めませんでした」と案内する。
         const results = await Promise.all(
           favorites.map(async (id) => {
             try {
@@ -30,7 +36,10 @@ export default function FavoritesPage() {
               if (res.ok) {
                 return { kind: 'ok' as const, value: (await res.json()) as AnimalPublic };
               }
-              return { kind: 'notfound' as const };
+              if (res.status === 404) {
+                return { kind: 'notfound' as const };
+              }
+              return { kind: 'error' as const };
             } catch {
               return { kind: 'error' as const };
             }
@@ -40,11 +49,14 @@ export default function FavoritesPage() {
         const ok = results
           .filter((r): r is { kind: 'ok'; value: AnimalPublic } => r.kind === 'ok')
           .map((r) => r.value);
-        const networkErrors = results.filter((r) => r.kind === 'error').length;
+        const notFound = results.filter((r) => r.kind === 'notfound').length;
+        const transientErrors = results.filter((r) => r.kind === 'error').length;
         setAnimals(ok);
-        // 1 件も取得できず、原因がネットワーク/サーバー障害なら明示エラー。
+        setNotFoundCount(notFound);
+        setTransientErrorCount(transientErrors);
+        // 1 件も取得できず、原因が一時障害なら明示エラー全面表示。
         // (全件 404 = 全部譲渡済みのケースは後段の注記で案内する)
-        if (ok.length === 0 && networkErrors > 0) {
+        if (ok.length === 0 && transientErrors > 0) {
           setError('一時的に読み込めませんでした');
         }
       } catch (e) {
@@ -94,9 +106,14 @@ export default function FavoritesPage() {
           {animals.map((a) => (
             <AnimalCard key={a.id} animal={a} />
           ))}
-          {animals.length < favorites.length && (
+          {notFoundCount > 0 && (
             <p className="col-span-full text-sm text-[var(--color-text-secondary)]">
-              ※ {favorites.length - animals.length}件は元データが見つかりませんでした（譲渡済み等）
+              ※ {notFoundCount}件は元データが見つかりませんでした（譲渡済み等）
+            </p>
+          )}
+          {transientErrorCount > 0 && (
+            <p className="col-span-full text-sm text-amber-700">
+              ※ {transientErrorCount}件は一時的に読み込めませんでした。時間をおいて再読み込みしてください。
             </p>
           )}
         </div>
