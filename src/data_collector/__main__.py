@@ -661,6 +661,13 @@ def main():
                 # 呼ぶ仕様のため、両ファイルは merge モードで累積される。run の境界を
                 # クリアにするため、ここで一度だけ削除して fresh state からスタート。
                 # これを忘れると過去 run のデータが残り続ける。
+                #
+                # 注意: この reset() は cross-run の snapshot 再利用 (既知 source_url の
+                # LLM 抽出スキップ) も意図的に無効化している。load_animal_map() は
+                # reset 後に空 dict を返すため、再利用分岐は常に毎 run 再抽出になる
+                # (rule-based 100% 運用では影響は小さい)。**reset() を消して再利用を
+                # 「最適化」しないこと**: ヒットした個体が source_url 消滅まで再抽出
+                # されず古い情報で凍結する方が、僅かな Groq コストより有害。
                 snapshot_store.reset()
                 output_writer.reset()
                 logger.info("snapshot / output をリセット (fresh run 開始)")

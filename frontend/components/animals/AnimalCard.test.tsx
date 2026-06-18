@@ -126,4 +126,19 @@ describe('AnimalCard', () => {
     render(<AnimalCard animal={lostAnimal} />);
     expect(screen.getByText('迷子')).toBeInTheDocument();
   });
+
+  it('譲渡済み(adopted)の動物には「里親決定」バッジが表示される', () => {
+    render(<AnimalCard animal={{ ...mockAnimal, status: 'adopted' }} />);
+    expect(screen.getByText(/里親決定/)).toBeInTheDocument();
+  });
+
+  it('返還済み(returned)の動物には「飼い主のもとへ」バッジが表示される', () => {
+    render(<AnimalCard animal={{ ...mockAnimal, status: 'returned' }} />);
+    expect(screen.getByText(/飼い主のもとへ/)).toBeInTheDocument();
+  });
+
+  it('収容中(sheltered)の動物には卒業バッジが表示されない', () => {
+    render(<AnimalCard animal={{ ...mockAnimal, status: 'sheltered' }} />);
+    expect(screen.queryByText(/里親決定|飼い主のもとへ/)).not.toBeInTheDocument();
+  });
 });
