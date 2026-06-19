@@ -1,12 +1,12 @@
 おおいた動物愛護センター（譲渡犬）:
-  consecutive_failures: 1
+  consecutive_failures: 0
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''oita-aigo.com'', port=443): Max
     retries exceeded with url: /information_doglist/anytimedog/ (Caused by ConnectTimeoutError(<HTTPSConnection(host=''oita-aigo.com'',
     port=443) at 0x7f2ab40a7a90>, ''Connection to oita-aigo.com timed out. (connect
     timeout=30)''))'
   last_failed_at: '2026-06-18T18:09:34+00:00'
 おおいた動物愛護センター（迷子情報メイン）:
-  consecutive_failures: 1
+  consecutive_failures: 0
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''oita-aigo.com'', port=443): Max
     retries exceeded with url: /lostchild/ (Caused by ConnectTimeoutError(<HTTPSConnection(host=''oita-aigo.com'',
     port=443) at 0x7f2ab3e69290>, ''Connection to oita-aigo.com timed out. (connect
