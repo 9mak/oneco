@@ -131,6 +131,8 @@ class TestPrefSagaAdapter:
         assert isinstance(raw, RawAnimalData)
         assert raw.location == "嬉野市塩田町"
         assert raw.species == "犬"  # h3 から推定
+        # 「種類：雑種」は species(table/heading で犬確定)ではなく犬種=breed として保持
+        assert raw.breed == "雑種"
         assert raw.sex == "オス"
         assert raw.color == "茶白"
         assert raw.size == "中型"
@@ -170,6 +172,9 @@ class TestPrefSagaAdapter:
             animal = adapter.normalize(raw)
         assert raw.species == "犬"
         assert animal.species == "犬"
+        # 「種類：ビーグル」は species ではなく犬種=breed として保持される
+        assert raw.breed == "ビーグル"
+        assert animal.breed == "ビーグル"
 
     def test_all_six_sites_registered(self):
         """6 つの佐賀県サイト名すべてが Registry に登録されている"""

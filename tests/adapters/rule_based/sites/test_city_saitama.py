@@ -184,6 +184,8 @@ class TestCitySaitamaAdapter:
         assert isinstance(raw, RawAnimalData)
         # サイト名から犬と推定される
         assert raw.species == "犬"
+        # 管理番号(R07-001)が保持される(以前は空判定で解析するだけで破棄していた)
+        assert raw.management_number == "R07-001"
         assert raw.sex == "オス"
         assert raw.color == "茶"
         assert raw.size == "中"

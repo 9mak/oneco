@@ -147,6 +147,7 @@ class PrefNiigataAdapter(SinglePageTableAdapter):
         management_number = ""
         shelter_date = ""
         location = ""
+        breed = ""
         sex = ""
         color = ""
         size = ""
@@ -184,7 +185,8 @@ class PrefNiigataAdapter(SinglePageTableAdapter):
             # (4) 属性段落: 「、」区切りで種類/性別/毛色/補足が並ぶ
             #     例: "MIX、オス(未去勢)、白茶、しま模様の尻尾、体重3.6Kg、装着物なし"
             if not sex and "、" in text and self._looks_like_attribute_line(text):
-                sex_v, color_v, size_v, age_v = self._parse_attribute_line(text)
+                breed_v, sex_v, color_v, size_v, age_v = self._parse_attribute_line(text)
+                breed = breed_v
                 sex = sex_v
                 color = color_v
                 size = size_v
@@ -203,6 +205,8 @@ class PrefNiigataAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                # 属性行先頭の品種(MIX/雑種等)は犬種=breed。抽出していたが未伝搬で欠損していた。
+                breed=breed,
                 # 管理番号(例 26長MC007)は local var に抽出済みだが未伝搬で欠損していた。
                 management_number=management_number,
                 sex=sex,
@@ -277,15 +281,16 @@ class PrefNiigataAdapter(SinglePageTableAdapter):
         return False
 
     @staticmethod
-    def _parse_attribute_line(text: str) -> tuple[str, str, str, str]:
-        """属性行から (sex, color, size, age) を抽出する
+    def _parse_attribute_line(text: str) -> tuple[str, str, str, str, str]:
+        """属性行から (breed, sex, color, size, age) を抽出する
 
         例: "MIX、オス(未去勢)、白茶、しま模様の尻尾、体重3.6Kg、装着物なし"
-            -> sex="オス(未去勢)", color="白茶", size="3.6Kg", age=""
-        色は性別の次のトークンを採用する単純ルール。要素数が足りない
-        場合は空文字で埋める。
+            -> breed="MIX", sex="オス(未去勢)", color="白茶", size="3.6Kg", age=""
+        breed は性別トークンより前の先頭トークン(品種: MIX/雑種等)を採用する。
+        色は性別の次のトークンを採用する単純ルール。要素数が足りない場合は空文字で埋める。
         """
         parts = [s.strip() for s in text.split("、") if s.strip()]
+        breed = ""
         sex = ""
         color = ""
         size = ""
@@ -296,6 +301,9 @@ class PrefNiigataAdapter(SinglePageTableAdapter):
                 sex = part
                 sex_idx = i
                 break
+        # 性別より前の先頭トークンが品種(MIX/雑種/品種名)。性別が先頭(sex_idx==0)なら品種無し。
+        if sex_idx > 0:
+            breed = parts[0]
         if sex_idx >= 0 and sex_idx + 1 < len(parts):
             color = parts[sex_idx + 1]
         # 体重表記から size 候補を取り出す (例: "体重3.6Kg")
@@ -304,7 +312,7 @@ class PrefNiigataAdapter(SinglePageTableAdapter):
             if m:
                 size = f"{m.group(1)}Kg"
                 break
-        return sex, color, size, age
+        return breed, sex, color, size, age
 
     def _extract_footer_phone(self) -> str:
         """フッタの "Tel：0258-21-5501" から電話番号を抽出"""

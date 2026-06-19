@@ -143,10 +143,15 @@ class CitySaitamaAdapter(SinglePageTableAdapter):
         # 動物種別は HTML の「種類」(柴犬/雑種等) ではなくサイト名から推定する
         species = self._infer_species_from_site_name(self.site_config.name)
 
+        # 管理番号 (R07-XXX) は _is_empty_template の空判定で解析されるだけで
+        # 従来は破棄されていた。個体識別フィールドとして card から抽出して伝搬する。
+        management_number = self._extract_management_number(card)
+
         try:
             return RawAnimalData(
                 species=species,
                 breed=fields.get("species", ""),
+                management_number=management_number,
                 sex=fields.get("sex", ""),
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),
@@ -162,6 +167,15 @@ class CitySaitamaAdapter(SinglePageTableAdapter):
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
+
+    @staticmethod
+    def _extract_management_number(div: Tag) -> str:
+        """カードの `<p>管理番号 R07-XXX</p>` から管理番号値 (R07-XXX) を抽出する。"""
+        for p in div.find_all("p"):
+            text = p.get_text(strip=True)
+            if "管理番号" in text:
+                return text.partition("管理番号")[2].strip()
+        return ""
 
     @staticmethod
     def _is_animal_card(div: Tag) -> bool:
