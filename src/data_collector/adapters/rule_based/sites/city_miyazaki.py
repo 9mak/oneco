@@ -79,16 +79,18 @@ class CityMiyazakiAdapter(SinglePageTableAdapter):
         # 次の h3 までに現れた最初の非空 <p> のテキストを使う。
         fields: dict[str, str] = {}
         species = ""
+        breed = ""
         for h3 in article.find_all("h3"):
             label = h3.get_text(strip=True)
             value = self._collect_value_after(h3)
             if not value:
                 continue
             if label in ("犬の種類", "猫の種類"):
-                # 種別はページ本文の見出しから直接判定
+                # 種別はページ本文の見出しから直接判定。
                 species = "犬" if label.startswith("犬") else "猫"
-                # 種類詳細 (柴系雑種など) は現状 RawAnimalData に対応フィールドが
-                # ないため species 推定にのみ利用する。
+                # 種類詳細 (柴系雑種など) は犬種=breed として保持する。
+                # 以前は RawAnimalData に未伝搬で欠損していた (mie_dakc 同型)。
+                breed = value
                 continue
             field = self._LABEL_TO_FIELD.get(label)
             if field:
@@ -104,6 +106,7 @@ class CityMiyazakiAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                breed=breed,
                 sex=fields.get("sex", ""),
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),

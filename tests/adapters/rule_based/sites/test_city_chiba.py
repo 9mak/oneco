@@ -138,6 +138,9 @@ class TestCityChibaAdapter:
             raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
         assert raw.location == "美浜区真砂"
         assert "令和８年４月８日" == raw.shelter_date
+        # 「種類：雑種」は species ではなく犬種=breed として保持(サイレントドロップ回帰防止)
+        assert raw.breed == "雑種"
+        assert adapter.normalize(raw).breed == "雑種"
 
     def test_extract_drops_non_standard_size_value(self):
         """size に標準値以外 (「生後1か月前後」) が入っていれば空文字にする

@@ -149,6 +149,9 @@ class CityYokohamaAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                # 「種類」列は species 本体ではなく犬種名(具体値)=breed (上のコメント参照)。
+                # fields["species"] に抽出済みだが species は site 名から導出され未伝搬で欠損。
+                breed=fields.get("species", ""),
                 sex=fields.get("sex", ""),
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),

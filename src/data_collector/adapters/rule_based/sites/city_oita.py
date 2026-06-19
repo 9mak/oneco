@@ -106,6 +106,9 @@ class CityOitaAdapter(RuleBasedAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                # 「種類: {犬種}」は species 本体ではなく犬種=breed。block["species"]
+                # に抽出済みなのに未伝搬で欠損していた (mie_dakc 同型)。
+                breed=block.get("species", ""),
                 sex=block.get("sex", ""),
                 age=block.get("age", ""),
                 color=block.get("color", ""),

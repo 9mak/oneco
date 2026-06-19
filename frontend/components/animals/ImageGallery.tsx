@@ -76,7 +76,9 @@ export function ImageGallery({ imageUrls, alt, sourceUrl }: ImageGalleryProps) {
                 fill
                 sizes="(max-width: 768px) 50vw, 33vw"
                 className="object-cover"
-                loading="lazy"
+                // 先頭画像は詳細ページの LCP 要素なので priority で先読みし、
+                // 残りは lazy のまま（priority と loading は排他）。
+                {...(index === 0 ? { priority: true } : { loading: 'lazy' as const })}
                 unoptimized={isPlaceholder ? true : undefined}
                 onError={() => handleImageError(index)}
               />
