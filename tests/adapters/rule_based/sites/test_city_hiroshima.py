@@ -188,3 +188,26 @@ class TestCityHiroshimaAdapter:
 
         assert raw.sex == "メス"
         assert raw.phone == "082-243-6058"
+
+    def test_breed_extracted_from_species_label(self):
+        """dt「種類/犬種/猫種」(犬種名) が breed として保持される
+
+        以前は fields["species_breed"] に抽出済みなのに RawAnimalData に未伝搬で
+        欠損していた (mie_dakc 同型のサイレントドロップ)。種類に値があるケースで
+        normalize() 戻り値の AnimalData.breed まで保持されることを検証する。
+        """
+        html = (
+            '<html><body><div id="voice"><h2>整理番号：7</h2><dl>'
+            "<dt>収容月日</dt><dd>令和8年5月21日</dd>"
+            "<dt>種類</dt><dd>柴犬</dd>"
+            "<dt>性別</dt><dd>オス</dd>"
+            "<dt>拾得等の場所</dt><dd>中区</dd>"
+            "</dl></div></body></html>"
+        )
+        adapter = CityHiroshimaAdapter(_site_dog())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+
+        assert raw.breed == "柴犬"
+        assert adapter.normalize(raw).breed == "柴犬"

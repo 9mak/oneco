@@ -142,6 +142,9 @@ class CityHiroshimaAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                # dt「種類/犬種/猫種」は species 本体ではなく犬種=breed。抽出済み
+                # (fields["species_breed"]) なのに未伝搬で欠損していた (mie_dakc 同型)。
+                breed=fields.get("species_breed", ""),
                 sex=fields.get("sex", ""),
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),

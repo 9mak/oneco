@@ -136,6 +136,10 @@ class TestCityOitaAdapterExtract:
             raw = adapter.extract_animal_details(urls[0][0], "sheltered")
         assert isinstance(raw, RawAnimalData)
         assert raw.species == "犬"  # サイト名 (保護犬) から推定
+        # 「種類: 雑種」は species ではなく犬種=breed。以前は未伝搬で欠損していた。
+        # normalize() 戻り値でも保持されること。
+        assert raw.breed == "雑種"
+        assert adapter.normalize(raw).breed == "雑種"
         assert raw.sex == "オス"
         assert raw.age == "5～7歳"
         assert "茶" in raw.color
