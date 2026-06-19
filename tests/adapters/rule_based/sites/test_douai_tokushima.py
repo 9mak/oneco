@@ -307,6 +307,9 @@ class TestDouaiTokushimaDetailExtraction:
         assert_raw_animal(
             raw,
             species="犬",
+            # 「種類：雑種」は species 上書き(画像パスで犬確定)で失われていたが、
+            # 犬種=breed として保持される。
+            breed="雑種",
             sex="メス",
             # 「成犬」は adapter 層で「36ヶ月」(3歳相当) に変換される。
             # 元の語彙では normalizer (`_normalize_age`) が拾えず age_months
