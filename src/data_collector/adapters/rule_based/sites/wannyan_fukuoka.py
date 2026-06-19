@@ -143,21 +143,24 @@ class WannyanFukuokaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
                 url=detail_url,
             )
 
-        # species 補完: 空の場合は detail URL → list URL → site name の順で推定
-        if not fields.get("species"):
-            inferred = (
-                self._infer_species_from_url(detail_url)
-                or self._infer_species_from_url(self.site_config.list_url)
-                or self._infer_species_from_site_name(self.site_config.name)
-            )
-            if inferred:
-                fields["species"] = inferred
+        # 「種類/品種」(雑種/柴犬等)は species 本体ではなく犬種=breed。品種をそのまま
+        # species にすると normalizer で「雑種」が「その他」に誤分類され breed も欠落する
+        # (二重バグ・mie_dakc 同型)。species は detail URL → list URL → site 名から犬/猫を
+        # 推定し、品種は breed として保存する。推定不能なら従来どおり品種テキストを species に。
+        breed = fields.get("species", "")
+        species = (
+            self._infer_species_from_url(detail_url)
+            or self._infer_species_from_url(self.site_config.list_url)
+            or self._infer_species_from_site_name(self.site_config.name)
+            or breed
+        )
 
         image_urls = self._extract_images(soup, detail_url)
 
         try:
             return RawAnimalData(
-                species=fields.get("species", ""),
+                species=species,
+                breed=breed,
                 sex=fields.get("sex", ""),
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),
