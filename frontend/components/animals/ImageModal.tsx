@@ -83,7 +83,7 @@ export function ImageModal({ imageUrl, alt, onClose, sourceUrl }: ImageModalProp
   return createPortal(
     <div
       ref={dialogRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
       role="dialog"
       aria-modal="true"
       aria-label="画像拡大表示"
