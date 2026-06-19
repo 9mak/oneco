@@ -116,6 +116,9 @@ class TestPrefWakayamaAdapter:
         assert isinstance(raw, RawAnimalData)
         # ラベル → フィールドのマップが効いていることを確認
         assert raw.species == "柴犬"
+        # 「種類：柴犬」は犬種=breed としても保持される(以前は breed が永久に空だった)
+        assert raw.breed == "柴犬"
+        assert adapter.normalize(raw).breed == "柴犬"
         assert raw.sex == "オス"
         assert raw.color == "茶"
         assert raw.size == "中"

@@ -112,6 +112,9 @@ class CityKoshigayaKojinAdapter(RuleBasedAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                # 「種類/犬種/猫種」は species 本体(h2 セクションで犬/猫を確定)ではなく
+                # 犬種=breed。fields["species_detail"] に抽出済みだが未伝搬で欠損していた。
+                breed=fields.get("species_detail", ""),
                 sex=sex,
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),

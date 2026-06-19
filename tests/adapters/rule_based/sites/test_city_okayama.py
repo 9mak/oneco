@@ -180,9 +180,12 @@ class TestCityOkayamaAdapterDetailExtraction:
             raw = adapter.extract_animal_details(detail_url, category="sheltered")
 
         assert isinstance(raw, RawAnimalData)
+        # 「品種：雑種」は species ではなく breed。species はタイトル/サイト名から「犬」
+        # (以前は species="雑種"→normalizerで「その他」誤分類+breed欠落)
         assert_raw_animal(
             raw,
-            species="雑種",
+            species="犬",
+            breed="雑種",
             sex="オス",
             age="成犬",
             color="黒白",
@@ -210,9 +213,11 @@ class TestCityOkayamaAdapterDetailExtraction:
             raw = adapter.extract_animal_details(detail_url, category="sheltered")
 
         assert isinstance(raw, RawAnimalData)
+        # 「品種：三毛」は species ではなく breed。species はタイトル/サイト名から「猫」。
         assert_raw_animal(
             raw,
-            species="三毛",
+            species="猫",
+            breed="三毛",
             sex="メス",
             color="三毛",
             shelter_date="2026年5月10日",

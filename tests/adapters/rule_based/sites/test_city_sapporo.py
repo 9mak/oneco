@@ -73,7 +73,10 @@ def test_extract_returns_raw_data():
     with patch.object(adapter, "_http_get", return_value=SAMPLE_HTML):
         adapter.fetch_animal_list()
         raw = adapter.extract_animal_details(f"{adapter.site_config.list_url}#row=0")
-    assert raw.species == "雑種"
+    # 「種類：雑種」は species ではなく breed。species はサイト名(犬)から推定
+    # (以前は species="雑種"→normalizerで「その他」誤分類+breed欠落)
+    assert raw.species == "犬"
+    assert raw.breed == "雑種"
     assert raw.sex == "オス"
     assert raw.color == "茶"
     assert raw.location == "札幌市中央区"

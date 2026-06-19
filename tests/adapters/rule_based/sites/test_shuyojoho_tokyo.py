@@ -285,9 +285,11 @@ class TestShuyojohoTokyoAdapterDetailExtraction:
             raw = adapter.extract_animal_details(detail_url, category="sheltered")
 
         assert isinstance(raw, RawAnimalData)
+        # 「種類：雑種」は species 上書き(→猫)で失われていたが、犬種=breed として保持。
         assert_raw_animal(
             raw,
             species="猫",
+            breed="雑種",
             sex="オス(去勢含む)",
             color="黒/白",
             size="中",

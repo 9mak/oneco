@@ -68,6 +68,8 @@ class TestPrefNiigataAdapter:
         assert raw.species == "猫"
         # 管理番号(26長MC007)が保持される(サイレントドロップ回帰防止)
         assert raw.management_number == "26長MC007"
+        # 属性行先頭の品種「MIX」が breed として保持される(以前は破棄)
+        assert raw.breed == "MIX"
         # 場所抽出: "5月13日 長岡市乙吉地内で保護" -> "長岡市乙吉地内"
         assert "長岡市" in raw.location
         # 属性: "MIX、オス(未去勢)、白茶、しま模様の尻尾、体重3.6Kg、装着物なし"

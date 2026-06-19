@@ -150,21 +150,24 @@ class CityTakamatsuKagawaAdapter(WordPressListAdapter):
             if footer is not None:
                 fields["phone"] = self._zenkaku_to_hankaku(footer.get_text(strip=True))
 
-        # species 補完: 抽出値が空の場合は URL クエリ → サイト名の順で推定
-        if not fields.get("species"):
-            inferred = (
-                self._infer_species_from_url(detail_url)
-                or self._infer_species_from_url(self.site_config.list_url)
-                or self._infer_species_from_site_name(self.site_config.name)
-            )
-            if inferred:
-                fields["species"] = inferred
+        # 「品種」(三毛猫/雑種等)は species 本体ではなく犬種=breed。品種をそのまま
+        # species にすると normalizer で「雑種」が「その他」に誤分類され breed も欠落
+        # する (二重バグ・mie_dakc 同型)。species は URL クエリ(animaltype) → list URL →
+        # サイト名から犬/猫を推定し、品種は breed として保存する。推定不能なら品種を species に。
+        breed = fields.get("species", "")
+        species = (
+            self._infer_species_from_url(detail_url)
+            or self._infer_species_from_url(self.site_config.list_url)
+            or self._infer_species_from_site_name(self.site_config.name)
+            or breed
+        )
 
         image_urls = self._extract_images(soup, detail_url)
 
         try:
             return RawAnimalData(
-                species=fields.get("species", ""),
+                species=species,
+                breed=breed,
                 sex=fields.get("sex", ""),
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),
