@@ -67,15 +67,19 @@ class CitySapporoAdapter(SinglePageTableAdapter):
                 url=virtual_url,
             )
         record = records[idx]
-        species = record.get("種類", "")
-        if not species:
-            species = (
-                "犬"
-                if "犬" in self.site_config.name
-                else ("猫" if "猫" in self.site_config.name else "")
-            )
+        # 「種類」(柴犬/雑種等)は species 本体ではなく犬種=breed。品種をそのまま
+        # species にすると normalizer で「雑種」が「その他」に誤分類され breed も
+        # 欠落する (二重バグ・mie_dakc 同型)。species はサイト名から犬/猫を推定し、
+        # 品種は breed として保存する。サイト名で判別できない場合のみ品種を species に。
+        breed = record.get("種類", "")
+        species = (
+            "犬"
+            if "犬" in self.site_config.name
+            else ("猫" if "猫" in self.site_config.name else breed)
+        )
         return RawAnimalData(
             species=species,
+            breed=breed,
             sex=record.get("性別", ""),
             age=record.get("年齢", ""),
             color=record.get("毛色", ""),
