@@ -185,6 +185,9 @@ class CityUtsunomiyaAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                # 「種類」(ダックス系/雑種等)は species 本体ではなく犬種=breed (上のコメント参照)。
+                # fields["species_local"] に抽出済みだが species は h2 から導出され未伝搬で欠損。
+                breed=fields.get("species_local", ""),
                 sex=fields.get("sex", ""),
                 age="",
                 color=fields.get("color", ""),

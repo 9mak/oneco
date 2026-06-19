@@ -110,6 +110,9 @@ class TestCityKashiwaAdapter:
         assert isinstance(raw, RawAnimalData)
         # 直前の <h3>猫</h3> から推定
         assert raw.species == "猫"
+        # 「種類」(雑種/三毛猫等)は species ではなく品種=breed として保持(回帰防止)
+        assert raw.breed
+        assert adapter.normalize(raw).breed
         assert raw.sex == "メス"
         assert "茶" in raw.color
         assert "豊四季台" in raw.location

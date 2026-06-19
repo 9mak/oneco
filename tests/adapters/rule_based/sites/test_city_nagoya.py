@@ -159,6 +159,10 @@ class TestCityNagoyaAdapter:
         assert isinstance(raw, RawAnimalData)
         # サイト名から犬と推定される
         assert raw.species == "犬"
+        # 「管理番号」(D-001) のサイレントドロップ回帰防止。以前は _id にマップされ
+        # _build_column_map で除外=破棄されていた。normalize() 戻り値でも保持。
+        assert raw.management_number == "D-001"
+        assert adapter.normalize(raw).management_number == "D-001"
         assert raw.sex == "オス"
         assert raw.color == "茶"
         assert raw.size == "中"

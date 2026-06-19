@@ -82,9 +82,16 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <OrganizationSchema siteUrl={SITE_URL} siteName={SITE_NAME} />
+        {/* スキップリンク (WCAG 2.4.1 Bypass Blocks): フォーカス時のみ可視化 */}
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-[var(--color-primary-700)] focus:shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)]"
+        >
+          本文へ移動
+        </a>
         <div className="flex flex-col min-h-screen">
           <Header />
-          <main className="flex-1">
+          <main id="main" className="flex-1">
             {children}
           </main>
           <Footer />

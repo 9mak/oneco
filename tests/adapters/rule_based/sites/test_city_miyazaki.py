@@ -63,6 +63,10 @@ class TestCityMiyazakiAdapter:
         assert isinstance(raw, RawAnimalData)
         # ページ本文 "犬の種類" 見出しから犬と判定
         assert raw.species == "犬"
+        # 「犬の種類」の詳細(柴系雑種)は犬種=breed として保持される。
+        # 以前は RawAnimalData に未伝搬で欠損していた。normalize() 戻り値でも保持。
+        assert raw.breed == "柴系雑種"
+        assert adapter.normalize(raw).breed == "柴系雑種"
         # 各フィールドはフィクスチャ通り
         assert "宮崎市恒久" in raw.location
         assert raw.sex == "メス"

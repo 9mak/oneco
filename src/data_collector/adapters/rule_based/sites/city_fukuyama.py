@@ -146,6 +146,9 @@ class CityFukuyamaAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                # 「種類」列(柴/雑等)は species 本体ではなく犬種=breed (上のコメント参照)。
+                # fields["species"] に抽出済みだが未伝搬で欠損していた。
+                breed=fields.get("species", ""),
                 sex=fields.get("sex", ""),
                 age="",
                 color=fields.get("color", ""),

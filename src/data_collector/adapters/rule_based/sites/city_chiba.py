@@ -235,6 +235,9 @@ class CityChibaAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                # 「種類」列(柴犬/雑種等)は species 本体ではなく犬種=breed。fields["species"]
+                # に抽出済みだが species は site 名から別途導出され未使用で欠損していた。
+                breed=fields.get("species", ""),
                 sex=fields.get("sex", ""),
                 age="",
                 color=fields.get("color", ""),

@@ -270,6 +270,9 @@ class CityKashiwaAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                # 「種類」(雑種/柴犬/三毛猫等)は species 本体ではなく犬種=breed。
+                # fields["species"] に抽出済みだが未伝搬で欠損していた。
+                breed=fields.get("species", ""),
                 sex=fields.get("sex", ""),
                 age=age,
                 color=fields.get("color", ""),

@@ -133,8 +133,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
-      {/* 初訪問者向けの導入（フィルタ未適用時のみ） */}
-      {isPristine && <Hero />}
+      {/* 初訪問者向けの導入（フィルタ未適用時のみ）。Hero は h1 を含むため、
+          フィルタ適用時は見出し階層を保つため sr-only の h1 を常設する
+          (h1 欠落で見出しが h2 始まりになる a11y/SEO 問題の回避)。 */}
+      {isPristine ? (
+        <Hero />
+      ) : (
+        <h1 className="sr-only">保護犬・保護猫を探す</h1>
+      )}
 
       {/* 都道府県別マップ（未選択時）／選択中は文脈バー＋全国マップ復帰導線 */}
       {filters.prefecture ? (

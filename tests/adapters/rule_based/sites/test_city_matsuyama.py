@@ -126,6 +126,8 @@ class TestCityMatsuyamaAdapterFixture:
 
         assert isinstance(raw, RawAnimalData)
         assert raw.species == "犬"
+        # 収容番号(R7No.310)が management_number として保持される(回帰防止)
+        assert raw.management_number == "R7No.310"
         # 収容番号 (alt) と状態テキストが location に入る
         assert "R7No.310" in raw.location
         assert "新しい飼い主募集中" in raw.location

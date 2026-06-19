@@ -116,11 +116,14 @@ describe('ImageGallery', () => {
     expect(firstImageButton).toHaveClass('focus:ring-2');
   });
 
-  it('画像がlazyローディングで読み込まれる', () => {
+  it('先頭画像は priority・残りは lazy で読み込まれる', () => {
     render(<ImageGallery imageUrls={mockImageUrls} alt="犬" />);
 
     const images = screen.getAllByRole('img', { name: /犬の画像\d+/ });
-    images.forEach((image) => {
+    // 先頭(詳細ページの LCP 要素)は lazy ではない (priority で先読み)
+    expect(images[0]).not.toHaveAttribute('loading', 'lazy');
+    // 2枚目以降は lazy のまま
+    images.slice(1).forEach((image) => {
       expect(image).toHaveAttribute('loading', 'lazy');
     });
   });

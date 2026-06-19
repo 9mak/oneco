@@ -54,6 +54,8 @@ _LABEL_TO_FIELD: dict[str, str] = {
     "種類": "breed",
     "品種": "breed",
     "犬種": "breed",
+    "管理番号": "management_number",
+    "受付番号": "management_number",
     "性別": "sex",
     "年齢": "age",
     "推定年齢": "age",
@@ -241,6 +243,9 @@ class CityKawasakiAdapter(SinglePageTableAdapter):
                 species=species,
                 # 「種類/品種/犬種」は _set_field_by_label で breed として fields に格納される
                 breed=fields.get("breed", ""),
+                # 「管理番号」(例 R8-28) は縦型属性テーブルで抽出されるが、_LABEL_TO_FIELD
+                # 未登録で _set_field_by_label が破棄していた (個体識別のサイレントドロップ)。
+                management_number=fields.get("management_number", ""),
                 sex=fields.get("sex", ""),
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),

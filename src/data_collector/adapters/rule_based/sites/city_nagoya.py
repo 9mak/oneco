@@ -54,8 +54,8 @@ _LABEL_TO_FIELD: dict[str, str] = {
     "体格": "size",
     "大きさ": "size",
     "サイズ": "size",
-    "管理番号": "_id",
-    "番号": "_id",
+    "管理番号": "management_number",
+    "番号": "management_number",
 }
 
 
@@ -134,6 +134,9 @@ class CityNagoyaAdapter(SinglePageTableAdapter):
             return RawAnimalData(
                 species=species,
                 breed=fields.get("species", ""),
+                # 「管理番号/番号」列は従来 _id にマップされ _build_column_map で
+                # 除外=破棄されていた (個体識別のサイレントドロップ)。
+                management_number=fields.get("management_number", ""),
                 sex=fields.get("sex", ""),
                 age="",
                 color=fields.get("color", ""),
@@ -175,7 +178,7 @@ class CityNagoyaAdapter(SinglePageTableAdapter):
         for col_idx, cell in enumerate(cells):
             label = cell.get_text(separator="", strip=True)
             field = self._match_label_to_field(label)
-            if field and field != "_id":
+            if field:
                 col_map[col_idx] = field
         return col_map
 

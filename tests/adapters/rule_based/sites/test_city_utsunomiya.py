@@ -114,6 +114,9 @@ class TestCityUtsunomiyaAdapter:
         assert isinstance(raw, RawAnimalData)
         # `<h2>迷子犬…` から「犬」と推定される
         assert raw.species == "犬"
+        # 「種類」(ダックス系等)は species ではなく犬種=breed として保持(回帰防止)
+        assert raw.breed
+        assert adapter.normalize(raw).breed
         assert raw.sex == "メス"
         assert raw.color == "黒茶"
         assert raw.size == "小"

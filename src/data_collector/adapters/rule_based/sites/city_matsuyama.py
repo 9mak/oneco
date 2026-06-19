@@ -126,6 +126,9 @@ class CityMatsuyamaAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                # 収容番号(個体識別番号)は location に連結されるだけで management_number
+                # に未伝搬だった。個体識別フィールドとして明示的に渡す。
+                management_number=animal_id,
                 sex="",
                 age="",
                 color="",

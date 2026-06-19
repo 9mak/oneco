@@ -203,6 +203,8 @@ class PrefNiigataAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                # 管理番号(例 26長MC007)は local var に抽出済みだが未伝搬で欠損していた。
+                management_number=management_number,
                 sex=sex,
                 age=age,
                 color=color,
