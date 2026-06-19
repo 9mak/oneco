@@ -164,6 +164,10 @@ class ShuyojohoTokyoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
         try:
             return RawAnimalData(
                 species=fields.get("species", ""),
+                # 「種類」の原値(species_value)は犬/猫推定で上書きされる前に L152 で
+                # 退避済み。雑種/ミックス等が species 上書きで失われていたため、原値を
+                # 犬種=breed として保存する (上書き前の値を使う。fields["species"]ではない)。
+                breed=species_value,
                 sex=fields.get("sex", ""),
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),

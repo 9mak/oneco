@@ -200,6 +200,10 @@ class PrefWakayamaAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=fields.get("species", ""),
+                # 「種類」(柴犬/雑種等)は犬種=breed としても保存する。和歌山県は犬猫
+                # 合同サイトで per-animal の species 信号が種類セルのみのため species は
+                # 従来どおり(変更すると誤分類リスク)、breed のみ追加で回復する。
+                breed=fields.get("species", ""),
                 sex=fields.get("sex", ""),
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),

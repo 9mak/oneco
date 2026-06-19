@@ -50,6 +50,7 @@ class TestCityKoshigayaKojinAdapter:
             <h3>R8-001</h3>
               <p>発見場所：越谷市大沢４丁目付近</p>
               <p>発見時期：おおよそ２０２５年８月ごろ</p>
+              <p>種類：スコティッシュフォールド</p>
               <p>毛色：キジトラ</p>
               <p>特徴：ピンク色の首輪あり</p>
         </div>
@@ -63,6 +64,9 @@ class TestCityKoshigayaKojinAdapter:
         assert mock_get.call_count == 1, "HTML はキャッシュされる"
         assert len(urls) == 1
         assert raw.species == "猫"
+        # 「種類」は species(h2セクションで猫確定)ではなく猫種=breed として保持(回帰防止)
+        assert raw.breed == "スコティッシュフォールド"
+        assert adapter.normalize(raw).breed == "スコティッシュフォールド"
         assert "越谷市大沢" in raw.location
         assert "2025" in raw.shelter_date or "２０２５" in raw.shelter_date
         assert "キジトラ" in raw.color

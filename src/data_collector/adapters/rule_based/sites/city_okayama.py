@@ -141,26 +141,30 @@ class CityOkayamaAdapter(WordPressListAdapter):
                 url=detail_url,
             )
 
-        # species 補完: 空のときはページタイトル、サイト名の順で推定
-        if not fields.get("species"):
-            title_text = ""
-            title_el = soup.find("title")
-            if isinstance(title_el, Tag):
-                title_text = title_el.get_text(strip=True)
-            h1_el = soup.find("h1")
-            if isinstance(h1_el, Tag):
-                title_text = f"{title_text} {h1_el.get_text(strip=True)}"
-            inferred = self._infer_species_from_text(title_text)
-            if not inferred:
-                inferred = self._infer_species_from_text(self.site_config.name)
-            if inferred:
-                fields["species"] = inferred
+        # 「種類」(品種: 雑種/柴犬等)は species 本体ではなく犬種=breed。品種をそのまま
+        # species にすると normalizer で「雑種」が「その他」に誤分類され breed も欠落する
+        # (二重バグ・mie_dakc 同型)。species はタイトル/h1/site 名から犬/猫を推定し、
+        # 品種は breed として保存する。推定不能なら従来どおり品種テキストを species に残す。
+        breed = fields.get("species", "")
+        title_text = ""
+        title_el = soup.find("title")
+        if isinstance(title_el, Tag):
+            title_text = title_el.get_text(strip=True)
+        h1_el = soup.find("h1")
+        if isinstance(h1_el, Tag):
+            title_text = f"{title_text} {h1_el.get_text(strip=True)}"
+        species = (
+            self._infer_species_from_text(title_text)
+            or self._infer_species_from_text(self.site_config.name)
+            or breed
+        )
 
         image_urls = self._extract_images(soup, detail_url)
 
         try:
             return RawAnimalData(
-                species=fields.get("species", ""),
+                species=species,
+                breed=breed,
                 sex=fields.get("sex", ""),
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),

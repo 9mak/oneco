@@ -235,6 +235,10 @@ class PrefSagaAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                # 「種類」(ビーグル等)は犬種=breed。species は table/heading から犬/猫を
+                # 一次決定するため fields["species"](種類)は breed として保存する。
+                # 抽出済みなのに従来は species のフォールバックとしてしか使われず欠損していた。
+                breed=fields.get("species", ""),
                 sex=fields.get("sex", ""),
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),

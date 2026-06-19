@@ -291,6 +291,9 @@ class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=fields.get("species", ""),
+                # 収容中カードの「種類」(雑種)は species 上書き(画像パス/年齢で犬猫確定)で
+                # 失われていた。上書き前に退避した原値(species_val)を犬種=breed として保存。
+                breed=species_val,
                 sex=fields.get("sex", ""),
                 age=age,
                 color=color,
