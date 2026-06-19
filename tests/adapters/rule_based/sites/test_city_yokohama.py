@@ -136,6 +136,9 @@ class TestCityYokohamaAdapter:
         assert isinstance(raw, RawAnimalData)
         # サイト名から犬と推定される
         assert raw.species == "犬"
+        # 「種類」列は species ではなく犬種=breed として保持(サイレントドロップ回帰防止)
+        assert raw.breed
+        assert adapter.normalize(raw).breed
         assert raw.sex == "オス"
         assert raw.color == "茶"
         assert raw.size == "中"

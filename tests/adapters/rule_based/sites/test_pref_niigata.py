@@ -66,6 +66,8 @@ class TestPrefNiigataAdapter:
         assert isinstance(raw, RawAnimalData)
         # h3「猫」見出しから猫と判定される
         assert raw.species == "猫"
+        # 管理番号(26長MC007)が保持される(サイレントドロップ回帰防止)
+        assert raw.management_number == "26長MC007"
         # 場所抽出: "5月13日 長岡市乙吉地内で保護" -> "長岡市乙吉地内"
         assert "長岡市" in raw.location
         # 属性: "MIX、オス(未去勢)、白茶、しま模様の尻尾、体重3.6Kg、装着物なし"
