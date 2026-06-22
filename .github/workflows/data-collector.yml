@@ -10,6 +10,10 @@ on:
 
 permissions:
   contents: write
+  # 自己修復ループ Phase 1→2 橋渡し: __main__ が検知サイトを
+  # auto-fix-adapter.yml に workflow_dispatch する。GITHUB_TOKEN で
+  # 他 workflow を起動するには actions: write が必要。
+  actions: write
 
 jobs:
   collect:
@@ -53,6 +57,14 @@ jobs:
           # 1 サイトの処理が固まっても次のサイトへ進めるため、SIGALRM ベースの per-site timeout
           SITE_TIMEOUT_SEC: '120'
           SITE_TIMEOUT_JS_SEC: '180'
+          # 自己修復ループ Phase 1→2: 検知サイトを auto-fix-adapter ワーカーに渡す。
+          # kill switch 既定 false なので、明示的に true にしないと一切起動しない
+          # (初期は dry_run=true で安全段階リリース。安定確認後に false へ)。
+          # gh CLI が GitHub API を叩くために GH_TOKEN が必要。
+          ONECO_AUTO_FIX_ENABLED: ${{ vars.ONECO_AUTO_FIX_ENABLED || 'false' }}
+          ONECO_AUTO_FIX_DRY_RUN: ${{ vars.ONECO_AUTO_FIX_DRY_RUN || 'true' }}
+          ONECO_AUTO_FIX_MAX_SITES: ${{ vars.ONECO_AUTO_FIX_MAX_SITES || '3' }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python -m data_collector
 

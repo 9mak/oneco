@@ -35,8 +35,15 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["data_collector"]
 package-dir = {"" = "src"}
+
+# src/ 配下の全パッケージを自動 discovery。明示 `packages = ["data_collector"]`
+# だと `notification_manager` `syndication_service` (とそのサブパッケージ群) が
+# wheel build 時に欠落する。editable install (`pip install -e .`) は救われるが、
+# 本番 docker / PyPI 配布シナリオで import エラーになる。`find` で src/ 配下の
+# サブパッケージも含めて再帰検出する。
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [project.optional-dependencies]
 dev = [
