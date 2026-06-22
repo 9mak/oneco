@@ -485,7 +485,7 @@ def run_rule_based_sites(
 _RUN_FAIL_RATIO_CRITICAL = 0.2
 
 
-def _trigger_auto_fix(site_names: list[str], logger: logging.Logger) -> int:
+def _trigger_auto_fix(site_names: list[str], logger: logging.Logger) -> dict[str, Any]:
     """検知された壊れサイトについて auto-fix-adapter.yml ワークフローを起動する。
 
     Phase 1 の検知シグナル (broken_tracker.critical_sites /
@@ -504,22 +504,31 @@ def _trigger_auto_fix(site_names: list[str], logger: logging.Logger) -> int:
     - best-effort: gh CLI の失敗は logger.warning にとどめ、収集パイプラインは継続
 
     Returns:
-        実際に起動したワークフロー数。kill switch off や対象 0 件なら 0。
-    """
-    if os.environ.get("ONECO_AUTO_FIX_ENABLED", "false").lower() != "true":
-        if site_names:
-            logger.info(f"auto-fix-adapter: {len(site_names)} 件の検知サイトあり (kill switch off)")
-        return 0
-    if not site_names:
-        return 0
+        dict with keys:
+        - invoked: dispatch 成功した workflow run 数
+        - attempted: dispatch を試行した数 (失敗含む)
+        - candidates: 集約された候補数 (dedup 後)
+        - disabled: kill switch off だったか
 
-    # 順序保持 dedup
+        attempted > invoked は dispatch 失敗 = silent failure シグナル。
+        呼び出し側 (`_send_run_summary_alert`) で Discord 通知に折り込み、
+        自己修復が静かに動いていない状態を可視化する。
+    """
+    # 順序保持 dedup (kill switch off でも candidates 数のレポートに使う)
     seen: set[str] = set()
     uniq: list[str] = []
     for name in site_names:
         if name not in seen:
             seen.add(name)
             uniq.append(name)
+
+    if os.environ.get("ONECO_AUTO_FIX_ENABLED", "false").lower() != "true":
+        if uniq:
+            logger.info(f"auto-fix-adapter: {len(uniq)} 件の検知サイトあり (kill switch off)")
+        return {"invoked": 0, "attempted": 0, "candidates": len(uniq), "disabled": True}
+
+    if not uniq:
+        return {"invoked": 0, "attempted": 0, "candidates": 0, "disabled": False}
 
     max_sites = int(os.environ.get("ONECO_AUTO_FIX_MAX_SITES", "3"))
     targets = uniq[:max_sites]
@@ -532,6 +541,7 @@ def _trigger_auto_fix(site_names: list[str], logger: logging.Logger) -> int:
         )
 
     invoked = 0
+    attempted = 0
     for site_name in targets:
         cmd = [
             "gh",
@@ -543,6 +553,7 @@ def _trigger_auto_fix(site_names: list[str], logger: logging.Logger) -> int:
             "-f",
             f"dry_run={'true' if dry_run else 'false'}",
         ]
+        attempted += 1
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, check=False)
             if result.returncode == 0:
@@ -558,7 +569,12 @@ def _trigger_auto_fix(site_names: list[str], logger: logging.Logger) -> int:
         except Exception as e:
             # best-effort: 想定外でも収集パイプラインは止めない
             logger.warning(f"auto-fix-adapter: 想定外エラー ({e})")
-    return invoked
+    return {
+        "invoked": invoked,
+        "attempted": attempted,
+        "candidates": len(uniq),
+        "disabled": False,
+    }
 
 
 def _send_run_summary_alert(
@@ -572,6 +588,7 @@ def _send_run_summary_alert(
     logger: logging.Logger,
     field_drifts: list[FieldDrift] | None = None,
     zero_count_regressions: list[ZeroCountRegression] | None = None,
+    auto_fix_result: dict[str, Any] | None = None,
 ) -> None:
     """1 回の run 終了時に Slack / Discord へサマリアラートを送る。
 
@@ -580,7 +597,8 @@ def _send_run_summary_alert(
       - critical_sites (consec>=threshold) > 0
         OR total_failed > 0
         OR field_drifts (フィールド欠損率急増) > 0
-        OR zero_count_regressions (過去≥1件→今0件継続) > 0 → WARNING
+        OR zero_count_regressions (過去≥1件→今0件継続) > 0
+        OR auto_fix_result の dispatch 失敗 (attempted > invoked) → WARNING
       - 何も無ければ通知しない
 
     webhook 未設定時は NotificationClient が自動的に no-op になる。
@@ -593,6 +611,10 @@ def _send_run_summary_alert(
     zero_count_regressions: 過去に ≥1 件あったが今 0 件が継続するサイト。
     snapshot とは独立した永続ベースライン (SiteBaselineTracker) で検知され、
     「正常終了したが silent に 0 件」というサイレント破損を可視化する。
+
+    auto_fix_result: `_trigger_auto_fix` の戻り値 dict。
+    `attempted > invoked` のとき dispatch 失敗を WARNING シグナルに含め、
+    自己修復が静かに動いていない状態を可視化する。
     """
     if total_sites == 0:
         return
@@ -610,7 +632,18 @@ def _send_run_summary_alert(
     )
     drifts = list(field_drifts) if field_drifts else []
     regressions = list(zero_count_regressions) if zero_count_regressions else []
-    has_warning = bool(critical_sites_list) or total_failed > 0 or bool(drifts) or bool(regressions)
+    # auto-fix dispatch 失敗の signal: attempted > invoked
+    af = auto_fix_result or {}
+    af_attempted = int(af.get("attempted", 0))
+    af_invoked = int(af.get("invoked", 0))
+    af_dispatch_failed = af_attempted > af_invoked
+    has_warning = (
+        bool(critical_sites_list)
+        or total_failed > 0
+        or bool(drifts)
+        or bool(regressions)
+        or af_dispatch_failed
+    )
 
     if not (is_critical or has_warning):
         return
@@ -653,6 +686,17 @@ def _send_run_summary_alert(
         if len(regressions) > 10:
             sample += f" ... (+{len(regressions) - 10} more)"
         details["zero_count_regressions_sample"] = sample
+    # 自己修復ループ Phase 1→2 橋渡しの結果。attempted > invoked = silent failure。
+    # candidates > 0 でも disabled なら kill switch off (info only)。
+    if af:
+        details["auto_fix_candidates"] = af.get("candidates", 0)
+        details["auto_fix_attempted"] = af_attempted
+        details["auto_fix_invoked"] = af_invoked
+        if af.get("disabled"):
+            details["auto_fix_disabled"] = True
+        if af_dispatch_failed:
+            details["auto_fix_dispatch_failures"] = af_attempted - af_invoked
+            message += f", 自己修復 dispatch 失敗 {af_attempted - af_invoked} 件"
     try:
         notification_client.send_alert(level, message, details)
     except Exception as e:
@@ -917,23 +961,17 @@ def main():
                 except Exception as e:
                     logger.warning(f"件数ベースライン追跡失敗: {e}")
 
-                # Slack / Discord 通知: 連続失敗サイト / 全体失敗率 / 欠損率ドリフト /
-                # 件数ゼロ回帰 に応じて Warning/Critical
-                _send_run_summary_alert(
-                    notification_client=notification_client,
-                    broken_tracker=broken_tracker,
-                    total_sites=len(config.sites),
-                    total_succeeded=total_succeeded,
-                    total_failed=total_failed,
-                    threshold=BROKEN_SITE_SKIP_THRESHOLD,
-                    logger=logger,
-                    field_drifts=field_drifts,
-                    zero_count_regressions=zero_regressions,
-                )
-
                 # 自己修復ループ Phase 1→2 橋渡し: 検知サイトを auto-fix-adapter に
                 # 渡して LLM-assisted patch worker を起動する (kill switch off の
                 # 場合は no-op)。失敗時も収集パイプラインは止めない。
+                # 順序: summary 通知より先に実行し、auto_fix の dispatch 結果を
+                # Discord に折り込めるようにする (silent failure 検知)。
+                auto_fix_result: dict[str, Any] = {
+                    "invoked": 0,
+                    "attempted": 0,
+                    "candidates": 0,
+                    "disabled": False,
+                }
                 try:
                     candidate_sites: list[str] = []
                     try:
@@ -944,9 +982,24 @@ def main():
                         logger.warning(f"critical_sites 取得失敗: {e}")
                     candidate_sites.extend(r.site_name for r in zero_regressions)
                     candidate_sites.extend(d.site_name for d in field_drifts)
-                    _trigger_auto_fix(candidate_sites, logger=logger)
+                    auto_fix_result = _trigger_auto_fix(candidate_sites, logger=logger)
                 except Exception as e:
                     logger.warning(f"auto-fix 橋渡しでエラー: {e}")
+
+                # Slack / Discord 通知: 連続失敗サイト / 全体失敗率 / 欠損率ドリフト /
+                # 件数ゼロ回帰 / 自己修復 dispatch 失敗 に応じて Warning/Critical
+                _send_run_summary_alert(
+                    notification_client=notification_client,
+                    broken_tracker=broken_tracker,
+                    total_sites=len(config.sites),
+                    total_succeeded=total_succeeded,
+                    total_failed=total_failed,
+                    threshold=BROKEN_SITE_SKIP_THRESHOLD,
+                    logger=logger,
+                    field_drifts=field_drifts,
+                    zero_count_regressions=zero_regressions,
+                    auto_fix_result=auto_fix_result,
+                )
 
                 # 進捗ログ
                 stats = SiteAdapterRegistry.coverage_stats([s.name for s in config.sites])

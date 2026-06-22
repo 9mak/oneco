@@ -255,6 +255,67 @@ def test_zero_count_regression_empty_does_not_change_behavior():
     client.send_alert.assert_not_called()
 
 
+def test_auto_fix_dispatch_failure_triggers_warning():
+    """失敗 0 でも auto-fix dispatch が失敗していれば WARNING を出す。
+    silent failure 検知 feature が silent fail する皮肉を解消する。"""
+    client = MagicMock()
+    af = {"invoked": 0, "attempted": 3, "candidates": 3, "disabled": False}
+    _send_run_summary_alert(
+        notification_client=client,
+        broken_tracker=_make_tracker(0),
+        total_sites=209,
+        total_succeeded=209,
+        total_failed=0,
+        threshold=3,
+        logger=_make_logger(),
+        auto_fix_result=af,
+    )
+    assert client.send_alert.called
+    args, _ = client.send_alert.call_args
+    assert args[0] == NotificationLevel.WARNING
+    details = client.send_alert.call_args[0][2]
+    assert details["auto_fix_attempted"] == 3
+    assert details["auto_fix_invoked"] == 0
+    assert details["auto_fix_dispatch_failures"] == 3
+    # message にも分かりやすく含まれる
+    assert "自己修復 dispatch 失敗" in args[1]
+
+
+def test_auto_fix_all_success_no_warning():
+    """auto-fix が全件 invoked = attempted なら dispatch_failures は出ず、
+    他のシグナルが無ければ通知しない (info only)。"""
+    client = MagicMock()
+    af = {"invoked": 2, "attempted": 2, "candidates": 2, "disabled": False}
+    _send_run_summary_alert(
+        notification_client=client,
+        broken_tracker=_make_tracker(0),
+        total_sites=10,
+        total_succeeded=10,
+        total_failed=0,
+        threshold=3,
+        logger=_make_logger(),
+        auto_fix_result=af,
+    )
+    client.send_alert.assert_not_called()
+
+
+def test_auto_fix_disabled_does_not_trigger_warning():
+    """kill switch off は通知トリガーにしない (info purpose のみ)。"""
+    client = MagicMock()
+    af = {"invoked": 0, "attempted": 0, "candidates": 5, "disabled": True}
+    _send_run_summary_alert(
+        notification_client=client,
+        broken_tracker=_make_tracker(0),
+        total_sites=10,
+        total_succeeded=10,
+        total_failed=0,
+        threshold=3,
+        logger=_make_logger(),
+        auto_fix_result=af,
+    )
+    client.send_alert.assert_not_called()
+
+
 def test_zero_count_regression_sample_truncated():
     """回帰サンプルは先頭 10 件に切り詰め、残数を表示する"""
     from src.data_collector.infrastructure.site_baseline_tracker import ZeroCountRegression
