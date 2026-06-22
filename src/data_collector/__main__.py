@@ -5,6 +5,7 @@ import contextlib
 import logging
 import os
 import signal
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -484,6 +485,82 @@ def run_rule_based_sites(
 _RUN_FAIL_RATIO_CRITICAL = 0.2
 
 
+def _trigger_auto_fix(site_names: list[str], logger: logging.Logger) -> int:
+    """検知された壊れサイトについて auto-fix-adapter.yml ワークフローを起動する。
+
+    Phase 1 の検知シグナル (broken_tracker.critical_sites /
+    zero_count_regressions / field_drifts) を集約して、Phase 2 ワーカー
+    (.github/workflows/auto-fix-adapter.yml) に橋渡しする。
+
+    安全機構:
+    - kill switch: `ONECO_AUTO_FIX_ENABLED=true` でないと一切起動しない
+      (デフォルト false: 自己修復は user の明示的な opt-in が必要)
+    - dry_run: `ONECO_AUTO_FIX_DRY_RUN` (default 'true') = true なら
+      auto-fix worker はパッチ生成 + ガード確認までして PR は作らない。
+      安定確認後 false に切り替えて本番自動修復化する段階リリース
+    - 上限: `ONECO_AUTO_FIX_MAX_SITES` (default 3) で 1 run あたりの起動数を
+      キャップ (並列爆発・LLM コスト爆発防止)
+    - dedup: 同じサイトが複数経路 (broken + drift + zero_count) から来ても 1 度だけ
+    - best-effort: gh CLI の失敗は logger.warning にとどめ、収集パイプラインは継続
+
+    Returns:
+        実際に起動したワークフロー数。kill switch off や対象 0 件なら 0。
+    """
+    if os.environ.get("ONECO_AUTO_FIX_ENABLED", "false").lower() != "true":
+        if site_names:
+            logger.info(f"auto-fix-adapter: {len(site_names)} 件の検知サイトあり (kill switch off)")
+        return 0
+    if not site_names:
+        return 0
+
+    # 順序保持 dedup
+    seen: set[str] = set()
+    uniq: list[str] = []
+    for name in site_names:
+        if name not in seen:
+            seen.add(name)
+            uniq.append(name)
+
+    max_sites = int(os.environ.get("ONECO_AUTO_FIX_MAX_SITES", "3"))
+    targets = uniq[:max_sites]
+    dry_run = os.environ.get("ONECO_AUTO_FIX_DRY_RUN", "true").lower() == "true"
+
+    if len(uniq) > max_sites:
+        logger.warning(
+            f"auto-fix-adapter: 検知 {len(uniq)} 件のうち {max_sites} 件のみ起動 "
+            f"(残り {len(uniq) - max_sites} 件は次回 run で対象)"
+        )
+
+    invoked = 0
+    for site_name in targets:
+        cmd = [
+            "gh",
+            "workflow",
+            "run",
+            "auto-fix-adapter.yml",
+            "-f",
+            f"site_name={site_name}",
+            "-f",
+            f"dry_run={'true' if dry_run else 'false'}",
+        ]
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+            if result.returncode == 0:
+                logger.info(f"auto-fix-adapter: 起動成功 site={site_name} dry_run={dry_run}")
+                invoked += 1
+            else:
+                logger.warning(
+                    f"auto-fix-adapter: 起動失敗 site={site_name} stderr={result.stderr[:200]}"
+                )
+        except (FileNotFoundError, OSError) as e:
+            # gh CLI 未インストール / 環境不整備でクラッシュしない
+            logger.warning(f"auto-fix-adapter: subprocess 失敗 ({e})")
+        except Exception as e:
+            # best-effort: 想定外でも収集パイプラインは止めない
+            logger.warning(f"auto-fix-adapter: 想定外エラー ({e})")
+    return invoked
+
+
 def _send_run_summary_alert(
     *,
     notification_client: NotificationClient,
@@ -853,6 +930,23 @@ def main():
                     field_drifts=field_drifts,
                     zero_count_regressions=zero_regressions,
                 )
+
+                # 自己修復ループ Phase 1→2 橋渡し: 検知サイトを auto-fix-adapter に
+                # 渡して LLM-assisted patch worker を起動する (kill switch off の
+                # 場合は no-op)。失敗時も収集パイプラインは止めない。
+                try:
+                    candidate_sites: list[str] = []
+                    try:
+                        candidate_sites.extend(
+                            broken_tracker.critical_sites(threshold=BROKEN_SITE_SKIP_THRESHOLD)
+                        )
+                    except Exception as e:
+                        logger.warning(f"critical_sites 取得失敗: {e}")
+                    candidate_sites.extend(r.site_name for r in zero_regressions)
+                    candidate_sites.extend(d.site_name for d in field_drifts)
+                    _trigger_auto_fix(candidate_sites, logger=logger)
+                except Exception as e:
+                    logger.warning(f"auto-fix 橋渡しでエラー: {e}")
 
                 # 進捗ログ
                 stats = SiteAdapterRegistry.coverage_stats([s.name for s in config.sites])
