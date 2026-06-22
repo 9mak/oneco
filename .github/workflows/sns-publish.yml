@@ -1,0 +1,109 @@
+name: SNS Publish (Threads)
+
+# 日次 cron で SNS 投稿候補を 1 件評価する。
+#
+# kill switch (THREADS_PUBLISH_ENABLED) が true でない限り何もしない。
+# 段階リリース: 最初は THREADS_PUBLISH_DRY_RUN=true で moderate + post_log
+# 記録までを試し、安定確認後に false へ切替する。
+#
+# 詳細: project_growth_progress memory, design.md §5
+
+on:
+  # 毎日 JST 9:00 (UTC 0:00) — Threads のアクティブ時間帯に合わせる
+  schedule:
+    - cron: '0 0 * * *'
+
+  # 手動実行 (smoke test 用)
+  workflow_dispatch:
+    inputs:
+      dry_run_override:
+        description: '今回の run だけ dry_run を強制 (true/false)。空欄なら repo variable を使う'
+        required: false
+        type: string
+
+permissions:
+  # post_log (data/sns_posts.yaml) を commit するため
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Run SNS publisher
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          # Meta Threads (Phase 4.2 で取得・登録)
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
+          # kill switch / dry_run は repo variable で運用
+          THREADS_PUBLISH_ENABLED: ${{ vars.THREADS_PUBLISH_ENABLED || 'false' }}
+          THREADS_PUBLISH_DRY_RUN: ${{ github.event.inputs.dry_run_override || vars.THREADS_PUBLISH_DRY_RUN || 'true' }}
+          # YAML 永続化先
+          SNS_POST_LOG_PATH: data/sns_posts.yaml
+        run: |
+          python -m syndication_service.sns_publisher
+
+      - name: Commit post_log (if any)
+        if: success()
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          if [ -e data/sns_posts.yaml ]; then
+            git add data/sns_posts.yaml
+            if git diff --staged --quiet; then
+              echo "::notice::post_log unchanged"
+              exit 0
+            fi
+            git commit -m "Update sns_posts log [automated]
+
+            🤖 Generated with Claude Code (https://claude.com/claude-code)
+
+            Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
+            # push retry: data-collector.yml と同パターン
+            for attempt in 1 2 3; do
+              if git push; then
+                echo "::notice::Push successful on attempt $attempt"
+                exit 0
+              fi
+              if [ "$attempt" -lt 3 ]; then
+                git pull --rebase origin main || exit 0
+                sleep $((attempt * 3))
+              fi
+            done
+            echo "::warning::post_log push failed; will retry next run"
+            exit 0
+          fi
+
+      - name: Notify Discord on failure
+        if: failure()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo "::notice::DISCORD_WEBHOOK_URL not configured; skipping notification"
+            exit 0
+          fi
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          CONTENT=":warning: SNS publisher (Threads) failed
+          run #${{ github.run_number }} (${{ github.event_name }})
+          $RUN_URL"
+          PAYLOAD=$(jq -n --arg content "$CONTENT" '{content: $content}')
+          curl -sS -X POST -H 'Content-Type: application/json' \
+            --data "$PAYLOAD" "$DISCORD_WEBHOOK_URL" || echo "::warning::Discord notify failed"
