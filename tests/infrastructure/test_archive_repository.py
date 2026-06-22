@@ -207,6 +207,53 @@ class TestListArchived:
         assert "高知" in result[0].location
 
     @pytest.mark.asyncio
+    async def test_list_archived_escapes_like_wildcards_in_location(
+        self, archive_repository, async_session
+    ):
+        """location に LIKE ワイルドカード ('%' '_' '\\') が含まれても部分一致リテラル
+        として扱われ、全件マッチや 1 文字 wildcard 化しないこと。
+
+        Why: syndication の ?location= 経由でユーザー入力が ilike に流入する。
+        escape しないと location=% で全件 scan、location=A_B で意図しない 1 文字
+        wildcard 化が起き、DB コスト増・誤フィルタ表示に繋がる。
+        """
+        async_session.add_all(
+            [
+                AnimalArchive(
+                    original_id=301,
+                    species="犬",
+                    shelter_date=date(2025, 6, 1),
+                    location="高知県高知市",
+                    source_url="https://example.com/archived_kochi_escape",
+                    category="adoption",
+                    status="adopted",
+                    archived_at=datetime.now(UTC),
+                ),
+                AnimalArchive(
+                    original_id=302,
+                    species="犬",
+                    shelter_date=date(2025, 6, 1),
+                    location="徳島県",
+                    source_url="https://example.com/archived_tokushima_escape",
+                    category="adoption",
+                    status="adopted",
+                    archived_at=datetime.now(UTC),
+                ),
+            ]
+        )
+        await async_session.commit()
+
+        # '%' を渡しても全件マッチしないこと（リテラル '%' は実 location に含まれない）
+        result_percent, total_percent = await archive_repository.list_archived(location="%")
+        assert total_percent == 0
+        assert result_percent == []
+
+        # '_' を渡しても 1 文字 wildcard 化せず literal として扱われること
+        result_underscore, total_underscore = await archive_repository.list_archived(location="_")
+        assert total_underscore == 0
+        assert result_underscore == []
+
+    @pytest.mark.asyncio
     async def test_list_archived_filters_by_archived_from(self, archive_repository, async_session):
         """list_archived() が archived_from でフィルタリングできるか"""
         # 異なる日時のアーカイブデータを挿入

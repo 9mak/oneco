@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.data_collector.domain.models import AnimalData, AnimalStatus
 from src.data_collector.infrastructure.database.models import Animal, AnimalArchive
+from src.data_collector.infrastructure.database.repository import _escape_like
 
 
 class ArchiveRepository:
@@ -137,7 +138,12 @@ class ArchiveRepository:
         if species:
             filters.append(AnimalArchive.species == species)
         if location:
-            filters.append(AnimalArchive.location.ilike(f"%{location}%"))
+            # ユーザー入力 (syndication フィードの ?location= 経由) なので LIKE
+            # ワイルドカード ('%' '_' '\\') をリテラル化する。escape を付けないと
+            # location=% で全件マッチ・location=A_B の '_' が任意 1 文字に化け、
+            # 意図しない全件 scan による DB コスト増を招く。 repository.py の
+            # Animal.location.like と同パターン。
+            filters.append(AnimalArchive.location.ilike(f"%{_escape_like(location)}%", escape="\\"))
         if archived_from:
             # date を datetime に変換（その日の開始時刻）
             archived_from_dt = datetime.combine(archived_from, datetime.min.time())
