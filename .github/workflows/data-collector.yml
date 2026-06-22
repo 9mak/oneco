@@ -64,7 +64,14 @@ jobs:
           ONECO_AUTO_FIX_ENABLED: ${{ vars.ONECO_AUTO_FIX_ENABLED || 'false' }}
           ONECO_AUTO_FIX_DRY_RUN: ${{ vars.ONECO_AUTO_FIX_DRY_RUN || 'true' }}
           ONECO_AUTO_FIX_MAX_SITES: ${{ vars.ONECO_AUTO_FIX_MAX_SITES || '3' }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # PAT-ready: ONECO_AUTO_FIX_TOKEN (PAT or GitHub App token) があれば
+          # それを優先、無ければ GITHUB_TOKEN に fallback。
+          #   - GITHUB_TOKEN: workflow_dispatch (Hop 1) は動くが、auto-fix が作る
+          #     PR (Hop 2) は downstream pull_request workflow を発火しない
+          #     (GitHub の recursion prevention 仕様)
+          #   - PAT/App token: Hop 2 も発火する (auto-merge-fix-pr.yml が動く)
+          # 詳細: project_self_healing memory, PR #216 description
+          GH_TOKEN: ${{ secrets.ONECO_AUTO_FIX_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           python -m data_collector
 

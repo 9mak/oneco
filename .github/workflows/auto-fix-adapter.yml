@@ -70,7 +70,12 @@ jobs:
       - name: Run auto-fix
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # PAT-ready: scripts/auto_fix_adapter.py が `gh pr create` で作る PR は、
+          # ONECO_AUTO_FIX_TOKEN (PAT/App token) 経由でないと downstream
+          # auto-merge-fix-pr.yml (pull_request) を発火しない (GitHub recursion
+          # prevention)。未設定なら GITHUB_TOKEN に fallback (PR 作成は可能だが
+          # auto-merge は手動 review 待ちになる)。
+          GH_TOKEN: ${{ secrets.ONECO_AUTO_FIX_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           set -e
           ARGS=(--site-name "${{ inputs.site_name }}" --model "${{ inputs.model }}")
