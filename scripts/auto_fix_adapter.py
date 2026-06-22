@@ -281,8 +281,59 @@ def extract_diff(text: str) -> str:
     return text.strip()
 
 
-def apply_patch(patch_text: str, cwd: Path = ROOT) -> bool:
-    """unified diff を `git apply` で当てる。成功なら True。"""
+_DIFF_PLUS_RE = re.compile(r"^\+\+\+ (?:b/)?(.+?)\s*$", re.MULTILINE)
+_DIFF_MINUS_RE = re.compile(r"^--- (?:a/)?(.+?)\s*$", re.MULTILINE)
+
+
+def validate_patch_scope(patch_text: str, allowed_files: list[str]) -> tuple[bool, str]:
+    """unified diff が `allowed_files` (repo 相対パスのリスト) のみを変更する
+    ことを検証する gate。
+
+    LLM が prompt 内の「テスト・他ファイル変更禁止」制約を無視するケースを
+    apply_patch の前で reject する。これが無いと、LLM が tests/ を緩めて
+    ガード1 (unit test) を欺き、garbage な adapter が auto-merge される
+    最悪パスが残る (過去 6 回サイレントドロップを踏んだ領域)。
+
+    Returns:
+        (ok, reason). ok=True なら allowed のみ変更。False なら理由付き reject。
+    """
+    plus_files = set(_DIFF_PLUS_RE.findall(patch_text))
+    minus_files = set(_DIFF_MINUS_RE.findall(patch_text))
+
+    if not plus_files and not minus_files:
+        return False, "patch contains no file headers (no '--- '/'+++ ' lines)"
+
+    # /dev/null = 新規ファイル作成 (--- /dev/null) / 削除 (+++ /dev/null)
+    # adapter 修復のスコープ外。明確に reject。
+    if "/dev/null" in plus_files:
+        return False, "patch contains file deletion ('+++ /dev/null') — not allowed"
+    if "/dev/null" in minus_files:
+        return False, "patch contains new file creation ('--- /dev/null') — not allowed"
+
+    all_files = plus_files | minus_files
+    allowed_set = set(allowed_files)
+    forbidden = sorted(all_files - allowed_set)
+    if forbidden:
+        return False, f"patch touches files outside allowed scope: {forbidden}"
+
+    return True, "ok"
+
+
+def apply_patch(
+    patch_text: str,
+    cwd: Path = ROOT,
+    allowed_files: list[str] | None = None,
+) -> bool:
+    """unified diff を `git apply` で当てる。成功なら True。
+
+    `allowed_files` が指定されている場合、validate_patch_scope で「指定 file
+    以外を触らない」ことを apply 前に確認する。違反したら apply せず False を返す。
+    """
+    if allowed_files is not None:
+        ok, reason = validate_patch_scope(patch_text, allowed_files)
+        if not ok:
+            print(f"patch scope gate failed: {reason}", file=sys.stderr)
+            return False
     with tempfile.NamedTemporaryFile("w", suffix=".patch", delete=False, encoding="utf-8") as f:
         f.write(patch_text)
         if not patch_text.endswith("\n"):
@@ -315,7 +366,12 @@ def rollback(adapter_file: Path, cwd: Path = ROOT) -> None:
 
 
 def run_unit_tests(cwd: Path = ROOT) -> bool:
-    """rule_based 配下と normalizer のテストを走らせる。pass なら True。"""
+    """rule_based 配下と normalizer のテストを走らせる。pass なら True。
+
+    validate_patch_scope で「adapter ファイル以外を触らないパッチ」のみ apply
+    される保証があるため、normalize() を含む既存テストは確実に変更されていない。
+    本テスト pass = adapter の正しさ + normalize 規約 + 既存サイトの非回帰。
+    """
     cmd = [
         str(cwd / ".venv/bin/python"),
         "-m",
@@ -330,6 +386,47 @@ def run_unit_tests(cwd: Path = ROOT) -> bool:
     if result.returncode != 0:
         print((result.stderr or "")[-800:], file=sys.stderr)
     return result.returncode == 0
+
+
+def verify_no_unexpected_changes(allowed_files: list[str], cwd: Path = ROOT) -> tuple[bool, str]:
+    """`git status --porcelain` で allowed_files 以外に変更が無いことを再確認する。
+
+    apply_patch の validate_patch_scope が機能している限り redundant な防御層だが、
+    diff parse の取りこぼし (新形式 git diff・rename・mode 変更) や、テスト中に
+    他ファイルを副作用で書き換える adapter ロジック (例: ファイル出力) を捕まえる
+    最後の砦。
+
+    Returns:
+        (ok, reason). ok=True なら allowed のみ dirty。
+    """
+    # `-uall` を付けて untracked directory を 1 行で集約せず各ファイル単位で
+    # 展開する。default だと "tests/" のように dir 単位で集約され、
+    # tests/test_x.py の改ざんを path 名で identify できない。
+    result = subprocess.run(
+        ["git", "status", "--porcelain", "-z", "-uall"],
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return False, f"git status failed: {result.stderr}"
+
+    allowed_set = set(allowed_files)
+    forbidden: list[str] = []
+    # `-z` は NUL 区切り。各エントリは "XY <path>\0" の形式。
+    entries = [e for e in result.stdout.split("\0") if e]
+    for entry in entries:
+        # XY (2 文字 status) + space + path
+        if len(entry) < 4:
+            continue
+        path = entry[3:]
+        # rename ("R") の場合は "old\0new" になるが、簡略化のため new だけ見る
+        if path not in allowed_set:
+            forbidden.append(path)
+    if forbidden:
+        return False, f"unexpected dirty files: {sorted(forbidden)}"
+    return True, "ok"
 
 
 def evaluate_improvement(before: Metrics, after: Metrics) -> tuple[bool, str]:
@@ -484,17 +581,28 @@ def main() -> int:
     print(f"patch length: {len(patch)} chars")
     print(patch[:600] + ("..." if len(patch) > 600 else ""))
 
-    # 4. パッチ適用
+    # 4. パッチ適用 (adapter ファイル本体のみ変更を許可する gate 付き)
     print("\n[4/6] applying patch...")
-    if not apply_patch(patch):
-        msg = "LLM 生成パッチが当たらなかった (git apply 失敗)"
+    adapter_file_rel = str(adapter_file.relative_to(ROOT))
+    if not apply_patch(patch, allowed_files=[adapter_file_rel]):
+        msg = (
+            "LLM 生成パッチが当たらなかった or 許可スコープ外 "
+            f"({adapter_file_rel} 以外のファイル変更を含む可能性)"
+        )
         print(msg, file=sys.stderr)
         if not args.dry_run:
             create_issue(args.site_name, msg)
         return 3
 
-    # 5. ガード1: ユニットテスト
-    print("\n[5/6] guard 1: unit tests...")
+    # 5. ガード1: ユニットテスト + 「adapter ファイル外が dirty でない」再確認
+    print("\n[5/6] guard 1: unit tests + git status...")
+    ok, reason = verify_no_unexpected_changes([adapter_file_rel])
+    if not ok:
+        print(f"想定外のファイル変更 → ロールバック ({reason})", file=sys.stderr)
+        rollback(adapter_file)
+        if not args.dry_run:
+            create_issue(args.site_name, f"想定外のファイル変更: {reason}")
+        return 4
     if not run_unit_tests():
         print("ユニットテスト失敗 → ロールバック", file=sys.stderr)
         rollback(adapter_file)

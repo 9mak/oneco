@@ -78,4 +78,17 @@ scripts/poc_selectors/
 AGENTS.md
 release-screenshot-*.png
 test-*.png
-release-screenshot-*.png
+
+# 開発中スクリーンショット (PR や Discord 共有用に local 撮影、コミット対象外)
+oneco-*.png
+mobile-header.png
+
+# ローカル SQLite (本番は Supabase、local 専用 cache)
+oneco_local.db
+
+# .mcp.json: MCP server local config (project-scoped 個人設定、共有しない)
+.mcp.json
+
+# node_modules: frontend/ 配下は frontend/.gitignore で除外済みだが、root で
+# `npm install` した場合に root/node_modules ができる (Vercel build や誤実行)。
+node_modules/

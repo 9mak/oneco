@@ -189,6 +189,191 @@ class TestApplyPatch:
         assert afa.apply_patch(patch, cwd=tmp_path) is False
 
 
+class TestValidatePatchScope:
+    """diff が「指定 adapter ファイル」のみを変更することを enforce する gate。
+
+    LLM が prompt の制約を無視してテストや他ファイルを書き換えるパッチを返した
+    場合に apply_patch の前で reject する。これが無いと「テスト改ざんでガード1
+    を欺いた garbage adapter」が auto-merge される最悪ケースが残る。
+    """
+
+    def test_single_allowed_file_passes(self):
+        patch = """--- a/src/data_collector/adapters/rule_based/sites/foo.py
++++ b/src/data_collector/adapters/rule_based/sites/foo.py
+@@ -1 +1 @@
+-old
++new
+"""
+        ok, reason = afa.validate_patch_scope(
+            patch, ["src/data_collector/adapters/rule_based/sites/foo.py"]
+        )
+        assert ok is True
+        assert reason == "ok"
+
+    def test_test_file_change_rejected(self):
+        """tests/ 配下を含む diff は reject。これが core gate。"""
+        patch = """--- a/src/data_collector/adapters/rule_based/sites/foo.py
++++ b/src/data_collector/adapters/rule_based/sites/foo.py
+@@ -1 +1 @@
+-old
++new
+--- a/tests/adapters/rule_based/sites/test_foo.py
++++ b/tests/adapters/rule_based/sites/test_foo.py
+@@ -10 +10 @@
+-    assert breed == "雑種"
++    assert breed is None
+"""
+        ok, reason = afa.validate_patch_scope(
+            patch, ["src/data_collector/adapters/rule_based/sites/foo.py"]
+        )
+        assert ok is False
+        assert "tests/" in reason
+
+    def test_other_adapter_change_rejected(self):
+        """1 サイト修復で他 adapter を巻き込む diff も reject。"""
+        patch = """--- a/src/data_collector/adapters/rule_based/sites/foo.py
++++ b/src/data_collector/adapters/rule_based/sites/foo.py
+@@ -1 +1 @@
+-old
++new
+--- a/src/data_collector/adapters/rule_based/sites/bar.py
++++ b/src/data_collector/adapters/rule_based/sites/bar.py
+@@ -1 +1 @@
+-x
++y
+"""
+        ok, reason = afa.validate_patch_scope(
+            patch, ["src/data_collector/adapters/rule_based/sites/foo.py"]
+        )
+        assert ok is False
+        assert "bar.py" in reason
+
+    def test_normalizer_change_rejected(self):
+        """domain/normalizer.py 等の基盤層書き換えも reject。"""
+        patch = """--- a/src/data_collector/domain/normalizer.py
++++ b/src/data_collector/domain/normalizer.py
+@@ -1 +1 @@
+-old
++new
+"""
+        ok, reason = afa.validate_patch_scope(
+            patch, ["src/data_collector/adapters/rule_based/sites/foo.py"]
+        )
+        assert ok is False
+        assert "normalizer.py" in reason
+
+    def test_file_deletion_rejected(self):
+        """+++ /dev/null (ファイル削除) を含むパッチは reject。"""
+        patch = """--- a/src/data_collector/adapters/rule_based/sites/foo.py
++++ /dev/null
+@@ -1,3 +0,0 @@
+-line1
+-line2
+-line3
+"""
+        ok, reason = afa.validate_patch_scope(
+            patch, ["src/data_collector/adapters/rule_based/sites/foo.py"]
+        )
+        assert ok is False
+        assert "deletion" in reason or "/dev/null" in reason
+
+    def test_new_file_creation_rejected(self):
+        """--- /dev/null (新規ファイル作成) を含むパッチは reject。"""
+        patch = """--- /dev/null
++++ b/src/data_collector/adapters/rule_based/sites/new.py
+@@ -0,0 +1,3 @@
++line1
++line2
++line3
+"""
+        ok, reason = afa.validate_patch_scope(
+            patch, ["src/data_collector/adapters/rule_based/sites/foo.py"]
+        )
+        assert ok is False
+        assert "creation" in reason or "/dev/null" in reason
+
+    def test_empty_patch_rejected(self):
+        """空 / ヘッダなし の patch は reject。"""
+        ok, reason = afa.validate_patch_scope(
+            "", ["src/data_collector/adapters/rule_based/sites/foo.py"]
+        )
+        assert ok is False
+        assert "no file" in reason.lower() or "header" in reason.lower()
+
+    def test_path_without_a_b_prefix_is_handled(self):
+        """diff のパスに a/ b/ prefix が無いケース (git apply は受け付ける) も検証。"""
+        patch = """--- src/data_collector/adapters/rule_based/sites/foo.py
++++ src/data_collector/adapters/rule_based/sites/foo.py
+@@ -1 +1 @@
+-old
++new
+"""
+        ok, reason = afa.validate_patch_scope(
+            patch, ["src/data_collector/adapters/rule_based/sites/foo.py"]
+        )
+        assert ok is True, f"unexpected reject: {reason}"
+
+    def test_workflow_file_change_rejected(self):
+        """`.github/workflows/` 配下の変更も reject (auto-fix のスコープ外)。"""
+        patch = """--- a/.github/workflows/data-collector.yml
++++ b/.github/workflows/data-collector.yml
+@@ -1 +1 @@
+-old
++new
+"""
+        ok, reason = afa.validate_patch_scope(
+            patch, ["src/data_collector/adapters/rule_based/sites/foo.py"]
+        )
+        assert ok is False
+        assert "workflows" in reason or ".yml" in reason
+
+
+class TestVerifyNoUnexpectedChanges:
+    """git status で allowed 以外に変更が無いことを再確認する gate。"""
+
+    def _init_git(self, path: Path) -> None:
+        subprocess.run(["git", "init"], cwd=path, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "config", "user.email", "test@example.com"],
+            cwd=path,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "test"], cwd=path, check=True, capture_output=True
+        )
+
+    def test_clean_tree_passes(self, tmp_path):
+        self._init_git(tmp_path)
+        ok, reason = afa.verify_no_unexpected_changes(["adapter.py"], cwd=tmp_path)
+        assert ok is True
+        assert reason == "ok"
+
+    def test_only_allowed_file_dirty_passes(self, tmp_path):
+        self._init_git(tmp_path)
+        (tmp_path / "adapter.py").write_text("x", encoding="utf-8")
+        ok, reason = afa.verify_no_unexpected_changes(["adapter.py"], cwd=tmp_path)
+        assert ok is True, f"unexpected reject: {reason}"
+
+    def test_test_file_dirty_rejected(self, tmp_path):
+        """テストファイルが書き換わっていたら reject (test 改ざんの最後の砦)。"""
+        self._init_git(tmp_path)
+        (tmp_path / "adapter.py").write_text("x", encoding="utf-8")
+        (tmp_path / "tests").mkdir()
+        (tmp_path / "tests" / "test_adapter.py").write_text("y", encoding="utf-8")
+        ok, reason = afa.verify_no_unexpected_changes(["adapter.py"], cwd=tmp_path)
+        assert ok is False
+        assert "tests/test_adapter.py" in reason
+
+    def test_other_file_dirty_rejected(self, tmp_path):
+        self._init_git(tmp_path)
+        (tmp_path / "adapter.py").write_text("x", encoding="utf-8")
+        (tmp_path / "other.py").write_text("y", encoding="utf-8")
+        ok, reason = afa.verify_no_unexpected_changes(["adapter.py"], cwd=tmp_path)
+        assert ok is False
+        assert "other.py" in reason
+
+
 class TestMetrics:
     def test_to_dict_serializable(self):
         m = afa.Metrics(status="ok", list_count=5, missing_rates={"location": 0.1})
