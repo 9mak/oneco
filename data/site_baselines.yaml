@@ -1,0 +1,1004 @@
+あかし動物センター（迷子犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+あかし動物センター（迷子猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+おおいた動物愛護センター（譲渡犬）:
+  consecutive_zero_runs: 0
+  high_water_count: 12
+  last_count: 12
+  last_nonzero_at: '2026-06-22T19:04:19+00:00'
+  last_nonzero_count: 12
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+おおいた動物愛護センター（譲渡猫）:
+  consecutive_zero_runs: 0
+  high_water_count: 12
+  last_count: 12
+  last_nonzero_at: '2026-06-22T19:04:19+00:00'
+  last_nonzero_count: 12
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+おおいた動物愛護センター（迷子情報メイン）:
+  consecutive_zero_runs: 0
+  high_water_count: 2
+  last_count: 2
+  last_nonzero_at: '2026-06-22T19:04:19+00:00'
+  last_nonzero_count: 2
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+さいたま市（保護犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+さいたま市（保護猫・その他）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+さぬき動物愛護センター（譲渡犬猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+アニウェル北海道（猫の里親募集）:
+  consecutive_zero_runs: 0
+  high_water_count: 9
+  last_count: 9
+  last_nonzero_at: '2026-06-22T19:04:22+00:00'
+  last_nonzero_count: 9
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+ワンニャピアあきた（譲渡犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+ワンニャピアあきた（譲渡猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+三重県動物愛護管理センター（迷い犬情報）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+中讃保健福祉事務所（収容動物）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+京都市ペットラブ（迷子犬）:
+  consecutive_zero_runs: 0
+  high_water_count: 2
+  last_count: 2
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 2
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+京都市ペットラブ（迷子猫）:
+  consecutive_zero_runs: 0
+  high_water_count: 2
+  last_count: 2
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 2
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+京都府 南丹保健所（迷子犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+京都府 南丹保健所（迷子猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+京都府 山城北保健所（迷子犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+京都府 山城北保健所（迷子猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+京都府 山城南保健所（飼い主不明動物）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+仙台市アニパル（譲渡子猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+仙台市アニパル（譲渡犬）:
+  consecutive_zero_runs: 0
+  high_water_count: 3
+  last_count: 3
+  last_nonzero_at: '2026-06-22T19:04:22+00:00'
+  last_nonzero_count: 3
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+仙台市アニパル（譲渡猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+佐世保市（保護犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+佐世保市（保護猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+佐賀県（伊万里・西松浦郡）保護犬猫:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+佐賀県（佐賀市・多久・小城・神埼）保護犬猫:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+佐賀県（全県）譲渡犬猫:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+佐賀県（唐津・東松浦郡）保護犬猫:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:19+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+佐賀県（武雄・鹿島・嬉野・杵島・藤津）保護犬猫:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+佐賀県（鳥栖・三養基郡）保護犬猫:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+倉敷市（保護動物）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+兵庫県動物愛護センター（収容動物）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+函館どうなん動物愛護センター（里親募集）:
+  consecutive_zero_runs: 0
+  high_water_count: 15
+  last_count: 15
+  last_nonzero_at: '2026-06-22T19:04:22+00:00'
+  last_nonzero_count: 15
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+前橋市（保護犬）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+北九州市（保護犬）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:19+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+北九州市（譲渡犬）:
+  consecutive_zero_runs: 0
+  high_water_count: 6
+  last_count: 6
+  last_nonzero_at: '2026-06-22T19:04:19+00:00'
+  last_nonzero_count: 6
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+千葉市（市民保護その他）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+千葉市（市民保護犬）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+千葉市（市民保護猫）:
+  consecutive_zero_runs: 0
+  high_water_count: 9
+  last_count: 9
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 9
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+千葉市（迷子その他動物）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+千葉市（迷子犬）:
+  consecutive_zero_runs: 0
+  high_water_count: 2
+  last_count: 2
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 2
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+千葉市（迷子猫）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+千葉県動愛センター本所（収容犬猫以外）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+千葉県動愛センター本所（収容犬）:
+  consecutive_zero_runs: 0
+  high_water_count: 2
+  last_count: 2
+  last_nonzero_at: '2026-06-22T19:04:19+00:00'
+  last_nonzero_count: 2
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+千葉県動愛センター本所（収容猫）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:19+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+千葉県動愛センター東葛飾支所（収容犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+千葉県動愛センター東葛飾支所（収容猫）:
+  consecutive_zero_runs: 0
+  high_water_count: 2
+  last_count: 2
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 2
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+名古屋市（譲渡犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+名古屋市（譲渡猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+名古屋市（飼主不明動物）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+和歌山市動物愛護管理センター（譲渡候補）:
+  consecutive_zero_runs: 0
+  high_water_count: 20
+  last_count: 20
+  last_nonzero_at: '2026-06-22T19:04:21+00:00'
+  last_nonzero_count: 20
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+和歌山県（保護犬猫情報）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+四日市市（保護動物情報）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+大分市（保護犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+大津市動物愛護センター（迷い犬猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+大阪市（譲渡犬）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+大阪市（譲渡猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+大阪市（迷子犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+大阪市（迷子猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+大阪府動物愛護管理センター（迷い犬猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+奈良市（保護動物情報）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+宇都宮市（迷子犬・負傷猫）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+宮崎市（センター保護犬・飼い主募集）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:19+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+宮崎市（センター保護猫・飼い主募集）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:19+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+宮崎市（直近保護犬）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:19+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+富山県（迷い犬猫情報）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+小豆保健所（収容動物）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+尼崎市動物愛護センター（収容動物）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+山口県動物愛護センター（収容動物）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+山形県（飼い主探し掲示板・ハブ）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+山梨県（探している犬）:
+  consecutive_zero_runs: 0
+  high_water_count: 42
+  last_count: 42
+  last_nonzero_at: '2026-06-22T19:04:21+00:00'
+  last_nonzero_count: 42
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+山梨県（探している猫）:
+  consecutive_zero_runs: 0
+  high_water_count: 46
+  last_count: 46
+  last_nonzero_at: '2026-06-22T19:04:21+00:00'
+  last_nonzero_count: 46
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+岐阜県（迷い犬情報）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+岡山市（保護動物情報）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+岡山県動物愛護センター（保護動物）:
+  consecutive_zero_runs: 0
+  high_water_count: 2
+  last_count: 2
+  last_nonzero_at: '2026-06-22T19:04:21+00:00'
+  last_nonzero_count: 2
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+岡崎市（保護動物）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+岩手県（保護動物情報・ハブ）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+島根県 松江保健所（収容動物）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+川崎市（収容その他動物）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+川崎市（収容犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+川崎市（収容猫）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+広島市（迷子犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+広島市（迷子猫）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:21+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+広島県動物愛護センター（迷い犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+広島県動物愛護センター（迷い猫）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:21+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+徳島県動物愛護管理センター（収容中）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+徳島県動物愛護管理センター（譲渡犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+徳島県動物愛護管理センター（譲渡猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+愛媛県動物愛護センター（収容中）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:19+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+愛媛県動物愛護センター（譲渡予定）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+愛知県わんにゃんナビ:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+新潟県動物愛護センター（保護動物）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+旭川市あにまある（収容その他）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+旭川市あにまある（収容犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+旭川市あにまある（収容猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+旭川市あにまある（市民保護犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+旭川市あにまある（市民保護猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+旭川市あにまある（譲渡その他）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+旭川市あにまある（譲渡犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+旭川市あにまある（譲渡猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+札幌市（迷子犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+札幌市（迷子猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+東京都収容動物情報（犬）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+東京都収容動物情報（猫等）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+東大阪市（保護収容動物）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+東讃保健福祉事務所（収容動物）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+松山市 はぴまるの丘（収容中）:
+  consecutive_zero_runs: 0
+  high_water_count: 12
+  last_count: 12
+  last_nonzero_at: '2026-06-22T19:04:19+00:00'
+  last_nonzero_count: 12
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+枚方市（収容動物）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+柏市（保護動物）:
+  consecutive_zero_runs: 0
+  high_water_count: 5
+  last_count: 5
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 5
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+柏市（譲渡対象動物）:
+  consecutive_zero_runs: 0
+  high_water_count: 6
+  last_count: 6
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 6
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+栃木県動物愛護指導センター（保護動物）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+栃木県動物愛護指導センター（譲渡動物）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+栃木県動物愛護指導センター（迷子動物）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+横浜市（収容その他動物）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+横浜市（収容犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+横浜市（収容猫）:
+  consecutive_zero_runs: 0
+  high_water_count: 2
+  last_count: 2
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 2
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+横須賀市（保護その他）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+横須賀市（保護犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+横須賀市（保護猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+横須賀市（譲渡その他）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+横須賀市（譲渡犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+横須賀市（譲渡猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+水戸市（愛護センター収容中の動物たち）:
+  consecutive_zero_runs: 0
+  high_water_count: 2
+  last_count: 2
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 2
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+水戸市（迷子ペット情報）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+沖縄県動物愛護管理センター（収容犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+沖縄県動物愛護管理センター（収容猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+沖縄県動物愛護管理センター（行方不明犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+沖縄県動物愛護管理センター（行方不明猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+沖縄県動物愛護管理センター（迷い込み保護犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+沖縄県動物愛護管理センター（迷い込み保護猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+浜松市はぴまるの丘（保護犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+滋賀県動物保護管理センター（迷い犬猫）:
+  consecutive_zero_runs: 0
+  high_water_count: 3
+  last_count: 3
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 3
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+熊本市（迷子犬一覧）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+熊本市（迷子猫一覧）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+熊本県動愛（センター譲渡犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+熊本県動愛（センター譲渡猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+熊本県動愛（個人保護犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+熊本県動愛（個人保護猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+熊本県動愛（団体譲渡犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+熊本県動愛（団体譲渡猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+熊本県動愛（迷子犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+熊本県動愛（迷子猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+町田市（保護情報）:
+  consecutive_zero_runs: 0
+  high_water_count: 2
+  last_count: 2
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 2
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+町田市（収容動物のお知らせ）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+町田市（迷子その他・捜索）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+町田市（迷子犬・捜索）:
+  consecutive_zero_runs: 0
+  high_water_count: 2
+  last_count: 2
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 2
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+町田市（迷子猫・捜索）:
+  consecutive_zero_runs: 0
+  high_water_count: 56
+  last_count: 56
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 56
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+石川県（保護犬・猫情報）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+神奈川県動物愛護センター（その他動物）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+神奈川県動物愛護センター（センター外保護動物）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+神奈川県動物愛護センター（保護犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+神奈川県動物愛護センター（保護猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+神戸市動物管理センター（収容動物）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+福井県（動物保護センター）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+福山市（保護犬）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:21+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+福山市（保護猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+福岡市わんにゃん（犬保護中）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+福岡市わんにゃん（犬譲渡）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+福岡市わんにゃん（猫保護中）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+福岡市わんにゃん（猫譲渡）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+福岡県動物愛護協会（センター譲渡犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+福岡県動物愛護協会（センター譲渡猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+福岡県動物愛護協会（一般保護犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+福岡県動物愛護協会（一般保護猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+福岡県動物愛護協会（保健所収容犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+福岡県動物愛護協会（保健所収容猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+福岡県動物愛護協会（団体譲渡犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+福岡県動物愛護協会（団体譲渡猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+福島県（中通り 迷子犬）:
+  consecutive_zero_runs: 0
+  high_water_count: 4
+  last_count: 4
+  last_nonzero_at: '2026-06-22T19:04:22+00:00'
+  last_nonzero_count: 4
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+福島県（中通り 迷子猫）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:22+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+福島県（会津 迷子犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+福島県（相双 迷子犬）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:22+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+福島県（相双 迷子猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+群馬県動物愛護センター東部支所（保護犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+群馬県動物愛護センター（保護犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+群馬県動物愛護センター（保護猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+船橋市（収容犬猫）:
+  consecutive_zero_runs: 0
+  high_water_count: 3
+  last_count: 3
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 3
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+船橋市（譲渡可能犬猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+茨城県（収容中の動物たち）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+茨城県（迷い犬・猫情報）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+西讃保健福祉事務所（収容動物）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+豊中市（迷子犬猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+豊橋市あいくる（迷い犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+豊橋市あいくる（迷い猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+豊田市動物愛護センター（迷子動物）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+越谷市（保護犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+越谷市（保護猫）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+越谷市（個人保護犬猫）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:20+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+那覇市（保護犬猫情報）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+長崎市動物愛護管理センター（犬里親募集）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:19+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+長崎市動物愛護管理センター（猫里親募集）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:19+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+長崎犬猫ネット（保健所収容）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+長崎犬猫ネット（保護）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+長崎犬猫ネット（迷子）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+長野県動物愛護センター（譲渡犬）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:21+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+長野県動物愛護センター（譲渡猫）:
+  consecutive_zero_runs: 0
+  high_water_count: 4
+  last_count: 4
+  last_nonzero_at: '2026-06-22T19:04:21+00:00'
+  last_nonzero_count: 4
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+青森県動物愛護センター（収容情報）:
+  consecutive_zero_runs: 0
+  high_water_count: 1
+  last_count: 1
+  last_nonzero_at: '2026-06-22T19:04:22+00:00'
+  last_nonzero_count: 1
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+静岡県（保護犬猫情報）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+高松市 わんにゃん高松（収容中犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+高松市 わんにゃん高松（収容中猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+高槻市（迷子犬猫）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:20+00:00'
+高知県動物愛護センター:
+  consecutive_zero_runs: 0
+  high_water_count: 65
+  last_count: 65
+  last_nonzero_at: '2026-06-22T19:04:22+00:00'
+  last_nonzero_count: 65
+  last_seen_at: '2026-06-22T19:04:22+00:00'
+鳥取県（迷子動物情報）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:21+00:00'
+鹿児島市（保護犬）:
+  consecutive_zero_runs: 1
+  last_count: 0
+  last_seen_at: '2026-06-22T19:04:19+00:00'
+鹿児島市（保護猫）:
+  consecutive_zero_runs: 0
+  high_water_count: 7
+  last_count: 7
+  last_nonzero_at: '2026-06-22T19:04:19+00:00'
+  last_nonzero_count: 7
+  last_seen_at: '2026-06-22T19:04:19+00:00'
