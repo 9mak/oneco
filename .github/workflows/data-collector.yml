@@ -46,6 +46,7 @@ jobs:
         env:
           NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -70,7 +71,15 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add output/animals.json snapshots/latest.json data/broken_sites.yaml || true
+          # 監視状態ファイル (broken_sites / site_baselines / field_quality_drift) は
+          # run 跨ぎで状態を保持するため必ず commit する。存在しないファイルを
+          # git add に渡すと pathspec エラーで stage 全体が中断するため、存在する
+          # ものだけを個別に add する。
+          for f in output/animals.json snapshots/latest.json \
+                   data/broken_sites.yaml data/site_baselines.yaml \
+                   data/field_quality_drift.yaml; do
+            [ -e "$f" ] && git add "$f" || true
+          done
 
           # 変更が無ければ何もしない (exit 0)
           if git diff --staged --quiet; then
@@ -126,3 +135,21 @@ jobs:
             '{text: ($text + "\n<" + $run_url + "|run #" + $run_no + "> (" + $event + ")")}')
           curl -sS -X POST -H 'Content-Type: application/json' \
             --data "$PAYLOAD" "$SLACK_WEBHOOK_URL" || echo "::warning::Slack webhook 送信に失敗"
+
+      - name: Notify Discord on failure
+        if: failure()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          # DISCORD_WEBHOOK_URL secret 未設定時は何もしない（graceful degradation）
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo "::notice::DISCORD_WEBHOOK_URL secret not configured; skipping Discord notification"
+            exit 0
+          fi
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          CONTENT=":warning: oneco data-collector が失敗しました
+          run #${{ github.run_number }} (${{ github.event_name }})
+          $RUN_URL"
+          PAYLOAD=$(jq -n --arg content "$CONTENT" '{content: $content}')
+          curl -sS -X POST -H 'Content-Type: application/json' \
+            --data "$PAYLOAD" "$DISCORD_WEBHOOK_URL" || echo "::warning::Discord webhook 送信に失敗"

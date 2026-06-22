@@ -9,9 +9,17 @@ from src.data_collector.orchestration.collector_service import CollectionResult
 
 
 @pytest.fixture(autouse=True)
-def _stub_sites_runners():
+def _stub_sites_runners(tmp_path, monkeypatch):
     """main() 内の sites.yaml 走査関数を全テストで stub し、
-    本物の broken_tracker / output_writer 等に副作用が漏れないようにする。"""
+    本物の broken_tracker / output_writer 等に副作用が漏れないようにする。
+
+    監視状態ファイル (broken_sites / site_baselines / field_quality_drift) の
+    書き込み先を tmp に逃がし、テストが repo 内 data/ を汚染しないようにする
+    (MagicMock 化された SnapshotStore は int() で 1 を返すため、パスを逃がさ
+    ないと全実サイトのベースラインが data/site_baselines.yaml に書かれる)。"""
+    monkeypatch.setenv("BROKEN_SITES_PATH", str(tmp_path / "broken_sites.yaml"))
+    monkeypatch.setenv("SITE_BASELINE_PATH", str(tmp_path / "site_baselines.yaml"))
+    monkeypatch.setenv("FIELD_QUALITY_DRIFT_PATH", str(tmp_path / "field_quality_drift.yaml"))
     with (
         patch(
             "src.data_collector.__main__.run_rule_based_sites",
@@ -229,7 +237,6 @@ class TestCLIWithDatabase:
         # DatabaseConnection が初期化されたことを確認
         mock_db_connection_class.assert_called_once()
 
-    @patch.dict("os.environ", {}, clear=True)
     @patch("src.data_collector.__main__.CollectorService")
     @patch("src.data_collector.__main__.KochiAdapter")
     @patch("src.data_collector.__main__.SnapshotStore")
@@ -244,8 +251,13 @@ class TestCLIWithDatabase:
         mock_snapshot_store_class,
         mock_kochi_adapter_class,
         mock_collector_service_class,
+        monkeypatch,
     ):
         """DATABASE_URL 未設定時は repository=None で CollectorService が作成されることを確認"""
+        # DATABASE_URL のみ削除する。os.environ を clear=True で全消去すると
+        # autouse fixture が設定した SITE_BASELINE_PATH 等まで消え、main() が
+        # repo 内 data/ に状態ファイルを書いてしまうため delenv で限定する。
+        monkeypatch.delenv("DATABASE_URL", raising=False)
         # モックの設定
         mock_service = Mock()
         mock_service.run_collection.return_value = CollectionResult(

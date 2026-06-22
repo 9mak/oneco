@@ -29,6 +29,7 @@ from .domain.quality_metrics import compute_missing_rates, group_animals_by_site
 from .infrastructure.database.connection import DatabaseConnection, DatabaseSettings
 from .infrastructure.notification_client import NotificationClient, NotificationLevel
 from .infrastructure.output_writer import OutputWriter
+from .infrastructure.site_baseline_tracker import SiteBaselineTracker, ZeroCountRegression
 from .infrastructure.snapshot_store import SnapshotStore
 from .llm.adapter import LlmAdapter
 from .llm.config import SiteConfigLoader, SitesConfig
@@ -493,22 +494,28 @@ def _send_run_summary_alert(
     threshold: int,
     logger: logging.Logger,
     field_drifts: list[FieldDrift] | None = None,
+    zero_count_regressions: list[ZeroCountRegression] | None = None,
 ) -> None:
-    """1 回の run 終了時に Slack へサマリアラートを送る。
+    """1 回の run 終了時に Slack / Discord へサマリアラートを送る。
 
     判定:
       - failure_ratio > 0.2 OR 全件失敗 → CRITICAL
       - critical_sites (consec>=threshold) > 0
         OR total_failed > 0
-        OR field_drifts (フィールド欠損率急増) > 0 → WARNING
+        OR field_drifts (フィールド欠損率急増) > 0
+        OR zero_count_regressions (過去≥1件→今0件継続) > 0 → WARNING
       - 何も無ければ通知しない
 
-    Slack webhook 未設定時は NotificationClient が自動的に no-op になる。
+    webhook 未設定時は NotificationClient が自動的に no-op になる。
 
     field_drifts: 自己修復ループ Phase 1 のフィールド欠損率ドリフト検知結果。
     各サイトについて location/age_months 等の欠損率が前回比 +閾値 急増した
     場合に投入される。adapter のラベル/セレクタ不一致シグナルとして通知に
     含める。
+
+    zero_count_regressions: 過去に ≥1 件あったが今 0 件が継続するサイト。
+    snapshot とは独立した永続ベースライン (SiteBaselineTracker) で検知され、
+    「正常終了したが silent に 0 件」というサイレント破損を可視化する。
     """
     if total_sites == 0:
         return
@@ -525,7 +532,8 @@ def _send_run_summary_alert(
         total_succeeded == 0 and total_failed > 0
     )
     drifts = list(field_drifts) if field_drifts else []
-    has_warning = bool(critical_sites_list) or total_failed > 0 or bool(drifts)
+    regressions = list(zero_count_regressions) if zero_count_regressions else []
+    has_warning = bool(critical_sites_list) or total_failed > 0 or bool(drifts) or bool(regressions)
 
     if not (is_critical or has_warning):
         return
@@ -537,6 +545,8 @@ def _send_run_summary_alert(
     )
     if drifts:
         message += f", フィールド品質ドリフト {len(drifts)} 件"
+    if regressions:
+        message += f", 件数ゼロ回帰 {len(regressions)} 件"
     details: dict[str, Any] = {
         "total_sites": total_sites,
         "succeeded": total_succeeded,
@@ -557,6 +567,15 @@ def _send_run_summary_alert(
         if len(drifts) > 5:
             sample += f" ... (+{len(drifts) - 5} more)"
         details["field_drifts_sample"] = sample
+    if regressions:
+        details["zero_count_regressions_count"] = len(regressions)
+        sample = "; ".join(
+            f"[{r.site_name}] baseline {r.baseline_count}→0 ({r.consecutive_zero_runs}連続)"
+            for r in regressions[:10]
+        )
+        if len(regressions) > 10:
+            sample += f" ... (+{len(regressions) - 10} more)"
+        details["zero_count_regressions_sample"] = sample
     try:
         notification_client.send_alert(level, message, details)
     except Exception as e:
@@ -600,6 +619,8 @@ def main():
             notification_config["email"] = email
         if slack_url := os.environ.get("SLACK_WEBHOOK_URL"):
             notification_config["slack_webhook_url"] = slack_url
+        if discord_url := os.environ.get("DISCORD_WEBHOOK_URL"):
+            notification_config["discord_webhook_url"] = discord_url
         notification_client = NotificationClient(notification_config)
 
         database_url = os.environ.get("DATABASE_URL")
@@ -761,7 +782,11 @@ def main():
                         os.environ.get("FIELD_QUALITY_DRIFT_PATH", "data/field_quality_drift.yaml")
                     )
                     fq_tracker = FieldQualityTracker(fq_path)
-                    animals_now = snapshot_store.load_snapshot()
+                    # load_snapshot() は後方互換のため常に空リストを返すスタブ。
+                    # 今 run の実データは load_animal_map() (= 後段の件数集計と同じ
+                    # ソース) から取る。これを使わないと欠損率が常に空集計になり、
+                    # フィールド品質ドリフト検知が無音化する。
+                    animals_now = list(snapshot_store.load_animal_map().values())
                     site_groups = group_animals_by_site(animals_now, site_list_urls)
                     for site_name, animals in site_groups.items():
                         rates = compute_missing_rates(animals)
@@ -778,8 +803,45 @@ def main():
                 except Exception as e:
                     logger.warning(f"フィールド欠損率ドリフト検知失敗: {e}")
 
-                # Slack 通知: 連続失敗サイト / 全体失敗率 / 欠損率ドリフト に応じて
-                # Warning/Critical
+                # サイト別件数の永続ベースライン更新 + ゼロ件回帰検知。
+                # snapshot は run ごとに reset されるため、0 件回帰が 1 run しか
+                # 検知されず 2 run 目以降は沈黙する盲点があった。snapshot とは独立
+                # した永続ファイル (data/site_baselines.yaml) で「過去≥1件→今0件」を
+                # 毎 run 検知する。失敗サイトは broken_tracker / critical_sites 側で
+                # 扱うため、ここではベースラインを更新しない (失敗の 0 を「真の
+                # 0 件」と混同しないため)。best-effort: 失敗しても収集は止めない。
+                zero_regressions: list[ZeroCountRegression] = []
+                try:
+                    baseline_path = Path(
+                        os.environ.get("SITE_BASELINE_PATH", "data/site_baselines.yaml")
+                    )
+                    baseline_tracker = SiteBaselineTracker(baseline_path)
+                    current_site_counts = snapshot_store.load_counts_by_site_url_prefix(
+                        site_list_urls
+                    )
+                    for site_name in site_list_urls:
+                        if broken_tracker.consecutive_failures(site_name) > 0:
+                            continue
+                        baseline_tracker.record(site_name, current_site_counts.get(site_name, 0))
+                    zero_drop_threshold = int(os.environ.get("ONECO_ZERO_DROP_THRESHOLD", "2"))
+                    zero_regressions = baseline_tracker.detect_zero_count_regressions(
+                        threshold=zero_drop_threshold
+                    )
+                    if zero_regressions:
+                        logger.warning(
+                            f"件数ゼロ回帰検知: {len(zero_regressions)} サイト "
+                            f"(過去≥1件→今0件が{zero_drop_threshold}回以上連続)"
+                        )
+                        for r in zero_regressions[:10]:
+                            logger.warning(
+                                f"  [{r.site_name}] baseline {r.baseline_count} → 0 "
+                                f"({r.consecutive_zero_runs}連続)"
+                            )
+                except Exception as e:
+                    logger.warning(f"件数ベースライン追跡失敗: {e}")
+
+                # Slack / Discord 通知: 連続失敗サイト / 全体失敗率 / 欠損率ドリフト /
+                # 件数ゼロ回帰 に応じて Warning/Critical
                 _send_run_summary_alert(
                     notification_client=notification_client,
                     broken_tracker=broken_tracker,
@@ -789,6 +851,7 @@ def main():
                     threshold=BROKEN_SITE_SKIP_THRESHOLD,
                     logger=logger,
                     field_drifts=field_drifts,
+                    zero_count_regressions=zero_regressions,
                 )
 
                 # 進捗ログ
