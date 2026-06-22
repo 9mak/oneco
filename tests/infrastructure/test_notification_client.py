@@ -174,3 +174,98 @@ class TestNotificationClient:
 
         # 4回呼ばれたことを確認
         assert mock_post.call_count == 4
+
+    @patch("src.data_collector.infrastructure.notification_client.requests.post")
+    def test_send_alert_has_timeout(self, mock_post, client):
+        """requests.post に timeout が渡される（無限ハング防止 / Bandit B113）"""
+        mock_post.return_value.status_code = 200
+        client.send_alert(NotificationLevel.INFO, "msg", {"k": "v"})
+        assert mock_post.call_args[1].get("timeout") is not None
+
+
+class TestDiscordNotification:
+    """Discord webhook 通知のテスト"""
+
+    @pytest.fixture
+    def discord_client(self):
+        return NotificationClient(
+            {"discord_webhook_url": "https://discord.com/api/webhooks/123/abc"}
+        )
+
+    @pytest.fixture
+    def sample_animal_data(self):
+        return [
+            AnimalData(
+                species="猫",
+                sex="女の子",
+                shelter_date="2026-06-19",
+                location="高知県",
+                source_url="https://example.jp/a/1",
+                category="adoption",
+            )
+        ]
+
+    @patch("src.data_collector.infrastructure.notification_client.requests.post")
+    def test_discord_alert_uses_content_field(self, mock_post, discord_client):
+        """Discord は Slack の text ではなく content フィールドを使う"""
+        mock_post.return_value.status_code = 204
+        discord_client.send_alert(
+            NotificationLevel.CRITICAL, "Page structure changed", {"prefecture": "高知県"}
+        )
+        assert mock_post.called
+        call_args = mock_post.call_args
+        assert call_args[0][0] == "https://discord.com/api/webhooks/123/abc"
+        json_data = call_args[1]["json"]
+        assert "content" in json_data
+        assert "text" not in json_data
+        assert "Page structure changed" in json_data["content"]
+        assert "高知県" in json_data["content"]
+
+    @patch("src.data_collector.infrastructure.notification_client.requests.post")
+    def test_discord_content_truncated_to_limit(self, mock_post, discord_client):
+        """Discord の 2000 文字上限を超えないよう content を切り詰める"""
+        mock_post.return_value.status_code = 204
+        big_details = {f"key{i}": "値" * 200 for i in range(50)}
+        discord_client.send_alert(NotificationLevel.WARNING, "big", big_details)
+        json_data = mock_post.call_args[1]["json"]
+        assert len(json_data["content"]) <= 2000
+
+    @patch("src.data_collector.infrastructure.notification_client.requests.post")
+    def test_discord_new_animals(self, mock_post, discord_client, sample_animal_data):
+        mock_post.return_value.status_code = 204
+        discord_client.notify_new_animals(sample_animal_data)
+        assert mock_post.called
+        json_data = mock_post.call_args[1]["json"]
+        assert "content" in json_data
+        assert "新規収容動物" in json_data["content"] or "1件" in json_data["content"]
+
+    @patch("src.data_collector.infrastructure.notification_client.requests.post")
+    def test_both_channels_send_to_both(self, mock_post):
+        """Slack と Discord 両方設定すると両方に送信される"""
+        mock_post.return_value.status_code = 200
+        client = NotificationClient(
+            {
+                "slack_webhook_url": "https://hooks.slack.com/services/X/Y/Z",
+                "discord_webhook_url": "https://discord.com/api/webhooks/1/a",
+            }
+        )
+        client.send_alert(NotificationLevel.WARNING, "msg", {"k": "v"})
+        assert mock_post.call_count == 2
+        urls = {c[0][0] for c in mock_post.call_args_list}
+        assert "https://hooks.slack.com/services/X/Y/Z" in urls
+        assert "https://discord.com/api/webhooks/1/a" in urls
+
+    @patch("src.data_collector.infrastructure.notification_client.requests.post")
+    def test_discord_failure_is_graceful(self, mock_post, discord_client):
+        mock_post.side_effect = Exception("Network error")
+        try:
+            discord_client.send_alert(NotificationLevel.ERROR, "x", {"e": "y"})
+        except Exception:
+            pytest.fail("send_alert should not raise")
+
+    @patch("src.data_collector.infrastructure.notification_client.requests.post")
+    def test_no_channel_no_send(self, mock_post):
+        """チャネル未設定なら送信しない（no-op）"""
+        client = NotificationClient({"email": "a@b.c"})
+        client.send_alert(NotificationLevel.INFO, "x", {})
+        assert not mock_post.called

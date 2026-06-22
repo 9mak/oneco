@@ -209,3 +209,73 @@ def test_field_drifts_alongside_failures_warning():
     assert args[0] == NotificationLevel.WARNING
     details = client.send_alert.call_args[0][2]
     assert details["field_drifts_count"] == 2
+
+
+def test_zero_count_regression_alone_triggers_warning():
+    """失敗 0 でも件数ゼロ回帰があれば WARNING（サイレント破損の検知）"""
+    from src.data_collector.infrastructure.site_baseline_tracker import ZeroCountRegression
+
+    client = MagicMock()
+    regs = [
+        ZeroCountRegression(
+            site_name="船橋市", baseline_count=21, consecutive_zero_runs=2, last_nonzero_at=None
+        ),
+    ]
+    _send_run_summary_alert(
+        notification_client=client,
+        broken_tracker=_make_tracker(0),
+        total_sites=209,
+        total_succeeded=209,
+        total_failed=0,
+        threshold=3,
+        logger=_make_logger(),
+        zero_count_regressions=regs,
+    )
+    assert client.send_alert.called
+    args, _ = client.send_alert.call_args
+    assert args[0] == NotificationLevel.WARNING
+    details = client.send_alert.call_args[0][2]
+    assert details.get("zero_count_regressions_count") == 1
+    assert "船橋市" in details.get("zero_count_regressions_sample", "")
+
+
+def test_zero_count_regression_empty_does_not_change_behavior():
+    """件数ゼロ回帰が None / 空なら既存判定そのまま（後方互換）"""
+    client = MagicMock()
+    _send_run_summary_alert(
+        notification_client=client,
+        broken_tracker=_make_tracker(0),
+        total_sites=10,
+        total_succeeded=10,
+        total_failed=0,
+        threshold=3,
+        logger=_make_logger(),
+        zero_count_regressions=[],
+    )
+    client.send_alert.assert_not_called()
+
+
+def test_zero_count_regression_sample_truncated():
+    """回帰サンプルは先頭 10 件に切り詰め、残数を表示する"""
+    from src.data_collector.infrastructure.site_baseline_tracker import ZeroCountRegression
+
+    client = MagicMock()
+    regs = [
+        ZeroCountRegression(
+            f"サイト{i}", baseline_count=5, consecutive_zero_runs=2, last_nonzero_at=None
+        )
+        for i in range(15)
+    ]
+    _send_run_summary_alert(
+        notification_client=client,
+        broken_tracker=_make_tracker(0),
+        total_sites=209,
+        total_succeeded=209,
+        total_failed=0,
+        threshold=3,
+        logger=_make_logger(),
+        zero_count_regressions=regs,
+    )
+    details = client.send_alert.call_args[0][2]
+    assert details["zero_count_regressions_count"] == 15
+    assert "more" in details["zero_count_regressions_sample"]
