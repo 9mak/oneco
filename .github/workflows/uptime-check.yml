@@ -1,0 +1,147 @@
+name: Uptime Check
+
+# Cloud Run /health と Vercel フロント top の死活を 30 分毎に外形監視。
+# 失敗時のみ Discord に通知し、CI status も failure にして GitHub 上にも残す。
+#
+# 設計判断:
+# - スケジュール遅延: GitHub Actions cron は best-effort で 5〜15+分の遅延が普通。
+#   検知 RTO は「およそ 30〜60 分以内」程度と理解すること（tight RTO は無理）。
+# - チェックは浅く: HTTP 200 のみ確認。「/health が 200」≠「API が正しい」だが、
+#   uptime の altitude では適切。深い機能チェックには昇格しない。
+# - リトライ: 単発の transient エラー（GCP 一瞬の 5xx・ネットワーク）で flap して
+#   誤通知すると alert 疲労を起こすので、3 回試行・各 5 秒間隔で「本当に落ちている」
+#   を確証してから通知する。
+# - 60 日ルール: GitHub は 60 日リポジトリ無活動で schedule を自動 disable する。
+#   現状アクティブなので非問題だが、知識として残す。
+# - force_failure 入力: 配線確認用。意図的に 404 を踏んで Discord 通知パスを
+#   実地検証できる（PR #213 で _send_discord_alert を直接呼んだ精神と同じ）。
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'  # 30 分毎
+  workflow_dispatch:
+    inputs:
+      force_failure:
+        description: '配線テスト: true で意図的に失敗 URL を踏んで Discord 通知到達確認'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BACKEND_URL: https://oneco-api-tvlsrcvyuq-an.a.run.app/health
+      FRONTEND_URL: https://frontend-psi-ten-73.vercel.app/
+      RETRY_COUNT: '3'
+      RETRY_WAIT_SEC: '5'
+      CURL_TIMEOUT_SEC: '15'
+    steps:
+      - name: Probe targets
+        id: probe
+        env:
+          FORCE_FAILURE: ${{ inputs.force_failure }}
+        run: |
+          set -u  # 未定義変数で fail（-e は失敗ターゲットがあっても集計を続けるためあえて入れない）
+
+          # force_failure=true なら、意図的に存在しないパスをチェックリストに混ぜる
+          # （実 endpoint も並行に確認するので片方でも落ちれば通知 = 配線検証になる）。
+          if [ "$FORCE_FAILURE" = "true" ]; then
+            FORCED_URL="https://oneco-api-tvlsrcvyuq-an.a.run.app/__uptime_force_failure__"
+            echo "::warning::force_failure=true なので意図的に $FORCED_URL を含めます（Discord 通知の配線検証）"
+            TARGETS="backend=$BACKEND_URL frontend=$FRONTEND_URL forced_failure=$FORCED_URL"
+          else
+            TARGETS="backend=$BACKEND_URL frontend=$FRONTEND_URL"
+          fi
+
+          FAILURES=""
+          DETAILS=""
+
+          for entry in $TARGETS; do
+            name="${entry%%=*}"
+            url="${entry#*=}"
+            echo "[$name] $url"
+
+            last_status=""
+            last_err=""
+            ok=0
+
+            for attempt in $(seq 1 "$RETRY_COUNT"); do
+              # -s: silent, -S: show errors, -o /dev/null: 本文捨てる, -w '%{http_code}'
+              # --max-time: 全体タイムアウト, -L: redirect 追跡（フロントの 308 など）
+              status="$(curl -sS -L -o /dev/null --max-time "$CURL_TIMEOUT_SEC" \
+                          -w '%{http_code}' "$url" 2>/tmp/curl_err_$$ || echo '000')"
+              last_status="$status"
+              last_err="$(cat /tmp/curl_err_$$ 2>/dev/null || true)"
+              echo "  attempt $attempt: HTTP $status"
+
+              if [ "$status" = "200" ]; then
+                ok=1
+                break
+              fi
+
+              if [ "$attempt" -lt "$RETRY_COUNT" ]; then
+                sleep "$RETRY_WAIT_SEC"
+              fi
+            done
+
+            if [ "$ok" = "1" ]; then
+              continue
+            fi
+
+            FAILURES="$FAILURES $name"
+            DETAILS="$DETAILS\n- $name: HTTP $last_status ($url)"
+            if [ -n "$last_err" ]; then
+              # curl のエラーメッセージ（DNS 失敗・SSL 失敗・timeout 等）も拾う
+              DETAILS="$DETAILS\n  curl_err: $last_err"
+            fi
+          done
+
+          if [ -n "$FAILURES" ]; then
+            FAILURES_TRIMMED="$(echo "$FAILURES" | xargs)"
+            echo "failed=true" >> "$GITHUB_OUTPUT"
+            echo "failed_targets=$FAILURES_TRIMMED" >> "$GITHUB_OUTPUT"
+            # multiline output (heredoc)
+            {
+              echo 'details<<EOF'
+              printf '%b' "$DETAILS"
+              echo
+              echo 'EOF'
+            } >> "$GITHUB_OUTPUT"
+            echo "::error::uptime check 失敗: $FAILURES_TRIMMED"
+          else
+            echo "failed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::全ターゲット 200 OK"
+          fi
+
+      - name: Notify Discord on failure
+        if: steps.probe.outputs.failed == 'true'
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          FAILED_TARGETS: ${{ steps.probe.outputs.failed_targets }}
+          DETAILS: ${{ steps.probe.outputs.details }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo "::warning::DISCORD_WEBHOOK_URL 未設定。Discord 通知はスキップ"
+            exit 0
+          fi
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          CONTENT=":rotating_light: oneco uptime check 失敗
+          失敗ターゲット: $FAILED_TARGETS
+          詳細:
+          $DETAILS
+          run: $RUN_URL"
+          PAYLOAD=$(jq -n --arg content "$CONTENT" '{content: $content}')
+          curl -sS -X POST -H 'Content-Type: application/json' \
+            --data "$PAYLOAD" "$DISCORD_WEBHOOK_URL" \
+            || echo "::warning::Discord webhook 送信に失敗"
+
+      - name: Fail step on uptime failure
+        if: steps.probe.outputs.failed == 'true'
+        # GitHub Actions の status を failure にして UI 上でも目立たせる
+        # （Discord 通知が万一届かなくても GitHub の email/notif で気づける二重ガード）。
+        run: exit 1
