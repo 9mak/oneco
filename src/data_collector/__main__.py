@@ -163,17 +163,22 @@ def run_llm_sites(
     db_connection: DatabaseConnection | None,
     logger: logging.Logger,
     broken_tracker: BrokenSitesTracker | None = None,
-) -> tuple[int, int, list[str]]:
+) -> tuple[int, int, list[str], list[str]]:
     """LLMベースのサイト群を収集
 
     Returns:
-        (成功サイト数, 失敗サイト数, 0件で完了したサイト名一覧)。
+        (成功サイト数, 失敗サイト数, 0件で完了したサイト名一覧,
+         成功した site_name 一覧)。
         0 件サイトは success 扱いだが、HTML 構造変化で行抽出が空配列に
         なっている可能性があるため、ログ上で別途可視化する。
+        成功 site_name 一覧は SiteBaselineTracker の filter 用。
+        robots-disallowed / skip 対象 / 失敗サイトを baseline=0 で記録すると
+        永続ファイル汚染になるため、main() ではこの一覧でループを絞る。
     """
     succeeded = 0
     failed = 0
     zero_count_sites: list[str] = []
+    succeeded_site_names: list[str] = []
     robots = RobotsChecker()
 
     for site in config.sites:
@@ -247,6 +252,7 @@ def run_llm_sites(
                     f"処理時間{elapsed:.1f}秒"
                 )
                 succeeded += 1
+                succeeded_site_names.append(site.name)
                 if result.total_collected == 0:
                     zero_count_sites.append(site.name)
             else:
@@ -270,7 +276,7 @@ def run_llm_sites(
             failed += 1
             continue  # 他のサイトの処理を継続
 
-    return succeeded, failed, zero_count_sites
+    return succeeded, failed, zero_count_sites, succeeded_site_names
 
 
 def run_rule_based_sites(
@@ -283,7 +289,7 @@ def run_rule_based_sites(
     logger: logging.Logger,
     broken_tracker: BrokenSitesTracker | None = None,
     previous_site_counts: dict[str, int] | None = None,
-) -> tuple[int, int, list[str]]:
+) -> tuple[int, int, list[str], list[str]]:
     """rule-based 抽出方式でサイト群をドメイン単位の並列で収集
 
     SiteAdapterRegistry に登録された adapter のみ rule-based 経路で実行。
@@ -309,7 +315,12 @@ def run_rule_based_sites(
             せず、本物の破損は list_error/detail_error/timeout で検知する。
 
     Returns:
-        (成功サイト数, 失敗サイト数, 0件で完了したサイト名一覧)。
+        (成功サイト数, 失敗サイト数, 0件で完了したサイト名一覧,
+         成功した site_name 一覧)。
+        成功 site_name 一覧は SiteBaselineTracker の filter 用。
+        robots-disallowed / 未登録 adapter / skip 対象 / 失敗サイトを baseline=0
+        で記録すると永続ファイル汚染 (永久 0 件回帰扱い) になるため、
+        main() ではこの一覧でループを絞る。
     """
     from .orchestration.parallel_runner import run_sites_parallel
     from .orchestration.soft_deadline import SoftDeadline
@@ -407,6 +418,7 @@ def run_rule_based_sites(
     succeeded = 0
     failed = 0
     zero_count_sites: list[str] = []
+    succeeded_site_names: list[str] = []
 
     def _on_outcome(outcome) -> None:
         nonlocal succeeded, failed
@@ -445,6 +457,7 @@ def run_rule_based_sites(
             if broken_tracker:
                 broken_tracker.record_success(site_name)
             succeeded += 1
+            succeeded_site_names.append(site_name)
             if result.total_collected == 0:
                 zero_count_sites.append(site_name)
                 if is_zero_count_drop:
@@ -465,6 +478,7 @@ def run_rule_based_sites(
                 f"[{site_name}] LLM フォールバック成功: {fallback_result.total_collected}件"
             )
             succeeded += 1
+            succeeded_site_names.append(site_name)
             if fallback_result.total_collected == 0:
                 zero_count_sites.append(site_name)
         else:
@@ -478,7 +492,7 @@ def run_rule_based_sites(
         on_outcome=_on_outcome,
     )
 
-    return succeeded, failed, zero_count_sites
+    return succeeded, failed, zero_count_sites, succeeded_site_names
 
 
 # 全体失敗率がこの値を超えると CRITICAL、超えないが critical_sites>0 なら WARNING
@@ -591,6 +605,11 @@ def _send_run_summary_alert(
     auto_fix_result: dict[str, Any] | None = None,
 ) -> None:
     """1 回の run 終了時に Slack / Discord へサマリアラートを送る。
+
+    `total_sites` は **実行された** サイト数 (= total_succeeded + total_failed)。
+    config.sites の総数を渡してはいけない: robots-disallowed / 未登録 adapter /
+    連続失敗 skip 等で実行されなかったサイトで分母が膨らむと failure_ratio が
+    希釈され、CRITICAL アラートが WARNING に抑制される。
 
     判定:
       - failure_ratio > 0.2 OR 全件失敗 → CRITICAL
@@ -820,7 +839,7 @@ def main():
                     os.environ.get("BROKEN_SITES_PATH", "data/broken_sites.yaml")
                 )
                 broken_tracker = BrokenSitesTracker(broken_tracker_path)
-                rule_succeeded, rule_failed, rule_zero = run_rule_based_sites(
+                rule_succeeded, rule_failed, rule_zero, rule_succeeded_names = run_rule_based_sites(
                     config=config,
                     snapshot_store=snapshot_store,
                     diff_detector=diff_detector,
@@ -833,7 +852,7 @@ def main():
                 )
 
                 # LLM サイト群（rule-based 化されてないサイト）
-                llm_succeeded, llm_failed, llm_zero = run_llm_sites(
+                llm_succeeded, llm_failed, llm_zero, llm_succeeded_names = run_llm_sites(
                     config=config,
                     snapshot_store=snapshot_store,
                     diff_detector=diff_detector,
@@ -847,6 +866,7 @@ def main():
                 total_succeeded = rule_succeeded + llm_succeeded
                 total_failed = rule_failed + llm_failed
                 zero_count_sites = rule_zero + llm_zero
+                succeeded_site_names = rule_succeeded_names + llm_succeeded_names
                 logger.info(
                     f"収集サマリ: 成功 {total_succeeded}サイト "
                     f"(うち 0 件 {len(zero_count_sites)}サイト), "
@@ -928,9 +948,15 @@ def main():
                 # snapshot は run ごとに reset されるため、0 件回帰が 1 run しか
                 # 検知されず 2 run 目以降は沈黙する盲点があった。snapshot とは独立
                 # した永続ファイル (data/site_baselines.yaml) で「過去≥1件→今0件」を
-                # 毎 run 検知する。失敗サイトは broken_tracker / critical_sites 側で
-                # 扱うため、ここではベースラインを更新しない (失敗の 0 を「真の
-                # 0 件」と混同しないため)。best-effort: 失敗しても収集は止めない。
+                # 毎 run 検知する。
+                #
+                # 記録対象は **実行成功したサイトのみ** (succeeded_site_names)。
+                # robots-disallowed / 未登録 adapter / skip 対象 / 失敗サイトを
+                # baseline=0 で記録すると、本来「未実行」のサイトが「過去 ≥1 件
+                # だが今 0 件継続」として誤検知され、永続ファイルに残り続ける
+                # (auto-fix 候補として誤 dispatch、CRITICAL アラート希釈)。
+                # 失敗サイトは broken_tracker / critical_sites 側で扱う。
+                # best-effort: 失敗しても収集は止めない。
                 zero_regressions: list[ZeroCountRegression] = []
                 try:
                     baseline_path = Path(
@@ -940,9 +966,7 @@ def main():
                     current_site_counts = snapshot_store.load_counts_by_site_url_prefix(
                         site_list_urls
                     )
-                    for site_name in site_list_urls:
-                        if broken_tracker.consecutive_failures(site_name) > 0:
-                            continue
+                    for site_name in succeeded_site_names:
                         baseline_tracker.record(site_name, current_site_counts.get(site_name, 0))
                     zero_drop_threshold = int(os.environ.get("ONECO_ZERO_DROP_THRESHOLD", "2"))
                     zero_regressions = baseline_tracker.detect_zero_count_regressions(
@@ -988,10 +1012,16 @@ def main():
 
                 # Slack / Discord 通知: 連続失敗サイト / 全体失敗率 / 欠損率ドリフト /
                 # 件数ゼロ回帰 / 自己修復 dispatch 失敗 に応じて Warning/Critical
+                # `total_sites` は実行された数 (= total_succeeded + total_failed)。
+                # len(config.sites) を渡すと robots-disallowed / 未登録 adapter /
+                # 連続失敗 skip 等で実行されなかったサイトで分母が膨らみ、
+                # failure_ratio が希釈されて CRITICAL アラートが WARNING に
+                # 抑制される (例: 60 実行中 30 失敗 = 50% が、209 中 30 = 14%
+                # に化けて閾値 20% 未満扱い)。
                 _send_run_summary_alert(
                     notification_client=notification_client,
                     broken_tracker=broken_tracker,
-                    total_sites=len(config.sites),
+                    total_sites=total_succeeded + total_failed,
                     total_succeeded=total_succeeded,
                     total_failed=total_failed,
                     threshold=BROKEN_SITE_SKIP_THRESHOLD,

@@ -71,10 +71,10 @@ class TestProviderRegistry:
 class TestSiteRunReturnTypeContract:
     """run_llm_sites / run_rule_based_sites の戻り値契約
 
-    PR #20 で bool → tuple[succeeded, failed, zero_count_sites] に変更した。
-    main 側で「成功 0 件かつ失敗 > 0 のみ exit 1、それ以外は exit 0」の
-    部分成功許容判定に使うため、対象サイトが 0 件の config では (0, 0, [])
-    を返すことが契約として固定されている必要がある。
+    PR #20 で bool → tuple[succeeded, failed, zero_count_sites] に変更し、
+    その後 (2026-06) SiteBaselineTracker filter のため
+    tuple[succeeded, failed, zero_count_sites, succeeded_site_names] に拡張。
+    対象サイトが 0 件の config では (0, 0, [], []) を返すことが契約。
 
     SitesConfig は `sites=[]` を許容しないため、対象 extraction と
     異なるサイトを 1 件入れて「処理対象 0 件」状態を作る。
@@ -103,7 +103,7 @@ class TestSiteRunReturnTypeContract:
             db_connection=None,
             logger=Mock(),
         )
-        assert result == (0, 0, [])
+        assert result == (0, 0, [], [])
 
     def test_run_rule_based_sites_returns_zero_zero_empty_when_no_rule_sites(self):
         from unittest.mock import Mock
@@ -128,7 +128,7 @@ class TestSiteRunReturnTypeContract:
             db_connection=None,
             logger=Mock(),
         )
-        assert result == (0, 0, [])
+        assert result == (0, 0, [], [])
 
 
 class TestBrokenSiteSkipThreshold:
@@ -173,7 +173,7 @@ class TestBrokenSiteSkipThreshold:
             sites=[site],
         )
 
-        succeeded, failed, zero = run_rule_based_sites(
+        succeeded, failed, zero, names = run_rule_based_sites(
             config=config,
             snapshot_store=Mock(),
             diff_detector=Mock(),
@@ -187,8 +187,9 @@ class TestBrokenSiteSkipThreshold:
         assert spy_adapter_cls.call_count == 0, (
             "閾値超えサイトでは adapter コンストラクタも呼ばれない"
         )
-        assert (succeeded, failed, zero) == (0, 0, []), (
-            "スキップは success / failure どちらにもカウントしない (0件サイトでもない)"
+        assert (succeeded, failed, zero, names) == (0, 0, [], []), (
+            "スキップは success / failure どちらにもカウントしない "
+            "(succeeded_site_names にも入らない: baseline_tracker を汚染しないため)"
         )
 
 
@@ -263,7 +264,7 @@ class TestZeroCountAnomalyDetection:
         from data_collector.adapters.rule_based.broken_tracker import BrokenSitesTracker
 
         tracker = BrokenSitesTracker(tmp_path / "broken_sites.yaml")
-        succeeded, failed, zero = self._run_with_stub(
+        succeeded, failed, zero, _names = self._run_with_stub(
             "テスト_正常0件",
             total_collected=0,
             previous_counts={"テスト_正常0件": 0},
@@ -279,7 +280,7 @@ class TestZeroCountAnomalyDetection:
         from data_collector.adapters.rule_based.broken_tracker import BrokenSitesTracker
 
         tracker = BrokenSitesTracker(tmp_path / "broken_sites.yaml")
-        succeeded, failed, zero = self._run_with_stub(
+        succeeded, failed, zero, _names = self._run_with_stub(
             "テスト_新規取得",
             total_collected=5,
             previous_counts={"テスト_新規取得": 0},
@@ -293,7 +294,7 @@ class TestZeroCountAnomalyDetection:
         from data_collector.adapters.rule_based.broken_tracker import BrokenSitesTracker
 
         tracker = BrokenSitesTracker(tmp_path / "broken_sites.yaml")
-        succeeded, failed, zero = self._run_with_stub(
+        succeeded, failed, zero, _names = self._run_with_stub(
             "テスト_継続取得",
             total_collected=3,
             previous_counts={"テスト_継続取得": 5},
@@ -313,7 +314,7 @@ class TestZeroCountAnomalyDetection:
         from data_collector.adapters.rule_based.broken_tracker import BrokenSitesTracker
 
         tracker = BrokenSitesTracker(tmp_path / "broken_sites.yaml")
-        succeeded, failed, zero = self._run_with_stub(
+        succeeded, failed, zero, _names = self._run_with_stub(
             "テスト_件数低下",
             total_collected=0,
             previous_counts={"テスト_件数低下": 4},
@@ -333,7 +334,7 @@ class TestZeroCountAnomalyDetection:
         from data_collector.adapters.rule_based.broken_tracker import BrokenSitesTracker
 
         tracker = BrokenSitesTracker(tmp_path / "broken_sites.yaml")
-        succeeded, failed, zero = self._run_with_stub(
+        succeeded, failed, zero, _names = self._run_with_stub(
             "テスト_前回情報なし",
             total_collected=0,
             previous_counts={},  # 前回情報無し
