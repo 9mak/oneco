@@ -23,6 +23,7 @@ from syndication_service.sns_publisher.publisher import (
     PublishResult,
     publish_one,
 )
+from syndication_service.sns_publisher.threads_client import ThreadsPostError
 
 
 def _animal(
@@ -202,3 +203,106 @@ class TestRecord:
         # 再ロードでも持続する
         reloaded = PostLog(path=tmp_path / "sns_posts.yaml")
         assert "https://example.jp/animals/42" in reloaded.posted_urls()
+
+
+def _wet_env() -> dict[str, str]:
+    """wet mode (実投稿) を有効化する env。本番 cron と同じ状態。"""
+    return {"THREADS_PUBLISH_ENABLED": "true", "THREADS_PUBLISH_DRY_RUN": "false"}
+
+
+@pytest.mark.asyncio
+class TestWetModePublish:
+    """wet-mode (dry_run=false + client 注入) の実投稿経路。
+
+    本番 cron (JST 9:00) で毎日実行されているが、threads_client 注入時の
+    success/failure 経路は従来テストが無く、全体監査 (2026-06-24) で P1 と
+    して検出された。Mock ThreadsClient で publisher.publish_one の wet branch
+    (publisher.py の client.post → post_log.record → posted=True) を固定する。
+    """
+
+    async def test_wet_success_posts_and_records(self, tmp_path):
+        """post 成功 → posted=True / reason=None / post_log に記録 (重複防止)"""
+        url = "https://example.jp/animals/77"
+        repo = _repo([_animal(source_url=url)])
+        log = _log(tmp_path)
+        client = MagicMock()
+        client.post.return_value = "published_thread_id"
+
+        result = await publish_one(
+            repo=repo,
+            generator=_gen(),
+            post_log=log,
+            platform="threads",
+            env=_wet_env(),
+            threads_client=client,
+        )
+
+        assert result.posted is True
+        assert result.dry_run is False
+        assert result.reason is None
+        client.post.assert_called_once()
+        # 実投稿したものは post_log に残す (翌日同一個体の重複投稿を防ぐ)
+        assert url in log.posted_urls()
+        # 再ロードでも持続
+        assert url in PostLog(path=tmp_path / "sns_posts.yaml").posted_urls()
+
+    async def test_wet_post_failure_does_not_pollute_log(self, tmp_path):
+        """post が例外 → posted=False / reason=publish_error:* / post_log 汚染なし
+
+        投稿に失敗したのに post_log に記録されると、その個体が二度と
+        投稿候補に上がらず永久に取りこぼされる。失敗時は記録しない契約。
+        """
+        url = "https://example.jp/animals/88"
+        repo = _repo([_animal(source_url=url)])
+        log = _log(tmp_path)
+        client = MagicMock()
+        client.post.side_effect = ThreadsPostError("publish failed: 500 Server Error")
+
+        result = await publish_one(
+            repo=repo,
+            generator=_gen(),
+            post_log=log,
+            platform="threads",
+            env=_wet_env(),
+            threads_client=client,
+        )
+
+        assert result.posted is False
+        assert result.reason == "publish_error:ThreadsPostError"
+        # 失敗 → post_log に残さない (= 次回 run で再選定の余地)
+        assert url not in log.posted_urls()
+        assert log.posted_urls() == set()
+
+    async def test_wet_post_failure_does_not_leak_token_to_logs(self, tmp_path, caplog):
+        """post 例外メッセージに token が含まれても publisher のログに漏れない。
+
+        threads_client 側で redaction 済みだが、publisher のエラーログ
+        (err=%s) に exc を載せる経路の end-to-end 回帰を固定する。
+        """
+        import logging
+
+        url = "https://example.jp/animals/99"
+        repo = _repo([_animal(source_url=url)])
+        log = _log(tmp_path)
+        client = MagicMock()
+        # threads_client が redaction 済みメッセージを投げる前提 (実装と一致)
+        client.post.side_effect = ThreadsPostError(
+            "container creation failed: 403 Client Error: Forbidden for url: "
+            "https://graph.threads.net/v1.0/1/threads?access_token=<redacted>&text=hi"
+        )
+
+        with caplog.at_level(logging.ERROR):
+            result = await publish_one(
+                repo=repo,
+                generator=_gen(),
+                post_log=log,
+                platform="threads",
+                env=_wet_env(),
+                threads_client=client,
+            )
+
+        assert result.posted is False
+        # ログ全体に生 token が出ない
+        assert "access_token=<redacted>" in caplog.text or "<redacted>" in caplog.text
+        # 生トークンらしき文字列が無い (redaction マーカー以外の access_token= が無い)
+        assert "access_token=test" not in caplog.text
