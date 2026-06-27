@@ -40,19 +40,27 @@ def _mock_response(json_data: dict, status: int = 200) -> MagicMock:
 
 
 def _mock_session(responses: list[MagicMock]) -> MagicMock:
-    """post() が responses を順番に返す mock session"""
+    """post() が responses を順番に返す mock session。
+
+    container status の GET はデフォルトで FINISHED を返す (ポーリング即完了)。
+    遷移を検証したいテストは sess.get.side_effect を上書きする。
+    """
     sess = MagicMock()
     sess.post.side_effect = responses
+    sess.get.return_value = _mock_response({"status": "FINISHED"})
     return sess
 
 
-def _client(session: MagicMock) -> ThreadsClient:
+def _client(session: MagicMock, **kwargs) -> ThreadsClient:
+    # sleep はデフォルト no-op (ポーリングテストでハングしない)。
+    kwargs.setdefault("sleep", lambda _s: None)
     return ThreadsClient(
         user_id=_USER_ID,
         access_token=_TOKEN,
         session=session,
         base_url=_TEST_BASE,
         timeout=5.0,
+        **kwargs,
     )
 
 
@@ -209,6 +217,8 @@ class TestRedactToken:
         ことで「requests が URL に token を載せる」という前提自体を固定する。
         """
         sess = MagicMock()
+        # container status ポーリングは FINISHED で即通過させ、publish 段に到達させる
+        sess.get.return_value = _mock_response({"status": "FINISHED"})
 
         def _make_403_response(path: str) -> requests.Response:
             resp = requests.Response()
@@ -246,6 +256,103 @@ class TestRedactToken:
         """publish 段の HTTP エラーでも token が漏れない"""
         session = self._session_raising_real_http_error(container_ok=True)
         client = _client(session)
+        with pytest.raises(ThreadsPostError) as exc:
+            client.post("hi")
+        assert _TOKEN not in str(exc.value)
+        assert "<redacted>" in str(exc.value)
+
+
+class TestContainerPolling:
+    """container status ポーリング (wet 化後の間欠 400 対策・全体監査 2026-06-27)。
+
+    Threads は container 作成後に非同期処理する。作成直後に publish すると
+    status=IN_PROGRESS のまま叩いて 400 Bad Request になる間欠失敗があった。
+    FINISHED を待ってから publish して安定させる。
+    """
+
+    def test_finished_immediately_publishes_without_sleep(self):
+        session = _mock_session(
+            [
+                _mock_response({"id": "c1"}),
+                _mock_response({"id": "published"}),
+            ]
+        )
+        session.get.return_value = _mock_response({"status": "FINISHED"})
+        sleep = MagicMock()
+        client = _client(session, sleep=sleep)
+        assert client.post("hi") == "published"
+        # FINISHED 即時なので待たない
+        sleep.assert_not_called()
+        # create + publish の 2 回
+        assert session.post.call_count == 2
+
+    def test_in_progress_then_finished_waits_then_publishes(self):
+        session = _mock_session(
+            [
+                _mock_response({"id": "c1"}),
+                _mock_response({"id": "published"}),
+            ]
+        )
+        session.get.side_effect = [
+            _mock_response({"status": "IN_PROGRESS"}),
+            _mock_response({"status": "FINISHED"}),
+        ]
+        sleep = MagicMock()
+        client = _client(session, sleep=sleep)
+        assert client.post("hi") == "published"
+        assert session.get.call_count == 2
+        assert sleep.call_count == 1  # IN_PROGRESS の後に 1 回待つ
+        assert session.post.call_count == 2
+
+    def test_status_check_polls_correct_container_url(self):
+        session = _mock_session([_mock_response({"id": "c1"}), _mock_response({"id": "pub"})])
+        session.get.return_value = _mock_response({"status": "FINISHED"})
+        client = _client(session)
+        client.post("hi")
+        get_call = session.get.call_args
+        assert get_call.args[0] == f"{_TEST_BASE}/c1"
+        params = get_call.kwargs.get("params") or {}
+        assert params.get("fields") == "status"
+        assert params.get("access_token") == _TOKEN
+
+    def test_error_status_raises_without_publishing(self):
+        # publish が呼ばれないこと: post side_effect は container 作成の 1 件のみ
+        session = _mock_session([_mock_response({"id": "c1"})])
+        session.get.return_value = _mock_response({"status": "ERROR"})
+        client = _client(session, sleep=MagicMock())
+        with pytest.raises(ThreadsPostError) as exc:
+            client.post("hi")
+        assert "ERROR" in str(exc.value)
+        assert session.post.call_count == 1  # publish に到達しない
+
+    def test_expired_status_raises_without_publishing(self):
+        session = _mock_session([_mock_response({"id": "c1"})])
+        session.get.return_value = _mock_response({"status": "EXPIRED"})
+        client = _client(session, sleep=MagicMock())
+        with pytest.raises(ThreadsPostError):
+            client.post("hi")
+        assert session.post.call_count == 1
+
+    def test_timeout_still_in_progress_raises_without_publishing(self):
+        session = _mock_session([_mock_response({"id": "c1"})])
+        session.get.return_value = _mock_response({"status": "IN_PROGRESS"})
+        sleep = MagicMock()
+        client = _client(session, sleep=sleep, poll_max_attempts=3)
+        with pytest.raises(ThreadsPostError) as exc:
+            client.post("hi")
+        assert "FINISHED" in str(exc.value)
+        assert session.get.call_count == 3  # 3 回試して諦める
+        assert sleep.call_count == 2  # 最終試行後は待たない
+        assert session.post.call_count == 1  # publish されない
+
+    def test_status_http_error_redacts_token(self):
+        session = _mock_session([_mock_response({"id": "c1"})])
+        resp = requests.Response()
+        resp.status_code = 403
+        resp.reason = "Forbidden"
+        resp.url = f"{_TEST_BASE}/c1?fields=status&access_token={_TOKEN}"
+        session.get.return_value = resp
+        client = _client(session, sleep=MagicMock())
         with pytest.raises(ThreadsPostError) as exc:
             client.post("hi")
         assert _TOKEN not in str(exc.value)
