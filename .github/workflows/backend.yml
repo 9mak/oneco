@@ -108,8 +108,16 @@ jobs:
           alembic upgrade head
 
       - name: Run tests with coverage
+        # coverage 対象に syndication_service / notification_manager を追加。
+        # #218/#220 で入った SNS publisher (本番 cron 稼働中) が計測対象外
+        # だった盲点を解消 (全体監査 2026-06-24 の P1)。fail-under ゲートは
+        # 無いため対象追加でカバレッジ率が下がっても CI は落ちない (可視化目的)。
         run: |
-          pytest --cov=src/data_collector --cov-report=xml --cov-report=term -v
+          pytest \
+            --cov=src/data_collector \
+            --cov=src/syndication_service \
+            --cov=src/notification_manager \
+            --cov-report=xml --cov-report=term -v
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v7

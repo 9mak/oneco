@@ -14,10 +14,12 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import pytest
+import requests
 
 from syndication_service.sns_publisher.threads_client import (
     ThreadsClient,
     ThreadsPostError,
+    _redact_token,
 )
 
 _TEST_BASE = "https://graph.threads.net/v1.0"
@@ -182,3 +184,69 @@ class TestPublisherCompat:
         client = _client(session)
         published_id = client.post("hi", candidate=MagicMock())
         assert published_id == "published_xyz"
+
+
+class TestRedactToken:
+    """access_token がエラーメッセージ経由でログに漏れないこと (全体監査 2026-06-24)"""
+
+    def test_redact_helper_masks_token_value(self):
+        msg = "for url: https://graph.threads.net/v1.0/1/threads?access_token=SECRET123&text=hi"
+        redacted = _redact_token(msg)
+        assert "SECRET123" not in redacted
+        assert "access_token=<redacted>" in redacted
+        # token 以外のクエリは保持される (デバッグ可能性を残す)
+        assert "text=hi" in redacted
+
+    def test_redact_helper_noop_without_token(self):
+        msg = "publish failed: 500 Server Error"
+        assert _redact_token(msg) == msg
+
+    def _session_raising_real_http_error(self, *, container_ok: bool) -> MagicMock:
+        """requests の実挙動を再現: 4xx 時に解決済み URL (token 入り) を
+        メッセージに持つ本物の HTTPError を raise_for_status() で投げさせる。
+
+        手書き文字列ではなく requests.Response.raise_for_status() に投げさせる
+        ことで「requests が URL に token を載せる」という前提自体を固定する。
+        """
+        sess = MagicMock()
+
+        def _make_403_response(path: str) -> requests.Response:
+            resp = requests.Response()
+            resp.status_code = 403
+            resp.reason = "Forbidden"
+            # requests は params を URL にマージするため、解決済み URL に token が載る
+            resp.url = (
+                f"{_TEST_BASE}/{_USER_ID}/{path}?access_token={_TOKEN}&text=hi&media_type=TEXT"
+            )
+            return resp
+
+        if container_ok:
+            ok = MagicMock()
+            ok.json.return_value = {"id": "container_abc"}
+            ok.status_code = 200
+            ok.raise_for_status.return_value = None
+            sess.post.side_effect = [ok, _make_403_response("threads_publish")]
+        else:
+            sess.post.side_effect = [_make_403_response("threads")]
+        return sess
+
+    def test_container_http_error_does_not_leak_token(self):
+        """container 作成段の HTTP エラーで token が ThreadsPostError に載らない"""
+        session = self._session_raising_real_http_error(container_ok=False)
+        client = _client(session)
+        with pytest.raises(ThreadsPostError) as exc:
+            client.post("hi")
+        # 前提確認: 素の requests なら token が漏れるはずのメッセージ形
+        assert "access_token=" in str(exc.value)
+        # 修正後: 生の token 値は伏字化されている
+        assert _TOKEN not in str(exc.value)
+        assert "<redacted>" in str(exc.value)
+
+    def test_publish_http_error_does_not_leak_token(self):
+        """publish 段の HTTP エラーでも token が漏れない"""
+        session = self._session_raising_real_http_error(container_ok=True)
+        client = _client(session)
+        with pytest.raises(ThreadsPostError) as exc:
+            client.post("hi")
+        assert _TOKEN not in str(exc.value)
+        assert "<redacted>" in str(exc.value)
