@@ -18,6 +18,8 @@ from __future__ import annotations
 
 import logging
 import re
+import time
+from collections.abc import Callable
 from typing import Any
 
 import requests
@@ -49,6 +51,9 @@ class ThreadsClient:
         session: requests.Session | None = None,
         base_url: str = "https://graph.threads.net/v1.0",
         timeout: float = 15.0,
+        poll_interval_sec: float = 2.0,
+        poll_max_attempts: int = 10,
+        sleep: Callable[[float], None] = time.sleep,
     ) -> None:
         if not user_id:
             raise ValueError("user_id must be non-empty")
@@ -59,6 +64,11 @@ class ThreadsClient:
         self._session = session or requests.Session()
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout
+        # container が publish 可能 (status=FINISHED) になるまでのポーリング設定。
+        # sleep は注入可能 (テストで no-op 化してハングを防ぐ)。
+        self._poll_interval_sec = poll_interval_sec
+        self._poll_max_attempts = poll_max_attempts
+        self._sleep = sleep
 
     def post(
         self,
@@ -82,7 +92,47 @@ class ThreadsClient:
         """
         del candidate  # publisher 互換
         container_id = self._create_container(text, image_url=image_url)
+        # container が FINISHED になるまで待ってから publish。作成直後に publish すると
+        # status=IN_PROGRESS のまま叩いて 400 Bad Request になる間欠失敗を防ぐ。
+        self._wait_until_ready(container_id)
         return self._publish(container_id)
+
+    def _wait_until_ready(self, container_id: str) -> None:
+        """media container が publish 可能 (status=FINISHED) になるまでポーリングする。
+
+        Threads は container 作成後に非同期で処理する。作成直後に publish すると
+        status=IN_PROGRESS のまま叩いて 400 Bad Request になることがある (wet 化後
+        7run 中 1 失敗の間欠失敗の原因)。FINISHED を待ってから publish して安定させる。
+
+        Raises:
+            ThreadsPostError: status=ERROR/EXPIRED、HTTP エラー、または規定回数
+                ポーリングしても FINISHED にならなかった場合。
+        """
+        url = f"{self._base_url}/{container_id}"
+        params = {"fields": "status", "access_token": self._access_token}
+        for attempt in range(self._poll_max_attempts):
+            try:
+                resp = self._session.get(url, params=params, timeout=self._timeout)
+                resp.raise_for_status()
+            except requests.RequestException as exc:
+                raise ThreadsPostError(
+                    f"container status check failed: {_redact_token(str(exc))}"
+                ) from exc
+
+            try:
+                data = resp.json()
+            except ValueError as exc:
+                raise ThreadsPostError(f"status response not JSON: {resp.text!r}") from exc
+
+            status = data.get("status") if isinstance(data, dict) else None
+            if status == "FINISHED":
+                return
+            if status in ("ERROR", "EXPIRED"):
+                raise ThreadsPostError(f"container not publishable: status={status}")
+            # IN_PROGRESS / 不明 → 待って再試行 (最終試行後は待たない)
+            if attempt < self._poll_max_attempts - 1:
+                self._sleep(self._poll_interval_sec)
+        raise ThreadsPostError(f"container not FINISHED after {self._poll_max_attempts} polls")
 
     def _create_container(self, text: str, *, image_url: str | None) -> str:
         url = f"{self._base_url}/{self._user_id}/threads"
