@@ -103,7 +103,6 @@ def create_app() -> FastAPI:
     from slowapi.errors import RateLimitExceeded
     from slowapi.middleware import SlowAPIMiddleware
 
-    from src.syndication_service.api.health import create_health_router
     from src.syndication_service.api.routes import create_syndication_router
     from src.syndication_service.middleware.rate_limiter import (
         PUBLIC_API_DEFAULT_RATE_LIMIT,
@@ -140,10 +139,9 @@ def create_app() -> FastAPI:
     )
     app.include_router(syndication_router, prefix="/feeds", tags=["syndication"])
 
-    # Health Check ルーター登録（syndication-service）
-    health_router = create_health_router(
-        metrics_collector=metrics_collector, cache_manager=cache_manager
-    )
-    app.include_router(health_router, tags=["health"])
+    # 注: /health は data_collector の routes.py (router) 側に実装があり、
+    # そちらが先に include されるため FastAPI のルート解決で勝つ。syndication 側の
+    # create_health_router は常に shadow される dead code だったため削除した
+    # (routes.py の /health は SELECT 1 で実 DB 検証しており、こちらが本物)。
 
     return app

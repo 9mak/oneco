@@ -10,7 +10,7 @@
 from datetime import date, datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
 
 
 class AnimalStatus(StrEnum):
@@ -180,10 +180,9 @@ class AnimalData(BaseModel):
             )
         return v
 
-    class Config:
-        """Pydantic 設定"""
-
-        json_schema_extra = {
+    # Pydantic v2: class-based Config は v3 で削除予定 → ConfigDict に移行
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "species": "犬",
                 "sex": "男の子",
@@ -197,3 +196,4 @@ class AnimalData(BaseModel):
                 "source_url": "https://example-kochi.jp/animals/123",
             }
         }
+    )
