@@ -23,11 +23,11 @@ def _stub_sites_runners(tmp_path, monkeypatch):
     with (
         patch(
             "src.data_collector.__main__.run_rule_based_sites",
-            return_value=(0, 0, []),
+            return_value=(0, 0, [], []),
         ),
         patch(
             "src.data_collector.__main__.run_llm_sites",
-            return_value=(0, 0, []),
+            return_value=(0, 0, [], []),
         ),
     ):
         yield
