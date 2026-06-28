@@ -39,3 +39,20 @@ posts:
 
     #保護猫 #里親募集 #山梨県'
   dry_run: false
+- url: https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html#row=21
+  platform: threads
+  text: '山梨県甲斐市で保護された猫を紹介します。
+
+    種別: 猫
+
+    性別: 男の子
+
+    所在地: 甲斐市長塚
+
+    品種: 雑
+
+
+    この猫を里親として迎えてくれる方を募集しています。#保護猫 #里親募集 #山梨県
+
+    詳細・問い合わせは自治体公式へ: https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html?utm_source=threads#row=21'
+  dry_run: false
