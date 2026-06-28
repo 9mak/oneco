@@ -47,12 +47,12 @@
     (connect timeout=30)''))'
   last_failed_at: '2026-06-25T17:35:15+00:00'
 山梨県（保護されている犬）:
-  consecutive_failures: 2
+  consecutive_failures: 3
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''www.pref.yamanashi.jp'', port=443):
     Max retries exceeded with url: /doubutsu/p_dog/index.html (Caused by ConnectTimeoutError(<HTTPSConnection(host=''www.pref.yamanashi.jp'',
-    port=443) at 0x7fcafc3ab190>, ''Connection to www.pref.yamanashi.jp timed out.
+    port=443) at 0x7f1f7c37e350>, ''Connection to www.pref.yamanashi.jp timed out.
     (connect timeout=30)''))'
-  last_failed_at: '2026-06-27T16:19:44+00:00'
+  last_failed_at: '2026-06-28T16:29:28+00:00'
 山梨県（保護されている猫）:
   consecutive_failures: 4
   last_error: 'timeout: site 山梨県（保護されている猫） timed out after 120.0s'
@@ -65,9 +65,9 @@
     (connect timeout=30)''))'
   last_failed_at: '2026-06-25T17:35:15+00:00'
 山梨県（探している猫）:
-  consecutive_failures: 0
+  consecutive_failures: 1
   last_error: 'timeout: site 山梨県（探している猫） timed out after 600.0s'
-  last_failed_at: '2026-06-25T17:35:15+00:00'
+  last_failed_at: '2026-06-28T16:29:28+00:00'
 東京都収容動物情報（犬）:
   consecutive_failures: 0
   last_error: '件数低下異常: 前回 2 件 → 今回 0 件 (adapter 破損 or サイト構造変更の可能性)'
