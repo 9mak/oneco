@@ -188,6 +188,112 @@ class TestApplyPatch:
 """
         assert afa.apply_patch(patch, cwd=tmp_path) is False
 
+    def test_recount_tolerates_wrong_hunk_line_count(self, tmp_path):
+        """LLM が出しがちな『ハンクヘッダの行数が実ハンクとズレた diff』を
+        --recount で救えることを確認 (本物の山梨県 patch で踏んだ corrupt ケース)。"""
+        subprocess.run(["git", "init"], cwd=tmp_path, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "config", "user.email", "t@e.com"],
+            cwd=tmp_path,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "t"], cwd=tmp_path, check=True, capture_output=True
+        )
+        target = tmp_path / "x.txt"
+        target.write_text("alpha\nbeta\ngamma\ndelta\n", encoding="utf-8")
+        subprocess.run(["git", "add", "x.txt"], cwd=tmp_path, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", "init"], cwd=tmp_path, check=True, capture_output=True
+        )
+        # ヘッダは「-1,3 +1,3」と宣言するが、実際は旧4行(alpha/beta/gamma/delta)・
+        # 新3行 で行数が合わず、--recount 無しでは "corrupt patch" になる。
+        patch = """--- a/x.txt
++++ b/x.txt
+@@ -1,3 +1,3 @@
+ alpha
+-beta
+-gamma
++BETAGAMMA
+ delta
+"""
+        assert afa.apply_patch(patch, cwd=tmp_path) is True
+        assert "BETAGAMMA" in target.read_text(encoding="utf-8")
+
+
+class TestCompressHtml:
+    def test_strips_script_style_comment_and_collapses_whitespace(self):
+        html = (
+            "<div>  a   b\n\n<script>var x=1;</script>"
+            "<style>.c{color:red}</style>\n  <!-- note -->  <span>keep</span></div>"
+        )
+        out = afa._compress_html(html)
+        assert "<script>" not in out and "var x" not in out
+        assert "<style>" not in out and "color:red" not in out
+        assert "<!--" not in out and "note" not in out
+        assert "  " not in out  # 連続空白は1つに圧縮
+        assert "<span>keep</span>" in out  # タグ構造とラベルは保持
+        assert "<div>" in out
+
+
+class TestRetryAfterSeconds:
+    @staticmethod
+    def _err(headers):
+        response = type("Resp", (), {"headers": headers})()
+        return type("Err", (Exception,), {"response": response})()
+
+    def test_reads_numeric_header(self):
+        assert afa._retry_after_seconds(self._err({"retry-after": "30"})) == 30.0
+
+    def test_absent_header_returns_none(self):
+        assert afa._retry_after_seconds(self._err({})) is None
+
+    def test_garbage_header_returns_none(self):
+        assert afa._retry_after_seconds(self._err({"retry-after": "soon"})) is None
+
+    def test_no_response_returns_none(self):
+        assert afa._retry_after_seconds(Exception("x")) is None
+
+
+class TestRateLimitRetry:
+    def test_retries_on_rate_limit_then_succeeds(self, monkeypatch):
+        """並列 dispatch で 429 を踏んでも、待って再試行し成功することを確認。
+        build_prompt はスタブ化し (TestBuildPrompt で別途カバー)、retry 制御だけ検証。"""
+        import httpx
+        import openai
+
+        monkeypatch.setenv("GROQ_API_KEY", "test-key")
+        monkeypatch.setattr(afa.time, "sleep", lambda _s: None)
+        monkeypatch.setattr(afa, "build_prompt", lambda *a, **k: ("sys", "user"))
+
+        calls = {"n": 0}
+
+        def fake_create(**_kwargs):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                req = httpx.Request("POST", "https://api.groq.com/openai/v1/chat/completions")
+                resp = httpx.Response(429, headers={"retry-after": "1"}, request=req)
+                raise openai.RateLimitError("rate limited", response=resp, body=None)
+            msg = type("M", (), {"content": "OK-PATCH"})()
+            return type("Resp", (), {"choices": [type("C", (), {"message": msg})()]})()
+
+        class FakeClient:
+            def __init__(self, **_kw):
+                self.chat = type(
+                    "Chat",
+                    (),
+                    {"completions": type("Comp", (), {"create": staticmethod(fake_create)})()},
+                )()
+
+        monkeypatch.setattr(openai, "OpenAI", FakeClient)
+
+        result = afa.ask_llm_for_patch(
+            "code", ROOT / "scripts" / "auto_fix_adapter.py", None, None, {}
+        )
+        assert calls["n"] == 2  # 1回目 429 → 2回目成功
+        assert "OK-PATCH" in result
+
 
 class TestValidatePatchScope:
     """diff が「指定 adapter ファイル」のみを変更することを enforce する gate。
