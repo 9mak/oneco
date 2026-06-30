@@ -1,7 +1,12 @@
 name: Uptime Check
 
-# Cloud Run /health と Vercel フロント top の死活を 30 分毎に外形監視。
+# Cloud Run /health と Vercel フロント top + 代表 /areas ページの死活を 30 分毎に外形監視。
 # 失敗時のみ Discord に通知し、CI status も failure にして GitHub 上にも残す。
+#
+# /areas を含める理由 (PR #229 の教訓): 日本語スラッグの SSR サブルートが
+# x-next-cache-tags ヘッダーで 500 を出していたのに、監視が top + /health + API
+# だけで SSR サブルートを見ておらず約2週間気づけなかった。代表1県 (東京都) を
+# 200 アサートして、SSR サブルート全般が死んだら気づける盲点埋めにする。
 #
 # 設計判断:
 # - スケジュール遅延: GitHub Actions cron は best-effort で 5〜15+分の遅延が普通。
@@ -37,6 +42,9 @@ jobs:
     env:
       BACKEND_URL: https://oneco-api-tvlsrcvyuq-an.a.run.app/health
       FRONTEND_URL: https://frontend-psi-ten-73.vercel.app/
+      # 代表的な日本語スラッグの SSR サブルート (東京都 = %E6%9D%B1%E4%BA%AC%E9%83%BD)。
+      # URL エンコード済みで渡す (TARGETS はスペース区切りで分割するため非エンコード日本語は不可)。
+      AREAS_URL: https://frontend-psi-ten-73.vercel.app/areas/%E6%9D%B1%E4%BA%AC%E9%83%BD
       RETRY_COUNT: '3'
       RETRY_WAIT_SEC: '5'
       CURL_TIMEOUT_SEC: '15'
@@ -53,9 +61,9 @@ jobs:
           if [ "$FORCE_FAILURE" = "true" ]; then
             FORCED_URL="https://oneco-api-tvlsrcvyuq-an.a.run.app/__uptime_force_failure__"
             echo "::warning::force_failure=true なので意図的に $FORCED_URL を含めます（Discord 通知の配線検証）"
-            TARGETS="backend=$BACKEND_URL frontend=$FRONTEND_URL forced_failure=$FORCED_URL"
+            TARGETS="backend=$BACKEND_URL frontend=$FRONTEND_URL areas=$AREAS_URL forced_failure=$FORCED_URL"
           else
-            TARGETS="backend=$BACKEND_URL frontend=$FRONTEND_URL"
+            TARGETS="backend=$BACKEND_URL frontend=$FRONTEND_URL areas=$AREAS_URL"
           fi
 
           FAILURES=""
