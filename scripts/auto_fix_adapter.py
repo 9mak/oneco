@@ -27,6 +27,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -52,8 +53,50 @@ from data_collector.llm.config import SiteConfig  # noqa: E402
 
 DEFAULT_MODEL = "llama-3.3-70b-versatile"  # Groq (既存 GroqProvider と揃える)
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
-MAX_HTML_CHARS = 8000
+MAX_HTML_CHARS = 6000  # 圧縮後の list/detail HTML 各上限 (Groq 無料枠 TPM 12000 に収める)
 DETAIL_SAMPLE_COUNT = 5
+# max_tokens は Groq の "Requested" トークンに 1:1 で効く (実出力長と無関係)。
+# セレクタ/ラベル修正の unified diff は短いので 2048 で足り、無料枠超過を防ぐ。
+MAX_OUTPUT_TOKENS = 2048
+# 並列 dispatch (山梨県 犬/猫/他ペット 等) で org 全体の TPM/min を食い合った際の
+# 待機リトライ。単発リクエストを縮小しても、同一分内に複数走ると 429 になりうるため。
+RATE_LIMIT_MAX_RETRIES = 4
+RATE_LIMIT_DEFAULT_WAIT_SEC = 60
+
+
+_SCRIPT_STYLE_RE = re.compile(
+    r"<(script|style|noscript)\b[^>]*>.*?</\1>", re.IGNORECASE | re.DOTALL
+)
+_HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+_WHITESPACE_RE = re.compile(r"\s+")
+
+
+def _compress_html(html: str) -> str:
+    """LLM プロンプト用に HTML を圧縮する。
+
+    script/style/noscript ブロック・HTML コメント・連続空白を除去し、
+    タグ構造とラベルテキスト (セレクタ修復に必要な情報) は保ったまま
+    トークン量を削る。Groq 無料枠 TPM 12000 に単発リクエストを収めるため。
+    """
+    html = _SCRIPT_STYLE_RE.sub("", html)
+    html = _HTML_COMMENT_RE.sub("", html)
+    html = _WHITESPACE_RE.sub(" ", html)
+    return html.strip()
+
+
+def _retry_after_seconds(err: Exception) -> float | None:
+    """RateLimitError の Retry-After ヘッダ (秒) を読む。無ければ None。"""
+    response = getattr(err, "response", None)
+    headers = getattr(response, "headers", None)
+    if not headers:
+        return None
+    value = headers.get("retry-after")
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 
 @dataclass
@@ -137,7 +180,7 @@ def fetch_html_samples(site_config: SiteConfig, adapter_cls: type) -> dict[str, 
     samples: dict[str, str] = {}
     try:
         list_html = adapter._http_get(site_config.list_url)
-        samples["list_html"] = list_html[:MAX_HTML_CHARS]
+        samples["list_html"] = _compress_html(list_html)[:MAX_HTML_CHARS]
     except Exception as e:
         samples["list_html"] = f"<error: {e}>"
         return samples
@@ -147,7 +190,7 @@ def fetch_html_samples(site_config: SiteConfig, adapter_cls: type) -> dict[str, 
             detail_url = urls[0][0]
             detail_html = adapter._http_get(detail_url)
             samples["detail_url"] = detail_url
-            samples["detail_html"] = detail_html[:MAX_HTML_CHARS]
+            samples["detail_html"] = _compress_html(detail_html)[:MAX_HTML_CHARS]
     except Exception as e:
         samples["detail_html"] = f"<error: {e}>"
     return samples
@@ -239,7 +282,7 @@ def ask_llm_for_patch(
     既存 GroqProvider と同じ openai SDK + Groq エンドポイント経由。
     `GROQ_API_KEY` 環境変数が必須。
     """
-    from openai import OpenAI  # 遅延 import (テストで mock しやすくするため)
+    from openai import OpenAI, RateLimitError  # 遅延 import (テストで mock しやすくするため)
 
     api_key = os.environ.get("GROQ_API_KEY")
     if not api_key:
@@ -252,14 +295,30 @@ def ask_llm_for_patch(
         before,
         samples,
     )
-    response = client.chat.completions.create(
-        model=model,
-        max_tokens=4096,
-        messages=[
-            {"role": "system", "content": system_msg},
-            {"role": "user", "content": user_msg},
-        ],
-    )
+    # 並列 dispatch で org 全体の TPM/min を食い合うと 429 (rate_limit) になる。
+    # 単発が無料枠内なら、待てば次の分でリセットされるので backoff リトライする。
+    # (413 = 単発がサイズ超過は待っても無駄なので、そちらは縮小側で対処済み。)
+    for attempt in range(RATE_LIMIT_MAX_RETRIES):
+        try:
+            response = client.chat.completions.create(
+                model=model,
+                max_tokens=MAX_OUTPUT_TOKENS,
+                messages=[
+                    {"role": "system", "content": system_msg},
+                    {"role": "user", "content": user_msg},
+                ],
+            )
+            break
+        except RateLimitError as e:
+            if attempt == RATE_LIMIT_MAX_RETRIES - 1:
+                raise
+            wait = _retry_after_seconds(e) or RATE_LIMIT_DEFAULT_WAIT_SEC
+            print(
+                f"  rate_limit (attempt {attempt + 1}/{RATE_LIMIT_MAX_RETRIES}): "
+                f"{wait}s 待って再試行",
+                file=sys.stderr,
+            )
+            time.sleep(wait)
     text = response.choices[0].message.content or ""
     return extract_diff(text)
 
@@ -340,8 +399,12 @@ def apply_patch(
             f.write("\n")
         patch_path = f.name
     try:
+        # --recount: ハンクヘッダ (@@ -1,5 +1,5 @@) の行数を無視し、実際の行から
+        # 再カウントする。LLM (llama) は unified diff の行数を誤りやすく、宣言行数と
+        # 実ハンク行数がズレて "corrupt patch" になるのを救う (実測で山梨県の patch が
+        # これで当たるようになった)。当たった後はガードテストが内容の妥当性を検証する。
         result = subprocess.run(
-            ["git", "apply", patch_path],
+            ["git", "apply", "--recount", patch_path],
             cwd=cwd,
             capture_output=True,
             text=True,
