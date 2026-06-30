@@ -23,12 +23,19 @@ function buildQuery(params: FetchAnimalsParams): string {
   return search.toString();
 }
 
+/**
+ * @param options.revalidate fetch のキャッシュ再検証秒数。既定 300。
+ *   `false` を渡すと無期限キャッシュ (再検証しない) になる。
+ *   force-static なルート (例: /areas/[prefecture]) ではランタイム再レンダリングが
+ *   x-next-cache-tags ヘッダーで 500 になるため、再検証を止める用途で false を渡す。
+ */
 export async function fetchAnimals(
   params: FetchAnimalsParams,
+  options?: { revalidate?: number | false },
 ): Promise<PaginatedResponse<AnimalPublic>> {
   const url = `${API_BASE_URL}/animals?${buildQuery(params)}`;
   const res = await fetch(url, {
-    next: { revalidate: 300 },
+    next: { revalidate: options?.revalidate ?? 300 },
   });
 
   if (!res.ok) {
