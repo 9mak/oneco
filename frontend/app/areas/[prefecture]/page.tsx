@@ -7,8 +7,15 @@ import { PREFECTURES, isValidPrefecture } from '@/lib/prefectures';
 import { getSiteUrl } from '@/lib/site-url';
 import type { AnimalPublic, FilterState } from '@/types/animal';
 
-// 各都道府県ページは ISR。事前生成 + 5 分ごとに再検証する。
-export const revalidate = 300;
+// 各都道府県ページは静的生成 (force-static)。
+// 日本語スラッグ (例: 東京都) はランタイム再レンダリング時に Next.js が内部で付ける
+// x-next-cache-tags レスポンスヘッダーへ非 ASCII のまま載り、Node の HTTP 層が
+// ERR_INVALID_CHAR を投げて 500 になる (Next.js の制約。このヘッダーはアプリ側で
+// encode できない)。generateStaticParams で全 47 県をビルド時生成済みのため、
+// ランタイム render 経路を断つ force-static にすればヘッダー設定を回避できる。
+// データ鮮度は data-collector の日次 push が frontend を再デプロイして保たれる
+// (収集自体が日次 cron なので 5 分 ISR は元々オーバースペックだった)。
+export const dynamic = 'force-static';
 
 const PAGE_SIZE = 20;
 const SITE_URL = getSiteUrl();
@@ -35,12 +42,15 @@ function resolvePrefecture(raw: string): string | null {
 
 async function fetchTotalCount(prefecture: string): Promise<number | null> {
   try {
-    const data = await fetchAnimals({
-      prefecture,
-      status: 'sheltered',
-      limit: 1,
-      offset: 0,
-    });
+    const data = await fetchAnimals(
+      {
+        prefecture,
+        status: 'sheltered',
+        limit: 1,
+        offset: 0,
+      },
+      { revalidate: false },
+    );
     return data.meta.total_count;
   } catch {
     return null;
@@ -92,7 +102,10 @@ async function fetchPrefectureAnimals(prefecture: string): Promise<{
 }> {
   const filters: FilterState = { prefecture, status: 'sheltered' };
   try {
-    const data = await fetchAnimals({ ...filters, limit: PAGE_SIZE, offset: 0 });
+    const data = await fetchAnimals(
+      { ...filters, limit: PAGE_SIZE, offset: 0 },
+      { revalidate: false },
+    );
     return { items: data.items, totalCount: data.meta.total_count, fetchFailed: false };
   } catch (error) {
     console.error('Failed to fetch animals:', error);
