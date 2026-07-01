@@ -66,3 +66,13 @@ posts:
   text: '山梨県都留市で保護された猫の里親を探しています。保護された猫は、雌で雑種です。詳細・問い合わせは自治体公式へ https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html?utm_source=threads#row=83
     #保護猫 #里親募集 #山梨県'
   dry_run: false
+- url: https://www.city.kumamoto.jp/doubutuaigo/kiji00371154/index.html
+  platform: threads
+  text: '熊本県東区長嶺東で、1匹の猫が保護されました。この猫は雄です。里親を探しています。
+
+    #保護猫 #里親募集 #熊本県
+
+    詳細・問い合わせは自治体公式へ
+
+    https://www.city.kumamoto.jp/doubutuaigo/kiji00371154/index.html?utm_source=threads'
+  dry_run: false
