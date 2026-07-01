@@ -18,6 +18,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import ast
 import importlib
 import inspect
 import json
@@ -26,7 +27,6 @@ import pkgutil
 import re
 import subprocess
 import sys
-import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -55,9 +55,12 @@ DEFAULT_MODEL = "llama-3.3-70b-versatile"  # Groq (既存 GroqProvider と揃え
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 MAX_HTML_CHARS = 6000  # 圧縮後の list/detail HTML 各上限 (Groq 無料枠 TPM 12000 に収める)
 DETAIL_SAMPLE_COUNT = 5
-# max_tokens は Groq の "Requested" トークンに 1:1 で効く (実出力長と無関係)。
-# セレクタ/ラベル修正の unified diff は短いので 2048 で足り、無料枠超過を防ぐ。
-MAX_OUTPUT_TOKENS = 2048
+# max_tokens は Groq の "Requested" トークンに 1:1 で効く (実出力長と無関係、
+# 予約分として毎回カウントされる)。SEARCH/REPLACE ブロックは変更箇所だけの
+# 短い出力で足りるため 1024 で十分。実測で山梨県 adapter (389行) は
+# 2048 のままだと入力+予約が 12066 token になり無料枠 TPM 12000 を
+# わずかに超過して 413 になった。1024 に縮小し解消。
+MAX_OUTPUT_TOKENS = 1024
 # 並列 dispatch (山梨県 犬/猫/他ペット 等) で org 全体の TPM/min を食い合った際の
 # 待機リトライ。単発リクエストを縮小しても、同一分内に複数走ると 429 になりうるため。
 RATE_LIMIT_MAX_RETRIES = 4
@@ -221,7 +224,8 @@ def build_prompt(
     system_msg = (
         "あなたは Python 製の rule-based HTML スクレイピング adapter を修復する AI です。"
         "対象 adapter は壊れている兆候があります (フィールド欠損率急増 or detail_error)。"
-        "実 HTML を読み取り、ラベル/セレクタの不一致を直す unified diff を生成してください。"
+        "実 HTML を読み取り、ラベル/セレクタの不一致を SEARCH/REPLACE ブロック形式の"
+        "部分編集で直してください。"
     )
     user_msg = f"""## 対象サイト
 - 名前: {site_config.name}
@@ -253,34 +257,54 @@ def build_prompt(
 adapter のラベル/セレクタを実HTML に合わせて修正してください。
 
 制約:
-- 修正対象は `{adapter_file_rel}` **のみ**。基底クラス・テスト・他ファイル変更禁止
-- 既存クラス名・メソッド名は保持
-- 出力は unified diff 形式のみ (説明文・前置き禁止)
-- diff のヘッダは `--- a/<path>` `+++ b/<path>` 形式
+- 修正対象は `{adapter_file_rel}` の内容 **のみ**。他ファイルには触れられません
+- 既存クラス名・メソッド名・`SiteAdapterRegistry.register(...)` 呼び出しは保持
+- ファイル全文は出力しないこと。変更箇所だけを SEARCH/REPLACE ブロックで出力する
+- SEARCH 部分は「## 現在の adapter コード」から**一字一句そのまま**
+  (インデント含む) コピーすること。行番号は使わない
+- SEARCH は変更箇所を一意に特定できるだけの前後行 (数行程度) のみを含めること
+  (1行だけだと同じ行が他にもあり曖昧になる場合があるので前後行が必要だが、
+  メソッド全体やクラス全体を SEARCH/REPLACE に含めるのは禁止。
+  実際に変更する行 + 前後2〜3行程度に絞ること)
+- 複数箇所を直す場合は SEARCH/REPLACE ブロックを複数繰り返す
+  (1つの巨大なブロックにまとめないこと)
 
 ## 出力フォーマット
-```diff
---- a/{adapter_file_rel}
-+++ b/{adapter_file_rel}
-@@ ... @@
- ...変更内容...
+```
+<<<<<<< SEARCH
+...現在のコードそのまま (変更したい範囲)...
+=======
+...修正後のコード...
+>>>>>>> REPLACE
 ```
 """
     return system_msg, user_msg
 
 
-def ask_llm_for_patch(
+def ask_llm_for_fix(
     adapter_code: str,
     adapter_file: Path,
     site_config: SiteConfig,
     before: Metrics,
     samples: dict[str, str],
     model: str = DEFAULT_MODEL,
-) -> str:
-    """Groq API (OpenAI 互換) に修正パッチを依頼。unified diff を返す。
+) -> list[tuple[str, str]]:
+    """Groq API (OpenAI 互換) に修正を依頼し、SEARCH/REPLACE ブロックを返す。
 
     既存 GroqProvider と同じ openai SDK + Groq エンドポイント経由。
     `GROQ_API_KEY` 環境変数が必須。
+
+    unified diff ではなく SEARCH/REPLACE 形式の部分編集を要求する。
+    - diff (行番号ベース) は LLM (llama) が行番号/context を幻覚しやすく、
+      `git apply` が "patch does not apply" で継続的に失敗していた
+      (実測: 山梨県 adapter、--recount 導入後も解消せず)。
+    - ファイル全文書き換えなら行番号は不要になるが、adapter ファイルは平均
+      247行・最大514行あり、全文出力が Groq 無料枠 TPM 12000 と衝突する
+      (実測: 山梨県 389行 adapter で出力が MAX_OUTPUT_TOKENS 内に収まらず
+      途中で切れ、末尾の SiteAdapterRegistry.register(...) が欠落した)。
+    SEARCH/REPLACE ブロックは「一致する文字列」で位置を特定するため行番号の
+    幻覚が起きず、かつ変更箇所だけを出力すればよいので出力サイズもファイル全体の
+    大きさに依存しない。
     """
     from openai import OpenAI, RateLimitError  # 遅延 import (テストで mock しやすくするため)
 
@@ -320,102 +344,94 @@ def ask_llm_for_patch(
             )
             time.sleep(wait)
     text = response.choices[0].message.content or ""
-    return extract_diff(text)
+    return extract_search_replace_blocks(text)
 
 
-def extract_diff(text: str) -> str:
-    """LLM 応答から ```diff ... ``` 部分を取り出す。なければ生テキストを返す。"""
-    if "```diff" in text:
-        return text.split("```diff", 1)[1].split("```", 1)[0].strip()
-    if "```" in text:
-        # 最初のコードブロックを試す
-        parts = text.split("```", 2)
-        if len(parts) >= 3:
-            chunk = parts[1]
-            # 言語指定 'diff' が先頭にあれば除く (lstrip('diff') は文字単位
-            # strip になり誤動作するので literal prefix で除去)
-            if chunk.startswith("diff"):
-                chunk = chunk[4:]
-            return chunk.strip()
-    return text.strip()
+_SEARCH_REPLACE_BLOCK_RE = re.compile(
+    # マーカーの矢印方向 (`<<<<<<<` か `>>>>>>>`) は区切り記号として使うだけで
+    # 意味を持たせない。llama は `>>>>>>> SEARCH` のように向きを逆にすることが
+    # 実測であったため、どちらの向きでも受理する。
+    r"[<>]{5,}\s*SEARCH\s*\n(.*?)\n={5,}\s*\n(.*?)\n[<>]{5,}\s*REPLACE",
+    re.DOTALL,
+)
 
 
-_DIFF_PLUS_RE = re.compile(r"^\+\+\+ (?:b/)?(.+?)\s*$", re.MULTILINE)
-_DIFF_MINUS_RE = re.compile(r"^--- (?:a/)?(.+?)\s*$", re.MULTILINE)
+def extract_search_replace_blocks(text: str) -> list[tuple[str, str]]:
+    """LLM 応答から `<<<<<<< SEARCH ... ======= ... >>>>>>> REPLACE` ブロックを
+    全て取り出す。(search, replace) のリストを返す。1件も無ければ空リスト。
+    """
+    return [(search, replace) for search, replace in _SEARCH_REPLACE_BLOCK_RE.findall(text)]
 
 
-def validate_patch_scope(patch_text: str, allowed_files: list[str]) -> tuple[bool, str]:
-    """unified diff が `allowed_files` (repo 相対パスのリスト) のみを変更する
-    ことを検証する gate。
+def apply_search_replace_edits(
+    original_code: str, blocks: list[tuple[str, str]]
+) -> tuple[str | None, str]:
+    """SEARCH/REPLACE ブロックを順番に `original_code` へ適用し、結果の全文を返す。
 
-    LLM が prompt 内の「テスト・他ファイル変更禁止」制約を無視するケースを
-    apply_patch の前で reject する。これが無いと、LLM が tests/ を緩めて
-    ガード1 (unit test) を欺き、garbage な adapter が auto-merge される
-    最悪パスが残る (過去 6 回サイレントドロップを踏んだ領域)。
+    行番号を一切使わず「SEARCH の文字列がそのまま存在するか」だけで位置を
+    特定するため、diff 方式で起きていた行番号/context の幻覚によるミスマッチが
+    構造的に発生しない。ただし、以下は書き込み前に reject する:
+    - ブロックが1つも無い (LLM が形式を無視した)
+    - SEARCH がファイル中に見つからない (LLM が実コードを正確に写せなかった)
+    - SEARCH が複数箇所にマッチする (どこを直したいか曖昧 → 誤った箇所を
+      書き換えるリスクがあるので安全側に倒して reject)
 
     Returns:
-        (ok, reason). ok=True なら allowed のみ変更。False なら理由付き reject。
+        (new_code, reason). 失敗時は (None, reason)。
     """
-    plus_files = set(_DIFF_PLUS_RE.findall(patch_text))
-    minus_files = set(_DIFF_MINUS_RE.findall(patch_text))
+    if not blocks:
+        return None, "no SEARCH/REPLACE blocks found in LLM response"
+    working = original_code
+    for search, replace in blocks:
+        count = working.count(search)
+        if count == 0:
+            return None, f"SEARCH block not found in file: {search[:80]!r}"
+        if count > 1:
+            return None, f"SEARCH block matches {count} locations (ambiguous): {search[:80]!r}"
+        working = working.replace(search, replace, 1)
+    return working, "ok"
 
-    if not plus_files and not minus_files:
-        return False, "patch contains no file headers (no '--- '/'+++ ' lines)"
 
-    # /dev/null = 新規ファイル作成 (--- /dev/null) / 削除 (+++ /dev/null)
-    # adapter 修復のスコープ外。明確に reject。
-    if "/dev/null" in plus_files:
-        return False, "patch contains file deletion ('+++ /dev/null') — not allowed"
-    if "/dev/null" in minus_files:
-        return False, "patch contains new file creation ('--- /dev/null') — not allowed"
+def validate_full_file_replacement(new_code: str, class_name: str) -> tuple[bool, str]:
+    """LLM が返した『修正後の完全なファイル内容』を書き込み前に検証する gate。
 
-    all_files = plus_files | minus_files
-    allowed_set = set(allowed_files)
-    forbidden = sorted(all_files - allowed_set)
-    if forbidden:
-        return False, f"patch touches files outside allowed scope: {forbidden}"
+    書き込み先は呼び出し側が固定した1ファイル (adapter_file) のみなので、旧
+    diff 方式にあった「他ファイルを触っていないか」の scope check は不要
+    (そもそも他ファイルへの書き込み経路が存在しない)。代わりに、LLM が壊れた/
+    無関係な内容を返すケースを弾く:
+    - 空 or 構文エラー → adapter が import できず site 全体が壊れる
+    - 既存クラス名が消えている → SiteAdapterRegistry から脱落しサイトが
+      サイレントに収集対象外になる (過去のサイレントドロップと同種のリスク)
+    - registry 登録呼び出しが消えている → 同上
 
+    Returns:
+        (ok, reason)
+    """
+    if not new_code.strip():
+        return False, "LLM returned empty file content"
+    try:
+        ast.parse(new_code)
+    except SyntaxError as e:
+        return False, f"generated file is not valid Python: {e}"
+    if class_name not in new_code:
+        return False, f"class '{class_name}' missing from generated file"
+    if "SiteAdapterRegistry.register(" not in new_code:
+        return False, "SiteAdapterRegistry.register(...) call missing from generated file"
     return True, "ok"
 
 
-def apply_patch(
-    patch_text: str,
-    cwd: Path = ROOT,
-    allowed_files: list[str] | None = None,
-) -> bool:
-    """unified diff を `git apply` で当てる。成功なら True。
-
-    `allowed_files` が指定されている場合、validate_patch_scope で「指定 file
-    以外を触らない」ことを apply 前に確認する。違反したら apply せず False を返す。
-    """
-    if allowed_files is not None:
-        ok, reason = validate_patch_scope(patch_text, allowed_files)
-        if not ok:
-            print(f"patch scope gate failed: {reason}", file=sys.stderr)
-            return False
-    with tempfile.NamedTemporaryFile("w", suffix=".patch", delete=False, encoding="utf-8") as f:
-        f.write(patch_text)
-        if not patch_text.endswith("\n"):
-            f.write("\n")
-        patch_path = f.name
-    try:
-        # --recount: ハンクヘッダ (@@ -1,5 +1,5 @@) の行数を無視し、実際の行から
-        # 再カウントする。LLM (llama) は unified diff の行数を誤りやすく、宣言行数と
-        # 実ハンク行数がズレて "corrupt patch" になるのを救う (実測で山梨県の patch が
-        # これで当たるようになった)。当たった後はガードテストが内容の妥当性を検証する。
-        result = subprocess.run(
-            ["git", "apply", "--recount", patch_path],
-            cwd=cwd,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if result.returncode != 0:
-            print(f"git apply failed: {result.stderr}", file=sys.stderr)
-            return False
-        return True
-    finally:
-        os.unlink(patch_path)
+def apply_full_file_replacement(
+    new_code: str,
+    adapter_file: Path,
+    class_name: str,
+) -> tuple[bool, str]:
+    """検証を通れば adapter_file に修正後の全文を書き込む。成功なら (True, "ok")。"""
+    ok, reason = validate_full_file_replacement(new_code, class_name)
+    if not ok:
+        print(f"generated file rejected: {reason}", file=sys.stderr)
+        return False, reason
+    adapter_file.write_text(new_code, encoding="utf-8")
+    return True, "ok"
 
 
 def rollback(adapter_file: Path, cwd: Path = ROOT) -> None:
@@ -608,6 +624,19 @@ def create_issue(site_name: str, reason: str, cwd: Path = ROOT) -> str | None:
     return None
 
 
+def _dry_run_exit(code: int, dry_run: bool) -> int:
+    """観察モード (--dry-run) では『LLM 提案が却下された』はスクリプトの失敗
+    ではなく想定内の観察結果。GitHub Actions の step を赤にして Discord ノイズ
+    にするのを避けるため、当該 exit code は 0 に丸める。
+
+    exit 2 (LLM 呼び出し自体の例外) は却下ではなく本当のスクリプト障害なので、
+    dry-run でも丸めない。
+    """
+    if dry_run and code in (3, 4, 5):
+        return 0
+    return code
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="LLM-assisted adapter 自動修復")
     parser.add_argument("--site-name", required=True, help="sites.yaml の name と完全一致")
@@ -628,11 +657,11 @@ def main() -> int:
     print("\n[2/6] fetching HTML samples...")
     samples = fetch_html_samples(site_config, adapter_cls)
 
-    # 3. LLM パッチ依頼
-    print("\n[3/6] requesting patch from LLM...")
+    # 3. LLM に SEARCH/REPLACE 形式の修正を依頼
+    print("\n[3/6] requesting fix (SEARCH/REPLACE blocks) from LLM...")
     adapter_code = adapter_file.read_text(encoding="utf-8")
     try:
-        patch = ask_llm_for_patch(
+        blocks = ask_llm_for_fix(
             adapter_code, adapter_file, site_config, before, samples, model=args.model
         )
     except Exception as e:
@@ -641,21 +670,25 @@ def main() -> int:
         if not args.dry_run:
             create_issue(args.site_name, msg)
         return 2
-    print(f"patch length: {len(patch)} chars")
-    print(patch[:600] + ("..." if len(patch) > 600 else ""))
+    print(f"{len(blocks)} 個の SEARCH/REPLACE ブロックを受信")
 
-    # 4. パッチ適用 (adapter ファイル本体のみ変更を許可する gate 付き)
-    print("\n[4/6] applying patch...")
+    # 4. ブロック適用 → 構文・クラス名・registry 登録の健全性チェック → 書き込み
+    print("\n[4/6] applying edits...")
     adapter_file_rel = str(adapter_file.relative_to(ROOT))
-    if not apply_patch(patch, allowed_files=[adapter_file_rel]):
-        msg = (
-            "LLM 生成パッチが当たらなかった or 許可スコープ外 "
-            f"({adapter_file_rel} 以外のファイル変更を含む可能性)"
-        )
+    fixed_code, reason = apply_search_replace_edits(adapter_code, blocks)
+    if fixed_code is None:
+        msg = f"LLM 生成パッチが適用できませんでした ({reason})"
         print(msg, file=sys.stderr)
         if not args.dry_run:
             create_issue(args.site_name, msg)
-        return 3
+        return _dry_run_exit(3, args.dry_run)
+    ok, reason = apply_full_file_replacement(fixed_code, adapter_file, adapter_cls.__name__)
+    if not ok:
+        msg = f"適用後の内容が検証を通らず書き込みませんでした ({reason})"
+        print(msg, file=sys.stderr)
+        if not args.dry_run:
+            create_issue(args.site_name, msg)
+        return _dry_run_exit(3, args.dry_run)
 
     # 5. ガード1: ユニットテスト + 「adapter ファイル外が dirty でない」再確認
     print("\n[5/6] guard 1: unit tests + git status...")
@@ -665,13 +698,13 @@ def main() -> int:
         rollback(adapter_file)
         if not args.dry_run:
             create_issue(args.site_name, f"想定外のファイル変更: {reason}")
-        return 4
+        return _dry_run_exit(4, args.dry_run)
     if not run_unit_tests():
         print("ユニットテスト失敗 → ロールバック", file=sys.stderr)
         rollback(adapter_file)
         if not args.dry_run:
             create_issue(args.site_name, "修正後のユニットテストが失敗しました")
-        return 4
+        return _dry_run_exit(4, args.dry_run)
 
     # 6. ガード2: live test の改善定量確認
     print("\n[6/6] guard 2: live test improvement...")
@@ -689,7 +722,7 @@ def main() -> int:
                 args.site_name,
                 f"改善が検出されませんでした: {reason}\n\nbefore:\n{json.dumps(before.to_dict(), ensure_ascii=False, indent=2)}\n\nafter:\n{json.dumps(after.to_dict(), ensure_ascii=False, indent=2)}",
             )
-        return 5
+        return _dry_run_exit(5, args.dry_run)
     print(f"✓ improvement: {reason}")
 
     if args.dry_run:
