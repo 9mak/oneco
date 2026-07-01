@@ -1,7 +1,8 @@
 """auto_fix_adapter.py のテスト
 
 LLM 呼び出しと git/gh の subprocess を mock し、純粋ロジック
-(extract_diff / evaluate_improvement / _slugify / build_prompt / apply_patch)
+(extract_search_replace_blocks / apply_search_replace_edits / evaluate_improvement /
+_slugify / build_prompt / apply_full_file_replacement)
 を単体で検証する。
 """
 
@@ -20,32 +21,102 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import auto_fix_adapter as afa  # noqa: E402
 
 
-class TestExtractDiff:
-    def test_diff_code_block(self):
+class TestExtractSearchReplaceBlocks:
+    def test_single_block(self):
         text = """ここはサマリ
-```diff
---- a/foo.py
-+++ b/foo.py
-@@ -1 +1 @@
--old
-+new
-```
+<<<<<<< SEARCH
+old_line
+=======
+new_line
+>>>>>>> REPLACE
 余分な後書き
 """
-        result = afa.extract_diff(text)
-        assert result.startswith("--- a/foo.py")
-        assert "+new" in result
-        assert "余分な後書き" not in result
+        result = afa.extract_search_replace_blocks(text)
+        assert result == [("old_line", "new_line")]
 
-    def test_generic_code_block_fallback(self):
-        text = "```\n--- a/x\n+++ b/x\n@@ -1 +1 @@\n-a\n+b\n```"
-        result = afa.extract_diff(text)
-        assert "+b" in result
+    def test_multiple_blocks(self):
+        text = """<<<<<<< SEARCH
+a
+=======
+A
+>>>>>>> REPLACE
 
-    def test_raw_text_when_no_code_block(self):
-        text = "--- a/x\n+++ b/x\n@@ -1 +1 @@\n-a\n+b\n"
-        result = afa.extract_diff(text)
-        assert result == text.strip()
+<<<<<<< SEARCH
+b
+=======
+B
+>>>>>>> REPLACE
+"""
+        result = afa.extract_search_replace_blocks(text)
+        assert result == [("a", "A"), ("b", "B")]
+
+    def test_no_blocks_returns_empty_list(self):
+        assert afa.extract_search_replace_blocks("説明文だけで形式無視") == []
+
+    def test_multiline_search_and_replace(self):
+        text = """<<<<<<< SEARCH
+    ROW_SELECTOR: ClassVar[str] = "div.menu_item"
+    SKIP_FIRST_ROW: ClassVar[bool] = False
+=======
+    ROW_SELECTOR: ClassVar[str] = "div.new_item"
+    SKIP_FIRST_ROW: ClassVar[bool] = True
+>>>>>>> REPLACE
+"""
+        result = afa.extract_search_replace_blocks(text)
+        assert len(result) == 1
+        search, replace = result[0]
+        assert "div.menu_item" in search
+        assert "div.new_item" in replace
+
+    def test_reversed_arrow_direction_is_tolerated(self):
+        """llama-3.3-70b は実測で `>>>>>>> SEARCH` / `<<<<<<< REPLACE` のように
+        矢印の向きを逆にすることがあった。向きは区切り記号としてのみ扱い、
+        どちらの向きでも受理する。"""
+        text = """>>>>>>> SEARCH
+old_line
+=======
+new_line
+<<<<<<< REPLACE
+"""
+        result = afa.extract_search_replace_blocks(text)
+        assert result == [("old_line", "new_line")]
+
+
+class TestApplySearchReplaceEdits:
+    def test_single_edit_applies(self):
+        original = "class Foo:\n    x = 1\n    y = 2\n"
+        blocks = [("x = 1", "x = 99")]
+        new_code, reason = afa.apply_search_replace_edits(original, blocks)
+        assert reason == "ok"
+        assert new_code == "class Foo:\n    x = 99\n    y = 2\n"
+
+    def test_multiple_edits_apply_in_sequence(self):
+        original = "class Foo:\n    x = 1\n    y = 2\n"
+        blocks = [("x = 1", "x = 99"), ("y = 2", "y = 100")]
+        new_code, reason = afa.apply_search_replace_edits(original, blocks)
+        assert reason == "ok"
+        assert new_code == "class Foo:\n    x = 99\n    y = 100\n"
+
+    def test_no_blocks_rejected(self):
+        new_code, reason = afa.apply_search_replace_edits("class Foo:\n    pass\n", [])
+        assert new_code is None
+        assert "no search/replace" in reason.lower()
+
+    def test_search_not_found_rejected(self):
+        original = "class Foo:\n    x = 1\n"
+        new_code, reason = afa.apply_search_replace_edits(original, [("z = 9", "z = 10")])
+        assert new_code is None
+        assert "not found" in reason.lower()
+        # 元のファイルは変更されない (呼び出し側が None を見て書き込みをスキップする)
+        assert original == "class Foo:\n    x = 1\n"
+
+    def test_ambiguous_search_rejected(self):
+        """SEARCH が複数箇所にマッチする場合は、誤った箇所を書き換えるリスクを
+        避けるため安全側に倒して reject する。"""
+        original = "class Foo:\n    x = 1\nclass Bar:\n    x = 1\n"
+        new_code, reason = afa.apply_search_replace_edits(original, [("x = 1", "x = 99")])
+        assert new_code is None
+        assert "ambiguous" in reason.lower() or "2" in reason
 
 
 class TestSlugify:
@@ -136,90 +207,80 @@ class TestBuildPrompt:
             samples=samples,
         )
         assert "rule-based" in system_msg
-        assert "unified diff" in system_msg
+        assert "SEARCH/REPLACE" in system_msg
         assert "サイトX" in user_msg
         assert "https://example.lg.jp/list" in user_msg
         assert "class Foo: pass" in user_msg
         assert "detail_error" in user_msg
         assert "RawAnimalData" in user_msg
-        # diff format header の指示が含まれる
-        assert "--- a/" in user_msg
+        # SEARCH/REPLACE 形式の出力指示が含まれ、全文出力は明示的に禁止されている
+        assert "<<<<<<< SEARCH" in user_msg
+        assert ">>>>>>> REPLACE" in user_msg
+        assert "ファイル全文は出力しない" in user_msg
 
 
-class TestApplyPatch:
-    def test_applies_valid_diff(self, tmp_path):
-        # 一時 git リポジトリで apply
-        subprocess.run(["git", "init"], cwd=tmp_path, check=True, capture_output=True)
-        subprocess.run(
-            ["git", "config", "user.email", "test@example.com"],
-            cwd=tmp_path,
-            check=True,
-            capture_output=True,
-        )
-        subprocess.run(
-            ["git", "config", "user.name", "test"], cwd=tmp_path, check=True, capture_output=True
-        )
-        target = tmp_path / "x.txt"
-        target.write_text("alpha\nbeta\ngamma\n", encoding="utf-8")
-        subprocess.run(["git", "add", "x.txt"], cwd=tmp_path, check=True, capture_output=True)
-        subprocess.run(
-            ["git", "commit", "-m", "init"], cwd=tmp_path, check=True, capture_output=True
-        )
+class TestValidateFullFileReplacement:
+    """LLM が返した『修正後の完全なファイル内容』を書き込み前に検証する gate。
 
-        patch = """--- a/x.txt
-+++ b/x.txt
-@@ -1,3 +1,3 @@
- alpha
--beta
-+BETA
- gamma
-"""
-        assert afa.apply_patch(patch, cwd=tmp_path) is True
-        assert "BETA" in target.read_text(encoding="utf-8")
+    diff 方式では LLM が行番号/context を幻覚し git apply が『patch does not
+    apply』で落ち続けた (実測: 山梨県 adapter、--recount 導入後も解消せず)。
+    全文書き込み方式ではこの失敗クラス自体が発生しない代わりに、LLM が壊れた/
+    無関係な内容を返すケースを別の観点で弾く必要がある。
+    """
 
-    def test_returns_false_on_invalid_diff(self, tmp_path):
-        subprocess.run(["git", "init"], cwd=tmp_path, check=True, capture_output=True)
-        # 対象ファイルがないので apply 失敗するはず
-        patch = """--- a/nope.txt
-+++ b/nope.txt
-@@ -1 +1 @@
--a
-+b
-"""
-        assert afa.apply_patch(patch, cwd=tmp_path) is False
+    def test_valid_python_with_class_and_registration_passes(self):
+        code = "class FooAdapter:\n    pass\n\nSiteAdapterRegistry.register('foo', FooAdapter)\n"
+        ok, reason = afa.validate_full_file_replacement(code, "FooAdapter")
+        assert ok is True
+        assert reason == "ok"
 
-    def test_recount_tolerates_wrong_hunk_line_count(self, tmp_path):
-        """LLM が出しがちな『ハンクヘッダの行数が実ハンクとズレた diff』を
-        --recount で救えることを確認 (本物の山梨県 patch で踏んだ corrupt ケース)。"""
-        subprocess.run(["git", "init"], cwd=tmp_path, check=True, capture_output=True)
-        subprocess.run(
-            ["git", "config", "user.email", "t@e.com"],
-            cwd=tmp_path,
-            check=True,
-            capture_output=True,
+    def test_empty_content_rejected(self):
+        ok, reason = afa.validate_full_file_replacement("   \n", "FooAdapter")
+        assert ok is False
+        assert "empty" in reason.lower()
+
+    def test_syntax_error_rejected(self):
+        code = "class FooAdapter(:\n    pass\n"
+        ok, reason = afa.validate_full_file_replacement(code, "FooAdapter")
+        assert ok is False
+        assert "valid python" in reason.lower()
+
+    def test_missing_class_name_rejected(self):
+        """クラス名が消えている = registry から脱落しサイトがサイレントに
+        収集対象外になる。過去のサイレントドロップと同種のリスクなので reject。"""
+        code = (
+            "class SomethingElse:\n    pass\n\nSiteAdapterRegistry.register('foo', SomethingElse)\n"
         )
-        subprocess.run(
-            ["git", "config", "user.name", "t"], cwd=tmp_path, check=True, capture_output=True
+        ok, reason = afa.validate_full_file_replacement(code, "FooAdapter")
+        assert ok is False
+        assert "FooAdapter" in reason
+
+    def test_missing_registration_call_rejected(self):
+        code = "class FooAdapter:\n    pass\n"
+        ok, reason = afa.validate_full_file_replacement(code, "FooAdapter")
+        assert ok is False
+        assert "register" in reason.lower()
+
+
+class TestApplyFullFileReplacement:
+    def test_writes_valid_replacement(self, tmp_path):
+        target = tmp_path / "adapter.py"
+        target.write_text("class FooAdapter:\n    pass\n", encoding="utf-8")
+        new_code = (
+            "class FooAdapter:\n    x = 1\n\nSiteAdapterRegistry.register('foo', FooAdapter)\n"
         )
-        target = tmp_path / "x.txt"
-        target.write_text("alpha\nbeta\ngamma\ndelta\n", encoding="utf-8")
-        subprocess.run(["git", "add", "x.txt"], cwd=tmp_path, check=True, capture_output=True)
-        subprocess.run(
-            ["git", "commit", "-m", "init"], cwd=tmp_path, check=True, capture_output=True
-        )
-        # ヘッダは「-1,3 +1,3」と宣言するが、実際は旧4行(alpha/beta/gamma/delta)・
-        # 新3行 で行数が合わず、--recount 無しでは "corrupt patch" になる。
-        patch = """--- a/x.txt
-+++ b/x.txt
-@@ -1,3 +1,3 @@
- alpha
--beta
--gamma
-+BETAGAMMA
- delta
-"""
-        assert afa.apply_patch(patch, cwd=tmp_path) is True
-        assert "BETAGAMMA" in target.read_text(encoding="utf-8")
+        ok, reason = afa.apply_full_file_replacement(new_code, target, "FooAdapter")
+        assert ok is True
+        assert reason == "ok"
+        assert target.read_text(encoding="utf-8") == new_code
+
+    def test_rejected_replacement_does_not_touch_file(self, tmp_path):
+        target = tmp_path / "adapter.py"
+        original = "class FooAdapter:\n    pass\n"
+        target.write_text(original, encoding="utf-8")
+        ok, _reason = afa.apply_full_file_replacement("", target, "FooAdapter")
+        assert ok is False
+        assert target.read_text(encoding="utf-8") == original
 
 
 class TestCompressHtml:
@@ -275,7 +336,8 @@ class TestRateLimitRetry:
                 req = httpx.Request("POST", "https://api.groq.com/openai/v1/chat/completions")
                 resp = httpx.Response(429, headers={"retry-after": "1"}, request=req)
                 raise openai.RateLimitError("rate limited", response=resp, body=None)
-            msg = type("M", (), {"content": "OK-PATCH"})()
+            content = "<<<<<<< SEARCH\nold\n=======\nOK-PATCH\n>>>>>>> REPLACE"
+            msg = type("M", (), {"content": content})()
             return type("Resp", (), {"choices": [type("C", (), {"message": msg})()]})()
 
         class FakeClient:
@@ -288,150 +350,11 @@ class TestRateLimitRetry:
 
         monkeypatch.setattr(openai, "OpenAI", FakeClient)
 
-        result = afa.ask_llm_for_patch(
+        result = afa.ask_llm_for_fix(
             "code", ROOT / "scripts" / "auto_fix_adapter.py", None, None, {}
         )
         assert calls["n"] == 2  # 1回目 429 → 2回目成功
-        assert "OK-PATCH" in result
-
-
-class TestValidatePatchScope:
-    """diff が「指定 adapter ファイル」のみを変更することを enforce する gate。
-
-    LLM が prompt の制約を無視してテストや他ファイルを書き換えるパッチを返した
-    場合に apply_patch の前で reject する。これが無いと「テスト改ざんでガード1
-    を欺いた garbage adapter」が auto-merge される最悪ケースが残る。
-    """
-
-    def test_single_allowed_file_passes(self):
-        patch = """--- a/src/data_collector/adapters/rule_based/sites/foo.py
-+++ b/src/data_collector/adapters/rule_based/sites/foo.py
-@@ -1 +1 @@
--old
-+new
-"""
-        ok, reason = afa.validate_patch_scope(
-            patch, ["src/data_collector/adapters/rule_based/sites/foo.py"]
-        )
-        assert ok is True
-        assert reason == "ok"
-
-    def test_test_file_change_rejected(self):
-        """tests/ 配下を含む diff は reject。これが core gate。"""
-        patch = """--- a/src/data_collector/adapters/rule_based/sites/foo.py
-+++ b/src/data_collector/adapters/rule_based/sites/foo.py
-@@ -1 +1 @@
--old
-+new
---- a/tests/adapters/rule_based/sites/test_foo.py
-+++ b/tests/adapters/rule_based/sites/test_foo.py
-@@ -10 +10 @@
--    assert breed == "雑種"
-+    assert breed is None
-"""
-        ok, reason = afa.validate_patch_scope(
-            patch, ["src/data_collector/adapters/rule_based/sites/foo.py"]
-        )
-        assert ok is False
-        assert "tests/" in reason
-
-    def test_other_adapter_change_rejected(self):
-        """1 サイト修復で他 adapter を巻き込む diff も reject。"""
-        patch = """--- a/src/data_collector/adapters/rule_based/sites/foo.py
-+++ b/src/data_collector/adapters/rule_based/sites/foo.py
-@@ -1 +1 @@
--old
-+new
---- a/src/data_collector/adapters/rule_based/sites/bar.py
-+++ b/src/data_collector/adapters/rule_based/sites/bar.py
-@@ -1 +1 @@
--x
-+y
-"""
-        ok, reason = afa.validate_patch_scope(
-            patch, ["src/data_collector/adapters/rule_based/sites/foo.py"]
-        )
-        assert ok is False
-        assert "bar.py" in reason
-
-    def test_normalizer_change_rejected(self):
-        """domain/normalizer.py 等の基盤層書き換えも reject。"""
-        patch = """--- a/src/data_collector/domain/normalizer.py
-+++ b/src/data_collector/domain/normalizer.py
-@@ -1 +1 @@
--old
-+new
-"""
-        ok, reason = afa.validate_patch_scope(
-            patch, ["src/data_collector/adapters/rule_based/sites/foo.py"]
-        )
-        assert ok is False
-        assert "normalizer.py" in reason
-
-    def test_file_deletion_rejected(self):
-        """+++ /dev/null (ファイル削除) を含むパッチは reject。"""
-        patch = """--- a/src/data_collector/adapters/rule_based/sites/foo.py
-+++ /dev/null
-@@ -1,3 +0,0 @@
--line1
--line2
--line3
-"""
-        ok, reason = afa.validate_patch_scope(
-            patch, ["src/data_collector/adapters/rule_based/sites/foo.py"]
-        )
-        assert ok is False
-        assert "deletion" in reason or "/dev/null" in reason
-
-    def test_new_file_creation_rejected(self):
-        """--- /dev/null (新規ファイル作成) を含むパッチは reject。"""
-        patch = """--- /dev/null
-+++ b/src/data_collector/adapters/rule_based/sites/new.py
-@@ -0,0 +1,3 @@
-+line1
-+line2
-+line3
-"""
-        ok, reason = afa.validate_patch_scope(
-            patch, ["src/data_collector/adapters/rule_based/sites/foo.py"]
-        )
-        assert ok is False
-        assert "creation" in reason or "/dev/null" in reason
-
-    def test_empty_patch_rejected(self):
-        """空 / ヘッダなし の patch は reject。"""
-        ok, reason = afa.validate_patch_scope(
-            "", ["src/data_collector/adapters/rule_based/sites/foo.py"]
-        )
-        assert ok is False
-        assert "no file" in reason.lower() or "header" in reason.lower()
-
-    def test_path_without_a_b_prefix_is_handled(self):
-        """diff のパスに a/ b/ prefix が無いケース (git apply は受け付ける) も検証。"""
-        patch = """--- src/data_collector/adapters/rule_based/sites/foo.py
-+++ src/data_collector/adapters/rule_based/sites/foo.py
-@@ -1 +1 @@
--old
-+new
-"""
-        ok, reason = afa.validate_patch_scope(
-            patch, ["src/data_collector/adapters/rule_based/sites/foo.py"]
-        )
-        assert ok is True, f"unexpected reject: {reason}"
-
-    def test_workflow_file_change_rejected(self):
-        """`.github/workflows/` 配下の変更も reject (auto-fix のスコープ外)。"""
-        patch = """--- a/.github/workflows/data-collector.yml
-+++ b/.github/workflows/data-collector.yml
-@@ -1 +1 @@
--old
-+new
-"""
-        ok, reason = afa.validate_patch_scope(
-            patch, ["src/data_collector/adapters/rule_based/sites/foo.py"]
-        )
-        assert ok is False
-        assert "workflows" in reason or ".yml" in reason
+        assert result == [("old", "OK-PATCH")]
 
 
 class TestVerifyNoUnexpectedChanges:
@@ -496,3 +419,27 @@ class TestMetrics:
         m = afa.Metrics(status="empty", list_count=0)
         d = m.to_dict()
         assert d["missing_rates"] == {}
+
+
+class TestDryRunExit:
+    """観察モード (--dry-run) では『LLM 提案が却下された』はスクリプトの失敗では
+    なく想定内の観察結果。GitHub Actions の step を赤にして Discord ノイズにする
+    のを避けるため、当該 exit code は 0 に丸める。
+
+    exit 2 (LLM 呼び出し自体の例外) は却下ではなく本当のスクリプト障害なので、
+    dry-run でも丸めない。"""
+
+    def test_rejection_codes_neutralized_in_dry_run(self):
+        for code in (3, 4, 5):
+            assert afa._dry_run_exit(code, dry_run=True) == 0
+
+    def test_rejection_codes_preserved_when_not_dry_run(self):
+        for code in (3, 4, 5):
+            assert afa._dry_run_exit(code, dry_run=False) == code
+
+    def test_llm_call_failure_not_neutralized_even_in_dry_run(self):
+        assert afa._dry_run_exit(2, dry_run=True) == 2
+
+    def test_success_code_passthrough(self):
+        assert afa._dry_run_exit(0, dry_run=True) == 0
+        assert afa._dry_run_exit(0, dry_run=False) == 0
