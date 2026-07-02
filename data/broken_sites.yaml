@@ -19,7 +19,7 @@
     port=443) at 0x7fccc45ad710>, ''Connection to aniwel.jp timed out. (connect timeout=30)''))'
   last_failed_at: '2026-06-30T17:14:28+00:00'
 三重県動物愛護管理センター（迷い犬情報）:
-  consecutive_failures: 1
+  consecutive_failures: 0
   last_error: 'ネットワークエラー: HTTPConnectionPool(host=''mie-dakc.server-shared.com'',
     port=80): Max retries exceeded with url: /maigoinujyouhou.html (Caused by ConnectTimeoutError(<HTTPConnection(host=''mie-dakc.server-shared.com'',
     port=80) at 0x7f46bb73acd0>, ''Connection to mie-dakc.server-shared.com timed

@@ -2,9 +2,6 @@
   age_months:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 12
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 12
     - missing_rate: 0.0
@@ -30,14 +27,14 @@
       sample_size: 12
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:13+00:00'
+      sample_size: 12
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:24+00:00'
       sample_size: 12
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 12
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 12
     - missing_rate: 0.0
@@ -63,14 +60,14 @@
       sample_size: 12
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:13+00:00'
+      sample_size: 12
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:24+00:00'
       sample_size: 12
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 12
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 12
     - missing_rate: 0.0
@@ -96,14 +93,14 @@
       sample_size: 12
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:13+00:00'
+      sample_size: 12
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:24+00:00'
       sample_size: 12
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 12
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 12
     - missing_rate: 0.0
@@ -129,14 +126,14 @@
       sample_size: 12
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:13+00:00'
+      sample_size: 12
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:24+00:00'
       sample_size: 12
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 12
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 12
     - missing_rate: 0.0
@@ -162,14 +159,14 @@
       sample_size: 12
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:13+00:00'
+      sample_size: 12
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:24+00:00'
       sample_size: 12
     last_alert_at: null
   size:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 12
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 12
     - missing_rate: 0.0
@@ -195,15 +192,15 @@
       sample_size: 12
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:13+00:00'
+      sample_size: 12
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:24+00:00'
       sample_size: 12
     last_alert_at: null
 おおいた動物愛護センター（譲渡猫）:
   age_months:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 12
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 12
     - missing_rate: 0.0
@@ -229,14 +226,14 @@
       sample_size: 12
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:13+00:00'
+      sample_size: 12
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:24+00:00'
       sample_size: 12
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 12
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 12
     - missing_rate: 0.0
@@ -262,14 +259,14 @@
       sample_size: 12
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:13+00:00'
+      sample_size: 12
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:24+00:00'
       sample_size: 12
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 12
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 12
     - missing_rate: 0.0
@@ -295,14 +292,14 @@
       sample_size: 12
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:13+00:00'
+      sample_size: 12
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:24+00:00'
       sample_size: 12
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 12
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 12
     - missing_rate: 0.0
@@ -328,14 +325,14 @@
       sample_size: 12
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:13+00:00'
+      sample_size: 12
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:24+00:00'
       sample_size: 12
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 12
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 12
     - missing_rate: 0.0
@@ -361,14 +358,14 @@
       sample_size: 12
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:13+00:00'
+      sample_size: 12
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:24+00:00'
       sample_size: 12
     last_alert_at: null
   size:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 12
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 12
     - missing_rate: 1.0
@@ -394,6 +391,9 @@
       sample_size: 12
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:13+00:00'
+      sample_size: 12
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:24+00:00'
       sample_size: 12
     last_alert_at: null
 おおいた動物愛護センター（迷子情報メイン）:
@@ -714,6 +714,9 @@
     - missing_rate: 1.0
       run_at: '2026-06-30T17:25:02+00:00'
       sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:33+00:00'
+      sample_size: 1
     last_alert_at: null
   image_urls:
     history:
@@ -722,6 +725,9 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-06-30T17:25:02+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:33+00:00'
       sample_size: 1
     last_alert_at: null
   location:
@@ -732,6 +738,9 @@
     - missing_rate: 0.0
       run_at: '2026-06-30T17:25:02+00:00'
       sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:33+00:00'
+      sample_size: 1
     last_alert_at: null
   phone:
     history:
@@ -740,6 +749,9 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-06-30T17:25:02+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:33+00:00'
       sample_size: 1
     last_alert_at: null
   sex:
@@ -750,6 +762,9 @@
     - missing_rate: 0.0
       run_at: '2026-06-30T17:25:02+00:00'
       sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:33+00:00'
+      sample_size: 1
     last_alert_at: null
   size:
     history:
@@ -758,15 +773,15 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-06-30T17:25:02+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:33+00:00'
       sample_size: 1
     last_alert_at: null
 京都市ペットラブ（迷子犬）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 2
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 2
     - missing_rate: 1.0
@@ -792,14 +807,14 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:23+00:00'
+      sample_size: 2
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:34+00:00'
       sample_size: 2
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 2
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 2
     - missing_rate: 1.0
@@ -825,14 +840,14 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:23+00:00'
+      sample_size: 2
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:34+00:00'
       sample_size: 2
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 2
     - missing_rate: 0.0
@@ -858,14 +873,14 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:23+00:00'
+      sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:34+00:00'
       sample_size: 2
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 2
     - missing_rate: 0.0
@@ -891,14 +906,14 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:23+00:00'
+      sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:34+00:00'
       sample_size: 2
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 2
     - missing_rate: 0.0
@@ -924,14 +939,14 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:23+00:00'
+      sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:34+00:00'
       sample_size: 2
     last_alert_at: null
   size:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 2
     - missing_rate: 0.0
@@ -957,6 +972,9 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:23+00:00'
+      sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:34+00:00'
       sample_size: 2
     last_alert_at: null
 京都市ペットラブ（迷子猫）:
@@ -1072,9 +1090,6 @@
   age_months:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 3
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 3
     - missing_rate: 0.0
@@ -1100,14 +1115,14 @@
       sample_size: 3
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:28+00:00'
+      sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:40+00:00'
       sample_size: 3
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 3
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 3
     - missing_rate: 0.0
@@ -1133,14 +1148,14 @@
       sample_size: 3
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:28+00:00'
+      sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:40+00:00'
       sample_size: 3
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 3
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 3
     - missing_rate: 0.0
@@ -1166,14 +1181,14 @@
       sample_size: 3
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:28+00:00'
+      sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:40+00:00'
       sample_size: 3
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 3
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 3
     - missing_rate: 0.0
@@ -1199,14 +1214,14 @@
       sample_size: 3
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:28+00:00'
+      sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:40+00:00'
       sample_size: 3
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 3
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 3
     - missing_rate: 0.0
@@ -1232,14 +1247,14 @@
       sample_size: 3
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:28+00:00'
+      sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:40+00:00'
       sample_size: 3
     last_alert_at: null
   size:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 3
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 3
     - missing_rate: 1.0
@@ -1266,6 +1281,46 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:28+00:00'
       sample_size: 3
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:40+00:00'
+      sample_size: 3
+    last_alert_at: null
+佐賀県（伊万里・西松浦郡）保護犬猫:
+  age_months:
+    history:
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:19+00:00'
+      sample_size: 1
+    last_alert_at: null
+  image_urls:
+    history:
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:19+00:00'
+      sample_size: 1
+    last_alert_at: null
+  location:
+    history:
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:19+00:00'
+      sample_size: 1
+    last_alert_at: null
+  phone:
+    history:
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:19+00:00'
+      sample_size: 1
+    last_alert_at: null
+  sex:
+    history:
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:19+00:00'
+      sample_size: 1
+    last_alert_at: null
+  size:
+    history:
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:19+00:00'
+      sample_size: 1
     last_alert_at: null
 佐賀県（唐津・東松浦郡）保護犬猫:
   age_months:
@@ -1367,6 +1422,9 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:28+00:00'
       sample_size: 15
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:39+00:00'
+      sample_size: 15
     last_alert_at: null
   image_urls:
     history:
@@ -1393,6 +1451,9 @@
       sample_size: 15
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:28+00:00'
+      sample_size: 15
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:39+00:00'
       sample_size: 15
     last_alert_at: null
   location:
@@ -1421,6 +1482,9 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:28+00:00'
       sample_size: 15
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:39+00:00'
+      sample_size: 15
     last_alert_at: null
   phone:
     history:
@@ -1447,6 +1511,9 @@
       sample_size: 15
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:28+00:00'
+      sample_size: 15
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:39+00:00'
       sample_size: 15
     last_alert_at: null
   sex:
@@ -1475,6 +1542,9 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:28+00:00'
       sample_size: 15
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:39+00:00'
+      sample_size: 15
     last_alert_at: null
   size:
     history:
@@ -1501,15 +1571,15 @@
       sample_size: 15
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:28+00:00'
+      sample_size: 15
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:39+00:00'
       sample_size: 15
     last_alert_at: null
 前橋市（保護犬）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -1535,14 +1605,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:15+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:26+00:00'
       sample_size: 1
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -1568,14 +1638,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:15+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:26+00:00'
       sample_size: 1
     last_alert_at: null
   location:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -1601,14 +1671,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:15+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:26+00:00'
       sample_size: 1
     last_alert_at: null
   phone:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -1635,12 +1705,12 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:15+00:00'
       sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:26+00:00'
+      sample_size: 1
     last_alert_at: null
   sex:
     history:
-    - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
@@ -1668,12 +1738,12 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:15+00:00'
       sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:26+00:00'
+      sample_size: 1
     last_alert_at: null
   size:
     history:
-    - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
@@ -1700,15 +1770,15 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:15+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:26+00:00'
       sample_size: 1
     last_alert_at: null
 北九州市（保護犬）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 6
     - missing_rate: 1.0
@@ -1734,14 +1804,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:09+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:20+00:00'
       sample_size: 1
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 6
     - missing_rate: 1.0
@@ -1767,14 +1837,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:09+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:20+00:00'
       sample_size: 1
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 6
     - missing_rate: 0.0
@@ -1800,14 +1870,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:09+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:20+00:00'
       sample_size: 1
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 6
     - missing_rate: 0.0
@@ -1833,14 +1903,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:09+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:20+00:00'
       sample_size: 1
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 6
     - missing_rate: 0.0
@@ -1866,14 +1936,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:09+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:20+00:00'
       sample_size: 1
     last_alert_at: null
   size:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 6
     - missing_rate: 0.0
@@ -1899,15 +1969,15 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:09+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:20+00:00'
       sample_size: 1
     last_alert_at: null
 北九州市（譲渡犬）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 6
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 6
     - missing_rate: 1.0
@@ -1933,14 +2003,14 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:09+00:00'
+      sample_size: 2
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:20+00:00'
       sample_size: 2
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 6
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 6
     - missing_rate: 1.0
@@ -1966,14 +2036,14 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:09+00:00'
+      sample_size: 2
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:20+00:00'
       sample_size: 2
     last_alert_at: null
   location:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 6
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 6
     - missing_rate: 1.0
@@ -1999,14 +2069,14 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:09+00:00'
+      sample_size: 2
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:20+00:00'
       sample_size: 2
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 6
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 6
     - missing_rate: 0.0
@@ -2032,14 +2102,14 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:09+00:00'
+      sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:20+00:00'
       sample_size: 2
     last_alert_at: null
   sex:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 6
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 6
     - missing_rate: 1.0
@@ -2065,14 +2135,14 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:09+00:00'
+      sample_size: 2
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:20+00:00'
       sample_size: 2
     last_alert_at: null
   size:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 6
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 6
     - missing_rate: 1.0
@@ -2098,15 +2168,15 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:09+00:00'
+      sample_size: 2
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:20+00:00'
       sample_size: 2
     last_alert_at: null
 千葉市（市民保護その他）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -2132,14 +2202,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:18+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:29+00:00'
       sample_size: 1
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -2165,14 +2235,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:18+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:29+00:00'
       sample_size: 1
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -2198,14 +2268,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:18+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:29+00:00'
       sample_size: 1
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -2231,14 +2301,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:18+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:29+00:00'
       sample_size: 1
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -2264,14 +2334,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:18+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:29+00:00'
       sample_size: 1
     last_alert_at: null
   size:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -2297,15 +2367,15 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:18+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:29+00:00'
       sample_size: 1
     last_alert_at: null
 千葉市（市民保護犬）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -2331,14 +2401,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:17+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:28+00:00'
       sample_size: 1
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -2364,14 +2434,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:17+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:28+00:00'
       sample_size: 1
     last_alert_at: null
   location:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -2397,14 +2467,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:17+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:28+00:00'
       sample_size: 1
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -2430,14 +2500,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:17+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:28+00:00'
       sample_size: 1
     last_alert_at: null
   sex:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -2463,14 +2533,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:17+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:28+00:00'
       sample_size: 1
     last_alert_at: null
   size:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -2496,15 +2566,15 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:17+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:28+00:00'
       sample_size: 1
     last_alert_at: null
 千葉市（市民保護猫）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 9
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 9
     - missing_rate: 1.0
@@ -2530,14 +2600,14 @@
       sample_size: 10
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:18+00:00'
+      sample_size: 10
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:28+00:00'
       sample_size: 10
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.1111111111111111
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 9
-    - missing_rate: 0.1111111111111111
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 9
     - missing_rate: 0.1111111111111111
@@ -2563,14 +2633,14 @@
       sample_size: 10
     - missing_rate: 0.2
       run_at: '2026-07-01T17:22:18+00:00'
+      sample_size: 10
+    - missing_rate: 0.2
+      run_at: '2026-07-02T17:00:28+00:00'
       sample_size: 10
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 9
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 9
     - missing_rate: 0.0
@@ -2596,14 +2666,14 @@
       sample_size: 10
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:18+00:00'
+      sample_size: 10
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:28+00:00'
       sample_size: 10
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 9
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 9
     - missing_rate: 0.0
@@ -2629,14 +2699,14 @@
       sample_size: 10
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:18+00:00'
+      sample_size: 10
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:28+00:00'
       sample_size: 10
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.1111111111111111
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 9
-    - missing_rate: 0.1111111111111111
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 9
     - missing_rate: 0.1111111111111111
@@ -2662,14 +2732,14 @@
       sample_size: 10
     - missing_rate: 0.1
       run_at: '2026-07-01T17:22:18+00:00'
+      sample_size: 10
+    - missing_rate: 0.1
+      run_at: '2026-07-02T17:00:28+00:00'
       sample_size: 10
     last_alert_at: null
   size:
     history:
     - missing_rate: 0.1111111111111111
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 9
-    - missing_rate: 0.1111111111111111
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 9
     - missing_rate: 0.1111111111111111
@@ -2695,15 +2765,15 @@
       sample_size: 10
     - missing_rate: 0.1
       run_at: '2026-07-01T17:22:18+00:00'
+      sample_size: 10
+    - missing_rate: 0.1
+      run_at: '2026-07-02T17:00:28+00:00'
       sample_size: 10
     last_alert_at: null
 千葉市（迷子その他動物）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -2729,14 +2799,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:17+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:28+00:00'
       sample_size: 1
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -2762,14 +2832,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:17+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:28+00:00'
       sample_size: 1
     last_alert_at: null
   location:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -2795,14 +2865,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:17+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:28+00:00'
       sample_size: 1
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -2828,14 +2898,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:17+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:28+00:00'
       sample_size: 1
     last_alert_at: null
   sex:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -2861,14 +2931,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:17+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:28+00:00'
       sample_size: 1
     last_alert_at: null
   size:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -2894,15 +2964,15 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:17+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:28+00:00'
       sample_size: 1
     last_alert_at: null
 千葉市（迷子犬）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 2
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 2
     - missing_rate: 1.0
@@ -2928,14 +2998,14 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:16+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:27+00:00'
       sample_size: 1
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 2
     - missing_rate: 0.0
@@ -2961,14 +3031,14 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:16+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:27+00:00'
       sample_size: 1
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 2
     - missing_rate: 0.0
@@ -2994,14 +3064,14 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:16+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:27+00:00'
       sample_size: 1
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 2
     - missing_rate: 0.0
@@ -3027,14 +3097,14 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:16+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:27+00:00'
       sample_size: 1
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 2
     - missing_rate: 0.0
@@ -3060,14 +3130,14 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:16+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:27+00:00'
       sample_size: 1
     last_alert_at: null
   size:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 2
     - missing_rate: 0.0
@@ -3093,6 +3163,9 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:16+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:27+00:00'
       sample_size: 1
     last_alert_at: null
 千葉市（迷子猫）:
@@ -3125,6 +3198,9 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:17+00:00'
       sample_size: 4
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:27+00:00'
+      sample_size: 2
     last_alert_at: null
   image_urls:
     history:
@@ -3155,6 +3231,9 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:17+00:00'
       sample_size: 4
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:27+00:00'
+      sample_size: 2
     last_alert_at: null
   location:
     history:
@@ -3185,6 +3264,9 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:17+00:00'
       sample_size: 4
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:27+00:00'
+      sample_size: 2
     last_alert_at: null
   phone:
     history:
@@ -3215,6 +3297,9 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:17+00:00'
       sample_size: 4
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:27+00:00'
+      sample_size: 2
     last_alert_at: null
   sex:
     history:
@@ -3245,6 +3330,9 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:17+00:00'
       sample_size: 4
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:27+00:00'
+      sample_size: 2
     last_alert_at: null
   size:
     history:
@@ -3275,14 +3363,14 @@
     - missing_rate: 0.75
       run_at: '2026-07-01T17:22:17+00:00'
       sample_size: 4
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:27+00:00'
+      sample_size: 2
     last_alert_at: null
 千葉県動愛センター本所（収容犬）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 2
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -3309,13 +3397,13 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:13+00:00'
       sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:24+00:00'
+      sample_size: 2
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -3342,13 +3430,13 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:13+00:00'
       sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:24+00:00'
+      sample_size: 2
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -3375,13 +3463,13 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:13+00:00'
       sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:24+00:00'
+      sample_size: 2
     last_alert_at: null
   phone:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 2
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -3408,13 +3496,13 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:13+00:00'
       sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:24+00:00'
+      sample_size: 2
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -3441,12 +3529,12 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:13+00:00'
       sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:24+00:00'
+      sample_size: 2
     last_alert_at: null
   size:
     history:
-    - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
@@ -3474,6 +3562,9 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:13+00:00'
       sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:24+00:00'
+      sample_size: 2
     last_alert_at: null
 千葉県動愛センター本所（収容猫）:
   age_months:
@@ -3860,9 +3951,6 @@
   age_months:
     history:
     - missing_rate: 0.05
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 20
-    - missing_rate: 0.05
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 20
     - missing_rate: 0.05
@@ -3888,14 +3976,14 @@
       sample_size: 19
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:24+00:00'
+      sample_size: 19
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:36+00:00'
       sample_size: 19
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 20
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 20
     - missing_rate: 0.0
@@ -3921,14 +4009,14 @@
       sample_size: 19
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:24+00:00'
+      sample_size: 19
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:36+00:00'
       sample_size: 19
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 20
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 20
     - missing_rate: 0.0
@@ -3954,14 +4042,14 @@
       sample_size: 19
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:24+00:00'
+      sample_size: 19
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:36+00:00'
       sample_size: 19
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 20
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 20
     - missing_rate: 0.0
@@ -3987,14 +4075,14 @@
       sample_size: 19
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:24+00:00'
+      sample_size: 19
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:36+00:00'
       sample_size: 19
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 20
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 20
     - missing_rate: 0.0
@@ -4020,14 +4108,14 @@
       sample_size: 19
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:24+00:00'
+      sample_size: 19
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:36+00:00'
       sample_size: 19
     last_alert_at: null
   size:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 20
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 20
     - missing_rate: 1.0
@@ -4053,6 +4141,9 @@
       sample_size: 19
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:24+00:00'
+      sample_size: 19
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:36+00:00'
       sample_size: 19
     last_alert_at: null
 大阪市（譲渡犬）:
@@ -4064,6 +4155,9 @@
     - missing_rate: 1.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:35+00:00'
+      sample_size: 1
     last_alert_at: null
   image_urls:
     history:
@@ -4072,6 +4166,9 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:35+00:00'
       sample_size: 1
     last_alert_at: null
   location:
@@ -4082,6 +4179,9 @@
     - missing_rate: 1.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:35+00:00'
+      sample_size: 1
     last_alert_at: null
   phone:
     history:
@@ -4090,6 +4190,9 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-06-23T17:34:41+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:35+00:00'
       sample_size: 1
     last_alert_at: null
   sex:
@@ -4100,6 +4203,9 @@
     - missing_rate: 1.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:35+00:00'
+      sample_size: 1
     last_alert_at: null
   size:
     history:
@@ -4108,6 +4214,9 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-06-23T17:34:41+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:35+00:00'
       sample_size: 1
     last_alert_at: null
 大阪市（譲渡猫）:
@@ -4131,6 +4240,9 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:24+00:00'
       sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:35+00:00'
+      sample_size: 3
     last_alert_at: null
   image_urls:
     history:
@@ -4152,6 +4264,9 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:24+00:00'
       sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:35+00:00'
+      sample_size: 3
     last_alert_at: null
   location:
     history:
@@ -4173,6 +4288,9 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:24+00:00'
       sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:35+00:00'
+      sample_size: 3
     last_alert_at: null
   phone:
     history:
@@ -4194,6 +4312,9 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:24+00:00'
       sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:35+00:00'
+      sample_size: 3
     last_alert_at: null
   sex:
     history:
@@ -4215,6 +4336,9 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:24+00:00'
       sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:35+00:00'
+      sample_size: 3
     last_alert_at: null
   size:
     history:
@@ -4236,14 +4360,14 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:24+00:00'
       sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:35+00:00'
+      sample_size: 3
     last_alert_at: null
 宇都宮市（迷子犬・負傷猫）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -4270,13 +4394,13 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:15+00:00'
       sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:26+00:00'
+      sample_size: 3
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -4303,13 +4427,13 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:15+00:00'
       sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:26+00:00'
+      sample_size: 3
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -4336,13 +4460,13 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:15+00:00'
       sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:26+00:00'
+      sample_size: 3
     last_alert_at: null
   phone:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -4369,13 +4493,13 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:15+00:00'
       sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:26+00:00'
+      sample_size: 3
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -4402,13 +4526,13 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:15+00:00'
       sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:26+00:00'
+      sample_size: 3
     last_alert_at: null
   size:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -4435,14 +4559,14 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:15+00:00'
       sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:26+00:00'
+      sample_size: 3
     last_alert_at: null
 宮崎市（センター保護犬・飼い主募集）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -4468,14 +4592,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:11+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:22+00:00'
       sample_size: 1
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -4501,14 +4625,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:11+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:22+00:00'
       sample_size: 1
     last_alert_at: null
   location:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -4534,14 +4658,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:11+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:22+00:00'
       sample_size: 1
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -4567,14 +4691,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:11+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:22+00:00'
       sample_size: 1
     last_alert_at: null
   sex:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -4600,14 +4724,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:11+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:22+00:00'
       sample_size: 1
     last_alert_at: null
   size:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -4633,15 +4757,15 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:11+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:22+00:00'
       sample_size: 1
     last_alert_at: null
 宮崎市（センター保護猫・飼い主募集）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -4667,14 +4791,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:11+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:22+00:00'
       sample_size: 1
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -4700,14 +4824,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:11+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:22+00:00'
       sample_size: 1
     last_alert_at: null
   location:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -4733,14 +4857,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:11+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:22+00:00'
       sample_size: 1
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -4766,14 +4890,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:11+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:22+00:00'
       sample_size: 1
     last_alert_at: null
   sex:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -4799,14 +4923,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:11+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:22+00:00'
       sample_size: 1
     last_alert_at: null
   size:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -4832,15 +4956,15 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:11+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:22+00:00'
       sample_size: 1
     last_alert_at: null
 宮崎市（直近保護犬）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -4866,14 +4990,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:10+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:21+00:00'
       sample_size: 1
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -4899,14 +5023,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:10+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:21+00:00'
       sample_size: 1
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -4932,14 +5056,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:10+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:21+00:00'
       sample_size: 1
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -4965,14 +5089,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:10+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:21+00:00'
       sample_size: 1
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -4998,14 +5122,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:10+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:21+00:00'
       sample_size: 1
     last_alert_at: null
   size:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -5031,6 +5155,9 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:10+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:21+00:00'
       sample_size: 1
     last_alert_at: null
 山梨県（保護されている犬）:
@@ -5111,9 +5238,6 @@
   age_months:
     history:
     - missing_rate: 0.35714285714285715
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 42
-    - missing_rate: 0.35714285714285715
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 42
     - missing_rate: 0.35714285714285715
@@ -5140,12 +5264,12 @@
     - missing_rate: 0.3488372093023256
       run_at: '2026-07-01T17:22:27+00:00'
       sample_size: 43
+    - missing_rate: 0.3488372093023256
+      run_at: '2026-07-02T17:00:39+00:00'
+      sample_size: 43
     last_alert_at: null
   image_urls:
     history:
-    - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 42
     - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 42
@@ -5172,14 +5296,14 @@
       sample_size: 43
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:27+00:00'
+      sample_size: 43
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:39+00:00'
       sample_size: 43
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 42
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 42
     - missing_rate: 0.0
@@ -5205,14 +5329,14 @@
       sample_size: 43
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:27+00:00'
+      sample_size: 43
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:39+00:00'
       sample_size: 43
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 42
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 42
     - missing_rate: 0.0
@@ -5238,14 +5362,14 @@
       sample_size: 43
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:27+00:00'
+      sample_size: 43
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:39+00:00'
       sample_size: 43
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 42
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 42
     - missing_rate: 0.0
@@ -5272,12 +5396,12 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:27+00:00'
       sample_size: 43
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:39+00:00'
+      sample_size: 43
     last_alert_at: null
   size:
     history:
-    - missing_rate: 0.4523809523809524
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 42
     - missing_rate: 0.4523809523809524
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 42
@@ -5304,6 +5428,9 @@
       sample_size: 43
     - missing_rate: 0.4418604651162791
       run_at: '2026-07-01T17:22:27+00:00'
+      sample_size: 43
+    - missing_rate: 0.4418604651162791
+      run_at: '2026-07-02T17:00:39+00:00'
       sample_size: 43
     last_alert_at: null
 山梨県（探している猫）:
@@ -5511,6 +5638,9 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:24+00:00'
       sample_size: 3
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:36+00:00'
+      sample_size: 3
     last_alert_at: null
   image_urls:
     history:
@@ -5534,6 +5664,9 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:24+00:00'
+      sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:36+00:00'
       sample_size: 3
     last_alert_at: null
   location:
@@ -5559,6 +5692,9 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:24+00:00'
       sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:36+00:00'
+      sample_size: 3
     last_alert_at: null
   phone:
     history:
@@ -5582,6 +5718,9 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:24+00:00'
+      sample_size: 3
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:36+00:00'
       sample_size: 3
     last_alert_at: null
   sex:
@@ -5607,6 +5746,9 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:24+00:00'
       sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:36+00:00'
+      sample_size: 3
     last_alert_at: null
   size:
     history:
@@ -5630,15 +5772,15 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:24+00:00'
+      sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:36+00:00'
       sample_size: 3
     last_alert_at: null
 川崎市（収容猫）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -5664,14 +5806,14 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:22+00:00'
+      sample_size: 3
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:33+00:00'
       sample_size: 3
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -5697,14 +5839,14 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:22+00:00'
+      sample_size: 3
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:33+00:00'
       sample_size: 3
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -5730,14 +5872,14 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:22+00:00'
+      sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:33+00:00'
       sample_size: 3
     last_alert_at: null
   phone:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -5763,14 +5905,14 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:22+00:00'
+      sample_size: 3
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:33+00:00'
       sample_size: 3
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -5796,14 +5938,14 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:22+00:00'
+      sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:33+00:00'
       sample_size: 3
     last_alert_at: null
   size:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -5829,15 +5971,15 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:22+00:00'
+      sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:33+00:00'
       sample_size: 3
     last_alert_at: null
 広島市（迷子猫）:
   age_months:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -5863,14 +6005,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:26+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:37+00:00'
       sample_size: 1
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -5896,14 +6038,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:26+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:37+00:00'
       sample_size: 1
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -5929,14 +6071,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:26+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:37+00:00'
       sample_size: 1
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -5962,14 +6104,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:26+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:37+00:00'
       sample_size: 1
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -5995,14 +6137,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:26+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:37+00:00'
       sample_size: 1
     last_alert_at: null
   size:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -6028,6 +6170,9 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:26+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:37+00:00'
       sample_size: 1
     last_alert_at: null
 広島県動物愛護センター（迷い犬）:
@@ -6060,6 +6205,9 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:25+00:00'
       sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:36+00:00'
+      sample_size: 2
     last_alert_at: null
   image_urls:
     history:
@@ -6089,6 +6237,9 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:25+00:00'
+      sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:36+00:00'
       sample_size: 2
     last_alert_at: null
   location:
@@ -6120,6 +6271,9 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:25+00:00'
       sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:36+00:00'
+      sample_size: 2
     last_alert_at: null
   phone:
     history:
@@ -6149,6 +6303,9 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:25+00:00'
+      sample_size: 2
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:36+00:00'
       sample_size: 2
     last_alert_at: null
   sex:
@@ -6180,6 +6337,9 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:25+00:00'
       sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:36+00:00'
+      sample_size: 2
     last_alert_at: null
   size:
     history:
@@ -6209,15 +6369,15 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:25+00:00'
+      sample_size: 2
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:36+00:00'
       sample_size: 2
     last_alert_at: null
 広島県動物愛護センター（迷い猫）:
   age_months:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -6243,14 +6403,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:25+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:37+00:00'
       sample_size: 1
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -6276,14 +6436,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:25+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:37+00:00'
       sample_size: 1
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -6309,14 +6469,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:25+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:37+00:00'
       sample_size: 1
     last_alert_at: null
   phone:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -6342,14 +6502,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:25+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:37+00:00'
       sample_size: 1
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -6375,14 +6535,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:25+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:37+00:00'
       sample_size: 1
     last_alert_at: null
   size:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -6408,15 +6568,15 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:25+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:37+00:00'
       sample_size: 1
     last_alert_at: null
 愛媛県動物愛護センター（収容中）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:38+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -6442,14 +6602,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:08+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:18+00:00'
       sample_size: 1
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:38+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -6475,14 +6635,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:08+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:18+00:00'
       sample_size: 1
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:38+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -6508,14 +6668,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:08+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:18+00:00'
       sample_size: 1
     last_alert_at: null
   phone:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:38+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -6541,14 +6701,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:08+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:18+00:00'
       sample_size: 1
     last_alert_at: null
   sex:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:38+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -6574,14 +6734,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:08+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:18+00:00'
       sample_size: 1
     last_alert_at: null
   size:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:38+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -6607,15 +6767,15 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:08+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:18+00:00'
       sample_size: 1
     last_alert_at: null
 東京都収容動物情報（犬）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -6642,13 +6802,13 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:14+00:00'
       sample_size: 3
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:25+00:00'
+      sample_size: 4
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -6675,13 +6835,13 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:14+00:00'
       sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:25+00:00'
+      sample_size: 4
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -6708,13 +6868,13 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:14+00:00'
       sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:25+00:00'
+      sample_size: 4
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -6741,13 +6901,13 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:14+00:00'
       sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:25+00:00'
+      sample_size: 4
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -6774,13 +6934,13 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:14+00:00'
       sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:25+00:00'
+      sample_size: 4
     last_alert_at: null
   size:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -6807,14 +6967,14 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:14+00:00'
       sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:25+00:00'
+      sample_size: 4
     last_alert_at: null
 松山市 はぴまるの丘（収容中）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 12
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:38+00:00'
       sample_size: 12
     - missing_rate: 1.0
@@ -6840,14 +7000,14 @@
       sample_size: 14
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:08+00:00'
+      sample_size: 15
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:19+00:00'
       sample_size: 15
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 12
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:38+00:00'
       sample_size: 12
     - missing_rate: 0.0
@@ -6873,14 +7033,14 @@
       sample_size: 14
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:08+00:00'
+      sample_size: 15
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:19+00:00'
       sample_size: 15
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 12
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:38+00:00'
       sample_size: 12
     - missing_rate: 0.0
@@ -6906,14 +7066,14 @@
       sample_size: 14
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:08+00:00'
+      sample_size: 15
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:19+00:00'
       sample_size: 15
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 12
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:38+00:00'
       sample_size: 12
     - missing_rate: 0.0
@@ -6939,14 +7099,14 @@
       sample_size: 14
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:08+00:00'
+      sample_size: 15
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:19+00:00'
       sample_size: 15
     last_alert_at: null
   sex:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 12
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:38+00:00'
       sample_size: 12
     - missing_rate: 1.0
@@ -6972,14 +7132,14 @@
       sample_size: 14
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:08+00:00'
+      sample_size: 15
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:19+00:00'
       sample_size: 15
     last_alert_at: null
   size:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 12
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:38+00:00'
       sample_size: 12
     - missing_rate: 1.0
@@ -7005,15 +7165,15 @@
       sample_size: 14
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:08+00:00'
+      sample_size: 15
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:19+00:00'
       sample_size: 15
     last_alert_at: null
 柏市（保護動物）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 5
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 5
     - missing_rate: 1.0
@@ -7039,14 +7199,14 @@
       sample_size: 7
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:19+00:00'
+      sample_size: 7
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:30+00:00'
       sample_size: 7
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.2
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 5
-    - missing_rate: 0.2
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 5
     - missing_rate: 0.2
@@ -7072,14 +7232,14 @@
       sample_size: 7
     - missing_rate: 0.42857142857142855
       run_at: '2026-07-01T17:22:19+00:00'
+      sample_size: 7
+    - missing_rate: 0.42857142857142855
+      run_at: '2026-07-02T17:00:30+00:00'
       sample_size: 7
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 5
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 5
     - missing_rate: 0.0
@@ -7105,14 +7265,14 @@
       sample_size: 7
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:19+00:00'
+      sample_size: 7
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:30+00:00'
       sample_size: 7
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 5
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 5
     - missing_rate: 0.0
@@ -7138,14 +7298,14 @@
       sample_size: 7
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:19+00:00'
+      sample_size: 7
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:30+00:00'
       sample_size: 7
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 5
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 5
     - missing_rate: 0.0
@@ -7171,14 +7331,14 @@
       sample_size: 7
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:19+00:00'
+      sample_size: 7
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:30+00:00'
       sample_size: 7
     last_alert_at: null
   size:
     history:
     - missing_rate: 0.2
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 5
-    - missing_rate: 0.2
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 5
     - missing_rate: 0.2
@@ -7204,15 +7364,15 @@
       sample_size: 7
     - missing_rate: 0.42857142857142855
       run_at: '2026-07-01T17:22:19+00:00'
+      sample_size: 7
+    - missing_rate: 0.42857142857142855
+      run_at: '2026-07-02T17:00:30+00:00'
       sample_size: 7
     last_alert_at: null
 柏市（譲渡対象動物）:
   age_months:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 6
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 6
     - missing_rate: 0.0
@@ -7238,14 +7398,14 @@
       sample_size: 6
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:20+00:00'
+      sample_size: 6
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:30+00:00'
       sample_size: 6
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 6
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 6
     - missing_rate: 0.0
@@ -7271,14 +7431,14 @@
       sample_size: 6
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:20+00:00'
+      sample_size: 6
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:30+00:00'
       sample_size: 6
     last_alert_at: null
   location:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 6
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 6
     - missing_rate: 1.0
@@ -7304,14 +7464,14 @@
       sample_size: 6
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:20+00:00'
+      sample_size: 6
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:30+00:00'
       sample_size: 6
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 6
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 6
     - missing_rate: 0.0
@@ -7337,14 +7497,14 @@
       sample_size: 6
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:20+00:00'
+      sample_size: 6
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:30+00:00'
       sample_size: 6
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 6
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 6
     - missing_rate: 0.0
@@ -7370,14 +7530,14 @@
       sample_size: 6
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:20+00:00'
+      sample_size: 6
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:30+00:00'
       sample_size: 6
     last_alert_at: null
   size:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 6
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 6
     - missing_rate: 1.0
@@ -7403,15 +7563,15 @@
       sample_size: 6
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:20+00:00'
+      sample_size: 6
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:30+00:00'
       sample_size: 6
     last_alert_at: null
 横浜市（収容猫）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 2
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 3
     - missing_rate: 1.0
@@ -7438,13 +7598,13 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:22+00:00'
       sample_size: 3
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:33+00:00'
+      sample_size: 4
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 2
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 3
     - missing_rate: 1.0
@@ -7471,13 +7631,13 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:22+00:00'
       sample_size: 3
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:33+00:00'
+      sample_size: 4
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 3
     - missing_rate: 0.0
@@ -7504,13 +7664,13 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:22+00:00'
       sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:33+00:00'
+      sample_size: 4
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 3
     - missing_rate: 0.0
@@ -7537,13 +7697,13 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:22+00:00'
       sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:33+00:00'
+      sample_size: 4
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 3
     - missing_rate: 0.0
@@ -7570,13 +7730,13 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:22+00:00'
       sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:33+00:00'
+      sample_size: 4
     last_alert_at: null
   size:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 2
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 3
     - missing_rate: 1.0
@@ -7603,14 +7763,14 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:22+00:00'
       sample_size: 3
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:33+00:00'
+      sample_size: 4
     last_alert_at: null
 水戸市（愛護センター収容中の動物たち）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 2
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 2
     - missing_rate: 1.0
@@ -7636,14 +7796,14 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:15+00:00'
+      sample_size: 2
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:25+00:00'
       sample_size: 2
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 2
     - missing_rate: 0.0
@@ -7669,14 +7829,14 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:15+00:00'
+      sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:25+00:00'
       sample_size: 2
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 2
     - missing_rate: 0.0
@@ -7702,14 +7862,14 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:15+00:00'
+      sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:25+00:00'
       sample_size: 2
     last_alert_at: null
   phone:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 2
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 2
     - missing_rate: 1.0
@@ -7735,14 +7895,14 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:15+00:00'
+      sample_size: 2
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:25+00:00'
       sample_size: 2
     last_alert_at: null
   sex:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 2
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 2
     - missing_rate: 1.0
@@ -7768,14 +7928,14 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:15+00:00'
+      sample_size: 2
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:25+00:00'
       sample_size: 2
     last_alert_at: null
   size:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 2
     - missing_rate: 0.0
@@ -7801,6 +7961,9 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:15+00:00'
+      sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:25+00:00'
       sample_size: 2
     last_alert_at: null
 浜松市はぴまるの丘（保護犬）:
@@ -7862,9 +8025,6 @@
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 3
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 2
     - missing_rate: 1.0
@@ -7890,14 +8050,14 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:23+00:00'
+      sample_size: 3
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:34+00:00'
       sample_size: 3
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 3
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 2
     - missing_rate: 0.0
@@ -7923,14 +8083,14 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:23+00:00'
+      sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:34+00:00'
       sample_size: 3
     last_alert_at: null
   location:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 3
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 2
     - missing_rate: 1.0
@@ -7956,14 +8116,14 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:23+00:00'
+      sample_size: 3
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:34+00:00'
       sample_size: 3
     last_alert_at: null
   phone:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 3
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 2
     - missing_rate: 1.0
@@ -7989,14 +8149,14 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:23+00:00'
+      sample_size: 3
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:34+00:00'
       sample_size: 3
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 3
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 2
     - missing_rate: 0.0
@@ -8022,14 +8182,14 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:23+00:00'
+      sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:34+00:00'
       sample_size: 3
     last_alert_at: null
   size:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 3
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 2
     - missing_rate: 0.0
@@ -8055,15 +8215,15 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:23+00:00'
+      sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:34+00:00'
       sample_size: 3
     last_alert_at: null
 町田市（保護情報）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 2
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 2
     - missing_rate: 1.0
@@ -8089,14 +8249,14 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:20+00:00'
+      sample_size: 2
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:31+00:00'
       sample_size: 2
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 2
     - missing_rate: 0.0
@@ -8122,14 +8282,14 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:20+00:00'
+      sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:31+00:00'
       sample_size: 2
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 2
     - missing_rate: 0.0
@@ -8155,14 +8315,14 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:20+00:00'
+      sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:31+00:00'
       sample_size: 2
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 2
     - missing_rate: 0.0
@@ -8188,14 +8348,14 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:20+00:00'
+      sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:31+00:00'
       sample_size: 2
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 2
     - missing_rate: 0.0
@@ -8221,14 +8381,14 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:20+00:00'
+      sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:31+00:00'
       sample_size: 2
     last_alert_at: null
   size:
     history:
     - missing_rate: 0.5
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 2
-    - missing_rate: 0.5
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 2
     - missing_rate: 0.5
@@ -8254,6 +8414,9 @@
       sample_size: 2
     - missing_rate: 0.5
       run_at: '2026-07-01T17:22:20+00:00'
+      sample_size: 2
+    - missing_rate: 0.5
+      run_at: '2026-07-02T17:00:31+00:00'
       sample_size: 2
     last_alert_at: null
 町田市（収容動物のお知らせ）:
@@ -8377,6 +8540,9 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:22+00:00'
       sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:32+00:00'
+      sample_size: 1
     last_alert_at: null
   image_urls:
     history:
@@ -8388,6 +8554,9 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:22+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:32+00:00'
       sample_size: 1
     last_alert_at: null
   location:
@@ -8401,6 +8570,9 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:22+00:00'
       sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:32+00:00'
+      sample_size: 1
     last_alert_at: null
   phone:
     history:
@@ -8412,6 +8584,9 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:22+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:32+00:00'
       sample_size: 1
     last_alert_at: null
   sex:
@@ -8425,6 +8600,9 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:22+00:00'
       sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:32+00:00'
+      sample_size: 1
     last_alert_at: null
   size:
     history:
@@ -8436,15 +8614,15 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:22+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:32+00:00'
       sample_size: 1
     last_alert_at: null
 町田市（迷子犬・捜索）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 2
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 2
     - missing_rate: 1.0
@@ -8470,14 +8648,14 @@
       sample_size: 3
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:21+00:00'
+      sample_size: 3
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:31+00:00'
       sample_size: 3
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 2
     - missing_rate: 0.0
@@ -8503,14 +8681,14 @@
       sample_size: 3
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:21+00:00'
+      sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:31+00:00'
       sample_size: 3
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 2
     - missing_rate: 0.0
@@ -8536,14 +8714,14 @@
       sample_size: 3
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:21+00:00'
+      sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:31+00:00'
       sample_size: 3
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 2
     - missing_rate: 0.0
@@ -8569,14 +8747,14 @@
       sample_size: 3
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:21+00:00'
+      sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:31+00:00'
       sample_size: 3
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 2
     - missing_rate: 0.0
@@ -8602,14 +8780,14 @@
       sample_size: 3
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:21+00:00'
+      sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:31+00:00'
       sample_size: 3
     last_alert_at: null
   size:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 2
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 2
     - missing_rate: 0.0
@@ -8635,15 +8813,15 @@
       sample_size: 3
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:21+00:00'
+      sample_size: 3
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:31+00:00'
       sample_size: 3
     last_alert_at: null
 町田市（迷子猫・捜索）:
   age_months:
     history:
     - missing_rate: 0.8035714285714286
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 56
-    - missing_rate: 0.8035714285714286
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 56
     - missing_rate: 0.8035714285714286
@@ -8669,14 +8847,14 @@
       sample_size: 57
     - missing_rate: 0.8070175438596491
       run_at: '2026-07-01T17:22:21+00:00'
+      sample_size: 57
+    - missing_rate: 0.8070175438596491
+      run_at: '2026-07-02T17:00:32+00:00'
       sample_size: 57
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 56
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 56
     - missing_rate: 0.0
@@ -8702,14 +8880,14 @@
       sample_size: 57
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:21+00:00'
+      sample_size: 57
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:32+00:00'
       sample_size: 57
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.03571428571428571
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 56
-    - missing_rate: 0.03571428571428571
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 56
     - missing_rate: 0.03571428571428571
@@ -8735,14 +8913,14 @@
       sample_size: 57
     - missing_rate: 0.03508771929824561
       run_at: '2026-07-01T17:22:21+00:00'
+      sample_size: 57
+    - missing_rate: 0.03508771929824561
+      run_at: '2026-07-02T17:00:32+00:00'
       sample_size: 57
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 56
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 56
     - missing_rate: 0.0
@@ -8768,14 +8946,14 @@
       sample_size: 57
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:21+00:00'
+      sample_size: 57
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:32+00:00'
       sample_size: 57
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 56
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 56
     - missing_rate: 0.0
@@ -8801,14 +8979,14 @@
       sample_size: 57
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:21+00:00'
+      sample_size: 57
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:32+00:00'
       sample_size: 57
     last_alert_at: null
   size:
     history:
     - missing_rate: 0.7142857142857143
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 56
-    - missing_rate: 0.7142857142857143
       run_at: '2026-06-23T17:34:41+00:00'
       sample_size: 56
     - missing_rate: 0.7142857142857143
@@ -8834,15 +9012,15 @@
       sample_size: 57
     - missing_rate: 0.7017543859649122
       run_at: '2026-07-01T17:22:21+00:00'
+      sample_size: 57
+    - missing_rate: 0.7017543859649122
+      run_at: '2026-07-02T17:00:32+00:00'
       sample_size: 57
     last_alert_at: null
 福山市（保護犬）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -8868,14 +9046,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:26+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:38+00:00'
       sample_size: 1
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -8901,14 +9079,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:26+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:38+00:00'
       sample_size: 1
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -8934,14 +9112,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:26+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:38+00:00'
       sample_size: 1
     last_alert_at: null
   phone:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -8967,14 +9145,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:26+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:38+00:00'
       sample_size: 1
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -9000,14 +9178,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:26+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:38+00:00'
       sample_size: 1
     last_alert_at: null
   size:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -9033,15 +9211,15 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:26+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:38+00:00'
       sample_size: 1
     last_alert_at: null
 福島県（中通り 迷子犬）:
   age_months:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 4
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 4
     - missing_rate: 0.0
@@ -9067,14 +9245,14 @@
       sample_size: 3
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:29+00:00'
+      sample_size: 4
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:40+00:00'
       sample_size: 4
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 4
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 4
     - missing_rate: 0.0
@@ -9100,14 +9278,14 @@
       sample_size: 3
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:29+00:00'
+      sample_size: 4
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:40+00:00'
       sample_size: 4
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 4
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 4
     - missing_rate: 0.0
@@ -9133,14 +9311,14 @@
       sample_size: 3
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:29+00:00'
+      sample_size: 4
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:40+00:00'
       sample_size: 4
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 4
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 4
     - missing_rate: 0.0
@@ -9166,14 +9344,14 @@
       sample_size: 3
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:29+00:00'
+      sample_size: 4
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:40+00:00'
       sample_size: 4
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 4
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 4
     - missing_rate: 0.0
@@ -9199,14 +9377,14 @@
       sample_size: 3
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:29+00:00'
+      sample_size: 4
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:40+00:00'
       sample_size: 4
     last_alert_at: null
   size:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 4
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 4
     - missing_rate: 0.0
@@ -9232,15 +9410,15 @@
       sample_size: 3
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:29+00:00'
+      sample_size: 4
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:40+00:00'
       sample_size: 4
     last_alert_at: null
 福島県（中通り 迷子猫）:
   age_months:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -9266,14 +9444,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:29+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:41+00:00'
       sample_size: 1
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -9299,14 +9477,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:29+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:41+00:00'
       sample_size: 1
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -9332,14 +9510,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:29+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:41+00:00'
       sample_size: 1
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -9365,14 +9543,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:29+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:41+00:00'
       sample_size: 1
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -9398,14 +9576,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:29+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:41+00:00'
       sample_size: 1
     last_alert_at: null
   size:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -9431,15 +9609,15 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:29+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:41+00:00'
       sample_size: 1
     last_alert_at: null
 福島県（相双 迷子犬）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -9465,14 +9643,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:29+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:41+00:00'
       sample_size: 1
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -9498,14 +9676,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:29+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:41+00:00'
       sample_size: 1
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -9531,14 +9709,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:29+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:41+00:00'
       sample_size: 1
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -9564,14 +9742,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:29+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:41+00:00'
       sample_size: 1
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -9597,14 +9775,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:29+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:41+00:00'
       sample_size: 1
     last_alert_at: null
   size:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -9630,15 +9808,15 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:29+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:41+00:00'
       sample_size: 1
     last_alert_at: null
 船橋市（収容犬猫）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 3
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 5
     - missing_rate: 1.0
@@ -9665,12 +9843,12 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:19+00:00'
       sample_size: 2
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:29+00:00'
+      sample_size: 3
     last_alert_at: null
   image_urls:
     history:
-    - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 3
     - missing_rate: 0.8
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 5
@@ -9698,13 +9876,13 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:19+00:00'
       sample_size: 2
+    - missing_rate: 0.3333333333333333
+      run_at: '2026-07-02T17:00:29+00:00'
+      sample_size: 3
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 3
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 5
     - missing_rate: 0.0
@@ -9731,13 +9909,13 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:19+00:00'
       sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:29+00:00'
+      sample_size: 3
     last_alert_at: null
   phone:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 3
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 5
     - missing_rate: 1.0
@@ -9764,12 +9942,12 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:19+00:00'
       sample_size: 2
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:29+00:00'
+      sample_size: 3
     last_alert_at: null
   sex:
     history:
-    - missing_rate: 0.6666666666666666
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 3
     - missing_rate: 0.6
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 5
@@ -9797,12 +9975,12 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:19+00:00'
       sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:29+00:00'
+      sample_size: 3
     last_alert_at: null
   size:
     history:
-    - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 3
     - missing_rate: 0.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 5
@@ -9830,6 +10008,9 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:19+00:00'
       sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:29+00:00'
+      sample_size: 3
     last_alert_at: null
 船橋市（譲渡可能犬猫）:
   age_months:
@@ -9861,6 +10042,9 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:19+00:00'
       sample_size: 6
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:30+00:00'
+      sample_size: 6
     last_alert_at: null
   image_urls:
     history:
@@ -9890,6 +10074,9 @@
       sample_size: 6
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:19+00:00'
+      sample_size: 6
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:30+00:00'
       sample_size: 6
     last_alert_at: null
   location:
@@ -9921,6 +10108,9 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:19+00:00'
       sample_size: 6
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:30+00:00'
+      sample_size: 6
     last_alert_at: null
   phone:
     history:
@@ -9950,6 +10140,9 @@
       sample_size: 6
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:19+00:00'
+      sample_size: 6
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:30+00:00'
       sample_size: 6
     last_alert_at: null
   sex:
@@ -9981,6 +10174,9 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:19+00:00'
       sample_size: 6
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:30+00:00'
+      sample_size: 6
     last_alert_at: null
   size:
     history:
@@ -10010,6 +10206,9 @@
       sample_size: 6
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:19+00:00'
+      sample_size: 6
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:30+00:00'
       sample_size: 6
     last_alert_at: null
 越谷市（保護猫）:
@@ -10161,9 +10360,6 @@
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -10189,14 +10385,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:16+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:26+00:00'
       sample_size: 1
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -10222,14 +10418,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:16+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:26+00:00'
       sample_size: 1
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -10255,14 +10451,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:16+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:26+00:00'
       sample_size: 1
     last_alert_at: null
   phone:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -10288,14 +10484,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:16+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:26+00:00'
       sample_size: 1
     last_alert_at: null
   sex:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -10321,14 +10517,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:16+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:26+00:00'
       sample_size: 1
     last_alert_at: null
   size:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:40+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -10354,15 +10550,15 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:16+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:26+00:00'
       sample_size: 1
     last_alert_at: null
 長崎市動物愛護管理センター（犬里親募集）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -10388,14 +10584,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:09+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:21+00:00'
       sample_size: 1
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -10421,14 +10617,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:09+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:21+00:00'
       sample_size: 1
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -10454,14 +10650,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:09+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:21+00:00'
       sample_size: 1
     last_alert_at: null
   phone:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -10487,14 +10683,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:09+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:21+00:00'
       sample_size: 1
     last_alert_at: null
   sex:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -10520,14 +10716,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:09+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:21+00:00'
       sample_size: 1
     last_alert_at: null
   size:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -10553,15 +10749,15 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:09+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:21+00:00'
       sample_size: 1
     last_alert_at: null
 長崎市動物愛護管理センター（猫里親募集）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -10587,14 +10783,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:10+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:21+00:00'
       sample_size: 1
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -10620,14 +10816,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:10+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:21+00:00'
       sample_size: 1
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -10653,14 +10849,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:10+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:21+00:00'
       sample_size: 1
     last_alert_at: null
   phone:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -10686,14 +10882,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:10+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:21+00:00'
       sample_size: 1
     last_alert_at: null
   sex:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -10719,14 +10915,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:10+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:21+00:00'
       sample_size: 1
     last_alert_at: null
   size:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -10752,15 +10948,15 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:10+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:21+00:00'
       sample_size: 1
     last_alert_at: null
 長野県動物愛護センター（譲渡犬）:
   age_months:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -10786,14 +10982,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:26+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:38+00:00'
       sample_size: 1
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -10819,14 +11015,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:26+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:38+00:00'
       sample_size: 1
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -10852,14 +11048,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:26+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:38+00:00'
       sample_size: 1
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -10885,14 +11081,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:26+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:38+00:00'
       sample_size: 1
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -10918,14 +11114,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:26+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:38+00:00'
       sample_size: 1
     last_alert_at: null
   size:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 1
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 1
     - missing_rate: 0.0
@@ -10951,15 +11147,15 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:26+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:38+00:00'
       sample_size: 1
     last_alert_at: null
 長野県動物愛護センター（譲渡猫）:
   age_months:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 4
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 4
     - missing_rate: 0.0
@@ -10985,14 +11181,14 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:27+00:00'
+      sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:39+00:00'
       sample_size: 2
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 4
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 4
     - missing_rate: 0.0
@@ -11018,14 +11214,14 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:27+00:00'
+      sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:39+00:00'
       sample_size: 2
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 4
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 4
     - missing_rate: 0.0
@@ -11051,14 +11247,14 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:27+00:00'
+      sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:39+00:00'
       sample_size: 2
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 4
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 4
     - missing_rate: 0.0
@@ -11084,14 +11280,14 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:27+00:00'
+      sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:39+00:00'
       sample_size: 2
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 4
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 4
     - missing_rate: 0.0
@@ -11117,14 +11313,14 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:27+00:00'
+      sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:39+00:00'
       sample_size: 2
     last_alert_at: null
   size:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:18+00:00'
-      sample_size: 4
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:42+00:00'
       sample_size: 4
     - missing_rate: 1.0
@@ -11150,15 +11346,15 @@
       sample_size: 2
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:27+00:00'
+      sample_size: 2
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:39+00:00'
       sample_size: 2
     last_alert_at: null
 青森県動物愛護センター（収容情報）:
   age_months:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -11184,14 +11380,14 @@
       sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:30+00:00'
+      sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:42+00:00'
       sample_size: 1
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -11217,14 +11413,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:30+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:42+00:00'
       sample_size: 1
     last_alert_at: null
   location:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -11250,14 +11446,14 @@
       sample_size: 1
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:30+00:00'
+      sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:42+00:00'
       sample_size: 1
     last_alert_at: null
   phone:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 1
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 1
     - missing_rate: 1.0
@@ -11284,12 +11480,12 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:30+00:00'
       sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:42+00:00'
+      sample_size: 1
     last_alert_at: null
   sex:
     history:
-    - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 1
@@ -11317,12 +11513,12 @@
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:30+00:00'
       sample_size: 1
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:42+00:00'
+      sample_size: 1
     last_alert_at: null
   size:
     history:
-    - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 1
     - missing_rate: 1.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 1
@@ -11350,14 +11546,14 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:30+00:00'
       sample_size: 1
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:42+00:00'
+      sample_size: 1
     last_alert_at: null
 高知県動物愛護センター:
   age_months:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 65
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 65
     - missing_rate: 0.0
@@ -11384,13 +11580,13 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:30+00:00'
       sample_size: 62
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:42+00:00'
+      sample_size: 63
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 65
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 65
     - missing_rate: 0.0
@@ -11417,13 +11613,13 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:30+00:00'
       sample_size: 62
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:42+00:00'
+      sample_size: 63
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 65
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 65
     - missing_rate: 0.0
@@ -11450,13 +11646,13 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:30+00:00'
       sample_size: 62
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:42+00:00'
+      sample_size: 63
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 65
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 65
     - missing_rate: 0.0
@@ -11483,12 +11679,12 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:30+00:00'
       sample_size: 62
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:42+00:00'
+      sample_size: 63
     last_alert_at: null
   sex:
     history:
-    - missing_rate: 0.015384615384615385
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 65
     - missing_rate: 0.015384615384615385
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 65
@@ -11516,12 +11712,12 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:30+00:00'
       sample_size: 62
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:42+00:00'
+      sample_size: 63
     last_alert_at: null
   size:
     history:
-    - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:19+00:00'
-      sample_size: 65
     - missing_rate: 0.0
       run_at: '2026-06-23T17:34:43+00:00'
       sample_size: 65
@@ -11549,6 +11745,9 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:30+00:00'
       sample_size: 62
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:42+00:00'
+      sample_size: 63
     last_alert_at: null
 鹿児島市（保護犬）:
   age_months:
@@ -11577,6 +11776,9 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:11+00:00'
       sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:23+00:00'
+      sample_size: 2
     last_alert_at: null
   image_urls:
     history:
@@ -11603,6 +11805,9 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:11+00:00'
+      sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:23+00:00'
       sample_size: 2
     last_alert_at: null
   location:
@@ -11631,6 +11836,9 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:11+00:00'
       sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:23+00:00'
+      sample_size: 2
     last_alert_at: null
   phone:
     history:
@@ -11657,6 +11865,9 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:11+00:00'
+      sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:23+00:00'
       sample_size: 2
     last_alert_at: null
   sex:
@@ -11685,6 +11896,9 @@
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:11+00:00'
       sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:23+00:00'
+      sample_size: 2
     last_alert_at: null
   size:
     history:
@@ -11711,15 +11925,15 @@
       sample_size: 2
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:11+00:00'
+      sample_size: 2
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:23+00:00'
       sample_size: 2
     last_alert_at: null
 鹿児島市（保護猫）:
   age_months:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 7
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 7
     - missing_rate: 0.0
@@ -11745,14 +11959,14 @@
       sample_size: 7
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:12+00:00'
+      sample_size: 7
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:23+00:00'
       sample_size: 7
     last_alert_at: null
   image_urls:
     history:
     - missing_rate: 0.14285714285714285
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 7
-    - missing_rate: 0.14285714285714285
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 7
     - missing_rate: 0.14285714285714285
@@ -11778,14 +11992,14 @@
       sample_size: 7
     - missing_rate: 0.14285714285714285
       run_at: '2026-07-01T17:22:12+00:00'
+      sample_size: 7
+    - missing_rate: 0.14285714285714285
+      run_at: '2026-07-02T17:00:23+00:00'
       sample_size: 7
     last_alert_at: null
   location:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 7
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 7
     - missing_rate: 0.0
@@ -11811,14 +12025,14 @@
       sample_size: 7
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:12+00:00'
+      sample_size: 7
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:23+00:00'
       sample_size: 7
     last_alert_at: null
   phone:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 7
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 7
     - missing_rate: 0.0
@@ -11844,14 +12058,14 @@
       sample_size: 7
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:12+00:00'
+      sample_size: 7
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:23+00:00'
       sample_size: 7
     last_alert_at: null
   sex:
     history:
     - missing_rate: 0.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 7
-    - missing_rate: 0.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 7
     - missing_rate: 0.0
@@ -11877,14 +12091,14 @@
       sample_size: 7
     - missing_rate: 0.0
       run_at: '2026-07-01T17:22:12+00:00'
+      sample_size: 7
+    - missing_rate: 0.0
+      run_at: '2026-07-02T17:00:23+00:00'
       sample_size: 7
     last_alert_at: null
   size:
     history:
     - missing_rate: 1.0
-      run_at: '2026-06-22T19:04:17+00:00'
-      sample_size: 7
-    - missing_rate: 1.0
       run_at: '2026-06-23T17:34:39+00:00'
       sample_size: 7
     - missing_rate: 1.0
@@ -11910,5 +12124,8 @@
       sample_size: 7
     - missing_rate: 1.0
       run_at: '2026-07-01T17:22:12+00:00'
+      sample_size: 7
+    - missing_rate: 1.0
+      run_at: '2026-07-02T17:00:23+00:00'
       sample_size: 7
     last_alert_at: null
