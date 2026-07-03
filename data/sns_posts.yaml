@@ -83,3 +83,11 @@ posts:
     https://www.city.kumamoto.jp/doubutuaigo/kiji00371311/index.html?utm_source=threads
     #保護猫 #里親募集 #熊本県'
   dry_run: false
+- url: https://animal-net.pref.nagasaki.jp/animal/no-19689/
+  platform: threads
+  text: '平戸市で保護された猫（女の子）を紹介します。里親を探しています。詳細については下記のURLをご覧ください。
+
+    #保護猫 #里親募集 #長崎県
+
+    詳細・問い合わせは自治体公式へ：https://animal-net.pref.nagasaki.jp/animal/no-19689/?utm_source=threads'
+  dry_run: false
