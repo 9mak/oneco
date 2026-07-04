@@ -49,12 +49,11 @@
   last_error: 'HTTP エラー: 404 Client Error: Not Found for url: https://www.city.wakayama.wakayama.jp/kurashi/kenko_iryo/1009125/1035775/1002096.html'
   last_failed_at: '2026-06-10T18:01:52+00:00'
 山梨県（保護されている他のペット）:
-  consecutive_failures: 0
+  consecutive_failures: 1
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''www.pref.yamanashi.jp'', port=443):
-    Max retries exceeded with url: /doubutsu/p_other/index.html (Caused by ConnectTimeoutError(<HTTPSConnection(host=''www.pref.yamanashi.jp'',
-    port=443) at 0x7fe7a8d62410>, ''Connection to www.pref.yamanashi.jp timed out.
-    (connect timeout=30)''))'
-  last_failed_at: '2026-06-25T17:35:15+00:00'
+    Max retries exceeded with url: /doubutsu/p_other/index.html (Caused by NewConnectionError("HTTPSConnection(host=''www.pref.yamanashi.jp'',
+    port=443): Failed to establish a new connection: [Errno 111] Connection refused"))'
+  last_failed_at: '2026-07-04T16:12:53+00:00'
 山梨県（保護されている犬）:
   consecutive_failures: 3
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''www.pref.yamanashi.jp'', port=443):
@@ -63,9 +62,9 @@
     (connect timeout=30)''))'
   last_failed_at: '2026-06-28T16:29:28+00:00'
 山梨県（保護されている猫）:
-  consecutive_failures: 0
+  consecutive_failures: 1
   last_error: 'timeout: site 山梨県（保護されている猫） timed out after 120.0s'
-  last_failed_at: '2026-06-25T17:35:15+00:00'
+  last_failed_at: '2026-07-04T16:12:53+00:00'
 山梨県（探している他のペット）:
   consecutive_failures: 0
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''www.pref.yamanashi.jp'', port=443):
