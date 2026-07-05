@@ -40,6 +40,29 @@ class DatabaseSettings(BaseSettings):
     )
 
 
+def _build_engine_kwargs(settings: "DatabaseSettings") -> dict:
+    """`create_async_engine` に渡す kwargs を構築する。
+
+    SQLite はプールパラメータ・connect_args (asyncpg 固有) を一切サポートしない
+    ため、postgres 系 URL のときのみ付与する。
+    """
+    engine_kwargs: dict = {"echo": False, "future": True}
+
+    if not settings.database_url.startswith("sqlite"):
+        engine_kwargs["pool_size"] = settings.pool_size
+        engine_kwargs["max_overflow"] = settings.max_overflow
+        # Supabase の pgbouncer transaction-mode プーラー対応。
+        # transaction pooling は論理セッション内の各クエリが別の物理接続に
+        # routing されうるため、asyncpg 既定の prepared statement cache が
+        # 前の接続で作った statement を参照し続け "prepared statement ...
+        # does not exist" になる。statement_cache_size=0 で無効化して防ぐ。
+        # (session-mode プーラーや直結 Postgres でもキャッシュを使わないだけで
+        # 動作自体は変わらないため、常時付与して問題ない。)
+        engine_kwargs["connect_args"] = {"statement_cache_size": 0}
+
+    return engine_kwargs
+
+
 class DatabaseConnection:
     """
     データベース接続マネージャー
@@ -57,15 +80,7 @@ class DatabaseConnection:
         """
         self.settings = settings
 
-        # SQLite はプールパラメータをサポートしないため、条件分岐
-        engine_kwargs = {
-            "echo": False,
-            "future": True,
-        }
-
-        if not settings.database_url.startswith("sqlite"):
-            engine_kwargs["pool_size"] = settings.pool_size
-            engine_kwargs["max_overflow"] = settings.max_overflow
+        engine_kwargs = _build_engine_kwargs(settings)
 
         self.engine: AsyncEngine = create_async_engine(
             settings.database_url,
