@@ -58,19 +58,15 @@ npm run build
 - 本文: 概要・テスト計画（チェックリスト）を記載
 - 関連 Issue を `Closes #N` で紐付け
 
-## サイト追加（コード変更不要）
+## サイト追加
 
-新しい自治体サイトに対応する場合は [`src/data_collector/config/sites.yaml`](src/data_collector/config/sites.yaml) に設定を追加するだけで動きます（LLM 抽出エンジンが汎用対応）。
+デフォルトの抽出方式は **rule-based** です。新しい自治体サイトに対応するには、
+[`src/data_collector/config/sites.yaml`](src/data_collector/config/sites.yaml) へのエントリ追加に加えて、
+`src/data_collector/adapters/rule_based/sites/` に **サイト個別 adapter の実装が必要**です
+（LLM 抽出はフォールバックとして温存されていますが、既定では使いません）。
 
-```yaml
-- name: "○○市 動物愛護センター（収容中）"
-  prefecture: "○○県"
-  prefecture_code: "01"
-  list_url: "https://example.lg.jp/animals"
-  list_link_pattern: "a[href*='detail']"  # 任意（CSSセレクター）
-  category: "lost"
-  requires_js: false  # JS 必須サイトは true
-```
+手順の詳細（基底クラスの選び方・registry 登録・end-to-end テストの書き方・`next.config.ts` の
+`remotePatterns` 追加）は [docs/wiki/03-adapters.md](docs/wiki/03-adapters.md) を参照してください。
 
 追加後、`scripts/monitoring/check_robots.py` で robots.txt 遵守を確認してください。
 
