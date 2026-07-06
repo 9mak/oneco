@@ -4,7 +4,7 @@
 - [x] FastAPI バックエンド（API、DB、正規化パイプライン）
 - [x] Next.js フロントエンド（動物一覧、検索UI）
 - [x] 高知県アダプター（ルールベース、特別ルール対応済み）
-- [x] PostgreSQL + Redis インフラ
+- [x] PostgreSQL インフラ（Redis は任意化済み。PR #160 で不在でも動作）
 - [x] 60件のリアルデータで動作確認
 
 ## Phase 1: 四国完成 + AI抽出導入（完了）
@@ -21,18 +21,24 @@
 - [x] MVP公開（Cloud Run + Vercel + Supabase 本番稼働中）
 
 ### Phase 1 で当初想定を超えた成果
-- 四国 5サイトに留まらず、**全国 209サイト**まで設定駆動で拡張済（`src/data_collector/config/sites.yaml`）
+- 四国 5サイトに留まらず、**全国 211サイト**まで拡張済（`src/data_collector/config/sites.yaml`）
+- ※ 2026-05-15 に抽出方式を **rule-based デフォルト**へ転換（LLM コスト $0 化。LLM は adapter 自己修復の修理工に役割変更）
 - `image_hashes` テーブルへの URL ハッシュ蓄積（重複検出基盤）
 - フロント: お気に入り、キーワード検索、都道府県別マップ（地方別グリッド）、画像 onError フォールバック
 
-## Phase 1.5: 運用フェーズ（現在地）
-- [ ] 収集オペレーション可視化ダッシュボード（`/admin` 認証ゲート）
-  - サイト別 直近実行ステータス、県別件数推移、LLMコスト累計、抽出失敗ランキング
-- [ ] トップページ刷新（インタラクティブ日本地図 / ヒートマップ）
-- [ ] 収集成功率の異常検知 + Slack 通知
-- [ ] データ品質チェック（必須フィールド欠損率、画像URL生存率）
-- [ ] サイト別タイムアウト/レートリミット個別調整
-- [ ] robots.txt 遵守の自動チェック
+## Phase 1.5: 運用フェーズ（完了 2026-06）
+- [x] 収集オペレーション可視化ダッシュボード（`/admin` 認証ゲート）
+- [x] トップページ刷新（インタラクティブ日本地図 / ヒートマップ）
+- [x] 収集成功率の異常検知 + Slack/Discord 通知（PR #213）
+- [x] データ品質チェック（フィールド欠損率ドリフト検知 `data/field_quality_drift.yaml`）
+- [x] サイト別タイムアウト個別調整（`sites.yaml` で上書き可）
+- [x] robots.txt 遵守の自動チェック（`_apply_robots_policy` + `scripts/monitoring/check_robots.py`）
+
+## Phase 1.6: 手離れ運用（現在地、2026-07）
+- [x] adapter 自己修復ループ（検知 → Groq 修復 PR → auto-merge。段階リリース中）
+- [x] 外形監視 / Secret 失効監視 / 収集品質アラート（Discord）
+- [ ] 自己修復の本番化判断（`ONECO_AUTO_FIX_ENABLED` 有効化）
+- 並行: 集客 Phase 4 = SNS（Threads 自動投稿は dry_run 稼働中）
 
 ## Phase 2: 資金調達 + 認知拡大
 - [ ] OSS公開準備（README整備、CONTRIBUTING、ライセンス、セットアップ手順）
@@ -60,28 +66,19 @@
 
 ## 技術方針
 
-### データ抽出アーキテクチャ移行
+### データ抽出アーキテクチャ（2026-05-15 改訂）
 ```
-[現在] サイト固有アダプター（ルールベース）
-  └─ 高知県: kochi_adapter.py（450行、特別ルール4つ）
-  └─ 課題: 1サイトあたり数時間〜1日、保守コスト大
+[一時期] LLM 抽出エンジン（Groq/YAML設定のみ）を全面採用
+  └─ 課題: API コスト・レート制限・抽出品質の揺れ
 
-[Phase 1以降] AI抽出エンジン（LLMベース）
-  └─ 汎用エンジン + YAML設定
-  └─ 新規サイト追加: 設定数行のみ
-  └─ サイト構造変更にも頑健
+[現在] rule-based をデフォルトに再転換
+  └─ サイト別 adapter（共通基底 WordPressList/SinglePageTable/Playwright/PdfTable で実装コスト圧縮）
+  └─ LLM (Groq) は「修理工」: 壊れた adapter を自己修復ループで自動修正
+  └─ LLM 抽出はフォールバックとして温存（sites.yaml で extraction: llm 指定可）
 ```
 
-### サイト設定例（想定）
-```yaml
-sites:
-  - name: "徳島県動物愛護管理センター"
-    prefecture: "徳島県"
-    list_url: "https://douai-tokushima.com/"
-    list_link_pattern: "a[href*='detail']"  # 最低限のヒント
-    extraction: "llm"  # AI抽出
-```
+詳細は `docs/wiki/03-adapters.md` / `docs/wiki/04-self-healing.md`。
 
 ---
 _created_at: 2026-03-18_
-_last_updated: 2026-05-08 (Phase 1 完了、Phase 1.5 運用フェーズ追記)_
+_last_updated: 2026-07-06 (Phase 1.5 完了反映、Phase 1.6 手離れ運用を現在地に、抽出方針を rule-based 改訂に更新)_
