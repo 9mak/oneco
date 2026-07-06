@@ -8,16 +8,16 @@
 
 ### 主要機能
 
-- **自動データ収集**: 自治体サイトから保護動物情報を毎日自動収集（GitHub Actions）
-- **LLM 解析**: Anthropic Claude / Groq で各自治体の不定形な HTML・PDF を解析
+- **自動データ収集**: 自治体サイト 211 件から保護動物情報を毎日自動収集（GitHub Actions）
+- **rule-based 抽出**: サイト別 adapter で HTML・PDF を解析（LLM = Groq は adapter 自己修復専用）
 - **REST API**: FastAPI による動物データ API（フィルタ・ページング対応）
 - **Web ポータル**: Next.js による保護動物の検索・閲覧画面
 
 ## アーキテクチャ
 
 ```
-自治体サイト
-     │ LLM スクレイピング (Anthropic Claude / Groq)
+自治体サイト (211サイト / 47都道府県)
+     │ rule-based スクレイピング (サイト別 adapter)
      ▼
 GitHub Actions ──▶ Supabase PostgreSQL
 (data-collector)          │
@@ -50,15 +50,12 @@ oneco/
 │   │   ├── domain/            # ドメインモデル・バリデーション
 │   │   ├── infrastructure/    # DB, API, LLM アダプター
 │   │   └── orchestration/     # 収集オーケストレーション
-│   ├── notification_manager/  # LINE 通知管理（MVP では未公開機能、配線は今後）
-│   └── syndication_service/   # RSS/Atom 配信
+│   ├── notification_manager/  # LINE 通知管理（MVP では未公開機能、配線は今後。運用アラートは Slack/Discord）
+│   └── syndication_service/   # RSS/Atom 配信 + SNS 自動投稿 (Threads)
 ├── frontend/                  # Next.js Web ポータル
 ├── tests/                     # テストコード
 ├── alembic/                   # データベースマイグレーション
-├── .github/workflows/         # CI/CD
-│   ├── backend.yml            # Backend テスト
-│   ├── frontend.yml           # Frontend テスト + Vercel デプロイ
-│   └── data-collector.yml     # 毎日データ収集
+├── .github/workflows/         # CI/CD + 運用（全9本、下記 CI/CD 表参照）
 ├── Dockerfile                 # Cloud Run 用イメージ
 └── run_server.py              # uvicorn エントリポイント
 ```
@@ -112,6 +109,10 @@ pytest --cov=src --cov-report=html
 cd frontend && npm test
 ```
 
+## ドキュメント
+
+体系ドキュメント（アーキテクチャ・データフロー・adapter 追加手順・監視ほか）は **[docs/wiki/](docs/wiki/README.md)** にまとまっています。運用の障害対応は [docs/RUNBOOK.md](docs/RUNBOOK.md)。
+
 ## 本番デプロイ
 
 詳細は [DEPLOYMENT.md](./DEPLOYMENT.md) を参照。
@@ -129,8 +130,7 @@ cd frontend && npm test
 | 変数名 | 説明 | 必須 |
 |--------|------|------|
 | `DATABASE_URL` | Supabase PostgreSQL 接続 URL | ✅ |
-| `GROQ_API_KEY` | Groq API キー（デフォルトプロバイダー） | ✅ |
-| `ANTHROPIC_API_KEY` | Claude API キー（オーバーライド指定時） | - |
+| `GROQ_API_KEY` | Groq API キー（adapter 自己修復・LLM フォールバック用） | ✅ |
 | `INTERNAL_API_TOKEN` | 内部 API（PATCH/admin）認証トークン | ✅ |
 | `SLACK_WEBHOOK_URL` | 収集結果通知用 Slack Webhook | - |
 | `AUTH_SECRET` | NextAuth セッション暗号化キー | ✅ (frontend) |
@@ -141,9 +141,17 @@ cd frontend && npm test
 
 | ワークフロー | トリガー | 内容 |
 |------------|---------|------|
-| `backend.yml` | push / PR → main | Lint → Test → Build |
-| `frontend.yml` | push / PR → main | Lint → Test → Vercel デプロイ |
+| `backend.yml` | push / PR → main | ruff lint/format → pytest |
+| `frontend.yml` | push / PR → main | ESLint → Vitest（デプロイは Vercel の GitHub 連携） |
+| `deploy-backend.yml` | push → main / 手動 | Cloud Run へ WIF キーレスデプロイ |
 | `data-collector.yml` | 毎日 JST 00:00 | 自治体サイトからデータ収集 |
+| `sns-publish.yml` | 毎日 JST 09:00 | Threads 自動投稿 |
+| `uptime-check.yml` | 30分毎 | 外形監視（API / frontend）→ 失敗で Discord 通知 |
+| `secret-health.yml` | 毎日 JST 09:00 | Groq/Threads トークン失効検知 |
+| `auto-fix-adapter.yml` | dispatch | 壊れた adapter を LLM で自動修復し PR 作成 |
+| `auto-merge-fix-pr.yml` | PR イベント | auto-fix PR の自動マージ |
+
+詳細は [docs/wiki/09-workflows.md](docs/wiki/09-workflows.md) を参照。
 
 ## ライセンス
 

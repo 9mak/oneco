@@ -2,62 +2,43 @@
 
 ## Architecture
 
-メタフレームワーク: AI 開発ライフサイクル管理
-- Claude Code スキル/コマンドシステムとの統合
-- ファイルベースの知識管理（Markdown + JSON）
-- ステートフルな仕様追跡
+サーバーレス構成（固定費 ≒ 0 を維持する方針）:
 
-## Core Technologies
+- **収集**: GitHub Actions cron（毎日 JST 0:00）で `python -m data_collector` を実行
+- **DB**: Supabase PostgreSQL。**pgbouncer transaction-mode プーラー (:6543)** 経由で接続（PR #233。session mode は EMAXCONNSESSION 枯渇の教訓により不使用。asyncpg は `statement_cache_size=0`）
+- **API**: FastAPI を Google Cloud Run `oneco-api`（asia-northeast1）にデプロイ（WIF キーレス、`deploy-backend.yml`）
+- **Frontend**: Next.js を Vercel にデプロイ（`main` push で自動。CF Pages は 2026-05-19 に全廃）
 
-- **Platform**: Claude Code CLI
-- **Storage**: File-based (Markdown for docs, JSON for metadata)
-- **Language**: 日本語 (output), English (internal processing)
+## Backend (Python 3.11)
 
-## Key Components
+- FastAPI / SQLAlchemy async + asyncpg / alembic
+- スクレイピング: httpx + BeautifulSoup、JS 必須サイト(27件)は Playwright、PDF は pdfplumber
+- **抽出はデフォルト rule-based**（サイト別 adapter、`sites.yaml` の `default_extraction: rule-based`）
+- **LLM は Groq `llama-3.3-70b-versatile` のみ**。用途は adapter 自己修復（SEARCH/REPLACE 方式）と抽出フォールバック。**Anthropic API は不採用**（コスト方針）
+- Lint: ruff（`check` + `format --check` の2段。CI で強制）。mypy は既知エラー約120件のためゲート無効
 
-### `.kiro/steering/`
-プロジェクト全体の永続的知識
-- `product.md`: プロダクト目的と価値
-- `tech.md`: 技術スタックと標準
-- `structure.md`: プロジェクト構造パターン
-- カスタムファイル: 専門ドメイン知識（API、テスト、セキュリティなど）
+## Frontend
 
-### `.kiro/specs/`
-個別機能の形式化された開発プロセス
-- `spec.json`: メタデータと承認状態
-- `requirements.md`: 要件定義
-- `design.md`: 技術設計
-- `tasks.md`: 実装タスク
-- `research.md`: コードベース調査結果
+- Next.js 16 App Router / React 19 / Tailwind CSS v4 / Auth.js v5 (GitHub OAuth, admin 専用)
+- ISR（トップ 300s / archive 1800s）+ SSG（`/areas/[prefecture]` は force-static、日本語スラッグ × ISR の 500 事件対策 PR #229）
+- 画像ホストは `next.config.ts` の `remotePatterns` に列挙必須（`tests/test_image_remote_patterns.py` が sites.yaml との一致を CI で強制）
 
-### `.kiro/settings/`
-フレームワーク設定（ユーザー文書化対象外）
-- `templates/`: 初期化テンプレート
-- `rules/`: 生成ルールと原則
+## Testing
 
-## Development Standards
-
-### Phase Separation
-- 各フェーズは独立して承認
-- `-y` フラグなしでは人間レビュー必須
-- 段階的な詳細化（要件 → 設計 → タスク）
-
-### Output Language
-- AI内部処理: 英語（思考）
-- 生成ファイル: 日本語（`spec.json.language` に従う）
-- コミュニケーション: 日本語
-
-### Documentation Granularity
-- パターンを文書化、網羅的リストは避ける
-- "Golden Rule": 既存パターンに従う新コードは steering 更新不要
-- 具体例で原則を示す
+- pytest + pytest-asyncio (strict)。実行は `.venv/bin/python`（Python 3.11、CI と一致）
+- adapter/registry テストは `PYTHONPATH=src` が必要
+- frontend: Vitest + Playwright E2E + a11y
+- adapter の新規テストは `adapter.normalize(raw)` の戻り値 `AnimalData` でアサーションする（end-to-end 必須）
 
 ## Key Technical Decisions
 
-**ファイルベースストレージ**: データベース不要、Git で追跡可能、人間が読める
-**段階的承認**: スコープクリープ防止、各段階での明確なチェックポイント
-**テンプレート駆動**: 一貫性確保、カスタマイズ可能
-**JIT コードベース分析**: 必要時のみ読み込み、効率的な文脈管理
+1. **rule-based を default 抽出に**（2026-05-15）: LLM API コスト $0 維持。壊れたら adapter を直す
+2. **自己修復ループ**（2026-06〜）: 検知(3トラッカー) → Groq で修復 PR → auto-merge。kill switch `ONECO_AUTO_FIX_ENABLED` 段階リリース
+3. **収集データを git にコミット**: snapshot / broken_sites / baselines の履歴が git log に残る
+4. **Supabase anon 権限全剥奪**: DB アクセスは Cloud Run API 経由のみ（RLS + REVOKE の alembic 5本）
+
+詳細は `docs/wiki/`（アーキテクチャ・データフロー・adapter・監視ほか）を参照。
 
 ---
 _created_at: 2026-01-06_
+_updated_at: 2026-07-06_

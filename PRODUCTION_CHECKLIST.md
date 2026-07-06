@@ -1,314 +1,48 @@
-# 本番環境デプロイチェックリスト
+# 本番環境チェックリスト
 
-このチェックリストは、本番環境へのデプロイ前に確認すべき項目を網羅しています。
+本番構成（Cloud Run + Vercel + Supabase + GitHub Actions）を変更・再構築するときの確認項目。
+デプロイの具体的手順は [DEPLOYMENT.md](DEPLOYMENT.md)、障害対応は [docs/RUNBOOK.md](docs/RUNBOOK.md)、全体像は [docs/wiki/](docs/wiki/README.md) を参照。
 
-## 📋 デプロイ前チェック
+> 旧版はセルフホスト (docker-compose) 前提の汎用テンプレートだったため、2026-07-06 に実構成に合わせて全面書き換え。
 
-### 1. インフラストラクチャ準備
+## 1. インフラ
 
-- [ ] **クラウドプロバイダー選定**
-  - AWS / GCP / Azure / その他
-  - リージョン選定
+- [ ] **Supabase PostgreSQL**
+  - [ ] `DATABASE_URL` は **transaction-mode プーラー (:6543)** を使う（session :5432 は EMAXCONNSESSION 枯渇の教訓により禁止。PR #233）
+  - [ ] anon ロールの権限剥奪が維持されている（RLS + REVOKE 系マイグレーション適用済みか）
+  - [ ] バックアップ（Supabase 自動バックアップ）有効
+- [ ] **Cloud Run** (`oneco-api`, asia-northeast1)
+  - [ ] `deploy-backend.yml` の WIF（Workload Identity Federation）が有効。SA キーの JSON は使わない
+  - [ ] **min instances は 0 のまま**（上げるとコスト発生。無料枠内運用が方針）
+  - [ ] Artifact Registry の古いイメージを定期削除（6GB 超で実費発生の実績あり）
+- [ ] **Vercel**（frontend）
+  - [ ] `main` push の自動デプロイが有効
+  - [ ] `NEXT_PUBLIC_API_BASE_URL` が Cloud Run URL を指している
+- [ ] **Redis**: 任意（不在でも動作する。PR #160）。契約不要
 
-- [ ] **PostgreSQL データベース**
-  - [ ] マネージドサービス契約 (RDS / Cloud SQL / Azure Database)
-  - [ ] インスタンスタイプ選定 (最小: 2GB RAM)
-  - [ ] バックアップ自動化設定
-  - [ ] 暗号化有効化
-  - [ ] 接続情報の記録
+## 2. Secrets / 環境変数
 
-- [ ] **Redis キャッシュ**
-  - [ ] マネージドサービス契約 (ElastiCache / Memorystore)
-  - [ ] インスタンスタイプ選定 (最小: 256MB)
-  - [ ] 永続化設定 (AOF または RDB)
-  - [ ] 接続情報の記録
+- [ ] **GitHub Actions Secrets**: `DATABASE_URL` / `GROQ_API_KEY` / `INTERNAL_API_TOKEN` / `SLACK_WEBHOOK_URL` / `DISCORD_WEBHOOK_URL` / Threads 系 / `ONECO_AUTO_FIX_TOKEN`(PAT)
+- [ ] **Repo Variables**（段階リリーストグル）: `THREADS_PUBLISH_ENABLED` / `THREADS_PUBLISH_DRY_RUN` / auto-fix 系
+- [ ] `INTERNAL_API_TOKEN` は `openssl rand -hex 32` で生成
+- [ ] ローカルの保管は Keychain（`oneco-*` プレフィックス）または `.env`（gitignore 済み）。shell rc への直書き禁止
+- [ ] ローテーション後は `deploy-backend.yml` を手動実行して Cloud Run に反映（Secrets 変更だけでは反映されない）
 
-- [ ] **コンテナホスティング**
-  - [ ] サービス選定 (ECS / Cloud Run / App Service)
-  - [ ] コンテナレジストリ設定 (ECR / GCR / ACR)
-  - [ ] リソース割り当て (CPU: 1, Memory: 2GB)
-  - [ ] オートスケーリング設定
+## 3. デプロイ後の確認
 
-- [ ] **ドメイン & SSL**
-  - [ ] ドメイン取得
-  - [ ] DNS設定
-  - [ ] SSL証明書取得 (Let's Encrypt推奨)
-  - [ ] HTTPS設定
+- [ ] `curl https://<cloud-run-url>/health` → 200
+- [ ] frontend トップ + `/areas/東京都`（SSR サブルート）→ 200
+- [ ] `gh run list` で `uptime-check.yml` の直近 run が green
+- [ ] Cloud Run ログにエラーがないこと（デプロイ後 10 分程度）
+- [ ] データ収集の翌日 run が成功し、`Update collection data [automated]` コミットが積まれること
 
-### 2. 環境変数設定
+## 4. 監視が生きていることの確認
 
-- [ ] **.env.production 作成**
-  ```bash
-  cp .env.production.example .env.production
-  ```
+- [ ] `uptime-check.yml`（30分毎）が有効
+- [ ] `secret-health.yml`（日次）が有効
+- [ ] Discord/Slack webhook が生きている（`workflow_dispatch(force_failure)` でテスト可能）
 
-- [ ] **必須環境変数の設定**
-  - [ ] `POSTGRES_PASSWORD`: 強力なパスワード (16文字以上)
-  - [ ] `DATABASE_URL`: 本番PostgreSQL接続文字列
-  - [ ] `REDIS_URL`: 本番Redis接続文字列
-  - [ ] `SECRET_KEY`: ランダムな秘密鍵生成
-  - [ ] `CORS_ORIGINS`: フロントエンドドメイン設定
-  - [ ] `LINE_CHANNEL_ACCESS_TOKEN`: LINE Messaging APIトークン (※未公開機能・後述参照)
-  - [ ] `LINE_CHANNEL_SECRET`: LINEチャネルシークレット (※未公開機能・後述参照)
-  - [ ] `NOTIFICATION_EMAIL`: 運用者メールアドレス
-  - [ ] `SLACK_WEBHOOK_URL`: Slack通知用Webhook URL
+## 5. 未公開機能（配線しないこと）
 
-- [ ] **GitHub Secrets設定**
-  - Settings > Secrets and variables > Actions で設定
-  - [ ] `DATABASE_URL`
-  - [ ] `NOTIFICATION_EMAIL`
-  - [ ] `SLACK_WEBHOOK_URL`
-
-### 3. セキュリティ設定
-
-- [ ] **ファイアウォール**
-  - [ ] HTTP (80) 開放
-  - [ ] HTTPS (443) 開放
-  - [ ] SSH (22) 必要に応じて開放
-  - [ ] PostgreSQL (5432) 内部ネットワークのみ
-  - [ ] Redis (6379) 内部ネットワークのみ
-
-- [ ] **アクセス制御**
-  - [ ] データベースユーザー権限の最小化
-  - [ ] API認証設定 (将来実装)
-  - [ ] CORS設定の確認
-
-- [ ] **シークレット管理**
-  - [ ] 環境変数をGitにコミットしない
-  - [ ] `.env.production` を `.gitignore` に追加済み確認
-  - [ ] パスワードマネージャーでシークレット管理
-
-### 4. データベース準備
-
-- [ ] **マイグレーション**
-  ```bash
-  alembic upgrade head
-  ```
-
-- [ ] **初期データ投入** (必要に応じて)
-  ```bash
-  python scripts/seed_data.py
-  ```
-
-- [ ] **インデックス確認**
-  - [ ] animals テーブルのインデックス作成確認
-  - [ ] パフォーマンステスト実施
-
-### 5. Docker イメージ準備
-
-- [ ] **イメージビルド**
-  ```bash
-  docker build -t oneco-api:latest .
-  ```
-
-- [ ] **イメージテスト**
-  ```bash
-  docker run --rm oneco-api:latest python -c "import data_collector; print('OK')"
-  ```
-
-- [ ] **レジストリプッシュ** (本番環境の場合)
-  ```bash
-  docker tag oneco-api:latest your-registry/oneco-api:v1.0.0
-  docker push your-registry/oneco-api:v1.0.0
-  ```
-
-### 6. デプロイ実行
-
-- [ ] **デプロイスクリプト実行**
-  ```bash
-  ./scripts/deployment/deploy.sh production
-  ```
-
-- [ ] **サービス起動確認**
-  ```bash
-  docker-compose -f docker-compose.prod.yml ps
-  ```
-
-### 7. 動作確認
-
-- [ ] **ヘルスチェック**
-  ```bash
-  curl https://your-domain.com/health
-  ```
-
-- [ ] **API動作確認**
-  ```bash
-  curl https://your-domain.com/animals?limit=10
-  ```
-
-- [ ] **OpenAPI ドキュメント確認**
-  - https://your-domain.com/docs
-
-- [ ] **RSS/Atom フィード確認**
-  ```bash
-  curl https://your-domain.com/feeds/rss
-  ```
-
-- [ ] **データベース接続確認**
-  ```bash
-  docker-compose -f docker-compose.prod.yml exec postgres psql -U oneco -c "SELECT count(*) FROM animals;"
-  ```
-
-### 8. モニタリング設定
-
-- [ ] **ヘルスチェック監視**
-  - [ ] Cron ジョブで定期ヘルスチェック
-  ```bash
-  */5 * * * * /path/to/scripts/monitoring/health_check.sh
-  ```
-
-- [ ] **ログ監視**
-  - [ ] CloudWatch / Stackdriver / Azure Monitor 設定
-  - [ ] エラーアラート設定
-
-- [ ] **メトリクス収集**
-  - [ ] Prometheus / Datadog / New Relic 設定 (オプション)
-
-- [ ] **アラート設定**
-  - [ ] ダウンタイムアラート
-  - [ ] エラー率アラート
-  - [ ] ディスク使用量アラート
-
-### 9. バックアップ設定
-
-- [ ] **自動バックアップ**
-  - [ ] Cron ジョブで毎日バックアップ
-  ```bash
-  0 2 * * * /path/to/scripts/backup/backup.sh
-  ```
-
-- [ ] **バックアップ保管場所**
-  - [ ] S3 / Cloud Storage / Azure Blob へアップロード
-  - [ ] 保持期間設定 (推奨: 30日)
-
-- [ ] **リストアテスト**
-  ```bash
-  ./scripts/backup/restore.sh backups/backup_YYYYMMDD_HHMMSS.tar.gz
-  ```
-
-### 10. パフォーマンステスト
-
-- [ ] **負荷テスト**
-  - [ ] 同時100リクエスト処理確認
-  - [ ] レスポンスタイム < 500ms 確認
-
-- [ ] **キャッシュ効率確認**
-  - [ ] Redis ヒット率 > 70% 確認
-
-- [ ] **データベースパフォーマンス**
-  - [ ] スロークエリログ確認
-  - [ ] インデックス使用確認
-
-## 📊 デプロイ後チェック
-
-### 即時確認 (デプロイ後30分以内)
-
-- [ ] **サービス稼働確認**
-  ```bash
-  ./scripts/monitoring/health_check.sh --verbose
-  ```
-
-- [ ] **ログ確認**
-  ```bash
-  docker-compose -f docker-compose.prod.yml logs -f api
-  ```
-
-- [ ] **エラー監視**
-  - [ ] エラーログがないことを確認
-  - [ ] 予期しない動作がないことを確認
-
-### 1日後確認
-
-- [ ] **データ収集確認**
-  - [ ] data-collector が正常に実行されたか
-  - [ ] GitHub Actions ワークフローの成功確認
-
-- [ ] **通知配信確認** (※LINE通知は MVP リリース時点で未公開機能。本セクションはスキップ可。詳細は notification_manager の README/コードコメント参照)
-  - [ ] LINE通知が正常に配信されたか（未公開）
-  - [ ] notification-manager ログ確認（未公開）
-
-- [ ] **バックアップ確認**
-  - [ ] 自動バックアップが実行されたか
-  - [ ] バックアップファイルの整合性確認
-
-### 1週間後確認
-
-- [ ] **パフォーマンス分析**
-  - [ ] レスポンスタイム推移
-  - [ ] エラー率推移
-  - [ ] リソース使用率推移
-
-- [ ] **ディスク使用量確認**
-  - [ ] データベース容量
-  - [ ] ログファイル容量
-  - [ ] バックアップ容量
-
-- [ ] **ユーザーフィードバック収集**
-  - [ ] 動作不具合報告の確認
-  - [ ] パフォーマンス問題の確認
-
-## 🚨 トラブルシューティング
-
-### サービスが起動しない
-
-1. ログを確認
-   ```bash
-   docker-compose -f docker-compose.prod.yml logs api
-   ```
-
-2. 環境変数を確認
-   ```bash
-   docker-compose -f docker-compose.prod.yml config
-   ```
-
-3. データベース接続を確認
-   ```bash
-   docker-compose -f docker-compose.prod.yml exec postgres pg_isready -U oneco
-   ```
-
-### パフォーマンスが悪い
-
-1. リソース使用状況を確認
-   ```bash
-   docker stats
-   ```
-
-2. スロークエリを確認
-   ```sql
-   SELECT * FROM pg_stat_statements ORDER BY mean_exec_time DESC LIMIT 10;
-   ```
-
-3. コネクションプールを調整
-   - `DB_POOL_SIZE` を増加
-   - `DB_MAX_OVERFLOW` を調整
-
-### データベースエラー
-
-1. マイグレーション状態を確認
-   ```bash
-   alembic current
-   alembic history
-   ```
-
-2. データベース整合性を確認
-   ```sql
-   VACUUM ANALYZE;
-   REINDEX DATABASE oneco;
-   ```
-
-## 📞 緊急連絡先
-
-- インフラ管理者: [連絡先]
-- データベース管理者: [連絡先]
-- 開発チームリーダー: [連絡先]
-
-## 📚 参考資料
-
-- [DEPLOYMENT.md](./DEPLOYMENT.md) - デプロイガイド
-- [README.md](./README.md) - プロジェクト概要
-- [API Documentation](https://your-domain.com/docs) - API仕様
-
----
-
-**最終更新**: 2026-02-10
-**次回レビュー**: デプロイ後1週間
+- LINE 通知（`notification_manager`）は実装済みだが未配線。`LINE_CHANNEL_*` の設定は不要
+- 公開 API の rate limit は SSR exempt 設計が整うまで意図的に未導入

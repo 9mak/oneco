@@ -6,7 +6,7 @@
 
 ```mermaid
 flowchart LR
-    subgraph "自治体サイト 209件"
+    subgraph "自治体サイト 211件"
         S1[徳島県]
         S2[高知県]
         S3[...]
@@ -20,7 +20,7 @@ flowchart LR
         DB[(animals テーブル<br/>+ status_history<br/>+ archive)]
     end
 
-    subgraph "Backend Vercel or Cloud Run"
+    subgraph "Backend Cloud Run"
         API[FastAPI<br/>syndication_service]
     end
 
@@ -44,7 +44,7 @@ flowchart LR
 ## 主要コンポーネント
 
 ### 1. Data Collector (`src/data_collector/`)
-**役割**: 209 サイトを巡回して動物データを抽出 → DB 投入
+**役割**: 211 サイトを巡回して動物データを抽出 → DB 投入
 
 - エントリ: `__main__.py`
 - 実行: GitHub Actions `.github/workflows/data-collector.yml` が毎日 JST 00:00 (UTC 15:00) に cron 実行
@@ -66,8 +66,8 @@ flowchart LR
 | `GET /public/stats` | 公開メトリクス（総数、最終更新時刻） |
 | `GET /admin/sites` | サイト一覧 + DB 集計（管理者） |
 | `GET /admin/stats` | 全体集計（管理者） |
-| `GET /rss`, `/atom` | RSS/Atom フィード |
-| `GET /archive/rss`, `/archive/atom` | アーカイブフィード |
+| `GET /feeds/rss`, `/feeds/atom` | RSS/Atom フィード（`/feeds` prefix でマウント） |
+| `GET /feeds/archive/rss`, `/feeds/archive/atom` | アーカイブフィード |
 | `GET /health` | ヘルスチェック |
 
 - DB: PostgreSQL (Supabase 想定)、SQLAlchemy + asyncpg
@@ -100,7 +100,7 @@ flowchart LR
 ```
 JST 00:00  GitHub Actions data-collector.yml が起動
    ↓
-   1. sites.yaml を読む (209 サイト)
+   1. sites.yaml を読む (211 サイト)
    2. broken_sites.yaml でスキップ判定
    3. 各サイトを rule-based adapter で取得・抽出
       - per-site timeout (通常 120s / Playwright 180s / sites.yaml で個別上書き可)
@@ -121,8 +121,8 @@ JST 00:30 頃  完了 (収集サマリ: 成功 X サイト / 失敗 Y サイト)
 | コンポーネント | サービス | 備考 |
 |---|---|---|
 | Frontend (Next.js) | Vercel | `.vercel/project.json` 連携 |
-| Backend (FastAPI) | (Cloud Run / Vercel Functions / Render などを想定) | `Dockerfile` あり |
-| DB | Supabase (PostgreSQL) | `DATABASE_URL` で接続、`alembic` で migration |
+| Backend (FastAPI) | Google Cloud Run `oneco-api` (asia-northeast1) | `deploy-backend.yml` で WIF キーレスデプロイ |
+| DB | Supabase (PostgreSQL) | transaction-mode プーラー (:6543) 経由、`alembic` で migration |
 | Cron 実行 | GitHub Actions | サーバーレス収集（cost ≒ 0） |
 | シークレット | Keychain (ローカル) / GitHub Actions Secrets (CI) | 命名: `oneco-*` プレフィックス必須 |
 
@@ -140,15 +140,15 @@ oneco/
 │   │   └── infrastructure/
 │   │       ├── api/            # admin/animals エンドポイント (FastAPI)
 │   │       └── database/       # SQLAlchemy models, repository
-│   ├── syndication_service/    # RSS/Atom + 公開フィード
-│   └── notification_manager/   # Slack 通知
+│   ├── syndication_service/    # RSS/Atom + SNS 自動投稿 (Threads)
+│   └── notification_manager/   # LINE 通知 (実装済み・未配線)
 ├── frontend/                   # Next.js 16 SPA
 ├── data/broken_sites.yaml      # 連続失敗サイトの記録 (自動更新)
 ├── snapshots/latest.json       # 前回収集の全データ (自動更新)
 ├── output/animals.json         # 最新収集サマリ (自動更新)
 ├── alembic/                    # DB migration
 ├── .kiro/                      # Spec-driven dev (steering + specs)
-└── .github/workflows/          # CI: backend / frontend / data-collector
+└── .github/workflows/          # 全9本 (docs/wiki/09-workflows.md 参照)
 ```
 
 ## キーとなる設計判断
@@ -166,6 +166,7 @@ oneco/
 
 ## 関連ドキュメント
 
+- [docs/wiki/](docs/wiki/README.md) — 体系ドキュメント（データフロー・adapter・自己修復・監視ほか）
 - `.kiro/steering/product.md` — プロダクトビジョン・マネタイズ
 - `.kiro/steering/roadmap.md` — フェーズ計画
 - `.kiro/specs/<feature>/` — 各機能の要件・設計・タスク

@@ -47,7 +47,7 @@ Cloud Run の環境変数として設定する：
 
 | 変数名 | 説明 | 例 |
 |--------|------|---|
-| `DATABASE_URL` | Supabase 接続 URL | `postgresql+asyncpg://postgres.<project>:<pass>@aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres` |
+| `DATABASE_URL` | Supabase 接続 URL（**transaction-mode プーラー :6543**。session mode :5432 は EMAXCONNSESSION で枯渇した経緯があり使わない。PR #233） | `postgresql+asyncpg://postgres.<project>:<pass>@aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres` |
 | `CORS_ORIGINS` | 許可 CORS オリジン（カンマ区切り、本番ドメイン明示推奨） | `https://your-frontend.vercel.app` |
 | `LOG_LEVEL` | ログレベル | `INFO` |
 | `INTERNAL_API_TOKEN` | **必須**: PATCH /animals/{id}/status 等の内部 API 認証トークン。`openssl rand -hex 32` で生成し Secret Manager 推奨 | `<32-byte hex>` |
