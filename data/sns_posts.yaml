@@ -110,3 +110,11 @@ posts:
 
     https://www.kumamoto-doubutuaigo.jp/animals/detail/4789?utm_source=threads'
   dry_run: false
+- url: https://www.kumamoto-doubutuaigo.jp/animals/detail/4790
+  platform: threads
+  text: '熊本県宇城市松橋町東松崎701-4で保護された猫の情報が公開されました。管理番号はDC00731。詳細・問い合わせは自治体公式へ。
+
+    https://www.kumamoto-doubutuaigo.jp/animals/detail/4790?utm_source=threads
+
+    #保護猫 #里親募集 #熊本県'
+  dry_run: false
