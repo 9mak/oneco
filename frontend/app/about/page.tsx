@@ -17,7 +17,7 @@ const DATA_SOURCE_COUNTS = {
 
 export default function AboutPage() {
   return (
-    <article className="container mx-auto px-4 py-12 max-w-3xl prose prose-sm md:prose-base">
+    <article className="container mx-auto px-4 py-12 max-w-3xl prose prose-sm md:prose-base prose-p:leading-7 md:prose-p:leading-8">
       <h1 className="text-2xl md:text-3xl font-bold mb-6">このサイトについて</h1>
 
       <section className="mb-10">
@@ -44,15 +44,15 @@ export default function AboutPage() {
         </p>
 
         <figure className="not-prose m-0 mt-6">
-          <div className="grid grid-cols-3 grid-rows-2 gap-2">
-            <div className="col-span-2 row-span-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:grid-rows-2">
+            <div className="col-span-2 sm:row-span-2">
               <Image
                 src="/images/about/pom-1.jpg"
                 unoptimized
                 alt="床にちょこんと座って舌を出して笑う、白い小さな犬のポム"
                 width={1200}
                 height={815}
-                className="h-full w-full rounded-lg object-cover"
+                className="aspect-[3/2] h-full w-full rounded-lg object-cover"
               />
             </div>
             <Image
@@ -72,7 +72,7 @@ export default function AboutPage() {
               className="aspect-[3/2] w-full rounded-lg object-cover"
             />
           </div>
-          <figcaption className="text-sm text-gray-500 mt-2">ポム</figcaption>
+          <figcaption className="mt-2 text-center text-xs text-gray-500">ポム</figcaption>
         </figure>
 
         <p className="mt-4">
@@ -80,18 +80,20 @@ export default function AboutPage() {
           私が通っていた専門学校で生まれ、トリミング実習のモデル犬として、学生たちのカット練習に付き合ってくれていた子です。
           犬舎にいた頃から、私を見つけると寝転んでお腹を見せてくれる子で、学校の里親制度を通じて4歳のときにうちに来ました。
         </p>
-        <p className="mt-3">
-          最初は1階で暮らしてもらうつもりで、専門学校の友人と木のケージまで手作りしたのですが、夜にさびしそうに鳴く声を聞いて、その日のうちにあきらめました。
+        <p className="mt-4">
+          最初は1階で暮らしてもらうつもりで、専門学校の友人と木のケージまで手作りしました。
+          けれど夜にさびしそうに鳴く声を聞き、その日のうちにあきらめました。
           それからはずっと、私たちと同じ2階で一緒に暮らしました。
           体重3キロほどの小さな子で、いつも私の横にいて、公園では子どもたちと遊び、家でのシャンプーやカットもおとなしくさせてくれました。
         </p>
-        <p className="mt-3">
-          散歩が大好きだったはずなのに、私がさぼっているうちにビリーと過ごす時間が長くなって、自分のことを猫だと思い始めたのか、気づけばキャットタワーに登ろうとしていたこともあります。
+        <p className="mt-4">
+          散歩は大好きだったはずですが、私が散歩をさぼるうちにビリーと過ごす時間が長くなりました。
+          自分のことを猫だと思い始めたのか、気づけばキャットタワーに登ろうとしていたこともあります。
+          5年を一緒に過ごして、9歳のときにお別れをしました。
         </p>
-        <p className="mt-3">5年を一緒に過ごして、9歳のときにお別れをしました。</p>
 
         <figure className="not-prose m-0 mt-8">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
             <Image
               src="/images/about/billy-1.jpg"
               unoptimized
@@ -125,27 +127,29 @@ export default function AboutPage() {
               className="aspect-[3/2] w-full rounded-lg object-cover"
             />
           </div>
-          <figcaption className="text-sm text-gray-500 mt-2">ビリー</figcaption>
+          <figcaption className="mt-2 text-center text-xs text-gray-500">ビリー</figcaption>
         </figure>
 
         <p className="mt-4">
           <strong>ブルーグリーンの円は、猫のビリーです。</strong>
-          私が働いていた動物病院の近くで兄弟猫と一緒に拾われ、兄弟が先にもらわれていくなかで、ビリーだけが病院に残りました。
-          そのまま病院猫になり、体が大きかったこともあって、血液が必要な子のための輸血ドナーを務めてくれていました。
+          ビリーは、私が働いていた動物病院の近くで兄弟猫と一緒に拾われました。
+          兄弟は先にもらわれていき、ビリーだけが病院に残りました。
+          その後は病院猫として過ごし、体が大きかったこともあって、血液が必要な子のための輸血ドナーを務めてくれていました。
         </p>
-        <p className="mt-3">
-          ふだんは大型犬用の犬舎で暮らしていて、私は昼休みや仕事終わりに犬舎から出して、よく一緒に遊んでいました。
+        <p className="mt-4">
+          ふだんは大型犬用の犬舎で暮らしていました。
+          私は昼休みや仕事終わりにそこから出して、よく一緒に遊んでいました。
           輸血のたびに軽い麻酔でふらつく姿を見ているうちに、うちに連れて帰ることにしました。
         </p>
-        <p className="mt-3">
-          家ではおとなしくて、ほっぺを揉まれてもお風呂に入れられても嫌がらない、心の大きな子でした。
+        <p className="mt-4">
+          家ではおとなしく、ほっぺを揉まれてもお風呂に入れられても嫌がらない子でした。
           ポムのちょっかいにも静かに付き合ってくれました。
         </p>
-        <p className="mt-3">5年を一緒に過ごして、9歳のとき、リンパ腫でお別れをしました。</p>
+        <p className="mt-4">5年を一緒に過ごして、9歳のとき、リンパ腫でお別れをしました。</p>
         <p className="mt-3">
           <strong>ふたつの円が重なる場所に、oneco の出発点があります。</strong>
-          ポムは練習台として学生の学びに関わり、ビリーは輸血ドナーとして病院で過ごしました。
-          2匹を見送るとき、行き場を探している子たちがポムやビリーのように誰かの家族になれるようにする、と約束しました。
+          ポムは実習のモデル犬として学生の学びに関わり、ビリーは輸血ドナーとして病院で過ごしました。
+          2匹を見送るときに、行き場を探している子たちがポムやビリーのように誰かの家族になれるようにしようと約束しました。
           oneco という名前は、その約束に由来しています。
         </p>
       </section>
