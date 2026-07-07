@@ -42,32 +42,39 @@ export default function AboutPage() {
           ロゴの重なり合うふたつの円には、モデルになった 2 匹がいます。
         </p>
 
-        <div className="not-prose grid gap-6 md:grid-cols-2 mt-6">
-          <figure className="m-0">
+        <figure className="not-prose m-0 mt-6">
+          <div className="grid grid-cols-3 grid-rows-2 gap-2">
+            <div className="col-span-2 row-span-2">
+              <Image
+                src="/images/about/pom-1.jpg"
+                unoptimized
+                alt="床にちょこんと座って舌を出して笑う、白い小さな犬のポム"
+                width={1200}
+                height={815}
+                className="h-full w-full rounded-lg object-cover"
+              />
+            </div>
             <Image
-              src="/images/about/pom.jpg"
+              src="/images/about/pom-2.jpg"
               unoptimized
-              alt="白い小さな犬、ポム"
+              alt="ベッドのそばでこちらを見上げるポム"
               width={1200}
               height={815}
-              className="rounded-lg"
+              className="aspect-[3/2] w-full rounded-lg object-cover"
             />
-            <figcaption className="text-sm text-gray-500 mt-2">ポム</figcaption>
-          </figure>
-          <figure className="m-0">
             <Image
-              src="/images/about/billy.jpg"
+              src="/images/about/pom-3.jpg"
               unoptimized
-              alt="白地に黒いぶちの大きな猫、ビリー"
+              alt="夜の散歩中、立ち止まって振り返るポム"
               width={1200}
               height={815}
-              className="rounded-lg"
+              className="aspect-[3/2] w-full rounded-lg object-cover"
             />
-            <figcaption className="text-sm text-gray-500 mt-2">ビリー</figcaption>
-          </figure>
-        </div>
+          </div>
+          <figcaption className="text-sm text-gray-500 mt-2">ポム</figcaption>
+        </figure>
 
-        <p className="mt-6">
+        <p className="mt-4">
           <strong>コーラルの円は、犬のポム。</strong>
           私が通っていた専門学校で生まれた子でした。トリミング実習の練習台として、
           何人もの学生がポムに付き合ってもらいながらカットを覚えました。
@@ -76,7 +83,46 @@ export default function AboutPage() {
           同居するビリーにしょっちゅうちょっかいを出しては遊んでもらう女の子でした。
           5 年を一緒に過ごして、9 歳で旅立ちました。
         </p>
-        <p className="mt-3">
+
+        <figure className="not-prose m-0 mt-8">
+          <div className="grid grid-cols-2 gap-2">
+            <Image
+              src="/images/about/billy-1.jpg"
+              unoptimized
+              alt="両手でほっぺを包まれて、されるがままのビリー"
+              width={1200}
+              height={815}
+              className="aspect-[3/2] w-full rounded-lg object-cover"
+            />
+            <Image
+              src="/images/about/billy-2.jpg"
+              unoptimized
+              alt="布団の上でくつろぐ、白地に黒ぶちの大きな猫のビリー"
+              width={1200}
+              height={815}
+              className="aspect-[3/2] w-full rounded-lg object-cover"
+            />
+            <Image
+              src="/images/about/billy-3.jpg"
+              unoptimized
+              alt="気持ちよさそうに眠るビリー"
+              width={1200}
+              height={815}
+              className="aspect-[3/2] w-full rounded-lg object-cover"
+            />
+            <Image
+              src="/images/about/billy-4.jpg"
+              unoptimized
+              alt="ベランダから外を眺めるビリーの後ろ姿"
+              width={1200}
+              height={815}
+              className="aspect-[3/2] w-full rounded-lg object-cover"
+            />
+          </div>
+          <figcaption className="text-sm text-gray-500 mt-2">ビリー</figcaption>
+        </figure>
+
+        <p className="mt-4">
           <strong>ブルーグリーンの円は、猫のビリー。</strong>
           私が働いていた動物病院の近くで、兄弟と一緒に拾われた子でした。
           兄弟が先にもらわれていき、残ったビリーはそのまま「病院猫」に。
