@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
@@ -31,6 +32,65 @@ export default function AboutPage() {
           <strong>{DATA_SOURCE_COUNTS.hosts} ホスト</strong>・
           <strong>{DATA_SOURCE_COUNTS.sources} ソース</strong>
           から日次で情報を集約しています。
+        </p>
+      </section>
+
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-3">oneco という名前と、ふたつの円</h2>
+        <p>
+          oneco（ワンコ）は、ONE と NECO ──「わん」と「ねこ」、そして「ひとつに」という意味を重ねた名前です。
+          ロゴの重なり合うふたつの円には、モデルになった 2 匹がいます。
+        </p>
+
+        <div className="not-prose grid gap-6 md:grid-cols-2 mt-6">
+          <figure className="m-0">
+            <Image
+              src="/images/about/pom.jpg"
+              alt="白い小さな犬、ポム"
+              width={1200}
+              height={815}
+              className="rounded-lg"
+            />
+            <figcaption className="text-sm text-gray-500 mt-2">ポム</figcaption>
+          </figure>
+          <figure className="m-0">
+            <Image
+              src="/images/about/billy.jpg"
+              alt="白地に黒いぶちの大きな猫、ビリー"
+              width={1200}
+              height={815}
+              className="rounded-lg"
+            />
+            <figcaption className="text-sm text-gray-500 mt-2">ビリー</figcaption>
+          </figure>
+        </div>
+
+        <p className="mt-6">
+          <strong>コーラルの円は、犬のポム。</strong>
+          私が通っていた専門学校で生まれた子でした。トリミング実習の練習台として、
+          何人もの学生がポムに付き合ってもらいながらカットを覚えました。
+          学校の里親制度で引き取って、4 歳でうちの子に。
+          体はうんと小さいのに感情表現は大きく、私のことが大好きで、
+          同居するビリーにしょっちゅうちょっかいを出しては遊んでもらう女の子でした。
+          5 年を一緒に過ごして、9 歳で旅立ちました。
+        </p>
+        <p className="mt-3">
+          <strong>ブルーグリーンの円は、猫のビリー。</strong>
+          私が働いていた動物病院の近くで、兄弟と一緒に拾われた子でした。
+          兄弟が先にもらわれていき、残ったビリーはそのまま「病院猫」に。
+          大きな体を見込まれて、事故や手術で血液が足りない子のための輸血ドナーを務めていました。
+          輸血のたびに麻酔でフラフラになる姿を見て、「うちで引き取る」と決めて、うちの子に。
+          おとなしくて、からだも心も大きく、ポムのちょっかいに黙って付き合ってくれる男の子でした。
+          同じく 5 年を一緒に過ごして、9 歳のとき、リンパ腫で旅立ちました。
+        </p>
+        <p className="mt-3">
+          <strong>ふたつの円が重なる場所が、oneco です。</strong>
+          2 匹とも、うちに来る前から誰かのために働いてきた子たちでした。
+          ポムは練習台として学生を育て、ビリーはドナーとして命をつないだ。
+          そして 2 匹とも、家に来てからの 5 年間は、まぎれもなく家族でした。
+          2 匹を見送るとき、約束をしました。この子たちに誇れるものを作ること。
+          行き場を探している子たちが、ポムやビリーのように、誰かの家族になれるようにすること。
+          oneco は、その約束です。
         </p>
       </section>
 
