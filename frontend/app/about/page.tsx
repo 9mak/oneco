@@ -143,6 +143,14 @@ export default function AboutPage() {
           家ではおとなしく、ほっぺを揉まれてもお風呂に入れられても嫌がらない、ポムのちょっかいにも静かに付き合ってくれる子でした。
         </p>
         <p className="mt-4">うちで過ごしたのは、同じく5年間。9歳のとき、リンパ腫でお別れをしました。</p>
+
+        <div className="not-prose mt-10 mb-6 flex justify-center" aria-hidden="true">
+          <svg width="44" height="24" viewBox="0 0 44 24">
+            <circle cx="17" cy="12" r="10" fill="#E8826E" fillOpacity="0.8" />
+            <circle cx="27" cy="12" r="10" fill="#6FAEBB" fillOpacity="0.8" />
+          </svg>
+        </div>
+
         <p className="mt-3">
           <strong>ふたつの円が重なる場所に、oneco の出発点があります。</strong>
           ポムは実習のモデル犬として学生の学びに関わり、ビリーは輸血ドナーとして病院で過ごしました。
