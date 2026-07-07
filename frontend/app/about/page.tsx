@@ -43,10 +43,10 @@ export default function AboutPage() {
           ロゴのふたつの円は、このサイトのモデルになった犬のポムと猫のビリーを表しています。
         </p>
 
-        <div className="relative mt-6 overflow-hidden">
+        <div className="relative mt-6 overflow-hidden sm:overflow-visible">
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute -bottom-20 -left-24 h-64 w-64 rounded-full bg-[#E8826E]/[0.13] sm:h-80 sm:w-80"
+            className="pointer-events-none absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-[#E8826E]/[0.13] sm:-left-36 sm:-bottom-10 sm:h-80 sm:w-80"
           />
         <figure className="not-prose m-0">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:grid-rows-2">
@@ -97,10 +97,10 @@ export default function AboutPage() {
         </p>
         </div>
 
-        <div className="relative mt-8 overflow-hidden">
+        <div className="relative mt-8 overflow-hidden sm:overflow-visible">
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-[#6FAEBB]/[0.13] sm:h-96 sm:w-96"
+            className="pointer-events-none absolute -bottom-20 -right-16 h-80 w-80 rounded-full bg-[#6FAEBB]/[0.13] sm:-right-44 sm:-bottom-16 sm:h-96 sm:w-96"
           />
         <figure className="not-prose m-0">
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
