@@ -30,4 +30,5 @@
 
 - **`/areas/[日本語スラッグ]` × ISR の 500 事件**: ISR 再検証時に `x-next-cache-tags` ヘッダーの日本語スラッグが原因で 47 ページが 500 になった。PR #229 で force-static + `fetch revalidate:false` に変更して解消。uptime-check に `/areas/東京都` を含めているのはこの再発検知のため
 - **画像ホストの列挙**: 新しい収集サイトの画像ホストは `next.config.ts` の `remotePatterns` に追加が必要。`tests/test_image_remote_patterns.py`（backend CI）が `sites.yaml` との一致を強制する。列挙漏れは silent failure になる（PR #179 の教訓）
+- **画像は Vercel 最適化ではなく wsrv.nl 経由**: Vercel の画像最適化は Hobby プランの変換クォータ超過で 402 を返し、全サムネイルが非表示になった（2026-07-07 本番障害）。`lib/image-loader.ts` のカスタム loader が wsrv.nl（無料の画像プロキシ）で縮小・WebP 化する。縮小サムネイル方針（著作権配慮）はここで維持。ローカル静的画像（`/images/...`）は変換せず素通し。`remotePatterns` は loader では未使用だが収集ホストの台帳として維持
 - **ビルド時 API 依存**: SSG/`generateStaticParams` はビルド時にバックエンド API を叩くため、API 停止中は frontend ビルドが失敗しうる
