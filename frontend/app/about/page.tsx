@@ -43,7 +43,12 @@ export default function AboutPage() {
           ロゴのふたつの円は、このサイトのモデルになった犬のポムと猫のビリーを表しています。
         </p>
 
-        <figure className="not-prose m-0 mt-6">
+        <div className="relative mt-6 overflow-hidden">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -bottom-20 -left-24 h-64 w-64 rounded-full bg-[#E8826E]/[0.13] sm:h-80 sm:w-80"
+          />
+        <figure className="not-prose m-0">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:grid-rows-2">
             <div className="col-span-2 sm:row-span-2">
               <Image
@@ -90,8 +95,14 @@ export default function AboutPage() {
           散歩は大好きだったはずが、私が散歩をさぼるうちにビリーと過ごす時間が長くなり、自分のことを猫だと思い始めたのか、気づけばキャットタワーに登ろうとしていたことも。
           うちで過ごしたのは5年間。9歳のときにお別れをしました。
         </p>
+        </div>
 
-        <figure className="not-prose m-0 mt-8">
+        <div className="relative mt-8 overflow-hidden">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-[#6FAEBB]/[0.13] sm:h-96 sm:w-96"
+          />
+        <figure className="not-prose m-0">
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
             <Image
               src="/images/about/billy-1.jpg"
@@ -143,6 +154,7 @@ export default function AboutPage() {
           家ではおとなしく、ほっぺを揉まれてもお風呂に入れられても嫌がらない、ポムのちょっかいにも静かに付き合ってくれる子でした。
         </p>
         <p className="mt-4">うちで過ごしたのは、同じく5年間。9歳のとき、リンパ腫でお別れをしました。</p>
+        </div>
 
         <div className="not-prose mt-10 mb-6 flex justify-center" aria-hidden="true">
           <svg width="44" height="24" viewBox="0 0 44 24">
