@@ -8,6 +8,15 @@ const nextConfig: NextConfig = {
    * scripts/deployment/setup_gcp.sh と同じく、新規サイト追加時はここも更新する。
    */
   images: {
+    /* Vercel の画像最適化はHobbyプランの変換クォータ超過で 402 を返し、
+     * 全サムネイルが非表示になる (2026-07-07 本番障害)。動物は日次で増え
+     * 無料枠に収まらないため、wsrv.nl プロキシのカスタム loader に切替。
+     * 縮小サムネイル方針 (下記コメント) は loader 側で維持する。
+     * remotePatterns は loader では未使用だが、収集対象ホストの台帳として
+     * 残す (tests/test_image_remote_patterns.py が sites.yaml との一致を強制)。
+     */
+    loader: 'custom',
+    loaderFile: './lib/image-loader.ts',
     remotePatterns: [
       // Next.js 16 から remotePatterns は最大 50 件の制約。sites.yaml は 211
       // サイト / 91 host で個別列挙だと上限超過 (Build error)。
