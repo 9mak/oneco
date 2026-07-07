@@ -38,7 +38,8 @@ export default function AboutPage() {
       <section className="mb-10">
         <h2 className="text-xl font-semibold mb-3">oneco という名前と、ふたつの円</h2>
         <p>
-          oneco（ワンコ）は、ONE と NECO に「わん」「ねこ」「ひとつに」の意味を重ねた名前です。
+          oneco（ワンコ）は、「わんこ」の綴りの中に「ねこ（NECO）」がいる名前です。
+          頭の ONE には、ばらばらの情報をひとつにという意味も重なっています。
           ロゴのふたつの円は、このサイトのモデルになった犬のポムと猫のビリーを表しています。
         </p>
 
