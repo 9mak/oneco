@@ -46,6 +46,7 @@ export default function AboutPage() {
           <figure className="m-0">
             <Image
               src="/images/about/pom.jpg"
+              unoptimized
               alt="白い小さな犬、ポム"
               width={1200}
               height={815}
@@ -56,6 +57,7 @@ export default function AboutPage() {
           <figure className="m-0">
             <Image
               src="/images/about/billy.jpg"
+              unoptimized
               alt="白地に黒いぶちの大きな猫、ビリー"
               width={1200}
               height={815}
