@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
@@ -16,7 +17,7 @@ const DATA_SOURCE_COUNTS = {
 
 export default function AboutPage() {
   return (
-    <article className="container mx-auto px-4 py-12 max-w-3xl prose prose-sm md:prose-base">
+    <article className="container mx-auto px-4 py-12 max-w-3xl prose prose-sm md:prose-base prose-p:leading-7 md:prose-p:leading-8">
       <h1 className="text-2xl md:text-3xl font-bold mb-6">このサイトについて</h1>
 
       <section className="mb-10">
@@ -31,6 +32,142 @@ export default function AboutPage() {
           <strong>{DATA_SOURCE_COUNTS.hosts} ホスト</strong>・
           <strong>{DATA_SOURCE_COUNTS.sources} ソース</strong>
           から日次で情報を集約しています。
+        </p>
+      </section>
+
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-3">oneco という名前と、ふたつの円</h2>
+        <p>
+          oneco（ワンコ）は、「わんこ」の綴りの中に「ねこ（NECO）」がいる名前です。
+          頭の ONE には、ばらばらの情報をひとつにという意味も重なっています。
+          ロゴのふたつの円は、このサイトのモデルになった犬のポムと猫のビリーを表しています。
+        </p>
+
+        <div className="relative mt-6 overflow-hidden sm:overflow-visible">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-[#E8826E]/[0.13] sm:-left-36 sm:-bottom-10 sm:h-80 sm:w-80"
+          />
+        <figure className="not-prose m-0">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:grid-rows-2">
+            <div className="col-span-2 sm:row-span-2">
+              <Image
+                src="/images/about/pom-1.jpg"
+                unoptimized
+                alt="床にちょこんと座って舌を出して笑う、白い小さな犬のポム"
+                width={1200}
+                height={815}
+                className="aspect-[3/2] h-full w-full rounded-lg object-cover"
+              />
+            </div>
+            <Image
+              src="/images/about/pom-2.jpg"
+              unoptimized
+              alt="ベッドのそばでこちらを見上げるポム"
+              width={1200}
+              height={815}
+              className="aspect-[3/2] w-full rounded-lg object-cover"
+            />
+            <Image
+              src="/images/about/pom-3.jpg"
+              unoptimized
+              alt="夜の散歩中、立ち止まって振り返るポム"
+              width={1200}
+              height={815}
+              className="aspect-[3/2] w-full rounded-lg object-cover"
+            />
+          </div>
+          <figcaption className="mt-2 text-center text-xs text-gray-500">ポム</figcaption>
+        </figure>
+
+        <p className="mt-4">
+          <strong>コーラルの円は、犬のポムをイメージしています。</strong>
+          私が通っていた専門学校で生まれ、トリミング実習のモデル犬として、学生たちのカット練習に付き合ってくれていた子です。
+          犬舎にいた頃から、私を見つけると寝転んでお腹を見せてくれる子で、学校の里親制度を通じて4歳のときにうちに来ました。
+        </p>
+        <p className="mt-4">
+          最初は1階で暮らしてもらうつもりで、専門学校の友人と木のケージまで手作りしました。
+          けれど夜にさびしそうに鳴く声を聞き、その日のうちにあきらめて、それからはずっと私たちと同じ2階暮らしです。
+          体重は3キロほど。
+          いつも私の横にいて、公園では子どもたちと遊び、家でのシャンプーやカットもおとなしくさせてくれる子でした。
+        </p>
+        <p className="mt-4">
+          散歩は大好きだったはずが、私が散歩をさぼるうちにビリーと過ごす時間が長くなり、自分のことを猫だと思い始めたのか、気づけばキャットタワーに登ろうとしていたことも。
+          うちで過ごしたのは5年間。9歳のときにお別れをしました。
+        </p>
+        </div>
+
+        <div className="relative mt-8 overflow-hidden sm:overflow-visible">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -bottom-20 -right-16 h-80 w-80 rounded-full bg-[#6FAEBB]/[0.13] sm:-right-44 sm:-bottom-16 sm:h-96 sm:w-96"
+          />
+        <figure className="not-prose m-0">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
+            <Image
+              src="/images/about/billy-1.jpg"
+              unoptimized
+              alt="両手でほっぺを包まれて、されるがままのビリー"
+              width={1200}
+              height={815}
+              className="aspect-[3/2] w-full rounded-lg object-cover"
+            />
+            <Image
+              src="/images/about/billy-2.jpg"
+              unoptimized
+              alt="布団の上でくつろぐ、白地に黒ぶちの大きな猫のビリー"
+              width={1200}
+              height={815}
+              className="aspect-[3/2] w-full rounded-lg object-cover"
+            />
+            <Image
+              src="/images/about/billy-3.jpg"
+              unoptimized
+              alt="気持ちよさそうに眠るビリー"
+              width={1200}
+              height={815}
+              className="aspect-[3/2] w-full rounded-lg object-cover"
+            />
+            <Image
+              src="/images/about/billy-4.jpg"
+              unoptimized
+              alt="ベランダから外を眺めるビリーの後ろ姿"
+              width={1200}
+              height={815}
+              className="aspect-[3/2] w-full rounded-lg object-cover"
+            />
+          </div>
+          <figcaption className="mt-2 text-center text-xs text-gray-500">ビリー</figcaption>
+        </figure>
+
+        <p className="mt-4">
+          <strong>ブルーグリーンの円は、猫のビリーをイメージしています。</strong>
+          私が働いていた動物病院の近くで兄弟猫と一緒に拾われ、兄弟が先にもらわれていくなか、ビリーだけが病院に残った子です。
+          その後は病院猫として過ごし、体が大きかったこともあって、血液が必要な子のための輸血ドナーを務めてくれていました。
+        </p>
+        <p className="mt-4">
+          ふだんの住まいは、大型犬用の犬舎。
+          私は昼休みや仕事終わりにそこから出して、よく一緒に遊んでいました。
+          輸血のたびに軽い麻酔でふらつく姿を見ているうちに、うちに連れて帰ることにしました。
+        </p>
+        <p className="mt-4">
+          家ではおとなしく、ほっぺを揉まれてもお風呂に入れられても嫌がらない、ポムのちょっかいにも静かに付き合ってくれる子でした。
+        </p>
+        <p className="mt-4">うちで過ごしたのは、同じく5年間。9歳のとき、リンパ腫でお別れをしました。</p>
+        </div>
+
+        <div className="not-prose mt-10 mb-6 flex justify-center" aria-hidden="true">
+          <svg width="44" height="24" viewBox="0 0 44 24">
+            <circle cx="17" cy="12" r="10" fill="#E8826E" fillOpacity="0.8" />
+            <circle cx="27" cy="12" r="10" fill="#6FAEBB" fillOpacity="0.8" />
+          </svg>
+        </div>
+
+        <p className="mt-3">
+          <strong>ふたつの円が重なる場所に、oneco の出発点があります。</strong>
+          ポムは実習のモデル犬として学生の学びに関わり、ビリーは輸血ドナーとして病院で過ごしました。
+          2匹を見送るときに、行き場を探している子たちがポムやビリーのように誰かの家族になれるようにしようと約束しました。
+          oneco という名前は、その約束に由来しています。
         </p>
       </section>
 
