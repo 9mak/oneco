@@ -51,25 +51,44 @@ export function Header() {
             className="flex items-center gap-2 sm:gap-3 min-w-0 focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 rounded"
             aria-label="oneco トップへ"
           >
+            {/* ブランドマーク「ふたつの円」(コーラル=犬のポム / ブルーグリーン=猫のビリー) */}
             <span
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-100)]"
+              className="flex h-9 w-9 shrink-0 items-center justify-center"
               aria-hidden="true"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width={20}
-                height={20}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--color-accent-700)"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
+                width={34}
+                height={34}
+                viewBox="0 0 100 100"
               >
-                <circle cx="11" cy="4" r="2" />
-                <circle cx="18" cy="8" r="2" />
-                <circle cx="20" cy="16" r="2" />
-                <path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z" />
+                <defs>
+                  <radialGradient id="hdrCoral" gradientUnits="userSpaceOnUse" cx="26" cy="34" r="46">
+                    <stop offset="0%" stopColor="#F4A28E" />
+                    <stop offset="55%" stopColor="#E8826E" />
+                    <stop offset="100%" stopColor="#DB6C58" />
+                  </radialGradient>
+                  <linearGradient id="hdrTeal" gradientUnits="userSpaceOnUse" x1="61" y1="17" x2="61" y2="83">
+                    <stop offset="0%" stopColor="#83BCC6" />
+                    <stop offset="38%" stopColor="#6FAEBB" />
+                    <stop offset="58%" stopColor="#A9BD90" />
+                    <stop offset="72%" stopColor="#D8BE82" />
+                    <stop offset="88%" stopColor="#7FAFC2" />
+                    <stop offset="100%" stopColor="#6BA3B8" />
+                  </linearGradient>
+                  <linearGradient id="hdrLens" gradientUnits="userSpaceOnUse" x1="45" y1="26" x2="45" y2="68">
+                    <stop offset="0%" stopColor="#9A8FA4" />
+                    <stop offset="100%" stopColor="#7E88A0" />
+                  </linearGradient>
+                  <clipPath id="hdrClipCoral">
+                    <circle cx="34" cy="44" r="28" />
+                  </clipPath>
+                </defs>
+                <circle cx="34" cy="44" r="28" fill="url(#hdrCoral)" />
+                <circle cx="61" cy="50" r="33" fill="url(#hdrTeal)" />
+                <g clipPath="url(#hdrClipCoral)">
+                  <circle cx="61" cy="50" r="33" fill="url(#hdrLens)" />
+                </g>
               </svg>
             </span>
             <span className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2 min-w-0">
