@@ -81,6 +81,8 @@ test-*.png
 
 # 開発中スクリーンショット (PR や Discord 共有用に local 撮影、コミット対象外)
 oneco-*.png
+# ブランドアセットは例外 (SNSアバター等の公式画像)
+!frontend/public/brand/oneco-*.png
 mobile-header.png
 
 # ローカル SQLite (本番は Supabase、local 専用 cache)
