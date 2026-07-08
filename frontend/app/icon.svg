@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!--
+    oneco ブランドマーク「ふたつの円」(A案・2026-07-08確定)
+    コーラルの円 = 犬のポム / ブルーグリーンの円 = 猫のビリー
+    非対称の円が対角に重なる構図 (等円水平並びの他ブランドとの差別化)
+  -->
+  <defs>
+    <radialGradient id="gCoral" gradientUnits="userSpaceOnUse" cx="26" cy="34" r="46">
+      <stop offset="0%" stop-color="#F4A28E"/>
+      <stop offset="55%" stop-color="#E8826E"/>
+      <stop offset="100%" stop-color="#DB6C58"/>
+    </radialGradient>
+    <linearGradient id="gTeal" gradientUnits="userSpaceOnUse" x1="61" y1="17" x2="61" y2="83">
+      <stop offset="0%" stop-color="#83BCC6"/>
+      <stop offset="38%" stop-color="#6FAEBB"/>
+      <stop offset="58%" stop-color="#A9BD90"/>
+      <stop offset="72%" stop-color="#D8BE82"/>
+      <stop offset="88%" stop-color="#7FAFC2"/>
+      <stop offset="100%" stop-color="#6BA3B8"/>
+    </linearGradient>
+    <linearGradient id="gLens" gradientUnits="userSpaceOnUse" x1="45" y1="26" x2="45" y2="68">
+      <stop offset="0%" stop-color="#9A8FA4"/>
+      <stop offset="100%" stop-color="#7E88A0"/>
+    </linearGradient>
+    <clipPath id="clipCoral"><circle cx="34" cy="44" r="28"/></clipPath>
+  </defs>
+  <circle cx="34" cy="44" r="28" fill="url(#gCoral)"/>
+  <circle cx="61" cy="50" r="33" fill="url(#gTeal)"/>
+  <g clip-path="url(#clipCoral)"><circle cx="61" cy="50" r="33" fill="url(#gLens)"/></g>
+</svg>
