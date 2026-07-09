@@ -118,3 +118,11 @@ posts:
 
     #保護猫 #里親募集 #熊本県'
   dry_run: false
+- url: https://animal-net.pref.nagasaki.jp/animal/no-19666/
+  platform: threads
+  text: '長崎県諫早市で保護された猫のご紹介です。種別は猫、性別は男の子です。里親を募集しています。
+
+    詳細・問い合わせは自治体公式へ #保護猫 #里親募集 #長崎県
+
+    https://animal-net.pref.nagasaki.jp/animal/no-19666/?utm_source=threads'
+  dry_run: false
