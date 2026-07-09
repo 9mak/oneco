@@ -24,7 +24,10 @@ if config.config_file_name is not None:
 if not config.get_main_option("sqlalchemy.url"):
     database_url = os.getenv("DATABASE_URL")
     if database_url:
-        config.set_main_option("sqlalchemy.url", database_url)
+        # configparser は % を補間構文として解釈するためエスケープする。
+        # パスワードに %xx (URLエンコード文字) を含む DATABASE_URL で
+        # ValueError になる (2026-07-08 のパスワードローテーション後に顕在化)
+        config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
 
 # add your model's MetaData object here
 # for 'autogenerate' support
