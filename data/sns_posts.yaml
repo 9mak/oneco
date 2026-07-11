@@ -126,3 +126,15 @@ posts:
 
     https://animal-net.pref.nagasaki.jp/animal/no-19666/?utm_source=threads'
   dry_run: false
+- url: https://aniwel.jp/cats/#row=7
+  platform: threads
+  text: '北見市のアニウェル北海道で女の子の猫が保護されています。詳細は以下の通りです。
+
+    種別: 猫
+
+    性別: 女の子
+
+    この猫を里親として迎え入れる方を探しています。詳細・問い合わせは自治体公式へ #保護猫 #里親募集 #北海道
+
+    https://aniwel.jp/cats/?utm_source=threads#row=7'
+  dry_run: false
