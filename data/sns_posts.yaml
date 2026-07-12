@@ -138,3 +138,11 @@ posts:
 
     https://aniwel.jp/cats/?utm_source=threads#row=7'
   dry_run: false
+- url: https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html#row=17
+  platform: threads
+  text: '山梨県南アルプス市上高砂で保護された猫の情報です。性別は男の子、種別は雑種です。里親を探しています。#保護猫 #里親募集 #山梨県
+
+    詳細・問い合わせは自治体公式へ
+
+    https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html?utm_source=threads#row=17'
+  dry_run: false
