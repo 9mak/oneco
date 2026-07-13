@@ -59,6 +59,13 @@ class BrokenSitesTracker:
             return 0
         return int(entry.get("consecutive_failures", 0))
 
+    def last_error(self, site_name: str) -> str:
+        """site_name の最後に記録されたエラーメッセージを返す（未記録なら空文字）"""
+        entry = self._state.get(site_name)
+        if not entry:
+            return ""
+        return str(entry.get("last_error") or "")
+
     def last_failed_at(self, site_name: str) -> datetime | None:
         """site_name の最終失敗日時を返す（未記録 / parse 失敗時は None）"""
         entry = self._state.get(site_name)

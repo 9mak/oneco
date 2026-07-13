@@ -10,11 +10,67 @@ from __future__ import annotations
 import logging
 from unittest.mock import MagicMock, patch
 
-from src.data_collector.__main__ import _trigger_auto_fix
+from src.data_collector.__main__ import _is_llm_fixable_error, _trigger_auto_fix
 
 
 def _logger() -> logging.Logger:
     return logging.getLogger("test_trigger_auto_fix")
+
+
+class TestIsLlmFixableError:
+    """critical_sites の失敗原因が LLM コード修正で直せるかの分類
+
+    ネットワーク断・HTTP エラー・タイムアウトは adapter コードを
+    いくらパッチしても直らないため auto-fix 対象から除外する
+    (2026-07 に山梨県のネットワーク断続エラーが日次 3 枠を 2 週間
+    占有し、本当に壊れていた柏市・群馬に修理が回らなかった反省)。
+    """
+
+    def test_network_error_is_not_fixable(self):
+        # broken_sites.yaml の実記録 (山梨県)
+        assert not _is_llm_fixable_error(
+            "ネットワークエラー: HTTPSConnectionPool(host='www.pref.yamanashi.jp', port=443): "
+            "Max retries exceeded with url: /doubutsu/p_dog/index.html "
+            "(Caused by NewConnectionError(...: Failed to establish a new connection: "
+            "[Errno 111] Connection refused))"
+        )
+
+    def test_connect_timeout_is_not_fixable(self):
+        assert not _is_llm_fixable_error(
+            "ネットワークエラー: HTTPSConnectionPool(host='aniwel.jp', port=443): "
+            "Max retries exceeded with url: /cats/ (Caused by ConnectTimeoutError(..., "
+            "'Connection to aniwel.jp timed out. (connect timeout=30)'))"
+        )
+
+    def test_http_error_is_not_fixable(self):
+        # 403/404 はコード修正では直らない (URL 変更 / WAF ブロック)
+        assert not _is_llm_fixable_error(
+            "HTTP エラー: 403 Client Error: Forbidden for url: https://www.city.nagoya.jp/..."
+        )
+
+    def test_site_timeout_is_not_fixable(self):
+        # per-site SIGALRM timeout (処理が固まった) もコード修正対象外
+        assert not _is_llm_fixable_error(
+            "timeout: site 山梨県（探している犬） timed out after 120.0s"
+        )
+        assert not _is_llm_fixable_error(
+            "site collection timed out after 240s: 高知県動物愛護センター"
+        )
+
+    def test_parsing_error_is_fixable(self):
+        # DOM 構造変化 → セレクタ修正で直せる本来の auto-fix 対象
+        assert _is_llm_fixable_error("行要素が見つかりません")
+
+    def test_zero_count_anomaly_is_fixable(self):
+        assert _is_llm_fixable_error(
+            "件数低下異常: 前回 2 件 → 今回 0 件 (adapter 破損 or サイト構造変更の可能性)"
+        )
+
+    def test_unknown_or_empty_error_is_fixable(self):
+        # 分類不能な失敗は安全側 (= 従来通り対象に含める)
+        assert _is_llm_fixable_error("")
+        assert _is_llm_fixable_error(None)
+        assert _is_llm_fixable_error("RawAnimalData バリデーション失敗: ...")
 
 
 class TestTriggerAutoFix:
