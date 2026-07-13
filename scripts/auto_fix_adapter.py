@@ -624,6 +624,18 @@ def create_issue(site_name: str, reason: str, cwd: Path = ROOT) -> str | None:
     return None
 
 
+def gh_warning(message: str) -> None:
+    """GitHub Actions の warning annotation を stdout に出す
+
+    dry-run では却下 (exit 3/4/5) を 0 に丸めるため、workflow conclusion
+    だけ見ると全 run が success になり、パッチ適用失敗が続いても気づけない
+    (2026-07 に 2 週間のサイレント空回りが発覚)。annotation は conclusion を
+    変えずに run 一覧・summary 上に黄色で表示される。
+    Actions 外で実行された場合はただの print として無害。
+    """
+    print(f"::warning::{' '.join(message.splitlines())}")
+
+
 def _dry_run_exit(code: int, dry_run: bool) -> int:
     """観察モード (--dry-run) では『LLM 提案が却下された』はスクリプトの失敗
     ではなく想定内の観察結果。GitHub Actions の step を赤にして Discord ノイズ
@@ -667,6 +679,7 @@ def main() -> int:
     except Exception as e:
         msg = f"LLM 呼び出し失敗: {e}"
         print(msg, file=sys.stderr)
+        gh_warning(f"[{args.site_name}] {msg}")
         if not args.dry_run:
             create_issue(args.site_name, msg)
         return 2
@@ -679,6 +692,7 @@ def main() -> int:
     if fixed_code is None:
         msg = f"LLM 生成パッチが適用できませんでした ({reason})"
         print(msg, file=sys.stderr)
+        gh_warning(f"[{args.site_name}] {msg}")
         if not args.dry_run:
             create_issue(args.site_name, msg)
         return _dry_run_exit(3, args.dry_run)
@@ -686,6 +700,7 @@ def main() -> int:
     if not ok:
         msg = f"適用後の内容が検証を通らず書き込みませんでした ({reason})"
         print(msg, file=sys.stderr)
+        gh_warning(f"[{args.site_name}] {msg}")
         if not args.dry_run:
             create_issue(args.site_name, msg)
         return _dry_run_exit(3, args.dry_run)
@@ -695,12 +710,14 @@ def main() -> int:
     ok, reason = verify_no_unexpected_changes([adapter_file_rel])
     if not ok:
         print(f"想定外のファイル変更 → ロールバック ({reason})", file=sys.stderr)
+        gh_warning(f"[{args.site_name}] 想定外のファイル変更 → ロールバック ({reason})")
         rollback(adapter_file)
         if not args.dry_run:
             create_issue(args.site_name, f"想定外のファイル変更: {reason}")
         return _dry_run_exit(4, args.dry_run)
     if not run_unit_tests():
         print("ユニットテスト失敗 → ロールバック", file=sys.stderr)
+        gh_warning(f"[{args.site_name}] 修正後のユニットテスト失敗 → ロールバック")
         rollback(adapter_file)
         if not args.dry_run:
             create_issue(args.site_name, "修正後のユニットテストが失敗しました")
@@ -716,6 +733,7 @@ def main() -> int:
     improved, reason = evaluate_improvement(before, after)
     if not improved:
         print(f"改善なし → ロールバック ({reason})", file=sys.stderr)
+        gh_warning(f"[{args.site_name}] 改善なし → ロールバック ({reason})")
         rollback(adapter_file)
         if not args.dry_run:
             create_issue(
@@ -733,6 +751,7 @@ def main() -> int:
     print("\n[7/7] creating PR...")
     pr_url = create_pr(args.site_name, adapter_file, reason)
     if not pr_url:
+        gh_warning(f"[{args.site_name}] PR 作成失敗 (git push or gh pr create 失敗)")
         rollback(adapter_file)
         create_issue(args.site_name, "PR 作成失敗 (git push or gh pr create 失敗)")
         return 6

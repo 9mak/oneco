@@ -178,6 +178,22 @@ class TestCityKashiwaAdapter:
 
         assert raw.category == "adoption"
 
+    def test_cardless_inventory_page_returns_empty_list(self, fixture_html):
+        """在庫 0 でカード自体が消えたページ (2026-07 観測) は空リストを返す
+
+        現行の hogo.html は在庫 0 のとき「おりません」等の告知文を出さず、
+        <h3>猫</h3><h3>犬</h3> 見出しだけ残してカードを丸ごと省略する。
+        旧実装はこれを ParsingError (行要素が見つかりません) にしてしまい
+        連続失敗で broken 扱いになっていた (2026-07-11 まで 3 連続失敗)。
+        """
+        html = fixture_html("city_kashiwa_hogo_cardless")
+        adapter = CityKashiwaAdapter(_site_hogo())
+
+        with patch.object(adapter, "_http_get", return_value=html):
+            result = adapter.fetch_animal_list()
+
+        assert result == []
+
     def test_empty_state_returns_empty_list(self):
         """0 件告知ページでは ParsingError ではなく空リストを返す"""
         empty_html = (

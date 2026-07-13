@@ -443,3 +443,26 @@ class TestDryRunExit:
     def test_success_code_passthrough(self):
         assert afa._dry_run_exit(0, dry_run=True) == 0
         assert afa._dry_run_exit(0, dry_run=False) == 0
+
+
+class TestGhWarning:
+    """修復却下時の GitHub Actions warning annotation
+
+    dry-run では却下 (exit 3/4/5) を 0 に丸めるため、workflow conclusion
+    だけ見ると全 run が success になり、パッチ適用失敗が 2 週間
+    サイレントに続いた (2026-07 発見)。annotation なら conclusion を
+    変えずに run 一覧・summary 上で失敗が見える。
+    """
+
+    def test_emits_single_line_warning_annotation(self, capsys):
+        afa.gh_warning("パッチ適用失敗 (SEARCH block not found)")
+        out = capsys.readouterr().out
+        assert out.startswith("::warning::")
+        assert "パッチ適用失敗" in out
+
+    def test_newlines_are_flattened(self, capsys):
+        """annotation は 1 行でないと GitHub が後続を無視する"""
+        afa.gh_warning("1行目\n2行目\n3行目")
+        out = capsys.readouterr().out.rstrip("\n")
+        assert "\n" not in out
+        assert "2行目" in out
