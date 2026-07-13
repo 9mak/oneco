@@ -9,6 +9,7 @@ import { AnimalPublic } from '@/types/animal';
 import { AnimalDetailClient } from '@/components/animals/AnimalDetailClient';
 import { PetSchema } from '@/components/animals/PetSchema';
 import { getSiteUrl } from '@/lib/site-url';
+import { getApiBaseUrl } from '@/lib/api-base-url';
 
 const SITE_URL = getSiteUrl();
 
@@ -22,7 +23,7 @@ interface AnimalDetailPageProps {
  * 個別動物データを取得
  */
 async function getAnimal(id: string): Promise<AnimalPublic | null> {
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+  const apiBaseUrl = getApiBaseUrl();
 
   try {
     const res = await fetch(`${apiBaseUrl}/animals/${id}`, {

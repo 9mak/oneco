@@ -6,8 +6,7 @@ import { useFavorites } from '@/lib/favorites';
 import { AnimalCard } from '@/components/animals/AnimalCard';
 import { AnimalGridSkeleton } from '@/components/animals/AnimalGridSkeleton';
 import type { AnimalPublic } from '@/types/animal';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+import { getApiBaseUrl } from '@/lib/api-base-url';
 
 export default function FavoritesPage() {
   const { favorites } = useFavorites();
@@ -32,7 +31,7 @@ export default function FavoritesPage() {
         const results = await Promise.all(
           favorites.map(async (id) => {
             try {
-              const res = await fetch(`${API_BASE_URL}/animals/${id}`);
+              const res = await fetch(`${getApiBaseUrl()}/animals/${id}`);
               if (res.ok) {
                 return { kind: 'ok' as const, value: (await res.json()) as AnimalPublic };
               }

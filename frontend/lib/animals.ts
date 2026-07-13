@@ -1,6 +1,5 @@
 import type { AnimalPublic, FilterState, PaginatedResponse } from '@/types/animal';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+import { getApiBaseUrl } from '@/lib/api-base-url';
 
 export interface FetchAnimalsParams extends FilterState {
   limit?: number;
@@ -33,7 +32,7 @@ export async function fetchAnimals(
   params: FetchAnimalsParams,
   options?: { revalidate?: number | false },
 ): Promise<PaginatedResponse<AnimalPublic>> {
-  const url = `${API_BASE_URL}/animals?${buildQuery(params)}`;
+  const url = `${getApiBaseUrl()}/animals?${buildQuery(params)}`;
   const res = await fetch(url, {
     next: { revalidate: options?.revalidate ?? 300 },
   });
@@ -50,7 +49,7 @@ export async function fetchAnimals(
  */
 export async function fetchPrefectureStats(): Promise<Record<string, number>> {
   try {
-    const res = await fetch(`${API_BASE_URL}/animals/stats/by-prefecture`, {
+    const res = await fetch(`${getApiBaseUrl()}/animals/stats/by-prefecture`, {
       next: { revalidate: 600 },
     });
     if (!res.ok) return {};
