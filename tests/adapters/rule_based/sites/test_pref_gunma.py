@@ -3,11 +3,16 @@
 群馬県動物愛護センターサイト (pref.gunma.jp) 用 rule-based adapter の
 動作を検証する。
 
+2026-07 のサイト構造変更で、一覧ページはインラインの動物テーブルから
+「管理番号：NN-NNN（場所）」の詳細ページリンク並びに変わった。
+本テストは新形式の実ページフィクスチャで検証する:
+
+- 一覧ページ (`pref_gunma_list_tobu.html`): 詳細ページ URL の抽出
+- 詳細ページ (`pref_gunma_detail.html`): ラベル/値テーブルからの全フィールド抽出
+  + `normalize()` 戻り値 (AnimalData) での end-to-end 検証 (サイレントドロップ防止)
+- 0 件告知ページ (`pref_gunma_empty_new.html`): 空リストを返す
 - 同一テンプレート上の 3 サイト (本所 保護犬/猫、東部支所 保護犬) の登録確認
-- 0 件告知ページ (本フィクスチャ) では fetch_animal_list が空配列を返す
-- お問い合わせ先テーブルは動物データとして拾わない
-- サイト名からの動物種別 (犬/猫) 推定
-- ページ全体に table が無く empty state でもないケースは ParsingError
+- リンクも empty state も無い無関係 HTML は ParsingError
 """
 
 from __future__ import annotations
@@ -20,12 +25,16 @@ from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.pref_gunma import (
     PrefGunmaAdapter,
 )
+from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
+
+_LIST_URL_TOBU = "https://www.pref.gunma.jp/page/179441.html"
+_DETAIL_URL = "https://www.pref.gunma.jp/page/766184.html"
 
 
 def _site(
-    name: str = "群馬県動物愛護センター（保護犬）",
-    list_url: str = "https://www.pref.gunma.jp/page/167499.html",
+    name: str = "群馬県動物愛護センター東部支所（保護犬）",
+    list_url: str = _LIST_URL_TOBU,
     category: str = "sheltered",
 ) -> SiteConfig:
     return SiteConfig(
@@ -38,72 +47,68 @@ def _site(
     )
 
 
-def _load_gunma_html(fixture_html) -> str:
-    """フィクスチャを読み込み、必要であれば mojibake (二重 UTF-8) を補正する
+def _patch_http(adapter, fixture_html):
+    """list_url / 詳細 URL に応じたフィクスチャを返す _http_get モック"""
+    pages = {
+        _LIST_URL_TOBU: fixture_html("pref_gunma_list_tobu"),
+        _DETAIL_URL: fixture_html("pref_gunma_detail"),
+    }
 
-    リポジトリに保存された `pref_gunma.html` は基本的に UTF-8 で正しく
-    エンコードされている想定だが、保存経緯次第で latin-1 → utf-8 の
-    二重エンコーディング状態になる可能性に備えて防御的に補正する。
-    実運用 (`_http_get`) では requests が正しい UTF-8 として受け取る。
-    """
-    raw = fixture_html("pref_gunma")
-    # 復号後に「群馬県」または「動物愛護センター」が出現するかで判定
-    if "群馬県" in raw or "動物愛護センター" in raw:
-        return raw
-    try:
-        return raw.encode("latin-1").decode("utf-8")
-    except (UnicodeEncodeError, UnicodeDecodeError):
-        return raw
+    def _get(url, *args, **kwargs):
+        if url not in pages:
+            raise AssertionError(f"unexpected URL fetched: {url}")
+        return pages[url]
+
+    return patch.object(adapter, "_http_get", side_effect=_get)
 
 
-class TestPrefGunmaAdapter:
-    def test_fetch_animal_list_returns_empty_for_no_animals_page(self, fixture_html):
-        """「現在、保管期間中の犬はおりません」告知ページでは空リストが返る
-
-        フィクスチャは中毛/北毛/西毛 各地区とも全て
-        「現在、保管期間中の犬はおりません」の告知のみが並ぶ 0 件状態。
-        基底の単純実装は ParsingError を投げるが、本 adapter ではこれを
-        正常な 0 件として扱う。
-        """
-        html = _load_gunma_html(fixture_html)
+class TestFetchAnimalList:
+    def test_returns_detail_page_urls(self, fixture_html):
+        """一覧ページの「管理番号：…」リンクから詳細ページ URL を抽出できる"""
         adapter = PrefGunmaAdapter(_site())
 
-        with patch.object(adapter, "_http_get", return_value=html):
+        with _patch_http(adapter, fixture_html):
+            result = adapter.fetch_animal_list()
+
+        assert result == [(_DETAIL_URL, "sheltered")]
+
+    def test_returns_empty_for_no_animals_page(self, fixture_html):
+        """「現在、保管期間中の負傷猫はいません」告知ページでは空リストが返る"""
+        adapter = PrefGunmaAdapter(
+            _site(
+                name="群馬県動物愛護センター（保護猫）",
+                list_url="https://www.pref.gunma.jp/page/167523.html",
+            )
+        )
+
+        with patch.object(adapter, "_http_get", return_value=fixture_html("pref_gunma_empty_new")):
             result = adapter.fetch_animal_list()
 
         assert result == [], f"empty state ページでは空配列が返るはず: got {result!r}"
 
-    def test_contact_table_is_excluded(self, fixture_html):
-        """お問い合わせ先テーブルは動物データとして拾わない
-
-        フィクスチャ末尾には「お問い合わせ先」(caption) を持つ table が
-        存在する。これを動物データと誤認すると 0 件のはずが 1 件として
-        扱われてしまうので、_load_rows が確実に除外することを検証する。
-        """
-        html = _load_gunma_html(fixture_html)
+    def test_returns_empty_for_old_format_no_animals_page(self, fixture_html):
+        """旧形式の 0 件告知ページ (地域別「おりません」) でも空リストが返る"""
         adapter = PrefGunmaAdapter(_site())
 
-        with patch.object(adapter, "_http_get", return_value=html):
-            rows = adapter._load_rows()
+        with patch.object(adapter, "_http_get", return_value=fixture_html("pref_gunma")):
+            result = adapter.fetch_animal_list()
 
-        assert rows == [], f"連絡先テーブルは動物データとして残してはいけない: got {len(rows)} rows"
+        assert result == []
 
-    def test_fetch_animal_list_caches_html(self, fixture_html):
+    def test_caches_list_html(self, fixture_html):
         """同一インスタンスでの繰り返し呼び出しは HTTP を 1 回しか実行しない"""
-        html = _load_gunma_html(fixture_html)
         adapter = PrefGunmaAdapter(_site())
 
-        with patch.object(adapter, "_http_get", return_value=html) as mock_get:
-            adapter.fetch_animal_list()
+        with patch.object(
+            adapter, "_http_get", return_value=fixture_html("pref_gunma_list_tobu")
+        ) as mock_get:
             adapter.fetch_animal_list()
             adapter.fetch_animal_list()
 
-        assert mock_get.call_count == 1, (
-            f"HTML はキャッシュされ HTTP は 1 回のみ: got {mock_get.call_count}"
-        )
+        assert mock_get.call_count == 1
 
     def test_raises_parsing_error_for_unrelated_html(self):
-        """テーブルも empty state テキストも無い HTML では ParsingError"""
+        """リンクも empty state テキストも無い HTML では ParsingError"""
         adapter = PrefGunmaAdapter(_site())
         with patch.object(
             adapter,
@@ -113,8 +118,72 @@ class TestPrefGunmaAdapter:
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()
 
+
+class TestExtractAnimalDetails:
+    def test_extracts_all_fields_from_detail_page(self, fixture_html):
+        """詳細ページのラベル/値テーブルから全フィールドを抽出できる
+
+        フィクスチャ収録の個体 (管理番号 26-049):
+        - 種類: 柴犬 (= breed)  性別: オス  推定年齢: 10才位
+        - 毛色: 薄茶  体格: 中型  収容日: 2026年7月8日  収容場所: 館林市岡野町
+        - 首輪: 赤色 (description に保持)  写真: 2 枚 (バナー広告は除外)
+        """
+        adapter = PrefGunmaAdapter(_site())
+
+        with _patch_http(adapter, fixture_html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category=urls[0][1])
+
+        assert isinstance(raw, RawAnimalData)
+        assert raw.species == "犬"
+        assert raw.breed == "柴犬"
+        assert raw.management_number == "26-049"
+        assert raw.sex == "オス"
+        assert raw.age == "10才位"
+        assert raw.color == "薄茶"
+        assert raw.size == "中型"
+        assert raw.shelter_date == "2026年7月8日"
+        assert raw.location == "館林市岡野町"
+        assert "首輪" in raw.description and "赤色" in raw.description
+        # 東部出張所の Tel を抽出 (県庁代表 027-223-1111 を拾わない)
+        assert raw.phone == "0276-55-0731"
+        assert raw.source_url == _DETAIL_URL
+        # 動物写真 2 枚のみ。/uploaded/banner/ 配下の広告は除外
+        assert len(raw.image_urls) == 2
+        assert all(
+            u.startswith("https://www.pref.gunma.jp/uploaded/image/") for u in raw.image_urls
+        )
+
+    def test_full_scraping_flow_normalize(self, fixture_html):
+        """end-to-end: normalize() 戻り値 AnimalData まで個体識別フィールドが届く
+
+        adapter 単体で raw.breed を検証するだけでは normalize 側での
+        サイレントドロップ (PR #171/#173/#176/#177/#180 の再発) を検出
+        できないため、AnimalData でアサーションする。
+        """
+        adapter = PrefGunmaAdapter(_site())
+
+        with _patch_http(adapter, fixture_html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category=urls[0][1])
+            animal = adapter.normalize(raw)
+
+        assert animal.species == "犬"
+        assert animal.breed == "柴犬"
+        assert animal.management_number == "26-049"
+        assert animal.sex == "男の子"
+        assert animal.age_months == 120  # 10才位 → 120ヶ月
+        assert animal.color == "薄茶"
+        assert animal.size == "中型"
+        assert animal.prefecture == "群馬県"
+        assert animal.location == "館林市岡野町"
+        assert animal.description and "赤色" in animal.description
+        assert str(animal.shelter_date) == "2026-07-08"
+        assert len(animal.image_urls) == 2
+
+
+class TestHelpers:
     def test_infer_species_from_site_name_dog(self):
-        """サイト名に "犬" を含むと species 推定が "犬" になる"""
         assert (
             PrefGunmaAdapter._infer_species_from_site_name("群馬県動物愛護センター（保護犬）")
             == "犬"
@@ -127,24 +196,18 @@ class TestPrefGunmaAdapter:
         )
 
     def test_infer_species_from_site_name_cat(self):
-        """サイト名に "猫" を含むと species 推定が "猫" になる"""
         assert (
             PrefGunmaAdapter._infer_species_from_site_name("群馬県動物愛護センター（保護猫）")
             == "猫"
         )
 
     def test_infer_species_from_site_name_unknown(self):
-        """犬/猫 を含まないサイト名は空文字 (テーブル値フォールバック)"""
         assert (
             PrefGunmaAdapter._infer_species_from_site_name("群馬県動物愛護センター（その他）") == ""
         )
 
     def test_all_three_sites_registered(self):
-        """3 つの群馬県サイト名すべてが Registry に登録されている
-
-        sites.yaml で `prefecture: 群馬県` かつ `pref.gunma.jp` ドメインの
-        全サイトを列挙する。
-        """
+        """3 つの群馬県サイト名すべてが Registry に登録されている"""
         expected = [
             "群馬県動物愛護センター（保護犬）",
             "群馬県動物愛護センター東部支所（保護犬）",

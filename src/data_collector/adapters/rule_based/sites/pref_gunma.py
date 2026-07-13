@@ -3,31 +3,25 @@
 対象ドメイン: https://www.pref.gunma.jp/
 
 特徴:
-- 同一ドメイン (pref.gunma.jp) 上で 3 サイトが共通テンプレートを使用する
-  single_page 形式:
+- 同一ドメイン (pref.gunma.jp) 上で 3 サイトが共通テンプレートを使用する:
     - https://www.pref.gunma.jp/page/167499.html  (本所 保護犬)
     - https://www.pref.gunma.jp/page/179441.html  (東部支所 保護犬)
     - https://www.pref.gunma.jp/page/167523.html  (本所 保護猫)
-- 群馬県 CMS の本文 (`#main_body` 配下 `div.detail_free`) は次のような並び:
+- 2026-07 のサイト構造変更で、一覧ページはインラインの動物テーブルから
+  **個別詳細ページへのリンク並び**に変わった:
     <div class="detail_free">
-      <h2>飼い主さんを探しています</h2>
       <h3>収容情報</h3>
-      <ul>...</ul>
-      <h4>{地域名}（市町村...）</h4>
-      <p>　現在、保管期間中の犬はおりません。　</p>
-      ... (地域ごとに繰り返し)
+      <p><a href="/page/766184.html">管理番号：26-049（館林市岡野町）</a></p>
+      ... (収容が無い地域は「現在、保管期間中の犬はおりません」<p> のみ)
     </div>
-- 動物が収容されている場合は地域 `<h4>` の後に動物情報のブロック
-  (テーブル / 段落 / 画像) が並ぶ想定。0 件のときは
-  「現在、保管期間中の犬はおりません」「現在、保管期間中の猫はおりません」
-  といった告知 `<p>` のみが置かれる。
-- 個別 detail ページは存在しない single_page 形式。
-- 動物種別 (犬/猫) はサイト名から推定する (URL パスや本文には
-  明示されないため)。
-- 0 件状態は ParsingError ではなく正常系として空リストを返す。
-- このページは UTF-8 が正しく宣言されており、二重 UTF-8 mojibake は
-  発生しない想定だが、念のため京都府 / 千葉県 adapter と同等の
-  防御的補正は行わない (現状のフィクスチャに必要が無い)。
+- 詳細ページは `div#main_body div.detail_free` 配下に th/td の
+  ラベル/値テーブル 1 つ (管理番号/収容日/保管終了期日/収容場所/
+  保管事務所/種類/性別/推定年齢/毛色/体格/首輪/備考) と動物写真
+  (`/uploaded/image/...`) を持つ。ページ下部にバナー広告
+  (`/uploaded/banner/...`) が並ぶため写真抽出時に除外が必要。
+- 動物種別 (犬/猫) はサイト名から推定する (本文には明示されないため)。
+- 0 件状態 (「現在、保管期間中の犬はおりません」等) は ParsingError では
+  なく正常系として空リストを返す。
 """
 
 from __future__ import annotations
@@ -37,12 +31,12 @@ from typing import ClassVar
 
 from bs4 import BeautifulSoup, Tag
 
-from ....domain.models import RawAnimalData
+from ....domain.models import AnimalData, RawAnimalData
 from ...municipality_adapter import ParsingError
+from ..base import RuleBasedAdapter
 from ..registry import SiteAdapterRegistry
-from ..single_page_table import SinglePageTableAdapter
 
-# 「現在、保管期間中の犬はおりません」「保護している猫はおりません」など
+# 「現在、保管期間中の犬はおりません」「保管期間中の負傷猫はいません」など
 # 0 件告知パターン。表記揺れ (おりません/ありません/いません、犬/猫) を吸収。
 _EMPTY_STATE_PATTERN = re.compile(
     r"(?:保管期間中|保護している|収容している|現在)[^。]*?"
@@ -50,229 +44,203 @@ _EMPTY_STATE_PATTERN = re.compile(
     r"(?:おりません|ありません|いません)"
 )
 
+# 一覧ページの動物詳細リンクのテキスト (例: "管理番号：26-049（館林市岡野町）")
+_DETAIL_LINK_TEXT_PATTERN = re.compile(r"管理番号")
 
-class PrefGunmaAdapter(SinglePageTableAdapter):
+# 詳細ページの「東部出張所（…） Tel：0276-55-0731」から担当事務所の電話番号を
+# 拾う。県庁代表 (「電話番号(代表): 027-223-1111」) を誤って拾わないよう
+# "Tel" 表記に限定する。
+_OFFICE_TEL_PATTERN = re.compile(r"Tel[：:]\s*(0\d[\d\-]{8,11})")
+
+
+class PrefGunmaAdapter(RuleBasedAdapter):
     """群馬県動物愛護センター用 rule-based adapter
 
     本所 (保護犬/保護猫) と東部支所 (保護犬) の計 3 サイトで
-    共通テンプレートを使用する single_page 形式。
-    各動物データは本文 `div.detail_free` 配下に並ぶ想定。
+    共通テンプレートを使用する。一覧ページの「管理番号：…」リンクを
+    詳細ページ URL として辿り、詳細ページのラベル/値テーブルから抽出する。
     """
 
-    # 本文 (`div#main_body` 配下) の動物データ起点。動物が居るときは
-    # `div.detail_free` 内に地域別 `<h4>` + 各動物の table/段落が並ぶ。
-    # 動物データの粒度は地域ブロック単位ではなく「テーブル単位」で扱うのが
-    # 千葉県 / 京都府 adapter と整合的なため、本文 div 配下の `<table>` を
-    # 1 動物として扱う。0 件時はテーブルが存在しないため fetch_animal_list
-    # が空リストを返す。
-    ROW_SELECTOR: ClassVar[str] = "div#main_body div.detail_free table"
-    SKIP_FIRST_ROW: ClassVar[bool] = False
-    # 値の取り出しはオーバーライドした `extract_animal_details` が
-    # 縦並びレイアウト (ラベル/値) を直接スキャンするため、
-    # `COLUMN_FIELDS` は契約として宣言のみ。
-    COLUMN_FIELDS: ClassVar[dict[int, str]] = {
-        0: "species",
-        1: "color",
-        2: "sex",
-        3: "size",
-        4: "age",
-        5: "shelter_date",
+    # 一覧・詳細とも本文は `div#main_body div.detail_free` 配下
+    _MAIN_SELECTOR: ClassVar[str] = "div#main_body div.detail_free"
+
+    # 詳細ページのラベル → RawAnimalData フィールド名のマッピング
+    _LABEL_TO_FIELD: ClassVar[dict[str, str]] = {
+        "管理番号": "management_number",
+        "種類": "breed",  # 値は「柴犬」等の品種。species はサイト名から推定
+        "犬種": "breed",
+        "猫種": "breed",
+        "毛色": "color",
+        "毛の色": "color",
+        "性別": "sex",
+        "体格": "size",
+        "大きさ": "size",
+        "体型": "size",
+        "推定年齢": "age",
+        "年齢": "age",
+        "収容日": "shelter_date",
+        "保護日": "shelter_date",
+        "保管日": "shelter_date",
+        "収容場所": "location",
+        "保護場所": "location",
+        "発見場所": "location",
+        "保管場所": "location",
     }
-    LOCATION_COLUMN: ClassVar[int | None] = None
-    # 群馬県サイトには動物個別の収容日が必ず明示されているとは限らないため
-    # デフォルト値は空文字 (不明扱い)。
-    SHELTER_DATE_DEFAULT: ClassVar[str] = ""
 
-    # ─────────────────── オーバーライド ───────────────────
+    # 個体識別の自由記述として description に残すラベル (「首輪：赤色」等)
+    _DESCRIPTION_LABELS: ClassVar[tuple[str, ...]] = ("首輪", "特徴", "備考")
 
-    def _load_rows(self) -> list[Tag]:
-        """list_url の HTML を取得し、動物テーブルをキャッシュする
+    def __init__(self, site_config) -> None:
+        super().__init__(site_config)
+        self._list_html_cache: str | None = None
+        self._detail_html_cache: dict[str, str] = {}
 
-        - 「お問い合わせ先」テーブル (caption/thead に "お問い合わせ" や
-          "名称"/"所在地"/"電話番号" を含む) はサイト共通連絡先のため除外する。
-        """
-        if self._rows_cache is not None:
-            return self._rows_cache
-
-        if self._html_cache is None:
-            self._html_cache = self._http_get(self.site_config.list_url)
-
-        soup = BeautifulSoup(self._html_cache, "html.parser")
-        rows: list[Tag] = []
-        for table in soup.select(self.ROW_SELECTOR):
-            if not isinstance(table, Tag):
-                continue
-            if self._is_contact_table(table):
-                continue
-            rows.append(table)
-
-        self._rows_cache = rows
-        return rows
+    # ─────────────────── MunicipalityAdapter 実装 ───────────────────
 
     def fetch_animal_list(self) -> list[tuple[str, str]]:
-        """一覧ページから動物の仮想 URL を返す
+        """一覧ページの「管理番号：…」リンクから詳細ページ URL を抽出する
 
-        基底 `SinglePageTableAdapter.fetch_animal_list` は行が 0 件のとき
-        `ParsingError` を投げるが、群馬県サイトでは
-        「現在、保管期間中の犬はおりません」のような告知ページが正常状態
-        として頻繁に発生する。empty state テキストを検出した場合は
-        空リストを返し、それ以外で行が見つからなかった場合のみ
-        ParsingError を伝播する。
+        リンクが 1 件も無い場合、「現在、保管期間中の犬はおりません」等の
+        0 件告知テキストがあれば正常な 0 件として空リストを返す。
+        どちらも無い場合のみ ParsingError (構造変化の疑い)。
         """
-        rows = self._load_rows()
-        if not rows:
-            if self._html_cache and _EMPTY_STATE_PATTERN.search(self._html_cache):
-                # 「現在、保管期間中の犬はおりません」等の正常な 0 件状態
-                return []
-            raise ParsingError(
-                "行要素が見つかりません",
-                selector=self.ROW_SELECTOR,
-                url=self.site_config.list_url,
-            )
+        if self._list_html_cache is None:
+            self._list_html_cache = self._http_get(self.site_config.list_url)
+        html = self._list_html_cache
+
+        soup = BeautifulSoup(html, "html.parser")
+        main = soup.select_one(self._MAIN_SELECTOR)
+        scope = main if isinstance(main, Tag) else soup
+
         category = self.site_config.category
-        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
+        results: list[tuple[str, str]] = []
+        seen: set[str] = set()
+        for a in scope.find_all("a"):
+            if not isinstance(a, Tag):
+                continue
+            href = a.get("href")
+            if not href or not isinstance(href, str):
+                continue
+            if not _DETAIL_LINK_TEXT_PATTERN.search(a.get_text(strip=True)):
+                continue
+            url = self._absolute_url(href, base=self.site_config.list_url)
+            if url not in seen:
+                seen.add(url)
+                results.append((url, category))
 
-    def extract_animal_details(
-        self, virtual_url: str, category: str = "sheltered"
-    ) -> RawAnimalData:
-        """1 個の `<table>` から RawAnimalData を構築する
+        if results:
+            return results
+        if _EMPTY_STATE_PATTERN.search(html):
+            # 「現在、保管期間中の犬はおりません」等の正常な 0 件状態
+            return []
+        raise ParsingError(
+            "動物詳細リンクが見つかりません (0 件告知も無し)",
+            selector=self._MAIN_SELECTOR,
+            url=self.site_config.list_url,
+        )
 
-        群馬県 CMS のテーブルは「項目名 / 値」が左右に並ぶ縦並び構造を
-        想定する。各 `<tr>` から最後のセルを値、それ以前のいずれかの
-        セルにラベルが含まれているものとして読み取る。
-        実装は京都府 / 佐賀県 adapter と同等の縦並び抽出。
+    def extract_animal_details(self, detail_url: str, category: str = "sheltered") -> RawAnimalData:
+        """詳細ページのラベル/値テーブル 1 つから RawAnimalData を構築する
 
-        合わせて、テーブル直前の `<h4>` 地域名が取得できれば location に
-        補完する (テーブル内に「保護場所」が明示されていない場合の
-        フォールバック)。
+        テーブルは <th>ラベル</th><td>値</td> の縦並び構造。
+        「首輪」「備考」等の自由記述ラベルは「ラベル：値」形式で
+        description に連結して個体識別情報として残す。
         """
-        rows = self._load_rows()
-        idx = self._parse_row_index(virtual_url)
-        if idx >= len(rows):
-            raise ParsingError(
-                f"row index {idx} out of range (total {len(rows)})",
-                url=virtual_url,
-            )
-        table = rows[idx]
-        trs = [tr for tr in table.find_all("tr") if isinstance(tr, Tag)]
+        if detail_url not in self._detail_html_cache:
+            self._detail_html_cache[detail_url] = self._http_get(detail_url)
+        html = self._detail_html_cache[detail_url]
 
-        # ラベル → RawAnimalData フィールド名のマッピング。
-        # 群馬県の実テンプレート (動物が居る時) は入手できていないため、
-        # 一般的な保護動物テーブルで想定される項目を網羅的にマップする。
-        label_to_field = {
-            "種類": "species",
-            "種別": "species",
-            "犬種": "species",
-            "猫種": "species",
-            "毛色": "color",
-            "毛の色": "color",
-            "色": "color",
-            "性別": "sex",
-            "体格": "size",
-            "大きさ": "size",
-            "体型": "size",
-            "年齢": "age",
-            "推定年齢": "age",
-            "推定": "age",
-            "保護日": "shelter_date",
-            "収容日": "shelter_date",
-            "保管日": "shelter_date",
-            "保護場所": "location",
-            "収容場所": "location",
-            "発見場所": "location",
-            "保管場所": "location",
-        }
+        soup = BeautifulSoup(html, "html.parser")
+        # 詳細ページの本文は複数の div.detail_free ブロックに分かれる
+        # (前置き / 写真+テーブル / 後置き)。全ブロックを走査対象にする。
+        blocks = [b for b in soup.select(self._MAIN_SELECTOR) if isinstance(b, Tag)]
+        scopes: list[Tag] = blocks or [soup]
 
         fields: dict[str, str] = {}
-        for tr in trs:
-            cells = [c for c in tr.find_all(["td", "th"]) if isinstance(c, Tag)]
-            if len(cells) < 2:
+        description_parts: list[str] = []
+        for tr in (tr for scope in scopes for tr in scope.find_all("tr")):
+            if not isinstance(tr, Tag):
                 continue
-            value_cell = cells[-1]
-            value_text = value_cell.get_text(separator=" ", strip=True)
-            value_text = re.sub(r"[ 　]+", " ", value_text).strip()
-            for label_cell in cells[:-1]:
-                label_text = label_cell.get_text(separator="", strip=True)
-                matched = False
-                for label, field in label_to_field.items():
-                    if field in fields:
-                        continue
-                    if label in label_text:
-                        fields[field] = value_text
-                        matched = True
-                        break
-                if matched:
-                    break
+            th = tr.find("th")
+            td = tr.find("td")
+            if not isinstance(th, Tag) or not isinstance(td, Tag):
+                continue
+            label = th.get_text(strip=True)
+            value = td.get_text(separator=" ", strip=True)
+            value = re.sub(r"[ 　]+", " ", value).strip()
+            if not value:
+                continue
+            field = self._LABEL_TO_FIELD.get(label)
+            if field and field not in fields:
+                fields[field] = value
+            elif label in self._DESCRIPTION_LABELS:
+                description_parts.append(f"{label}：{value}")
 
-        # location が空ならテーブル直前 (兄弟方向に遡る) の `<h4>` 地域名で補完
-        if not fields.get("location"):
-            region = self._find_preceding_region_label(table)
-            if region:
-                fields["location"] = region
+        if not fields:
+            raise ParsingError(
+                "詳細ページにラベル/値テーブルが見つかりません",
+                selector=self._MAIN_SELECTOR,
+                url=detail_url,
+            )
 
-        # species はサイト名 (犬/猫) を優先採用、テーブル値はフォールバック
+        # species はサイト名 (保護犬/保護猫) から推定。テーブルの「種類」は
+        # 「柴犬」等の品種情報なので breed に保持する (サイレントドロップ防止)。
         species = self._infer_species_from_site_name(self.site_config.name)
-        if not species:
-            species = fields.get("species", "")
 
         try:
             return RawAnimalData(
                 species=species,
+                breed=fields.get("breed", ""),
                 sex=fields.get("sex", ""),
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),
                 size=fields.get("size", ""),
-                shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
+                shelter_date=fields.get("shelter_date", ""),
                 location=fields.get("location", ""),
-                phone="",
-                image_urls=self._extract_row_images(table, virtual_url),
-                source_url=virtual_url,
+                phone=self._extract_office_phone(html),
+                image_urls=self._extract_detail_images(scopes, detail_url),
+                source_url=detail_url,
                 category=category,
+                description="　".join(description_parts),
+                management_number=fields.get("management_number", ""),
+                name="",
             )
         except Exception as e:
-            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
+            raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=detail_url) from e
+
+    def normalize(self, raw_data: RawAnimalData) -> AnimalData:
+        return self._default_normalize(raw_data)
 
     # ─────────────────── ヘルパー ───────────────────
 
-    @staticmethod
-    def _is_contact_table(table: Tag) -> bool:
-        """お問い合わせ先テーブルを除外するための判定
+    def _extract_detail_images(self, scopes: list[Tag], base_url: str) -> list[str]:
+        """詳細ページ本文から動物写真の絶対 URL を返す
 
-        - `<caption>` に「お問い合わせ」を含む
-        - `<thead>` の `<th>` に「電話番号」「所在地」「名称」が
-          並んでいる
-        のいずれかを満たすテーブルを連絡先テーブルと見なす。
+        群馬県 CMS では動物写真が `/uploaded/image/NNNNNN.JPG`、
+        バナー広告が `/uploaded/banner/...` に置かれる。banner 配下を
+        除外し、それ以外の img src を採用する。
         """
-        caption = table.find("caption")
-        if isinstance(caption, Tag):
-            caption_text = caption.get_text(strip=True)
-            if "お問い合わせ" in caption_text or "問合せ" in caption_text:
-                return True
-
-        thead = table.find("thead")
-        if isinstance(thead, Tag):
-            ths = [th.get_text(strip=True) for th in thead.find_all("th") if isinstance(th, Tag)]
-            joined = "".join(ths)
-            if "電話番号" in joined and ("所在地" in joined or "名称" in joined):
-                return True
-        return False
-
-    @staticmethod
-    def _find_preceding_region_label(table: Tag) -> str:
-        """テーブルの前に出現する直近の `<h4>` テキストを返す
-
-        群馬県の本文は「<h4>地域名（市町村...）</h4>」の後に動物データが
-        並ぶため、テーブルの兄弟を遡って最初に見つけた `<h4>` を地域名と見なす。
-        無ければ空文字を返す。
-        """
-        for sib in table.find_previous_siblings():
-            if not isinstance(sib, Tag):
+        urls: list[str] = []
+        for img in (img for scope in scopes for img in scope.find_all("img")):
+            if not isinstance(img, Tag):
                 continue
-            if sib.name == "h4":
-                return sib.get_text(strip=True)
-            # 別の動物 h2/h3 セクションに到達したら打ち切り
-            if sib.name in ("h2", "h3"):
-                break
+            src = img.get("src")
+            if not src or not isinstance(src, str):
+                continue
+            if "/uploaded/banner/" in src:
+                continue
+            urls.append(self._absolute_url(src, base=base_url))
+        return urls
+
+    def _extract_office_phone(self, html: str) -> str:
+        """詳細ページから担当事務所 (本所/東部出張所) の電話番号を抽出する
+
+        ページ下部の「東部出張所（…） Tel：0276-55-0731」を拾う。
+        見つからなければ空文字 (不明扱い)。
+        """
+        m = _OFFICE_TEL_PATTERN.search(html)
+        if m:
+            return self._normalize_phone(m.group(1))
         return ""
 
     @staticmethod
@@ -281,7 +249,7 @@ class PrefGunmaAdapter(SinglePageTableAdapter):
 
         - "保護犬" / "犬" を含む → "犬"
         - "保護猫" / "猫" を含む → "猫"
-        - それ以外 → "" (空文字、テーブル値にフォールバック)
+        - それ以外 → "" (空文字)
         """
         if "犬" in name:
             return "犬"
