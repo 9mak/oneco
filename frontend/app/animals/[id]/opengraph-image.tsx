@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import { getApiBaseUrl } from '@/lib/api-base-url';
 
 export const alt = 'oneco - 保護動物詳細';
 export const size = { width: 1200, height: 630 };
@@ -22,7 +23,7 @@ const CATEGORY_LABEL: Record<string, string> = {
 const FONT_FAMILY = 'Noto Sans JP';
 
 async function fetchAnimal(id: string): Promise<AnimalSummary | null> {
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+  const apiBaseUrl = getApiBaseUrl();
   try {
     const res = await fetch(`${apiBaseUrl}/animals/${id}`, {
       next: { revalidate: 600 },

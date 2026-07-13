@@ -1,9 +1,9 @@
 import type { MetadataRoute } from 'next';
 import { PREFECTURES } from '@/lib/prefectures';
 import { getSiteUrl } from '@/lib/site-url';
+import { getApiBaseUrl } from '@/lib/api-base-url';
 
 const SITE_URL = getSiteUrl();
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000';
 
 interface SitemapAnimal {
   id: number;
@@ -23,7 +23,7 @@ async function fetchAllSitemapAnimals(): Promise<SitemapAnimal[]> {
 
   try {
     while (true) {
-      const url = `${API_BASE_URL}/animals?limit=${PAGE_SIZE}&offset=${offset}&status=sheltered`;
+      const url = `${getApiBaseUrl()}/animals?limit=${PAGE_SIZE}&offset=${offset}&status=sheltered`;
       const res = await fetch(url, { next: { revalidate: 3600 } });
       if (!res.ok) break;
 
