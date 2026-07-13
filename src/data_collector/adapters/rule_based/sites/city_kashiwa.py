@@ -120,6 +120,13 @@ class CityKashiwaAdapter(SinglePageTableAdapter):
         r"(?:おりません|ありません|いません)"
     )
 
+    # 在庫 0 でカード自体が省略されるページ (2026-07 観測) の判定に使う。
+    # <h3>犬</h3> / <h3>猫</h3> の種別見出しが残っていればテンプレートは
+    # 生きている (= 構造変化ではなく空在庫) と見なす。
+    _SPECIES_HEADING_PATTERN: ClassVar[re.Pattern[str]] = re.compile(
+        r"<h3[^>]*>\s*(?:犬|猫)\s*</h3>"
+    )
+
     # ── 自由テキスト形式 (B / satoya.html) 用 ──
     # 性別マーカー。「オス(去勢手術済み)」「メス(不妊手術済み)」等の自由文から拾う。
     _SEX_RE: ClassVar[re.Pattern[str]] = re.compile(r"(オス|メス)")
@@ -155,6 +162,16 @@ class CityKashiwaAdapter(SinglePageTableAdapter):
         valid = [r for r in raw_rows if self._has_labeled_field(r) or self._has_following_attr(r)]
         self._rows_cache = valid
         return valid
+
+    @classmethod
+    def _is_cardless_inventory(cls, html: str) -> bool:
+        """在庫 0 でカードが丸ごと省略されたページかを判定する
+
+        テンプレートの種別見出し (<h3>犬</h3>/<h3>猫</h3>) が残っており、
+        かつカード要素 (col2_sp2_wrap) が 1 つも無ければ、構造変化ではなく
+        「掲載動物なし」の正常状態と見なす。
+        """
+        return "col2_sp2_wrap" not in html and bool(cls._SPECIES_HEADING_PATTERN.search(html))
 
     @classmethod
     def _has_labeled_field(cls, card: Tag) -> bool:
@@ -210,14 +227,24 @@ class CityKashiwaAdapter(SinglePageTableAdapter):
         """一覧ページから動物の仮想 URL を返す
 
         基底実装は行が 0 件のとき `ParsingError` を投げるが、柏市の
-        テンプレートでは「現在、保護動物はおりません」等の告知ページが
-        正常状態として発生し得る。empty state テキストを検出した場合は
-        空リストを返し、それ以外で行が見つからなかった場合のみ
-        `ParsingError` を伝播する。
+        テンプレートでは 0 件が正常状態として発生し得る:
+
+        - 「現在、保護動物はおりません」等の告知テキストがあるページ
+        - 告知すら無く、<h3>犬</h3>/<h3>猫</h3> の種別見出しだけ残して
+          カードが丸ごと省略されるページ (2026-07 観測。旧実装はこれを
+          ParsingError にして連続失敗 → broken 扱いになっていた)
+
+        いずれかを検出した場合は空リストを返し、それ以外で行が
+        見つからなかった場合のみ `ParsingError` を伝播する。
+        カード構造の変化で偽の 0 件になるリスクは、収集側の件数低下検知
+        (前回 N 件 → 今回 0 件の warning) で補足する運用。
         """
         rows = self._load_rows()
         if not rows:
-            if self._html_cache and self._EMPTY_STATE_PATTERN.search(self._html_cache):
+            if self._html_cache and (
+                self._EMPTY_STATE_PATTERN.search(self._html_cache)
+                or self._is_cardless_inventory(self._html_cache)
+            ):
                 return []
             raise ParsingError(
                 "行要素が見つかりません",

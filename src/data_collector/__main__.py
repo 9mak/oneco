@@ -4,6 +4,7 @@ import asyncio
 import contextlib
 import logging
 import os
+import re
 import signal
 import subprocess
 import sys
@@ -497,6 +498,27 @@ def run_rule_based_sites(
 
 # 全体失敗率がこの値を超えると CRITICAL、超えないが critical_sites>0 なら WARNING
 _RUN_FAIL_RATIO_CRITICAL = 0.2
+
+# LLM コード修正では直せない失敗原因のパターン。
+# ネットワーク断・HTTP エラー (403/404/5xx)・タイムアウトは adapter コードを
+# いくらパッチしても直らないため、auto-fix の候補から除外する。
+# (2026-07: 山梨県のネットワーク断続エラーが日次 MAX_SITES=3 枠を 2 週間
+#  占有し、本当に構造が壊れていた柏市・群馬に修理が回らなかった反省)
+_NON_CODE_FIXABLE_ERROR_PATTERN = re.compile(
+    r"ネットワークエラー|HTTP エラー|timed out|ConnectTimeoutError|NewConnectionError|Connection refused"
+)
+
+
+def _is_llm_fixable_error(error_message: str | None) -> bool:
+    """broken_tracker の失敗原因が LLM コード修正で直せる種類かを返す。
+
+    ParsingError (「行要素が見つかりません」等) や件数低下異常は DOM 構造
+    変化の可能性が高く auto-fix の本来の対象。ネットワーク/HTTP/timeout は
+    対象外。分類不能 (空文字/None) は安全側で True (= 従来通り候補に含める)。
+    """
+    if not error_message:
+        return True
+    return not _NON_CODE_FIXABLE_ERROR_PATTERN.search(error_message)
 
 
 def _trigger_auto_fix(site_names: list[str], logger: logging.Logger) -> dict[str, Any]:
@@ -999,9 +1021,19 @@ def main():
                 try:
                     candidate_sites: list[str] = []
                     try:
-                        candidate_sites.extend(
-                            broken_tracker.critical_sites(threshold=BROKEN_SITE_SKIP_THRESHOLD)
-                        )
+                        crit = broken_tracker.critical_sites(threshold=BROKEN_SITE_SKIP_THRESHOLD)
+                        # ネットワーク/HTTP/timeout 起因はコード修正で直らないため
+                        # auto-fix 候補から除外 (MAX_SITES 枠と LLM コストの浪費防止)
+                        fixable = [
+                            s for s in crit if _is_llm_fixable_error(broken_tracker.last_error(s))
+                        ]
+                        excluded = [s for s in crit if s not in fixable]
+                        if excluded:
+                            logger.info(
+                                f"auto-fix-adapter: ネットワーク/HTTP 起因の {len(excluded)} 件を"
+                                f"候補から除外: {excluded}"
+                            )
+                        candidate_sites.extend(fixable)
                     except Exception as e:
                         logger.warning(f"critical_sites 取得失敗: {e}")
                     candidate_sites.extend(r.site_name for r in zero_regressions)
