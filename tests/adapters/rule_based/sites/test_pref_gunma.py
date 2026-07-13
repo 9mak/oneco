@@ -72,6 +72,27 @@ class TestFetchAnimalList:
 
         assert result == [(_DETAIL_URL, "sheltered")]
 
+    def test_ignores_non_detail_links(self, fixture_html):
+        """「管理番号」を含むだけの案内リンクや、詳細ページ形式でない href は拾わない
+
+        Codex レビュー指摘 (2026-07-14): テキストの「管理番号」出現だけで
+        採用すると「管理番号について」のような案内リンクを誤抽出する。
+        href は /page/<数字>.html 形式、テキストは「管理番号：」形式の
+        両方を満たすリンクのみ詳細ページとして扱う。
+        """
+        html = fixture_html("pref_gunma_list_tobu").replace(
+            "<h3>収容情報</h3>",
+            "<h3>収容情報</h3>"
+            '<p><a href="/page/999999.html">管理番号について</a></p>'
+            '<p><a href="/soshiki/aigo/">管理番号：制度の説明</a></p>',
+        )
+        adapter = PrefGunmaAdapter(_site())
+
+        with patch.object(adapter, "_http_get", return_value=html):
+            result = adapter.fetch_animal_list()
+
+        assert result == [(_DETAIL_URL, "sheltered")]
+
     def test_returns_empty_for_no_animals_page(self, fixture_html):
         """「現在、保管期間中の負傷猫はいません」告知ページでは空リストが返る"""
         adapter = PrefGunmaAdapter(
@@ -180,6 +201,31 @@ class TestExtractAnimalDetails:
         assert animal.description and "赤色" in animal.description
         assert str(animal.shelter_date) == "2026-07-08"
         assert len(animal.image_urls) == 2
+
+
+class TestExtractOfficePhone:
+    """担当事務所の電話番号抽出 — 表記揺れ耐性 (Codex レビュー指摘 2026-07-14)"""
+
+    def test_tel_variants(self):
+        adapter = PrefGunmaAdapter(_site())
+        for html in (
+            "<span>東部出張所 Tel：0276-55-0731</span>",
+            "<span>東部出張所 TEL: 0276-55-0731</span>",
+            "<span>東部出張所 Tel. 0276-55-0731</span>",
+            "<span>東部出張所 電話：0276-55-0731</span>",
+            "<span>東部出張所 電話番号：0276-55-0731</span>",
+        ):
+            assert adapter._extract_office_phone(html) == "0276-55-0731", html
+
+    def test_does_not_pick_prefecture_switchboard(self):
+        """県庁代表 (「電話番号(代表): 027-223-1111」) は拾わない"""
+        adapter = PrefGunmaAdapter(_site())
+        html = "<p>電話番号(代表): 027-223-1111</p>"
+        assert adapter._extract_office_phone(html) == ""
+
+    def test_returns_empty_when_absent(self):
+        adapter = PrefGunmaAdapter(_site())
+        assert adapter._extract_office_phone("<p>連絡先なし</p>") == ""
 
 
 class TestHelpers:

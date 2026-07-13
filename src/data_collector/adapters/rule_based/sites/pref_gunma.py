@@ -44,13 +44,19 @@ _EMPTY_STATE_PATTERN = re.compile(
     r"(?:おりません|ありません|いません)"
 )
 
-# 一覧ページの動物詳細リンクのテキスト (例: "管理番号：26-049（館林市岡野町）")
-_DETAIL_LINK_TEXT_PATTERN = re.compile(r"管理番号")
+# 一覧ページの動物詳細リンク。テキストの「管理番号」出現だけで採用すると
+# 「管理番号について」のような案内リンクを誤抽出するため、
+# テキストは「管理番号：」形式、href は /page/<数字>.html 形式の両方を要求する。
+_DETAIL_LINK_TEXT_PATTERN = re.compile(r"管理番号\s*[：:]")
+_DETAIL_LINK_HREF_PATTERN = re.compile(r"/page/\d+\.html$")
 
 # 詳細ページの「東部出張所（…） Tel：0276-55-0731」から担当事務所の電話番号を
-# 拾う。県庁代表 (「電話番号(代表): 027-223-1111」) を誤って拾わないよう
-# "Tel" 表記に限定する。
-_OFFICE_TEL_PATTERN = re.compile(r"Tel[：:]\s*(0\d[\d\-]{8,11})")
+# 拾う。Tel/TEL/電話/電話番号 の表記揺れを許容する。
+# 県庁代表は「電話番号(代表): 027-223-1111」の形式で、ラベル直後が "(" のため
+# このパターンにはマッチしない (誤抽出防止はテストで担保)。
+_OFFICE_TEL_PATTERN = re.compile(
+    r"(?:TEL|Tel|電話(?:番号)?)\s*[：:.．]?\s*(0\d{1,4}-\d{1,4}-\d{3,4})"
+)
 
 
 class PrefGunmaAdapter(RuleBasedAdapter):
@@ -122,6 +128,8 @@ class PrefGunmaAdapter(RuleBasedAdapter):
             if not href or not isinstance(href, str):
                 continue
             if not _DETAIL_LINK_TEXT_PATTERN.search(a.get_text(strip=True)):
+                continue
+            if not _DETAIL_LINK_HREF_PATTERN.search(href.split("?")[0].split("#")[0]):
                 continue
             url = self._absolute_url(href, base=self.site_config.list_url)
             if url not in seen:
