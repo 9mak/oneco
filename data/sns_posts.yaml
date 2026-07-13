@@ -146,3 +146,10 @@ posts:
 
     https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html?utm_source=threads#row=17'
   dry_run: false
+- url: https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html#row=38
+  platform: threads
+  text: '山梨県甲斐市竜王新町で保護されたアメリカンショートヘアの猫（女の子）が里親募集中です。詳細・問い合わせは自治体公式へ
+
+    https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html?utm_source=threads#row=38
+    #保護猫 #里親募集 #山梨県'
+  dry_run: false
