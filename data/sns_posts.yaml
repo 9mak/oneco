@@ -153,3 +153,9 @@ posts:
     https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html?utm_source=threads#row=38
     #保護猫 #里親募集 #山梨県'
   dry_run: false
+- url: https://www.kumamoto-doubutuaigo.jp/animals/detail/4799
+  platform: threads
+  text: '熊本県宇城市松橋町東松崎にいる猫の情報です。管理番号はDC00734です。種別は猫で、性別は男の子です。里親を探しています。詳細・問い合わせは自治体公式へ
+    https://www.kumamoto-doubutuaigo.jp/animals/detail/4799?utm_source=threads #保護猫
+    #里親募集 #熊本県'
+  dry_run: false
