@@ -164,3 +164,11 @@ posts:
   text: '山梨県昭和町西条で保護された猫が里親募集中です。種別は猫、性別は女の子、品種は雑です。詳細・問い合わせは自治体公式へ https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html?utm_source=threads#row=35
     #保護猫 #里親募集 #山梨県'
   dry_run: false
+- url: https://douai-tokushima.com/animalinfo/list1/#row=4
+  platform: threads
+  text: '徳島県動物愛護管理センターにいる、女の子の雑種猫を紹介します。詳細な情報や里親募集については、以下の公式サイトをご覧ください。
+
+    #保護猫 #里親募集 #徳島県
+
+    詳細・問い合わせは自治体公式へ: https://douai-tokushima.com/animalinfo/list1/?utm_source=threads#row=4'
+  dry_run: false
