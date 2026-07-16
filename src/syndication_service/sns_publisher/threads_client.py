@@ -38,6 +38,28 @@ def _redact_token(message: str) -> str:
     return _TOKEN_QUERY_RE.sub(r"\1<redacted>", message)
 
 
+_RESPONSE_BODY_MAX_LEN = 500
+
+
+def _response_body_snippet(response: requests.Response | None) -> str:
+    """HTTPError.response からエラーボディを抽出する (400 vs 500 の原因切り分け用)。
+
+    Meta Graph API のエラーレスポンスは `{"error": {"message": ..., "code": ...}}`
+    形式で原因 (レート制限/パラメータ不正/一時障害等) を含む。従来は
+    requests.HTTPError の str() (ステータスコードのみ) しかログに残らず、
+    400 と 500 を同じ扱いでしか観測できなかった (2026-07-16 間欠失敗の調査難航)。
+    """
+    if response is None:
+        return ""
+    try:
+        text = response.text
+    except Exception:
+        return ""
+    if not text:
+        return ""
+    return f" body={_redact_token(text[:_RESPONSE_BODY_MAX_LEN])}"
+
+
 class ThreadsPostError(Exception):
     """Threads 投稿の上流エラー (HTTP / レスポンス形式)"""
 
@@ -115,8 +137,9 @@ class ThreadsClient:
                 resp = self._session.get(url, params=params, timeout=self._timeout)
                 resp.raise_for_status()
             except requests.RequestException as exc:
+                body = _response_body_snippet(getattr(exc, "response", None))
                 raise ThreadsPostError(
-                    f"container status check failed: {_redact_token(str(exc))}"
+                    f"container status check failed: {_redact_token(str(exc))}{body}"
                 ) from exc
 
             try:
@@ -148,7 +171,10 @@ class ThreadsClient:
             resp = self._session.post(url, params=params, timeout=self._timeout)
             resp.raise_for_status()
         except requests.RequestException as exc:
-            raise ThreadsPostError(f"container creation failed: {_redact_token(str(exc))}") from exc
+            body = _response_body_snippet(getattr(exc, "response", None))
+            raise ThreadsPostError(
+                f"container creation failed: {_redact_token(str(exc))}{body}"
+            ) from exc
 
         try:
             data = resp.json()
@@ -170,7 +196,8 @@ class ThreadsClient:
             resp = self._session.post(url, params=params, timeout=self._timeout)
             resp.raise_for_status()
         except requests.RequestException as exc:
-            raise ThreadsPostError(f"publish failed: {_redact_token(str(exc))}") from exc
+            body = _response_body_snippet(getattr(exc, "response", None))
+            raise ThreadsPostError(f"publish failed: {_redact_token(str(exc))}{body}") from exc
 
         try:
             data = resp.json()
