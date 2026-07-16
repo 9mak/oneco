@@ -35,7 +35,11 @@ def _mock_response(json_data: dict, status: int = 200) -> MagicMock:
     if status >= 400:
         from requests.exceptions import HTTPError
 
-        resp.raise_for_status.side_effect = HTTPError(f"{status} error")
+        error = HTTPError(f"{status} error")
+        # 実 requests は raise_for_status() 時に HTTPError.response を自分自身にする。
+        # これを再現しないと exc.response からのボディ抽出をテストできない。
+        error.response = resp
+        resp.raise_for_status.side_effect = error
     return resp
 
 
@@ -260,6 +264,64 @@ class TestRedactToken:
             client.post("hi")
         assert _TOKEN not in str(exc.value)
         assert "<redacted>" in str(exc.value)
+
+
+class TestErrorResponseBody:
+    """400/500 時、Meta API のエラーレスポンスボディをログに残す。
+
+    従来は requests.HTTPError の str() (ステータスコードのみ) しか
+    ThreadsPostError に載らず、400 (パラメータ不正) と 500 (Meta 側一時障害)
+    の区別がつかなかった (2026-07-16 間欠失敗の原因切り分けができず調査難航)。
+    """
+
+    def test_publish_http_error_includes_response_body(self):
+        session = _mock_session(
+            [
+                _mock_response({"id": "c1"}),
+                _mock_response(
+                    {"error": {"message": "rate limit exceeded", "code": 4}}, status=429
+                ),
+            ]
+        )
+        client = _client(session)
+        with pytest.raises(ThreadsPostError) as exc:
+            client.post("hi")
+        assert "rate limit exceeded" in str(exc.value)
+
+    def test_container_creation_http_error_includes_response_body(self):
+        session = _mock_session(
+            [_mock_response({"error": {"message": "invalid parameter", "code": 100}}, status=400)]
+        )
+        client = _client(session)
+        with pytest.raises(ThreadsPostError) as exc:
+            client.post("hi")
+        assert "invalid parameter" in str(exc.value)
+
+    def test_status_check_http_error_includes_response_body(self):
+        session = _mock_session([_mock_response({"id": "c1"})])
+        session.get.return_value = _mock_response(
+            {"error": {"message": "container not found"}}, status=400
+        )
+        client = _client(session, sleep=MagicMock())
+        with pytest.raises(ThreadsPostError) as exc:
+            client.post("hi")
+        assert "container not found" in str(exc.value)
+
+    def test_response_body_is_token_redacted(self):
+        """レスポンスボディに token が混入していても伏字化される (防御的)"""
+        session = _mock_session(
+            [
+                _mock_response({"id": "c1"}),
+                _mock_response(
+                    {"error": f"echo access_token={_TOKEN} back"},
+                    status=400,
+                ),
+            ]
+        )
+        client = _client(session)
+        with pytest.raises(ThreadsPostError) as exc:
+            client.post("hi")
+        assert _TOKEN not in str(exc.value)
 
 
 class TestContainerPolling:
