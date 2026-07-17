@@ -172,3 +172,16 @@ posts:
 
     詳細・問い合わせは自治体公式へ: https://douai-tokushima.com/animalinfo/list1/?utm_source=threads#row=4'
   dry_run: false
+- url: https://www.yokosuka-doubutu.com/adopted-animals/26-16/
+  platform: threads
+  text: '神奈川県横須賀市動物愛護センターで保護犬の里親を募集しています。
+
+    種別: 犬
+
+    性別: 女の子
+
+    詳細・問い合わせは自治体公式へ
+
+    https://www.yokosuka-doubutu.com/adopted-animals/26-16/?utm_source=threads #保護犬
+    #里親募集 #神奈川県'
+  dry_run: false
