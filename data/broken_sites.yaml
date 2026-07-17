@@ -62,12 +62,12 @@
     (connect timeout=30)''))'
   last_failed_at: '2026-07-16T16:35:38+00:00'
 山梨県（保護されている猫）:
-  consecutive_failures: 3
+  consecutive_failures: 4
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''www.pref.yamanashi.jp'', port=443):
     Max retries exceeded with url: /doubutsu/p_cat/index.html (Caused by ConnectTimeoutError(<HTTPSConnection(host=''www.pref.yamanashi.jp'',
-    port=443) at 0x7f76bcfc0150>, ''Connection to www.pref.yamanashi.jp timed out.
+    port=443) at 0x7ff362e4cc50>, ''Connection to www.pref.yamanashi.jp timed out.
     (connect timeout=30)''))'
-  last_failed_at: '2026-07-09T17:37:33+00:00'
+  last_failed_at: '2026-07-17T16:27:09+00:00'
 山梨県（探している他のペット）:
   consecutive_failures: 3
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''www.pref.yamanashi.jp'', port=443):
@@ -116,7 +116,7 @@
   last_error: '件数低下異常: 前回 8 件 → 今回 0 件 (adapter 破損 or サイト構造変更の可能性)'
   last_failed_at: '2026-05-27T04:06:08+00:00'
 長崎犬猫ネット（譲渡）:
-  consecutive_failures: 2
+  consecutive_failures: 0
   last_error: 'timeout: site 長崎犬猫ネット（譲渡） timed out after 120.0s'
   last_failed_at: '2026-07-16T16:24:15+00:00'
 青森県動物愛護センター（収容情報）:
