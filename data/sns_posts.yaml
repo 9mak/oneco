@@ -185,3 +185,10 @@ posts:
     https://www.yokosuka-doubutu.com/adopted-animals/26-16/?utm_source=threads #保護犬
     #里親募集 #神奈川県'
   dry_run: false
+- url: https://oita-aigo.com/information_catlist/anytimecat/#row=0
+  platform: threads
+  text: '大分県のおおいた動物愛護センターで、里親を探している猫がいます。種別は猫、性別は女の子で、仮名はぐりこです。詳細・問い合わせは自治体公式へ #保護猫
+    #里親募集 #大分県
+
+    https://oita-aigo.com/information_catlist/anytimecat/?utm_source=threads#row=0'
+  dry_run: false
