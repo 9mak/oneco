@@ -192,3 +192,19 @@ posts:
 
     https://oita-aigo.com/information_catlist/anytimecat/?utm_source=threads#row=0'
   dry_run: false
+- url: https://www.city.matsuyama.ehime.jp/kurashi/kurashi/aigo/index.html#row=6
+  platform: threads
+  text: '愛媛県で犬の保護が行われています。犬の情報は以下の通りです。
+
+    管理番号: R7No.310
+
+    都道府県: 愛媛県
+
+    新しい飼い主募集中です。
+
+    #保護犬 #里親募集 #愛媛県
+
+    詳細・問い合わせは自治体公式へ
+
+    https://www.city.matsuyama.ehime.jp/kurashi/kurashi/aigo/index.html?utm_source=threads#row=6'
+  dry_run: false
