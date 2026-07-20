@@ -208,3 +208,12 @@ posts:
 
     https://www.city.matsuyama.ehime.jp/kurashi/kurashi/aigo/index.html?utm_source=threads#row=6'
   dry_run: false
+- url: https://www.zaidan-fukuoka-douai.or.jp/animals/group-detail/4400e65b-3925-4301-9ec1-b6077fdacb89
+  platform: threads
+  text: '福岡県動物愛護センターで里親募集中の犬を紹介します。種別は犬、性別は男の子です。詳細な情報や里親になる手続きについては、以下の公式サイトをご覧ください。
+
+
+    #保護犬 #里親募集 #福岡県
+
+    https://www.zaidan-fukuoka-douai.or.jp/animals/group-detail/4400e65b-3925-4301-9ec1-b6077fdacb89?utm_source=threads'
+  dry_run: false
