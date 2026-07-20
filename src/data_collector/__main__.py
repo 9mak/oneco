@@ -19,7 +19,6 @@ try:
 except ImportError:
     pass
 
-from .adapters.kochi_adapter import KochiAdapter
 from .adapters.rule_based import (
     sites as _rule_based_sites,  # noqa: F401  全 adapter を Registry に登録
 )
@@ -750,7 +749,6 @@ def main():
 
     Usage:
         python -m data_collector
-        python -m data_collector --llm-only     # LLMサイトのみ
         python -m data_collector --kochi-only    # 高知県のみ
 
     Exit codes:
@@ -767,7 +765,6 @@ def main():
 
     # コマンドライン引数
     args = sys.argv[1:]
-    llm_only = "--llm-only" in args
     kochi_only = "--kochi-only" in args
 
     try:
@@ -794,283 +791,260 @@ def main():
 
         success = True
 
-        # === 高知県（ルールベース） ===
-        if not llm_only:
-            logger.info("=== 高知県（ルールベース）収集開始 ===")
-            adapter = KochiAdapter()
-            service = CollectorService(
-                adapter=adapter,
+        # === sites.yaml に基づく実行 (rule-based + LLM 混在) ===
+        config_path = Path(__file__).parent / "config" / "sites.yaml"
+        if config_path.exists():
+            config = SiteConfigLoader.load(config_path)
+            if kochi_only:
+                config.sites = [s for s in config.sites if s.name == "高知県動物愛護センター"]
+                logger.info("--kochi-only: 高知県動物愛護センターのみに絞り込み")
+            logger.info(
+                f"サイト設定読込: {len(config.sites)}サイト "
+                f"(default_provider={config.extraction.default_provider}, "
+                f"default_extraction={config.extraction.default_extraction})"
+            )
+
+            # 前回スナップショットから各サイトの件数を集計する。
+            # 「前回 ≥ 1 件 → 今回 0 件」のサイトを件数低下として監視ログに
+            # 記録するために使う (Task #9, 誤検知削減で改訂)。
+            site_list_urls = {s.name: s.list_url for s in config.sites}
+            previous_site_counts = snapshot_store.load_counts_by_site_url_prefix(site_list_urls)
+            drop_watch_eligible = [n for n, c in previous_site_counts.items() if c >= 1]
+            logger.info(
+                f"前回スナップショット: {sum(previous_site_counts.values())} 件, "
+                f"件数低下監視対象 {len(drop_watch_eligible)} サイト"
+            )
+
+            # 前回件数の計算が終わったら snapshot / output をリセット。
+            # CollectorService が **サイトごと** に save_snapshot / write_output を
+            # 呼ぶ仕様のため、両ファイルは merge モードで累積される。run の境界を
+            # クリアにするため、ここで一度だけ削除して fresh state からスタート。
+            # これを忘れると過去 run のデータが残り続ける。
+            #
+            # 注意: この reset() は cross-run の snapshot 再利用 (既知 source_url の
+            # LLM 抽出スキップ) も意図的に無効化している。load_animal_map() は
+            # reset 後に空 dict を返すため、再利用分岐は常に毎 run 再抽出になる
+            # (rule-based 100% 運用では影響は小さい)。**reset() を消して再利用を
+            # 「最適化」しないこと**: ヒットした個体が source_url 消滅まで再抽出
+            # されず古い情報で凍結する方が、僅かな Groq コストより有害。
+            snapshot_store.reset()
+            output_writer.reset()
+            logger.info("snapshot / output をリセット (fresh run 開始)")
+
+            # rule-based サイト群 (Registry 登録済み adapter を使用)
+            # BROKEN_SITES_PATH env でパス差し替え可能（テスト分離のため）。
+            broken_tracker_path = Path(
+                os.environ.get("BROKEN_SITES_PATH", "data/broken_sites.yaml")
+            )
+            broken_tracker = BrokenSitesTracker(broken_tracker_path)
+            rule_succeeded, rule_failed, rule_zero, rule_succeeded_names = run_rule_based_sites(
+                config=config,
+                snapshot_store=snapshot_store,
                 diff_detector=diff_detector,
                 output_writer=output_writer,
                 notification_client=notification_client,
-                snapshot_store=snapshot_store,
                 db_connection=db_connection,
+                logger=logger,
+                broken_tracker=broken_tracker,
+                previous_site_counts=previous_site_counts,
             )
-            result = service.run_collection()
 
-            if result.success:
-                logger.info(
-                    f"高知県収集完了: {result.total_collected}件, "
-                    f"新規{result.new_count}, 更新{result.updated_count}"
+            # LLM サイト群（rule-based 化されてないサイト）
+            llm_succeeded, llm_failed, llm_zero, llm_succeeded_names = run_llm_sites(
+                config=config,
+                snapshot_store=snapshot_store,
+                diff_detector=diff_detector,
+                output_writer=output_writer,
+                notification_client=notification_client,
+                db_connection=db_connection,
+                logger=logger,
+                broken_tracker=broken_tracker,
+            )
+
+            total_succeeded = rule_succeeded + llm_succeeded
+            total_failed = rule_failed + llm_failed
+            zero_count_sites = rule_zero + llm_zero
+            succeeded_site_names = rule_succeeded_names + llm_succeeded_names
+            logger.info(
+                f"収集サマリ: 成功 {total_succeeded}サイト "
+                f"(うち 0 件 {len(zero_count_sites)}サイト), "
+                f"失敗 {total_failed}サイト "
+                f"(rule-based: {rule_succeeded}/{rule_succeeded + rule_failed}, "
+                f"LLM: {llm_succeeded}/{llm_succeeded + llm_failed})"
+            )
+            if zero_count_sites:
+                logger.warning(
+                    f"抽出 0 件のサイト {len(zero_count_sites)}件: "
+                    + ", ".join(zero_count_sites[:20])
+                    + ("..." if len(zero_count_sites) > 20 else "")
                 )
-            else:
-                logger.error(f"高知県収集失敗: {', '.join(result.errors)}")
+
+            # 部分失敗は exit 0 で許容（commit & push を進めるため）。
+            # 全件失敗（成功 0 かつ失敗 > 0）の場合のみ pipeline failure 扱い。
+            if total_succeeded == 0 and total_failed > 0:
+                logger.error("全サイトで収集に失敗しました")
                 success = False
 
-        # === sites.yaml に基づく実行 (rule-based + LLM 混在) ===
-        if not kochi_only:
-            config_path = Path(__file__).parent / "config" / "sites.yaml"
-            if config_path.exists():
-                config = SiteConfigLoader.load(config_path)
-                logger.info(
-                    f"サイト設定読込: {len(config.sites)}サイト "
-                    f"(default_provider={config.extraction.default_provider}, "
-                    f"default_extraction={config.extraction.default_extraction})"
-                )
-
-                # 前回スナップショットから各サイトの件数を集計する。
-                # 「前回 ≥ 1 件 → 今回 0 件」のサイトを件数低下として監視ログに
-                # 記録するために使う (Task #9, 誤検知削減で改訂)。
-                site_list_urls = {s.name: s.list_url for s in config.sites}
-                previous_site_counts = snapshot_store.load_counts_by_site_url_prefix(site_list_urls)
-                drop_watch_eligible = [n for n, c in previous_site_counts.items() if c >= 1]
-                logger.info(
-                    f"前回スナップショット: {sum(previous_site_counts.values())} 件, "
-                    f"件数低下監視対象 {len(drop_watch_eligible)} サイト"
-                )
-
-                # 前回件数の計算が終わったら snapshot / output をリセット。
-                # CollectorService が **サイトごと** に save_snapshot / write_output を
-                # 呼ぶ仕様のため、両ファイルは merge モードで累積される。run の境界を
-                # クリアにするため、ここで一度だけ削除して fresh state からスタート。
-                # これを忘れると過去 run のデータが残り続ける。
-                #
-                # 注意: この reset() は cross-run の snapshot 再利用 (既知 source_url の
-                # LLM 抽出スキップ) も意図的に無効化している。load_animal_map() は
-                # reset 後に空 dict を返すため、再利用分岐は常に毎 run 再抽出になる
-                # (rule-based 100% 運用では影響は小さい)。**reset() を消して再利用を
-                # 「最適化」しないこと**: ヒットした個体が source_url 消滅まで再抽出
-                # されず古い情報で凍結する方が、僅かな Groq コストより有害。
-                snapshot_store.reset()
-                output_writer.reset()
-                logger.info("snapshot / output をリセット (fresh run 開始)")
-
-                # rule-based サイト群 (Registry 登録済み adapter を使用)
-                # BROKEN_SITES_PATH env でパス差し替え可能（テスト分離のため）。
-                broken_tracker_path = Path(
-                    os.environ.get("BROKEN_SITES_PATH", "data/broken_sites.yaml")
-                )
-                broken_tracker = BrokenSitesTracker(broken_tracker_path)
-                rule_succeeded, rule_failed, rule_zero, rule_succeeded_names = run_rule_based_sites(
-                    config=config,
-                    snapshot_store=snapshot_store,
-                    diff_detector=diff_detector,
-                    output_writer=output_writer,
-                    notification_client=notification_client,
-                    db_connection=db_connection,
-                    logger=logger,
-                    broken_tracker=broken_tracker,
-                    previous_site_counts=previous_site_counts,
-                )
-
-                # LLM サイト群（rule-based 化されてないサイト）
-                llm_succeeded, llm_failed, llm_zero, llm_succeeded_names = run_llm_sites(
-                    config=config,
-                    snapshot_store=snapshot_store,
-                    diff_detector=diff_detector,
-                    output_writer=output_writer,
-                    notification_client=notification_client,
-                    db_connection=db_connection,
-                    logger=logger,
-                    broken_tracker=broken_tracker,
-                )
-
-                total_succeeded = rule_succeeded + llm_succeeded
-                total_failed = rule_failed + llm_failed
-                zero_count_sites = rule_zero + llm_zero
-                succeeded_site_names = rule_succeeded_names + llm_succeeded_names
-                logger.info(
-                    f"収集サマリ: 成功 {total_succeeded}サイト "
-                    f"(うち 0 件 {len(zero_count_sites)}サイト), "
-                    f"失敗 {total_failed}サイト "
-                    f"(rule-based: {rule_succeeded}/{rule_succeeded + rule_failed}, "
-                    f"LLM: {llm_succeeded}/{llm_succeeded + llm_failed})"
-                )
-                if zero_count_sites:
-                    logger.warning(
-                        f"抽出 0 件のサイト {len(zero_count_sites)}件: "
-                        + ", ".join(zero_count_sites[:20])
-                        + ("..." if len(zero_count_sites) > 20 else "")
+            # 失敗率・0件率の閾値ゲート (Codex リリースレビュー I-3)。
+            # サイレントな大規模劣化を検知するため、環境変数で閾値を制御。
+            # デフォルト 1.0 (=100%) は現状の挙動を維持（=全件失敗時のみ失敗扱い）。
+            # リリース後は ONECO_MAX_FAIL_RATIO=0.3、ONECO_MAX_ZERO_RATIO=0.5 等に
+            # 絞って急性的劣化を検知できる。
+            total_sites = total_succeeded + total_failed
+            if total_sites > 0:
+                fail_ratio = total_failed / total_sites
+                zero_ratio = len(zero_count_sites) / total_sites
+                max_fail_ratio = float(os.environ.get("ONECO_MAX_FAIL_RATIO", "1.0"))
+                max_zero_ratio = float(os.environ.get("ONECO_MAX_ZERO_RATIO", "1.0"))
+                if fail_ratio > max_fail_ratio:
+                    logger.error(
+                        f"失敗率 {fail_ratio:.2%} が閾値 {max_fail_ratio:.2%} を超過 "
+                        f"({total_failed}/{total_sites} サイト失敗)"
                     )
-
-                # 部分失敗は exit 0 で許容（commit & push を進めるため）。
-                # 全件失敗（成功 0 かつ失敗 > 0）の場合のみ pipeline failure 扱い。
-                if total_succeeded == 0 and total_failed > 0:
-                    logger.error("全サイトで収集に失敗しました")
+                    success = False
+                if zero_ratio > max_zero_ratio:
+                    logger.error(
+                        f"0件サイト率 {zero_ratio:.2%} が閾値 {max_zero_ratio:.2%} を超過 "
+                        f"({len(zero_count_sites)}/{total_sites} サイト)"
+                    )
                     success = False
 
-                # 失敗率・0件率の閾値ゲート (Codex リリースレビュー I-3)。
-                # サイレントな大規模劣化を検知するため、環境変数で閾値を制御。
-                # デフォルト 1.0 (=100%) は現状の挙動を維持（=全件失敗時のみ失敗扱い）。
-                # リリース後は ONECO_MAX_FAIL_RATIO=0.3、ONECO_MAX_ZERO_RATIO=0.5 等に
-                # 絞って急性的劣化を検知できる。
-                total_sites = total_succeeded + total_failed
-                if total_sites > 0:
-                    fail_ratio = total_failed / total_sites
-                    zero_ratio = len(zero_count_sites) / total_sites
-                    max_fail_ratio = float(os.environ.get("ONECO_MAX_FAIL_RATIO", "1.0"))
-                    max_zero_ratio = float(os.environ.get("ONECO_MAX_ZERO_RATIO", "1.0"))
-                    if fail_ratio > max_fail_ratio:
-                        logger.error(
-                            f"失敗率 {fail_ratio:.2%} が閾値 {max_fail_ratio:.2%} を超過 "
-                            f"({total_failed}/{total_sites} サイト失敗)"
-                        )
-                        success = False
-                    if zero_ratio > max_zero_ratio:
-                        logger.error(
-                            f"0件サイト率 {zero_ratio:.2%} が閾値 {max_zero_ratio:.2%} を超過 "
-                            f"({len(zero_count_sites)}/{total_sites} サイト)"
-                        )
-                        success = False
-
-                # フィールド欠損率ドリフト検知 (自己修復ループ Phase 1)。
-                # 今 run の snapshot を読み、各サイトについて location/age_months
-                # 等の欠損率を計算 → FieldQualityTracker に記録 → 前回比 +閾値
-                # 急増を検知。検出されたドリフトは Slack 通知に含めて adapter
-                # 修復ワーカー (Phase 2) のシグナルとする。失敗しても収集
-                # パイプラインは止めない (best-effort)。
-                field_drifts: list[FieldDrift] = []
-                try:
-                    fq_path = Path(
-                        os.environ.get("FIELD_QUALITY_DRIFT_PATH", "data/field_quality_drift.yaml")
-                    )
-                    fq_tracker = FieldQualityTracker(fq_path)
-                    # load_snapshot() は後方互換のため常に空リストを返すスタブ。
-                    # 今 run の実データは load_animal_map() (= 後段の件数集計と同じ
-                    # ソース) から取る。これを使わないと欠損率が常に空集計になり、
-                    # フィールド品質ドリフト検知が無音化する。
-                    animals_now = list(snapshot_store.load_animal_map().values())
-                    site_groups = group_animals_by_site(animals_now, site_list_urls)
-                    for site_name, animals in site_groups.items():
-                        rates = compute_missing_rates(animals)
-                        fq_tracker.record(site_name, rates, len(animals))
-                    field_drifts = fq_tracker.detect_drifts()
-                    if field_drifts:
-                        logger.warning(f"フィールド欠損率ドリフト検知: {len(field_drifts)} 件")
-                        for d in field_drifts[:10]:
-                            logger.warning(
-                                f"  [{d.site_name}] {d.field}: "
-                                f"{d.prev_rate:.0%} → {d.curr_rate:.0%} "
-                                f"(+{d.delta:.0%})"
-                            )
-                except Exception as e:
-                    logger.warning(f"フィールド欠損率ドリフト検知失敗: {e}")
-
-                # サイト別件数の永続ベースライン更新 + ゼロ件回帰検知。
-                # snapshot は run ごとに reset されるため、0 件回帰が 1 run しか
-                # 検知されず 2 run 目以降は沈黙する盲点があった。snapshot とは独立
-                # した永続ファイル (data/site_baselines.yaml) で「過去≥1件→今0件」を
-                # 毎 run 検知する。
-                #
-                # 記録対象は **実行成功したサイトのみ** (succeeded_site_names)。
-                # robots-disallowed / 未登録 adapter / skip 対象 / 失敗サイトを
-                # baseline=0 で記録すると、本来「未実行」のサイトが「過去 ≥1 件
-                # だが今 0 件継続」として誤検知され、永続ファイルに残り続ける
-                # (auto-fix 候補として誤 dispatch、CRITICAL アラート希釈)。
-                # 失敗サイトは broken_tracker / critical_sites 側で扱う。
-                # best-effort: 失敗しても収集は止めない。
-                zero_regressions: list[ZeroCountRegression] = []
-                try:
-                    baseline_path = Path(
-                        os.environ.get("SITE_BASELINE_PATH", "data/site_baselines.yaml")
-                    )
-                    baseline_tracker = SiteBaselineTracker(baseline_path)
-                    current_site_counts = snapshot_store.load_counts_by_site_url_prefix(
-                        site_list_urls
-                    )
-                    for site_name in succeeded_site_names:
-                        baseline_tracker.record(site_name, current_site_counts.get(site_name, 0))
-                    zero_drop_threshold = int(os.environ.get("ONECO_ZERO_DROP_THRESHOLD", "2"))
-                    zero_regressions = baseline_tracker.detect_zero_count_regressions(
-                        threshold=zero_drop_threshold
-                    )
-                    if zero_regressions:
+            # フィールド欠損率ドリフト検知 (自己修復ループ Phase 1)。
+            # 今 run の snapshot を読み、各サイトについて location/age_months
+            # 等の欠損率を計算 → FieldQualityTracker に記録 → 前回比 +閾値
+            # 急増を検知。検出されたドリフトは Slack 通知に含めて adapter
+            # 修復ワーカー (Phase 2) のシグナルとする。失敗しても収集
+            # パイプラインは止めない (best-effort)。
+            field_drifts: list[FieldDrift] = []
+            try:
+                fq_path = Path(
+                    os.environ.get("FIELD_QUALITY_DRIFT_PATH", "data/field_quality_drift.yaml")
+                )
+                fq_tracker = FieldQualityTracker(fq_path)
+                # load_snapshot() は後方互換のため常に空リストを返すスタブ。
+                # 今 run の実データは load_animal_map() (= 後段の件数集計と同じ
+                # ソース) から取る。これを使わないと欠損率が常に空集計になり、
+                # フィールド品質ドリフト検知が無音化する。
+                animals_now = list(snapshot_store.load_animal_map().values())
+                site_groups = group_animals_by_site(animals_now, site_list_urls)
+                for site_name, animals in site_groups.items():
+                    rates = compute_missing_rates(animals)
+                    fq_tracker.record(site_name, rates, len(animals))
+                field_drifts = fq_tracker.detect_drifts()
+                if field_drifts:
+                    logger.warning(f"フィールド欠損率ドリフト検知: {len(field_drifts)} 件")
+                    for d in field_drifts[:10]:
                         logger.warning(
-                            f"件数ゼロ回帰検知: {len(zero_regressions)} サイト "
-                            f"(過去≥1件→今0件が{zero_drop_threshold}回以上連続)"
+                            f"  [{d.site_name}] {d.field}: "
+                            f"{d.prev_rate:.0%} → {d.curr_rate:.0%} "
+                            f"(+{d.delta:.0%})"
                         )
-                        for r in zero_regressions[:10]:
-                            logger.warning(
-                                f"  [{r.site_name}] baseline {r.baseline_count} → 0 "
-                                f"({r.consecutive_zero_runs}連続)"
-                            )
-                except Exception as e:
-                    logger.warning(f"件数ベースライン追跡失敗: {e}")
+            except Exception as e:
+                logger.warning(f"フィールド欠損率ドリフト検知失敗: {e}")
 
-                # 自己修復ループ Phase 1→2 橋渡し: 検知サイトを auto-fix-adapter に
-                # 渡して LLM-assisted patch worker を起動する (kill switch off の
-                # 場合は no-op)。失敗時も収集パイプラインは止めない。
-                # 順序: summary 通知より先に実行し、auto_fix の dispatch 結果を
-                # Discord に折り込めるようにする (silent failure 検知)。
-                auto_fix_result: dict[str, Any] = {
-                    "invoked": 0,
-                    "attempted": 0,
-                    "candidates": 0,
-                    "disabled": False,
-                }
+            # サイト別件数の永続ベースライン更新 + ゼロ件回帰検知。
+            # snapshot は run ごとに reset されるため、0 件回帰が 1 run しか
+            # 検知されず 2 run 目以降は沈黙する盲点があった。snapshot とは独立
+            # した永続ファイル (data/site_baselines.yaml) で「過去≥1件→今0件」を
+            # 毎 run 検知する。
+            #
+            # 記録対象は **実行成功したサイトのみ** (succeeded_site_names)。
+            # robots-disallowed / 未登録 adapter / skip 対象 / 失敗サイトを
+            # baseline=0 で記録すると、本来「未実行」のサイトが「過去 ≥1 件
+            # だが今 0 件継続」として誤検知され、永続ファイルに残り続ける
+            # (auto-fix 候補として誤 dispatch、CRITICAL アラート希釈)。
+            # 失敗サイトは broken_tracker / critical_sites 側で扱う。
+            # best-effort: 失敗しても収集は止めない。
+            zero_regressions: list[ZeroCountRegression] = []
+            try:
+                baseline_path = Path(
+                    os.environ.get("SITE_BASELINE_PATH", "data/site_baselines.yaml")
+                )
+                baseline_tracker = SiteBaselineTracker(baseline_path)
+                current_site_counts = snapshot_store.load_counts_by_site_url_prefix(site_list_urls)
+                for site_name in succeeded_site_names:
+                    baseline_tracker.record(site_name, current_site_counts.get(site_name, 0))
+                zero_drop_threshold = int(os.environ.get("ONECO_ZERO_DROP_THRESHOLD", "2"))
+                zero_regressions = baseline_tracker.detect_zero_count_regressions(
+                    threshold=zero_drop_threshold
+                )
+                if zero_regressions:
+                    logger.warning(
+                        f"件数ゼロ回帰検知: {len(zero_regressions)} サイト "
+                        f"(過去≥1件→今0件が{zero_drop_threshold}回以上連続)"
+                    )
+                    for r in zero_regressions[:10]:
+                        logger.warning(
+                            f"  [{r.site_name}] baseline {r.baseline_count} → 0 "
+                            f"({r.consecutive_zero_runs}連続)"
+                        )
+            except Exception as e:
+                logger.warning(f"件数ベースライン追跡失敗: {e}")
+
+            # 自己修復ループ Phase 1→2 橋渡し: 検知サイトを auto-fix-adapter に
+            # 渡して LLM-assisted patch worker を起動する (kill switch off の
+            # 場合は no-op)。失敗時も収集パイプラインは止めない。
+            # 順序: summary 通知より先に実行し、auto_fix の dispatch 結果を
+            # Discord に折り込めるようにする (silent failure 検知)。
+            auto_fix_result: dict[str, Any] = {
+                "invoked": 0,
+                "attempted": 0,
+                "candidates": 0,
+                "disabled": False,
+            }
+            try:
+                candidate_sites: list[str] = []
                 try:
-                    candidate_sites: list[str] = []
-                    try:
-                        crit = broken_tracker.critical_sites(threshold=BROKEN_SITE_SKIP_THRESHOLD)
-                        # ネットワーク/HTTP/timeout 起因はコード修正で直らないため
-                        # auto-fix 候補から除外 (MAX_SITES 枠と LLM コストの浪費防止)
-                        fixable = [
-                            s for s in crit if _is_llm_fixable_error(broken_tracker.last_error(s))
-                        ]
-                        excluded = [s for s in crit if s not in fixable]
-                        if excluded:
-                            logger.info(
-                                f"auto-fix-adapter: ネットワーク/HTTP 起因の {len(excluded)} 件を"
-                                f"候補から除外: {excluded}"
-                            )
-                        candidate_sites.extend(fixable)
-                    except Exception as e:
-                        logger.warning(f"critical_sites 取得失敗: {e}")
-                    candidate_sites.extend(r.site_name for r in zero_regressions)
-                    candidate_sites.extend(d.site_name for d in field_drifts)
-                    auto_fix_result = _trigger_auto_fix(candidate_sites, logger=logger)
+                    crit = broken_tracker.critical_sites(threshold=BROKEN_SITE_SKIP_THRESHOLD)
+                    # ネットワーク/HTTP/timeout 起因はコード修正で直らないため
+                    # auto-fix 候補から除外 (MAX_SITES 枠と LLM コストの浪費防止)
+                    fixable = [
+                        s for s in crit if _is_llm_fixable_error(broken_tracker.last_error(s))
+                    ]
+                    excluded = [s for s in crit if s not in fixable]
+                    if excluded:
+                        logger.info(
+                            f"auto-fix-adapter: ネットワーク/HTTP 起因の {len(excluded)} 件を"
+                            f"候補から除外: {excluded}"
+                        )
+                    candidate_sites.extend(fixable)
                 except Exception as e:
-                    logger.warning(f"auto-fix 橋渡しでエラー: {e}")
+                    logger.warning(f"critical_sites 取得失敗: {e}")
+                candidate_sites.extend(r.site_name for r in zero_regressions)
+                candidate_sites.extend(d.site_name for d in field_drifts)
+                auto_fix_result = _trigger_auto_fix(candidate_sites, logger=logger)
+            except Exception as e:
+                logger.warning(f"auto-fix 橋渡しでエラー: {e}")
 
-                # Slack / Discord 通知: 連続失敗サイト / 全体失敗率 / 欠損率ドリフト /
-                # 件数ゼロ回帰 / 自己修復 dispatch 失敗 に応じて Warning/Critical
-                # `total_sites` は実行された数 (= total_succeeded + total_failed)。
-                # len(config.sites) を渡すと robots-disallowed / 未登録 adapter /
-                # 連続失敗 skip 等で実行されなかったサイトで分母が膨らみ、
-                # failure_ratio が希釈されて CRITICAL アラートが WARNING に
-                # 抑制される (例: 60 実行中 30 失敗 = 50% が、209 中 30 = 14%
-                # に化けて閾値 20% 未満扱い)。
-                _send_run_summary_alert(
-                    notification_client=notification_client,
-                    broken_tracker=broken_tracker,
-                    total_sites=total_succeeded + total_failed,
-                    total_succeeded=total_succeeded,
-                    total_failed=total_failed,
-                    threshold=BROKEN_SITE_SKIP_THRESHOLD,
-                    logger=logger,
-                    field_drifts=field_drifts,
-                    zero_count_regressions=zero_regressions,
-                    auto_fix_result=auto_fix_result,
-                )
+            # Slack / Discord 通知: 連続失敗サイト / 全体失敗率 / 欠損率ドリフト /
+            # 件数ゼロ回帰 / 自己修復 dispatch 失敗 に応じて Warning/Critical
+            # `total_sites` は実行された数 (= total_succeeded + total_failed)。
+            # len(config.sites) を渡すと robots-disallowed / 未登録 adapter /
+            # 連続失敗 skip 等で実行されなかったサイトで分母が膨らみ、
+            # failure_ratio が希釈されて CRITICAL アラートが WARNING に
+            # 抑制される (例: 60 実行中 30 失敗 = 50% が、209 中 30 = 14%
+            # に化けて閾値 20% 未満扱い)。
+            _send_run_summary_alert(
+                notification_client=notification_client,
+                broken_tracker=broken_tracker,
+                total_sites=total_succeeded + total_failed,
+                total_succeeded=total_succeeded,
+                total_failed=total_failed,
+                threshold=BROKEN_SITE_SKIP_THRESHOLD,
+                logger=logger,
+                field_drifts=field_drifts,
+                zero_count_regressions=zero_regressions,
+                auto_fix_result=auto_fix_result,
+            )
 
-                # 進捗ログ
-                stats = SiteAdapterRegistry.coverage_stats([s.name for s in config.sites])
-                logger.info(
-                    f"rule-based 進捗: {stats['rule_based']}/{stats['total']} "
-                    f"(LLM 残り {stats['llm_only']})"
-                )
-            else:
-                logger.info("サイト設定なし（sites.yaml が見つかりません）")
+            # 進捗ログ
+            stats = SiteAdapterRegistry.coverage_stats([s.name for s in config.sites])
+            logger.info(
+                f"rule-based 進捗: {stats['rule_based']}/{stats['total']} "
+                f"(LLM 残り {stats['llm_only']})"
+            )
+        else:
+            logger.info("サイト設定なし（sites.yaml が見つかりません）")
 
         sys.exit(0 if success else 1)
 

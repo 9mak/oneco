@@ -1,22 +1,27 @@
 """CLI エントリーポイントのテスト"""
 
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 
 from src.data_collector.__main__ import main
-from src.data_collector.orchestration.collector_service import CollectionResult
 
 
 @pytest.fixture(autouse=True)
-def _stub_sites_runners(tmp_path, monkeypatch):
+def stub_sites_runners(tmp_path, monkeypatch):
     """main() 内の sites.yaml 走査関数を全テストで stub し、
     本物の broken_tracker / output_writer 等に副作用が漏れないようにする。
 
     監視状態ファイル (broken_sites / site_baselines / field_quality_drift) の
     書き込み先を tmp に逃がし、テストが repo 内 data/ を汚染しないようにする
     (MagicMock 化された SnapshotStore は int() で 1 を返すため、パスを逃がさ
-    ないと全実サイトのベースラインが data/site_baselines.yaml に書かれる)。"""
+    ないと全実サイトのベースラインが data/site_baselines.yaml に書かれる)。
+
+    デフォルトの戻り値 (0, 0, [], []) は成功サイト・失敗サイトとも 0 件、
+    つまり「収集対象サイトが実質ゼロ」の中立ケース。exit code に影響する
+    総失敗率 / 全滅判定を個別テストで検証したい場合は、返り値の Mock を
+    `stub_sites_runners` 経由で上書きする。
+    """
     monkeypatch.setenv("BROKEN_SITES_PATH", str(tmp_path / "broken_sites.yaml"))
     monkeypatch.setenv("SITE_BASELINE_PATH", str(tmp_path / "site_baselines.yaml"))
     monkeypatch.setenv("FIELD_QUALITY_DRIFT_PATH", str(tmp_path / "field_quality_drift.yaml"))
@@ -24,20 +29,18 @@ def _stub_sites_runners(tmp_path, monkeypatch):
         patch(
             "src.data_collector.__main__.run_rule_based_sites",
             return_value=(0, 0, [], []),
-        ),
+        ) as mock_rule_based,
         patch(
             "src.data_collector.__main__.run_llm_sites",
             return_value=(0, 0, [], []),
-        ),
+        ) as mock_llm,
     ):
-        yield
+        yield mock_rule_based, mock_llm
 
 
 class TestCLI:
     """CLI エントリーポイントのテストケース"""
 
-    @patch("src.data_collector.__main__.CollectorService")
-    @patch("src.data_collector.__main__.KochiAdapter")
     @patch("src.data_collector.__main__.SnapshotStore")
     @patch("src.data_collector.__main__.DiffDetector")
     @patch("src.data_collector.__main__.OutputWriter")
@@ -48,32 +51,13 @@ class TestCLI:
         mock_output_writer_class,
         mock_diff_detector_class,
         mock_snapshot_store_class,
-        mock_kochi_adapter_class,
-        mock_collector_service_class,
     ):
-        """成功時に終了コード 0 で終了することを確認"""
-        # モックの設定
-        mock_service = Mock()
-        mock_service.run_collection.return_value = CollectionResult(
-            success=True,
-            total_collected=10,
-            new_count=2,
-            updated_count=1,
-            deleted_count=0,
-            errors=[],
-            execution_time_seconds=5.0,
-        )
-        mock_collector_service_class.return_value = mock_service
-
-        # main() を実行し、sys.exit をキャッチ
+        """成功時 (失敗サイト 0 件) に終了コード 0 で終了することを確認"""
         with pytest.raises(SystemExit) as exc_info:
             main()
 
-        # 終了コード 0 を確認
         assert exc_info.value.code == 0
 
-    @patch("src.data_collector.__main__.CollectorService")
-    @patch("src.data_collector.__main__.KochiAdapter")
     @patch("src.data_collector.__main__.SnapshotStore")
     @patch("src.data_collector.__main__.DiffDetector")
     @patch("src.data_collector.__main__.OutputWriter")
@@ -84,26 +68,50 @@ class TestCLI:
         mock_output_writer_class,
         mock_diff_detector_class,
         mock_snapshot_store_class,
-        mock_kochi_adapter_class,
-        mock_collector_service_class,
+        stub_sites_runners,
     ):
-        """失敗時に終了コード 1 で終了することを確認"""
-        # モックの設定
-        mock_service = Mock()
-        mock_service.run_collection.return_value = CollectionResult(
-            success=False, errors=["Test error"], execution_time_seconds=1.0
-        )
-        mock_collector_service_class.return_value = mock_service
+        """全サイト失敗（成功 0・失敗 >0）時に終了コード 1 で終了することを確認
 
-        # main() を実行し、sys.exit をキャッチ
+        高知県専用の直列パス（旧 KochiAdapter 個別呼び出し）は sites.yaml +
+        KochiApcAdapter ラッパー経由の rule-based 経路に統合済み。高知県だけが
+        単発でこけても他サイトが動いていれば全体失敗率で吸収されるべきで、
+        「1 サイトの失敗が即ジョブ全体を failure にする」非対称な旧挙動が
+        再発していないことをここで検証する。
+        """
+        mock_rule_based, _mock_llm = stub_sites_runners
+        mock_rule_based.return_value = (0, 1, [], [])
+
         with pytest.raises(SystemExit) as exc_info:
             main()
 
-        # 終了コード 1 を確認
         assert exc_info.value.code == 1
 
-    @patch("src.data_collector.__main__.CollectorService")
-    @patch("src.data_collector.__main__.KochiAdapter")
+    @patch("src.data_collector.__main__.SnapshotStore")
+    @patch("src.data_collector.__main__.DiffDetector")
+    @patch("src.data_collector.__main__.OutputWriter")
+    @patch("src.data_collector.__main__.NotificationClient")
+    def test_single_site_failure_does_not_fail_whole_job(
+        self,
+        mock_notification_client_class,
+        mock_output_writer_class,
+        mock_diff_detector_class,
+        mock_snapshot_store_class,
+        stub_sites_runners,
+    ):
+        """他サイトが成功していれば、1 サイトの失敗だけでは exit 0 のままであることを確認
+
+        高知県 (kochi-apc.com) のような単一サイトのネットワーク起因失敗が
+        207 サイト中の 1 件に過ぎない場合、デフォルト閾値 (ONECO_MAX_FAIL_RATIO=1.0)
+        の下では失敗率超過にならず、ジョブ全体は成功扱いになるべき。
+        """
+        mock_rule_based, _mock_llm = stub_sites_runners
+        mock_rule_based.return_value = (206, 1, [], [f"site-{i}" for i in range(206)])
+
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+
+        assert exc_info.value.code == 0
+
     @patch("src.data_collector.__main__.SnapshotStore")
     @patch("src.data_collector.__main__.DiffDetector")
     @patch("src.data_collector.__main__.OutputWriter")
@@ -114,63 +122,38 @@ class TestCLI:
         mock_output_writer_class,
         mock_diff_detector_class,
         mock_snapshot_store_class,
-        mock_kochi_adapter_class,
-        mock_collector_service_class,
     ):
-        """すべてのコンポーネントが初期化されることを確認（高知+LLMサイト群）"""
-        # モックの設定
-        mock_service = Mock()
-        mock_service.run_collection.return_value = CollectionResult(
-            success=True, total_collected=0, errors=[], execution_time_seconds=0.1
-        )
-        mock_collector_service_class.return_value = mock_service
-
-        # main() を実行
+        """すべてのコンポーネントが初期化されることを確認"""
         with pytest.raises(SystemExit):
             main()
 
-        # 各コンポーネントが初期化されたことを確認
-        mock_kochi_adapter_class.assert_called_once()
         mock_snapshot_store_class.assert_called_once()
         mock_diff_detector_class.assert_called_once()
         mock_output_writer_class.assert_called_once()
         mock_notification_client_class.assert_called_once()
-        # CollectorServiceは高知+LLMサイト分で複数回呼ばれる
-        assert mock_collector_service_class.call_count >= 1
 
-    @patch("src.data_collector.__main__.CollectorService")
-    @patch("src.data_collector.__main__.KochiAdapter")
     @patch("src.data_collector.__main__.SnapshotStore")
     @patch("src.data_collector.__main__.DiffDetector")
     @patch("src.data_collector.__main__.OutputWriter")
     @patch("src.data_collector.__main__.NotificationClient")
-    def test_main_calls_run_collection(
+    def test_main_calls_site_runners(
         self,
         mock_notification_client_class,
         mock_output_writer_class,
         mock_diff_detector_class,
         mock_snapshot_store_class,
-        mock_kochi_adapter_class,
-        mock_collector_service_class,
+        stub_sites_runners,
     ):
-        """run_collection() が呼ばれることを確認"""
-        # モックの設定
-        mock_service = Mock()
-        mock_service.run_collection.return_value = CollectionResult(
-            success=True, total_collected=0, errors=[], execution_time_seconds=0.1
-        )
-        mock_collector_service_class.return_value = mock_service
+        """rule-based / LLM 両方のサイトランナーが呼ばれることを確認"""
+        mock_rule_based, mock_llm = stub_sites_runners
 
-        # main() を実行
         with pytest.raises(SystemExit):
             main()
 
-        # run_collection() が高知+LLMサイト分で呼ばれたことを確認
-        assert mock_service.run_collection.call_count >= 1
+        mock_rule_based.assert_called_once()
+        mock_llm.assert_called_once()
 
     @patch("src.data_collector.__main__.logging.basicConfig")
-    @patch("src.data_collector.__main__.CollectorService")
-    @patch("src.data_collector.__main__.KochiAdapter")
     @patch("src.data_collector.__main__.SnapshotStore")
     @patch("src.data_collector.__main__.DiffDetector")
     @patch("src.data_collector.__main__.OutputWriter")
@@ -181,23 +164,12 @@ class TestCLI:
         mock_output_writer_class,
         mock_diff_detector_class,
         mock_snapshot_store_class,
-        mock_kochi_adapter_class,
-        mock_collector_service_class,
         mock_logging_config,
     ):
         """ロギングが設定されることを確認"""
-        # モックの設定
-        mock_service = Mock()
-        mock_service.run_collection.return_value = CollectionResult(
-            success=True, total_collected=0, errors=[], execution_time_seconds=0.1
-        )
-        mock_collector_service_class.return_value = mock_service
-
-        # main() を実行
         with pytest.raises(SystemExit):
             main()
 
-        # logging.basicConfig が呼ばれたことを確認
         mock_logging_config.assert_called_once()
 
 
@@ -206,8 +178,6 @@ class TestCLIWithDatabase:
 
     @patch.dict("os.environ", {"DATABASE_URL": "postgresql+asyncpg://user:pass@localhost/test"})
     @patch("src.data_collector.__main__.DatabaseConnection")
-    @patch("src.data_collector.__main__.CollectorService")
-    @patch("src.data_collector.__main__.KochiAdapter")
     @patch("src.data_collector.__main__.SnapshotStore")
     @patch("src.data_collector.__main__.DiffDetector")
     @patch("src.data_collector.__main__.OutputWriter")
@@ -218,27 +188,14 @@ class TestCLIWithDatabase:
         mock_output_writer_class,
         mock_diff_detector_class,
         mock_snapshot_store_class,
-        mock_kochi_adapter_class,
-        mock_collector_service_class,
         mock_db_connection_class,
     ):
         """DATABASE_URL 設定時に DatabaseConnection が初期化されることを確認"""
-        # モックの設定
-        mock_service = Mock()
-        mock_service.run_collection.return_value = CollectionResult(
-            success=True, total_collected=0, errors=[], execution_time_seconds=0.1
-        )
-        mock_collector_service_class.return_value = mock_service
-
-        # main() を実行
         with pytest.raises(SystemExit):
             main()
 
-        # DatabaseConnection が初期化されたことを確認
         mock_db_connection_class.assert_called_once()
 
-    @patch("src.data_collector.__main__.CollectorService")
-    @patch("src.data_collector.__main__.KochiAdapter")
     @patch("src.data_collector.__main__.SnapshotStore")
     @patch("src.data_collector.__main__.DiffDetector")
     @patch("src.data_collector.__main__.OutputWriter")
@@ -249,26 +206,17 @@ class TestCLIWithDatabase:
         mock_output_writer_class,
         mock_diff_detector_class,
         mock_snapshot_store_class,
-        mock_kochi_adapter_class,
-        mock_collector_service_class,
+        stub_sites_runners,
         monkeypatch,
     ):
-        """DATABASE_URL 未設定時は repository=None で CollectorService が作成されることを確認"""
+        """DATABASE_URL 未設定時は db_connection=None でサイトランナーが呼ばれることを確認"""
         # DATABASE_URL のみ削除する。os.environ を clear=True で全消去すると
         # autouse fixture が設定した SITE_BASELINE_PATH 等まで消え、main() が
         # repo 内 data/ に状態ファイルを書いてしまうため delenv で限定する。
         monkeypatch.delenv("DATABASE_URL", raising=False)
-        # モックの設定
-        mock_service = Mock()
-        mock_service.run_collection.return_value = CollectionResult(
-            success=True, total_collected=0, errors=[], execution_time_seconds=0.1
-        )
-        mock_collector_service_class.return_value = mock_service
+        mock_rule_based, _mock_llm = stub_sites_runners
 
-        # main() を実行
         with pytest.raises(SystemExit):
             main()
 
-        # CollectorService が db_connection=None で呼ばれたことを確認
-        call_kwargs = mock_collector_service_class.call_args[1]
-        assert call_kwargs.get("db_connection") is None
+        assert mock_rule_based.call_args.kwargs["db_connection"] is None

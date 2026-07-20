@@ -4,10 +4,10 @@
 hand-written rule-based 実装) を `RuleBasedAdapter` インターフェースに合わせて
 ラップし、`SiteAdapterRegistry` に登録する。
 
-既存 `__main__.py` には Kochi 専用の独立実行パス (KochiAdapter() 直接 instantiate)
-があり、本 wrapper はそれと並列に rule-based 経路でも Kochi を扱えるようにする。
 sites.yaml の "高知県動物愛護センター" エントリが extraction: "rule-based" 指定
-(またはデフォルト) の時、run_rule_based_sites からも収集される。
+(またはデフォルト) の時、run_rule_based_sites から収集される唯一の経路。
+`__main__.py` にあった Kochi 専用の独立実行パス (KochiAdapter() 直接
+instantiate) は本 wrapper と機能重複していたため削除済み (#247)。
 """
 
 from __future__ import annotations
