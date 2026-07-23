@@ -209,6 +209,33 @@ async def test_get_animal_by_id_returns_none_if_not_found(repository):
 
 
 @pytest.mark.asyncio
+async def test_get_animal_id_by_source_url_returns_id(repository, async_session):
+    """get_animal_id_by_source_url()が一致するsource_urlのidを返すか"""
+    animal = Animal(
+        species="犬",
+        shelter_date=date(2026, 1, 5),
+        location="高知県",
+        source_url="https://example.com/animal/200",
+        category="adoption",
+    )
+    async_session.add(animal)
+    await async_session.commit()
+    await async_session.refresh(animal)
+
+    result = await repository.get_animal_id_by_source_url("https://example.com/animal/200")
+
+    assert result == animal.id
+
+
+@pytest.mark.asyncio
+async def test_get_animal_id_by_source_url_returns_none_if_not_found(repository):
+    """get_animal_id_by_source_url()が一致するレコードなしの場合Noneを返すか"""
+    result = await repository.get_animal_id_by_source_url("https://example.com/no-such-animal")
+
+    assert result is None
+
+
+@pytest.mark.asyncio
 async def test_list_animals_returns_all_animals(repository, async_session):
     """list_animals()が全ての動物を返すか"""
     # テストデータを挿入

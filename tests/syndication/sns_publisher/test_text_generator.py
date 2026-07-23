@@ -102,6 +102,18 @@ class TestFallback:
         text = build_fallback_text(_animal(management_number="C-2026-001"), platform="threads")
         assert "C-2026-001" in text or "管理番号" in text
 
+    def test_fallback_without_oneco_url_omits_oneco_link(self):
+        """oneco_url 未指定 (id が引けなかった等) では oneco 導線を追加しない"""
+        text = build_fallback_text(_animal(), platform="threads")
+        assert "oneco" not in text.lower()
+
+    def test_fallback_includes_oneco_url_when_provided(self):
+        oneco_url = "https://frontend-psi-ten-73.vercel.app/animals/42?utm_source=threads"
+        text = build_fallback_text(_animal(), platform="threads", oneco_url=oneco_url)
+        assert oneco_url in text
+        # 自治体公式URLも引き続き必須要素として残る
+        assert "example.jp/animals/123" in text
+
 
 # ---- Groq generator ----
 
@@ -189,3 +201,27 @@ class TestGroqGenerator:
         gen = TextGenerator(client=None)
         with pytest.raises(ValueError):
             gen.generate(_animal(), platform="myspace")
+
+    def test_generate_appends_oneco_url_to_llm_text(self):
+        """LLM 出力に oneco_url が含まれていなくても末尾に付加する"""
+        fake = _FakeGroqClient(
+            return_text="柴犬さん #保護犬 #里親募集 https://example.jp/animals/123"
+        )
+        gen = TextGenerator(client=fake)
+        oneco_url = "https://frontend-psi-ten-73.vercel.app/animals/42?utm_source=threads"
+        text = gen.generate(_animal(), platform="threads", oneco_url=oneco_url)
+        assert oneco_url in text
+
+    def test_generate_fallback_on_exception_includes_oneco_url(self):
+        fake = _FakeGroqClient(return_text="ignored")
+        fake.chat.completions.create.side_effect = RuntimeError("upstream 503")
+        gen = TextGenerator(client=fake)
+        oneco_url = "https://frontend-psi-ten-73.vercel.app/animals/42?utm_source=threads"
+        text = gen.generate(_animal(), platform="threads", oneco_url=oneco_url)
+        assert oneco_url in text
+
+    def test_generate_no_oneco_url_by_default(self):
+        """oneco_url を渡さなければ従来どおり oneco 導線を追加しない"""
+        gen = TextGenerator(client=None)
+        text = gen.generate(_animal(), platform="threads")
+        assert "vercel.app" not in text
