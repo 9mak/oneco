@@ -232,3 +232,10 @@ posts:
 
     詳細・問い合わせは自治体公式へ: https://oita-aigo.com/information_doglist/anytimedog/?utm_source=threads#row=2'
   dry_run: false
+- url: https://animal-net.pref.nagasaki.jp/animal/no-19772/
+  platform: threads
+  text: '長崎県長崎市で保護された猫（男の子）が里親募集中です。詳細・問い合わせは自治体公式へ
+
+    https://animal-net.pref.nagasaki.jp/animal/no-19772/?utm_source=threads #保護猫 #里親募集
+    #長崎県'
+  dry_run: false
