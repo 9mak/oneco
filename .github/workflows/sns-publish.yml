@@ -55,6 +55,8 @@ jobs:
           # kill switch / dry_run は repo variable で運用
           THREADS_PUBLISH_ENABLED: ${{ vars.THREADS_PUBLISH_ENABLED || 'false' }}
           THREADS_PUBLISH_DRY_RUN: ${{ github.event.inputs.dry_run_override || vars.THREADS_PUBLISH_DRY_RUN || 'true' }}
+          # oneco 本体への集客導線 (投稿文に添える動物詳細ページ URL の base)
+          SITE_URL: ${{ vars.SITE_URL }}
           # YAML 永続化先
           SNS_POST_LOG_PATH: data/sns_posts.yaml
         run: |

@@ -109,10 +109,23 @@ def _ensure_utm(url: str, platform: str) -> str:
     return urlunparse(parts._replace(query=new_query))
 
 
-def build_fallback_text(animal: AnimalData, *, platform: str) -> str:
+def _append_oneco_url(text: str, oneco_url: str | None) -> str:
+    """oneco 側の動物詳細ページへの導線を末尾に足す (未指定なら何もしない)。
+
+    自治体公式リンク・「自治体公式へ」の必須要素はそのまま維持し、
+    oneco は追加の発見導線として最後に添えるだけに留める
+    (oneco が一次情報源であるかのような誤解を避けるため)。
+    """
+    if not oneco_url:
+        return text
+    return f"{text}\n🔍 oneco でも公開中: {oneco_url}"
+
+
+def build_fallback_text(animal: AnimalData, *, platform: str, oneco_url: str | None = None) -> str:
     """LLM 不要のテンプレ生成。常に出力できる。
 
-    180 字以内、必須要素 (種別/地域/URL/「自治体公式へ」/ハッシュタグ) を含む。
+    180 字以内 (oneco_url 付与時はこの限りではなく moderator の上限に委ねる)、
+    必須要素 (種別/地域/URL/「自治体公式へ」/ハッシュタグ) を含む。
     主観的表現 (description) は持ち込まない。
     """
     if platform not in _VALID_PLATFORMS:
@@ -143,7 +156,7 @@ def build_fallback_text(animal: AnimalData, *, platform: str) -> str:
         text = "\n".join(p for p in parts if not p.startswith("管理番号:"))
     if len(text) > _TARGET_LEN:
         text = text[: _TARGET_LEN - 1].rstrip() + "…"
-    return text
+    return _append_oneco_url(text, oneco_url)
 
 
 class TextGenerator:
@@ -160,25 +173,25 @@ class TextGenerator:
         self._model = model
         self._timeout = timeout
 
-    def generate(self, animal: AnimalData, *, platform: str) -> str:
+    def generate(self, animal: AnimalData, *, platform: str, oneco_url: str | None = None) -> str:
         if platform not in _VALID_PLATFORMS:
             raise ValueError(f"unknown platform: {platform!r}")
 
         if self._client is None:
-            return build_fallback_text(animal, platform=platform)
+            return build_fallback_text(animal, platform=platform, oneco_url=oneco_url)
 
         try:
             text = self._call_llm(animal, platform=platform)
         except Exception as exc:
             # LLM の up-stream 障害 (network/rate-limit/timeout) は全部 fallback へ
             logger.warning("Groq generation failed (%s); using fallback", exc)
-            return build_fallback_text(animal, platform=platform)
+            return build_fallback_text(animal, platform=platform, oneco_url=oneco_url)
 
         if not text or not text.strip():
             logger.warning("Groq returned empty text; using fallback")
-            return build_fallback_text(animal, platform=platform)
+            return build_fallback_text(animal, platform=platform, oneco_url=oneco_url)
 
-        return self._post_process(text.strip(), animal, platform=platform)
+        return self._post_process(text.strip(), animal, platform=platform, oneco_url=oneco_url)
 
     def _call_llm(self, animal: AnimalData, *, platform: str) -> str:
         user_prompt = self._build_user_prompt(animal, platform=platform)
@@ -221,9 +234,16 @@ class TextGenerator:
         lines.append("- 「詳細・問い合わせは自治体公式へ」を含める")
         return "\n".join(lines)
 
-    def _post_process(self, text: str, animal: AnimalData, *, platform: str) -> str:
-        """LLM 出力に URL/utm が含まれていなければ付加する。重複は作らない。"""
+    def _post_process(
+        self, text: str, animal: AnimalData, *, platform: str, oneco_url: str | None = None
+    ) -> str:
+        """LLM 出力に URL/utm が含まれていなければ付加する。重複は作らない。
+
+        oneco_url は LLM が触れていないので、常に (未付加なら) 追加する。
+        """
         url = _ensure_utm(str(animal.source_url), platform)
-        if str(animal.source_url) in text or "utm_source=" in text:
-            return text
-        return f"{text}\n{url}"
+        if str(animal.source_url) not in text and "utm_source=" not in text:
+            text = f"{text}\n{url}"
+        if oneco_url and oneco_url not in text:
+            text = _append_oneco_url(text, oneco_url)
+        return text

@@ -43,9 +43,10 @@ def _animal(
     )
 
 
-def _repo(animals: list[AnimalData]) -> Any:
+def _repo(animals: list[AnimalData], *, animal_id: int | None = None) -> Any:
     repo = AsyncMock()
     repo.list_animals.return_value = (animals, len(animals))
+    repo.get_animal_id_by_source_url.return_value = animal_id
     return repo
 
 
@@ -203,6 +204,46 @@ class TestRecord:
         # 再ロードでも持続する
         reloaded = PostLog(path=tmp_path / "sns_posts.yaml")
         assert "https://example.jp/animals/42" in reloaded.posted_urls()
+
+
+@pytest.mark.asyncio
+class TestOnecoUrl:
+    """投稿本文に oneco 自体への誘導リンクを添える (集客導線)。
+
+    自治体公式リンクは design.md の方針どおり維持しつつ、animal_id が
+    引ける場合のみ oneco の動物詳細ページへの導線を additional に渡す。
+    """
+
+    async def test_passes_oneco_url_when_animal_id_resolvable(self, tmp_path):
+        repo = _repo([_animal(source_url="https://example.jp/animals/42")], animal_id=42)
+        gen = _gen()
+        await publish_one(
+            repo=repo,
+            generator=gen,
+            post_log=_log(tmp_path),
+            platform="threads",
+            env={
+                "THREADS_PUBLISH_ENABLED": "true",
+                "SITE_URL": "https://frontend-psi-ten-73.vercel.app",
+            },
+        )
+        kwargs = gen.generate.call_args.kwargs
+        assert kwargs.get("oneco_url") is not None
+        assert "frontend-psi-ten-73.vercel.app/animals/42" in kwargs["oneco_url"]
+        assert "utm_source=threads" in kwargs["oneco_url"]
+
+    async def test_oneco_url_none_when_animal_id_not_found(self, tmp_path):
+        repo = _repo([_animal()], animal_id=None)
+        gen = _gen()
+        await publish_one(
+            repo=repo,
+            generator=gen,
+            post_log=_log(tmp_path),
+            platform="threads",
+            env={"THREADS_PUBLISH_ENABLED": "true"},
+        )
+        kwargs = gen.generate.call_args.kwargs
+        assert kwargs.get("oneco_url") is None
 
 
 def _wet_env() -> dict[str, str]:

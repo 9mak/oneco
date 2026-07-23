@@ -17,6 +17,7 @@ import logging
 import os
 from dataclasses import dataclass
 from typing import Any, Protocol
+from urllib.parse import urlencode
 
 from data_collector.domain.models import AnimalData, AnimalStatus
 
@@ -25,6 +26,31 @@ from .moderator import moderate_post
 from .post_log import PostLog
 
 logger = logging.getLogger(__name__)
+
+# oneco 本体の base URL。feed_generator._resolve_base_url() と同じ優先順。
+_SITE_URL_ENV_VARS = ("SITE_URL", "FRONTEND_URL", "NEXT_PUBLIC_SITE_URL")
+_DEFAULT_SITE_URL = "https://oneco.example"
+
+
+def _resolve_site_url(env: dict[str, str]) -> str:
+    for var in _SITE_URL_ENV_VARS:
+        value = env.get(var, "").strip().rstrip("/")
+        if value:
+            return value
+    return _DEFAULT_SITE_URL
+
+
+def _build_oneco_url(animal_id: int | None, env: dict[str, str], *, platform: str) -> str | None:
+    """SNS 集客導線: oneco 側の動物詳細ページ URL を組み立てる。
+
+    animal_id が引けない (未同期・削除済み等) 場合は None を返し、
+    text_generator 側は自治体公式リンクのみで投稿する (従来動作)。
+    """
+    if animal_id is None:
+        return None
+    base = _resolve_site_url(env)
+    query = urlencode({"utm_source": platform, "utm_medium": "sns_post"})
+    return f"{base}/animals/{animal_id}?{query}"
 
 
 @dataclass(frozen=True)
@@ -52,9 +78,13 @@ class _AnimalsRepo(Protocol):
         **kwargs: object,
     ) -> tuple[list[AnimalData], int]: ...
 
+    async def get_animal_id_by_source_url(self, source_url: str) -> int | None: ...
+
 
 class _TextGen(Protocol):
-    def generate(self, animal: AnimalData, *, platform: str) -> str: ...
+    def generate(
+        self, animal: AnimalData, *, platform: str, oneco_url: str | None = None
+    ) -> str: ...
 
 
 def _truthy(env: dict[str, str], key: str, *, default: str = "false") -> bool:
@@ -104,8 +134,10 @@ async def publish_one(
             reason="no_candidate",
         )
 
-    # 3. generate text
-    text = generator.generate(candidate, platform=platform)
+    # 3. generate text (oneco 詳細ページへの導線を可能なら添える)
+    animal_id = await repo.get_animal_id_by_source_url(str(candidate.source_url))
+    oneco_url = _build_oneco_url(animal_id, env_map, platform=platform)
+    text = generator.generate(candidate, platform=platform, oneco_url=oneco_url)
 
     # 4. moderate (二重防御)
     mod = moderate_post(text, candidate, platform=platform)

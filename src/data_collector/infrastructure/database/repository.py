@@ -260,6 +260,23 @@ class AnimalRepository:
             return self._to_pydantic(orm_animal)
         return None
 
+    async def get_animal_id_by_source_url(self, source_url: str) -> int | None:
+        """
+        source_url に一致する動物の DB id を取得
+
+        AnimalData (pydantic) は id を持たないため、id が必要な呼び出し元
+        (SNS 投稿の oneco 詳細ページリンク生成等) 向けに用意する専用ルックアップ。
+
+        Args:
+            source_url: 元ページURL
+
+        Returns:
+            Optional[int]: 動物ID、存在しない場合は None
+        """
+        stmt = select(Animal.id).where(Animal.source_url == source_url)
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def list_animals(
         self,
         species: str | None = None,
