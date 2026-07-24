@@ -20,15 +20,23 @@ describe('AnimalCard', () => {
     category: 'adoption',
   };
 
-  it('動物の種別と性別が表示される', () => {
+  it('見出しには動物種別のみが表示される（性別を連結しない）', () => {
     render(<AnimalCard animal={mockAnimal} />);
-    expect(screen.getByRole('heading', { name: /犬の男の子/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '犬' })).toBeInTheDocument();
   });
 
-  it('性別が不明な場合は種別のみ見出しに表示される', () => {
+  it('性別はラベル付きの項目として表示される', () => {
+    render(<AnimalCard animal={mockAnimal} />);
+    expect(screen.getByText('性別')).toBeInTheDocument();
+    expect(screen.getByText('男の子')).toBeInTheDocument();
+  });
+
+  it('性別が不明でも性別欄はラベルとして表示される', () => {
     const unknownSex = { ...mockAnimal, sex: '不明' };
     render(<AnimalCard animal={unknownSex} />);
     expect(screen.getByRole('heading', { name: '犬' })).toBeInTheDocument();
+    expect(screen.getByText('性別')).toBeInTheDocument();
+    expect(screen.getByText('不明')).toBeInTheDocument();
   });
 
   it('毛色と体格が表示される', () => {

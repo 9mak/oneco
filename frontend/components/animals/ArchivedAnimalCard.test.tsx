@@ -25,6 +25,17 @@ const base: ArchivedAnimalPublic = {
 };
 
 describe('ArchivedAnimalCard', () => {
+  it('見出しには動物種別のみが表示される（性別を連結しない）', () => {
+    render(<ArchivedAnimalCard animal={base} />);
+    expect(screen.getByRole('heading', { name: '犬' })).toBeInTheDocument();
+  });
+
+  it('性別はラベル付きの項目として表示される', () => {
+    render(<ArchivedAnimalCard animal={base} />);
+    expect(screen.getByText('性別')).toBeInTheDocument();
+    expect(screen.getByText('男の子')).toBeInTheDocument();
+  });
+
   it('譲渡済バッジが表示される', () => {
     render(<ArchivedAnimalCard animal={base} />);
     expect(screen.getByText('譲渡')).toBeInTheDocument();
