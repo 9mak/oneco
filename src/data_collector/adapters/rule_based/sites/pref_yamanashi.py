@@ -77,6 +77,11 @@ _FULLWIDTH_NORMALIZE = str.maketrans(
     "０１２３４５６７８９ｋｇＫＧ．",
     "0123456789kgKG.",
 )
+# 括弧内が品種名ではなく体格の比較・補足説明であることを示す語。
+# 例: 「雑種・中型 (柴犬よりやや大きめ)」の括弧内は品種名ではないため、
+# 括弧内を breed 候補として採用してはいけない (2026-07-24 発見、本番4件で誤値確認:
+# 「柴犬よりやや大きめ」「大きめ」「より大きめ」「前後」)。
+_SIZE_COMPARISON_KEYWORDS = ("より", "大きめ", "小さめ", "前後")
 _WEIGHT_SIZE_SMALL_KG = 5.0
 _WEIGHT_SIZE_LARGE_KG = 15.0
 # 「子猫」「子犬」は size=「小」、「成犬」「成猫」は推定不可で空のまま
@@ -344,7 +349,11 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
         paren = re.search(r"[（(]\s*([^（）()]+?)\s*[）)]", text)
         if paren:
             inner = paren.group(1).strip()
-            if (
+            if any(kw in inner for kw in _SIZE_COMPARISON_KEYWORDS):
+                # 括弧内は品種名ではなく体格の比較説明 (例:「柴犬よりやや大きめ」)。
+                # 括弧ごと除去し、外側のテキストから品種を抽出する。
+                candidate = text[: paren.start()] + text[paren.end() :]
+            elif (
                 inner
                 and not _SIZE_SEARCH_PATTERN.fullmatch(inner)
                 and not _WEIGHT_PATTERN.search(inner)
