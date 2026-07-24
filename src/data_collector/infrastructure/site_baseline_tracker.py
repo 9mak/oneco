@@ -46,6 +46,19 @@ class ZeroCountRegression:
     last_nonzero_at: str | None
 
 
+@dataclass(frozen=True)
+class PersistentZeroSite:
+    """一度も非ゼロ実績が無い(baseline=0)まま長期間 0 件が継続しているサイト
+
+    ZeroCountRegression は「過去≥1件→今0件」の回帰しか検知できず、トラッカー
+    導入時点(2026-06-19)から一貫して0件のサイトは対象外だった。長崎犬猫ネット
+    がサイト側の長期障害でこの盲点に落ちていたことが2026-07-24に発覚。
+    """
+
+    site_name: str
+    consecutive_zero_runs: int
+
+
 class SiteBaselineTracker:
     """サイト別収集件数の永続ベースラインを保持し、ゼロ件回帰を検知する"""
 
@@ -127,6 +140,24 @@ class SiteBaselineTracker:
                         ),
                     )
                 )
+        return out
+
+    def detect_persistent_zero_sites(self, *, threshold: int = 14) -> list[PersistentZeroSite]:
+        """一度も非ゼロ実績が無い(baseline=0)まま threshold 回以上連続で 0 件のサイトを返す。
+
+        detect_zero_count_regressions は baseline>=1 が前提で、導入時点から一貫して
+        0件のサイトは「破損か元から0件想定サイトか区別できない」として対象外にして
+        いた。ここでは経過日数（consecutive_zero_runs）だけを基準に長期化したものを
+        拾う。baseline>=1 のサイトは detect_zero_count_regressions の担当のため
+        重複しないよう除外する。
+        """
+        out: list[PersistentZeroSite] = []
+        for name, entry in self._state.items():
+            baseline = int(entry.get("last_nonzero_count", 0))
+            last_count = int(entry.get("last_count", 0))
+            czr = int(entry.get("consecutive_zero_runs", 0))
+            if baseline == 0 and last_count == 0 and czr >= threshold:
+                out.append(PersistentZeroSite(site_name=name, consecutive_zero_runs=czr))
         return out
 
     # ─────────────────── 内部 ───────────────────

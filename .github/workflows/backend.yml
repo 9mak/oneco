@@ -44,7 +44,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ruff
+          # バージョン固定なしだと CI が pip install 時点の最新版を無条件に
+          # 拾い、新ルールがデフォルト有効化された瞬間に無関係な既存コードで
+          # Lint が赤くなる (2026-07-24, ruff 0.16.0 リリースで発覚)。
+          # ローカル実行版 (0.15.12) と揃えて固定する。
+          pip install "ruff==0.15.12"
 
       - name: Run ruff linter
         run: |
