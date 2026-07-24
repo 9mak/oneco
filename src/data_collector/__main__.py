@@ -25,6 +25,7 @@ from .adapters.rule_based import (
 from .adapters.rule_based.broken_tracker import BrokenSitesTracker
 from .adapters.rule_based.field_quality_tracker import FieldDrift, FieldQualityTracker
 from .adapters.rule_based.registry import SiteAdapterRegistry
+from .domain.content_anomaly import ContentAnomaly, detect_content_anomalies
 from .domain.diff_detector import DiffDetector
 from .domain.quality_metrics import compute_missing_rates, group_animals_by_site
 from .infrastructure.database.connection import DatabaseConnection, DatabaseSettings
@@ -629,6 +630,7 @@ def _send_run_summary_alert(
     zero_count_regressions: list[ZeroCountRegression] | None = None,
     persistent_zero_sites: list[PersistentZeroSite] | None = None,
     auto_fix_result: dict[str, Any] | None = None,
+    content_anomalies: list[ContentAnomaly] | None = None,
 ) -> None:
     """1 回の run 終了時に Slack / Discord へサマリアラートを送る。
 
@@ -664,6 +666,12 @@ def _send_run_summary_alert(
     auto_fix_result: `_trigger_auto_fix` の戻り値 dict。
     `attempted > invoked` のとき dispatch 失敗を WARNING シグナルに含め、
     自己修復が静かに動いていない状態を可視化する。
+
+    content_anomalies: `detect_content_anomalies` の検知結果。欠損率
+    ドリフトとは異なり「値はあるが内容が不正」なケース(2026-07-24 発見:
+    山梨県 breed に体格比較文混入、高知県 name に運営告知文混入)を検知する。
+    auto-fix 候補には含めない (内容不正は adapter の追加ロジックが必要な
+    ケースが多く、既存の LLM 自動修復ワーカーの対象範囲外のため)。
     """
     if total_sites == 0:
         return
@@ -682,6 +690,7 @@ def _send_run_summary_alert(
     drifts = list(field_drifts) if field_drifts else []
     regressions = list(zero_count_regressions) if zero_count_regressions else []
     persistent_zeros = list(persistent_zero_sites) if persistent_zero_sites else []
+    anomalies = list(content_anomalies) if content_anomalies else []
     # auto-fix dispatch 失敗の signal: attempted > invoked
     af = auto_fix_result or {}
     af_attempted = int(af.get("attempted", 0))
@@ -693,6 +702,7 @@ def _send_run_summary_alert(
         or bool(drifts)
         or bool(regressions)
         or bool(persistent_zeros)
+        or bool(anomalies)
         or af_dispatch_failed
     )
 
@@ -710,6 +720,8 @@ def _send_run_summary_alert(
         message += f", 件数ゼロ回帰 {len(regressions)} 件"
     if persistent_zeros:
         message += f", 長期0件サイト {len(persistent_zeros)} 件"
+    if anomalies:
+        message += f", 内容不正疑い {len(anomalies)} 件"
     details: dict[str, Any] = {
         "total_sites": total_sites,
         "succeeded": total_succeeded,
@@ -747,6 +759,12 @@ def _send_run_summary_alert(
         if len(persistent_zeros) > 10:
             sample += f" ... (+{len(persistent_zeros) - 10} more)"
         details["persistent_zero_sites_sample"] = sample
+    if anomalies:
+        details["content_anomalies_count"] = len(anomalies)
+        sample = "; ".join(f"[{a.field}] {a.value} ({a.reason})" for a in anomalies[:10])
+        if len(anomalies) > 10:
+            sample += f" ... (+{len(anomalies) - 10} more)"
+        details["content_anomalies_sample"] = sample
     # 自己修復ループ Phase 1→2 橋渡しの結果。attempted > invoked = silent failure。
     # candidates > 0 でも disabled なら kill switch off (info only)。
     if af:
@@ -1025,6 +1043,20 @@ def main():
             except Exception as e:
                 logger.warning(f"長期0件サイト検知失敗: {e}")
 
+            # 内容不正検知 (欠損率ドリフトでは検知できない「値はあるが誤り」)。
+            # 2026-07-24 発見: 山梨県 breed に体格比較文混入、高知県 name に
+            # 運営告知文混入。両者とも該当 adapter は個別に修正済みだが、
+            # 同種のバグが他サイトで再発した際に検知できるよう毎 run チェックする。
+            content_anomalies: list[ContentAnomaly] = []
+            try:
+                content_anomalies = detect_content_anomalies(animals_now)
+                if content_anomalies:
+                    logger.warning(f"内容不正疑い検知: {len(content_anomalies)} 件")
+                    for a in content_anomalies[:10]:
+                        logger.warning(f"  [{a.field}] {a.value} ({a.reason})")
+            except Exception as e:
+                logger.warning(f"内容不正検知失敗: {e}")
+
             # 自己修復ループ Phase 1→2 橋渡し: 検知サイトを auto-fix-adapter に
             # 渡して LLM-assisted patch worker を起動する (kill switch off の
             # 場合は no-op)。失敗時も収集パイプラインは止めない。
@@ -1081,6 +1113,7 @@ def main():
                 zero_count_regressions=zero_regressions,
                 persistent_zero_sites=persistent_zero_sites,
                 auto_fix_result=auto_fix_result,
+                content_anomalies=content_anomalies,
             )
 
             # 進捗ログ

@@ -378,6 +378,83 @@ def test_persistent_zero_site_sample_truncated():
     assert "more" in details["persistent_zero_sites_sample"]
 
 
+def test_content_anomalies_alone_triggers_warning():
+    """失敗0でも内容不正(breed/name混入等)があれば WARNING を出す"""
+    from src.data_collector.domain.content_anomaly import ContentAnomaly
+
+    client = MagicMock()
+    anomalies = [
+        ContentAnomaly(
+            source_url="https://pref.example/dog/1",
+            field="breed",
+            value="柴犬よりやや大きめ",
+            reason="品種名ではなく体格比較の説明文が混入している疑い",
+        )
+    ]
+    _send_run_summary_alert(
+        notification_client=client,
+        broken_tracker=_make_tracker(0),
+        total_sites=209,
+        total_succeeded=209,
+        total_failed=0,
+        threshold=3,
+        logger=_make_logger(),
+        content_anomalies=anomalies,
+    )
+    assert client.send_alert.called
+    args, _ = client.send_alert.call_args
+    assert args[0] == NotificationLevel.WARNING
+    details = client.send_alert.call_args[0][2]
+    assert details.get("content_anomalies_count") == 1
+    assert "breed" in details.get("content_anomalies_sample", "")
+    assert "柴犬よりやや大きめ" in details.get("content_anomalies_sample", "")
+
+
+def test_content_anomalies_empty_does_not_change_behavior():
+    """content_anomalies が None / 空なら既存判定そのまま（後方互換）"""
+    client = MagicMock()
+    _send_run_summary_alert(
+        notification_client=client,
+        broken_tracker=_make_tracker(0),
+        total_sites=10,
+        total_succeeded=10,
+        total_failed=0,
+        threshold=3,
+        logger=_make_logger(),
+        content_anomalies=[],
+    )
+    client.send_alert.assert_not_called()
+
+
+def test_content_anomalies_sample_truncated():
+    """内容不正サンプルは先頭10件に切り詰め、残数を表示する"""
+    from src.data_collector.domain.content_anomaly import ContentAnomaly
+
+    client = MagicMock()
+    anomalies = [
+        ContentAnomaly(
+            source_url=f"https://example.lg.jp/{i}",
+            field="name",
+            value=f"個体{i}※告知",
+            reason="仮名に運営告知(※...)が混入している疑い",
+        )
+        for i in range(15)
+    ]
+    _send_run_summary_alert(
+        notification_client=client,
+        broken_tracker=_make_tracker(0),
+        total_sites=209,
+        total_succeeded=209,
+        total_failed=0,
+        threshold=3,
+        logger=_make_logger(),
+        content_anomalies=anomalies,
+    )
+    details = client.send_alert.call_args[0][2]
+    assert details["content_anomalies_count"] == 15
+    assert "more" in details["content_anomalies_sample"]
+
+
 def test_zero_count_regression_sample_truncated():
     """回帰サンプルは先頭 10 件に切り詰め、残数を表示する"""
     from src.data_collector.infrastructure.site_baseline_tracker import ZeroCountRegression

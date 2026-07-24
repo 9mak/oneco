@@ -193,6 +193,26 @@ class TestPrefYamanashiAdapter:
         assert cls._extract_breed_from_kind_size("中型") == ""
         assert cls._extract_breed_from_kind_size("") == ""
 
+    def test_extract_breed_from_kind_size_ignores_size_comparison_parenthetical(self):
+        """括弧内が品種名ではなく体格の比較・補足説明であるケース (2026-07-24)。
+
+        実サイト観測 (id=1949, 山梨県探している犬):
+            「種類・体格：雑種・中型 (柴犬よりやや大きめ)」
+        旧実装は「猫（雑種）大型」のように括弧内を品種名とみなす前提のため、
+        本パターンでは誤って比較説明文そのものを breed として採用していた
+        (本番で breed="柴犬よりやや大きめ" という誤値が3件確認された)。
+        括弧内に「より/大きめ/小さめ」等の比較語を含む場合は品種名とみなさず、
+        括弧の外側テキストから品種を抽出する。
+        """
+        cls = PrefYamanashiAdapter
+        assert cls._extract_breed_from_kind_size("雑種・中型 (柴犬よりやや大きめ)") == "雑種"
+        # id=739 (探している猫) 相当パターン
+        assert cls._extract_breed_from_kind_size("雑種・小型（大きめ）") == "雑種"
+        # id=671 (探している犬) 相当パターン
+        assert cls._extract_breed_from_kind_size("雑種（より大きめ）") == "雑種"
+        # id=651 (探している犬) 相当パターン: 「前後」も比較・補足語として扱う
+        assert cls._extract_breed_from_kind_size("雑種・中型（体重10kg前後）") == "雑種"
+
     def test_extract_animal_details_breed_via_normalize(self, fixture_html):
         """「種類・体格」から breed を抽出し normalize() 戻り値に乗ること。
 
@@ -222,6 +242,38 @@ class TestPrefYamanashiAdapter:
 
         assert raw.breed == "トイプードル"
         assert animal.breed == "トイプードル"
+        assert animal.size == "中型"
+
+    def test_extract_animal_details_breed_ignores_size_comparison_via_normalize(self, fixture_html):
+        """括弧内が体格比較の補足説明であっても normalize() 後に正しい品種が乗ること。
+
+        実サイト観測 (id=1949): 「種類・体格：雑種・中型 (柴犬よりやや大きめ)」。
+        CLAUDE.md サイレントドロップ規約: raw でなく adapter.normalize(raw) の
+        AnimalData.breed をアサートする。
+        """
+        list_html = _load_yamanashi_html(fixture_html)
+        detail_html = """
+        <html><body>
+          <h2>種類・体格</h2>
+          <p>雑種・中型 (柴犬よりやや大きめ)</p>
+          <h2>管轄保健所の連絡先</h2>
+          <p>中北保健所TEL:055-273-5034</p>
+        </body></html>
+        """
+        adapter = PrefYamanashiAdapter(_site())
+
+        def _http_side_effect(url):
+            if url.endswith("index.html"):
+                return list_html
+            return detail_html
+
+        with patch.object(adapter, "_http_get", side_effect=_http_side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+            animal = adapter.normalize(raw)
+
+        assert raw.breed == "雑種"
+        assert animal.breed == "雑種"
         assert animal.size == "中型"
 
     def test_extract_animal_details_size_with_annotation(self, fixture_html):

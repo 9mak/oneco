@@ -318,6 +318,56 @@ class TestKochiAdapterExtractAnimalDetails:
 
         assert raw_data.image_urls == []
 
+    @patch("src.data_collector.adapters.kochi_adapter.requests.get")
+    def test_extract_animal_details_splits_name_notice_into_description(self, mock_get):
+        """仮名欄に混在する運営告知(※...)を description へ分離すること (2026-07-24)。
+
+        実サイト観測: 「仮名」セルに愛称と告知が同一セルに直接埋め込まれる
+        (例: "せつなちゃん※譲渡手続き中です。新規希望受付は一時中止しております。")。
+        旧実装はセル全文をそのまま name に採用しており、本番で6件汚染が確認された。
+        告知文自体は「譲渡手続き中」等ユーザーに有用な情報のため、削除ではなく
+        description へ振り分ける。
+        """
+        html_with_notice = """
+        <!DOCTYPE html>
+        <html>
+        <body>
+            <article>
+                <div class="entry-content">
+                    <p>管理番号: CD26-005</p>
+                    <p>仮名: せつなちゃん※譲渡手続き中です。新規希望受付は一時中止しております。</p>
+                    <p>種類: 雑種</p>
+                    <p>性別: メス</p>
+                    <p>年齢: 2歳</p>
+                    <p>毛色: 茶白</p>
+                    <p>体格: 小型</p>
+                    <p>収容日: 令和8年6月9日</p>
+                    <p>収容場所: 高知県動物愛護センター</p>
+                    <p>電話: 088-123-4567</p>
+                </div>
+            </article>
+        </body>
+        </html>
+        """
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.text = html_with_notice
+        mock_response.raise_for_status = Mock()
+        mock_get.return_value = mock_response
+
+        adapter = KochiAdapter()
+        raw_data = adapter.extract_animal_details("https://example.com/animals/detail/003")
+
+        assert raw_data.name == "せつなちゃん"
+        assert raw_data.description == "※譲渡手続き中です。新規希望受付は一時中止しております。"
+
+        # AnimalData レベル (normalize 後) でも分離が保持されていること
+        # (raw レベルの確認だけでは不十分。個体識別フィールドの
+        # サイレントドロップ再発防止のため animal.* まで確認する)
+        animal_data = adapter.normalize(raw_data)
+        assert animal_data.name == "せつなちゃん"
+        assert animal_data.description == "※譲渡手続き中です。新規希望受付は一時中止しております。"
+
 
 class TestKochiAdapterNormalize:
     """正規化統合のテスト"""
