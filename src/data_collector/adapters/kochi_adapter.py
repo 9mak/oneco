@@ -4,6 +4,7 @@
 高知県自治体サイトから保護動物情報をスクレイピングするアダプターです。
 """
 
+import re
 from urllib.parse import urljoin
 
 import requests
@@ -52,6 +53,11 @@ class KochiAdapter(MunicipalityAdapter):
 
     # 詳細ページの期待される構造（定義リストまたはテーブル）
     DETAIL_PAGE_SELECTORS = ["dl", "dt", "dd", "table", "body"]
+
+    # 【高知県特別ルール】「仮名」セルに運営告知(※...)が同一セル内に直接
+    # 埋め込まれる (例: "せつなちゃん※譲渡手続き中です。")。愛称と告知文の間に
+    # 区切り文字が無いため「※」以降を告知として分離し description へ回す。
+    _NAME_NOTICE_RE = re.compile(r"[\s　]*(※.*)$", re.DOTALL)
 
     # 【高知県特別ルール】一覧ページのカテゴリリンクから犬/猫を判定するためのパターン
     _SPECIES_URL_PATTERNS = {
@@ -312,7 +318,8 @@ class KochiAdapter(MunicipalityAdapter):
         management_number = self._extract_from_structured_data(
             entry_content, ["管理番号", "個体番号"]
         )
-        name = self._extract_from_structured_data(entry_content, ["仮名", "愛称", "お名前"])
+        name_raw = self._extract_from_structured_data(entry_content, ["仮名", "愛称", "お名前"])
+        name, name_notice = self._split_kochi_name_notice(name_raw)
         sex = self._extract_from_structured_data(entry_content, ["性別", "せいべつ"])
         age = self._extract_from_structured_data(
             entry_content, ["年齢", "推定年齢", "ねんれい", "月齢"]
@@ -352,6 +359,7 @@ class KochiAdapter(MunicipalityAdapter):
             breed=breed,
             name=name,
             management_number=management_number,
+            description=name_notice,
         )
 
     def normalize(self, raw_data: RawAnimalData) -> AnimalData:
@@ -410,6 +418,23 @@ class KochiAdapter(MunicipalityAdapter):
             description=raw_data.description,
         )
         return DataNormalizer.normalize(raw_data)
+
+    @classmethod
+    def _split_kochi_name_notice(cls, name: str) -> tuple[str, str]:
+        """仮名欄に混在する運営告知(※...)を仮名本体から分離する
+
+        Args:
+            name: 「仮名」セルの生テキスト (例: "せつなちゃん※譲渡手続き中です。")
+
+        Returns:
+            tuple[str, str]: (告知を除いた仮名, 告知文。無ければ空文字)
+        """
+        if not name:
+            return name, ""
+        match = cls._NAME_NOTICE_RE.search(name)
+        if not match:
+            return name, ""
+        return name[: match.start()].strip(), match.group(1).strip()
 
     def _validate_page_structure(self, soup: BeautifulSoup, expected_selectors: list[str]) -> bool:
         """
