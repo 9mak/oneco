@@ -142,6 +142,7 @@ class AnimalRepository:
             status_changed_at=orm_animal.status_changed_at,
             outcome_date=orm_animal.outcome_date,
             local_image_paths=orm_animal.local_image_paths or None,
+            last_collected_at=orm_animal.last_collected_at,
         )
 
     async def save_animal(
@@ -206,6 +207,11 @@ class AnimalRepository:
         # 収集経路から渡されたサイト識別名を記録（消滅同期削除のスコープ用）
         if source_site is not None:
             orm_animal.source_site = source_site
+
+        # 収集(クロール)が成功してここに来た時点の時刻を記録。
+        # animal_data の値は使わず常に現在時刻で上書きする(「いつ確認されたか」
+        # を示す値なので、呼び出し元が古い値を渡しても意味を持たせない)。
+        orm_animal.last_collected_at = datetime.now(UTC)
 
         await self.session.commit()
         await self.session.refresh(orm_animal)

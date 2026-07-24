@@ -58,6 +58,7 @@ class ArchiveRepository:
             status_changed_at=archived.status_changed_at,
             outcome_date=archived.outcome_date,
             local_image_paths=archived.local_image_paths or None,
+            last_collected_at=archived.last_collected_at,
             # 個体識別フィールド
             breed=archived.breed,
             name=archived.name,
@@ -208,6 +209,7 @@ class ArchiveRepository:
             status=animal.status,
             status_changed_at=animal.status_changed_at,
             outcome_date=animal.outcome_date,
+            last_collected_at=animal.last_collected_at,
             archived_at=datetime.now(UTC),
         )
         self.session.add(archived)
