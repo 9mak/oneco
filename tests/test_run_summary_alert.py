@@ -316,6 +316,68 @@ def test_auto_fix_disabled_does_not_trigger_warning():
     client.send_alert.assert_not_called()
 
 
+def test_persistent_zero_site_alone_triggers_warning():
+    """失敗0・回帰0でも長期0件(baseline無し)サイトがあれば WARNING を出す"""
+    from src.data_collector.infrastructure.site_baseline_tracker import PersistentZeroSite
+
+    client = MagicMock()
+    sites = [PersistentZeroSite(site_name="長崎犬猫ネット（保健所収容）", consecutive_zero_runs=28)]
+    _send_run_summary_alert(
+        notification_client=client,
+        broken_tracker=_make_tracker(0),
+        total_sites=209,
+        total_succeeded=209,
+        total_failed=0,
+        threshold=3,
+        logger=_make_logger(),
+        persistent_zero_sites=sites,
+    )
+    assert client.send_alert.called
+    args, _ = client.send_alert.call_args
+    assert args[0] == NotificationLevel.WARNING
+    details = client.send_alert.call_args[0][2]
+    assert details.get("persistent_zero_sites_count") == 1
+    assert "長崎犬猫ネット（保健所収容）" in details.get("persistent_zero_sites_sample", "")
+    assert "28" in details.get("persistent_zero_sites_sample", "")
+
+
+def test_persistent_zero_site_empty_does_not_change_behavior():
+    """persistent_zero_sites が None / 空なら既存判定そのまま（後方互換）"""
+    client = MagicMock()
+    _send_run_summary_alert(
+        notification_client=client,
+        broken_tracker=_make_tracker(0),
+        total_sites=10,
+        total_succeeded=10,
+        total_failed=0,
+        threshold=3,
+        logger=_make_logger(),
+        persistent_zero_sites=[],
+    )
+    client.send_alert.assert_not_called()
+
+
+def test_persistent_zero_site_sample_truncated():
+    """長期0件サンプルは先頭10件に切り詰め、残数を表示する"""
+    from src.data_collector.infrastructure.site_baseline_tracker import PersistentZeroSite
+
+    client = MagicMock()
+    sites = [PersistentZeroSite(f"サイト{i}", consecutive_zero_runs=14) for i in range(15)]
+    _send_run_summary_alert(
+        notification_client=client,
+        broken_tracker=_make_tracker(0),
+        total_sites=209,
+        total_succeeded=209,
+        total_failed=0,
+        threshold=3,
+        logger=_make_logger(),
+        persistent_zero_sites=sites,
+    )
+    details = client.send_alert.call_args[0][2]
+    assert details["persistent_zero_sites_count"] == 15
+    assert "more" in details["persistent_zero_sites_sample"]
+
+
 def test_zero_count_regression_sample_truncated():
     """回帰サンプルは先頭 10 件に切り詰め、残数を表示する"""
     from src.data_collector.infrastructure.site_baseline_tracker import ZeroCountRegression

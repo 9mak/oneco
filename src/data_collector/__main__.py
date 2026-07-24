@@ -30,7 +30,11 @@ from .domain.quality_metrics import compute_missing_rates, group_animals_by_site
 from .infrastructure.database.connection import DatabaseConnection, DatabaseSettings
 from .infrastructure.notification_client import NotificationClient, NotificationLevel
 from .infrastructure.output_writer import OutputWriter
-from .infrastructure.site_baseline_tracker import SiteBaselineTracker, ZeroCountRegression
+from .infrastructure.site_baseline_tracker import (
+    PersistentZeroSite,
+    SiteBaselineTracker,
+    ZeroCountRegression,
+)
 from .infrastructure.snapshot_store import SnapshotStore
 from .llm.adapter import LlmAdapter
 from .llm.config import SiteConfigLoader, SitesConfig
@@ -623,6 +627,7 @@ def _send_run_summary_alert(
     logger: logging.Logger,
     field_drifts: list[FieldDrift] | None = None,
     zero_count_regressions: list[ZeroCountRegression] | None = None,
+    persistent_zero_sites: list[PersistentZeroSite] | None = None,
     auto_fix_result: dict[str, Any] | None = None,
 ) -> None:
     """1 回の run 終了時に Slack / Discord へサマリアラートを送る。
@@ -652,6 +657,10 @@ def _send_run_summary_alert(
     snapshot とは独立した永続ベースライン (SiteBaselineTracker) で検知され、
     「正常終了したが silent に 0 件」というサイレント破損を可視化する。
 
+    persistent_zero_sites: 一度も非ゼロ実績が無い(baseline=0)まま長期間0件が
+    継続しているサイト。zero_count_regressions では検知できない盲点
+    (2026-07-24発覚、長崎犬猫ネットの事例) を埋めるための別枠検知。
+
     auto_fix_result: `_trigger_auto_fix` の戻り値 dict。
     `attempted > invoked` のとき dispatch 失敗を WARNING シグナルに含め、
     自己修復が静かに動いていない状態を可視化する。
@@ -672,6 +681,7 @@ def _send_run_summary_alert(
     )
     drifts = list(field_drifts) if field_drifts else []
     regressions = list(zero_count_regressions) if zero_count_regressions else []
+    persistent_zeros = list(persistent_zero_sites) if persistent_zero_sites else []
     # auto-fix dispatch 失敗の signal: attempted > invoked
     af = auto_fix_result or {}
     af_attempted = int(af.get("attempted", 0))
@@ -682,6 +692,7 @@ def _send_run_summary_alert(
         or total_failed > 0
         or bool(drifts)
         or bool(regressions)
+        or bool(persistent_zeros)
         or af_dispatch_failed
     )
 
@@ -697,6 +708,8 @@ def _send_run_summary_alert(
         message += f", フィールド品質ドリフト {len(drifts)} 件"
     if regressions:
         message += f", 件数ゼロ回帰 {len(regressions)} 件"
+    if persistent_zeros:
+        message += f", 長期0件サイト {len(persistent_zeros)} 件"
     details: dict[str, Any] = {
         "total_sites": total_sites,
         "succeeded": total_succeeded,
@@ -726,6 +739,14 @@ def _send_run_summary_alert(
         if len(regressions) > 10:
             sample += f" ... (+{len(regressions) - 10} more)"
         details["zero_count_regressions_sample"] = sample
+    if persistent_zeros:
+        details["persistent_zero_sites_count"] = len(persistent_zeros)
+        sample = "; ".join(
+            f"[{s.site_name}] {s.consecutive_zero_runs}日連続0件" for s in persistent_zeros[:10]
+        )
+        if len(persistent_zeros) > 10:
+            sample += f" ... (+{len(persistent_zeros) - 10} more)"
+        details["persistent_zero_sites_sample"] = sample
     # 自己修復ループ Phase 1→2 橋渡しの結果。attempted > invoked = silent failure。
     # candidates > 0 でも disabled なら kill switch off (info only)。
     if af:
@@ -981,6 +1002,29 @@ def main():
             except Exception as e:
                 logger.warning(f"件数ベースライン追跡失敗: {e}")
 
+            # 長期0件サイト検知（盲点②: baseline=0 のサイトはゼロ件回帰の対象外
+            # なので、ここでは連続0件の日数だけで長期化したものを別枠で拾う。
+            # 長崎犬猫ネットが5月時点47件収集できていたのに、トラッカー導入
+            # (6/19)直後からサイト側で詰まり28日間気付かれなかった事例で発覚
+            # (2026-07-24)。閾値14日はユーザー判断。
+            persistent_zero_sites: list[PersistentZeroSite] = []
+            try:
+                persistent_zero_threshold = int(
+                    os.environ.get("ONECO_PERSISTENT_ZERO_THRESHOLD", "14")
+                )
+                persistent_zero_sites = baseline_tracker.detect_persistent_zero_sites(
+                    threshold=persistent_zero_threshold
+                )
+                if persistent_zero_sites:
+                    logger.warning(
+                        f"長期0件サイト検知: {len(persistent_zero_sites)} サイト "
+                        f"(非ゼロ実績無しで{persistent_zero_threshold}日以上連続0件)"
+                    )
+                    for s in persistent_zero_sites[:10]:
+                        logger.warning(f"  [{s.site_name}] {s.consecutive_zero_runs}日連続0件")
+            except Exception as e:
+                logger.warning(f"長期0件サイト検知失敗: {e}")
+
             # 自己修復ループ Phase 1→2 橋渡し: 検知サイトを auto-fix-adapter に
             # 渡して LLM-assisted patch worker を起動する (kill switch off の
             # 場合は no-op)。失敗時も収集パイプラインは止めない。
@@ -1011,6 +1055,7 @@ def main():
                 except Exception as e:
                     logger.warning(f"critical_sites 取得失敗: {e}")
                 candidate_sites.extend(r.site_name for r in zero_regressions)
+                candidate_sites.extend(s.site_name for s in persistent_zero_sites)
                 candidate_sites.extend(d.site_name for d in field_drifts)
                 auto_fix_result = _trigger_auto_fix(candidate_sites, logger=logger)
             except Exception as e:
@@ -1034,6 +1079,7 @@ def main():
                 logger=logger,
                 field_drifts=field_drifts,
                 zero_count_regressions=zero_regressions,
+                persistent_zero_sites=persistent_zero_sites,
                 auto_fix_result=auto_fix_result,
             )
 

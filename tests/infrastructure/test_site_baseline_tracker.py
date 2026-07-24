@@ -9,6 +9,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from src.data_collector.infrastructure.site_baseline_tracker import (
+    PersistentZeroSite,
     SiteBaselineTracker,
     ZeroCountRegression,
 )
@@ -153,3 +154,46 @@ class TestSiteBaselineTracker:
 
         assert tracker.detect_zero_count_regressions(threshold=2, min_baseline=2) == []
         assert len(tracker.detect_zero_count_regressions(threshold=2, min_baseline=1)) == 1
+
+    def test_detect_persistent_zero_never_seen_site(self, tmp_path):
+        """一度も非ゼロ実績が無い(baseline=0)サイトが threshold 回連続0件 → 検知する。
+
+        detect_zero_count_regressions は baseline>=1 が前提のため、導入時点
+        から一貫して0件のサイト(長崎犬猫ネット等、トラッカー導入とほぼ同時期に
+        サイト側が詰まったケース)を検知できない盲点があった(2026-07-24発覚)。
+        """
+        tracker = SiteBaselineTracker(tmp_path / "baselines.yaml")
+        for day in range(1, 16):
+            tracker.record("長崎犬猫ネット", 0, now=_t(day))
+
+        sites = tracker.detect_persistent_zero_sites(threshold=14)
+        assert len(sites) == 1
+        assert isinstance(sites[0], PersistentZeroSite)
+        assert sites[0].site_name == "長崎犬猫ネット"
+        assert sites[0].consecutive_zero_runs == 15
+
+    def test_detect_persistent_zero_below_threshold_not_detected(self, tmp_path):
+        tracker = SiteBaselineTracker(tmp_path / "baselines.yaml")
+        for day in range(1, 5):
+            tracker.record("新サイト", 0, now=_t(day))
+
+        assert tracker.detect_persistent_zero_sites(threshold=14) == []
+
+    def test_detect_persistent_zero_excludes_sites_with_baseline(self, tmp_path):
+        """baseline>=1 のサイトは detect_zero_count_regressions の担当なので除外する
+        (二重通知を避けるため排他的にする)"""
+        tracker = SiteBaselineTracker(tmp_path / "baselines.yaml")
+        tracker.record("サイトA", 5, now=_t(1))
+        for day in range(2, 20):
+            tracker.record("サイトA", 0, now=_t(day))
+
+        assert tracker.detect_persistent_zero_sites(threshold=14) == []
+        assert len(tracker.detect_zero_count_regressions(threshold=2)) == 1
+
+    def test_detect_persistent_zero_recovery_resets(self, tmp_path):
+        tracker = SiteBaselineTracker(tmp_path / "baselines.yaml")
+        for day in range(1, 15):
+            tracker.record("サイトB", 0, now=_t(day))
+        tracker.record("サイトB", 3, now=_t(15))  # 復活
+
+        assert tracker.detect_persistent_zero_sites(threshold=14) == []
