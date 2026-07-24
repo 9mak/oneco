@@ -54,6 +54,7 @@ class AnimalPublic(BaseModel):
     status_changed_at: datetime | None = None
     outcome_date: date | None = None
     local_image_paths: list[str] | None = None
+    last_collected_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -141,6 +142,7 @@ class ArchivedAnimalPublic(BaseModel):
     status_changed_at: datetime | None = None
     outcome_date: date | None = None
     local_image_paths: list[str] | None = None
+    last_collected_at: datetime | None = None
     archived_at: datetime
     # 個体識別フィールド (animal-identity-fields)。すべて任意。
     breed: str | None = None

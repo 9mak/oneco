@@ -15,6 +15,7 @@ import { FavoriteButton } from './FavoriteButton';
 import { ContactInfo } from './ContactInfo';
 import { ExternalLink } from './ExternalLink';
 import { StaleDataBadge } from './StaleDataBadge';
+import { LastUpdatedInfo } from './LastUpdatedInfo';
 
 interface AnimalDetailClientProps {
   /** 動物データ */
@@ -178,6 +179,9 @@ export function AnimalDetailClient({ animal }: AnimalDetailClientProps) {
                 </div>
               )}
             </dl>
+            <div className="mt-3">
+              <LastUpdatedInfo lastCollectedAt={animal.last_collected_at} />
+            </div>
           </section>
 
           {/* 性格・特徴 (自由文。改行を保持し、テキストとして描画して HTML を解釈させない) */}

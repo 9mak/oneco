@@ -7,6 +7,7 @@ import { AnimalPublic } from '@/types/animal';
 import { CategoryBadge } from '@/components/ui/CategoryBadge';
 import { FavoriteButton } from '@/components/animals/FavoriteButton';
 import { StaleDataBadge } from '@/components/animals/StaleDataBadge';
+import { LastUpdatedInfo } from '@/components/animals/LastUpdatedInfo';
 import { PLACEHOLDER_IMAGE } from '@/lib/images';
 
 interface AnimalCardProps {
@@ -112,6 +113,7 @@ export function AnimalCard({ animal }: AnimalCardProps) {
             <dd className="text-[var(--color-text-primary)] font-medium">{animal.location}</dd>
           </div>
         </dl>
+        <LastUpdatedInfo lastCollectedAt={animal.last_collected_at} />
       </div>
     </Link>
   );
