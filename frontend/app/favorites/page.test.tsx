@@ -61,7 +61,7 @@ describe('FavoritesPage の取得失敗分類', () => {
 
     // 取得できた個体は通常カードとして表示される
     await waitFor(() =>
-      expect(screen.getByRole('heading', { name: /犬の男の子/ })).toBeInTheDocument(),
+      expect(screen.getByRole('heading', { name: '犬' })).toBeInTheDocument(),
     );
 
     // 404 は「譲渡済み等」注記（1件）

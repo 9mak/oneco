@@ -33,8 +33,6 @@ export function ArchivedAnimalCard({ animal }: ArchivedAnimalCardProps) {
       ? 'bg-[var(--color-category-adoption)] text-white'
       : 'bg-[var(--color-accent-700)] text-white';
 
-  const heading = animal.sex === '不明' ? animal.species : `${animal.species}の${animal.sex}`;
-
   return (
     <article className="bg-white rounded-lg shadow-md overflow-hidden">
       <div className="relative w-full h-48 bg-gray-200">
@@ -61,9 +59,15 @@ export function ArchivedAnimalCard({ animal }: ArchivedAnimalCardProps) {
       </div>
 
       <div className="p-4 space-y-2">
-        <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">{heading}</h3>
+        <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+          {animal.species}
+        </h3>
 
         <dl className="grid grid-cols-2 gap-2 text-sm">
+          <div className="col-span-2">
+            <dt className="text-[var(--color-text-secondary)]">性別</dt>
+            <dd className="text-[var(--color-text-primary)] font-medium">{animal.sex}</dd>
+          </div>
           <div className="col-span-2">
             <dt className="text-[var(--color-text-secondary)]">卒業日</dt>
             <dd className="text-[var(--color-text-primary)] font-medium">{outcomeDate}</dd>

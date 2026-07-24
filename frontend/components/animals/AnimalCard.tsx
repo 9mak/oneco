@@ -66,7 +66,7 @@ export function AnimalCard({ animal }: AnimalCardProps) {
       <div className="p-4 space-y-2">
         <div className="flex items-start justify-between gap-2">
           <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
-            {animal.sex === '不明' ? animal.species : `${animal.species}の${animal.sex}`}
+            {animal.species}
           </h3>
           <StaleDataBadge shelterDate={animal.shelter_date} />
         </div>
@@ -77,6 +77,10 @@ export function AnimalCard({ animal }: AnimalCardProps) {
         )}
 
         <dl className="grid grid-cols-2 gap-2 text-sm">
+          <div>
+            <dt className="text-[var(--color-text-secondary)]">性別</dt>
+            <dd className="text-[var(--color-text-primary)] font-medium">{animal.sex}</dd>
+          </div>
           <div>
             <dt className="text-[var(--color-text-secondary)]">推定年齢</dt>
             <dd className="text-[var(--color-text-primary)] font-medium">{ageDisplay}</dd>
