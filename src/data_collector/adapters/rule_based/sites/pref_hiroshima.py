@@ -99,24 +99,23 @@ class PrefHiroshimaAdapter(SinglePageTableAdapter):
 
         headers: list[Tag] = []
         blocks: list[tuple[Tag, list[Tag]]] = []
-        # scope 直下の要素を順に走査し、管理番号 h2 ごとにグルーピングする
-        current_header: Tag | None = None
-        current_body: list[Tag] = []
-        for child in scope.children:
-            if not isinstance(child, Tag):
-                continue
-            if child.name and child.name.lower() == "h2" and self._is_mgmt_header(child):
-                # 直前のブロックを確定
-                if current_header is not None:
-                    blocks.append((current_header, current_body))
-                    headers.append(current_header)
-                current_header = child
-                current_body = []
-            elif current_header is not None:
-                current_body.append(child)
-        if current_header is not None:
-            blocks.append((current_header, current_body))
-            headers.append(current_header)
+        # scope 内の管理番号 h2 を検索し、それぞれの後続要素をグルーピングする
+        mgmt_headers = [
+            h2 for h2 in scope.find_all("h2") if isinstance(h2, Tag) and self._is_mgmt_header(h2)
+        ]
+        for h2 in mgmt_headers:
+            body_tags: list[Tag] = []
+            for sibling in h2.next_siblings:
+                if isinstance(sibling, Tag):
+                    if (
+                        sibling.name
+                        and sibling.name.lower() == "h2"
+                        and self._is_mgmt_header(sibling)
+                    ):
+                        break
+                    body_tags.append(sibling)
+            headers.append(h2)
+            blocks.append((h2, body_tags))
 
         self._rows_cache = headers
         self._blocks_cache = blocks
