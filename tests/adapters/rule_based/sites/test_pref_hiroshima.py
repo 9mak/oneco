@@ -50,6 +50,19 @@ class TestPrefHiroshimaAdapter:
             assert url.startswith("https://www.pref.hiroshima.lg.jp/")
             assert cat == "lost"
 
+    def test_fetch_animal_list_handles_nested_wrapper_div(self, fixture_html):
+        """管理番号 h2 が detail_free の直接の子ではなく、ネストされた
+        <div> の子孫として配置されるサイト側HTML構造変更後でも動物ブロックを
+        抽出できる (2026-07-25 実サイトで発覚した本物のバグの回帰防止)。
+        """
+        html = fixture_html("pref_hiroshima_nested")
+        adapter = PrefHiroshimaAdapter(_site())
+
+        with patch.object(adapter, "_http_get", return_value=html):
+            result = adapter.fetch_animal_list()
+
+        assert len(result) == 2
+
     def test_extract_animal_details_first_block(self, fixture_html):
         """1 件目のブロックから RawAnimalData を構築できる"""
         html = fixture_html("pref_hiroshima")
