@@ -179,6 +179,56 @@ async def test_save_animal_updates_existing_record(repository, async_session):
 
 
 @pytest.mark.asyncio
+async def test_save_animal_sets_last_collected_at_on_insert(repository):
+    """save_animal()が新規挿入時にlast_collected_atを現在時刻で設定するか"""
+    animal_data = AnimalData(
+        species="犬",
+        shelter_date=date(2026, 1, 5),
+        location="高知県",
+        source_url="https://example.com/animal/new-collected",
+        category="adoption",
+    )
+
+    # SQLite は timezone-aware datetime を naive で読み戻すため、比較のため
+    # 両辺を naive に揃える (PostgreSQL 本番では aware のまま保持される)。
+    before = datetime.now(UTC).replace(tzinfo=None)
+    result = await repository.save_animal(animal_data)
+    after = datetime.now(UTC).replace(tzinfo=None)
+
+    assert result.last_collected_at is not None
+    collected = result.last_collected_at.replace(tzinfo=None)
+    assert before <= collected <= after
+
+
+@pytest.mark.asyncio
+async def test_save_animal_updates_last_collected_at_on_update(repository, async_session):
+    """save_animal()が既存レコード更新時もlast_collected_atを最新化するか"""
+    old_timestamp = datetime(2026, 1, 1, tzinfo=UTC)
+    existing_animal = Animal(
+        species="犬",
+        shelter_date=date(2026, 1, 5),
+        location="高知県",
+        source_url="https://example.com/animal/re-collected",
+        last_collected_at=old_timestamp,
+    )
+    async_session.add(existing_animal)
+    await async_session.commit()
+
+    animal_data = AnimalData(
+        species="犬",
+        shelter_date=date(2026, 1, 5),
+        location="高知県",
+        source_url="https://example.com/animal/re-collected",
+        category="adoption",
+    )
+    result = await repository.save_animal(animal_data)
+
+    assert result.last_collected_at is not None
+    collected = result.last_collected_at.replace(tzinfo=None)
+    assert collected > old_timestamp.replace(tzinfo=None)
+
+
+@pytest.mark.asyncio
 async def test_get_animal_by_id_returns_animal(repository, async_session):
     """get_animal_by_id()が指定IDの動物を返すか"""
     # テストデータを挿入

@@ -357,6 +357,134 @@ class TestRateLimitRetry:
         assert result == [("old", "OK-PATCH")]
 
 
+class TestResolveModel:
+    """--provider に応じたデフォルトモデル解決。明示 --model 指定は常に優先。"""
+
+    def test_groq_default(self):
+        assert afa._resolve_model("groq", None) == afa.DEFAULT_MODEL
+
+    def test_gemini_default(self):
+        assert afa._resolve_model("gemini", None) == afa.GEMINI_DEFAULT_MODEL
+
+    def test_explicit_model_overrides_groq_default(self):
+        assert afa._resolve_model("groq", "custom-model") == "custom-model"
+
+    def test_explicit_model_overrides_gemini_default(self):
+        assert afa._resolve_model("gemini", "custom-model") == "custom-model"
+
+
+class TestAskLlmForFixDispatch:
+    """provider によって Groq/Gemini どちらの実装を呼ぶかの振り分け。"""
+
+    def test_default_provider_calls_groq(self, monkeypatch):
+        calls = []
+        monkeypatch.setattr(afa, "_ask_groq_for_fix", lambda *a, **k: calls.append("groq") or [])
+        monkeypatch.setattr(
+            afa, "_ask_gemini_for_fix", lambda *a, **k: calls.append("gemini") or []
+        )
+        afa.ask_llm_for_fix("code", ROOT / "scripts" / "auto_fix_adapter.py", None, None, {})
+        assert calls == ["groq"]
+
+    def test_gemini_provider_calls_gemini(self, monkeypatch):
+        calls = []
+        monkeypatch.setattr(afa, "_ask_groq_for_fix", lambda *a, **k: calls.append("groq") or [])
+        monkeypatch.setattr(
+            afa, "_ask_gemini_for_fix", lambda *a, **k: calls.append("gemini") or []
+        )
+        afa.ask_llm_for_fix(
+            "code",
+            ROOT / "scripts" / "auto_fix_adapter.py",
+            None,
+            None,
+            {},
+            provider="gemini",
+        )
+        assert calls == ["gemini"]
+
+
+class TestAskGeminiForFix:
+    def test_missing_api_key_raises(self, monkeypatch):
+        monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+        with pytest.raises(RuntimeError, match="GEMINI_API_KEY"):
+            afa._ask_gemini_for_fix(
+                "code", ROOT / "scripts" / "auto_fix_adapter.py", None, None, {}, model="m"
+            )
+
+    def test_retries_on_rate_limit_then_succeeds(self, monkeypatch):
+        """429 (ClientError) を踏んでも待って再試行し成功することを確認。"""
+        from google.genai import errors
+
+        monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+        monkeypatch.setattr(afa.time, "sleep", lambda _s: None)
+        monkeypatch.setattr(afa, "build_prompt", lambda *a, **k: ("sys", "user"))
+
+        calls = {"n": 0}
+
+        def fake_generate_content(**_kwargs):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise errors.ClientError(429, {"error": {"message": "rate limited"}}, None)
+            content = "<<<<<<< SEARCH\nold\n=======\nOK-PATCH\n>>>>>>> REPLACE"
+            return type("Resp", (), {"text": content})()
+
+        class FakeModels:
+            generate_content = staticmethod(fake_generate_content)
+
+        class FakeClient:
+            def __init__(self, **_kw):
+                self.models = FakeModels()
+
+        monkeypatch.setattr(afa.genai, "Client", FakeClient)
+
+        result = afa._ask_gemini_for_fix(
+            "code", ROOT / "scripts" / "auto_fix_adapter.py", None, None, {}, model="gemini-test"
+        )
+        assert calls["n"] == 2
+        assert result == [("old", "OK-PATCH")]
+
+    def test_non_rate_limit_client_error_raises_immediately(self, monkeypatch):
+        from google.genai import errors
+
+        monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+        monkeypatch.setattr(afa, "build_prompt", lambda *a, **k: ("sys", "user"))
+
+        def fake_generate_content(**_kwargs):
+            raise errors.ClientError(400, {"error": {"message": "bad request"}}, None)
+
+        class FakeModels:
+            generate_content = staticmethod(fake_generate_content)
+
+        class FakeClient:
+            def __init__(self, **_kw):
+                self.models = FakeModels()
+
+        monkeypatch.setattr(afa.genai, "Client", FakeClient)
+
+        with pytest.raises(errors.ClientError):
+            afa._ask_gemini_for_fix(
+                "code", ROOT / "scripts" / "auto_fix_adapter.py", None, None, {}, model="m"
+            )
+
+
+class TestFetchHtmlSamplesMaxChars:
+    def test_uses_provided_max_html_chars(self, monkeypatch):
+        """max_html_chars を渡すと圧縮後 HTML がその長さでトランケートされる。"""
+
+        class FakeAdapter:
+            def __init__(self, _config):
+                pass
+
+            def _http_get(self, _url):
+                return "<html>" + "x" * 100 + "</html>"
+
+            def fetch_animal_list(self):
+                return [("https://example.com/detail", "sheltered")]
+
+        site_config = type("SC", (), {"list_url": "https://example.com/"})()
+        samples = afa.fetch_html_samples(site_config, FakeAdapter, max_html_chars=10)
+        assert len(samples["list_html"]) == 10
+
+
 class TestVerifyNoUnexpectedChanges:
     """git status で allowed 以外に変更が無いことを再確認する gate。"""
 

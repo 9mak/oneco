@@ -44,6 +44,8 @@ export interface AnimalPublic {
   description?: string | null;
   /** 収容番号・管理番号 */
   management_number?: string | null;
+  /** oneco側の収集(クロール)が最後に成功した日時 (ISO 8601形式) */
+  last_collected_at?: string | null;
 }
 
 /**
@@ -78,6 +80,8 @@ export interface ArchivedAnimalPublic {
   name?: string | null;
   management_number?: string | null;
   description?: string | null;
+  /** oneco側の収集(クロール)が最後に成功した日時 (ISO 8601形式) */
+  last_collected_at?: string | null;
 }
 
 /**

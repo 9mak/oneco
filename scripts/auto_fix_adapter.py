@@ -36,6 +36,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 import yaml  # noqa: E402
+from google import genai  # noqa: E402
 
 # adapter registry を populate（auto-discoverable）
 import data_collector.adapters.rule_based.sites as _sites_pkg  # noqa: E402
@@ -65,6 +66,16 @@ MAX_OUTPUT_TOKENS = 1024
 # 待機リトライ。単発リクエストを縮小しても、同一分内に複数走ると 429 になりうるため。
 RATE_LIMIT_MAX_RETRIES = 4
 RATE_LIMIT_DEFAULT_WAIT_SEC = 60
+
+# Gemini 経路 (agy 検証で高精度確認、2026-07-25 project_self_healing.md)。
+# Groq (llama-3.3-70b) は実測パッチ成功率ほぼ0%だったのに対し、agy CLI 経由の
+# Gemini は柏市・仙台市・高知県の3/3で一発成功。Groq 無料枠 TPM 12000 の制約が
+# 無いため MAX_HTML_CHARS を大幅に緩和できる (実測 19000〜23000 字で無問題)。
+# 無料枠 (Free Tier) は Flash 系で RPD=20 と少ないため、収益化前の運用は
+# 低頻度・手動中心を想定 (課金/Paid Tier 移行はユーザー判断、ここでは行わない)。
+GEMINI_DEFAULT_MODEL = "gemini-3.6-flash"
+GEMINI_MAX_HTML_CHARS = 25000
+GEMINI_MAX_OUTPUT_TOKENS = 2048
 
 
 _SCRIPT_STYLE_RE = re.compile(
@@ -177,13 +188,15 @@ def measure(adapter) -> Metrics:
     )
 
 
-def fetch_html_samples(site_config: SiteConfig, adapter_cls: type) -> dict[str, str]:
+def fetch_html_samples(
+    site_config: SiteConfig, adapter_cls: type, max_html_chars: int = MAX_HTML_CHARS
+) -> dict[str, str]:
     """list HTML と detail HTML サンプルを取得 (LLM プロンプト用)"""
     adapter = adapter_cls(site_config)
     samples: dict[str, str] = {}
     try:
         list_html = adapter._http_get(site_config.list_url)
-        samples["list_html"] = _compress_html(list_html)[:MAX_HTML_CHARS]
+        samples["list_html"] = _compress_html(list_html)[:max_html_chars]
     except Exception as e:
         samples["list_html"] = f"<error: {e}>"
         return samples
@@ -193,7 +206,7 @@ def fetch_html_samples(site_config: SiteConfig, adapter_cls: type) -> dict[str, 
             detail_url = urls[0][0]
             detail_html = adapter._http_get(detail_url)
             samples["detail_url"] = detail_url
-            samples["detail_html"] = _compress_html(detail_html)[:MAX_HTML_CHARS]
+            samples["detail_html"] = _compress_html(detail_html)[:max_html_chars]
     except Exception as e:
         samples["detail_html"] = f"<error: {e}>"
     return samples
@@ -281,7 +294,29 @@ adapter のラベル/セレクタを実HTML に合わせて修正してくださ
     return system_msg, user_msg
 
 
+def _resolve_model(provider: str, explicit_model: str | None) -> str:
+    """--model が明示されていればそれを使い、無ければ provider 別のデフォルトを返す。"""
+    if explicit_model:
+        return explicit_model
+    return GEMINI_DEFAULT_MODEL if provider == "gemini" else DEFAULT_MODEL
+
+
 def ask_llm_for_fix(
+    adapter_code: str,
+    adapter_file: Path,
+    site_config: SiteConfig,
+    before: Metrics,
+    samples: dict[str, str],
+    model: str = DEFAULT_MODEL,
+    provider: str = "groq",
+) -> list[tuple[str, str]]:
+    """provider に応じて Groq/Gemini いずれかに修正を依頼する (振り分けのみ)。"""
+    if provider == "gemini":
+        return _ask_gemini_for_fix(adapter_code, adapter_file, site_config, before, samples, model)
+    return _ask_groq_for_fix(adapter_code, adapter_file, site_config, before, samples, model)
+
+
+def _ask_groq_for_fix(
     adapter_code: str,
     adapter_file: Path,
     site_config: SiteConfig,
@@ -344,6 +379,59 @@ def ask_llm_for_fix(
             )
             time.sleep(wait)
     text = response.choices[0].message.content or ""
+    return extract_search_replace_blocks(text)
+
+
+def _ask_gemini_for_fix(
+    adapter_code: str,
+    adapter_file: Path,
+    site_config: SiteConfig,
+    before: Metrics,
+    samples: dict[str, str],
+    model: str = GEMINI_DEFAULT_MODEL,
+) -> list[tuple[str, str]]:
+    """Gemini API (google-genai SDK) に修正を依頼し、SEARCH/REPLACE ブロックを返す。
+
+    `GEMINI_API_KEY` 環境変数が必須。無料枠 (Free Tier) は Flash 系モデルで
+    RPD=20 と少ないため (2026-07-25 実測、project_self_healing.md)、収益化前は
+    低頻度・手動中心の運用を想定する。課金 (Paid Tier 移行) はユーザー判断で
+    別途行う。
+    """
+    from google.genai import errors, types  # 遅延 import (テストで mock しやすくするため)
+
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY 環境変数が未設定です")
+    client = genai.Client(api_key=api_key)
+    system_msg, user_msg = build_prompt(
+        adapter_code,
+        str(adapter_file.relative_to(ROOT)),
+        site_config,
+        before,
+        samples,
+    )
+    for attempt in range(RATE_LIMIT_MAX_RETRIES):
+        try:
+            response = client.models.generate_content(
+                model=model,
+                contents=user_msg,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_msg,
+                    max_output_tokens=GEMINI_MAX_OUTPUT_TOKENS,
+                ),
+            )
+            break
+        except errors.ClientError as e:
+            if e.code != 429 or attempt == RATE_LIMIT_MAX_RETRIES - 1:
+                raise
+            wait = _retry_after_seconds(e) or RATE_LIMIT_DEFAULT_WAIT_SEC
+            print(
+                f"  rate_limit (attempt {attempt + 1}/{RATE_LIMIT_MAX_RETRIES}): "
+                f"{wait}s 待って再試行",
+                file=sys.stderr,
+            )
+            time.sleep(wait)
+    text = response.text or ""
     return extract_search_replace_blocks(text)
 
 
@@ -652,11 +740,14 @@ def _dry_run_exit(code: int, dry_run: bool) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description="LLM-assisted adapter 自動修復")
     parser.add_argument("--site-name", required=True, help="sites.yaml の name と完全一致")
-    parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument("--provider", choices=["groq", "gemini"], default="groq")
+    parser.add_argument("--model", default=None, help="未指定なら --provider 別のデフォルトを使う")
     parser.add_argument("--dry-run", action="store_true", help="パッチ適用までして PR は作らない")
     args = parser.parse_args()
+    model = _resolve_model(args.provider, args.model)
+    max_html_chars = GEMINI_MAX_HTML_CHARS if args.provider == "gemini" else MAX_HTML_CHARS
 
-    print(f"=== auto-fix-adapter: {args.site_name} ===")
+    print(f"=== auto-fix-adapter: {args.site_name} (provider={args.provider}, model={model}) ===")
     site_config, adapter_cls, adapter_file = load_site(args.site_name)
     print(f"adapter: {adapter_cls.__name__} @ {adapter_file.relative_to(ROOT)}")
 
@@ -667,14 +758,20 @@ def main() -> int:
 
     # 2. HTML サンプル取得
     print("\n[2/6] fetching HTML samples...")
-    samples = fetch_html_samples(site_config, adapter_cls)
+    samples = fetch_html_samples(site_config, adapter_cls, max_html_chars=max_html_chars)
 
     # 3. LLM に SEARCH/REPLACE 形式の修正を依頼
     print("\n[3/6] requesting fix (SEARCH/REPLACE blocks) from LLM...")
     adapter_code = adapter_file.read_text(encoding="utf-8")
     try:
         blocks = ask_llm_for_fix(
-            adapter_code, adapter_file, site_config, before, samples, model=args.model
+            adapter_code,
+            adapter_file,
+            site_config,
+            before,
+            samples,
+            model=model,
+            provider=args.provider,
         )
     except Exception as e:
         msg = f"LLM 呼び出し失敗: {e}"

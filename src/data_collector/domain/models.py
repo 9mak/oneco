@@ -97,6 +97,9 @@ class AnimalData(BaseModel):
     local_image_paths: list[str] | None = Field(
         default=None, description="ローカル保存された画像のパス一覧"
     )
+    last_collected_at: datetime | None = Field(
+        default=None, description="oneco側の収集(クロール)が最後に成功した日時"
+    )
 
     @field_validator("species")
     @classmethod

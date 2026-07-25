@@ -98,6 +98,12 @@ class Animal(Base):
     # (1ドメインに複数サイトが同居するケースがあり source_url では分離できないため)。
     source_site: str | None = Column(String(255), nullable=True, index=True)
 
+    # oneco 側の収集(クロール)が最後に成功した日時。収集のたびに save_animal が
+    # 更新する。shelter_date (自治体側の保護開始日) とは別概念で、「この情報が
+    # いつ確認されたか」をフロントに示すために使う (2026-07-24 発覚: サイトの
+    # 収集が壊れて更新が止まっても古いデータがそのまま表示され続けていた)。
+    last_collected_at: datetime | None = Column(DateTime(timezone=True), nullable=True)
+
     # 画像永続化フィールド
     local_image_paths: list[str] = Column(
         JSON().with_variant(JSONB, "postgresql"),
@@ -257,6 +263,7 @@ class AnimalArchive(Base):
     status: str = Column(String(20), nullable=False)
     status_changed_at: datetime | None = Column(DateTime(timezone=True), nullable=True)
     outcome_date: date | None = Column(Date, nullable=True)
+    last_collected_at: datetime | None = Column(DateTime(timezone=True), nullable=True)
 
     # アーカイブ情報
     archived_at: datetime = Column(
