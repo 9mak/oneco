@@ -418,6 +418,7 @@ class TestInsertArchive:
             status="returned",
             status_changed_at=datetime(2025, 5, 20, tzinfo=UTC),
             outcome_date=date(2025, 5, 20),
+            last_collected_at=datetime(2025, 5, 19, tzinfo=UTC),
             # 個体識別フィールド (animal-identity-fields)
             breed="ミックス",
             name="シロ",
@@ -449,6 +450,7 @@ class TestInsertArchive:
         assert archived.category == "lost"
         assert archived.status == "returned"
         assert archived.outcome_date == date(2025, 5, 20)
+        assert archived.last_collected_at.replace(tzinfo=None) == datetime(2025, 5, 19)
         # 個体識別フィールド (animal-identity-fields) も引き継がれる
         assert archived.breed == "ミックス"
         assert archived.name == "シロ"

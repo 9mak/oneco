@@ -5,7 +5,7 @@ AnimalPublic, PaginationMeta, PaginatedResponse の Pydantic スキーマが
 要件通りに実装されているかを検証します。
 """
 
-from datetime import date
+from datetime import UTC, date, datetime
 
 import pytest
 from pydantic import ValidationError
@@ -74,6 +74,26 @@ def test_animal_public_schema_from_orm():
     assert animal.sex == "女の子"
     assert animal.age_months == 12
     assert animal.source_url == "https://example.com/animal/2"
+
+
+def test_animal_public_schema_includes_last_collected_at():
+    """AnimalPublicスキーマがlast_collected_atをORMから引き継ぐか"""
+    collected_at = datetime(2026, 7, 20, 9, 0, 0, tzinfo=UTC)
+    orm_animal = Animal(
+        id=1,
+        species="猫",
+        sex="女の子",
+        shelter_date=date(2026, 1, 6),
+        location="高知県",
+        source_url="https://example.com/animal/collected",
+        category="adoption",
+        image_urls=[],
+        last_collected_at=collected_at,
+    )
+
+    animal = AnimalPublic.model_validate(orm_animal)
+
+    assert animal.last_collected_at == collected_at
 
 
 def test_animal_public_schema_optional_fields():

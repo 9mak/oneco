@@ -37,8 +37,9 @@ from .infrastructure.site_baseline_tracker import (
     ZeroCountRegression,
 )
 from .infrastructure.snapshot_store import SnapshotStore
+from .infrastructure.zero_count_verifier import verify_zero_count
 from .llm.adapter import LlmAdapter
-from .llm.config import SiteConfigLoader, SitesConfig
+from .llm.config import SiteConfig, SiteConfigLoader, SitesConfig
 from .llm.html_preprocessor import HtmlPreprocessor
 from .llm.providers.base import LlmProvider
 from .llm.providers.groq_provider import GroqProvider
@@ -523,6 +524,46 @@ def _is_llm_fixable_error(error_message: str | None) -> bool:
     if not error_message:
         return True
     return not _NON_CODE_FIXABLE_ERROR_PATTERN.search(error_message)
+
+
+def _verify_zero_regressions(
+    zero_regressions: list[ZeroCountRegression],
+    sites_by_name: dict[str, SiteConfig],
+    logger: logging.Logger,
+) -> list[ZeroCountRegression]:
+    """件数ゼロ回帰の各候補に軽量再検証 (LLM不使用) をかけ、怪しいものだけ残す。
+
+    baseline 1〜2件の薄いサイトは在庫の自然な増減で threshold(2回連続0件)に
+    ひっかかりやすく誤検知が多い(2026-07-24 実データ: 検知15件中14件が
+    baseline 1〜2件)。threshold を緩めると「本サイトには掲載されているのに
+    oneco側の収集が壊れている」見逃しの検知が遅れるため、threshold は
+    据え置いたまま、baseline の大小に関係なく毎回 verify_zero_count() で
+    再取得+0件メッセージ確認をかけて絞り込む。
+
+    site_config / adapter が特定できない、または検証中に例外が起きた場合は
+    安全側 (壊れている可能性あり) に倒して候補に残す。
+    """
+    verified: list[ZeroCountRegression] = []
+    for r in zero_regressions:
+        site = sites_by_name.get(r.site_name)
+        adapter_cls = SiteAdapterRegistry.get(r.site_name) if site else None
+        if site is None or adapter_cls is None:
+            logger.warning(f"[{r.site_name}] 0件検証: site/adapter未特定 → 安全側で候補に残す")
+            verified.append(r)
+            continue
+        try:
+            adapter = adapter_cls(site)
+            result = verify_zero_count(adapter, list_url=site.list_url)
+        except Exception as e:
+            logger.warning(f"[{r.site_name}] 0件検証中に例外: {e} → 安全側で候補に残す")
+            verified.append(r)
+            continue
+        if result.should_flag:
+            logger.warning(f"[{r.site_name}] 0件検証: 怪しい ({result.reason}) → 候補に残す")
+            verified.append(r)
+        else:
+            logger.info(f"[{r.site_name}] 0件検証: 正常と判定 ({result.reason}) → 候補から除外")
+    return verified
 
 
 def _trigger_auto_fix(site_names: list[str], logger: logging.Logger) -> dict[str, Any]:
@@ -1086,7 +1127,11 @@ def main():
                     candidate_sites.extend(fixable)
                 except Exception as e:
                     logger.warning(f"critical_sites 取得失敗: {e}")
-                candidate_sites.extend(r.site_name for r in zero_regressions)
+                sites_by_name = {s.name: s for s in config.sites}
+                verified_zero_regressions = _verify_zero_regressions(
+                    zero_regressions, sites_by_name=sites_by_name, logger=logger
+                )
+                candidate_sites.extend(r.site_name for r in verified_zero_regressions)
                 candidate_sites.extend(s.site_name for s in persistent_zero_sites)
                 candidate_sites.extend(d.site_name for d in field_drifts)
                 auto_fix_result = _trigger_auto_fix(candidate_sites, logger=logger)
