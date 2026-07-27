@@ -96,6 +96,29 @@ def _has_explicit_zero_message(html: str) -> bool:
     return any(pattern.search(html) for pattern in _ZERO_MESSAGE_PATTERNS)
 
 
+def _strip_empty_placeholder_tables(soup: BeautifulSoup) -> None:
+    """ヘッダー行のみで実データ行を持たない表 (在庫0件のプレースホルダ) を除去する。
+
+    在庫0件でも表そのものは残り「ヘッダー行 + 全セル空の1行」という形に
+    なるサイトがある (実測: 鳥取県)。これをそのままテキスト化すると空セルは
+    消えて「収容日時 収容場所 種類 品種 毛色...」という項目名の羅列だけが
+    残り、LLM が「品種・毛色等の値がある = 動物が掲載されている」と誤認する
+    (2026-07-27 発見)。表の最初の行をヘッダーとみなし、それ以降の行に
+    非空セルが 1 つも無ければ実データなしとして表ごと除去する。
+    """
+    for table in soup.find_all("table"):
+        trs = table.find_all("tr")
+        if len(trs) <= 1:
+            continue
+        has_data = any(
+            cell.get_text(strip=True).replace("\xa0", "")
+            for tr in trs[1:]
+            for cell in tr.find_all(["td", "th"])
+        )
+        if not has_data:
+            table.decompose()
+
+
 def _compress_for_judge(html: str) -> str:
     """LLM 分類用にページ本文テキストを抽出する。
 
@@ -109,6 +132,7 @@ def _compress_for_judge(html: str) -> str:
     soup = BeautifulSoup(html, "html.parser")
     for tag in soup.find_all(_STRIP_TAGS):
         tag.decompose()
+    _strip_empty_placeholder_tables(soup)
     body = soup.body or soup
     text = _WHITESPACE_RE.sub(" ", body.get_text(separator=" ")).strip()
     return text[:_JUDGE_MAX_HTML_CHARS]
