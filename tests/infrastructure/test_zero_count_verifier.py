@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from src.data_collector.infrastructure import zero_count_verifier
 from src.data_collector.infrastructure.zero_count_verifier import (
+    _compress_for_judge,
     _llm_judge_page_animals,
     verify_zero_count,
 )
@@ -211,3 +212,92 @@ class TestLlmJudgePageAnimals:
                 )()
 
         monkeypatch.setattr(openai, "OpenAI", FakeClient)
+
+
+class TestCompressForJudgeEmptyTable:
+    """ヘッダー行+全セル空データ行のみの表 (在庫0件のプレースホルダ) は、
+    テキスト化するとヘッダーの項目名だけが動物データのように見えてしまい
+    LLM が LISTED と誤判定する (2026-07-27 実サイト調査: 鳥取県で、中部/西部
+    収容動物表のヘッダー行「収容日時 収容場所 種類 品種 毛色...」だけが
+    テキストに残り、値セルが全て空なのに LLM が『品種・毛色等の項目がある
+    = 動物が掲載されている』と誤認した)。ヘッダー行以外に実データを持たない
+    表はテキスト抽出前に除去する。"""
+
+    _EMPTY_TABLE_HTML = """
+    <body>
+    <h2 class="Title">中部総合事務所収容動物</h2>
+    <div class="Contents">
+    <table><tbody>
+    <tr><th>収容日時</th><th>収容場所</th><th>種類</th><th>品種</th><th>毛色</th></tr>
+    <tr><td></td><td></td><td></td><td></td><td></td></tr>
+    </tbody></table>
+    </div>
+    </body>
+    """
+
+    def test_header_only_empty_data_table_is_stripped(self):
+        compressed = _compress_for_judge(self._EMPTY_TABLE_HTML)
+        assert "品種" not in compressed
+        assert "毛色" not in compressed
+
+    def test_table_with_actual_data_row_is_kept(self):
+        html = """
+        <body>
+        <table><tbody>
+        <tr><th>収容日時</th><th>品種</th></tr>
+        <tr><td>令和8年7月20日</td><td>柴犬</td></tr>
+        </tbody></table>
+        </body>
+        """
+        compressed = _compress_for_judge(html)
+        assert "柴犬" in compressed
+
+
+class TestLlmJudgePageAnimalsTottoriRegression:
+    """鳥取県の実サイト構造 (中部/西部それぞれヘッダー行+空データ行のみの
+    表が2つ並ぶ) を模した回帰テスト。空表除去前は LLM が LISTED と誤判定
+    していた (2026-07-27 発見)。"""
+
+    _TOTTORI_LIKE_HTML = (
+        "<body><div>"
+        + "迷い犬猫収容情報。鳥取県内の保健所で収容した犬・猫等の情報を掲載しています。" * 5
+        + "</div>"
+        + '<h2 class="Title">中部総合事務所収容動物</h2>'
+        "<table><tbody>"
+        "<tr><th>収容日時</th><th>収容場所</th><th>種類</th><th>品種</th>"
+        "<th>毛色</th><th>性別</th><th>推定年齢</th><th>体格、その他特徴</th></tr>"
+        "<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>"
+        "</tbody></table>"
+        '<h2 class="Title">西部総合事務所収容動物</h2>'
+        "<table><tbody>"
+        "<tr><td>収容日時</td><td>収容場所</td><td>種類</td><td>品種</td>"
+        "<td>毛色</td><td>性別</td><td>推定年齢</td><td>体格、その他特徴</td></tr>"
+        "<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>"
+        "</tbody></table>"
+        "</body>"
+    )
+
+    def test_empty_placeholder_tables_do_not_trigger_llm_call(self, monkeypatch):
+        """空テーブル除去後は本文が短くなり、_JUDGE_MIN_TEXT_CHARS 未満で
+        unclear に倒れるか、あるいは LLM を呼んでも項目名の羅列が消えて
+        いるため listed とは誤判定されないことを確認する。"""
+        monkeypatch.setenv("GROQ_API_KEY", "test-key")
+
+        import openai
+
+        def fake_create(**_kwargs):
+            # 空表除去後に LLM へ渡ればヘッダー項目名は残っていないはず
+            msg = type("M", (), {"content": "NONE"})()
+            return type("Resp", (), {"choices": [type("C", (), {"message": msg})()]})()
+
+        class FakeClient:
+            def __init__(self, **_kw):
+                self.chat = type(
+                    "Chat",
+                    (),
+                    {"completions": type("Comp", (), {"create": staticmethod(fake_create)})()},
+                )()
+
+        monkeypatch.setattr(openai, "OpenAI", FakeClient)
+        result = _llm_judge_page_animals(self._TOTTORI_LIKE_HTML)
+        assert result in ("none", "unclear")
