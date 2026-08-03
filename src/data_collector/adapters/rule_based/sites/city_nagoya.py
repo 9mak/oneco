@@ -56,7 +56,13 @@ _LABEL_TO_FIELD: dict[str, str] = {
     "サイズ": "size",
     "管理番号": "management_number",
     "番号": "management_number",
+    # 迷子動物情報ページの「動物」列 (犬 / 猫 / その他)。
+    # 「種類」列は犬種名 (雑種・柴犬…) なので species とは別に扱う。
+    "動物": "animal_kind",
 }
+
+# 収容ゼロのとき置かれるプレースホルダ値。動物として数えない。
+_PLACEHOLDER_VALUES = {"-", "－", "ー", "―", "‐", ""}
 
 
 class CityNagoyaAdapter(SinglePageTableAdapter):
@@ -127,8 +133,13 @@ class CityNagoyaAdapter(SinglePageTableAdapter):
             if loc:
                 fields["location"] = loc
 
-        # 動物種別はサイト名から推定 (HTML の「種類」は犬種名等の具体値の可能性)
-        species = self._infer_species_from_site_name(self.site_config.name)
+        # 動物種別: 表に「動物」列 (犬/猫/その他) があればそれを最優先する。
+        # サイト名から決められない「飼主不明動物」ページでは、この列だけが
+        # 犬猫を判別できる情報源になる。
+        # (HTML の「種類」列は犬種名等の具体値なので species には使わない)
+        species = self._normalize_animal_kind(
+            fields.get("animal_kind", "")
+        ) or self._infer_species_from_site_name(self.site_config.name)
 
         try:
             return RawAnimalData(
@@ -157,9 +168,31 @@ class CityNagoyaAdapter(SinglePageTableAdapter):
         """ヘッダ行 (全セルが `<th>`) を除いたデータ行のみを返す
 
         動物用 table が存在しない場合は空リストを返す (0 件扱い)。
+        迷子動物情報ページは収容ゼロのとき全列 "-" のプレースホルダ行を
+        1 本置くため、これも動物として数えない。
         """
         rows = self._load_rows()
-        return [r for r in rows if not self._is_header_row(r)]
+        return [r for r in rows if not self._is_header_row(r) and not self._is_placeholder_row(r)]
+
+    @staticmethod
+    def _normalize_animal_kind(value: str) -> str:
+        """「動物」列の値を犬 / 猫 / その他 に寄せる (空なら空文字)"""
+        if not value:
+            return ""
+        if "犬" in value:
+            return "犬"
+        if "猫" in value:
+            return "猫"
+        return "その他"
+
+    @staticmethod
+    def _is_placeholder_row(row: Tag) -> bool:
+        """全セルが "-" 等のプレースホルダだけの行か判定する"""
+        cells = row.find_all(["td", "th"])
+        if not cells:
+            return True
+        values = [c.get_text(separator=" ", strip=True) for c in cells]
+        return all(v in _PLACEHOLDER_VALUES for v in values)
 
     def _build_column_map(self) -> dict[int, str]:
         """ヘッダ行からラベル → field の対応を学習する

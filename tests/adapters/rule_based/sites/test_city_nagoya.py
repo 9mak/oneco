@@ -239,3 +239,72 @@ class TestCityNagoyaAdapter:
 
         assert animal is not None
         assert animal.species == "犬"
+
+
+# 実ページ (迷子動物情報 / 1015494.html) の表。収容ゼロのときは
+# 全列が "-" のプレースホルダ行が 1 本だけ置かれる。
+_REAL_EMPTY_TABLE_HTML = """
+<html><body><article id="content">
+  <h1>迷子動物情報（犬猫等をお探しの方へ）</h1>
+  <table class="w100">
+    <tr><th>収容日</th><th>動物</th><th>種類</th><th>毛色</th><th>模様</th>
+        <th>性別</th><th>推定年齢</th><th>首輪・特徴</th><th>場所</th></tr>
+    <tr><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+        <td>-</td><td>-</td><td>-</td><td>-</td></tr>
+  </table>
+</article></body></html>
+"""
+
+_REAL_FILLED_TABLE_HTML = """
+<html><body><article id="content">
+  <h1>迷子動物情報（犬猫等をお探しの方へ）</h1>
+  <table class="w100">
+    <tr><th>収容日</th><th>動物</th><th>種類</th><th>毛色</th><th>模様</th>
+        <th>性別</th><th>推定年齢</th><th>首輪・特徴</th><th>場所</th></tr>
+    <tr><td>2026年8月1日</td><td>犬</td><td>雑種</td><td>茶</td><td>無地</td>
+        <td>オス</td><td>推定2歳</td><td>赤い首輪</td><td>中区栄</td></tr>
+  </table>
+</article></body></html>
+"""
+
+
+class TestMaigoDobutsuPage:
+    """迷子動物情報ページ (飼主不明動物の実体) の表
+
+    `名古屋市（飼主不明動物）` の list_url は長らく案内ページ
+    (1015493.html) を指しており、そこには個体の表が無かった。
+    実体は「迷子動物情報（犬猫等をお探しの方へ）」(1015494.html) 側にある。
+    """
+
+    def _site_lost(self):
+        from data_collector.llm.config import SiteConfig
+
+        return SiteConfig(
+            name="名古屋市（飼主不明動物）",
+            prefecture="愛知県",
+            prefecture_code="23",
+            list_url=("https://www.city.nagoya.jp/kurashi/pet/1015473/1015489/1015494.html"),
+            category="lost",
+            single_page=True,
+        )
+
+    def test_placeholder_row_is_not_an_animal(self):
+        """全列 "-" のプレースホルダ行を動物として拾わない"""
+        adapter = CityNagoyaAdapter(self._site_lost())
+        with patch.object(adapter, "_http_get", return_value=_REAL_EMPTY_TABLE_HTML):
+            urls = adapter.fetch_animal_list()
+        assert urls == [], "収容ゼロのページで 0 件を返す"
+
+    def test_filled_row_is_extracted(self):
+        """収容がある場合はヘッダ列から各属性を取り出す"""
+        adapter = CityNagoyaAdapter(self._site_lost())
+        with patch.object(adapter, "_http_get", return_value=_REAL_FILLED_TABLE_HTML):
+            urls = adapter.fetch_animal_list()
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
+
+        assert len(raws) == 1
+        r = raws[0]
+        assert r.species == "犬"
+        assert r.color == "茶"
+        assert r.sex == "オス"
+        assert "中区栄" in r.location
