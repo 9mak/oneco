@@ -184,7 +184,10 @@ def run_llm_sites(
     succeeded = 0
     failed = 0
     zero_count_sites: list[str] = []
-    succeeded_site_names: list[str] = []
+    # {site_name: 実収集件数}。adapter が数えた total_collected をそのまま持つ。
+    # snapshot の source_url から逆算しないこと (独立 detail URL のサイトで
+    # 前方一致が成立せず 43% を取りこぼした経緯がある / 2026-08-03)。
+    succeeded_site_counts: dict[str, int] = {}
     robots = RobotsChecker()
 
     for site in config.sites:
@@ -258,7 +261,7 @@ def run_llm_sites(
                     f"処理時間{elapsed:.1f}秒"
                 )
                 succeeded += 1
-                succeeded_site_names.append(site.name)
+                succeeded_site_counts[site.name] = result.total_collected
                 if result.total_collected == 0:
                     zero_count_sites.append(site.name)
             else:
@@ -282,7 +285,7 @@ def run_llm_sites(
             failed += 1
             continue  # 他のサイトの処理を継続
 
-    return succeeded, failed, zero_count_sites, succeeded_site_names
+    return succeeded, failed, zero_count_sites, succeeded_site_counts
 
 
 def run_rule_based_sites(
@@ -424,7 +427,8 @@ def run_rule_based_sites(
     succeeded = 0
     failed = 0
     zero_count_sites: list[str] = []
-    succeeded_site_names: list[str] = []
+    # {site_name: 実収集件数}。詳細は run_llm_sites 側の同名変数のコメントを参照。
+    succeeded_site_counts: dict[str, int] = {}
 
     def _on_outcome(outcome) -> None:
         nonlocal succeeded, failed
@@ -463,7 +467,7 @@ def run_rule_based_sites(
             if broken_tracker:
                 broken_tracker.record_success(site_name)
             succeeded += 1
-            succeeded_site_names.append(site_name)
+            succeeded_site_counts[site_name] = result.total_collected
             if result.total_collected == 0:
                 zero_count_sites.append(site_name)
                 if is_zero_count_drop:
@@ -484,7 +488,7 @@ def run_rule_based_sites(
                 f"[{site_name}] LLM フォールバック成功: {fallback_result.total_collected}件"
             )
             succeeded += 1
-            succeeded_site_names.append(site_name)
+            succeeded_site_counts[site_name] = fallback_result.total_collected
             if fallback_result.total_collected == 0:
                 zero_count_sites.append(site_name)
         else:
@@ -498,7 +502,7 @@ def run_rule_based_sites(
         on_outcome=_on_outcome,
     )
 
-    return succeeded, failed, zero_count_sites, succeeded_site_names
+    return succeeded, failed, zero_count_sites, succeeded_site_counts
 
 
 # 全体失敗率がこの値を超えると CRITICAL、超えないが critical_sites>0 なら WARNING
@@ -884,14 +888,24 @@ def main():
                 f"default_extraction={config.extraction.default_extraction})"
             )
 
-            # 前回スナップショットから各サイトの件数を集計する。
+            # 前回実行時の各サイト件数を取得する。
             # 「前回 ≥ 1 件 → 今回 0 件」のサイトを件数低下として監視ログに
             # 記録するために使う (Task #9, 誤検知削減で改訂)。
+            #
+            # 出典は永続ファイル site_baselines.yaml の last_count。
+            # 以前は snapshot の source_url を list_url で前方一致させて集計して
+            # いたが、独立した detail URL を持つサイトでは一致せず prev_count が
+            # 常に 0 になり、`is_zero_count_drop` (前回≥1 かつ 今回0) が永久に
+            # False だった。つまり当該サイトでは adapter が壊れて 0 件になっても
+            # 件数低下として検知されない状態だった (2026-08-03)。
             site_list_urls = {s.name: s.list_url for s in config.sites}
-            previous_site_counts = snapshot_store.load_counts_by_site_url_prefix(site_list_urls)
+            _prev_baseline = SiteBaselineTracker(
+                Path(os.environ.get("SITE_BASELINE_PATH", "data/site_baselines.yaml"))
+            )
+            previous_site_counts = {s.name: _prev_baseline.last_count(s.name) for s in config.sites}
             drop_watch_eligible = [n for n, c in previous_site_counts.items() if c >= 1]
             logger.info(
-                f"前回スナップショット: {sum(previous_site_counts.values())} 件, "
+                f"前回実行の記録: {sum(previous_site_counts.values())} 件, "
                 f"件数低下監視対象 {len(drop_watch_eligible)} サイト"
             )
 
@@ -917,7 +931,7 @@ def main():
                 os.environ.get("BROKEN_SITES_PATH", "data/broken_sites.yaml")
             )
             broken_tracker = BrokenSitesTracker(broken_tracker_path)
-            rule_succeeded, rule_failed, rule_zero, rule_succeeded_names = run_rule_based_sites(
+            rule_succeeded, rule_failed, rule_zero, rule_succeeded_counts = run_rule_based_sites(
                 config=config,
                 snapshot_store=snapshot_store,
                 diff_detector=diff_detector,
@@ -930,7 +944,7 @@ def main():
             )
 
             # LLM サイト群（rule-based 化されてないサイト）
-            llm_succeeded, llm_failed, llm_zero, llm_succeeded_names = run_llm_sites(
+            llm_succeeded, llm_failed, llm_zero, llm_succeeded_counts = run_llm_sites(
                 config=config,
                 snapshot_store=snapshot_store,
                 diff_detector=diff_detector,
@@ -944,7 +958,7 @@ def main():
             total_succeeded = rule_succeeded + llm_succeeded
             total_failed = rule_failed + llm_failed
             zero_count_sites = rule_zero + llm_zero
-            succeeded_site_names = rule_succeeded_names + llm_succeeded_names
+            succeeded_site_counts = {**rule_succeeded_counts, **llm_succeeded_counts}
             logger.info(
                 f"収集サマリ: 成功 {total_succeeded}サイト "
                 f"(うち 0 件 {len(zero_count_sites)}サイト), "
@@ -1028,12 +1042,19 @@ def main():
             # した永続ファイル (data/site_baselines.yaml) で「過去≥1件→今0件」を
             # 毎 run 検知する。
             #
-            # 記録対象は **実行成功したサイトのみ** (succeeded_site_names)。
+            # 記録対象は **実行成功したサイトのみ** (succeeded_site_counts のキー)。
             # robots-disallowed / 未登録 adapter / skip 対象 / 失敗サイトを
             # baseline=0 で記録すると、本来「未実行」のサイトが「過去 ≥1 件
             # だが今 0 件継続」として誤検知され、永続ファイルに残り続ける
             # (auto-fix 候補として誤 dispatch、CRITICAL アラート希釈)。
             # 失敗サイトは broken_tracker / critical_sites 側で扱う。
+            #
+            # 件数は adapter が数えた total_collected をそのまま使う。
+            # 以前は snapshot の source_url を list_url で前方一致させて集計して
+            # いたが、1 頭ごとに独立した detail URL を持つサイト (長崎犬猫ネット
+            # /animal/no-N/、福岡県動物愛護協会 /animals/protection-detail/{uuid}
+            # 等) では一致せず、収集成功しているのに 0 件として記録されていた。
+            # 実測で公開 729 頭中 317 頭 (43%) が計測から漏れていた (2026-08-03)。
             # best-effort: 失敗しても収集は止めない。
             zero_regressions: list[ZeroCountRegression] = []
             try:
@@ -1041,9 +1062,8 @@ def main():
                     os.environ.get("SITE_BASELINE_PATH", "data/site_baselines.yaml")
                 )
                 baseline_tracker = SiteBaselineTracker(baseline_path)
-                current_site_counts = snapshot_store.load_counts_by_site_url_prefix(site_list_urls)
-                for site_name in succeeded_site_names:
-                    baseline_tracker.record(site_name, current_site_counts.get(site_name, 0))
+                for site_name, collected in succeeded_site_counts.items():
+                    baseline_tracker.record(site_name, collected)
                 zero_drop_threshold = int(os.environ.get("ONECO_ZERO_DROP_THRESHOLD", "2"))
                 zero_regressions = baseline_tracker.detect_zero_count_regressions(
                     threshold=zero_drop_threshold
