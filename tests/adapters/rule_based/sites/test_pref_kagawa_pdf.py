@@ -362,3 +362,21 @@ class TestRealPdfLayout:
         # 「掲載開始： 令和8年8月1日」等が動物として混入していれば 3 件を超える
         assert len(records) == 3
         assert all(r["management_number"] for r in records)
+
+    def test_species_falls_back_to_other_when_unknown(self):
+        """species を特定できない行でも空文字のままにしない
+
+        species は致命 8 フィールドの 1 つ。空で通すと下流で「欠損」として
+        扱われるため、判別不能時は "その他" に寄せる (愛媛/名古屋 adapter と
+        同じ扱いに揃える)。
+        """
+        text = """個体管理番号 9990001
+収容日時 令和8年7月31日 13:40
+引取り場所 丸亀市 中津町
+毛色 黒 性別 オス 体格 小
+"""
+        adapter = PrefKagawaPdfAdapter(_site())
+        records = adapter._parse_pdf_text(text)
+
+        assert len(records) == 1
+        assert records[0]["species"] == "その他"

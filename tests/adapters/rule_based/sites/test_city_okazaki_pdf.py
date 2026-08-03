@@ -310,7 +310,64 @@ class TestRealPdfTableLayout:
         assert records[0]["species"] == "猫"
         assert records[0]["shelter_date"] == "2025-05-09"
 
+    def test_month_day_after_base_date_rolls_back_to_previous_year(self):
+        """掲載基準日より後の月日は前年の保護分とみなす (年跨ぎ)
+
+        「2026年1月10日 現在」のPDFに「12月28日」の行があれば、それは
+        2026年12月ではなく 2025年12月の保護である。
+        """
+        heading = "保護動物情報 犬 2026年1月10日 現在"
+        table = [
+            _REAL_TABLE_DOG[0],
+            ["1055-9", "", "大代町", "12月28日", "雑種", "黒", "♂", "中", "無", ""],
+        ]
+        records = self._records([table], heading)
+        assert records[0]["shelter_date"] == "2025-12-28"
+
+    def test_month_day_before_base_date_keeps_base_year(self):
+        """基準日以前の月日は同じ年のまま"""
+        heading = "保護動物情報 犬 2026年4月5日 現在"
+        table = [
+            _REAL_TABLE_DOG[0],
+            ["1055-8", "", "大代町", "1月20日", "雑種", "黒", "♂", "中", "無", ""],
+        ]
+        records = self._records([table], heading)
+        assert records[0]["shelter_date"] == "2026-01-20"
+
+    def test_month_day_equal_to_base_date_keeps_base_year(self):
+        """基準日と同日 (境界値) は前年に倒さない"""
+        heading = "保護動物情報 犬 2026年4月5日 現在"
+        table = [
+            _REAL_TABLE_DOG[0],
+            ["1055-7", "", "大代町", "4月5日", "雑種", "黒", "♂", "中", "無", ""],
+        ]
+        records = self._records([table], heading)
+        assert records[0]["shelter_date"] == "2026-04-05"
+
+    def test_missing_heading_year_leaves_date_empty(self):
+        """見出しから年を取れないときは収容日を空にする (誤った年を作らない)"""
+        table = [
+            _REAL_TABLE_DOG[0],
+            ["1055-6", "", "大代町", "4月3日", "雑種", "黒", "♂", "中", "無", ""],
+        ]
+        adapter = CityOkazakiPdfAdapter(_site())
+        text = adapter._tables_to_labeled_text([table], "保護動物情報（年の記載なし）")
+        # 収容日が作れない行は _is_record_valid を満たさず捨てられる
+        assert adapter._parse_pdf_text(text) == []
+
     def test_header_only_table_yields_nothing(self):
         """データ行が無い表 (収容ゼロ) では 0 件"""
         records = self._records([[_REAL_TABLE_DOG[0]]], _REAL_PAGE_TEXT_DOG)
         assert records == []
+
+    def test_species_falls_back_to_other_when_heading_lacks_kind(self):
+        """見出しに犬猫の別が無い場合でも species を空にしない
+
+        species は致命 8 フィールドの 1 つ。空で通すと下流で「欠損」として
+        扱われるため、判別不能時は "その他" に寄せる (愛媛/名古屋 adapter と
+        同じ扱いに揃える)。
+        """
+        heading = "保護動物情報 2026年4月5日 現在"  # 「犬」「猫」が無い
+        records = self._records([_REAL_TABLE_DOG], heading)
+        assert len(records) == 1
+        assert records[0]["species"] == "その他"

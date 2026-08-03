@@ -180,10 +180,18 @@ class PrefKagawaPdfAdapter(PdfTableAdapter):
 
     @staticmethod
     def _is_record_valid(record: dict) -> bool:
-        """少なくとも収容日と他 1 つ以上のフィールドが埋まっていれば有効"""
+        """少なくとも収容日と他 1 つ以上のフィールドが埋まっていれば有効
+
+        有効と判定した時点で species の既定値を埋める。species は致命 8
+        フィールドの 1 つで、空のまま通すと下流で「欠損」として扱われる。
+        判別不能時は "その他" に寄せる (愛媛/名古屋 adapter と同じ扱い)。
+        """
         if not record.get("shelter_date"):
             return False
-        return any(record.get(k) for k in ("species", "sex", "age", "color", "size", "location"))
+        valid = any(record.get(k) for k in ("species", "sex", "age", "color", "size", "location"))
+        if valid and not record.get("species"):
+            record["species"] = "その他"
+        return valid
 
 
 # ─────────────────── サイト登録 ───────────────────

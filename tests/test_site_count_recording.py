@@ -195,3 +195,186 @@ class TestCountsComeFromAdapterNotUrlPrefix:
 
         assert counts == {}
         assert failed == 1
+
+
+class TestCollectedUrlsWiring:
+    """収集した source_url が品質メトリクスまで配線されていること
+
+    このリポジトリで実際に起きた事故は「集計側の前提と収集側の実態が
+    食い違っているのに、どちらの単体テストも通るため誰も気付かない」
+    という形だった。同じ轍を踏まないよう、
+    `CollectionResult.source_urls` → `collected_urls_by_site` →
+    `group_animals_by_site` の経路を通しで固定する。
+    """
+
+    def _run_rule_based(self, site, result_obj, collected: dict[str, list[str]]):
+        from data_collector.__main__ import run_rule_based_sites
+
+        config = _config("rule-based", [site])
+        with (
+            patch("data_collector.__main__.SiteAdapterRegistry") as registry,
+            patch("data_collector.__main__.CollectorService") as service_cls,
+            patch("data_collector.__main__._apply_robots_policy", return_value=True),
+        ):
+            registry.get.return_value = Mock()
+            service_cls.return_value.run_collection.return_value = result_obj
+            return run_rule_based_sites(
+                config=config,
+                snapshot_store=Mock(),
+                diff_detector=Mock(),
+                output_writer=Mock(),
+                notification_client=Mock(),
+                db_connection=None,
+                logger=Mock(),
+                previous_site_counts={site.name: 0},
+                collected_urls_by_site=collected,
+            )
+
+    def test_rule_based_fills_collected_urls(self):
+        """run_rule_based_sites が collected_urls_by_site を埋める"""
+        site = _site(
+            name="長崎犬猫ネット（保健所収容）",
+            list_url="https://animal-net.pref.nagasaki.jp/syuuyou",
+        )
+        urls = [
+            "https://animal-net.pref.nagasaki.jp/animal/no-19847/",
+            "https://animal-net.pref.nagasaki.jp/animal/no-19823/",
+        ]
+        result_obj = Mock(
+            success=True,
+            total_collected=2,
+            new_count=2,
+            updated_count=0,
+            errors=[],
+            source_urls=urls,
+        )
+        collected: dict[str, list[str]] = {}
+        self._run_rule_based(site, result_obj, collected)
+
+        assert collected == {"長崎犬猫ネット（保健所収容）": urls}
+
+    def test_llm_path_fills_collected_urls(self):
+        """run_llm_sites も同じ dict を埋める"""
+        from data_collector.__main__ import run_llm_sites
+
+        site = _site(
+            name="LLMサイト",
+            list_url="https://llm.example.com/list",
+            extraction="llm",
+        )
+        config = _config("llm", [site])
+        urls = ["https://llm.example.com/detail/1"]
+        result_obj = Mock(
+            success=True,
+            total_collected=1,
+            new_count=1,
+            updated_count=0,
+            errors=[],
+            source_urls=urls,
+        )
+        collected: dict[str, list[str]] = {}
+
+        with (
+            patch("data_collector.__main__.CollectorService") as service_cls,
+            patch("data_collector.__main__._apply_robots_policy", return_value=True),
+            patch("data_collector.__main__.create_provider"),
+            patch("data_collector.__main__.LlmAdapter"),
+            patch("data_collector.__main__.HtmlPreprocessor"),
+        ):
+            service_cls.return_value.run_collection.return_value = result_obj
+            run_llm_sites(
+                config=config,
+                snapshot_store=Mock(),
+                diff_detector=Mock(),
+                output_writer=Mock(),
+                notification_client=Mock(),
+                db_connection=None,
+                logger=Mock(),
+                collected_urls_by_site=collected,
+            )
+
+        assert collected == {"LLMサイト": urls}
+
+    def test_collected_urls_feed_quality_grouping(self):
+        """埋めた dict がそのまま group_animals_by_site で機能する
+
+        収集側が返す source_url の形 (list_url と無関係な detail URL) のまま
+        品質メトリクス側でグルーピングできることを、両者を繋いで確認する。
+        """
+        from datetime import date
+
+        from data_collector.domain.models import AnimalData
+        from data_collector.domain.quality_metrics import group_animals_by_site
+
+        site = _site(
+            name="長崎犬猫ネット（保健所収容）",
+            list_url="https://animal-net.pref.nagasaki.jp/syuuyou",
+        )
+        urls = [
+            "https://animal-net.pref.nagasaki.jp/animal/no-19847/",
+            "https://animal-net.pref.nagasaki.jp/animal/no-19823/",
+        ]
+        result_obj = Mock(
+            success=True,
+            total_collected=2,
+            new_count=2,
+            updated_count=0,
+            errors=[],
+            source_urls=urls,
+        )
+        collected: dict[str, list[str]] = {}
+        self._run_rule_based(site, result_obj, collected)
+
+        animals = [
+            AnimalData(
+                species="犬",
+                shelter_date=date(2026, 7, 21),
+                location="長崎市",
+                sex="男の子",
+                age_months=24,
+                color="茶",
+                size="中型",
+                phone="095-000-0000",
+                image_urls=["https://animal-net.pref.nagasaki.jp/img/1.jpg"],
+                source_url=u,
+                category="sheltered",
+            )
+            for u in urls
+        ]
+        groups = group_animals_by_site(animals, collected)
+
+        assert len(groups["長崎犬猫ネット（保健所収容）"]) == 2
+
+    def test_none_collected_urls_is_tolerated(self):
+        """collected_urls_by_site 未指定でも収集は動く (best-effort)"""
+        site = _site(name="サイト", list_url="https://example.com/list")
+        result_obj = Mock(
+            success=True,
+            total_collected=1,
+            new_count=1,
+            updated_count=0,
+            errors=[],
+            source_urls=["https://example.com/detail/1"],
+        )
+        from data_collector.__main__ import run_rule_based_sites
+
+        config = _config("rule-based", [site])
+        with (
+            patch("data_collector.__main__.SiteAdapterRegistry") as registry,
+            patch("data_collector.__main__.CollectorService") as service_cls,
+            patch("data_collector.__main__._apply_robots_policy", return_value=True),
+        ):
+            registry.get.return_value = Mock()
+            service_cls.return_value.run_collection.return_value = result_obj
+            _, _, _, counts = run_rule_based_sites(
+                config=config,
+                snapshot_store=Mock(),
+                diff_detector=Mock(),
+                output_writer=Mock(),
+                notification_client=Mock(),
+                db_connection=None,
+                logger=Mock(),
+                previous_site_counts={site.name: 0},
+            )
+
+        assert counts == {"サイト": 1}
