@@ -169,12 +169,18 @@ def run_llm_sites(
     db_connection: DatabaseConnection | None,
     logger: logging.Logger,
     broken_tracker: BrokenSitesTracker | None = None,
-) -> tuple[int, int, list[str], list[str]]:
+    collected_urls_by_site: dict[str, list[str]] | None = None,
+) -> tuple[int, int, list[str], dict[str, int]]:
     """LLMベースのサイト群を収集
+
+    Args:
+        collected_urls_by_site: 渡された場合、`{site_name: [source_url, ...]}`
+            を書き込む。品質メトリクスをサイト別に集計するために使う
+            (snapshot の URL からはサイトを復元できないため)。
 
     Returns:
         (成功サイト数, 失敗サイト数, 0件で完了したサイト名一覧,
-         成功した site_name 一覧)。
+         `{site_name: 実収集件数}`)。
         0 件サイトは success 扱いだが、HTML 構造変化で行抽出が空配列に
         なっている可能性があるため、ログ上で別途可視化する。
         成功 site_name 一覧は SiteBaselineTracker の filter 用。
@@ -262,6 +268,8 @@ def run_llm_sites(
                 )
                 succeeded += 1
                 succeeded_site_counts[site.name] = result.total_collected
+                if collected_urls_by_site is not None:
+                    collected_urls_by_site[site.name] = list(result.source_urls)
                 if result.total_collected == 0:
                     zero_count_sites.append(site.name)
             else:
@@ -298,7 +306,8 @@ def run_rule_based_sites(
     logger: logging.Logger,
     broken_tracker: BrokenSitesTracker | None = None,
     previous_site_counts: dict[str, int] | None = None,
-) -> tuple[int, int, list[str], list[str]]:
+    collected_urls_by_site: dict[str, list[str]] | None = None,
+) -> tuple[int, int, list[str], dict[str, int]]:
     """rule-based 抽出方式でサイト群をドメイン単位の並列で収集
 
     SiteAdapterRegistry に登録された adapter のみ rule-based 経路で実行。
@@ -468,6 +477,8 @@ def run_rule_based_sites(
                 broken_tracker.record_success(site_name)
             succeeded += 1
             succeeded_site_counts[site_name] = result.total_collected
+            if collected_urls_by_site is not None:
+                collected_urls_by_site[site_name] = list(result.source_urls)
             if result.total_collected == 0:
                 zero_count_sites.append(site_name)
                 if is_zero_count_drop:
@@ -489,6 +500,8 @@ def run_rule_based_sites(
             )
             succeeded += 1
             succeeded_site_counts[site_name] = fallback_result.total_collected
+            if collected_urls_by_site is not None:
+                collected_urls_by_site[site_name] = list(fallback_result.source_urls)
             if fallback_result.total_collected == 0:
                 zero_count_sites.append(site_name)
         else:
@@ -898,7 +911,6 @@ def main():
             # 常に 0 になり、`is_zero_count_drop` (前回≥1 かつ 今回0) が永久に
             # False だった。つまり当該サイトでは adapter が壊れて 0 件になっても
             # 件数低下として検知されない状態だった (2026-08-03)。
-            site_list_urls = {s.name: s.list_url for s in config.sites}
             _prev_baseline = SiteBaselineTracker(
                 Path(os.environ.get("SITE_BASELINE_PATH", "data/site_baselines.yaml"))
             )
@@ -931,6 +943,10 @@ def main():
                 os.environ.get("BROKEN_SITES_PATH", "data/broken_sites.yaml")
             )
             broken_tracker = BrokenSitesTracker(broken_tracker_path)
+            # {site_name: [source_url, ...]}。フィールド欠損率をサイト別に
+            # 集計するために収集時の対応を持ち帰る (snapshot の URL からは
+            # サイトを復元できない)。
+            collected_urls_by_site: dict[str, list[str]] = {}
             rule_succeeded, rule_failed, rule_zero, rule_succeeded_counts = run_rule_based_sites(
                 config=config,
                 snapshot_store=snapshot_store,
@@ -941,6 +957,7 @@ def main():
                 logger=logger,
                 broken_tracker=broken_tracker,
                 previous_site_counts=previous_site_counts,
+                collected_urls_by_site=collected_urls_by_site,
             )
 
             # LLM サイト群（rule-based 化されてないサイト）
@@ -953,6 +970,7 @@ def main():
                 db_connection=db_connection,
                 logger=logger,
                 broken_tracker=broken_tracker,
+                collected_urls_by_site=collected_urls_by_site,
             )
 
             total_succeeded = rule_succeeded + llm_succeeded
@@ -1020,7 +1038,7 @@ def main():
                 # ソース) から取る。これを使わないと欠損率が常に空集計になり、
                 # フィールド品質ドリフト検知が無音化する。
                 animals_now = list(snapshot_store.load_animal_map().values())
-                site_groups = group_animals_by_site(animals_now, site_list_urls)
+                site_groups = group_animals_by_site(animals_now, collected_urls_by_site)
                 for site_name, animals in site_groups.items():
                     rates = compute_missing_rates(animals)
                     fq_tracker.record(site_name, rates, len(animals))

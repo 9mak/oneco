@@ -61,20 +61,39 @@ def compute_missing_rates(
 
 def group_animals_by_site(
     animals: list[AnimalData],
-    site_list_urls: dict[str, str],
+    source_urls_by_site: dict[str, list[str]],
 ) -> dict[str, list[AnimalData]]:
-    """`source_url` が site の `list_url` の prefix と一致する動物をグルーピング。
+    """収集時に判明した `source_url` の対応で動物をサイト別にまとめる。
 
-    どの site にも一致しなかった動物は結果に含めず、また 1 件も該当しない
-    site は結果のキーから除外する (空配列は返さない)。
+    Args:
+        animals: 今 run の全動物。
+        source_urls_by_site: `{site_name: [収集した source_url, ...]}`。
+            収集ループが実際に取得した URL をそのまま渡す。
+
+    Returns:
+        `{site_name: [AnimalData, ...]}`。どの site にも紐付かなかった動物は
+        結果に含めず、1 件も該当しない site はキーごと落とす (空配列は返さない)。
+
+    以前は `{site_name: list_url}` を受け取り `source_url.startswith(list_url)`
+    で振り分けていたが、1 頭ごとに独立した詳細ページ URL を持つサイト
+    (長崎犬猫ネット `/animal/no-N/` 等) では前方一致が成立せず、実測で
+    211 サイト中 70 サイトが「実データがあるのに品質監視の対象外」だった。
+    加えて同一ドメインに複数サイトを持つ自治体 (旭川市 8 / 福岡県 8 など) は
+    source_url だけでは原理的に site を特定できないため、収集時の対応を正とする。
     """
-    if not animals or not site_list_urls:
+    if not animals or not source_urls_by_site:
         return {}
-    groups: dict[str, list[AnimalData]] = {name: [] for name in site_list_urls}
+
+    # source_url → site_name の逆引き。同じ URL が複数サイトに現れた場合は
+    # 先に登録されたサイトを優先する (収集順 = sites.yaml の定義順)。
+    site_by_url: dict[str, str] = {}
+    for name, urls in source_urls_by_site.items():
+        for url in urls:
+            site_by_url.setdefault(str(url), name)
+
+    groups: dict[str, list[AnimalData]] = {name: [] for name in source_urls_by_site}
     for a in animals:
-        src = str(a.source_url)
-        for name, list_url in site_list_urls.items():
-            if src.startswith(list_url):
-                groups[name].append(a)
-                break
+        name = site_by_url.get(str(a.source_url))
+        if name is not None:
+            groups[name].append(a)
     return {name: lst for name, lst in groups.items() if lst}
