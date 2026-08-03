@@ -1,7 +1,7 @@
 あかし動物センター（迷子猫）:
-  consecutive_failures: 3
+  consecutive_failures: 4
   last_error: 'HTTP エラー: 404 Client Error: Not Found for url: https://www.city.akashi.lg.jp/kankyou/dobutsu/info/maigo/cat.html'
-  last_failed_at: '2026-07-26T16:03:51+00:00'
+  last_failed_at: '2026-08-03T17:12:33+00:00'
 おおいた動物愛護センター（譲渡犬）:
   consecutive_failures: 0
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''oita-aigo.com'', port=443): Max
@@ -85,12 +85,12 @@
     (connect timeout=30)''))'
   last_failed_at: '2026-08-01T16:17:52+00:00'
 山梨県（探している他のペット）:
-  consecutive_failures: 5
+  consecutive_failures: 6
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''www.pref.yamanashi.jp'', port=443):
     Max retries exceeded with url: /doubutsu/m_other/index.html (Caused by ConnectTimeoutError(<HTTPSConnection(host=''www.pref.yamanashi.jp'',
-    port=443) at 0x7f6a5c3a3610>, ''Connection to www.pref.yamanashi.jp timed out.
+    port=443) at 0x7f667482ff10>, ''Connection to www.pref.yamanashi.jp timed out.
     (connect timeout=30)''))'
-  last_failed_at: '2026-07-26T16:11:00+00:00'
+  last_failed_at: '2026-08-03T17:25:16+00:00'
 山梨県（探している犬）:
   consecutive_failures: 0
   last_error: 'timeout: site 山梨県（探している犬） timed out after 120.0s'
@@ -226,9 +226,9 @@
   last_error: '件数低下異常: 前回 8 件 → 今回 0 件 (adapter 破損 or サイト構造変更の可能性)'
   last_failed_at: '2026-05-27T04:06:08+00:00'
 長崎犬猫ネット（譲渡）:
-  consecutive_failures: 1
+  consecutive_failures: 2
   last_error: 'timeout: site 長崎犬猫ネット（譲渡） timed out after 120.0s'
-  last_failed_at: '2026-08-02T16:05:56+00:00'
+  last_failed_at: '2026-08-03T17:13:46+00:00'
 青森県動物愛護センター（収容情報）:
   consecutive_failures: 3
   last_error: 'ネットワークエラー: HTTPConnectionPool(host=''www.aomori-animal.jp'', port=80):
