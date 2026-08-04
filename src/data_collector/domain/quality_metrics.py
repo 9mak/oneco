@@ -32,19 +32,28 @@ MONITORED_FIELDS: tuple[str, ...] = (
 _UNKNOWN_STRINGS: tuple[str, ...] = ("", "不明", "-", "－", "なし", "?", "？")
 
 
+def is_missing_value(value: object) -> bool:
+    """値そのものが欠損かを返す。
+
+    None / "不明" 等のプレースホルダ文字列 / 空リスト を欠損とみなす。
+    AnimalData を持たない呼び出し元 (公開 API の dict を扱う監査スクリプト等) が
+    欠損の定義をコピーして食い違わせないよう、値ベースの判定として切り出す。
+    """
+    if value is None:
+        return True
+    if isinstance(value, str):
+        return value.strip() in _UNKNOWN_STRINGS
+    if isinstance(value, list):
+        return len(value) == 0
+    return False
+
+
 def is_missing(animal: AnimalData, field: str) -> bool:
     """指定フィールドが欠損しているかを返す。
 
     None / "不明" 等のプレースホルダ文字列 / 空リスト を欠損とみなす。
     """
-    v = getattr(animal, field, None)
-    if v is None:
-        return True
-    if isinstance(v, str):
-        return v.strip() in _UNKNOWN_STRINGS
-    if isinstance(v, list):
-        return len(v) == 0
-    return False
+    return is_missing_value(getattr(animal, field, None))
 
 
 def compute_missing_rates(
