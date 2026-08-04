@@ -204,6 +204,31 @@ class TestLoadCountsBySiteUrlPrefix:
         counts = store.load_counts_by_site_url_prefix({"サイトA": "https://example.com/a/page"})
         assert counts == {"サイトA": 1}
 
+    def test_independent_detail_urls_are_not_counted(self, tmp_path):
+        """独立 detail URL のサイトは数えられない (このメソッドの限界を固定する)
+
+        本メソッドは「detail URL が list_url 配下にある」前提でしか動かない。
+        長崎犬猫ネット型 (`/jyouto` の一覧に対し詳細は `/animal/no-N/`) では
+        前方一致せず 0 件になる。実測で公開 729 頭中 317 頭 (43%) がこの穴に
+        落ち、収集成功しているのに baseline 上は永久に 0 件だった (2026-08-03)。
+
+        この挙動は「仕様」ではなく **限界** である。サイト別件数は
+        `result.total_collected` を使うこと。ここでは、将来うっかり件数集計へ
+        再利用されないよう限界を明示的に固定しておく。
+        """
+        store = SnapshotStore(snapshot_dir=tmp_path / "snapshots")
+        store.save_snapshot(
+            [
+                _make_animal("https://animal-net.pref.nagasaki.jp/animal/no-19847/"),
+                _make_animal("https://animal-net.pref.nagasaki.jp/animal/no-19823/"),
+            ]
+        )
+        counts = store.load_counts_by_site_url_prefix(
+            {"長崎犬猫ネット（保健所収容）": "https://animal-net.pref.nagasaki.jp/syuuyou"}
+        )
+        # 実際には 2 頭収集できているのに 0 と数えられてしまう
+        assert counts == {"長崎犬猫ネット（保健所収容）": 0}
+
     def test_one_url_counted_only_once(self, tmp_path):
         """1 動物の URL は最初にマッチしたサイトに 1 回だけカウント
 

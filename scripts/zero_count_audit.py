@@ -91,6 +91,13 @@ def fetch(url: str, retries: int = 2) -> tuple[int | None, str]:
             resp = requests.get(
                 url, timeout=TIMEOUT, headers={"User-Agent": UA}, allow_redirects=True
             )
+            # requests は charset 未指定の text/* に ISO-8859-1 を仮定する
+            # (RFC 2616 §3.7.1)。<meta charset=...> でしか文字コードを宣言しない
+            # 自治体 CMS では日本語が全て mojibake になり、ゼロ表現の検出も
+            # table 行の判定も壊れるため、byte 検出にフォールバックする。
+            # (rule_based/base.py の _http_get と同じ扱い)
+            if "charset=" not in resp.headers.get("Content-Type", "").lower():
+                resp.encoding = resp.apparent_encoding
             return resp.status_code, resp.text
         except requests.RequestException as e:
             last_err = str(e)
