@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import re
 from typing import ClassVar
+from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup, Tag
 
@@ -71,6 +72,28 @@ _LABEL_TO_FIELD: dict[str, str] = {
     "毛色": "color",
 }
 
+# ─── 2026-08 リニューアル後の一覧表レイアウト用 ───
+# 譲渡猫 / 譲渡子猫ページは `<table class="datatable">` の
+# 「ヘッダ行 + 1 頭 = 1 行」形式に変更された。列構成はページごとに異なる
+# (猫: 管理番号/猫の種類/性別/体格/毛色/その他、
+#  子猫: 管理番号/写真/性別/毛色/コメント) ため、列 index は固定せず
+# ヘッダのラベル名から解決する。
+_DATATABLE_HEADER_TO_FIELD: dict[str, str] = {
+    "管理番号": "management_number",
+    "猫の種類": "breed",
+    "犬の種類": "breed",
+    "種類": "breed",
+    "性別": "sex",
+    "体格": "size",
+    "体重": "size",
+    "毛色": "color",
+    "年齢": "age",
+    "その他": "description",
+    "コメント": "description",
+}
+# 一覧表と判定するために必要なヘッダ (これが無い表は案内文などの別テーブル)。
+_DATATABLE_REQUIRED_HEADER = "管理番号"
+
 
 class CitySendaiAdapter(SinglePageTableAdapter):
     """仙台市動物管理センター用 rule-based adapter
@@ -100,6 +123,15 @@ class CitySendaiAdapter(SinglePageTableAdapter):
         # 各動物テーブルに対応する h3 テキスト (管理番号・愛称の抽出元)。
         # `_load_rows` で rows と同じ順序・件数で構築する。
         self._h3_text_by_row: list[str] = []
+        # レイアウト種別: "legacy" (h3 + テーブル) / "datatable" (一覧表)。
+        # `_load_rows` が実 HTML を見て決定する。
+        self._layout: str = "legacy"
+        # datatable レイアウトの {フィールド名: 列 index}。
+        self._datatable_fields: dict[str, int] = {}
+        # datatable レイアウトの {管理番号: 画像 URL 一覧}。
+        # 猫ページは写真が別テーブル (管理番号/写真1/写真2) に分離されている
+        # ため、管理番号をキーに突き合わせる。
+        self._images_by_mgmt: dict[str, list[str]] = {}
 
     # ─────────────────── fetch_animal_list オーバーライド ───────────────────
 
@@ -145,6 +177,12 @@ class CitySendaiAdapter(SinglePageTableAdapter):
                 h3_texts.append(text)
         self._h3_text_by_row = h3_texts
 
+        # 旧レイアウトで 1 頭も取れない場合は 2026-08 リニューアル後の
+        # 一覧表レイアウトを試す。譲渡犬ページは旧のままなので、
+        # 「旧を優先し、空なら新」の順で両対応する。
+        if not rows:
+            rows = self._load_datatable_rows(soup)
+
         # ページ全体から問い合わせ電話番号と「更新日」を 1 度だけ抽出してキャッシュ。
         page_text = soup.get_text(" ", strip=True)
         self._page_phone_cache = self._normalize_phone(page_text)
@@ -155,10 +193,108 @@ class CitySendaiAdapter(SinglePageTableAdapter):
         self._rows_cache = rows
         return rows
 
+    # ─────────────────── datatable レイアウト ───────────────────
+
+    def _load_datatable_rows(self, soup: BeautifulSoup) -> list[Tag]:
+        """`table.datatable` の一覧表から 1 頭 = 1 行の `<tr>` を集める
+
+        ヘッダ行に「管理番号」を含むテーブルだけを動物一覧とみなす。
+        列 index はヘッダのラベル名から解決して `_datatable_fields` に持つ。
+        写真専用テーブル (管理番号 + 写真N のみ) は動物一覧ではなく
+        画像ソースとして `_images_by_mgmt` に取り込む。
+        """
+        animal_rows: list[Tag] = []
+        for table in soup.find_all("table"):
+            if not isinstance(table, Tag):
+                continue
+            trs = table.find_all("tr")
+            if len(trs) < 2:
+                continue
+            headers = [c.get_text(" ", strip=True) for c in trs[0].find_all(["th", "td"])]
+            if _DATATABLE_REQUIRED_HEADER not in headers:
+                continue
+
+            fields = {
+                _DATATABLE_HEADER_TO_FIELD[h]: i
+                for i, h in enumerate(headers)
+                if h in _DATATABLE_HEADER_TO_FIELD
+            }
+            mgmt_idx = fields.get("management_number")
+            if mgmt_idx is None:
+                continue
+
+            # 「管理番号」以外に実データ列を持たない表 = 写真テーブル。
+            # 動物一覧としては扱わず、画像だけ管理番号に紐付けて回収する。
+            is_photo_table = set(fields) <= {"management_number"}
+            for tr in trs[1:]:
+                cells = tr.find_all(["th", "td"])
+                if mgmt_idx >= len(cells):
+                    continue
+                mgmt = cells[mgmt_idx].get_text(" ", strip=True)
+                if not mgmt:
+                    continue
+                imgs = self._collect_row_image_urls(tr)
+                if imgs:
+                    self._images_by_mgmt.setdefault(mgmt, []).extend(imgs)
+                if not is_photo_table:
+                    animal_rows.append(tr)
+
+            if not is_photo_table and fields:
+                self._datatable_fields = fields
+
+        if animal_rows:
+            self._layout = "datatable"
+        return animal_rows
+
+    def _collect_row_image_urls(self, row: Tag) -> list[str]:
+        """行内の `<img>` から絶対 URL を組み立てて返す"""
+        urls: list[str] = []
+        for img in row.find_all("img"):
+            if not isinstance(img, Tag):
+                continue
+            src = img.get("src") or ""
+            if not src:
+                continue
+            urls.append(urljoin(self.site_config.list_url, str(src)))
+        return urls
+
+    def _extract_from_datatable_row(self, row: Tag, virtual_url: str, category: str):
+        """一覧表の 1 行から RawAnimalData を構築する"""
+        cells = row.find_all(["th", "td"])
+
+        def cell(field: str) -> str:
+            i = self._datatable_fields.get(field)
+            if i is None or i >= len(cells):
+                return ""
+            return cells[i].get_text(" ", strip=True)
+
+        management_number = cell("management_number")
+        images = self._images_by_mgmt.get(management_number, [])
+        if not images:
+            images = self._collect_row_image_urls(row)
+
+        return RawAnimalData(
+            species=self._infer_species_from_site_name(self.site_config.name),
+            breed=cell("breed"),
+            name="",
+            management_number=management_number,
+            sex=cell("sex"),
+            age=cell("age"),
+            color=cell("color"),
+            size=cell("size"),
+            description=cell("description"),
+            shelter_date=self._page_update_date_cache or self.SHELTER_DATE_DEFAULT,
+            location="仙台市動物管理センター（アニパル仙台）",
+            phone=self._page_phone_cache or "",
+            image_urls=images,
+            source_url=virtual_url,
+            category=category,
+        )
+
     # ─────────────────── extract_animal_details オーバーライド ───────────────────
 
     def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
-        """1 頭分の `<table>` から RawAnimalData を構築する"""
+        """1 頭分の `<table>` (旧) または `<tr>` (一覧表) から RawAnimalData を構築する"""
         rows = self._load_rows()
         idx = self._parse_row_index(virtual_url)
         if idx >= len(rows):
@@ -167,6 +303,12 @@ class CitySendaiAdapter(SinglePageTableAdapter):
                 url=virtual_url,
             )
         table = rows[idx]
+
+        if self._layout == "datatable":
+            try:
+                return self._extract_from_datatable_row(table, virtual_url, category)
+            except Exception as e:
+                raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
         # `<p>` ベースで「ラベル：値」形式を集める。
         # セル内の `<br>` で分かれた行、複数の `<p>` のいずれにも対応するため、

@@ -227,3 +227,147 @@ class TestNormalize:
 
         assert normalized is not None
         assert hasattr(normalized, "species")
+
+
+# 実 PDF (岡崎市 hogo.pdf / 2026-08-03 取得) の pdfplumber 抽出結果。
+# 上の合成データと違い、実物はラベル付きの縦並びではなく **表** で、
+#   1 行目: 見出し「保護動物情報 犬 2026年4月5日 現在」(species と年はここだけ)
+#   2 行目: 表ヘッダ「管理番号/写真/保護場所/保護月日/種類/毛色/性別/体格/首輪/その他特徴」
+#   3 行目以降: 1 頭 = 1 行。「保護月日」は年を持たない (4月3日)
+# という形をしている。extract_text だと毛色が前後行へ割れる (猫 PDF の
+# 「白黒 / （はちわれ）」) ため、表として読む必要がある。
+_REAL_PAGE_TEXT_DOG = "保護動物情報 犬 2026年4月5日 現在"
+_REAL_TABLE_DOG = [
+    [
+        "管理番号",
+        "写真",
+        "保護場所",
+        "保護月日",
+        "種類",
+        "毛色",
+        "性別",
+        "体格",
+        "首輪",
+        "その他特徴",
+    ],
+    ["1055-1", "", "大代町", "4月3日", "推定ピットブル", "茶", "♀", "大型", "無", ""],
+]
+_REAL_PAGE_TEXT_CAT = "保護動物情報 猫 2025年5月12日 現在"
+_REAL_TABLE_CAT = [
+    [
+        "管理番号",
+        "写真",
+        "保護場所",
+        "保護月日",
+        "種類",
+        "毛色",
+        "性別",
+        "体格",
+        "首輪",
+        "その他特徴",
+    ],
+    ["1060-1", "", "鴨田町", "5月9日", "雑種", "白黒\n（はちわれ）", "♀", "中", "無", "削痩、衰弱"],
+]
+
+
+class TestRealPdfTableLayout:
+    """実 PDF (表形式) を構造化テキストへ変換してからパースする"""
+
+    def _records(self, tables, page_text):
+        adapter = CityOkazakiPdfAdapter(_site())
+        text = adapter._tables_to_labeled_text(tables, page_text)
+        return adapter._parse_pdf_text(text)
+
+    def test_dog_table_yields_one_animal(self):
+        records = self._records([_REAL_TABLE_DOG], _REAL_PAGE_TEXT_DOG)
+        assert len(records) == 1
+
+    def test_species_comes_from_heading_not_breed_column(self):
+        """species は見出しの「犬」。表の「種類」列は品種として保存する"""
+        records = self._records([_REAL_TABLE_DOG], _REAL_PAGE_TEXT_DOG)
+        assert records[0]["species"] == "犬"
+        assert records[0]["breed"] == "推定ピットブル"
+
+    def test_shelter_date_combines_heading_year_with_month_day(self):
+        """年を持たない「保護月日 4月3日」に見出しの年 (2026) を補う"""
+        records = self._records([_REAL_TABLE_DOG], _REAL_PAGE_TEXT_DOG)
+        assert records[0]["shelter_date"] == "2026-04-03"
+
+    def test_extracts_remaining_columns(self):
+        records = self._records([_REAL_TABLE_DOG], _REAL_PAGE_TEXT_DOG)
+        r = records[0]
+        assert r["color"] == "茶"
+        assert r["sex"] == "♀"
+        assert r["size"] == "大型"
+        assert r["location"] == "大代町"
+        assert r["management_number"] == "1055-1"
+
+    def test_multiline_cell_is_flattened(self):
+        """セル内改行 (「白黒\\n（はちわれ）」) を 1 つの値として扱う"""
+        records = self._records([_REAL_TABLE_CAT], _REAL_PAGE_TEXT_CAT)
+        assert len(records) == 1
+        assert records[0]["color"] == "白黒（はちわれ）"
+        assert records[0]["species"] == "猫"
+        assert records[0]["shelter_date"] == "2025-05-09"
+
+    def test_month_day_after_base_date_rolls_back_to_previous_year(self):
+        """掲載基準日より後の月日は前年の保護分とみなす (年跨ぎ)
+
+        「2026年1月10日 現在」のPDFに「12月28日」の行があれば、それは
+        2026年12月ではなく 2025年12月の保護である。
+        """
+        heading = "保護動物情報 犬 2026年1月10日 現在"
+        table = [
+            _REAL_TABLE_DOG[0],
+            ["1055-9", "", "大代町", "12月28日", "雑種", "黒", "♂", "中", "無", ""],
+        ]
+        records = self._records([table], heading)
+        assert records[0]["shelter_date"] == "2025-12-28"
+
+    def test_month_day_before_base_date_keeps_base_year(self):
+        """基準日以前の月日は同じ年のまま"""
+        heading = "保護動物情報 犬 2026年4月5日 現在"
+        table = [
+            _REAL_TABLE_DOG[0],
+            ["1055-8", "", "大代町", "1月20日", "雑種", "黒", "♂", "中", "無", ""],
+        ]
+        records = self._records([table], heading)
+        assert records[0]["shelter_date"] == "2026-01-20"
+
+    def test_month_day_equal_to_base_date_keeps_base_year(self):
+        """基準日と同日 (境界値) は前年に倒さない"""
+        heading = "保護動物情報 犬 2026年4月5日 現在"
+        table = [
+            _REAL_TABLE_DOG[0],
+            ["1055-7", "", "大代町", "4月5日", "雑種", "黒", "♂", "中", "無", ""],
+        ]
+        records = self._records([table], heading)
+        assert records[0]["shelter_date"] == "2026-04-05"
+
+    def test_missing_heading_year_leaves_date_empty(self):
+        """見出しから年を取れないときは収容日を空にする (誤った年を作らない)"""
+        table = [
+            _REAL_TABLE_DOG[0],
+            ["1055-6", "", "大代町", "4月3日", "雑種", "黒", "♂", "中", "無", ""],
+        ]
+        adapter = CityOkazakiPdfAdapter(_site())
+        text = adapter._tables_to_labeled_text([table], "保護動物情報（年の記載なし）")
+        # 収容日が作れない行は _is_record_valid を満たさず捨てられる
+        assert adapter._parse_pdf_text(text) == []
+
+    def test_header_only_table_yields_nothing(self):
+        """データ行が無い表 (収容ゼロ) では 0 件"""
+        records = self._records([[_REAL_TABLE_DOG[0]]], _REAL_PAGE_TEXT_DOG)
+        assert records == []
+
+    def test_species_falls_back_to_other_when_heading_lacks_kind(self):
+        """見出しに犬猫の別が無い場合でも species を空にしない
+
+        species は致命 8 フィールドの 1 つ。空で通すと下流で「欠損」として
+        扱われるため、判別不能時は "その他" に寄せる (愛媛/名古屋 adapter と
+        同じ扱いに揃える)。
+        """
+        heading = "保護動物情報 2026年4月5日 現在"  # 「犬」「猫」が無い
+        records = self._records([_REAL_TABLE_DOG], heading)
+        assert len(records) == 1
+        assert records[0]["species"] == "その他"

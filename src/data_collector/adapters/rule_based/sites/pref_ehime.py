@@ -77,6 +77,52 @@ _HEADER_LINE_RE = re.compile(
 # 「更新日：YYYY年M月D日」形式から年を取り出す
 _UPDATE_YEAR_RE = re.compile(r"更新日[:：]\s*(\d{4})\s*年")
 
+# ─── セクション見出し + 1 行 1 頭 レイアウト (2026-08 譲渡予定ページ) ───
+# ラベルは「毛　　 色」「毛　　色」「毛 　　色」のように全角スペースの
+# 入り方が不揃いで、行頭に ZWSP (U+200B) が混じるものもある。
+# 空白類を除去して正規化してから照合する。
+_SPACE_RE = re.compile("[\\s\\u3000\\u200b]+")
+# 正規化後のラベル群 (長いものを先に並べて部分一致の取りこぼしを防ぐ)
+_SECTION_LIST_LABELS = ("推定年齢", "コメント", "毛色", "性別", "体重", "愛称")
+_SECTION_LIST_LABEL_RE = re.compile("(" + "|".join(_SECTION_LIST_LABELS) + r")[：:]")
+
+
+def _normalize_spaces(text: str) -> str:
+    """空白類 (半角/全角/ZWSP) を除去する"""
+    return _SPACE_RE.sub("", text)
+
+
+def _parse_labeled_text(text: str) -> dict[str, str]:
+    """「毛色：茶 性別：オス …」形式の 1 行を {ラベル: 値} に分解する
+
+    空白を除去してからラベル位置で切り出すため、ラベル内に全角スペースが
+    入っていても解決できる。値は次のラベルの直前までを採る。
+    """
+    normalized = _normalize_spaces(text)
+    matches = list(_SECTION_LIST_LABEL_RE.finditer(normalized))
+    fields: dict[str, str] = {}
+    for i, m in enumerate(matches):
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(normalized)
+        value = normalized[m.end() : end].strip()
+        # 同じラベルが複数回出た場合は最初を優先する
+        fields.setdefault(m.group(1), value)
+    return fields
+
+
+def _infer_species_from_section(section: str) -> str:
+    """セクション見出し (「愛護棟ホールにいる子猫・成猫」等) から犬猫を判定する
+
+    譲渡予定ページは犬猫が同一ページに混在し、サイト名からは判別できない。
+    「子犬」「成犬」「犬舎」/「子猫」「成猫」「猫舎」を手掛かりにする。
+    """
+    if not section:
+        return ""
+    if "猫" in section and "犬" not in section:
+        return "猫"
+    if "犬" in section and "猫" not in section:
+        return "犬"
+    return ""
+
 
 class PrefEhimeAdapter(SinglePageTableAdapter):
     """愛媛県動物愛護センター用 rule-based adapter
@@ -100,6 +146,15 @@ class PrefEhimeAdapter(SinglePageTableAdapter):
     }
     LOCATION_COLUMN: ClassVar[int | None] = 1
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
+
+    def __init__(self, site_config) -> None:
+        super().__init__(site_config)
+        # レイアウト種別: "legacy" (table.sp_table_wrap) /
+        # "section_list" (セクション見出し + 1 行 1 頭)。_load_rows が決める。
+        self._layout: str = "legacy"
+        # section_list レイアウトで、各行に対応するセクション見出しテキスト。
+        # rows と同じ順序・件数で構築する (species 判定に使う)。
+        self._section_by_row: list[str] = []
 
     # ─────────────────── オーバーライド ───────────────────
 
@@ -144,8 +199,74 @@ class PrefEhimeAdapter(SinglePageTableAdapter):
                 continue
             rows.append(table)
 
+        # 旧レイアウトで 1 件も取れない場合は、2026-08 時点の譲渡予定ページ
+        # (セクション見出し + 1 行 1 頭) を試す。収容中ページは旧のままなので
+        # 「旧を優先し、空なら新」の順で両対応する。
+        if not rows:
+            rows = self._load_section_list_rows(soup)
+
         self._rows_cache = rows
         return rows
+
+    # ─────────────────── セクション見出し + 1 行 1 頭 レイアウト ───────────────────
+
+    def _load_section_list_rows(self, soup: BeautifulSoup) -> list[Tag]:
+        """class 無しテーブルから動物行 (`<tr>`) を集める
+
+        同じテーブル内にセクション見出し行が混在する:
+
+            <tr><td>愛護棟ホールにいる子猫・成猫</td></tr>   ← 見出し
+            <tr><td><img ...>毛　　 色：… 性 　　別：…</td></tr>  ← 1 頭
+
+        「毛色 / 愛称 / 性別」等のラベルを含む行だけを動物とみなし、直近の
+        見出しテキストを species 判定用に `_section_by_row` へ保持する。
+        「猫舎にいる成猫 → 現在、おりません」のような在庫ゼロの見出しは
+        ラベルを持たないため自然に除外される。
+        """
+        rows: list[Tag] = []
+        sections: list[str] = []
+        for table in soup.find_all("table"):
+            if not isinstance(table, Tag) or table.get("class"):
+                continue
+            current_section = ""
+            for tr in table.find_all("tr"):
+                if not isinstance(tr, Tag):
+                    continue
+                text = tr.get_text(" ", strip=True)
+                if not _SECTION_LIST_LABEL_RE.search(_normalize_spaces(text)):
+                    # ラベルを持たない行は見出し (または在庫ゼロの案内)
+                    if text:
+                        current_section = text
+                    continue
+                rows.append(tr)
+                sections.append(current_section)
+
+        if rows:
+            self._layout = "section_list"
+            self._section_by_row = sections
+        return rows
+
+    def _extract_from_section_row(self, row: Tag, idx: int, virtual_url: str, category: str):
+        """動物行 1 件から RawAnimalData を構築する"""
+        fields = _parse_labeled_text(row.get_text(" ", strip=True))
+        section = self._section_by_row[idx] if idx < len(self._section_by_row) else ""
+
+        return RawAnimalData(
+            species=_infer_species_from_section(section)
+            or self._infer_species_from_site_name(self.site_config.name),
+            sex=fields.get("性別", ""),
+            age=fields.get("推定年齢", ""),
+            color=fields.get("毛色", ""),
+            size=fields.get("体重", ""),
+            name=fields.get("愛称", ""),
+            description=fields.get("コメント", ""),
+            shelter_date=self.SHELTER_DATE_DEFAULT,
+            location=section or "愛媛県動物愛護センター",
+            phone="",
+            image_urls=self._extract_cell_images(row, virtual_url),
+            source_url=virtual_url,
+            category=category,
+        )
 
     def fetch_animal_list(self) -> list[tuple[str, str]]:
         """動物リスト取得 (在庫 0 件でも ParsingError を出さない)
@@ -173,6 +294,12 @@ class PrefEhimeAdapter(SinglePageTableAdapter):
                 url=virtual_url,
             )
         table = rows[idx]
+
+        if self._layout == "section_list":
+            try:
+                return self._extract_from_section_row(table, idx, virtual_url, category)
+            except Exception as e:
+                raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
         # 1) 直前の見出し段落から月日・場所ヒント・species ヒントを取得
         header_month_day, header_location, header_species = self._parse_header_paragraph(table)

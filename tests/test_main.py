@@ -17,7 +17,7 @@ def stub_sites_runners(tmp_path, monkeypatch):
     (MagicMock 化された SnapshotStore は int() で 1 を返すため、パスを逃がさ
     ないと全実サイトのベースラインが data/site_baselines.yaml に書かれる)。
 
-    デフォルトの戻り値 (0, 0, [], []) は成功サイト・失敗サイトとも 0 件、
+    デフォルトの戻り値 (0, 0, [], {}) は成功サイト・失敗サイトとも 0 件、
     つまり「収集対象サイトが実質ゼロ」の中立ケース。exit code に影響する
     総失敗率 / 全滅判定を個別テストで検証したい場合は、返り値の Mock を
     `stub_sites_runners` 経由で上書きする。
@@ -28,11 +28,11 @@ def stub_sites_runners(tmp_path, monkeypatch):
     with (
         patch(
             "src.data_collector.__main__.run_rule_based_sites",
-            return_value=(0, 0, [], []),
+            return_value=(0, 0, [], {}),
         ) as mock_rule_based,
         patch(
             "src.data_collector.__main__.run_llm_sites",
-            return_value=(0, 0, [], []),
+            return_value=(0, 0, [], {}),
         ) as mock_llm,
     ):
         yield mock_rule_based, mock_llm
@@ -79,7 +79,7 @@ class TestCLI:
         再発していないことをここで検証する。
         """
         mock_rule_based, _mock_llm = stub_sites_runners
-        mock_rule_based.return_value = (0, 1, [], [])
+        mock_rule_based.return_value = (0, 1, [], {})
 
         with pytest.raises(SystemExit) as exc_info:
             main()
@@ -105,7 +105,7 @@ class TestCLI:
         の下では失敗率超過にならず、ジョブ全体は成功扱いになるべき。
         """
         mock_rule_based, _mock_llm = stub_sites_runners
-        mock_rule_based.return_value = (206, 1, [], [f"site-{i}" for i in range(206)])
+        mock_rule_based.return_value = (206, 1, [], {f"site-{i}": 1 for i in range(206)})
 
         with pytest.raises(SystemExit) as exc_info:
             main()

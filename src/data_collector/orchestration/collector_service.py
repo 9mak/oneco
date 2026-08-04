@@ -36,6 +36,11 @@ class CollectionResult(BaseModel):
         deleted_count: 削除候補件数
         errors: エラーメッセージリスト
         execution_time_seconds: 実行時間（秒）
+        source_urls: 収集した動物の source_url 一覧。
+            どの動物がどのサイト由来かは snapshot の URL からは復元できない
+            (詳細ページ URL が list_url と無関係なサイトや、同一ドメインに
+            複数サイトを持つ自治体があるため)。品質メトリクスをサイト別に
+            集計するために、収集時点の対応をここで持ち帰る。
     """
 
     success: bool
@@ -45,6 +50,7 @@ class CollectionResult(BaseModel):
     deleted_count: int = 0
     errors: list[str] = []
     execution_time_seconds: float = 0.0
+    source_urls: list[str] = []
 
 
 class CollectorService:
@@ -186,6 +192,7 @@ class CollectorService:
                 deleted_count=len(diff_result.deleted_candidates),
                 errors=errors,
                 execution_time_seconds=execution_time,
+                source_urls=[str(a.source_url) for a in collected_data],
             )
 
         except ParsingError as e:

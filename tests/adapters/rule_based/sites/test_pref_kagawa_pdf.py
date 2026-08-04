@@ -257,3 +257,126 @@ class TestNormalize:
 
         assert normalized is not None
         assert hasattr(normalized, "species")
+
+
+# 実 PDF (中讃保健所 r8-7-31.pdf / 2026-08-03 取得) の pdfplumber 抽出結果。
+# 上の合成データと違い、実物は
+#   - 見出しが「収容日時」で日付が **和暦**
+#   - 場所ラベルが「引取り場所」(「収容場所」ではない)
+#   - 「動物の種類 犬 種類 雑種 2～3週齢」のように 1 行へ複数フィールドが並ぶ
+#   - 「推 定 / 年月齢」が縦組みの都合で 2 行に割れる
+# という形をしており、旧実装ではブロック開始 (収容日) を検出できず 0 件だった。
+_REAL_PDF_TEXT = """収容動物情報
+※譲渡先を募集中の動物については、さぬき動物愛護センターのページをご覧ください。
+さぬき動物愛護センターＵＲＬ：
+https://www.pref.kagawa.lg.jp/content/etc/subsite/sanukidouaicenter/index.shtml
+掲載開始： 令和8年8月1日
+掲載終了： 令和8年8月7日 中讃 保健所
+※この情報は、元の飼い主の方を探すために掲載しています。
+心当たりのある方は中讃保健所（TEL:０８７７－２４－９９６４）までお問い合わせください）
+個体管理番号 2630166
+収容日時 令和8年7月31日 13:40
+引取り場所 丸亀市 中津町
+推 定
+動物の種類 犬 種類 雑種 2～3週齢
+年月齢
+毛色 黒 性別 オス 体格 小
+その他の特徴
+備考
+個体管理番号 2630167
+収容日時 令和8年7月31日 13:40
+引取り場所 丸亀市 中津町
+推 定
+動物の種類 犬 種類 雑種 2～3週齢
+年月齢
+毛色 こげ茶 性別 メス 体格 小
+その他の特徴
+備考
+個体管理番号 2630165
+収容日時 令和8年7月29日 9:30
+引取り場所 善通寺市 吉原町
+推 定
+動物の種類 犬 種類 雑種 6～12か月齢
+年月齢
+毛色 薄茶 性別 メス 体格 小
+その他の特徴
+※元の飼い主の方を探すための画像です 備考
+"""
+
+
+class TestRealPdfLayout:
+    """実 PDF (個体管理番号 + 収容日時 + 和暦) レイアウトのパース"""
+
+    def test_parses_all_animals_from_real_pdf_text(self):
+        """個体管理番号ごとに 1 頭として抽出できる"""
+        adapter = PrefKagawaPdfAdapter(_site())
+        records = adapter._parse_pdf_text(_REAL_PDF_TEXT)
+
+        assert len(records) == 3, "個体管理番号 3 件ぶんが抽出される"
+
+    def test_converts_japanese_era_to_iso_date(self):
+        """和暦「令和8年7月31日」を ISO 形式へ変換する"""
+        adapter = PrefKagawaPdfAdapter(_site())
+        records = adapter._parse_pdf_text(_REAL_PDF_TEXT)
+
+        assert records[0]["shelter_date"] == "2026-07-31"
+        assert records[2]["shelter_date"] == "2026-07-29"
+
+    def test_extracts_management_number(self):
+        """個体管理番号を management_number として取り込む"""
+        adapter = PrefKagawaPdfAdapter(_site())
+        records = adapter._parse_pdf_text(_REAL_PDF_TEXT)
+
+        assert [r["management_number"] for r in records] == [
+            "2630166",
+            "2630167",
+            "2630165",
+        ]
+
+    def test_extracts_fields_from_multi_field_lines(self):
+        """1 行に複数フィールドが並ぶ行から各属性を取り出す"""
+        adapter = PrefKagawaPdfAdapter(_site())
+        records = adapter._parse_pdf_text(_REAL_PDF_TEXT)
+
+        first = records[0]
+        assert first["species"] == "犬"
+        assert first["breed"] == "雑種", "「種類 雑種」は品種として保存する"
+        assert first["color"] == "黒"
+        assert first["sex"] == "オス"
+        assert first["size"] == "小"
+        assert "丸亀市" in first["location"], "「引取り場所」を location に使う"
+
+    def test_extracts_age_with_unit_variants(self):
+        """「2～3週齢」「6～12か月齢」など単位違いの年齢を取り出す"""
+        adapter = PrefKagawaPdfAdapter(_site())
+        records = adapter._parse_pdf_text(_REAL_PDF_TEXT)
+
+        assert records[0]["age"] == "2～3週齢"
+        assert records[2]["age"] == "6～12か月齢"
+
+    def test_header_lines_are_not_treated_as_animals(self):
+        """掲載開始/終了の和暦日付をブロック開始と誤認しない"""
+        adapter = PrefKagawaPdfAdapter(_site())
+        records = adapter._parse_pdf_text(_REAL_PDF_TEXT)
+
+        # 「掲載開始： 令和8年8月1日」等が動物として混入していれば 3 件を超える
+        assert len(records) == 3
+        assert all(r["management_number"] for r in records)
+
+    def test_species_falls_back_to_other_when_unknown(self):
+        """species を特定できない行でも空文字のままにしない
+
+        species は致命 8 フィールドの 1 つ。空で通すと下流で「欠損」として
+        扱われるため、判別不能時は "その他" に寄せる (愛媛/名古屋 adapter と
+        同じ扱いに揃える)。
+        """
+        text = """個体管理番号 9990001
+収容日時 令和8年7月31日 13:40
+引取り場所 丸亀市 中津町
+毛色 黒 性別 オス 体格 小
+"""
+        adapter = PrefKagawaPdfAdapter(_site())
+        records = adapter._parse_pdf_text(text)
+
+        assert len(records) == 1
+        assert records[0]["species"] == "その他"

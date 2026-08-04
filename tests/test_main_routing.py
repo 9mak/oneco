@@ -72,9 +72,11 @@ class TestSiteRunReturnTypeContract:
     """run_llm_sites / run_rule_based_sites の戻り値契約
 
     PR #20 で bool → tuple[succeeded, failed, zero_count_sites] に変更し、
-    その後 (2026-06) SiteBaselineTracker filter のため
-    tuple[succeeded, failed, zero_count_sites, succeeded_site_names] に拡張。
-    対象サイトが 0 件の config では (0, 0, [], []) を返すことが契約。
+    その後 (2026-06) SiteBaselineTracker filter のため 4 要素に拡張。
+    2026-08 に 4 要素目を succeeded_site_names: list[str] から
+    succeeded_site_counts: dict[str, int] へ変更 (baseline へ adapter の
+    実収集件数を渡すため)。対象サイトが 0 件の config では
+    (0, 0, [], {}) を返すことが契約。
 
     SitesConfig は `sites=[]` を許容しないため、対象 extraction と
     異なるサイトを 1 件入れて「処理対象 0 件」状態を作る。
@@ -103,7 +105,7 @@ class TestSiteRunReturnTypeContract:
             db_connection=None,
             logger=Mock(),
         )
-        assert result == (0, 0, [], [])
+        assert result == (0, 0, [], {})
 
     def test_run_rule_based_sites_returns_zero_zero_empty_when_no_rule_sites(self):
         from unittest.mock import Mock
@@ -128,7 +130,7 @@ class TestSiteRunReturnTypeContract:
             db_connection=None,
             logger=Mock(),
         )
-        assert result == (0, 0, [], [])
+        assert result == (0, 0, [], {})
 
 
 class TestBrokenSiteSkipThreshold:
@@ -187,9 +189,9 @@ class TestBrokenSiteSkipThreshold:
         assert spy_adapter_cls.call_count == 0, (
             "閾値超えサイトでは adapter コンストラクタも呼ばれない"
         )
-        assert (succeeded, failed, zero, names) == (0, 0, [], []), (
+        assert (succeeded, failed, zero, names) == (0, 0, [], {}), (
             "スキップは success / failure どちらにもカウントしない "
-            "(succeeded_site_names にも入らない: baseline_tracker を汚染しないため)"
+            "(succeeded_site_counts にも入らない: baseline_tracker を汚染しないため)"
         )
 
 

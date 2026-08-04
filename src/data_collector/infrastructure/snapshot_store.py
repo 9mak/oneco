@@ -147,6 +147,24 @@ class SnapshotStore:
         するものをカウントする。各 adapter は detail URL を `{list_url}#row=N`
         や `{list_url}#h3=N`、または `{list_url}.../detail/{id}.html` 形式で
         生成するため、`list_url` を prefix にしてサイトを識別できる。
+
+        **サイト別の件数集計には使わないこと** (2026-08-03):
+            上の前提は「detail URL が list_url の配下にある」サイトでしか
+            成立しない。1 頭ごとに独立した詳細ページ URL を持つサイト
+
+                list_url  : https://animal-net.pref.nagasaki.jp/jyouto
+                source_url: https://animal-net.pref.nagasaki.jp/animal/no-19847/
+
+            では前方一致せず 0 件になる。実測で公開 729 頭のうち 317 頭 (43%)
+            がこの方法では数えられず、収集は成功しているのに
+            `site_baselines.yaml` 上は永久に 0 件・`consecutive_zero_runs` が
+            加算され続ける状態になっていた。さらに同一ドメインに複数サイトを
+            持つ自治体 (旭川市 8 / 福岡県 8 など) は source_url だけでは
+            原理的に site を特定できない。
+
+            サイト別件数は adapter の `result.total_collected`、サイト別の
+            動物グルーピングは収集時の `{site_name: [source_url, ...]}` を
+            使うこと。本メソッドは本番経路からは未使用。
         """
         animals = self.load_animal_map()
         result: dict[str, int] = dict.fromkeys(site_list_urls, 0)

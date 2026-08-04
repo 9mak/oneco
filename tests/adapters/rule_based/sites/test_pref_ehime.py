@@ -269,3 +269,83 @@ class TestPrefEhimeAdapter:
 
         assert normalized is not None
         assert hasattr(normalized, "species")
+
+
+class TestSectionListLayout:
+    """2026-08 時点の譲渡予定ページ (セクション見出し + 1 行 1 頭) レイアウト
+
+    譲渡予定ページ (page/17125.html) から `table.sp_table_wrap` が消え、
+    class 無しテーブルの中に
+
+        <tr><td>愛護棟ホールにいる子猫・成猫</td></tr>      ← セクション見出し
+        <tr><td><img ...>毛　　 色：サバトラ 性 　　別：オス …</td></tr>  ← 1 頭
+
+    が並ぶ形式に変わった。収容中ページ (16976) は旧レイアウトのままなので
+    adapter は両対応が必要。
+
+    ラベルは「毛　　 色」「毛　　色」「毛 　　色」のように全角スペースの
+    入り方が不揃いで、行頭に ZWSP (U+200B) が混じるものもあるため、
+    空白除去して正規化してから解決する。
+    """
+
+    def test_adoption_page_yields_all_animals(self, fixture_html):
+        """セクション見出しを除いた掲載頭数ぶん取得できる"""
+        html = fixture_html("pref_ehime_20260803")
+        adapter = PrefEhimeAdapter(_site_adoption())
+
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
+
+        assert len(raws) == 31, "猫 13 頭 + 犬 18 頭が掲載されている"
+        # 「現在、おりません」等のセクション見出しが動物として混入していない
+        assert all(r.sex or r.color or r.name for r in raws)
+
+    def test_species_is_inferred_from_section_heading(self, fixture_html):
+        """犬猫混在ページでセクション見出しから species を判定する
+
+        サイト名 (譲渡予定) には犬猫の別が無いため、直前のセクション見出し
+        (「…子猫・成猫」「…子犬」「…成犬」) から決める。
+        """
+        html = fixture_html("pref_ehime_20260803")
+        adapter = PrefEhimeAdapter(_site_adoption())
+
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
+
+        assert sum(1 for r in raws if r.species == "猫") == 13
+        assert sum(1 for r in raws if r.species == "犬") == 18
+
+    def test_labels_with_irregular_spacing_are_parsed(self, fixture_html):
+        """全角スペース混じりのラベルから毛色・性別・体重・愛称が取れる"""
+        html = fixture_html("pref_ehime_20260803")
+        adapter = PrefEhimeAdapter(_site_adoption())
+
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
+
+        colors = {r.color for r in raws}
+        assert "サバトラ" in colors, "「毛　　 色：サバトラ」を解決できていない"
+        assert "こげ茶" in colors, "「毛　　色：こげ茶」を解決できていない"
+
+        names = {r.name for r in raws}
+        assert {"コテツ", "カイ", "ポップ"} <= names, "「愛　　称：」から愛称を取れていない"
+
+        # 体重は size に入る (犬セクションのみ存在)
+        assert any(r.size for r in raws)
+        # 全頭に性別が入っている
+        assert all(r.sex for r in raws)
+
+    def test_legacy_sp_table_wrap_layout_still_works(self, fixture_html):
+        """旧レイアウト (収容中ページ) が壊れていないこと"""
+        html = fixture_html("pref_ehime")
+        adapter = PrefEhimeAdapter(_site_lost())
+
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raws = [adapter.extract_animal_details(u, category="lost") for u, _ in urls]
+
+        assert len(raws) >= 1
+        assert all(isinstance(r, RawAnimalData) for r in raws)

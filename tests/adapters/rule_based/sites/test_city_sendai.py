@@ -279,3 +279,89 @@ class TestCitySendaiAdapter:
                     f"{adapter.site_config.list_url}#row=99",
                     category="adoption",
                 )
+
+
+class TestDatatableLayout:
+    """2026-08 リニューアル後の `table.datatable` 一覧レイアウト
+
+    譲渡猫 / 譲渡子猫ページが「1 頭 = 1 テーブル」から
+    「ヘッダ行 + 1 頭 = 1 行」の一覧表に変更された。譲渡犬ページは旧
+    レイアウトのまま運用されているため、adapter は両対応が必要。
+
+    旧実装は `<h3>` に「管理番号」を含むものをアンカーにしていたが、
+    新レイアウトでは h3 が譲渡手続きの説明見出し (事前の検討 / 来所日時の
+    決定 …) だけになり、1 頭も取得できず 0 件になっていた。
+    """
+
+    def _adapter(self, name: str, url_leaf: str, fixture_html, slug: str):
+        adapter = CitySendaiAdapter(
+            _site(
+                name=name,
+                list_url=(
+                    "https://www.city.sendai.jp/dobutsu/kurashi/shizen/petto/"
+                    f"hogodobutsu/joho/{url_leaf}"
+                ),
+            )
+        )
+        return adapter, fixture_html(slug)
+
+    def test_neko_datatable_yields_all_animals(self, fixture_html):
+        """譲渡猫ページ (新レイアウト) から掲載頭数ぶん取得できる"""
+        adapter, html = self._adapter(
+            "仙台市アニパル（譲渡猫）",
+            "neko.html",
+            fixture_html,
+            "city_sendai_neko_datatable",
+        )
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
+
+        assert len(raws) == 5, "譲渡猫ページには 5 頭が掲載されている"
+        assert all(r.species == "猫" for r in raws)
+        # 管理番号がヘッダ「管理番号」列から取れている
+        assert {r.management_number for r in raws} == {
+            "C25093",
+            "C25103",
+            "C25113",
+            "C25114",
+            "C25115",
+        }
+        # 致命フィールドのうちサイト側に存在するものが埋まっている
+        for r in raws:
+            assert r.sex, f"{r.management_number} の性別が空"
+            assert r.color, f"{r.management_number} の毛色が空"
+
+    def test_koneko_datatable_yields_all_animals(self, fixture_html):
+        """譲渡子猫ページ (列構成が譲渡猫と異なる) でも取得できる
+
+        子猫ページは「管理番号 / 写真 / 性別 / 毛色 / コメント」で
+        「猫の種類」「体格」列を持たない。列位置は固定せずヘッダ名で解決する。
+        """
+        adapter, html = self._adapter(
+            "仙台市アニパル（譲渡子猫）",
+            "koneko.html",
+            fixture_html,
+            "city_sendai_koneko_datatable",
+        )
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
+
+        assert len(raws) == 2, "譲渡子猫ページには 2 頭が掲載されている"
+        assert all(r.species == "猫" for r in raws)
+        assert all(r.management_number for r in raws)
+        assert all(r.sex for r in raws)
+
+    def test_legacy_h3_layout_still_works(self):
+        """旧レイアウト (譲渡犬ページ) が壊れていないこと"""
+        html = _build_html_with_one_animal()
+        adapter = CitySendaiAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
+
+        assert len(raws) == 1
+        assert raws[0].management_number == "D24018"
+        assert raws[0].name == "平助"
+        assert raws[0].breed == "柴犬"

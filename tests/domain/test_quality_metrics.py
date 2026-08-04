@@ -108,7 +108,18 @@ class TestComputeMissingRates:
 
 
 class TestGroupAnimalsBySite:
-    def test_groups_by_list_url_prefix(self):
+    """収集時に判明した source_url の対応でグルーピングする
+
+    従来は `{site_name: list_url}` を渡し `source_url.startswith(list_url)` で
+    振り分けていたが、1 頭ごとに独立した詳細ページ URL を持つサイトでは
+    前方一致が成立せず、実測で 211 サイト中 70 サイトが「実データがあるのに
+    品質監視の対象外」になっていた (2026-08-03)。
+    さらに同一ドメインに複数サイトを持つ自治体 (旭川市 8 / 福岡県 8 など) は
+    source_url だけでは原理的に site を特定できない。
+    そのため収集時に得た `{site_name: [source_url, ...]}` を正とする。
+    """
+
+    def test_groups_by_collected_source_urls(self):
         animals = [
             _make(source_url="https://a.example.com/animals/1"),
             _make(source_url="https://a.example.com/animals/2"),
@@ -117,19 +128,67 @@ class TestGroupAnimalsBySite:
         groups = group_animals_by_site(
             animals,
             {
-                "サイトA": "https://a.example.com/animals/",
-                "サイトB": "https://b.example.com/list/",
+                "サイトA": [
+                    "https://a.example.com/animals/1",
+                    "https://a.example.com/animals/2",
+                ],
+                "サイトB": ["https://b.example.com/list/3"],
             },
         )
         assert len(groups["サイトA"]) == 2
         assert len(groups["サイトB"]) == 1
 
+    def test_detail_url_unrelated_to_list_url_is_grouped(self):
+        """詳細 URL が list_url と無関係でもグルーピングできる (43% 漏れの回帰)"""
+        animals = [
+            _make(source_url="https://animal-net.pref.nagasaki.jp/animal/no-19847/"),
+            _make(source_url="https://animal-net.pref.nagasaki.jp/animal/no-19823/"),
+        ]
+        groups = group_animals_by_site(
+            animals,
+            {
+                "長崎犬猫ネット（保健所収容）": [
+                    "https://animal-net.pref.nagasaki.jp/animal/no-19847/",
+                    "https://animal-net.pref.nagasaki.jp/animal/no-19823/",
+                ]
+            },
+        )
+        assert len(groups["長崎犬猫ネット（保健所収容）"]) == 2
+
+    def test_same_domain_multiple_sites_are_separated(self):
+        """同一ドメインの複数サイトを取り違えない (旭川市 douaicenter.jp 型)"""
+        animals = [
+            _make(source_url="https://www.douaicenter.jp/animal/15259"),
+            _make(source_url="https://www.douaicenter.jp/animal/14950"),
+        ]
+        groups = group_animals_by_site(
+            animals,
+            {
+                "旭川市あにまある（譲渡犬）": ["https://www.douaicenter.jp/animal/15259"],
+                "旭川市あにまある（譲渡猫）": ["https://www.douaicenter.jp/animal/14950"],
+            },
+        )
+        assert [str(a.source_url) for a in groups["旭川市あにまある（譲渡犬）"]] == [
+            "https://www.douaicenter.jp/animal/15259"
+        ]
+        assert [str(a.source_url) for a in groups["旭川市あにまある（譲渡猫）"]] == [
+            "https://www.douaicenter.jp/animal/14950"
+        ]
+
     def test_unmatched_url_not_in_any_group(self):
         animals = [_make(source_url="https://other.example.com/foo")]
-        groups = group_animals_by_site(animals, {"サイトA": "https://a.example.com/"})
+        groups = group_animals_by_site(animals, {"サイトA": ["https://a.example.com/1"]})
         assert "サイトA" not in groups or len(groups["サイトA"]) == 0
-        # other ホストの動物は無視される
+
+    def test_site_with_no_collected_animals_is_omitted(self):
+        """1 件も取れなかったサイトはキーごと落とす (空配列を返さない)"""
+        animals = [_make(source_url="https://a.example.com/1")]
+        groups = group_animals_by_site(
+            animals,
+            {"サイトA": ["https://a.example.com/1"], "サイトB": []},
+        )
+        assert "サイトB" not in groups
 
     def test_empty_inputs(self):
-        assert group_animals_by_site([], {"サイトA": "https://a.example.com/"}) == {}
+        assert group_animals_by_site([], {"サイトA": ["https://a.example.com/1"]}) == {}
         assert group_animals_by_site([_make()], {}) == {}
