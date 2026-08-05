@@ -76,6 +76,53 @@ DETAIL_HTML_DOG = """
 </body></html>
 """
 
+# 実サイトの detail 構造を再現した HTML (2026-08-05 の実ページから採取)。
+#
+# 個体写真は `#top-slider` の `img.sp-image` だけで、ページ下部の
+# `div.recommend-area`「このページを見ている人はこちらのページも見ています」に
+# 並ぶのは *別個体* へのリンクのサムネイル。両者は同じ `/files/cache/` 配下に
+# あるため URL では区別できない。
+#
+# これを取り違えて他個体の写真を混ぜていた実例 (本番 id=2078「ココ」に別個体の
+# 「すずらん」「バーン」が混入・W001/T020) の回帰テスト用。
+DETAIL_HTML_REAL_STRUCTURE = """
+<html><body>
+<div class="detail">
+  <dl>
+    <dt>個体管理ナンバー</dt><dd>AR01004</dd>
+    <dt>種類</dt><dd>雑種</dd>
+    <dt>性別</dt><dd>オス</dd>
+    <dt>毛色</dt><dd>茶</dd>
+    <dt>収容日</dt><dd>2026年4月10日</dd>
+    <dt>収容場所</dt><dd>熊本県動物愛護センター</dd>
+    <dt>連絡先</dt><dd>096-380-2153</dd>
+    <dt>写真</dt>
+    <dd>
+      <div class="copy-pht"></div>
+      <div id="top-slider" class="slider-pro">
+        <div class="sp-slides">
+          <div class="sp-slide"><img src="/files/cache/own1.jpg" class="sp-image" alt=""/></div>
+          <div class="sp-slide"><img src="/files/cache/own2.jpg" class="sp-image" alt=""/></div>
+          <div class="sp-slide"><img src="/files/cache/own3.jpg" class="sp-image" alt=""/></div>
+        </div>
+      </div>
+    </dd>
+  </dl>
+</div>
+<div class="recommend-area">
+  <h3 class="page-ttl">このページを見ている人はこちらのページも見ています</h3>
+  <ul class="list list-4col">
+    <li><a href="/animals/detail/4700">
+      <figure class="pht"><img src="/files/cache/other1.png" alt=""/></figure>
+    </a></li>
+    <li><a href="/animals/detail/4297">
+      <figure class="pht"><img src="/files/cache/other2.png" alt=""/></figure>
+    </a></li>
+  </ul>
+</div>
+</body></html>
+"""
+
 # detail ページを模した最小 HTML (`<th>/<td>` テーブル版)
 DETAIL_HTML_CAT_TABLE = """
 <html><body>
@@ -246,6 +293,49 @@ class TestKumamotoDoubutuAigoAdapterDetailExtraction:
         assert all("/uploads/animal/" in u for u in raw.image_urls)
         # source_url が detail_url と一致
         assert raw.source_url == detail_url
+
+    def test_images_exclude_recommend_area_of_other_animals(self):
+        """`recommend-area` の他個体サムネイルを画像に含めない
+
+        本番で id=2078「ココ」の image_urls に別個体「すずらん」「バーン」が
+        混ざっていた (W001/T020)。里親募集で他の子の写真を出すのは致命的なため
+        `#top-slider` の `sp-image` だけを個体写真として扱う。
+        """
+        adapter = KumamotoDoubutuAigoAdapter(_site_center_dog())
+        detail_url = "https://www.kumamoto-doubutuaigo.jp/animals/detail/4843"
+        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_REAL_STRUCTURE):
+            raw = adapter.extract_animal_details(detail_url, category="adoption")
+
+        assert [u.rsplit("/", 1)[-1] for u in raw.image_urls] == [
+            "own1.jpg",
+            "own2.jpg",
+            "own3.jpg",
+        ]
+        assert not any("other" in u for u in raw.image_urls)
+
+    def test_images_fall_back_to_page_images_excluding_recommend_area(self):
+        """`top-slider` が無い構造でも `recommend-area` だけは必ず除外する
+
+        サイト側がスライダを廃止した場合に画像ゼロへ倒れないためのフォールバック。
+        ただしフォールバック経路でも他個体サムネイルを拾ってはいけない。
+        """
+        html = """
+        <html><body>
+          <div class="detail">
+            <dl><dt>収容場所</dt><dd>熊本県動物愛護センター</dd></dl>
+            <img src="/files/cache/own_only.jpg" alt=""/>
+          </div>
+          <div class="recommend-area">
+            <ul><li><a href="/animals/detail/1"><img src="/files/cache/other.png"/></a></li></ul>
+          </div>
+        </body></html>
+        """
+        adapter = KumamotoDoubutuAigoAdapter(_site_center_dog())
+        detail_url = "https://www.kumamoto-doubutuaigo.jp/animals/detail/1"
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(detail_url, category="adoption")
+
+        assert [u.rsplit("/", 1)[-1] for u in raw.image_urls] == ["own_only.jpg"]
 
     def test_management_number_extracted_via_normalize(self):
         """個体識別: 「個体管理ナンバー」(例 DC00744) を抽出する。
