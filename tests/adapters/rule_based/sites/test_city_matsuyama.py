@@ -128,9 +128,13 @@ class TestCityMatsuyamaAdapterFixture:
         assert raw.species == "犬"
         # 収容番号(R7No.310)が management_number として保持される(回帰防止)
         assert raw.management_number == "R7No.310"
-        # 収容番号 (alt) と状態テキストが location に入る
-        assert "R7No.310" in raw.location
-        assert "新しい飼い主募集中" in raw.location
+        # location は所在地 (施設名)。収容番号や状態を入れない (W001/T023)。
+        # 「R7No.249-250 新しい飼い主募集中」が所在地として公開されていた。
+        assert raw.location == "松山市動物愛護センター（はぴまるの丘）"
+        assert "R7No.310" not in raw.location
+        assert "新しい飼い主募集中" not in raw.location
+        # 状態は description に入る
+        assert "新しい飼い主募集中" in raw.description
         # 電話番号は固定値が正規化されて入る
         assert raw.phone == "089-923-9435"
         # 画像は絶対 URL に変換される
@@ -154,7 +158,8 @@ class TestCityMatsuyamaAdapterFixture:
 
         assert raw.species == "猫"
         # 猫カードのステータス例
-        assert "マッチング予約不可" in raw.location
+        assert "マッチング予約不可" in raw.description
+        assert raw.location == "松山市動物愛護センター（はぴまるの丘）"
 
     def test_http_get_called_only_once_when_iterating(self, fixture_html):
         """同一ページから複数件取得しても HTTP は 1 回だけ (キャッシュ)"""
@@ -208,8 +213,9 @@ class TestCityMatsuyamaAdapterSynthetic:
         assert raw.color == ""
         assert raw.size == ""
         assert raw.shelter_date == ""
-        assert "R7No.999" in raw.location
-        assert "新しい飼い主募集中" in raw.location
+        assert raw.location == "松山市動物愛護センター（はぴまるの丘）"
+        assert raw.management_number == "R7No.999"
+        assert "新しい飼い主募集中" in raw.description
         assert raw.phone == "089-923-9435"
         # 画像 URL は list_url を base に絶対化される
         assert raw.image_urls == [
@@ -227,8 +233,8 @@ class TestCityMatsuyamaAdapterSynthetic:
             raw = adapter.extract_animal_details(cat_url, category="lost")
 
         assert raw.species == "猫"
-        assert "R8.No.01" in raw.location
-        assert "マッチング予約不可" in raw.location
+        assert raw.management_number == "R8.No.01"
+        assert "マッチング予約不可" in raw.description
         assert raw.image_urls and raw.image_urls[0].endswith("/index.images/neko.R8No.01.jpg")
 
     def test_invalid_row_index_raises_parsing_error(self):

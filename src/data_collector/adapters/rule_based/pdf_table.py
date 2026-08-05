@@ -106,7 +106,7 @@ class PdfTableAdapter(RuleBasedAdapter):
                 location=record.get("location", ""),
                 phone=self._normalize_phone(record.get("phone", "")),
                 image_urls=record.get("image_urls", []),
-                source_url=virtual_url,
+                source_url=self._public_source_url(pdf_url, idx),
                 category=category,
                 # 個体識別: 派生 PDF サブクラスが records に該当キーを生成すれば開通する。
                 # 監査(2026-06-11)指摘で追加 (kochi 同型サイレントドロップを予防)。
@@ -128,6 +128,20 @@ class PdfTableAdapter(RuleBasedAdapter):
         raise NotImplementedError("subclass must implement _parse_pdf_text")
 
     # ─────────────────── ヘルパー ───────────────────
+
+    def _public_source_url(self, pdf_url: str, idx: int) -> str:
+        """人がリンクを踏んだときに開ける URL を返す
+
+        PDF 本体の URL を公開すると、日次/週次の差し替えで翌期には 404 になる
+        (掲載監査で香川県 `documents/375/r8-7-31.pdf` の消滅を確認・W001/T022)。
+        掲載元の HTML ページなら差し替え後も生きているのでそちらを指す。
+
+        差分検知 (`diff_detector`) は `source_url` をユニークキーに使うため、
+        PDF ファイル名と行番号を fragment に残して一意性を保つ。fragment は
+        サーバーに送られないので、遷移先は list ページのままになる。
+        """
+        pdf_name = pdf_url.rsplit("/", 1)[-1]
+        return f"{self.site_config.list_url}#pdf={pdf_name}&row={idx}"
 
     def _load_pdf_records(self, pdf_url: str) -> list[dict]:
         """PDF をダウンロード→テキスト抽出→パースしてキャッシュ"""
