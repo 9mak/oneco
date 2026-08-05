@@ -95,6 +95,46 @@ class TestPdfTableAdapter:
         assert raw.location == "高松"
         assert raw.shelter_date == "2026-05-01"
 
+    def test_source_url_points_at_the_html_page_not_the_pdf(self):
+        """公開する `source_url` は PDF 本体ではなく掲載元の HTML ページにする
+
+        PDF は日次/週次で差し替わり、翌期には URL ごと消える。掲載監査で
+        香川県 `documents/375/r8-7-31.pdf` が 404 になっているのを確認した
+        (W001/T022)。リンクを踏んだ人が 404 に当たらないよう、リンク先は
+        生き続ける list ページにし、個体の一意性 (差分検知のキー) は
+        fragment で保つ。fragment はサーバーに送られないため遷移先は
+        list ページのまま。
+        """
+        adapter = _SamplePdfAdapter(_site())
+        with (
+            patch.object(adapter, "_http_get", return_value=LIST_HTML),
+            patch.object(adapter, "_download_pdf", return_value=b"fake-pdf"),
+            patch.object(adapter, "_extract_pdf_text", return_value=SAMPLE_PDF_TEXT),
+        ):
+            adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(
+                "https://example.com/files/animals_2026_05.pdf#row=1",
+                category="lost",
+            )
+
+        assert raw.source_url == "https://example.com/list/#pdf=animals_2026_05.pdf&row=1"
+        assert ".pdf#row=" not in raw.source_url
+
+    def test_source_url_is_unique_per_pdf_and_row(self):
+        """差分検知のユニークキーとして機能する (PDF 名と行で区別できる)"""
+        adapter = _SamplePdfAdapter(_site())
+        with (
+            patch.object(adapter, "_http_get", return_value=LIST_HTML),
+            patch.object(adapter, "_download_pdf", return_value=b"fake-pdf"),
+            patch.object(adapter, "_extract_pdf_text", return_value=SAMPLE_PDF_TEXT),
+        ):
+            virtual_urls = [u for u, _ in adapter.fetch_animal_list()]
+            source_urls = [
+                adapter.extract_animal_details(u, category="lost").source_url for u in virtual_urls
+            ]
+
+        assert len(set(source_urls)) == len(source_urls)
+
     def test_returns_empty_when_no_pdf_links(self):
         # PDF_LINK_SELECTOR にヒットしない場合は「現在公開中の収容情報 PDF がない」
         # 真ゼロとして空リストを返し、ParsingError を投げない。
