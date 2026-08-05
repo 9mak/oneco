@@ -50,8 +50,16 @@ def _load_yamanashi_html(fixture_html) -> str:
 
 
 class TestPrefYamanashiAdapter:
-    def test_fetch_animal_list_returns_multiple_rows(self, fixture_html):
-        """一覧ページから複数の動物カード (仮想 URL) が抽出できる"""
+    def test_fetch_animal_list_returns_detail_urls(self, fixture_html):
+        """一覧はカードの実 detail URL を返す
+
+        `collector_service` は `fetch_animal_list` が返した URL を snapshot の
+        キー (`AnimalData.source_url`) と突き合わせ、既知なら detail 取得ごと
+        スキップする。行番号ベースの仮想 URL は掲載順が変わるたびに別物になり、
+        スキップが効かず毎回全件の detail を取り直していた。その負荷が山梨県
+        サーバー側の接続拒否を誘発し、同一ホストの後続サイトを巻き込んで
+        落としていた (W001/T024)。
+        """
         html = _load_yamanashi_html(fixture_html)
         adapter = PrefYamanashiAdapter(_site())
 
@@ -60,9 +68,46 @@ class TestPrefYamanashiAdapter:
 
         assert len(result) >= 2, "少なくとも 2 件以上のカードが抽出されるはず"
         for url, cat in result:
-            assert "#row=" in url
-            assert url.startswith("https://www.pref.yamanashi.jp/")
+            assert "#row=" not in url
+            assert url.startswith("https://www.pref.yamanashi.jp/doubutsu/")
+            assert url.endswith(".html")
             assert cat == "lost"
+        assert result[0][0] == "https://www.pref.yamanashi.jp/doubutsu/kt/m_dog/33824.html"
+
+    def test_fetch_animal_list_falls_back_to_row_url_without_link(self):
+        """detail リンクが無いカードは仮想 URL のまま返す (取りこぼし防止)"""
+        html = """
+        <html><body>
+          <div class="menu_item"><div class="item_link_ttl">
+            <p class="txt">甲府市朝気</p><p>オス</p><p>黒</p>
+          </div></div>
+        </body></html>
+        """
+        adapter = PrefYamanashiAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            result = adapter.fetch_animal_list()
+
+        assert result[0][0].endswith("#row=0")
+
+    def test_snapshot_key_matches_fetched_url(self, fixture_html):
+        """`fetch_animal_list` の URL と `source_url` が一致する
+
+        この 2 つがずれると `collector_service` のスキップ判定
+        (`if url in known_animals`) が永久に外れ、毎回全件の detail を
+        取り直す。T024 の修正はこの一致が前提。
+        """
+        html = _load_yamanashi_html(fixture_html)
+        adapter = PrefYamanashiAdapter(_site())
+
+        def _side_effect(url):
+            return html if url.endswith("index.html") else "<html><body></body></html>"
+
+        with patch.object(adapter, "_http_get", side_effect=_side_effect):
+            urls = adapter.fetch_animal_list()
+            first_url, category = urls[0]
+            raw = adapter.extract_animal_details(first_url, category=category)
+
+        assert raw.source_url == first_url
 
     def test_extract_animal_details_first_row(self, fixture_html):
         """1 件目のカードから RawAnimalData を構築できる + detail から補完が走る"""
@@ -91,9 +136,34 @@ class TestPrefYamanashiAdapter:
         # 画像 URL が絶対 URL に変換されている
         assert raw.image_urls
         assert all(u.startswith("http") for u in raw.image_urls)
-        # source_url は仮想 URL
-        assert raw.source_url == first_url
+        # source_url はカードの実 detail URL。行番号ベースの仮想 URL では
+        # 掲載順が変わるたびに同じ子が別個体になり、毎回「新規N件・更新0件」で
+        # 全件を取り直す状態になっていた (W001/T024)。リンクを踏んだ人が
+        # 個体ページに着けるようにする意味もある。
+        assert raw.source_url == "https://www.pref.yamanashi.jp/doubutsu/kt/m_dog/33824.html"
+        assert "#row=" not in raw.source_url
         assert raw.category == "lost"
+
+    def test_source_url_falls_back_to_virtual_url_without_detail_link(self):
+        """detail リンクが無いカードでは仮想 URL のままにする (取りこぼし防止)"""
+        html = """
+        <html><body>
+          <div class="menu_item">
+            <div class="item_link_ttl">
+              <p class="txt">甲府市朝気</p>
+              <p>オス</p>
+              <p>黒</p>
+            </div>
+          </div>
+        </body></html>
+        """
+        adapter = PrefYamanashiAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+
+        assert raw.source_url == urls[0][0]
+        assert "#row=0" in raw.source_url
 
     def test_extract_animal_details_enriches_with_detail_page(self, fixture_html):
         """カードの detail URL を辿って phone / size を補完する

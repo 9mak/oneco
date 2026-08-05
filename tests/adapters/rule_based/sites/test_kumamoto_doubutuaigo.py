@@ -314,13 +314,15 @@ class TestKumamotoDoubutuAigoAdapterDetailExtraction:
         assert not any("other" in u for u in raw.image_urls)
 
     def test_images_fall_back_to_page_images_excluding_recommend_area(self):
-        """`top-slider` が無い構造でも `recommend-area` だけは必ず除外する
+        """`top-slider` が無い構造でも他個体とテンプレート画像は除外する
 
         サイト側がスライダを廃止した場合に画像ゼロへ倒れないためのフォールバック。
-        ただしフォールバック経路でも他個体サムネイルを拾ってはいけない。
+        この経路では他個体サムネイル (`recommend-area`) に加えて、ヘッダーロゴ等の
+        テンプレート画像 (`/img/common/*`) も拾ってはいけない (reviewer F-03)。
         """
         html = """
         <html><body>
+          <div class="header"><img src="/img/common/logo.svg" alt="ロゴ"/></div>
           <div class="detail">
             <dl><dt>収容場所</dt><dd>熊本県動物愛護センター</dd></dl>
             <img src="/files/cache/own_only.jpg" alt=""/>

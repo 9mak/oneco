@@ -53,6 +53,10 @@ _MATSUYAMA_CENTER_PHONE: str = "089-923-9435"
 # 収容先の施設名。カードに所在地の記載が無いため location に使う
 # (大分・北海道の adapter が施設名を location にしているのと同じ扱い)。
 _MATSUYAMA_CENTER_NAME: str = "松山市動物愛護センター（はぴまるの丘）"
+# 譲渡先が確定した子を示す状態表示。実サイトの表記は
+# 「新しい飼い主が決まりました！（本予約）」。仮予約 (「マッチング中（仮予約）」) は
+# キャンセルの可能性があるため含めない。
+_SETTLED_STATUS_MARKERS: tuple[str, ...] = ("決まりました", "本予約")
 
 
 class CityMatsuyamaAdapter(SinglePageTableAdapter):
@@ -85,7 +89,27 @@ class CityMatsuyamaAdapter(SinglePageTableAdapter):
         """
         rows = self._load_rows()
         category = self.site_config.category
-        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
+        # 譲渡が決まった子は載せない。カードに「新しい飼い主が決まりました！（本予約）」
+        # と出ていても収集していたため、問い合わせても会えない子を「収容中」として
+        # 公開していた (2026-08-05 の掲載監査 W001/T025・本番 id=2020 等)。
+        # サイトから消えた子と同じ扱いにすることで prune が自然に効く。
+        # 「マッチング中（仮予約）」はキャンセルの可能性があるので残し、状態は
+        # description に載せて判別できるようにしている。
+        # 除外してもカード位置 (#row=N) はズラさない。ズラすと同じ URL が別の子を
+        # 指すようになる。
+        return [
+            (f"{self.site_config.list_url}#row={i}", category)
+            for i, card in enumerate(rows)
+            if not self._is_adoption_settled(card)
+        ]
+
+    def _is_adoption_settled(self, card: Tag) -> bool:
+        """カードの状態表示が「譲渡先が確定した」ことを示すか"""
+        status_span = card.select_one("span.movie_slider_text")
+        if not isinstance(status_span, Tag):
+            return False
+        status = status_span.get_text(strip=True)
+        return any(marker in status for marker in _SETTLED_STATUS_MARKERS)
 
     def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """スライダー <li> から RawAnimalData を構築する

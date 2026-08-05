@@ -97,6 +97,76 @@ def _build_html_one_dog_one_cat() -> str:
     """
 
 
+def _build_html_with_settled_animal() -> str:
+    """譲渡確定・仮予約・募集中が並ぶ最小 HTML
+
+    実サイトの状態表示は「新しい飼い主募集中」「マッチング予約不可」
+    「マッチング中（仮予約）」「新しい飼い主が決まりました！（本予約）」の4種。
+    """
+    return """
+    <html><body>
+      <div class="aigo_sec05 aigo_wp_over">
+        <ul class="slider02" id="slick02">
+          <li>
+            <span class="movie_slider_img"><img src="index.images/a.jpg" alt="R8No.01"></span>
+            <span class="movie_slider_text">新しい飼い主募集中</span>
+          </li>
+          <li>
+            <span class="movie_slider_img"><img src="index.images/b.jpg" alt="R8No.02"></span>
+            <span class="movie_slider_text">新しい飼い主が決まりました！（本予約）</span>
+          </li>
+          <li>
+            <span class="movie_slider_img"><img src="index.images/c.jpg" alt="R8No.03"></span>
+            <span class="movie_slider_text">マッチング中（仮予約）</span>
+          </li>
+        </ul>
+      </div>
+    </body></html>
+    """
+
+
+class TestCityMatsuyamaAdapterSettledAnimals:
+    """譲渡が決まった子を公開しない (W001/T025)"""
+
+    def test_settled_animal_is_excluded(self):
+        """「新しい飼い主が決まりました！（本予約）」の子は収集しない
+
+        問い合わせても会えない子を「収容中」として公開していた
+        (本番 id=2020)。サイトから消えた子と同じ扱いにして prune を効かせる。
+        """
+        adapter = CityMatsuyamaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=_build_html_with_settled_animal()):
+            urls = adapter.fetch_animal_list()
+            raws = [adapter.extract_animal_details(u, category=c) for (u, c) in urls]
+
+        assert len(urls) == 2
+        assert [r.management_number for r in raws] == ["R8No.01", "R8No.03"]
+
+    def test_row_index_is_not_shifted_by_exclusion(self):
+        """除外してもカード位置 (#row=N) はズラさない
+
+        詰めると同じ URL が別の子を指すようになり、snapshot 再利用で
+        他人のデータが載る。
+        """
+        adapter = CityMatsuyamaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=_build_html_with_settled_animal()):
+            urls = adapter.fetch_animal_list()
+
+        assert [u for u, _ in urls] == [
+            "https://www.city.matsuyama.ehime.jp/kurashi/kurashi/aigo/index.html#row=0",
+            "https://www.city.matsuyama.ehime.jp/kurashi/kurashi/aigo/index.html#row=2",
+        ]
+
+    def test_provisional_reservation_is_kept(self):
+        """「マッチング中（仮予約）」はキャンセルの可能性があるので残す"""
+        adapter = CityMatsuyamaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=_build_html_with_settled_animal()):
+            urls = adapter.fetch_animal_list()
+            raws = [adapter.extract_animal_details(u, category=c) for (u, c) in urls]
+
+        assert any("仮予約" in (r.description or "") for r in raws)
+
+
 class TestCityMatsuyamaAdapterFixture:
     """実フィクスチャ (city_matsuyama_ehime_jp.html) ベースのテスト"""
 

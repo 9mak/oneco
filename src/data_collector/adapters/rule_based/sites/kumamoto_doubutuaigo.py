@@ -107,6 +107,8 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
     # 配下にあるため URL では区別できない。
     OWN_PHOTO_SELECTOR: ClassVar[str] = "#top-slider img.sp-image"
     RECOMMEND_AREA_CLASS: ClassVar[str] = "recommend-area"
+    # 投稿画像の置き場。テンプレート画像 (`/img/common/*`) と区別するのに使う。
+    UPLOADED_IMAGE_PATH: ClassVar[str] = "/files/cache/"
 
     # ─────────────────── オーバーライド ───────────────────
 
@@ -139,6 +141,17 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
             if src and isinstance(src, str):
                 urls.append(self._absolute_url(src, base=base_url))
         return self._filter_image_urls(urls, base_url)
+
+    def _filter_image_urls(self, urls: list[str], base_url: str) -> list[str]:
+        """アップロード画像 (`/files/cache/`) だけを残す
+
+        既定実装は `/wp-content/uploads/` を前提としており、熊本の
+        `/files/cache/` には一致しないためフェイルセーフで全件素通ししていた。
+        フォールバック経路 (top-slider 不在) ではヘッダーロゴやナビアイコン
+        (`/img/common/*`) まで対象に入るため、ここで実際の投稿画像に絞る。
+        """
+        filtered = [u for u in urls if self.UPLOADED_IMAGE_PATH in u]
+        return filtered if filtered else urls
 
     def fetch_animal_list(self) -> list[tuple[str, str]]:
         """一覧ページから detail URL を抽出する (0 件は正常系として許容)"""
