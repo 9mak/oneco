@@ -130,8 +130,7 @@ class TestPdfTableAdapter:
         ):
             virtual_urls = [u for u, _ in adapter.fetch_animal_list()]
             source_urls = [
-                adapter.extract_animal_details(u, category="lost").source_url
-                for u in virtual_urls
+                adapter.extract_animal_details(u, category="lost").source_url for u in virtual_urls
             ]
 
         assert len(set(source_urls)) == len(source_urls)
