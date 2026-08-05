@@ -50,6 +50,9 @@ from ..single_page_table import SinglePageTableAdapter
 
 # 松山市動物愛護センター（はぴまるの丘）共通の問い合わせ先
 _MATSUYAMA_CENTER_PHONE: str = "089-923-9435"
+# 収容先の施設名。カードに所在地の記載が無いため location に使う
+# (大分・北海道の adapter が施設名を location にしているのと同じ扱い)。
+_MATSUYAMA_CENTER_NAME: str = "松山市動物愛護センター（はぴまるの丘）"
 
 
 class CityMatsuyamaAdapter(SinglePageTableAdapter):
@@ -115,13 +118,12 @@ class CityMatsuyamaAdapter(SinglePageTableAdapter):
         status_span = item.select_one("span.movie_slider_text")
         status = status_span.get_text(strip=True) if isinstance(status_span, Tag) else ""
 
-        # location 列に相当する情報が無いため、収容番号 + 状態を埋める。
-        # どちらも空ならカード由来のテキスト全体を fallback として使う。
-        location_parts = [p for p in (animal_id, status) if p]
-        if location_parts:
-            location = " ".join(location_parts)
-        else:
-            location = item.get_text(separator=" ", strip=True)
+        # カードには所在地の記載が無い。旧実装は収容番号 + 状態を location に
+        # 詰めており、「R7No.249-250 新しい飼い主募集中」が所在地として公開されて
+        # いた (2026-08-05 の掲載監査 W001/T023)。所在地としては収容先の施設名が
+        # 正しいので固定値を入れ、収容番号は management_number、状態は description
+        # へそれぞれ本来のフィールドに載せる。
+        location = _MATSUYAMA_CENTER_NAME
 
         try:
             return RawAnimalData(
@@ -129,6 +131,9 @@ class CityMatsuyamaAdapter(SinglePageTableAdapter):
                 # 収容番号(個体識別番号)は location に連結されるだけで management_number
                 # に未伝搬だった。個体識別フィールドとして明示的に渡す。
                 management_number=animal_id,
+                # 「新しい飼い主募集中」「マッチング予約不可」等。所在地ではないので
+                # location からここへ移した (W001/T023)。
+                description=status,
                 sex="",
                 age="",
                 color="",
