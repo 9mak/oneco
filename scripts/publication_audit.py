@@ -215,12 +215,12 @@ def _card(index: int, animal: dict[str, Any], base_date: str, site_base: str) ->
     if fresh == "unknown":
         warn = (
             '<div class="warn">収集で一度も確認されていない個体 — '
-            "実サイトから消えている可能性がある（unknown）</div>"
+            "実サイトから消えている可能性がある</div>"
         )
     elif fresh == "stale":
         warn = (
             f'<div class="warn">最終確認が古い（{e(str(last_seen)[:10])}）— '
-            "実サイトから消えている可能性がある（stale）</div>"
+            "実サイトから消えている可能性がある</div>"
         )
     else:
         warn = ""

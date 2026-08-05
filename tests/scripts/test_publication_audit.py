@@ -140,8 +140,8 @@ class TestRenderHtml:
     def test_warns_on_stale_animal(self):
         animals = [_animal(last_collected_at="2026-07-01T00:00:00Z")]
         html = pa.render_html(animals, seed=1, base_date="2026-08-04", site_base="https://x.test")
-        assert "最終確認" in html
-        assert "stale" in html
+        assert "最終確認が古い（2026-07-01）" in html
+        assert 'data-freshness="stale"' in html
 
 
 class TestBuildManifest:
