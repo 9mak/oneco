@@ -101,8 +101,44 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
     _SIZE_BOUNDARY_LARGE_KG: ClassVar[float] = 15.0
 
     IMAGE_SELECTOR: ClassVar[str] = "img"
+    # 個体写真は `#top-slider` のスライダ画像だけ。ページ下部の
+    # `div.recommend-area`「このページを見ている人はこちらのページも見ています」に
+    # 並ぶのは *別個体* の detail へのリンクのサムネイルで、同じ `/files/cache/`
+    # 配下にあるため URL では区別できない。
+    OWN_PHOTO_SELECTOR: ClassVar[str] = "#top-slider img.sp-image"
+    RECOMMEND_AREA_CLASS: ClassVar[str] = "recommend-area"
 
     # ─────────────────── オーバーライド ───────────────────
+
+    def _extract_images(self, soup: BeautifulSoup, base_url: str) -> list[str]:
+        """個体本人の写真だけを返す
+
+        既定実装 (`IMAGE_SELECTOR = "img"` で全 img を拾い、`/wp-content/uploads/`
+        を含むものだけ残す) は熊本では機能しない。画像が `/files/cache/` 配下に
+        あるためフィルタが 1 件もマッチせず、データ消失防止のフェイルセーフで
+        全件そのまま通っていた。結果として `recommend-area` の他個体サムネイルを
+        本人の写真として公開していた (本番 id=2078「ココ」に「すずらん」「バーン」が
+        混入・2026-08-05 の掲載監査 W001/T020 で発見)。
+
+        里親募集で他の子の写真を出すのは最も重い誤りなので、スライダを第一候補に、
+        それが無い構造でも `recommend-area` 配下だけは必ず除外する。
+        """
+        imgs = soup.select(self.OWN_PHOTO_SELECTOR)
+        if not imgs:
+            # スライダが廃止された場合に画像ゼロへ倒れないためのフォールバック。
+            # この経路でも他個体サムネイルは拾わない (soup は壊さず親を辿って除外)。
+            imgs = [
+                img
+                for img in soup.select(self.IMAGE_SELECTOR)
+                if not img.find_parent(class_=self.RECOMMEND_AREA_CLASS)
+            ]
+
+        urls: list[str] = []
+        for img in imgs:
+            src = img.get("src")
+            if src and isinstance(src, str):
+                urls.append(self._absolute_url(src, base=base_url))
+        return self._filter_image_urls(urls, base_url)
 
     def fetch_animal_list(self) -> list[tuple[str, str]]:
         """一覧ページから detail URL を抽出する (0 件は正常系として許容)"""
