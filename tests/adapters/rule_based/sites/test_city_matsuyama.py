@@ -97,6 +97,76 @@ def _build_html_one_dog_one_cat() -> str:
     """
 
 
+def _build_html_with_settled_animal() -> str:
+    """譲渡確定・仮予約・募集中が並ぶ最小 HTML
+
+    実サイトの状態表示は「新しい飼い主募集中」「マッチング予約不可」
+    「マッチング中（仮予約）」「新しい飼い主が決まりました！（本予約）」の4種。
+    """
+    return """
+    <html><body>
+      <div class="aigo_sec05 aigo_wp_over">
+        <ul class="slider02" id="slick02">
+          <li>
+            <span class="movie_slider_img"><img src="index.images/a.jpg" alt="R8No.01"></span>
+            <span class="movie_slider_text">新しい飼い主募集中</span>
+          </li>
+          <li>
+            <span class="movie_slider_img"><img src="index.images/b.jpg" alt="R8No.02"></span>
+            <span class="movie_slider_text">新しい飼い主が決まりました！（本予約）</span>
+          </li>
+          <li>
+            <span class="movie_slider_img"><img src="index.images/c.jpg" alt="R8No.03"></span>
+            <span class="movie_slider_text">マッチング中（仮予約）</span>
+          </li>
+        </ul>
+      </div>
+    </body></html>
+    """
+
+
+class TestCityMatsuyamaAdapterSettledAnimals:
+    """譲渡が決まった子を公開しない (W001/T025)"""
+
+    def test_settled_animal_is_excluded(self):
+        """「新しい飼い主が決まりました！（本予約）」の子は収集しない
+
+        問い合わせても会えない子を「収容中」として公開していた
+        (本番 id=2020)。サイトから消えた子と同じ扱いにして prune を効かせる。
+        """
+        adapter = CityMatsuyamaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=_build_html_with_settled_animal()):
+            urls = adapter.fetch_animal_list()
+            raws = [adapter.extract_animal_details(u, category=c) for (u, c) in urls]
+
+        assert len(urls) == 2
+        assert [r.management_number for r in raws] == ["R8No.01", "R8No.03"]
+
+    def test_row_index_is_not_shifted_by_exclusion(self):
+        """除外してもカード位置 (#row=N) はズラさない
+
+        詰めると同じ URL が別の子を指すようになり、snapshot 再利用で
+        他人のデータが載る。
+        """
+        adapter = CityMatsuyamaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=_build_html_with_settled_animal()):
+            urls = adapter.fetch_animal_list()
+
+        assert [u for u, _ in urls] == [
+            "https://www.city.matsuyama.ehime.jp/kurashi/kurashi/aigo/index.html#row=0",
+            "https://www.city.matsuyama.ehime.jp/kurashi/kurashi/aigo/index.html#row=2",
+        ]
+
+    def test_provisional_reservation_is_kept(self):
+        """「マッチング中（仮予約）」はキャンセルの可能性があるので残す"""
+        adapter = CityMatsuyamaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=_build_html_with_settled_animal()):
+            urls = adapter.fetch_animal_list()
+            raws = [adapter.extract_animal_details(u, category=c) for (u, c) in urls]
+
+        assert any("仮予約" in (r.description or "") for r in raws)
+
+
 class TestCityMatsuyamaAdapterFixture:
     """実フィクスチャ (city_matsuyama_ehime_jp.html) ベースのテスト"""
 
@@ -128,9 +198,13 @@ class TestCityMatsuyamaAdapterFixture:
         assert raw.species == "犬"
         # 収容番号(R7No.310)が management_number として保持される(回帰防止)
         assert raw.management_number == "R7No.310"
-        # 収容番号 (alt) と状態テキストが location に入る
-        assert "R7No.310" in raw.location
-        assert "新しい飼い主募集中" in raw.location
+        # location は所在地 (施設名)。収容番号や状態を入れない (W001/T023)。
+        # 「R7No.249-250 新しい飼い主募集中」が所在地として公開されていた。
+        assert raw.location == "松山市動物愛護センター（はぴまるの丘）"
+        assert "R7No.310" not in raw.location
+        assert "新しい飼い主募集中" not in raw.location
+        # 状態は description に入る
+        assert "新しい飼い主募集中" in raw.description
         # 電話番号は固定値が正規化されて入る
         assert raw.phone == "089-923-9435"
         # 画像は絶対 URL に変換される
@@ -154,7 +228,8 @@ class TestCityMatsuyamaAdapterFixture:
 
         assert raw.species == "猫"
         # 猫カードのステータス例
-        assert "マッチング予約不可" in raw.location
+        assert "マッチング予約不可" in raw.description
+        assert raw.location == "松山市動物愛護センター（はぴまるの丘）"
 
     def test_http_get_called_only_once_when_iterating(self, fixture_html):
         """同一ページから複数件取得しても HTTP は 1 回だけ (キャッシュ)"""
@@ -208,8 +283,9 @@ class TestCityMatsuyamaAdapterSynthetic:
         assert raw.color == ""
         assert raw.size == ""
         assert raw.shelter_date == ""
-        assert "R7No.999" in raw.location
-        assert "新しい飼い主募集中" in raw.location
+        assert raw.location == "松山市動物愛護センター（はぴまるの丘）"
+        assert raw.management_number == "R7No.999"
+        assert "新しい飼い主募集中" in raw.description
         assert raw.phone == "089-923-9435"
         # 画像 URL は list_url を base に絶対化される
         assert raw.image_urls == [
@@ -227,8 +303,8 @@ class TestCityMatsuyamaAdapterSynthetic:
             raw = adapter.extract_animal_details(cat_url, category="lost")
 
         assert raw.species == "猫"
-        assert "R8.No.01" in raw.location
-        assert "マッチング予約不可" in raw.location
+        assert raw.management_number == "R8.No.01"
+        assert "マッチング予約不可" in raw.description
         assert raw.image_urls and raw.image_urls[0].endswith("/index.images/neko.R8No.01.jpg")
 
     def test_invalid_row_index_raises_parsing_error(self):

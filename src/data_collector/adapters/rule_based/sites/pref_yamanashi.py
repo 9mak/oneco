@@ -130,20 +130,36 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
 
     # ─────────────────── オーバーライド ───────────────────
 
+    def fetch_animal_list(self) -> list[tuple[str, str]]:
+        """カードの実 detail URL を返す (取れないカードだけ仮想 URL)
+
+        `collector_service` は ここで返した URL を snapshot のキー
+        (`AnimalData.source_url`) と突き合わせ、既知なら detail 取得ごと
+        スキップする。基底の行番号ベース仮想 URL (`index.html#row=N`) は
+        掲載順が変わるたびに別物になるためスキップが永久に効かず、毎回全件の
+        detail を取り直していた。「探している猫」では 1 回 9 分超に達し、その
+        直後に同一ホストの後続サイトが接続拒否で落ちていた (W001/T024)。
+        """
+        rows = self._load_rows()
+        if not rows:
+            return []
+        category = self.site_config.category
+        list_url = self.site_config.list_url
+        return [
+            (self._detail_url_from_card(card, list_url) or f"{list_url}#row={i}", category)
+            for i, card in enumerate(rows)
+        ]
+
     def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """`<div class="menu_item">` カードから RawAnimalData を構築する
 
         基底の `td/th` ベース実装ではなく、`.item_link_ttl > p` の並びを
         `COLUMN_FIELDS` のインデックスに従って取り出す。
+
+        `virtual_url` は `fetch_animal_list` が返した実 detail URL、または
+        detail リンクが無いカード用の `#row=N` を受け取る。
         """
-        rows = self._load_rows()
-        idx = self._parse_row_index(virtual_url)
-        if idx >= len(rows):
-            raise ParsingError(
-                f"row index {idx} out of range (total {len(rows)})",
-                url=virtual_url,
-            )
-        card = rows[idx]
+        card = self._find_card(virtual_url)
 
         # `.item_link_ttl` 配下の直下 <p> を順序通りに取得
         title_block = card.select_one("div.item_link_ttl")
@@ -169,6 +185,14 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
         # 一覧カードには無い phone / size / age を補完する。失敗時は空のまま。
         phone, size, age, breed = self._fetch_phone_size_age_from_detail(card, virtual_url)
 
+        # 公開する source_url は行番号ベースの仮想 URL ではなく実 detail URL を使う。
+        # 仮想 URL は掲載順が変わるたびに同じ子が別個体になるため、収集のたびに
+        # 「新規N件・更新0件」で全件を登録し直す状態になっていた。その全件 detail
+        # 取得 (探している猫で毎回9分超) が山梨県サーバー側の接続拒否を誘発し、
+        # 同一ホストの後続サイトを巻き込んで落としていた (W001/T024)。
+        # 個体ページへ直接飛べるようになる副次効果もある。
+        detail_url = self._detail_url_from_card(card, virtual_url)
+
         try:
             return RawAnimalData(
                 species=species,
@@ -183,13 +207,53 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
                 location=location,
                 phone=phone,
                 image_urls=self._extract_row_images(card, virtual_url),
-                source_url=virtual_url,
+                source_url=detail_url or virtual_url,
                 category=category,
             )
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── detail 補完 ───────────────────
+
+    def _find_card(self, url: str) -> Tag:
+        """URL に対応する一覧カードを返す
+
+        `fetch_animal_list` が実 detail URL を返すため、まず detail URL で
+        逆引きする。detail リンクが無いカード用の `#row=N` も受け付ける。
+        """
+        rows = self._load_rows()
+        if "#row=" in url:
+            idx = self._parse_row_index(url)
+            if idx >= len(rows):
+                raise ParsingError(
+                    f"row index {idx} out of range (total {len(rows)})",
+                    url=url,
+                )
+            return rows[idx]
+
+        list_url = self.site_config.list_url
+        for card in rows:
+            if self._detail_url_from_card(card, list_url) == url:
+                return card
+        raise ParsingError(
+            "detail URL に対応するカードが一覧に見つかりません",
+            url=url,
+        )
+
+    def _detail_url_from_card(self, card: Tag, base_url: str) -> str:
+        """カードのリンクから実 detail URL を返す (取れなければ空文字)
+
+        山梨のカードは `<p class="txt"><a href="/doubutsu/kt/m_dog/33694.html">`
+        の形で個体ページを指している。行番号ベースの仮想 URL と違って掲載順に
+        左右されないため、公開する `source_url` にも detail 取得にもこちらを使う。
+        """
+        link = card.select_one("div.item_link_ttl p.txt a")
+        if not isinstance(link, Tag):
+            return ""
+        href = link.get("href")
+        if not isinstance(href, str) or not href:
+            return ""
+        return self._absolute_url(href, base=base_url)
 
     def _fetch_phone_size_age_from_detail(
         self, card: Tag, base_url: str
@@ -208,13 +272,9 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
         ネットワーク失敗・HTML 構造変化等は致命的でないため、例外は
         握り潰して空文字を返す。
         """
-        link = card.select_one("div.item_link_ttl p.txt a")
-        if not isinstance(link, Tag):
+        detail_url = self._detail_url_from_card(card, base_url)
+        if not detail_url:
             return "", "", "", ""
-        href = link.get("href")
-        if not isinstance(href, str) or not href:
-            return "", "", "", ""
-        detail_url = self._absolute_url(href, base=base_url)
         try:
             html = self._http_get(detail_url)
         except Exception as e:

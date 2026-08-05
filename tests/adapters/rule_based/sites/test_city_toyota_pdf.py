@@ -170,7 +170,9 @@ class TestFetchAndExtract:
         assert raw.size == "中"
         assert raw.shelter_date == "2026-05-10"
         assert "豊田市" in raw.location
-        assert raw.source_url == first_url
+        # 公開する source_url は PDF 本体ではなく掲載元の HTML ページ (W001/T022)
+        assert raw.source_url.startswith(adapter.site_config.list_url + "#pdf=")
+        assert raw.source_url.endswith("&row=0")
         assert raw.category == "lost"
 
     def test_pdf_cache_avoids_re_download(self):
