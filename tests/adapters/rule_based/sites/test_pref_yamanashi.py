@@ -750,3 +750,102 @@ class TestPrefYamanashiAdapter:
         with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             result = adapter.fetch_animal_list()
         assert result == []
+
+
+class TestPrefYamanashiShelterDate:
+    """詳細ページの日付欄から shelter_date を取る (W001/T036)
+
+    実サイトの詳細ページには保護カテゴリなら「保護日」、迷子カテゴリなら
+    「いなくなった日」が載っているのに adapter が拾わず空文字を返していた。
+    空の shelter_date は `normalize` が収集日で埋めるため、全個体の日付が
+    収集日になり、SNS 投稿候補の並び (shelter_date 降順) を山梨が占拠する
+    状態になっていた。
+    """
+
+    def _adapter_with_detail(self, fixture_html, detail_html: str):
+        list_html = _load_yamanashi_html(fixture_html)
+        adapter = PrefYamanashiAdapter(_site())
+
+        def _http_side_effect(url):
+            return list_html if url.endswith("index.html") else detail_html
+
+        return adapter, _http_side_effect
+
+    def test_extracts_shelter_date_from_protection_page(self, fixture_html):
+        """保護カテゴリの「保護日」を ISO 形式で取る"""
+        detail_html = """
+        <html><body>
+          <h2>保護日</h2>
+          <p>令和8年7月5日</p>
+          <h2>管轄保健所の連絡先</h2>
+          <p>中北保健所TEL:0551-23-3071</p>
+        </body></html>
+        """
+        adapter, side_effect = self._adapter_with_detail(fixture_html, detail_html)
+        with patch.object(adapter, "_http_get", side_effect=side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="adoption")
+
+        assert raw.shelter_date == "2026-07-05"
+
+    def test_extracts_lost_date_from_lost_page(self, fixture_html):
+        """迷子カテゴリの「いなくなった日」を ISO 形式で取る"""
+        detail_html = """
+        <html><body>
+          <h2>いなくなった日</h2>
+          <p>令和8年6月10日</p>
+          <h2>管轄保健所の連絡先</h2>
+          <p>中北保健所TEL:0551-23-3071</p>
+        </body></html>
+        """
+        adapter, side_effect = self._adapter_with_detail(fixture_html, detail_html)
+        with patch.object(adapter, "_http_get", side_effect=side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+
+        assert raw.shelter_date == "2026-06-10"
+
+    def test_accepts_western_year_notation(self, fixture_html):
+        """西暦表記の日付も受け付ける"""
+        detail_html = """
+        <html><body>
+          <h2>保護日</h2>
+          <p>2026年7月5日</p>
+        </body></html>
+        """
+        adapter, side_effect = self._adapter_with_detail(fixture_html, detail_html)
+        with patch.object(adapter, "_http_get", side_effect=side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="adoption")
+
+        assert raw.shelter_date == "2026-07-05"
+
+    def test_leaves_shelter_date_empty_when_absent(self, fixture_html):
+        """日付欄が無い詳細ページでは空のままにする (誤った日付を作らない)"""
+        detail_html = """
+        <html><body>
+          <h2>種類・体格</h2>
+          <p>雑種　中型</p>
+        </body></html>
+        """
+        adapter, side_effect = self._adapter_with_detail(fixture_html, detail_html)
+        with patch.object(adapter, "_http_get", side_effect=side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="adoption")
+
+        assert raw.shelter_date == ""
+
+    def test_ignores_unparsable_date_text(self, fixture_html):
+        """日付として読めない文字列は捨てる"""
+        detail_html = """
+        <html><body>
+          <h2>保護日</h2>
+          <p>不明</p>
+        </body></html>
+        """
+        adapter, side_effect = self._adapter_with_detail(fixture_html, detail_html)
+        with patch.object(adapter, "_http_get", side_effect=side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="adoption")
+
+        assert raw.shelter_date == ""

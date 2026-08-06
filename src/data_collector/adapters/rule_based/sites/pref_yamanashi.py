@@ -30,8 +30,12 @@
   `extract_animal_details` をオーバーライドして `<p>` から値を取得する。
 - 種別 (犬/猫/その他) と収容/迷子の別は site_config 名と URL から決まり、
   ページ HTML には明示されないため adapter のクラス変数とサイト名から推定する。
-- 収容日もページに掲載されないため、`SHELTER_DATE_DEFAULT` を空文字としつつ
-  実運用では shelter_date 不明として扱う (RawAnimalData は文字列なので空可)。
+- 日付は一覧カードには無いが detail ページには載っている。保護カテゴリは
+  「保護日」、迷子カテゴリは「いなくなった日」で、いずれも和暦表記
+  (「令和8年7月5日」)。これを ISO に変換して shelter_date に入れる。
+  読めなかった場合だけ `SHELTER_DATE_DEFAULT` (空文字) に落とす。
+  空のまま返すと `normalize` が収集日で埋めてしまい、全個体の日付が
+  収集日になる (W001/T036 で本番138件がこの状態だった)。
 """
 
 from __future__ import annotations
@@ -59,7 +63,19 @@ _DETAIL_H2_LABELS: dict[str, str] = {
     "管轄保健所の連絡先": "phone",
     "現在の収容場所及び連絡先": "phone_fallback",
     "その他の情報": "_other_info",
+    # 保護カテゴリは「保護日」、迷子カテゴリは「いなくなった日」を持つ。
+    # どちらも個体がセンターに現れた日として shelter_date に入れる。
+    "保護日": "_shelter_date",
+    "いなくなった日": "_shelter_date",
 }
+
+# 詳細ページの日付表記。「令和8年7月5日」と「2026年7月5日」の両方が観測される。
+_WAREKI_DATE_PATTERN = re.compile(
+    r"(令和|平成|昭和)\s*(\d{1,2})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日"
+)
+_WESTERN_DATE_PATTERN = re.compile(r"(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日")
+# 元号の元年に対応する西暦から 1 を引いた値 (令和1年 = 2019 → 2018 + 1)
+_ERA_EPOCHS: dict[str, int] = {"令和": 2018, "平成": 1988, "昭和": 1925}
 # 体格表記の正規化用パターン。
 # 「猫（雑種）大型」「猫（雑種）・中型」のように全角括弧/中点が token を
 # 分割不能にするため、文字列全体から search() で体格語を探す。
@@ -183,7 +199,7 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
 
         # 詳細ページ (`/doubutsu/kt/{section}/{id}.html`) を辿って
         # 一覧カードには無い phone / size / age を補完する。失敗時は空のまま。
-        phone, size, age, breed = self._fetch_phone_size_age_from_detail(card, virtual_url)
+        phone, size, age, breed, shelter_date = self._fetch_detail_fields(card, virtual_url)
 
         # 公開する source_url は行番号ベースの仮想 URL ではなく実 detail URL を使う。
         # 仮想 URL は掲載順が変わるたびに同じ子が別個体になるため、収集のたびに
@@ -203,7 +219,10 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
                 # 個体識別: 犬種/品種。「種類・体格」欄から体格語を除いた残り。
                 # 旧実装は size のみ抽出し犬種を捨てていた (222 件 breed 欠損)。
                 breed=breed,
-                shelter_date=self.SHELTER_DATE_DEFAULT,
+                # 詳細ページの「保護日」/「いなくなった日」を優先する。読めな
+                # かった場合だけ既定値に落とす。空のまま返すと normalize が
+                # 収集日で埋め、全個体の日付が収集日になる (W001/T036)。
+                shelter_date=shelter_date or self.SHELTER_DATE_DEFAULT,
                 location=location,
                 phone=phone,
                 image_urls=self._extract_row_images(card, virtual_url),
@@ -255,14 +274,14 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
             return ""
         return self._absolute_url(href, base=base_url)
 
-    def _fetch_phone_size_age_from_detail(
-        self, card: Tag, base_url: str
-    ) -> tuple[str, str, str, str]:
-        """カードの詳細リンクを辿って phone / size / age / breed を抽出する
+    def _fetch_detail_fields(self, card: Tag, base_url: str) -> tuple[str, str, str, str, str]:
+        """カードの詳細リンクを辿って phone / size / age / breed / shelter_date を抽出する
 
         実サイト構造 (2026-05 観測):
             <h2>種類・体格</h2><p>{犬種} {体格}</p>
             <h2>管轄保健所の連絡先</h2><p>{保健所名}TEL:{番号}</p>
+            <h2>保護日</h2><p>令和8年7月5日</p>          ← 保護カテゴリ
+            <h2>いなくなった日</h2><p>令和8年6月10日</p>  ← 迷子カテゴリ
             <h2>その他の情報</h2><p>... 年齢：3才 ...</p>  ← 記載は任意
 
         age は構造化欄が無いため「その他の情報」自由記述から
@@ -272,14 +291,15 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
         ネットワーク失敗・HTML 構造変化等は致命的でないため、例外は
         握り潰して空文字を返す。
         """
+        empty = ("", "", "", "", "")
         detail_url = self._detail_url_from_card(card, base_url)
         if not detail_url:
-            return "", "", "", ""
+            return empty
         try:
             html = self._http_get(detail_url)
         except Exception as e:
             _logger.debug("yamanashi detail fetch failed %s: %s", detail_url, e)
-            return "", "", "", ""
+            return empty
 
         soup = BeautifulSoup(html, "html.parser")
         phone = ""
@@ -287,6 +307,7 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
         size = ""
         age = ""
         breed = ""
+        shelter_date = ""
         for h2 in soup.find_all("h2"):
             if not isinstance(h2, Tag):
                 continue
@@ -315,6 +336,9 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
             elif kind == "_kind_size":
                 size = self._extract_size_from_kind_size(value)
                 breed = self._extract_breed_from_kind_size(value)
+            elif kind == "_shelter_date":
+                if not shelter_date:
+                    shelter_date = self._parse_detail_date(value)
             elif kind == "_other_info":
                 m = _AGE_PATTERN.search(value)
                 if m:
@@ -324,7 +348,25 @@ class PrefYamanashiAdapter(SinglePageTableAdapter):
                 if not size:
                     size = self._extract_size_from_kind_size(value)
         # 「管轄保健所の連絡先」を優先、無ければ「現在の収容場所及び連絡先」で補完
-        return phone or phone_fallback, size, age, breed
+        return phone or phone_fallback, size, age, breed, shelter_date
+
+    @staticmethod
+    def _parse_detail_date(value: str) -> str:
+        """「令和8年7月5日」「2026年7月5日」を ISO 形式にする
+
+        読めない文字列 (「不明」等) は空文字を返す。ここで推測して日付を
+        作ると、実際とは違う保護日を公開することになるため。
+        """
+        wareki = _WAREKI_DATE_PATTERN.search(value)
+        if wareki:
+            era, era_year, month, day = wareki.groups()
+            year = _ERA_EPOCHS[era] + int(era_year)
+            return f"{year:04d}-{int(month):02d}-{int(day):02d}"
+        western = _WESTERN_DATE_PATTERN.search(value)
+        if western:
+            year, month, day = (int(g) for g in western.groups())
+            return f"{year:04d}-{month:02d}-{day:02d}"
+        return ""
 
     @staticmethod
     def _extract_phone(value: str) -> str:
