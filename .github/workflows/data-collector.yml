@@ -135,8 +135,18 @@ jobs:
           # exit 0 で workflow 自体は成功扱い (best-effort)。次回 run で再試行される。
           exit 0
 
+      # 通知条件に cancelled() を含める理由 (2026-08-06):
+      # job が cancelled になると failure() は false を返すため、失敗通知が飛ばない。
+      # 実行中のキャンセルや timeout-minutes 超過はこれで拾えるようになる。
+      #
+      # ただし cancelled() を足しても拾えない失敗モードがある。2026-08-06 の
+      # GitHub Actions 障害では job が runner を確保できないまま cancelled になり、
+      # jobs API 上 steps が空配列 = ステップが1つも実行されていない状態だった。
+      # ステップが走らない以上、どんな if: 条件を書いてもこの通知は飛ばない。
+      # 「収集が丸ごと落ちた」の検知は uptime-check.yml の freshness チェック
+      # (/health の last_collected_at の古さを外から見る) が担う。
       - name: Notify Slack on failure
-        if: failure()
+        if: failure() || cancelled()
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
@@ -156,7 +166,7 @@ jobs:
             --data "$PAYLOAD" "$SLACK_WEBHOOK_URL" || echo "::warning::Slack webhook 送信に失敗"
 
       - name: Notify Discord on failure
-        if: failure()
+        if: failure() || cancelled()
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
