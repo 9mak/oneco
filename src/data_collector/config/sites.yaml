@@ -1332,6 +1332,43 @@ sites:
     single_page: true
 
   # 【山梨県動物愛護指導センター】6 URL
+  #
+  # 掲載数の少ないサブカテゴリを先に、多いものを後に並べている。
+  # 同一ホストへの累積アクセスが一定量を超えると後続サイトが connect timeout で
+  # 弾かれるため (2026-08-07 の収集ログで確認: 「探している猫」129 件を 381.6 秒
+  # かけて取得した直後から、後続の 4 サイトが 30s×3 リトライすべて connect
+  # timeout。ローカルからは同時刻に 4 サイトとも 200 が返る)。
+  # 掲載数が少ないものを先に取り切ることで、累積量が閾値に達する前に完了させる。
+  # ※ 根本対処 (ホスト単位のクールダウンと失敗サイトの再試行) は別途必要で、
+  #   この並びは「重いサイトが後続を巻き添えにしない」ための緩和策。
+  - name: "山梨県（保護されている犬）"
+    prefecture: "山梨県"
+    prefecture_code: "19"
+    list_url: "https://www.pref.yamanashi.jp/doubutsu/p_dog/index.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "山梨県（保護されている他のペット）"
+    prefecture: "山梨県"
+    prefecture_code: "19"
+    list_url: "https://www.pref.yamanashi.jp/doubutsu/p_other/index.html"
+    category: "sheltered"
+    single_page: true
+
+  - name: "山梨県（探している他のペット）"
+    prefecture: "山梨県"
+    prefecture_code: "19"
+    list_url: "https://www.pref.yamanashi.jp/doubutsu/m_other/index.html"
+    category: "lost"
+    single_page: true
+
+  - name: "山梨県（保護されている猫）"
+    prefecture: "山梨県"
+    prefecture_code: "19"
+    list_url: "https://www.pref.yamanashi.jp/doubutsu/p_cat/index.html"
+    category: "sheltered"
+    single_page: true
+
   - name: "山梨県（探している犬）"
     prefecture: "山梨県"
     prefecture_code: "19"
@@ -1348,34 +1385,6 @@ sites:
     # 探している猫は他のサブカテゴリより掲載数が多く (実測 124 件)、
     # detail 取得時の 2s throttle で計 250s を超える。240s→600s に拡張。
     timeout_sec: 600
-
-  - name: "山梨県（探している他のペット）"
-    prefecture: "山梨県"
-    prefecture_code: "19"
-    list_url: "https://www.pref.yamanashi.jp/doubutsu/m_other/index.html"
-    category: "lost"
-    single_page: true
-
-  - name: "山梨県（保護されている犬）"
-    prefecture: "山梨県"
-    prefecture_code: "19"
-    list_url: "https://www.pref.yamanashi.jp/doubutsu/p_dog/index.html"
-    category: "sheltered"
-    single_page: true
-
-  - name: "山梨県（保護されている猫）"
-    prefecture: "山梨県"
-    prefecture_code: "19"
-    list_url: "https://www.pref.yamanashi.jp/doubutsu/p_cat/index.html"
-    category: "sheltered"
-    single_page: true
-
-  - name: "山梨県（保護されている他のペット）"
-    prefecture: "山梨県"
-    prefecture_code: "19"
-    list_url: "https://www.pref.yamanashi.jp/doubutsu/p_other/index.html"
-    category: "sheltered"
-    single_page: true
 
   # 【岐阜県】12 保健所のハブページ
   - name: "岐阜県（迷い犬情報）"
