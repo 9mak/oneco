@@ -4,7 +4,7 @@
 GET /health エンドポイントが要件通りに実装されているかを検証します。
 """
 
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 import pytest
 import pytest_asyncio
@@ -121,7 +121,7 @@ async def test_health_check_returns_max_last_collected_at(test_app, async_sessio
                 location="テストセンター",
                 source_url="https://example.com/animal/old",
                 category="adoption",
-                last_collected_at=datetime(2026, 8, 5, 16, 57, 20, tzinfo=timezone.utc),
+                last_collected_at=datetime(2026, 8, 5, 16, 57, 20, tzinfo=UTC),
             ),
             Animal(
                 species="猫",
@@ -129,7 +129,7 @@ async def test_health_check_returns_max_last_collected_at(test_app, async_sessio
                 location="テストセンター",
                 source_url="https://example.com/animal/new",
                 category="adoption",
-                last_collected_at=datetime(2026, 8, 7, 2, 8, 10, tzinfo=timezone.utc),
+                last_collected_at=datetime(2026, 8, 7, 2, 8, 10, tzinfo=UTC),
             ),
         ]
     )
