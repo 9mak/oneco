@@ -54,6 +54,11 @@ jobs:
       RETRY_COUNT: '3'
       RETRY_WAIT_SEC: '5'
       CURL_TIMEOUT_SEC: '15'
+      # 収集鮮度の許容上限 (時間)。/health の last_collected_at がこれ以上古ければ失敗。
+      # 収集は日次 15:00 UTC 開始で 20 分前後。GitHub の schedule cron は best-effort で
+      # 数十分遅れるため、24h ちょうどだと正常時にも鳴る。26h なら「1 回飛ばしたら鳴り、
+      # 正常運用では鳴らない」線になる (2026-08-06 の障害なら 8/6 18:57 UTC に鳴っていた)。
+      FRESHNESS_MAX_HOURS: '26'
     steps:
       - name: Probe targets
         id: probe
@@ -143,6 +148,34 @@ jobs:
             if [ "$ok" != "1" ]; then
               FAILURES="$FAILURES image"
               DETAILS="$DETAILS\n- image: HTTP $last_status content-type=$last_ctype ($IMG_URL)"
+            fi
+          fi
+
+          # --- 収集鮮度のチェック ---
+          # 「収集が丸ごと落ちた」を検知する。2026-08-06 の GitHub Actions 障害では
+          # Data Collector の job が runner を確保できず steps が1つも実行されないまま
+          # cancelled になり、job 内の通知ステップ (if: failure()) も走らず完全に無音で
+          # 1日分の収集が飛んだ。ジョブの中から自分の失敗を通知する方式では原理的に
+          # 拾えないため、公開データの鮮度という「症状」を外から見る。
+          # 原因 (runner 未割当・adapter 全滅・DB 書き込み失敗・デプロイ事故) を問わず
+          # 1本で拾えるのが、ワークフローの成否を見る方式に対する利点。
+          LAST_COLLECTED="$(curl -sS -L --max-time "$CURL_TIMEOUT_SEC" "$BACKEND_URL" 2>/dev/null \
+            | jq -r '.last_collected_at // empty' 2>/dev/null || true)"
+          if [ -z "$LAST_COLLECTED" ]; then
+            # backend 自体が落ちていれば上の backend チェックが既に拾っている。
+            # ここで二重に fail させると原因が読みにくくなるので warning に留める。
+            echo "::warning::[freshness] last_collected_at を取得できずスキップ"
+          else
+            LAST_EPOCH="$(date -u -d "$LAST_COLLECTED" +%s 2>/dev/null || echo '')"
+            if [ -z "$LAST_EPOCH" ]; then
+              echo "::warning::[freshness] last_collected_at をパースできずスキップ ($LAST_COLLECTED)"
+            else
+              AGE_HOURS=$(( ( $(date -u +%s) - LAST_EPOCH ) / 3600 ))
+              echo "[freshness] last_collected_at=$LAST_COLLECTED (${AGE_HOURS}h前)"
+              if [ "$AGE_HOURS" -ge "$FRESHNESS_MAX_HOURS" ]; then
+                FAILURES="$FAILURES freshness"
+                DETAILS="$DETAILS\n- freshness: 最終収集から ${AGE_HOURS} 時間経過 (閾値 ${FRESHNESS_MAX_HOURS}h, last_collected_at=$LAST_COLLECTED)"
+              fi
             fi
           fi
 
