@@ -309,19 +309,36 @@ async def health_check(session: SessionDep) -> dict:
     ヘルスチェックエンドポイント
 
     データベース接続テストを実行し、システムの健全性を確認します。
+
+    `last_collected_at` は公開中の個体で最後に収集が成功した日時 (最大値)。
+    外形監視 (.github/workflows/uptime-check.yml) がこの値の古さを見て
+    「収集が丸ごと落ちた」を検知する。2026-08-06 の GitHub Actions 障害では
+    Data Collector の job が runner を確保できず steps が1つも実行されないまま
+    cancelled になり、job 内の通知ステップも走らずに1日分の収集が無音で飛んだ。
+    ワークフローの失敗を見る (原因ベース) 方式では拾えない失敗モードがあるため、
+    公開データそのものの鮮度を見る (症状ベース) 方式で補う。
     """
     try:
         # データベース接続テスト（簡単なクエリを実行）
-        from sqlalchemy import text
+        from sqlalchemy import func, select, text
+
+        from src.data_collector.infrastructure.database.models import Animal
 
         result = await session.execute(text("SELECT 1"))
         result.scalar()
+
+        last_collected_at = (
+            await session.execute(select(func.max(Animal.last_collected_at)))
+        ).scalar()
 
         logger.info("Health check passed")
 
         return {
             "status": "healthy",
             "timestamp": datetime.utcnow().isoformat(),
+            "last_collected_at": (
+                last_collected_at.isoformat() if last_collected_at is not None else None
+            ),
         }
     except Exception as e:
         # エラー詳細はログのみ。レスポンスには汎用メッセージのみ（DB ホスト名等の漏洩防止）
