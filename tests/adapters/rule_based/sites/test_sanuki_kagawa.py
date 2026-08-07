@@ -93,6 +93,24 @@ _DOG_PDF_TEXT_MULTIPAGE = "\n".join(
     ]
 )
 
+# ヘッダのセル分割で「管理番号」が連結しても一致しなくなるケース。
+# 2026-08-07 の本番収集では犬42件のうち size が入ったのは row=0 と row=36〜41
+# の7件だけで、1ページ目の列位置が正解となる行に偏っていた。同じ PDF を同じ
+# adapter・同じ pdfplumber(0.11.10)/pdfminer.six(20260107) でローカル実行すると
+# 42/42 取得できるため本番固有の要因が残っているが、いずれにせよヘッダを
+# 見失った時点で列位置に依存する値が落ちる構造自体は塞いでおく。
+_DOG_PDF_TEXT_HEADER_NOT_DETECTED = "\n".join(
+    [
+        "掲載日：\t2026年8月5日\t～掲載されている犬について～\t\t\t\t\t\t\t",
+        "センター 管理番号\t\t推定 生年月日\t品種\t\t毛色\t性別\t大きさ\tフィラリア 検査\t特徴",
+        "NEW 8中‐D0155\t\tH31.4.1\t雑種\t\t薄茶\tオス\t約12ｋｇ\t陽性\t・人懐っこい性格の子です♪",
+        # 2 ページ目のヘッダは「管理」「番号」がセル分割され、連結しても
+        # 「管理番号」に一致しない → ヘッダとして検出されず前ページの列位置が残る
+        "センター\t管理 番号\t推定 生年月日\t品種\t毛色\t性別\t大きさ\tフィラリア 検査\t特徴",
+        "7西ーD0091\t\tR7.3.1\t雑種\t茶\tオス 去勢済\t約1６㎏\t陰性\t【トライアル可能（去勢手術済み）】",
+    ]
+)
+
 
 def _adapter_with_pdf(pdf_texts: dict[str, str]) -> SanukiKagawaAdapter:
     """`_extract_pdf_text` を差し替えた adapter を返す
@@ -249,6 +267,40 @@ class TestSanukiKagawaDetailExtraction:
             size="約1６㎏",
             management_number="7西ーD0091",
         )
+
+    def test_size_falls_back_to_row_scan_when_header_is_lost(self, assert_raw_animal):
+        """ヘッダを見失って列位置がずれても size は行全体から復元する
+
+        「約N kg」は体重にしか現れない形なので、列を特定できなくても行から
+        拾い直せる。sex / color / breed は他の列の値と紛れうるため対象にしない。
+        """
+        adapter = _adapter_with_pdf({"0805dog.pdf": _DOG_PDF_TEXT_HEADER_NOT_DETECTED})
+
+        raw = adapter.extract_animal_details(
+            "https://www.pref.kagawa.lg.jp/documents/6103/0805dog.pdf#row=1"
+        )
+
+        assert_raw_animal(raw, size="約1６㎏", management_number="7西ーD0091")
+
+    def test_size_prefers_column_value_over_row_scan(self, assert_raw_animal):
+        """列から取れているときは行スキャンで上書きしない"""
+        adapter = _adapter_with_pdf({"0805dog.pdf": _DOG_PDF_TEXT})
+
+        raw = adapter.extract_animal_details(
+            "https://www.pref.kagawa.lg.jp/documents/6103/0805dog.pdf#row=0"
+        )
+
+        assert_raw_animal(raw, size="約12ｋｇ")
+
+    def test_size_stays_empty_when_row_has_no_weight(self, assert_raw_animal):
+        """行のどこにも体重表記が無ければ空のままにする（猫 PDF に大きさ列は無い）"""
+        adapter = _adapter_with_pdf({"0805cat.pdf": _CAT_PDF_TEXT})
+
+        raw = adapter.extract_animal_details(
+            "https://www.pref.kagawa.lg.jp/documents/6103/0805cat.pdf#row=1"
+        )
+
+        assert_raw_animal(raw, species="猫", size="")
 
     def test_header_row_is_not_counted_as_animal(self):
         """2 ページ目以降のヘッダ行を 1 頭として数えない"""

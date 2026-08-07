@@ -33,12 +33,15 @@
 from __future__ import annotations
 
 import io
+import logging
 import re
 from typing import ClassVar
 
 from ..pdf_table import PdfTableAdapter
 from ..playwright import PlaywrightFetchMixin
 from ..registry import SiteAdapterRegistry
+
+logger = logging.getLogger(__name__)
 
 try:
     import pdfplumber
@@ -140,15 +143,31 @@ class SanukiKagawaAdapter(PlaywrightFetchMixin, PdfTableAdapter):
 
         records: list[dict] = []
         columns: dict[str, int] = {}
+        header_count = 0
         for cells in rows:
             header = self._header_columns(cells)
             if header:
                 columns = header
+                header_count += 1
                 continue
             mgmt = self._find_management_number(cells)
             if mgmt is None:
                 continue
             records.append(self._build_record(cells, columns, mgmt, species, published))
+
+        # 本番でのみ size が落ちる事象 (2026-08-07・犬42件中7件) の切り分け用。
+        # ヘッダを何回検出したかと最終的な列位置が分かれば、ページごとの
+        # 取り直しが効いているかをログだけで判定できる。
+        logger.info(
+            "[sanuki] PDF パース完了: species=%s rows=%d headers=%d records=%d "
+            "last_columns=%s size_filled=%d",
+            species or "不明",
+            len(rows),
+            header_count,
+            len(records),
+            columns,
+            sum(1 for r in records if r.get("size")),
+        )
         return records
 
     # ─────────────────── ヘルパー ───────────────────
@@ -234,12 +253,35 @@ class SanukiKagawaAdapter(PlaywrightFetchMixin, PdfTableAdapter):
         if feature:
             description_parts.append(feature)
 
+        size = self._clean_size(cell("size"))
+        if not size:
+            # 列を特定できなかった / 列位置がずれた場合の保険。「約N kg」は体重に
+            # しか現れない形なので、行全体から拾い直しても他の値と紛れない
+            # (sex / color / breed は他列の値と紛れうるので同じことはしない)。
+            #
+            # 2026-08-07 の本番収集では犬42件のうち size が入ったのは7件だけで、
+            # 1 ページ目の列位置が正解となる行に偏っていた。同じ PDF を同じ
+            # adapter・同じ pdfplumber(0.11.10)/pdfminer.six(20260107) でローカル
+            # 実行すると 42/42 取得できるため本番固有の要因が残っている。
+            # 原因を切り分けるため、復元が発動したことをログに出す。
+            size = self._clean_size(" ".join(cells))
+            if size:
+                logger.warning(
+                    "[sanuki] size を列(index=%s)から取得できず行全体から復元しました: "
+                    "mgmt=%s size=%s columns=%s cells=%s",
+                    columns.get("size"),
+                    mgmt,
+                    size,
+                    columns,
+                    cells,
+                )
+
         return {
             "species": species,
             "sex": self._clean_sex(cell("sex")),
             "age": "",
             "color": self._clean_color(cell("color")),
-            "size": self._clean_size(cell("size")),
+            "size": size,
             "shelter_date": published,
             "location": _CENTER_NAME,
             "phone": _CENTER_PHONE,
