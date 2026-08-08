@@ -3,32 +3,32 @@
   last_error: 'HTTP エラー: 404 Client Error: Not Found for url: https://www.city.akashi.lg.jp/kankyou/dobutsu/info/maigo/cat.html'
   last_failed_at: '2026-08-03T17:12:33+00:00'
 おおいた動物愛護センター（譲渡犬）:
-  consecutive_failures: 0
+  consecutive_failures: 1
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''oita-aigo.com'', port=443): Max
     retries exceeded with url: /information_doglist/anytimedog/ (Caused by ConnectTimeoutError(<HTTPSConnection(host=''oita-aigo.com'',
-    port=443) at 0x7f88a8669fd0>, ''Connection to oita-aigo.com timed out. (connect
+    port=443) at 0x7f684c5a8dd0>, ''Connection to oita-aigo.com timed out. (connect
     timeout=30)''))'
-  last_failed_at: '2026-07-31T16:53:50+00:00'
+  last_failed_at: '2026-08-08T15:36:54+00:00'
 おおいた動物愛護センター（譲渡猫）:
-  consecutive_failures: 0
+  consecutive_failures: 1
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''oita-aigo.com'', port=443): Max
     retries exceeded with url: /information_catlist/anytimecat/ (Caused by ConnectTimeoutError(<HTTPSConnection(host=''oita-aigo.com'',
-    port=443) at 0x7f88cb5f3290>, ''Connection to oita-aigo.com timed out. (connect
+    port=443) at 0x7f684ccfb110>, ''Connection to oita-aigo.com timed out. (connect
     timeout=30)''))'
-  last_failed_at: '2026-07-31T16:53:50+00:00'
+  last_failed_at: '2026-08-08T15:36:54+00:00'
 おおいた動物愛護センター（迷子情報メイン）:
-  consecutive_failures: 0
+  consecutive_failures: 1
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''oita-aigo.com'', port=443): Max
     retries exceeded with url: /lostchild/ (Caused by ConnectTimeoutError(<HTTPSConnection(host=''oita-aigo.com'',
-    port=443) at 0x7f88b84dbd10>, ''Connection to oita-aigo.com timed out. (connect
+    port=443) at 0x7f68655ea590>, ''Connection to oita-aigo.com timed out. (connect
     timeout=30)''))'
-  last_failed_at: '2026-07-31T16:53:50+00:00'
+  last_failed_at: '2026-08-08T15:36:54+00:00'
 アニウェル北海道（猫の里親募集）:
-  consecutive_failures: 0
+  consecutive_failures: 1
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''aniwel.jp'', port=443): Max retries
     exceeded with url: /cats/ (Caused by ConnectTimeoutError(<HTTPSConnection(host=''aniwel.jp'',
-    port=443) at 0x7f88a85470d0>, ''Connection to aniwel.jp timed out. (connect timeout=30)''))'
-  last_failed_at: '2026-07-31T16:52:50+00:00'
+    port=443) at 0x7f685ca85390>, ''Connection to aniwel.jp timed out. (connect timeout=30)''))'
+  last_failed_at: '2026-08-08T15:35:22+00:00'
 三重県動物愛護管理センター（迷い犬情報）:
   consecutive_failures: 0
   last_error: 'ネットワークエラー: HTTPConnectionPool(host=''mie-dakc.server-shared.com'',
@@ -37,12 +37,12 @@
     out. (connect timeout=30)''))'
   last_failed_at: '2026-07-01T17:19:14+00:00'
 函館どうなん動物愛護センター（里親募集）:
-  consecutive_failures: 0
+  consecutive_failures: 1
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''nyantomo.jp'', port=443): Max
     retries exceeded with url: /donanhakodate/ (Caused by ConnectTimeoutError(<HTTPSConnection(host=''nyantomo.jp'',
-    port=443) at 0x7f88a8fab710>, ''Connection to nyantomo.jp timed out. (connect
+    port=443) at 0x7f684ce252d0>, ''Connection to nyantomo.jp timed out. (connect
     timeout=30)''))'
-  last_failed_at: '2026-07-31T16:52:51+00:00'
+  last_failed_at: '2026-08-08T15:35:23+00:00'
 名古屋市（譲渡犬）:
   consecutive_failures: 0
   last_error: 'HTTP エラー: 403 Client Error: Forbidden for url: https://www.city.nagoya.jp/kurashi/pet/1015473/1015483/1015484.html'
@@ -102,61 +102,61 @@
     port=443): Failed to establish a new connection: [Errno 111] Connection refused"))'
   last_failed_at: '2026-07-31T16:53:45+00:00'
 旭川市あにまある（収容その他）:
-  consecutive_failures: 0
+  consecutive_failures: 1
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''www.douaicenter.jp'', port=443):
     Max retries exceeded with url: /animal/list/sheltered/other (Caused by ConnectTimeoutError(<HTTPSConnection(host=''www.douaicenter.jp'',
-    port=443) at 0x7f88b8fda210>, ''Connection to www.douaicenter.jp timed out. (connect
+    port=443) at 0x7f685c745a90>, ''Connection to www.douaicenter.jp timed out. (connect
     timeout=30)''))'
-  last_failed_at: '2026-07-31T17:04:06+00:00'
+  last_failed_at: '2026-08-08T15:46:39+00:00'
 旭川市あにまある（収容犬）:
-  consecutive_failures: 0
+  consecutive_failures: 1
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''www.douaicenter.jp'', port=443):
     Max retries exceeded with url: /animal/list/sheltered/dog (Caused by ConnectTimeoutError(<HTTPSConnection(host=''www.douaicenter.jp'',
-    port=443) at 0x7f88a8a1d2d0>, ''Connection to www.douaicenter.jp timed out. (connect
+    port=443) at 0x7f685c75bb10>, ''Connection to www.douaicenter.jp timed out. (connect
     timeout=30)''))'
-  last_failed_at: '2026-07-31T17:04:06+00:00'
+  last_failed_at: '2026-08-08T15:46:39+00:00'
 旭川市あにまある（収容猫）:
-  consecutive_failures: 0
+  consecutive_failures: 1
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''www.douaicenter.jp'', port=443):
     Max retries exceeded with url: /animal/list/sheltered/cat (Caused by ConnectTimeoutError(<HTTPSConnection(host=''www.douaicenter.jp'',
-    port=443) at 0x7f88b8c70190>, ''Connection to www.douaicenter.jp timed out. (connect
+    port=443) at 0x7f68643d1d90>, ''Connection to www.douaicenter.jp timed out. (connect
     timeout=30)''))'
-  last_failed_at: '2026-07-31T17:04:06+00:00'
+  last_failed_at: '2026-08-08T15:46:39+00:00'
 旭川市あにまある（市民保護犬）:
-  consecutive_failures: 0
+  consecutive_failures: 1
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''www.douaicenter.jp'', port=443):
     Max retries exceeded with url: /other-animal/list/dog (Caused by ConnectTimeoutError(<HTTPSConnection(host=''www.douaicenter.jp'',
-    port=443) at 0x7f88a8d47490>, ''Connection to www.douaicenter.jp timed out. (connect
+    port=443) at 0x7f685cd7f490>, ''Connection to www.douaicenter.jp timed out. (connect
     timeout=30)''))'
-  last_failed_at: '2026-07-31T17:04:06+00:00'
+  last_failed_at: '2026-08-08T15:46:39+00:00'
 旭川市あにまある（市民保護猫）:
-  consecutive_failures: 0
+  consecutive_failures: 1
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''www.douaicenter.jp'', port=443):
     Max retries exceeded with url: /other-animal/list/cat (Caused by ConnectTimeoutError(<HTTPSConnection(host=''www.douaicenter.jp'',
-    port=443) at 0x7f88a8525c90>, ''Connection to www.douaicenter.jp timed out. (connect
+    port=443) at 0x7f685c111b10>, ''Connection to www.douaicenter.jp timed out. (connect
     timeout=30)''))'
-  last_failed_at: '2026-07-31T17:04:06+00:00'
+  last_failed_at: '2026-08-08T15:46:39+00:00'
 旭川市あにまある（譲渡その他）:
-  consecutive_failures: 0
+  consecutive_failures: 1
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''www.douaicenter.jp'', port=443):
     Max retries exceeded with url: /animal/list/transfer/other (Caused by ConnectTimeoutError(<HTTPSConnection(host=''www.douaicenter.jp'',
-    port=443) at 0x7f88b839eb50>, ''Connection to www.douaicenter.jp timed out. (connect
+    port=443) at 0x7f686588e810>, ''Connection to www.douaicenter.jp timed out. (connect
     timeout=30)''))'
-  last_failed_at: '2026-07-31T17:04:06+00:00'
+  last_failed_at: '2026-08-08T15:46:39+00:00'
 旭川市あにまある（譲渡犬）:
-  consecutive_failures: 0
+  consecutive_failures: 1
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''www.douaicenter.jp'', port=443):
     Max retries exceeded with url: /animal/list/transfer/dog (Caused by ConnectTimeoutError(<HTTPSConnection(host=''www.douaicenter.jp'',
-    port=443) at 0x7f88b8f3d8d0>, ''Connection to www.douaicenter.jp timed out. (connect
+    port=443) at 0x7f685ca86850>, ''Connection to www.douaicenter.jp timed out. (connect
     timeout=30)''))'
-  last_failed_at: '2026-07-31T17:04:06+00:00'
+  last_failed_at: '2026-08-08T15:46:39+00:00'
 旭川市あにまある（譲渡猫）:
-  consecutive_failures: 0
+  consecutive_failures: 1
   last_error: 'ネットワークエラー: HTTPSConnectionPool(host=''www.douaicenter.jp'', port=443):
     Max retries exceeded with url: /animal/list/transfer/cat (Caused by ConnectTimeoutError(<HTTPSConnection(host=''www.douaicenter.jp'',
-    port=443) at 0x7f88b8b8fc10>, ''Connection to www.douaicenter.jp timed out. (connect
+    port=443) at 0x7f684c84b610>, ''Connection to www.douaicenter.jp timed out. (connect
     timeout=30)''))'
-  last_failed_at: '2026-07-31T17:04:06+00:00'
+  last_failed_at: '2026-08-08T15:46:39+00:00'
 東京都収容動物情報（犬）:
   consecutive_failures: 0
   last_error: '件数低下異常: 前回 2 件 → 今回 0 件 (adapter 破損 or サイト構造変更の可能性)'
@@ -182,41 +182,41 @@
   last_error: '件数低下異常: 前回 1 件 → 今回 0 件 (adapter 破損 or サイト構造変更の可能性)'
   last_failed_at: '2026-05-27T04:03:14+00:00'
 沖縄県動物愛護管理センター（収容犬）:
-  consecutive_failures: 0
+  consecutive_failures: 1
   last_error: "Playwrightページ取得失敗: Page.goto: Timeout 30000ms exceeded.\nCall log:\n\
     \  - navigating to \"https://www.aniwel-pref.okinawa/animals/accommodate/dogs\"\
     , waiting until \"networkidle\"\n"
-  last_failed_at: '2026-07-31T16:58:20+00:00'
+  last_failed_at: '2026-08-08T15:41:08+00:00'
 沖縄県動物愛護管理センター（収容猫）:
-  consecutive_failures: 0
+  consecutive_failures: 1
   last_error: "Playwrightページ取得失敗: Page.goto: Timeout 30000ms exceeded.\nCall log:\n\
     \  - navigating to \"https://www.aniwel-pref.okinawa/animals/accommodate/cats\"\
     , waiting until \"networkidle\"\n"
-  last_failed_at: '2026-07-31T16:58:20+00:00'
+  last_failed_at: '2026-08-08T15:41:08+00:00'
 沖縄県動物愛護管理センター（行方不明犬）:
-  consecutive_failures: 0
+  consecutive_failures: 1
   last_error: "Playwrightページ取得失敗: Page.goto: Timeout 30000ms exceeded.\nCall log:\n\
     \  - navigating to \"https://www.aniwel-pref.okinawa/animals/missing/dogs\", waiting\
     \ until \"networkidle\"\n"
-  last_failed_at: '2026-07-31T16:58:20+00:00'
+  last_failed_at: '2026-08-08T15:41:08+00:00'
 沖縄県動物愛護管理センター（行方不明猫）:
-  consecutive_failures: 0
+  consecutive_failures: 1
   last_error: "Playwrightページ取得失敗: Page.goto: Timeout 30000ms exceeded.\nCall log:\n\
     \  - navigating to \"https://www.aniwel-pref.okinawa/animals/missing/cats\", waiting\
     \ until \"networkidle\"\n"
-  last_failed_at: '2026-07-31T16:58:20+00:00'
+  last_failed_at: '2026-08-08T15:41:08+00:00'
 沖縄県動物愛護管理センター（迷い込み保護犬）:
-  consecutive_failures: 0
+  consecutive_failures: 1
   last_error: "Playwrightページ取得失敗: Page.goto: Timeout 30000ms exceeded.\nCall log:\n\
     \  - navigating to \"https://www.aniwel-pref.okinawa/animals/protection/dogs\"\
     , waiting until \"networkidle\"\n"
-  last_failed_at: '2026-07-31T16:58:20+00:00'
+  last_failed_at: '2026-08-08T15:41:08+00:00'
 沖縄県動物愛護管理センター（迷い込み保護猫）:
-  consecutive_failures: 0
+  consecutive_failures: 1
   last_error: "Playwrightページ取得失敗: Page.goto: Timeout 30000ms exceeded.\nCall log:\n\
     \  - navigating to \"https://www.aniwel-pref.okinawa/animals/protection/cats\"\
     , waiting until \"networkidle\"\n"
-  last_failed_at: '2026-07-31T16:58:20+00:00'
+  last_failed_at: '2026-08-08T15:41:08+00:00'
 群馬県動物愛護センター東部支所（保護犬）:
   consecutive_failures: 0
   last_error: '行要素が見つかりません (PR #244 で adapter 修理済み・手動リセット)'
@@ -241,12 +241,12 @@
   last_error: '件数低下異常: 前回 3 件 → 今回 0 件 (adapter 破損 or サイト構造変更の可能性)'
   last_failed_at: '2026-05-27T04:06:07+00:00'
 高知県動物愛護センター:
-  consecutive_failures: 0
+  consecutive_failures: 1
   last_error: 'ネットワークエラー (譲渡情報): HTTPSConnectionPool(host=''kochi-apc.com'', port=443):
     Max retries exceeded with url: /jouto/ (Caused by ConnectTimeoutError(<HTTPSConnection(host=''kochi-apc.com'',
-    port=443) at 0x7f88a8b42050>, ''Connection to kochi-apc.com timed out. (connect
+    port=443) at 0x7f684cf39710>, ''Connection to kochi-apc.com timed out. (connect
     timeout=30)''))'
-  last_failed_at: '2026-07-31T16:53:48+00:00'
+  last_failed_at: '2026-08-08T15:36:04+00:00'
 鹿児島市（保護犬）:
   consecutive_failures: 0
   last_error: '件数低下異常: 前回 2 件 → 今回 0 件 (adapter 破損 or サイト構造変更の可能性)'
