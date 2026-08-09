@@ -35,6 +35,7 @@ from __future__ import annotations
 import io
 import logging
 import re
+import unicodedata
 from typing import ClassVar
 
 from ..pdf_table import PdfTableAdapter
@@ -69,8 +70,13 @@ _SEX_RE = re.compile(r"(オス|メス|雄|雌)")
 # 品種。同じ理由で既知語を含む場合だけ採用する。
 _BREED_WORDS: tuple[str, ...] = ("雑種", "ミックス", "日本猫", "柴", "秋田", "洋猫")
 
-# 大きさ: 「約12ｋｇ」「約1９㎏」
+# 大きさ: 「約12ｋｇ」「約1９㎏」。実 PDF は半角 kg・全角 ｋｇ・合字 ㎏ が混在する。
 _SIZE_RE = re.compile(r"約\s*[\d０-９]+\s*(?:[kKｋＫ][gGｇＧ]|㎏|キロ)")
+
+# 体重 → 体格の境界 (kg)。他サイトの adapter (福岡・町田・大分・徳島・横須賀・
+# 熊本・柏) と同じ 5 / 15 kg を使い、UI の体格フィルタで横断比較できるようにする。
+_SIZE_BOUNDARY_SMALL_KG = 5.0
+_SIZE_BOUNDARY_LARGE_KG = 15.0
 
 # 毛色として妥当と見なす上限。重ね書きの混線は長い文字列になりやすい。
 _COLOR_MAX_LEN = 12
@@ -258,12 +264,6 @@ class SanukiKagawaAdapter(PlaywrightFetchMixin, PdfTableAdapter):
             # 列を特定できなかった / 列位置がずれた場合の保険。「約N kg」は体重に
             # しか現れない形なので、行全体から拾い直しても他の値と紛れない
             # (sex / color / breed は他列の値と紛れうるので同じことはしない)。
-            #
-            # 2026-08-07 の本番収集では犬42件のうち size が入ったのは7件だけで、
-            # 1 ページ目の列位置が正解となる行に偏っていた。同じ PDF を同じ
-            # adapter・同じ pdfplumber(0.11.10)/pdfminer.six(20260107) でローカル
-            # 実行すると 42/42 取得できるため本番固有の要因が残っている。
-            # 原因を切り分けるため、復元が発動したことをログに出す。
             size = self._clean_size(" ".join(cells))
             if size:
                 logger.warning(
@@ -322,8 +322,39 @@ class SanukiKagawaAdapter(PlaywrightFetchMixin, PdfTableAdapter):
 
     @staticmethod
     def _clean_size(value: str) -> str:
+        """「約12ｋｇ」等の体重表記を体格 (小型/中型/大型) に変換する
+
+        生の体重をそのまま返してはいけない。`DataNormalizer._cap_size` は
+        「体格語が無く体重情報のみなら size ではない」として捨てる仕様で、
+        判定正規表現が半角 kg にしか当たらないため、そのまま返すと
+        「約16kg」(半角) は None になり「約3ｋｇ」(全角) だけが素通りする、
+        という表記ゆれ依存の歯抜けになる。
+
+        2026-08-07 の本番データがまさにそれで、犬42件のうち DB に size が
+        入っていたのは全角表記の7件だけだった。adapter 段では 42/42 取れて
+        いたため「本番でのみ落ちる原因不明の問題」と誤認したが、実際は
+        normalize 段の仕様どおりの挙動だった (テストを RawAnimalData だけで
+        アサートしていて `normalize()` を通していなかったのが原因)。
+
+        体格の境界は他サイトの adapter と揃える。5kg 未満は小型、5〜15kg 未満は
+        中型、15kg 以上は大型。全角数字・全角 kg・合字 ㎏ は NFKC で吸収する。
+        """
         m = _SIZE_RE.search(value)
-        return m.group(0).replace(" ", "") if m else ""
+        if not m:
+            return ""
+        normalized = unicodedata.normalize("NFKC", m.group(0))
+        num = re.search(r"(\d+(?:\.\d+)?)", normalized)
+        if not num:
+            return ""
+        try:
+            kg = float(num.group(1))
+        except ValueError:  # pragma: no cover - 正規表現が数値を保証する
+            return ""
+        if kg < _SIZE_BOUNDARY_SMALL_KG:
+            return "小型"
+        if kg < _SIZE_BOUNDARY_LARGE_KG:
+            return "中型"
+        return "大型"
 
 
 # ─────────────────── サイト登録 ───────────────────

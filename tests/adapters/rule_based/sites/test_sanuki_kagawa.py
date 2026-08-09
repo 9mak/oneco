@@ -192,7 +192,7 @@ class TestSanukiKagawaDetailExtraction:
             sex="オス",
             color="薄茶",
             breed="雑種",
-            size="約12ｋｇ",
+            size="中型",
             management_number="8中‐D0155",
         )
         assert raw.location == "さぬき動物愛護センター"
@@ -255,7 +255,7 @@ class TestSanukiKagawaDetailExtraction:
         first = adapter.extract_animal_details(
             "https://www.pref.kagawa.lg.jp/documents/6103/0805dog.pdf#row=0"
         )
-        assert_raw_animal(first, sex="オス", color="薄茶", size="約12ｋｇ")
+        assert_raw_animal(first, sex="オス", color="薄茶", size="中型")
 
         second = adapter.extract_animal_details(
             "https://www.pref.kagawa.lg.jp/documents/6103/0805dog.pdf#row=1"
@@ -264,7 +264,7 @@ class TestSanukiKagawaDetailExtraction:
             second,
             sex="オス",
             color="茶",
-            size="約1６㎏",
+            size="大型",
             management_number="7西ーD0091",
         )
 
@@ -280,7 +280,7 @@ class TestSanukiKagawaDetailExtraction:
             "https://www.pref.kagawa.lg.jp/documents/6103/0805dog.pdf#row=1"
         )
 
-        assert_raw_animal(raw, size="約1６㎏", management_number="7西ーD0091")
+        assert_raw_animal(raw, size="大型", management_number="7西ーD0091")
 
     def test_size_prefers_column_value_over_row_scan(self, assert_raw_animal):
         """列から取れているときは行スキャンで上書きしない"""
@@ -290,7 +290,7 @@ class TestSanukiKagawaDetailExtraction:
             "https://www.pref.kagawa.lg.jp/documents/6103/0805dog.pdf#row=0"
         )
 
-        assert_raw_animal(raw, size="約12ｋｇ")
+        assert_raw_animal(raw, size="中型")
 
     def test_size_stays_empty_when_row_has_no_weight(self, assert_raw_animal):
         """行のどこにも体重表記が無ければ空のままにする（猫 PDF に大きさ列は無い）"""
@@ -309,6 +309,54 @@ class TestSanukiKagawaDetailExtraction:
             result = adapter.fetch_animal_list()
 
         assert len(result) == 2
+
+
+class TestSanukiKagawaNormalizedSize:
+    """`normalize()` を通した AnimalData で size を検証する
+
+    2026-08-08 の検証で判明した事故の再発防止。PR #269 では
+    `extract_animal_details` の戻り値 (RawAnimalData) だけをアサートしており、
+    adapter 段で 42/42 取れていることを「本番でのみ落ちる原因不明の問題」と
+    誤って結論づけた。実際は `DataNormalizer._cap_size` が「体格語が無く体重
+    情報のみなら size ではない」として捨てており、DB 段では 7/42 だった。
+    CLAUDE.md「新規 adapter テストは adapter.normalize(raw) の戻り値
+    AnimalData でアサーションする」に反していたのが原因。
+    """
+
+    def _normalized(self, pdf_texts: dict[str, str], url: str):
+        adapter = _adapter_with_pdf(pdf_texts)
+        return adapter.normalize(adapter.extract_animal_details(url))
+
+    def test_weight_survives_normalize_as_size_class(self):
+        """体重は体格語に変換され、normalize を通しても残る
+
+        生の「約12ｋｇ」のままだと `_cap_size` に捨てられて None になる。
+        """
+        animal = self._normalized(
+            {"0805dog.pdf": _DOG_PDF_TEXT},
+            "https://www.pref.kagawa.lg.jp/documents/6103/0805dog.pdf#row=0",
+        )
+
+        assert animal.size == "中型"
+
+    def test_half_width_kg_also_survives_normalize(self):
+        """半角 kg 表記も体格語になる（生値だと `_cap_size` に捨てられていた）"""
+        animal = self._normalized(
+            {"0805dog.pdf": _DOG_PDF_TEXT},
+            "https://www.pref.kagawa.lg.jp/documents/6103/0805dog.pdf#row=1",
+        )
+
+        # 「約16kg」→ 15kg 以上なので大型
+        assert animal.size == "大型"
+
+    def test_cat_without_size_column_is_none_after_normalize(self):
+        """猫 PDF は「大きさ」列を持たないので normalize 後も None"""
+        animal = self._normalized(
+            {"0805cat.pdf": _CAT_PDF_TEXT},
+            "https://www.pref.kagawa.lg.jp/documents/6103/0805cat.pdf#row=1",
+        )
+
+        assert animal.size is None
 
     def test_row_out_of_range_raises(self):
         from data_collector.adapters.municipality_adapter import ParsingError
