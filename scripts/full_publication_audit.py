@@ -56,7 +56,6 @@ for _, _name, _ in pkgutil.iter_modules(_sites_pkg.__path__):
         pass
 
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry  # noqa: E402
-from data_collector.domain.normalizer import DataNormalizer  # noqa: E402
 from data_collector.llm.config import SiteConfig  # noqa: E402
 
 DEFAULT_API_BASE = "https://oneco-api-tvlsrcvyuq-an.a.run.app"
@@ -158,7 +157,11 @@ def collect_site(raw_cfg: dict[str, Any]) -> dict[str, Any]:
     for detail_url, category in urls:
         try:
             raw = adapter.extract_animal_details(detail_url, category)
-            an = DataNormalizer.normalize(raw)
+            # 本番の保存経路 (collector_service.py) と同じく adapter.normalize を
+            # 通す。DataNormalizer を直接呼ぶと高知県等のサイト固有オーバーライド
+            # (location フォールバック・テンプレート画像除外) がバイパスされ、
+            # 監査側の偽陽性になる (review-20260814 F-01)
+            an = adapter.normalize(raw)
             out["animals"].append(
                 {
                     "source_url": str(an.source_url),
