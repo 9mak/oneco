@@ -62,9 +62,22 @@ jobs:
             --suppress-logs \
             .
 
-      - name: Update Cloud Run Job image
+      # ジョブ構成はここに完全宣言する (単一の真実源・review-20260814-pr272 F-01/F-02)。
+      # GCP コンソール側での手変更はこのステップの次回実行で宣言値に戻る。
+      # - task-timeout 18000s (5h): 旧 Actions 版の timeout-minutes: 300 と同値。
+      #   Cloud Run Jobs の既定 (10分) のままだと毎晩サイレントに打ち切られる
+      # - SITE_TIMEOUT_SEC/JS: 旧 Actions 版と同値 (コード既定の 300/360 より厳しい)
+      # - SLACK_WEBHOOK_URL は GitHub secrets に存在しないため設定しない (Discord のみ)
+      - name: Update Cloud Run Job (image + declared config)
         run: |
           gcloud run jobs update "$JOB_NAME" \
             --project "$GCP_PROJECT_ID" \
             --region "$GCP_REGION" \
-            --image "asia-northeast1-docker.pkg.dev/${GCP_PROJECT_ID}/oneco/oneco-collector:${GITHUB_SHA}"
+            --image "asia-northeast1-docker.pkg.dev/${GCP_PROJECT_ID}/oneco/oneco-collector:${GITHUB_SHA}" \
+            --service-account "oneco-collector-job@${GCP_PROJECT_ID}.iam.gserviceaccount.com" \
+            --set-env-vars "SITE_TIMEOUT_SEC=120,SITE_TIMEOUT_JS_SEC=180" \
+            --set-secrets "DATABASE_URL=DATABASE_URL:latest,GROQ_API_KEY=GROQ_API_KEY:latest,DISCORD_WEBHOOK_URL=DISCORD_WEBHOOK_URL:latest,GIT_DEPLOY_KEY=GIT_DEPLOY_KEY:latest" \
+            --task-timeout 18000 \
+            --cpu 2 \
+            --memory 2Gi \
+            --max-retries 0
