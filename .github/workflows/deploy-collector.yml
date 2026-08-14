@@ -1,0 +1,70 @@
+name: Deploy Collector Job
+
+# 収集ジョブ (Cloud Run Jobs) のイメージを再ビルドして差し替える。
+# 実行スケジュールは Cloud Scheduler (0:00 JST) が持つ。ここはデプロイのみ。
+#
+# 移設の経緯: GitHub Actions ランナーの IP 帯が複数自治体サイトから
+# 累積アクセスペナルティを受けるため、収集の実行を GCP asia-northeast1 へ移した
+# (T048/T049)。deploy-backend.yml と同じ WIF (キーレス) 認証を使う。
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'Dockerfile.collector'
+      - 'cloudbuild-collector.yaml'
+      - 'scripts/collector_entrypoint.sh'
+      - 'pyproject.toml'
+      - 'setup.py'
+      - '.github/workflows/deploy-collector.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-collector
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # deploy-backend.yml と同じガード: GCP 未設定のフォークでは何もしない
+    if: ${{ vars.GCP_PROJECT_ID != '' }}
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ vars.GCP_REGION || 'asia-northeast1' }}
+      JOB_NAME: oneco-collector
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Authenticate to Google Cloud (WIF)
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Build collector image
+        run: |
+          gcloud builds submit \
+            --project "$GCP_PROJECT_ID" \
+            --config cloudbuild-collector.yaml \
+            --substitutions "_TAG=${GITHUB_SHA}" \
+            --gcs-log-dir "gs://${GCP_PROJECT_ID}_cloudbuild/build-logs" \
+            --suppress-logs \
+            .
+
+      - name: Update Cloud Run Job image
+        run: |
+          gcloud run jobs update "$JOB_NAME" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --image "asia-northeast1-docker.pkg.dev/${GCP_PROJECT_ID}/oneco/oneco-collector:${GITHUB_SHA}"

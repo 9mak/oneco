@@ -1,11 +1,10 @@
 name: Data Collector
 
 on:
-  # 毎日深夜0時（UTC 15:00 = JST 00:00）に自動実行
-  schedule:
-    - cron: '0 15 * * *'
-
-  # 手動実行をサポート
+  # 定時実行は Cloud Scheduler + Cloud Run Jobs (asia-northeast1) へ移設した (T049)。
+  # 理由: GitHub Actions ランナーの IP 帯が山梨・青森・長崎の自治体サイトから
+  # 累積アクセスペナルティを受け、収集が劣化・凍結するため (T048 で特定)。
+  # このワークフローは緊急時のフォールバック用に手動実行のみ残す。
   workflow_dispatch:
 
 permissions:

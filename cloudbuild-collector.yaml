@@ -1,0 +1,18 @@
+# 収集ジョブ (Dockerfile.collector) のビルド定義。
+# gcloud builds submit --tag はルートの Dockerfile 固定のため、-f を使うにはこれが要る。
+substitutions:
+  _TAG: manual
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - Dockerfile.collector
+      - -t
+      - asia-northeast1-docker.pkg.dev/$PROJECT_ID/oneco/oneco-collector:${_TAG}
+      - -t
+      - asia-northeast1-docker.pkg.dev/$PROJECT_ID/oneco/oneco-collector:latest
+      - .
+images:
+  - asia-northeast1-docker.pkg.dev/$PROJECT_ID/oneco/oneco-collector:${_TAG}
+  - asia-northeast1-docker.pkg.dev/$PROJECT_ID/oneco/oneco-collector:latest
