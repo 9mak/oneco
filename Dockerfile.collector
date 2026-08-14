@@ -1,0 +1,39 @@
+# 夜間収集ジョブ (Cloud Run Jobs) 用イメージ。
+#
+# 既存の Dockerfile は API サーバ (uvicorn) 専用で chromium を含まないため分離した。
+# GitHub Actions からの移設理由: Actions の IP 帯 (Azure) が山梨・青森・長崎の
+# 自治体サイトから累積アクセスペナルティを受け、収集が劣化・凍結するため
+# (T048 で特定、GCP asia-northeast1 からは 130 件連続で劣化ゼロを実測済み)。
+#
+# コードはイメージに焼く (main への push ごとに deploy-collector.yml が再ビルド)。
+# 状態ファイル (data/*.yaml, output/, snapshots/) は実行時に clone した
+# リポジトリを CWD にすることで、相対パスのまま読み書きし、実行後に push する。
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# git / openssh-client: 状態ファイルの clone & push (deploy key 認証) に必要
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    git \
+    openssh-client \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY setup.py pyproject.toml README.md ./
+COPY src/ ./src/
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -e .
+
+# Playwright chromium (requires_js サイト用)。appuser からも読めるよう共有パスに置く
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN playwright install chromium --with-deps
+
+COPY scripts/collector_entrypoint.sh /app/collector_entrypoint.sh
+
+RUN useradd -m -u 1000 appuser \
+    && chmod +x /app/collector_entrypoint.sh \
+    && chown -R appuser:appuser /app
+USER appuser
+
+CMD ["/app/collector_entrypoint.sh"]
