@@ -89,7 +89,7 @@
     (connect timeout=30)''))'
   last_failed_at: '2026-08-07T02:06:44+00:00'
 山梨県（探している犬）:
-  consecutive_failures: 2
+  consecutive_failures: 0
   last_error: 'timeout: site 山梨県（探している犬） timed out after 120.0s'
   last_failed_at: '2026-08-13T16:14:50+00:00'
 山梨県（探している猫）:
@@ -227,8 +227,6 @@
   last_error: 'timeout: site 長崎犬猫ネット（譲渡） timed out after 120.0s'
   last_failed_at: '2026-08-04T16:56:00+00:00'
 青森県動物愛護センター（収容情報）:
-  # 2026-08-14 リセット: 失敗は GitHub Actions IP帯への接続拒否が原因 (T048)。
-  # 収集を GCP asia-northeast1 へ移設したため (PR #272)、次回から取得できる見込み
   consecutive_failures: 0
   last_error: 'ネットワークエラー: HTTPConnectionPool(host=''www.aomori-animal.jp'', port=80):
     Max retries exceeded with url: /01_MAIGO/Shuyo.html (Caused by ConnectTimeoutError(<HTTPConnection(host=''www.aomori-animal.jp'',
