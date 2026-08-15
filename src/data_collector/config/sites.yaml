@@ -349,28 +349,28 @@ sites:
   - name: "福岡市わんにゃん（犬保護中）"
     prefecture: "福岡県"
     prefecture_code: "40"
-    list_url: "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/index?type_id=1&sorting_id=4"
+    list_url: "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/index/?type_id=1&sorting_id=4"
     category: "sheltered"
     requires_js: true
 
   - name: "福岡市わんにゃん（猫保護中）"
     prefecture: "福岡県"
     prefecture_code: "40"
-    list_url: "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/index?type_id=2&sorting_id=4"
+    list_url: "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/index/?type_id=2&sorting_id=4"
     category: "sheltered"
     requires_js: true
 
   - name: "福岡市わんにゃん（犬譲渡）"
     prefecture: "福岡県"
     prefecture_code: "40"
-    list_url: "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/index?type_id=1&sorting_id=5"
+    list_url: "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/index/?type_id=1&sorting_id=5"
     category: "adoption"
     requires_js: true
 
   - name: "福岡市わんにゃん（猫譲渡）"
     prefecture: "福岡県"
     prefecture_code: "40"
-    list_url: "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/index?type_id=2&sorting_id=5"
+    list_url: "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/index/?type_id=2&sorting_id=5"
     category: "adoption"
     requires_js: true
 
