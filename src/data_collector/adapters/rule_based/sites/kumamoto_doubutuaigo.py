@@ -33,6 +33,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import ClassVar
 
@@ -43,6 +44,8 @@ from ...municipality_adapter import ParsingError
 from ..playwright import PlaywrightFetchMixin
 from ..registry import SiteAdapterRegistry
 from ..wordpress_list import FieldSpec, WordPressListAdapter
+
+logger = logging.getLogger(__name__)
 
 
 class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
@@ -193,6 +196,16 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
             if not next_href or not isinstance(next_href, str):
                 break
             page_url = self._absolute_url(next_href)
+        else:
+            # 上限で打ち切った = まだ next が残っている可能性があり、
+            # 静かな掲載漏れになるため必ずログに残す。
+            logger.warning(
+                "[%s] 一覧のページ送りが上限 %d ページに達しました。"
+                "未取得のページが残っている可能性があります: %s",
+                self.site_config.name,
+                self.MAX_LIST_PAGES,
+                page_url,
+            )
         return urls
 
     def extract_animal_details(self, detail_url: str, category: str = "adoption") -> RawAnimalData:

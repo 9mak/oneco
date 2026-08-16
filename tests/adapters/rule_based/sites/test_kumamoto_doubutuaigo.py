@@ -322,8 +322,33 @@ class TestKumamotoDoubutuAigoAdapterListExtraction:
         with patch.object(adapter, "_http_get", return_value=looping) as mock_get:
             result = adapter.fetch_animal_list()
         assert len(result) == 1
-        # list_url と同一 URL を next が指すため 2 回目で打ち切られる
-        assert mock_get.call_count <= 2
+        # next が list_url 自身を指すため、既訪検知により 2 ページ目の取得は走らない
+        assert mock_get.call_count == 1
+
+    def test_fetch_animal_list_warns_when_page_cap_reached(self, caplog):
+        """上限ページ数に達したら取得を打ち切り、warning を残す"""
+
+        def endless_pages(url: str, **_kwargs: object) -> str:
+            n = int(url.rsplit("page:", 1)[1]) if "page:" in url else 1
+            return f"""
+            <html><body>
+            <div class="animal-list"><a href="/animals/detail/animal_id:{n}">x</a></div>
+            <div class="paging">
+              <span class="next"><a href="/animals/index/type_id:2/animal_id:1/page:{n + 1}" rel="next">次のページ</a></span>
+            </div>
+            </body></html>
+            """
+
+        adapter = KumamotoDoubutuAigoAdapter(_site_center_dog())
+        with (
+            patch.object(adapter, "_http_get", side_effect=endless_pages) as mock_get,
+            caplog.at_level("WARNING"),
+        ):
+            result = adapter.fetch_animal_list()
+
+        assert mock_get.call_count == KumamotoDoubutuAigoAdapter.MAX_LIST_PAGES
+        assert len(result) == KumamotoDoubutuAigoAdapter.MAX_LIST_PAGES
+        assert any("上限" in rec.message for rec in caplog.records)
 
 
 class TestKumamotoDoubutuAigoAdapterDetailExtraction:
