@@ -1,3 +1,7 @@
+あかし動物センター（迷子犬）:
+  consecutive_failures: 1
+  last_error: 'HTTP エラー: 404 Client Error: Not Found for url: https://www.city.akashi.lg.jp/kankyou/dobutsu/info/maigo/dog.html'
+  last_failed_at: '2026-08-18T15:01:58+00:00'
 あかし動物センター（迷子猫）:
   consecutive_failures: 5
   last_error: 'HTTP エラー: 404 Client Error: Not Found for url: https://www.city.akashi.lg.jp/kankyou/dobutsu/info/maigo/cat.html'
