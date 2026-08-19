@@ -594,3 +594,79 @@ class TestOitaAigoDetailLinkSelection:
             raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
         assert raw.color == "黒茶白"
         assert raw.size == "中型"
+
+
+# ─────────────────── ページ送り (T052) ───────────────────
+
+_PAGE1_HTML = """
+<html><body>
+  <div class="information_box"><dl><dt>性別</dt><dd>オス</dd></dl></div>
+  <div class="information_box"><dl><dt>性別</dt><dd>メス</dd></dl></div>
+  <a rel="next" href="https://oita-aigo.com/information_catlist/anytimecat/page/2/">»</a>
+</body></html>
+"""
+
+_PAGE2_HTML = """
+<html><body>
+  <div class="information_box"><dl><dt>性別</dt><dd>オス</dd></dl></div>
+</body></html>
+"""
+
+_PAGE_SELF_NEXT_HTML = """
+<html><body>
+  <div class="information_box"><dl><dt>性別</dt><dd>オス</dd></dl></div>
+  <a rel="next" href="https://oita-aigo.com/information_catlist/anytimecat/">»</a>
+</body></html>
+"""
+
+
+class TestOitaAigoPagination:
+    """一覧の rel=next を最後まで辿る (T046 で猫 52 頭中 12 頭のみ収集と判明)"""
+
+    def test_follows_next_link_and_concatenates_rows(self):
+        """page/2/ を辿り、全ページのカードを通し index の仮想 URL で返す"""
+        adapter = OitaAigoAdapter(_adoption_cat_site())
+
+        def _get(url, **kwargs):
+            if url.rstrip("/").endswith("/page/2"):
+                return _PAGE2_HTML
+            return _PAGE1_HTML
+
+        with patch.object(adapter, "_http_get", side_effect=_get):
+            result = adapter.fetch_animal_list()
+
+        urls = [u for u, _cat in result]
+        assert len(urls) == 3
+        # 仮想 URL は list_url 基準の通し index (既存公開分の #row=N を変えない)
+        assert urls[0] == "https://oita-aigo.com/information_catlist/anytimecat/#row=0"
+        assert urls[2] == "https://oita-aigo.com/information_catlist/anytimecat/#row=2"
+
+    def test_page2_row_is_extractable(self):
+        """通し index の仮想 URL で 2 ページ目のカードも抽出できる"""
+        adapter = OitaAigoAdapter(_adoption_cat_site())
+
+        def _get(url, **kwargs):
+            if url.rstrip("/").endswith("/page/2"):
+                return _PAGE2_HTML
+            return _PAGE1_HTML
+
+        with patch.object(adapter, "_http_get", side_effect=_get):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[2][0], category="adoption")
+        assert raw.sex == "オス"
+
+    def test_no_next_link_stays_single_page(self):
+        """rel=next が無いページ (lostchild 等) は従来どおり 1 ページで完結する"""
+        adapter = OitaAigoAdapter(_lostchild_site())
+        with patch.object(adapter, "_http_get", return_value=_PAGE2_HTML) as mocked:
+            result = adapter.fetch_animal_list()
+        assert len(result) == 1
+        assert mocked.call_count == 1
+
+    def test_self_referencing_next_terminates(self):
+        """next が自分自身を指しても visited 集合で 1 回で止まる"""
+        adapter = OitaAigoAdapter(_adoption_cat_site())
+        with patch.object(adapter, "_http_get", return_value=_PAGE_SELF_NEXT_HTML) as mocked:
+            result = adapter.fetch_animal_list()
+        assert len(result) == 1
+        assert mocked.call_count == 1
