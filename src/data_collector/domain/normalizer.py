@@ -130,6 +130,10 @@ class DataNormalizer:
         today = DataNormalizer._today()
         raw_shelter = (raw_data.shelter_date or "").strip()
         shelter_date_str = ""
+        # 収集日フォールバック/未来日クランプが発生したかの印。repository が
+        # 「推定値で既存レコードを上書きしない」判定に使う (T055: 毎日の再収集で
+        # shelter_date が当日へロールし続けるのを止める)。
+        shelter_date_estimated = False
         if raw_shelter:
             try:
                 shelter_date_str = DataNormalizer._normalize_date(raw_shelter)
@@ -146,6 +150,7 @@ class DataNormalizer:
                     },
                 )
             shelter_date_str = today.strftime("%Y-%m-%d")
+            shelter_date_estimated = True
         else:
             # 収容日/「いなくなった日時」が未来日になるのは物理的に不正
             # (長崎 animal-net の実例)。収集日 (今日) にフォールバックして
@@ -161,6 +166,7 @@ class DataNormalizer:
                     },
                 )
                 shelter_date_str = today.strftime("%Y-%m-%d")
+                shelter_date_estimated = True
 
         # 所在地: 迷子(lost)は飼い主の生活圏を番地まで晒さないよう粗粒度化する。
         location = raw_data.location if raw_data.location else "不明"
@@ -175,6 +181,7 @@ class DataNormalizer:
             color=DataNormalizer._cap_color(raw_data.color),
             size=DataNormalizer._cap_size(raw_data.size),
             shelter_date=datetime.strptime(shelter_date_str, "%Y-%m-%d").date(),
+            shelter_date_estimated=shelter_date_estimated,
             location=location,
             prefecture=infer_prefecture_from_url(raw_data.source_url),
             # 携帯/IP 番号(発見者の個人電話)は公開 phone に載せない

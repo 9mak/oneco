@@ -100,6 +100,14 @@ class AnimalData(BaseModel):
     last_collected_at: datetime | None = Field(
         default=None, description="oneco側の収集(クロール)が最後に成功した日時"
     )
+    # shelter_date が実サイト由来でなく収集日フォールバック/未来日クランプによる
+    # 推定値であることを示すフラグ。DB には永続化しない (repository が上書き判定に
+    # 使う transient な印)。これが無いと毎日の再収集で shelter_date が「当日」へ
+    # ロールし続ける (T055 で約300件が常に「昨日収容」表示になっていた)。
+    shelter_date_estimated: bool = Field(
+        default=False,
+        description="shelter_date が収集日フォールバック/クランプによる推定値か",
+    )
 
     @field_validator("species")
     @classmethod
