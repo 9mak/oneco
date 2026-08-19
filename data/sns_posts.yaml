@@ -458,3 +458,43 @@ posts:
 
     🔍 oneco でも公開中: https://frontend-psi-ten-73.vercel.app/animals/569?utm_source=threads&utm_medium=sns_post'
   dry_run: false
+- url: https://www.pref.yamanashi.jp/doubutsu/kt/m_cat/33833.html
+  platform: threads
+  text: '(T057移行登録) 旧URL https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html#row=10
+    で投稿済み。画像 33833no2.jpg 一致（三毛・女の子）'
+  dry_run: true
+- url: https://www.pref.yamanashi.jp/doubutsu/ft/m_cat/n2606-1.html
+  platform: threads
+  text: '(T057移行登録) 旧URL https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html#row=13
+    で投稿済み。画像 3.png 一致（黒白・男の子）'
+  dry_run: true
+- url: https://www.pref.yamanashi.jp/doubutsu/m_cat/10067.html
+  platform: threads
+  text: '(T057移行登録) 旧URL https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html#row=38
+    で投稿済み。画像 1752812089310.jpg 一致（サバトラ・女の子）'
+  dry_run: true
+- url: https://www.pref.yamanashi.jp/doubutsu/kt/m_cat/33798.html
+  platform: threads
+  text: '(T057移行登録) 旧URL https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html#row=43
+    で投稿済み。画像 img_1308.jpeg 一致（茶・男の子）'
+  dry_run: true
+- url: https://www.pref.yamanashi.jp/doubutsu/ft/m_dog/n2410-03.html
+  platform: threads
+  text: '(T057移行登録) 旧URL https://www.pref.yamanashi.jp/doubutsu/m_dog/index.html#row=23
+    で投稿済み。種別/性別/毛色の一意一致（犬・男の子・白、一部薄みがかった茶）'
+  dry_run: true
+- url: https://www.pref.yamanashi.jp/doubutsu/ch/m_cat/m08028.html
+  platform: threads
+  text: '(T057移行登録) 旧URL https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html#row=9
+    で投稿済み。種別/性別/毛色の一意一致（猫・男の子・茶虎）'
+  dry_run: true
+- url: https://www.pref.yamanashi.jp/doubutsu/kn/m_cat/r8004.html
+  platform: threads
+  text: '(T057移行登録) 旧URL https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html#row=21
+    で投稿済み。種別/性別/毛色の一意一致（猫・男の子・白黒縞尾）'
+  dry_run: true
+- url: https://www.pref.yamanashi.jp/doubutsu/m_cat/10071.html
+  platform: threads
+  text: '(T057移行登録) 旧URL https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html#row=35
+    で投稿済み。種別/性別/毛色の一意一致（猫・男の子・黒(少しサビ入り)）'
+  dry_run: true
