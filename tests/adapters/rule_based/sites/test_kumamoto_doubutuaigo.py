@@ -263,6 +263,93 @@ class TestKumamotoDoubutuAigoAdapterListExtraction:
             result = adapter.fetch_animal_list()
         assert result == []
 
+    def test_fetch_animal_list_follows_pagination(self):
+        """`.paging a[rel='next']` を辿り、2 ページ目の detail URL も回収する"""
+        page1 = """
+        <html><body>
+        <div class="animal-list">
+          <a href="/animals/detail/animal_id:101">1</a>
+          <a href="/animals/detail/animal_id:102">2</a>
+        </div>
+        <div class="paging">
+          <span class="current">1</span>
+          <span><a href="/animals/index/type_id:2/animal_id:2/page:2">2</a></span>
+          <span class="next"><a href="/animals/index/type_id:2/animal_id:2/page:2" rel="next"> 次のページ</a></span>
+        </div>
+        </body></html>
+        """
+        page2 = """
+        <html><body>
+        <div class="animal-list">
+          <a href="/animals/detail/animal_id:103">3</a>
+          <a href="/animals/detail/animal_id:101">1 (前ページと重複)</a>
+        </div>
+        <div class="paging">
+          <span class="prev"><a href="/animals/index/type_id:2/animal_id:2/page:1" rel="prev">前のページ</a></span>
+          <span class="current">2</span>
+        </div>
+        </body></html>
+        """
+        adapter = KumamotoDoubutuAigoAdapter(_site_center_dog())
+        fetched: list[str] = []
+
+        def fake_get(url: str, **_kwargs: object) -> str:
+            fetched.append(url)
+            return page2 if "page:2" in url else page1
+
+        with patch.object(adapter, "_http_get", side_effect=fake_get):
+            result = adapter.fetch_animal_list()
+
+        urls = [u for u, _cat in result]
+        # 2 ページ分の detail が重複なく回収される
+        assert len(urls) == 3
+        assert any("/animals/detail/animal_id:103" in u for u in urls)
+        # 一覧ページの取得は 1 ページ目 + 2 ページ目のちょうど 2 回
+        assert len(fetched) == 2
+        assert "page:2" in fetched[1]
+
+    def test_fetch_animal_list_pagination_stops_on_visited_page(self):
+        """next が既訪ページを指しても無限ループしない"""
+        looping = """
+        <html><body>
+        <div class="animal-list"><a href="/animals/detail/animal_id:201">a</a></div>
+        <div class="paging">
+          <span class="next"><a href="https://www.kumamoto-doubutuaigo.jp/animals/index/type_id:2/animal_id:1" rel="next">次のページ</a></span>
+        </div>
+        </body></html>
+        """
+        adapter = KumamotoDoubutuAigoAdapter(_site_center_dog())
+        with patch.object(adapter, "_http_get", return_value=looping) as mock_get:
+            result = adapter.fetch_animal_list()
+        assert len(result) == 1
+        # next が list_url 自身を指すため、既訪検知により 2 ページ目の取得は走らない
+        assert mock_get.call_count == 1
+
+    def test_fetch_animal_list_warns_when_page_cap_reached(self, caplog):
+        """上限ページ数に達したら取得を打ち切り、warning を残す"""
+
+        def endless_pages(url: str, **_kwargs: object) -> str:
+            n = int(url.rsplit("page:", 1)[1]) if "page:" in url else 1
+            return f"""
+            <html><body>
+            <div class="animal-list"><a href="/animals/detail/animal_id:{n}">x</a></div>
+            <div class="paging">
+              <span class="next"><a href="/animals/index/type_id:2/animal_id:1/page:{n + 1}" rel="next">次のページ</a></span>
+            </div>
+            </body></html>
+            """
+
+        adapter = KumamotoDoubutuAigoAdapter(_site_center_dog())
+        with (
+            patch.object(adapter, "_http_get", side_effect=endless_pages) as mock_get,
+            caplog.at_level("WARNING"),
+        ):
+            result = adapter.fetch_animal_list()
+
+        assert mock_get.call_count == KumamotoDoubutuAigoAdapter.MAX_LIST_PAGES
+        assert len(result) == KumamotoDoubutuAigoAdapter.MAX_LIST_PAGES
+        assert any("上限" in rec.message for rec in caplog.records)
+
 
 class TestKumamotoDoubutuAigoAdapterDetailExtraction:
     """detail ページからの RawAnimalData 構築"""
