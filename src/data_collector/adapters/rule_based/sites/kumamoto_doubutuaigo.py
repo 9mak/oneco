@@ -33,6 +33,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import ClassVar
 
@@ -43,6 +44,8 @@ from ...municipality_adapter import ParsingError
 from ..playwright import PlaywrightFetchMixin
 from ..registry import SiteAdapterRegistry
 from ..wordpress_list import FieldSpec, WordPressListAdapter
+
+logger = logging.getLogger(__name__)
 
 
 class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
@@ -65,6 +68,11 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
     LIST_LINK_SELECTOR: ClassVar[str] = (
         "a[href*='/animals/detail/'], a[href*='/post_animals/detail/']"
     )
+
+    # 一覧のページ送り。`page:N` 形式の URL を持つ「次のページ」リンク。
+    NEXT_PAGE_SELECTOR: ClassVar[str] = ".paging a[rel='next']"
+    # ページ送りの上限 (無限ループ・暴走の保険。現状最大 2 ページ)。
+    MAX_LIST_PAGES: ClassVar[int] = 10
 
     # 詳細ページ `<dl class="animal-detail"><dt>項目</dt><dd>値</dd>` の実見出し
     # ラベル (2026-05 ブラウザ実査)。譲渡/迷子いずれも同一ラベル。
@@ -154,26 +162,50 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
         return filtered if filtered else urls
 
     def fetch_animal_list(self) -> list[tuple[str, str]]:
-        """一覧ページから detail URL を抽出する (0 件は正常系として許容)"""
-        html = self._http_get(self.site_config.list_url)
-        soup = BeautifulSoup(html, "html.parser")
+        """一覧ページから detail URL を抽出する (0 件は正常系として許容)
 
-        links = soup.select(self.LIST_LINK_SELECTOR)
-        if not links:
-            return []
-
+        一覧は 20 件/ページで `<div class="paging"><span class="next">
+        <a rel="next">` のページ送りを持つ (2026-08-16 実査、センター譲渡猫は
+        35 件で 2 ページ構成)。従来は 1 ページ目しか読まず 2 ページ目以降が
+        掲載漏れになっていたため、next リンクを最後まで辿る。
+        """
         urls: list[tuple[str, str]] = []
         seen: set[str] = set()
+        visited_pages: set[str] = set()
         category = self.site_config.category
-        for link in links:
-            href = link.get("href")
-            if not href or not isinstance(href, str):
-                continue
-            absolute = self._absolute_url(href)
-            if absolute in seen:
-                continue
-            seen.add(absolute)
-            urls.append((absolute, category))
+        page_url = self.site_config.list_url
+        for _ in range(self.MAX_LIST_PAGES):
+            if page_url in visited_pages:
+                break
+            visited_pages.add(page_url)
+            html = self._http_get(page_url)
+            soup = BeautifulSoup(html, "html.parser")
+
+            for link in soup.select(self.LIST_LINK_SELECTOR):
+                href = link.get("href")
+                if not href or not isinstance(href, str):
+                    continue
+                absolute = self._absolute_url(href)
+                if absolute in seen:
+                    continue
+                seen.add(absolute)
+                urls.append((absolute, category))
+
+            next_link = soup.select_one(self.NEXT_PAGE_SELECTOR)
+            next_href = next_link.get("href") if next_link else None
+            if not next_href or not isinstance(next_href, str):
+                break
+            page_url = self._absolute_url(next_href)
+        else:
+            # 上限で打ち切った = まだ next が残っている可能性があり、
+            # 静かな掲載漏れになるため必ずログに残す。
+            logger.warning(
+                "[%s] 一覧のページ送りが上限 %d ページに達しました。"
+                "未取得のページが残っている可能性があります: %s",
+                self.site_config.name,
+                self.MAX_LIST_PAGES,
+                page_url,
+            )
         return urls
 
     def extract_animal_details(self, detail_url: str, category: str = "adoption") -> RawAnimalData:
