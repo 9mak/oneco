@@ -23,7 +23,7 @@ from data_collector.domain.models import AnimalData, AnimalStatus
 
 from .candidate_selector import select_candidate
 from .moderator import moderate_post
-from .post_log import PostLog
+from .post_log import PostLog, identity_of
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +122,11 @@ async def publish_one(
     dry_run = _truthy(env_map, "THREADS_PUBLISH_DRY_RUN", default="true")
 
     # 2. select candidate
-    candidate = await select_candidate(repo, already_posted_urls=post_log.posted_urls())
+    candidate = await select_candidate(
+        repo,
+        already_posted_urls=post_log.posted_urls(),
+        already_posted_identity_keys=post_log.posted_identity_keys(),
+    )
     if candidate is None:
         logger.info("SNS publisher: no candidate")
         return PublishResult(
@@ -165,6 +169,7 @@ async def publish_one(
             platform=platform,
             text=final_text,
             dry_run=True,
+            identity=identity_of(candidate),
         )
         return PublishResult(
             posted=False,
@@ -208,6 +213,7 @@ async def publish_one(
         platform=platform,
         text=final_text,
         dry_run=False,
+        identity=identity_of(candidate),
     )
     return PublishResult(
         posted=True,

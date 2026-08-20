@@ -95,3 +95,73 @@ class TestSelectCandidate:
         repo = _repo([new, old])  # repo が新しい順で返す前提
         chosen = await select_candidate(repo, already_posted_urls=set())
         assert chosen == new
+
+
+@pytest.mark.asyncio
+class TestIdentityDedup:
+    """個体照合キーによる再投稿防止 (T058)
+
+    source_url の形式変更 (T026 山梨の実例) で URL 照合をすり抜けても、
+    画像フル URL (ホスト+パス) で「投稿済み」を判定する。
+    """
+
+    async def test_skips_when_image_key_matches(self):
+        """山梨型: source_url が変わっても画像フル URL が同じ個体はスキップ"""
+        posted_same_cat = _animal(
+            source_url="https://example.jp/new-format/33833.html",
+            image_urls=["https://example.jp/uploads/33833no2.jpg"],
+        )
+        other = _animal(
+            source_url="https://example.jp/animals/9",
+            image_urls=["https://example.jp/uploads/other.jpg"],
+        )
+        repo = _repo([posted_same_cat, other])
+        chosen = await select_candidate(
+            repo,
+            already_posted_urls=set(),
+            already_posted_identity_keys={"img:example.jp/uploads/33833no2.jpg"},
+        )
+        assert chosen == other
+
+    async def test_same_basename_different_path_is_not_blocked(self):
+        """沖縄型の回帰: 同名ファイルでもパスが違う別個体はブロックしない"""
+        cat = _animal(
+            source_url="https://www.aniwel-pref.okinawa/animal/2222",
+            image_urls=["https://www.aniwel-pref.okinawa/files/animal/image/2222/large_image.jpg"],
+        )
+        repo = _repo([cat])
+        chosen = await select_candidate(
+            repo,
+            already_posted_urls=set(),
+            already_posted_identity_keys={
+                "img:www.aniwel-pref.okinawa/files/animal/image/1111/large_image.jpg"
+            },
+        )
+        assert chosen == cat
+
+    async def test_placeholder_image_does_not_match_other_animal(self):
+        """プレースホルダ画像 (noimage) は img キーにならず、別個体を誤ブロックしない"""
+        cat = AnimalData(
+            species="猫",
+            sex="男の子",
+            color="黒",
+            shelter_date=date(2026, 7, 1),
+            location="山梨県",
+            source_url="https://example.jp/new-format/2.html",
+            category="adoption",
+            image_urls=["https://example.jp/uploads/noimage01.jpg"],
+            status=AnimalStatus.SHELTERED,
+        )
+        repo = _repo([cat])
+        chosen = await select_candidate(
+            repo,
+            already_posted_urls=set(),
+            already_posted_identity_keys={"img:example.jp/uploads/noimage01.jpg"},
+        )
+        assert chosen == cat
+
+    async def test_no_keys_keeps_existing_behavior(self):
+        a = _animal(source_url="https://example.jp/animals/1")
+        repo = _repo([a])
+        chosen = await select_candidate(repo, already_posted_urls=set())
+        assert chosen == a
