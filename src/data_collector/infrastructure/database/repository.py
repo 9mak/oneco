@@ -177,7 +177,12 @@ class AnimalRepository:
             existing_animal.age_months = animal_data.age_months
             existing_animal.color = animal_data.color
             existing_animal.size = animal_data.size
-            existing_animal.shelter_date = animal_data.shelter_date
+            # shelter_date: 実サイト由来の日付は常に反映する。推定値 (収集日
+            # フォールバック/未来日クランプ) は「初回収集日」の意味しか持たない
+            # ため、既存レコードの値を毎日の再収集で上書きしない。上書きすると
+            # 日付の無いサイトの個体が毎日「昨日収容」へロールし続ける (T055)。
+            if not (animal_data.shelter_date_estimated and existing_animal.shelter_date):
+                existing_animal.shelter_date = animal_data.shelter_date
             existing_animal.location = animal_data.location
             existing_animal.prefecture = animal_data.prefecture
             existing_animal.phone = animal_data.phone

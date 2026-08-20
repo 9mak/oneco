@@ -1524,3 +1524,70 @@ async def test_breed_search_absorbs_kana_variants(repository, async_session):
     res3, total3 = await repository.list_animals_orm(q="チワ")
     assert total3 == 1
     assert res3[0].breed == "チワワ"
+
+
+@pytest.mark.asyncio
+async def test_save_animal_preserves_shelter_date_when_estimated(repository, async_session):
+    """推定 shelter_date (収集日フォールバック) は既存レコードを上書きしない (T055)
+
+    日付の無いサイトの個体が毎日の再収集で「昨日収容」へロールし続けるのを
+    止める。既存値 (初回収集日) を保持する。
+    """
+    existing = Animal(
+        species="犬",
+        shelter_date=date(2026, 5, 1),
+        location="高知県",
+        source_url="https://example.com/animal/estimated-roll",
+    )
+    async_session.add(existing)
+    await async_session.commit()
+
+    animal_data = AnimalData(
+        species="犬",
+        shelter_date=date(2026, 8, 19),  # 当日フォールバック相当
+        shelter_date_estimated=True,
+        location="高知県",
+        source_url="https://example.com/animal/estimated-roll",
+        category="adoption",
+    )
+    result = await repository.save_animal(animal_data)
+    assert result.shelter_date == date(2026, 5, 1)
+
+
+@pytest.mark.asyncio
+async def test_save_animal_overwrites_shelter_date_when_real(repository, async_session):
+    """実サイト由来の shelter_date (estimated=False) は従来どおり上書きする"""
+    existing = Animal(
+        species="犬",
+        shelter_date=date(2026, 5, 1),
+        location="高知県",
+        source_url="https://example.com/animal/real-date",
+    )
+    async_session.add(existing)
+    await async_session.commit()
+
+    animal_data = AnimalData(
+        species="犬",
+        shelter_date=date(2026, 6, 15),
+        shelter_date_estimated=False,
+        location="高知県",
+        source_url="https://example.com/animal/real-date",
+        category="adoption",
+    )
+    result = await repository.save_animal(animal_data)
+    assert result.shelter_date == date(2026, 6, 15)
+
+
+@pytest.mark.asyncio
+async def test_save_animal_inserts_estimated_fallback_date_for_new_record(repository):
+    """新規レコードは推定値でもそのまま保存する (初回収集日として意味を持つ)"""
+    animal_data = AnimalData(
+        species="猫",
+        shelter_date=date(2026, 8, 19),
+        shelter_date_estimated=True,
+        location="高知県",
+        source_url="https://example.com/animal/new-estimated",
+        category="adoption",
+    )
+    result = await repository.save_animal(animal_data)
+    assert result.shelter_date == date(2026, 8, 19)
