@@ -12,6 +12,8 @@ from typing import Protocol
 
 from data_collector.domain.models import AnimalData, AnimalStatus
 
+from .post_log import identity_keys_of
+
 # repo から多めに取ってフィルタを通す。post_log と no-image が混ざるので余裕を持つ。
 _CANDIDATE_POOL = 100
 
@@ -32,6 +34,7 @@ async def select_candidate(
     repo: _ListAnimalsRepo,
     *,
     already_posted_urls: set[str],
+    already_posted_identity_keys: set[str] | frozenset[str] = frozenset(),
 ) -> AnimalData | None:
     """投稿可能な動物を 1 件返す。なければ None。
 
@@ -39,6 +42,9 @@ async def select_candidate(
       - status=SHELTERED + 公開可 (deceased 除外)
       - image_urls が 1 件以上ある
       - source_url が already_posted_urls に含まれていない
+      - 個体照合キー (画像フルURL) が already_posted_identity_keys と
+        重ならない。source_url の形式変更で URL 照合をすり抜けた同一個体の
+        再投稿を防ぐ (T058・T026 山梨の実例)
 
     repo は shelter_date.desc() でソート済みを返す前提 (AnimalRepository.list_animals)。
     """
@@ -52,6 +58,8 @@ async def select_candidate(
         if not a.image_urls:
             continue
         if str(a.source_url) in already_posted_urls:
+            continue
+        if already_posted_identity_keys and (identity_keys_of(a) & already_posted_identity_keys):
             continue
         return a
     return None

@@ -11,11 +11,70 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+from urllib.parse import urlparse
 
 import yaml
 
+if TYPE_CHECKING:
+    from data_collector.domain.models import AnimalData
+
 logger = logging.getLogger(__name__)
+
+# 「写真なし」プレースホルダ画像の名前パターン。これを照合キーに使うと
+# 写真の無い別個体同士が同一と誤判定されるため除外する (山梨 noimage01.jpg)。
+_PLACEHOLDER_IMAGE_MARKERS = ("noimage", "no-image", "no_image", "nophoto", "no-photo")
+
+
+def identity_of(animal: AnimalData) -> dict[str, str]:
+    """投稿記録に残す個体アイデンティティ (T058)。
+
+    source_url の形式変更 (T026 山梨の実例) で URL 照合をすり抜けても、
+    個体の特徴で「投稿済み」を判定するための材料。値はすべて文字列で
+    YAML にそのまま永続化できる形にする。species〜shelter_date は照合には
+    使わず記録のみ (将来の突き合わせ・監査用)。
+    """
+    image_path = ""
+    if animal.image_urls:
+        parsed = urlparse(str(animal.image_urls[0]))
+        image_path = f"{parsed.netloc}{parsed.path}".lower()
+    return {
+        "species": animal.species or "",
+        "sex": animal.sex or "",
+        "color": (animal.color or "").strip(),
+        "shelter_date": animal.shelter_date.isoformat() if animal.shelter_date else "",
+        "image_path": image_path,
+    }
+
+
+def identity_keys_from_fields(identity: dict[str, Any]) -> set[str]:
+    """identity 辞書から照合キー集合を作る。
+
+    照合キーは ``img:<ホスト+パスの画像フルURL>`` のみ。
+
+    - ファイル名単独は本番データで大規模衝突する (沖縄 large_image.jpg 91件・
+      福岡 "m" 26件 — PR #281 reviewer 実測) ため、必ずホスト+パスで
+      スコープする。山梨リニューアルでは source_url が変わっても画像フル URL
+      はバイト一致で維持されており (/images/126663/33833no2.jpg)、
+      T026 型の URL 形式変更を検知する目的はフル URL キーで満たせる。
+    - プレースホルダ画像 (noimage 等) は写真の無い別個体同士を誤同一視する
+      ため除外する。
+    - 種別|性別|毛色|収容日のプロフィールキーは、shelter_date 日次上書きバグ
+      (T055) の影響下で本番 22% が衝突するため照合には使わない。identity と
+      して記録は残し、日付修復 (T056) 後に再検討する。
+    """
+    keys: set[str] = set()
+    image_path = str(identity.get("image_path") or "").strip().lower()
+    if image_path:
+        basename = Path(image_path).name
+        if basename and not any(m in basename for m in _PLACEHOLDER_IMAGE_MARKERS):
+            keys.add(f"img:{image_path}")
+    return keys
+
+
+def identity_keys_of(animal: AnimalData) -> set[str]:
+    """AnimalData から直接照合キー集合を作る (candidate_selector 用)。"""
+    return identity_keys_from_fields(identity_of(animal))
 
 
 class PostLog:
@@ -58,6 +117,20 @@ class PostLog:
     def posted_urls(self) -> set[str]:
         return set(self._records.keys())
 
+    def posted_identity_keys(self) -> set[str]:
+        """記録済み identity から照合キー集合を返す。
+
+        source_url の形式変更 (T026 山梨の実例) で URL 照合をすり抜けても、
+        個体そのものの特徴で「投稿済み」を判定できるようにする (T058)。
+        identity を持たない旧エントリは空集合に寄与するだけで壊れない。
+        """
+        keys: set[str] = set()
+        for entry in self._records.values():
+            identity = entry.get("identity")
+            if isinstance(identity, dict):
+                keys |= identity_keys_from_fields(identity)
+        return keys
+
     def record(
         self,
         *,
@@ -65,15 +138,19 @@ class PostLog:
         platform: str,
         text: str,
         dry_run: bool,
+        identity: dict[str, str] | None = None,
     ) -> None:
         if not url:
             raise ValueError("url must be non-empty")
         if not platform:
             raise ValueError("platform must be non-empty")
-        self._records[url] = {
+        entry: dict[str, Any] = {
             "url": url,
             "platform": platform,
             "text": text,
             "dry_run": dry_run,
         }
+        if identity:
+            entry["identity"] = identity
+        self._records[url] = entry
         self._save()
