@@ -10,7 +10,11 @@ from pathlib import Path
 
 import pytest
 
-from syndication_service.sns_publisher.post_log import PostLog
+from syndication_service.sns_publisher.post_log import (
+    PostLog,
+    identity_keys_from_fields,
+    identity_of,
+)
 
 
 class TestPostLog:
@@ -59,3 +63,77 @@ class TestPostLog:
         log = PostLog(path=tmp_path / "sns_posts.yaml")
         with pytest.raises(ValueError):
             log.record(url="", platform="threads", text="x", dry_run=True)
+
+
+class TestIdentityPersistence:
+    """identity の永続化と照合キー生成 (T058)"""
+
+    def test_record_with_identity_roundtrips(self, tmp_path: Path):
+        path = tmp_path / "posts.yaml"
+        log = PostLog(path=path)
+        log.record(
+            url="https://example.jp/animals/1",
+            platform="threads",
+            text="t",
+            dry_run=True,
+            identity={
+                "species": "猫",
+                "sex": "女の子",
+                "color": "三毛",
+                "shelter_date": "2026-06-26",
+                "image_name": "33833no2.jpg",
+            },
+        )
+        reloaded = PostLog(path=path)
+        keys = reloaded.posted_identity_keys()
+        assert "img:33833no2.jpg" in keys
+        assert "prof:猫|女の子|三毛|2026-06-26" in keys
+
+    def test_record_without_identity_is_backward_compatible(self, tmp_path: Path):
+        path = tmp_path / "posts.yaml"
+        log = PostLog(path=path)
+        log.record(url="https://example.jp/animals/2", platform="threads", text="t", dry_run=True)
+        reloaded = PostLog(path=path)
+        assert reloaded.posted_identity_keys() == set()
+        assert "https://example.jp/animals/2" in reloaded.posted_urls()
+
+    def test_placeholder_image_excluded_and_partial_profile_skipped(self, tmp_path: Path):
+        path = tmp_path / "posts.yaml"
+        log = PostLog(path=path)
+        log.record(
+            url="https://example.jp/animals/3",
+            platform="threads",
+            text="t",
+            dry_run=True,
+            identity={
+                "species": "猫",
+                "sex": "男の子",
+                "color": "",  # 毛色欠損 → prof キーは作らない
+                "shelter_date": "2026-07-01",
+                "image_name": "noimage01.jpg",  # placeholder → img キーは作らない
+            },
+        )
+        assert PostLog(path=path).posted_identity_keys() == set()
+
+
+class TestIdentityHelpers:
+    def test_identity_of_extracts_first_image_basename(self):
+        from datetime import date
+
+        from data_collector.domain.models import AnimalData
+
+        animal = AnimalData(
+            species="猫",
+            sex="女の子",
+            color="三毛",
+            shelter_date=date(2026, 6, 26),
+            location="山梨県",
+            source_url="https://example.jp/animals/1",
+            category="adoption",
+            image_urls=["https://example.jp/uploads/photo/33833no2.jpg?ver=2"],
+        )
+        identity = identity_of(animal)
+        assert identity["image_name"] == "33833no2.jpg"
+        assert identity["shelter_date"] == "2026-06-26"
+        keys = identity_keys_from_fields(identity)
+        assert "img:33833no2.jpg" in keys
