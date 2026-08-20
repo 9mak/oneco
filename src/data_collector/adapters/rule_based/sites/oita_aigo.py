@@ -24,6 +24,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import ClassVar
 
@@ -33,6 +34,8 @@ from ....domain.models import RawAnimalData
 from ...municipality_adapter import NetworkError, ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
+
+logger = logging.getLogger(__name__)
 
 
 class OitaAigoAdapter(SinglePageTableAdapter):
@@ -81,12 +84,62 @@ class OitaAigoAdapter(SinglePageTableAdapter):
     # 本部代表を全動物カード共通の phone として割り当てる。
     _CENTER_TEL: ClassVar[str] = "097-588-1122"
 
+    # 一覧ページ送りの追跡上限。譲渡猫は 12 件/ページ × 5 ページ (2026-08-19
+    # 実査 52 頭) で、余裕を持たせつつ暴走を防ぐ。
+    MAX_LIST_PAGES: ClassVar[int] = 20
+
     # ─────────────────── オーバーライド ───────────────────
 
     def __init__(self, site_config) -> None:
         super().__init__(site_config)
         # 詳細ページ HTML のキャッシュ。同一 URL を 1 回しか取得しない。
         self._detail_html_cache: dict[str, str] = {}
+
+    def _load_rows(self) -> list[Tag]:
+        """一覧のページ送り (`<a rel="next">`) を最後まで辿って全カードを集める
+
+        WordPress のカテゴリ一覧は 12 件/ページで、譲渡猫は 5 ページ 52 頭に
+        及ぶ (2026-08-19 実査)。基底 `SinglePageTableAdapter._load_rows` は
+        list_url の 1 ページしか読まないため、1 ページ目の 12 頭以外が
+        掲載漏れになっていた (T046 で検出・T052)。
+
+        仮想 URL の行番号は全ページ連結後の通し index になる。既存公開分
+        (1 ページ目の #row=0..11) の番号は変わらないため、source_url の
+        入れ替わりは発生しない。
+        """
+        if self._rows_cache is not None:
+            return self._rows_cache
+
+        rows: list[Tag] = []
+        visited_pages: set[str] = set()
+        page_url = self.site_config.list_url
+        for _ in range(self.MAX_LIST_PAGES):
+            if page_url in visited_pages:
+                break
+            visited_pages.add(page_url)
+            html = self._http_get(page_url)
+            soup = BeautifulSoup(html, "html.parser")
+            page_rows = [r for r in soup.select(self.ROW_SELECTOR) if isinstance(r, Tag)]
+            rows.extend(page_rows)
+
+            next_link = soup.find("a", rel="next")
+            next_href = next_link.get("href") if isinstance(next_link, Tag) else None
+            if not next_href or not isinstance(next_href, str):
+                break
+            page_url = self._absolute_url(next_href, base=page_url)
+        else:
+            # 上限で打ち切った = まだ next が残っている可能性があり、
+            # 静かな掲載漏れになるため必ずログに残す。
+            logger.warning(
+                "[%s] 一覧のページ送りが上限 %d ページに達しました。"
+                "未取得のページが残っている可能性があります: %s",
+                self.site_config.name,
+                self.MAX_LIST_PAGES,
+                page_url,
+            )
+
+        self._rows_cache = rows
+        return rows
 
     def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """`<div class="information_box">` カードから RawAnimalData を構築する
