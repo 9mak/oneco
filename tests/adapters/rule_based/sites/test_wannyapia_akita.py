@@ -69,8 +69,9 @@ class TestExtractAnimalDetails:
             sex="メス",
             age="2歳～5歳",
             color="バイカラー",
-            # 体格フィールドは無く体重のみ (正規化は DataNormalizer 側)
-            size="約2.7㎏",
+            # 体格フィールドは無く「体重: 約2.7㎏」のみ。_cap_size は体格語の
+            # 無い体重表記を None に捨てるため adapter 側で体格語へ変換する
+            size="小型",
             # 収容日フィールドは存在しない
             shelter_date="",
             # 収容場所フィールドが無いためセンター名を注入
@@ -108,6 +109,37 @@ class TestExtractAnimalDetails:
         with patch.object(adapter, "_http_get", return_value=html):
             raw = adapter.extract_animal_details("https://wannyapia.akita.jp/pages/animals/p9999")
         assert raw.phone == "018-000-1234"
+
+
+class TestWeightToSize:
+    """体重表記 → 体格語変換 (reviewer F-01 対応)
+
+    DataNormalizer._cap_size は体格語の無い純粋な体重表記を None に捨てるため、
+    adapter 側で oita_aigo / city_kashiwa と同じ 5kg/15kg 境界で変換する。
+    """
+
+    def test_boundaries(self):
+        assert WannyapiaAkitaAdapter._weight_to_size("約2.7㎏") == "小型"
+        assert WannyapiaAkitaAdapter._weight_to_size("4.9kg") == "小型"
+        assert WannyapiaAkitaAdapter._weight_to_size("5kg") == "中型"
+        assert WannyapiaAkitaAdapter._weight_to_size("14.9kg") == "中型"
+        assert WannyapiaAkitaAdapter._weight_to_size("15kg") == "大型"
+        assert WannyapiaAkitaAdapter._weight_to_size("") == ""
+        assert WannyapiaAkitaAdapter._weight_to_size("不明") == ""
+        # 既に体格語を含む表記は温存
+        assert WannyapiaAkitaAdapter._weight_to_size("中型（10kg）") == "中型（10kg）"
+
+    def test_size_survives_normalizer(self, fixture_html):
+        """adapter.normalize まで通した後も size が捨てられないこと (正規化後検証)"""
+        adapter = WannyapiaAkitaAdapter(_site("猫"))
+        html = fixture_html("wannyapia_akita__detail")
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://wannyapia.akita.jp/pages/animals/p2085",
+                category="adoption",
+            )
+        animal = adapter.normalize(raw)
+        assert animal.size == "小型"
 
 
 class TestRegistry:

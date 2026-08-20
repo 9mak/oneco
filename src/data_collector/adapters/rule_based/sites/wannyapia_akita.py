@@ -51,8 +51,9 @@ class WannyapiaAkitaAdapter(WordPressListAdapter):
         "sex": FieldSpec(label="性別"),
         "age": FieldSpec(label="年齢"),
         "color": FieldSpec(label="毛色"),
-        # 体格フィールドは無く体重のみ。DataNormalizer が体重表記を
-        # 小型/中型/大型へ変換する (T043)。
+        # 体格フィールドは無く体重のみ。DataNormalizer._cap_size は体格語の
+        # 無い純粋な体重表記を None に捨てるため、adapter 側で体格語へ変換する
+        # (_postprocess_fields。oita_aigo / city_kashiwa と同じ 5kg/15kg 境界)。
         "size": FieldSpec(label="体重"),
         "description": FieldSpec(label="備考"),
         "management_number": FieldSpec(label="個体管理ナンバー"),
@@ -68,13 +69,16 @@ class WannyapiaAkitaAdapter(WordPressListAdapter):
     def _postprocess_fields(
         self, fields: dict[str, str], detail_url: str, soup: BeautifulSoup
     ) -> None:
-        """species / phone / location の不足分を補完する。
+        """species / size / phone / location の不足分を補完する。
 
         - species: 「雑種（ミックス）」等で犬猫判定できないため、
           list_url の protective-dogs / protective-cats から補完する。
-        - phone: 「連絡先」は施設名のみで番号を含まないため、数字が
-          無ければ代表電話を注入する。
-        - location: 相当フィールドが無いためセンター名を注入する。
+        - size: 「体重」しか無く、DataNormalizer._cap_size は体格語の無い
+          体重表記を None に捨てるため、ここで体格語へ変換する。
+        - phone: 「連絡先」は施設名のみで番号を含まないため、電話番号らしい
+          桁数 (6桁以上) が無ければ代表電話を注入する。
+        - location: 相当フィールドが無いためセンター名を注入する
+          (譲渡対象はセンター管理個体。yokosuka_doubutu と同型の補完)。
         """
         species = fields.get("species", "")
         if not any(kw in species for kw in ("犬", "猫", "いぬ", "ねこ", "イヌ", "ネコ")):
@@ -84,11 +88,38 @@ class WannyapiaAkitaAdapter(WordPressListAdapter):
             elif "protective-cats" in list_url:
                 fields["species"] = "猫"
 
-        if not re.search(r"\d", fields.get("phone", "")):
+        fields["size"] = self._weight_to_size(fields.get("size", ""))
+
+        if len(re.findall(r"\d", fields.get("phone", ""))) < 6:
             fields["phone"] = _CENTER_PHONE
 
         if not fields.get("location"):
             fields["location"] = _CENTER_NAME
+
+    @staticmethod
+    def _weight_to_size(size_text: str) -> str:
+        """「約2.7㎏」のような体重表記を体格語 (小型/中型/大型) に変換する。
+
+        oita_aigo / city_kashiwa と同じ境界: 5kg 未満=小型 / 15kg 未満=中型 /
+        それ以上=大型。既に体格語を含む場合はそのまま温存し、数値が拾えない
+        場合は空文字 (DataNormalizer 側で None 扱い)。
+        """
+        if not size_text:
+            return ""
+        if any(kw in size_text for kw in ("小型", "中型", "大型", "超小")):
+            return size_text
+        m = re.search(r"(\d+(?:[.．]\d+)?)", size_text)
+        if not m:
+            return ""
+        try:
+            kg = float(m.group(1).replace("．", "."))
+        except ValueError:
+            return ""
+        if kg < 5.0:
+            return "小型"
+        if kg < 15.0:
+            return "中型"
+        return "大型"
 
 
 SiteAdapterRegistry.register("ワンニャピアあきた（譲渡犬）", WannyapiaAkitaAdapter)
