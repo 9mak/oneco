@@ -42,9 +42,9 @@ async def select_candidate(
       - status=SHELTERED + 公開可 (deceased 除外)
       - image_urls が 1 件以上ある
       - source_url が already_posted_urls に含まれていない
-      - 個体照合キー (画像名 / 種別+性別+毛色+初出日) が
-        already_posted_identity_keys と重ならない。source_url の形式変更で
-        URL 照合をすり抜けた同一個体の再投稿を防ぐ (T058・T026 山梨の実例)
+      - 個体照合キー (画像フルURL) が already_posted_identity_keys と
+        重ならない。source_url の形式変更で URL 照合をすり抜けた同一個体の
+        再投稿を防ぐ (T058・T026 山梨の実例)
 
     repo は shelter_date.desc() でソート済みを返す前提 (AnimalRepository.list_animals)。
     """

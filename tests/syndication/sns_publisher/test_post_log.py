@@ -81,13 +81,15 @@ class TestIdentityPersistence:
                 "sex": "女の子",
                 "color": "三毛",
                 "shelter_date": "2026-06-26",
-                "image_name": "33833no2.jpg",
+                "image_path": "www.pref.yamanashi.jp/images/126663/33833no2.jpg",
             },
         )
         reloaded = PostLog(path=path)
         keys = reloaded.posted_identity_keys()
-        assert "img:33833no2.jpg" in keys
-        assert "prof:猫|女の子|三毛|2026-06-26" in keys
+        assert "img:www.pref.yamanashi.jp/images/126663/33833no2.jpg" in keys
+        # プロフィール (種別/性別/毛色/収容日) は記録のみで照合キーにしない
+        # (shelter_date 日次上書きバグの影響下で本番22%が衝突するため)
+        assert not any(k.startswith("prof:") for k in keys)
 
     def test_record_without_identity_is_backward_compatible(self, tmp_path: Path):
         path = tmp_path / "posts.yaml"
@@ -97,7 +99,7 @@ class TestIdentityPersistence:
         assert reloaded.posted_identity_keys() == set()
         assert "https://example.jp/animals/2" in reloaded.posted_urls()
 
-    def test_placeholder_image_excluded_and_partial_profile_skipped(self, tmp_path: Path):
+    def test_placeholder_image_yields_no_key(self, tmp_path: Path):
         path = tmp_path / "posts.yaml"
         log = PostLog(path=path)
         log.record(
@@ -108,16 +110,17 @@ class TestIdentityPersistence:
             identity={
                 "species": "猫",
                 "sex": "男の子",
-                "color": "",  # 毛色欠損 → prof キーは作らない
+                "color": "黒",
                 "shelter_date": "2026-07-01",
-                "image_name": "noimage01.jpg",  # placeholder → img キーは作らない
+                # placeholder 画像 → img キーは作らない
+                "image_path": "www.pref.yamanashi.jp/images/noimage01.jpg",
             },
         )
         assert PostLog(path=path).posted_identity_keys() == set()
 
 
 class TestIdentityHelpers:
-    def test_identity_of_extracts_first_image_basename(self):
+    def test_identity_of_uses_host_and_path(self):
         from datetime import date
 
         from data_collector.domain.models import AnimalData
@@ -130,10 +133,34 @@ class TestIdentityHelpers:
             location="山梨県",
             source_url="https://example.jp/animals/1",
             category="adoption",
-            image_urls=["https://example.jp/uploads/photo/33833no2.jpg?ver=2"],
+            image_urls=["https://Example.jp/uploads/photo/33833no2.jpg?ver=2"],
         )
         identity = identity_of(animal)
-        assert identity["image_name"] == "33833no2.jpg"
+        # クエリは落とし、ホスト+パスを小文字で保持
+        assert identity["image_path"] == "example.jp/uploads/photo/33833no2.jpg"
         assert identity["shelter_date"] == "2026-06-26"
         keys = identity_keys_from_fields(identity)
-        assert "img:33833no2.jpg" in keys
+        assert keys == {"img:example.jp/uploads/photo/33833no2.jpg"}
+
+    def test_same_basename_different_path_do_not_collide(self):
+        """沖縄型の回帰: 別個体が同名ファイル (large_image.jpg) を持っても
+        パスが違えばキーは衝突しない (PR #281 reviewer Critical 対応)"""
+        a = identity_keys_from_fields(
+            {"image_path": "www.aniwel-pref.okinawa/files/animal/image/1111/large_image.jpg"}
+        )
+        b = identity_keys_from_fields(
+            {"image_path": "www.aniwel-pref.okinawa/files/animal/image/2222/large_image.jpg"}
+        )
+        assert a and b
+        assert a.isdisjoint(b)
+
+    def test_yamanashi_renewal_same_image_url_matches(self):
+        """山梨型の回帰: source_url 形式が変わっても画像フル URL は不変
+        (実測: /images/126663/33833no2.jpg がリニューアル前後でバイト一致)"""
+        before = identity_keys_from_fields(
+            {"image_path": "www.pref.yamanashi.jp/images/126663/33833no2.jpg"}
+        )
+        after = identity_keys_from_fields(
+            {"image_path": "www.pref.yamanashi.jp/images/126663/33833no2.jpg"}
+        )
+        assert before == after != set()

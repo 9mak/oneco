@@ -31,40 +31,44 @@ def identity_of(animal: AnimalData) -> dict[str, str]:
 
     source_url の形式変更 (T026 山梨の実例) で URL 照合をすり抜けても、
     個体の特徴で「投稿済み」を判定するための材料。値はすべて文字列で
-    YAML にそのまま永続化できる形にする。
+    YAML にそのまま永続化できる形にする。species〜shelter_date は照合には
+    使わず記録のみ (将来の突き合わせ・監査用)。
     """
-    first_image = ""
+    image_path = ""
     if animal.image_urls:
-        first_image = Path(urlparse(str(animal.image_urls[0])).path).name
+        parsed = urlparse(str(animal.image_urls[0]))
+        image_path = f"{parsed.netloc}{parsed.path}".lower()
     return {
         "species": animal.species or "",
         "sex": animal.sex or "",
         "color": (animal.color or "").strip(),
         "shelter_date": animal.shelter_date.isoformat() if animal.shelter_date else "",
-        "image_name": first_image,
+        "image_path": image_path,
     }
 
 
 def identity_keys_from_fields(identity: dict[str, Any]) -> set[str]:
     """identity 辞書から照合キー集合を作る。
 
-    2 種類のキーを返す:
-      - ``img:<画像ファイル名>``: 個体写真は一意性が高く単独で照合できる。
-        プレースホルダ画像 (noimage 等) は別個体同士を誤同一視するため除外。
-      - ``prof:<種別>|<性別>|<毛色>|<初出日>``: 写真が無い個体向け。毛色だけでは
-        衝突する (キジトラ雄など) ため初出日まで含めて絞る。いずれかの要素が
-        欠けるキーは作らない (空要素入りキーは誤ヒットの温床になる)。
+    照合キーは ``img:<ホスト+パスの画像フルURL>`` のみ。
+
+    - ファイル名単独は本番データで大規模衝突する (沖縄 large_image.jpg 91件・
+      福岡 "m" 26件 — PR #281 reviewer 実測) ため、必ずホスト+パスで
+      スコープする。山梨リニューアルでは source_url が変わっても画像フル URL
+      はバイト一致で維持されており (/images/126663/33833no2.jpg)、
+      T026 型の URL 形式変更を検知する目的はフル URL キーで満たせる。
+    - プレースホルダ画像 (noimage 等) は写真の無い別個体同士を誤同一視する
+      ため除外する。
+    - 種別|性別|毛色|収容日のプロフィールキーは、shelter_date 日次上書きバグ
+      (T055) の影響下で本番 22% が衝突するため照合には使わない。identity と
+      して記録は残し、日付修復 (T056) 後に再検討する。
     """
     keys: set[str] = set()
-    image_name = str(identity.get("image_name") or "").strip().lower()
-    if image_name and not any(m in image_name for m in _PLACEHOLDER_IMAGE_MARKERS):
-        keys.add(f"img:{image_name}")
-    species = str(identity.get("species") or "").strip()
-    sex = str(identity.get("sex") or "").strip()
-    color = str(identity.get("color") or "").strip()
-    shelter_date = str(identity.get("shelter_date") or "").strip()
-    if species and sex and color and shelter_date:
-        keys.add(f"prof:{species}|{sex}|{color}|{shelter_date}")
+    image_path = str(identity.get("image_path") or "").strip().lower()
+    if image_path:
+        basename = Path(image_path).name
+        if basename and not any(m in basename for m in _PLACEHOLDER_IMAGE_MARKERS):
+            keys.add(f"img:{image_path}")
     return keys
 
 
