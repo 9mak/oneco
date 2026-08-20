@@ -1386,3 +1386,55 @@ class TestFilterJunkImages:
         assert DataNormalizer._filter_valid_image_urls(urls) == [
             "https://example.com/files/photo.png",
         ]
+
+
+class TestShelterDateEstimatedFlag:
+    """shelter_date_estimated フラグ (T055)
+
+    収集日フォールバック/未来日クランプで作られた日付は「推定値」として印を
+    付け、repository が既存レコードを上書きしない判定に使う。実サイト由来の
+    日付では False のままであること。
+    """
+
+    def _raw(self, shelter_date: str) -> RawAnimalData:
+        return RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="2歳",
+            color="茶",
+            size="中型",
+            shelter_date=shelter_date,
+            location="高知県",
+            phone="",
+            image_urls=[],
+            source_url="https://example-kochi.jp/animals/1",
+            category="adoption",
+        )
+
+    def test_empty_shelter_date_sets_estimated(self, monkeypatch):
+        """収容日が無いサイト → 収集日フォールバック + estimated=True"""
+        monkeypatch.setattr(DataNormalizer, "_today", staticmethod(lambda: date(2026, 8, 19)))
+        result = DataNormalizer.normalize(self._raw(""))
+        assert result.shelter_date == date(2026, 8, 19)
+        assert result.shelter_date_estimated is True
+
+    def test_unparseable_shelter_date_sets_estimated(self, monkeypatch):
+        """解析不能な収容日 → 収集日フォールバック + estimated=True"""
+        monkeypatch.setattr(DataNormalizer, "_today", staticmethod(lambda: date(2026, 8, 19)))
+        result = DataNormalizer.normalize(self._raw("随時"))
+        assert result.shelter_date == date(2026, 8, 19)
+        assert result.shelter_date_estimated is True
+
+    def test_future_clamp_sets_estimated(self, monkeypatch):
+        """未来日クランプも当日へ丸めた推定値なので estimated=True"""
+        monkeypatch.setattr(DataNormalizer, "_today", staticmethod(lambda: date(2026, 8, 19)))
+        result = DataNormalizer.normalize(self._raw("2026-12-31"))
+        assert result.shelter_date == date(2026, 8, 19)
+        assert result.shelter_date_estimated is True
+
+    def test_real_shelter_date_is_not_estimated(self, monkeypatch):
+        """実サイト由来の過去日付は estimated=False"""
+        monkeypatch.setattr(DataNormalizer, "_today", staticmethod(lambda: date(2026, 8, 19)))
+        result = DataNormalizer.normalize(self._raw("2026-08-01"))
+        assert result.shelter_date == date(2026, 8, 1)
+        assert result.shelter_date_estimated is False
