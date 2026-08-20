@@ -110,6 +110,26 @@ class TestExtractAnimalDetails:
             raw = adapter.extract_animal_details("https://wannyapia.akita.jp/pages/animals/p9999")
         assert raw.phone == "018-000-1234"
 
+    def test_non_phone_digits_fall_back_to_center_phone(self):
+        """電話番号として無効な桁数 (受付番号123456等) は代表電話へフォールバック
+
+        _normalize_phone は 10-11 桁のみ有効とするため、それ以外の数字列を
+        個別番号と誤認して phone を空にしない (reviewer r2 Major 対応)。
+        """
+        html = """
+        <html><body>
+          <div class="page-header"><h1>テスト</h1></div>
+          <table>
+            <tr><th>種類</th><td>雑種</td><th>性別</th><td>オス</td></tr>
+            <tr><th>連絡先</th><td>受付番号123456</td></tr>
+          </table>
+        </body></html>
+        """
+        adapter = WannyapiaAkitaAdapter(_site("犬"))
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details("https://wannyapia.akita.jp/pages/animals/p9998")
+        assert raw.phone == "018-827-5051"
+
 
 class TestWeightToSize:
     """体重表記 → 体格語変換 (reviewer F-01 対応)

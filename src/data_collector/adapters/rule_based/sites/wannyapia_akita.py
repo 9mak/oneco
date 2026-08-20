@@ -75,8 +75,9 @@ class WannyapiaAkitaAdapter(WordPressListAdapter):
           list_url の protective-dogs / protective-cats から補完する。
         - size: 「体重」しか無く、DataNormalizer._cap_size は体格語の無い
           体重表記を None に捨てるため、ここで体格語へ変換する。
-        - phone: 「連絡先」は施設名のみで番号を含まないため、電話番号らしい
-          桁数 (6桁以上) が無ければ代表電話を注入する。
+        - phone: 「連絡先」は施設名のみで番号を含まないため、_normalize_phone
+          で有効な電話番号 (10-11桁) が取れない場合は代表電話を注入する
+          (douai_tokushima と同型のフォールバックパターン)。
         - location: 相当フィールドが無いためセンター名を注入する
           (譲渡対象はセンター管理個体。yokosuka_doubutu と同型の補完)。
         """
@@ -90,8 +91,7 @@ class WannyapiaAkitaAdapter(WordPressListAdapter):
 
         fields["size"] = self._weight_to_size(fields.get("size", ""))
 
-        if len(re.findall(r"\d", fields.get("phone", ""))) < 6:
-            fields["phone"] = _CENTER_PHONE
+        fields["phone"] = self._normalize_phone(fields.get("phone", "")) or _CENTER_PHONE
 
         if not fields.get("location"):
             fields["location"] = _CENTER_NAME
