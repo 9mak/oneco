@@ -103,9 +103,10 @@ class OitaAigoAdapter(SinglePageTableAdapter):
         list_url の 1 ページしか読まないため、1 ページ目の 12 頭以外が
         掲載漏れになっていた (T046 で検出・T052)。
 
-        仮想 URL の行番号は全ページ連結後の通し index になる。既存公開分
-        (1 ページ目の #row=0..11) の番号は変わらないため、source_url の
-        入れ替わりは発生しない。
+        仮想 URL (list_url#row=N) は全ページ連結後の通し index を row 検索用の
+        内部キーとして使うが、source_url には採用しない (T053)。掲載順の
+        入れ替わりで row 番号と実個体の対応がズレるため、実際の source_url は
+        `extract_animal_details` がカード固有の詳細 URL から決定する。
         """
         if self._rows_cache is not None:
             return self._rows_cache
@@ -158,13 +159,20 @@ class OitaAigoAdapter(SinglePageTableAdapter):
 
         fields = self._extract_dl_fields(card)
 
+        # source_url: カード固有の詳細URLを優先する (T053)。
+        # 仮想URL (list_url#row=N) は一覧の並び順に依存するため、掲載順の
+        # 入れ替わりで指す動物がズレる。詳細URLはカード固有で安定する。
+        # 見つからない場合のみ仮想URLへフォールバックする (真の掲載漏れ防止)。
+        detail_url = self._select_detail_url(card)
+        source_url = detail_url or virtual_url
+
         # 一覧カードに無い項目 (毛色/大きさ) を詳細ページから補完する。
         # 譲渡犬 (anytimedog) / 迷子 (lostchild) の一覧カードには毛色が無く、
         # 詳細ページ (transferdoglist / lostchild/...) にのみ「毛色」または
         # 「毛色・長さ」「大きさ」の dt がある。猫サイトは詳細ページにも体重
         # ・大きさ情報は無いが、毛色は一覧から取れているので補完不要。
         # 詳細ページ取得が失敗した場合は一覧カードの情報のみで継続する。
-        detail_fields = self._fetch_detail_fields(card)
+        detail_fields = self._fetch_detail_fields(detail_url=detail_url)
         for key, value in detail_fields.items():
             if value and not fields.get(key):
                 fields[key] = value
@@ -202,7 +210,7 @@ class OitaAigoAdapter(SinglePageTableAdapter):
                 phone=self._CENTER_TEL,
                 name=fields.get("name", ""),
                 image_urls=self._extract_row_images(card, virtual_url),
-                source_url=virtual_url,
+                source_url=source_url,
                 category=category,
             )
         except Exception as e:
@@ -210,26 +218,24 @@ class OitaAigoAdapter(SinglePageTableAdapter):
 
     # ─────────────────── ヘルパー ───────────────────
 
-    def _fetch_detail_fields(self, card: Tag) -> dict[str, str]:
+    def _fetch_detail_fields(self, *, detail_url: str) -> dict[str, str]:
         """カードに紐づく詳細ページの dl から LABEL_FIELDS マッピング済み辞書を返す
 
-        詳細ページ URL の取得:
-          - カード内の `<a href=...>` を順に走査し、list_url 自身 (例:
-            「随時」カテゴリ自リンク) と同一/外部ドメインを除外した上で
-            最初に見つかった href を採用する
-          - href が無い、もしくは絶対 URL に解決できない場合は空辞書
+        詳細ページ URL は呼び出し側 (`extract_animal_details`) が
+        `_select_detail_url` で解決済みのものを受け取る (source_url と
+        二重に解決しないため)。
 
         実 oita-aigo.com 観測 (2026-06):
           anytimedog / anytimecat ページではカード内最初の `<a>` が
           「随時」カテゴリの自リンク (list_url 自身) であり、単純な
           `card.find("a")` だと詳細フェッチが list URL に向かい毛色 dl が
-          一切取れない。list_url と一致するリンクは必ずスキップする。
+          一切取れない。list_url と一致するリンクは必ずスキップする
+          (`_select_detail_url` 側で対処済み)。
 
         詳細ページ取得失敗 (NetworkError) は致命ではない。
         一覧カードのみで取れる範囲を返したいため、空辞書を返して継続する。
         同一 URL は `_detail_html_cache` で 1 回しかフェッチしない。
         """
-        detail_url = self._select_detail_url(card)
         if not detail_url:
             return {}
 
