@@ -23,7 +23,16 @@ logger = logging.getLogger(__name__)
 
 # 「写真なし」プレースホルダ画像の名前パターン。これを照合キーに使うと
 # 写真の無い別個体同士が同一と誤判定されるため除外する (山梨 noimage01.jpg)。
-_PLACEHOLDER_IMAGE_MARKERS = ("noimage", "no-image", "no_image", "nophoto", "no-photo")
+# normalizer._JUNK_IMAGE_URL_PATTERNS の placeholder/dummy と揃える (F-07)。
+_PLACEHOLDER_IMAGE_MARKERS = (
+    "noimage",
+    "no-image",
+    "no_image",
+    "nophoto",
+    "no-photo",
+    "placeholder",
+    "dummy",
+)
 
 
 def identity_of(animal: AnimalData) -> dict[str, str]:

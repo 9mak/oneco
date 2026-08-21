@@ -118,6 +118,26 @@ class TestIdentityPersistence:
         )
         assert PostLog(path=path).posted_identity_keys() == set()
 
+    @pytest.mark.parametrize("marker", ["placeholder", "dummy"])
+    def test_normalizer_junk_marker_image_yields_no_key(self, tmp_path: Path, marker: str):
+        path = tmp_path / "posts.yaml"
+        log = PostLog(path=path)
+        log.record(
+            url="https://example.jp/animals/4",
+            platform="threads",
+            text="t",
+            dry_run=True,
+            identity={
+                "species": "猫",
+                "sex": "女の子",
+                "color": "茶",
+                "shelter_date": "2026-07-01",
+                # normalizer._JUNK_IMAGE_URL_PATTERNS に含まれるマーカー画像
+                "image_path": f"www.example.jp/images/{marker}.jpg",
+            },
+        )
+        assert PostLog(path=path).posted_identity_keys() == set()
+
 
 class TestIdentityHelpers:
     def test_identity_of_uses_host_and_path(self):
