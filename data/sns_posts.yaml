@@ -528,3 +528,23 @@ posts:
     color: ''
     shelter_date: '2026-08-20'
     image_path: www.city.wakayama.wakayama.jp/_res/projects/default_project/_page_/001/002/096/2024-10-24-1-.png
+- url: https://www.city.sendai.jp/dobutsu/kurashi/shizen/petto/hogodobutsu/joho/koneko.html#row=1
+  platform: threads
+  text: '宮城県で猫の里親を募集中です。
+
+    管理番号: K26064。
+
+    詳細・問い合わせは自治体公式へ。
+
+    https://www.city.sendai.jp/dobutsu/kurashi/shizen/petto/hogodobutsu/joho/koneko.html?utm_source=threads#row=1
+
+    #保護猫 #里親募集 #宮城県
+
+    🔍 oneco でも公開中: https://frontend-psi-ten-73.vercel.app/animals/2816?utm_source=threads&utm_medium=sns_post'
+  dry_run: false
+  identity:
+    species: 猫
+    sex: 男の子
+    color: 薄茶白
+    shelter_date: '2026-08-21'
+    image_path: www.city.sendai.jp/dobutsu/kurashi/shizen/petto/hogodobutsu/joho/images/k26064.jpg
