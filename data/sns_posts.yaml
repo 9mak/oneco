@@ -273,6 +273,12 @@ posts:
 
     🔍 oneco でも公開中: https://frontend-psi-ten-73.vercel.app/animals/498?utm_source=threads&utm_medium=sns_post'
   dry_run: false
+  identity:
+    species: 犬
+    sex: オス
+    color: 茶
+    shelter_date: ''
+    image_path: oita-aigo.com/wp/wp-content/uploads/2024/07/dsc09785-コピー-scaled.jpg
 - url: https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html#row=29
   platform: threads
   text: '山梨県甲斐市長塚で保護された猫を里親募集中。種別は猫、性別は男の子、品種は雑です。詳細や里親になる方法については、以下のリンクをご覧ください。詳細・問い合わせは自治体公式へ
