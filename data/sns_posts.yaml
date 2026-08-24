@@ -61,6 +61,12 @@ posts:
   text: "大分県のおおいた動物愛護センターで、里親を探している犬がいます。種別は犬で、性別は男の子です。仮名は大和です。この犬の詳細や里親になる手続きについては、下記の公式情報をご覧ください。詳細・問い合わせは自治体公式へ\
     \ #保護犬 #里親募集 #大分県 \nhttps://oita-aigo.com/information_doglist/anytimedog/?utm_source=threads#row=7"
   dry_run: false
+  identity:
+    species: 犬
+    sex: オス
+    color: 茶
+    shelter_date: ''
+    image_path: oita-aigo.com/wp/wp-content/uploads/2025/12/1枚目-16.jpg
 - url: https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html#row=83
   platform: threads
   text: '山梨県都留市で保護された猫の里親を探しています。保護された猫は、雌で雑種です。詳細・問い合わせは自治体公式へ https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html?utm_source=threads#row=83
@@ -192,6 +198,12 @@ posts:
 
     https://oita-aigo.com/information_catlist/anytimecat/?utm_source=threads#row=0'
   dry_run: false
+  identity:
+    species: 猫
+    sex: メス
+    color: 黒白
+    shelter_date: ''
+    image_path: oita-aigo.com/wp/wp-content/uploads/2025/01/1枚目-11-scaled.jpg
 - url: https://www.city.matsuyama.ehime.jp/kurashi/kurashi/aigo/index.html#row=6
   platform: threads
   text: '愛媛県で犬の保護が行われています。犬の情報は以下の通りです。
@@ -232,6 +244,12 @@ posts:
 
     詳細・問い合わせは自治体公式へ: https://oita-aigo.com/information_doglist/anytimedog/?utm_source=threads#row=2'
   dry_run: false
+  identity:
+    species: 犬
+    sex: メス
+    color: 白茶
+    shelter_date: ''
+    image_path: oita-aigo.com/wp/wp-content/uploads/2024/08/1枚目-23.jpg
 - url: https://animal-net.pref.nagasaki.jp/animal/no-19772/
   platform: threads
   text: '長崎県長崎市で保護された猫（男の子）が里親募集中です。詳細・問い合わせは自治体公式へ
@@ -255,6 +273,12 @@ posts:
 
     🔍 oneco でも公開中: https://frontend-psi-ten-73.vercel.app/animals/498?utm_source=threads&utm_medium=sns_post'
   dry_run: false
+  identity:
+    species: 犬
+    sex: オス
+    color: 茶
+    shelter_date: ''
+    image_path: oita-aigo.com/wp/wp-content/uploads/2024/07/dsc09785-コピー-scaled.jpg
 - url: https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html#row=29
   platform: threads
   text: '山梨県甲斐市長塚で保護された猫を里親募集中。種別は猫、性別は男の子、品種は雑です。詳細や里親になる方法については、以下のリンクをご覧ください。詳細・問い合わせは自治体公式へ
@@ -427,6 +451,12 @@ posts:
 
     🔍 oneco でも公開中: https://frontend-psi-ten-73.vercel.app/animals/518?utm_source=threads&utm_medium=sns_post'
   dry_run: false
+  identity:
+    species: 猫
+    sex: メス
+    color: 白キジ
+    shelter_date: ''
+    image_path: oita-aigo.com/wp/wp-content/uploads/2025/09/1枚目-10-scaled.jpg
 - url: https://douai-tokushima.com/animalinfo/list4_1#row=7
   platform: threads
   text: '徳島県動物愛護管理センターに収容中の犬について、情報を共有します。種別は犬、性別は男の子です。詳細・問い合わせは自治体公式へ https://douai-tokushima.com/animalinfo/list4_1?utm_source=threads#row=7
