@@ -111,8 +111,10 @@ class TestOitaAigoAdapter:
         assert raw.image_urls
         assert all(u.startswith("https://oita-aigo.com/") for u in raw.image_urls)
         assert any("/wp-content/uploads/" in u for u in raw.image_urls)
-        # source_url は仮想 URL
-        assert raw.source_url == first_url
+        # source_url は個別詳細URL (T053: 仮想URLのページ送り依存を解消)
+        assert raw.source_url == (
+            "https://oita-aigo.com/lostchild/%e4%bb%a4%e5%92%8c8%e5%b9%b45%e6%9c%881%e6%97%a5/"
+        )
 
     def test_species_inferred_for_adoption_dog_site(self, fixture_html):
         """譲渡犬サイトでは species が "犬" に推定される
@@ -594,6 +596,38 @@ class TestOitaAigoDetailLinkSelection:
             raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
         assert raw.color == "黒茶白"
         assert raw.size == "中型"
+
+
+class TestOitaAigoSourceUrl:
+    """source_url は個別詳細URLを優先する (T053)
+
+    仮想URL (list_url#row=N) はページ送り順の入れ替わりで指す動物が
+    ズレるため、カード固有の詳細URLが取れる場合はそれを source_url に
+    採用する。詳細URLが見つからない場合のみ仮想URLへフォールバックする。
+    """
+
+    def test_source_url_uses_detail_url_when_available(self):
+        adapter = OitaAigoAdapter(_adoption_dog_site())
+        fake = _make_http_get(
+            _LIST_WITH_CATEGORY_SELF_LINK_THEN_DETAIL,
+            "https://oita-aigo.com/transferdoglist/24-0609-2/",
+            _DETAIL_DOG_HTML,
+        )
+        with patch.object(adapter, "_http_get", side_effect=fake):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="adoption")
+        assert raw.source_url == "https://oita-aigo.com/transferdoglist/24-0609-2/"
+
+    def test_source_url_falls_back_to_virtual_url_when_no_detail_link(self):
+        """カードに詳細リンクが無い (ページ送りテスト用フィクスチャ等) 場合は
+        仮想URLのまま (真の掲載漏れを起こさないためのフォールバック)。
+        """
+        adapter = OitaAigoAdapter(_adoption_cat_site())
+        with patch.object(adapter, "_http_get", return_value=_PAGE1_HTML):
+            urls = adapter.fetch_animal_list()
+            first_url, category = urls[0]
+            raw = adapter.extract_animal_details(first_url, category=category)
+        assert raw.source_url == first_url
 
 
 # ─────────────────── ページ送り (T052) ───────────────────
