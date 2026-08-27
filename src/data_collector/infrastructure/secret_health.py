@@ -35,6 +35,10 @@ HTTP_TIMEOUT_SEC = 10.0
 # 失効と判定する HTTP status (認証エラー)
 _EXPIRED_STATUSES = frozenset({401, 403})
 
+# Threads (Meta Graph API) はトークン失効時に 401/403 ではなく HTTP 400 +
+# OAuthException (code=190) を返すことがある (2026-08-22 実障害で確認)。
+_THREADS_OAUTH_EXPIRED_CODE = 190
+
 
 @dataclass(frozen=True)
 class SecretCheckResult:
@@ -115,8 +119,32 @@ def check_groq(api_key: str | None, *, client: _HttpClient) -> SecretCheckResult
     return _classify("groq", resp.status_code)
 
 
+def _threads_oauth_expired_detail(resp: Any) -> str | None:
+    """HTTP 400 のレスポンスボディが Meta の OAuthException (code=190, トークン失効)
+    かどうかを判定する。該当すれば detail 文字列を、そうでなければ None を返す。
+
+    body が空/不正で json() が失敗した場合は None を返し、呼び出し側で
+    一時障害扱いにフォールバックさせる (クラッシュさせない)。
+    """
+    try:
+        body = resp.json()
+        error = body.get("error", {})
+        code = error.get("code")
+        error_type = error.get("type")
+    except Exception:
+        return None
+    if code == _THREADS_OAUTH_EXPIRED_CODE or error_type == "OAuthException":
+        message = error.get("message", "")
+        return f"HTTP 400 OAuthException code={code} (失効の疑い): {message}"
+    return None
+
+
 def check_threads(access_token: str | None, *, client: _HttpClient) -> SecretCheckResult:
-    """Threads access_token の有効性を /me エンドポイントで確認する。"""
+    """Threads access_token の有効性を /me エンドポイントで確認する。
+
+    Meta は失効トークンを 401/403 ではなく HTTP 400 + OAuthException (code=190) で
+    返すことがあるため、400 のときはレスポンスボディを確認して失効判定する。
+    """
     if not access_token or not access_token.strip():
         return _unconfigured("threads")
     try:
@@ -128,6 +156,16 @@ def check_threads(access_token: str | None, *, client: _HttpClient) -> SecretChe
     except Exception as exc:
         # 接続失敗 (DNS/SSL/timeout 等) は一時障害とみなし、失効判定しない
         return _transient_error("threads", exc)
+    if resp.status_code == 400:
+        expired_detail = _threads_oauth_expired_detail(resp)
+        if expired_detail is not None:
+            return SecretCheckResult(
+                name="threads",
+                configured=True,
+                ok=False,
+                status_code=400,
+                detail=expired_detail,
+            )
     return _classify("threads", resp.status_code)
 
 
