@@ -50,7 +50,7 @@ PRESETS = {
     },
 }
 
-GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_MODEL = "openai/gpt-oss-120b"
 GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
 HTML_MAX_CHARS = 12_000  # ≈ 3k tokens, safe for Groq free-tier TPM limits
 CACHE_DIR = Path(__file__).parent / "poc_selectors"

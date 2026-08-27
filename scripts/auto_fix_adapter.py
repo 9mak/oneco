@@ -52,7 +52,7 @@ from data_collector.domain.normalizer import DataNormalizer  # noqa: E402
 from data_collector.domain.quality_metrics import compute_missing_rates  # noqa: E402
 from data_collector.llm.config import SiteConfig  # noqa: E402
 
-DEFAULT_MODEL = "llama-3.3-70b-versatile"  # Groq (既存 GroqProvider と揃える)
+DEFAULT_MODEL = "openai/gpt-oss-120b"  # Groq (既存 GroqProvider と揃える)
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 MAX_HTML_CHARS = 6000  # 圧縮後の list/detail HTML 各上限 (Groq 無料枠 TPM 12000 に収める)
 DETAIL_SAMPLE_COUNT = 5

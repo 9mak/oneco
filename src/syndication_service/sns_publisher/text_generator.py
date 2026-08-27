@@ -166,7 +166,7 @@ class TextGenerator:
         self,
         *,
         client: Any | None = None,
-        model: str = "llama-3.3-70b-versatile",
+        model: str = "openai/gpt-oss-120b",
         timeout: float = 10.0,
     ) -> None:
         self._client = client

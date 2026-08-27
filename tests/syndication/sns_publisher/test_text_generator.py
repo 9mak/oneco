@@ -142,7 +142,7 @@ class _FakeGroqClient:
 class TestGroqGenerator:
     def test_generate_returns_llm_text(self):
         fake = _FakeGroqClient(return_text="保護犬の柴犬さんが里親募集中 #保護犬 #里親募集")
-        gen = TextGenerator(client=fake, model="llama-3.3-70b-versatile")
+        gen = TextGenerator(client=fake, model="openai/gpt-oss-120b")
         text = gen.generate(_animal(), platform="threads")
         assert "保護犬" in text
         assert len(fake.calls) == 1

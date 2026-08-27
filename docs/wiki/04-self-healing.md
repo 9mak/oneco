@@ -13,7 +13,7 @@ Phase 1: 検知               data-collector.yml (毎日の収集ラン内)
         ▼
 Phase 2: 修復               auto-fix-adapter.yml (workflow_dispatch)
    scripts/auto_fix_adapter.py
-   ├ Groq (llama-3.3-70b-versatile) にパッチ生成を依頼
+   ├ Groq (openai/gpt-oss-120b) にパッチ生成を依頼
    ├ 二重ガード: ユニットテスト通過 + live test で改善を定量確認
    ├ 通過 → fix/auto-* ブランチで `auto-fix` ラベル付き PR 作成
    └ 失敗 → Issue 起票

@@ -44,7 +44,7 @@ from typing import Protocol
 from bs4 import BeautifulSoup
 
 _GROQ_BASE_URL = "https://api.groq.com/openai/v1"
-_JUDGE_MODEL = "llama-3.3-70b-versatile"
+_JUDGE_MODEL = "openai/gpt-oss-120b"
 # 分類プロンプトに含める HTML の上限 (Groq 無料枠 TPM 12000 に収める)。
 # 動物一覧 or 0件メッセージは本文冒頭〜中盤に現れることが多く、分類目的
 # なら全文は不要。
