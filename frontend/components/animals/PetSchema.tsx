@@ -9,8 +9,13 @@ interface PetSchemaProps {
 /**
  * 動物個体ページの構造化データ (JSON-LD)
  *
- * schema.org/Article をベースに、about プロパティで Pet/Animal の
- * 詳細を埋め込む。Google の Rich Results 対応 + 検索結果でのスニペット改善。
+ * schema.org/Article をベースに、about プロパティで動物の詳細を埋め込む。
+ * Google の Rich Results 対応 + 検索結果でのスニペット改善。
+ *
+ * 注: schema.org には `Pet` / `Animal` という型は存在しない
+ * (https://schema.org/Pet, https://schema.org/Animal は404、2026-08-26確認)。
+ * about には汎用の `Thing` を使い、性別・毛色・所在地は
+ * `additionalProperty` (PropertyValue の配列) で表現する。
  */
 export function PetSchema({ animal, siteUrl }: PetSchemaProps) {
   const categoryLabel =
@@ -22,6 +27,12 @@ export function PetSchema({ animal, siteUrl }: PetSchemaProps) {
 
   const headline = `${animal.prefecture ?? ''} ${animal.location}の${animal.species}（${categoryLabel}）`.trim();
   const url = `${siteUrl}/animals/${animal.id}`;
+
+  const additionalProperty = [
+    { '@type': 'PropertyValue', name: '性別', value: animal.sex },
+    { '@type': 'PropertyValue', name: '所在地', value: animal.location },
+    ...(animal.color ? [{ '@type': 'PropertyValue', name: '毛色', value: animal.color }] : []),
+  ];
 
   const data = {
     '@context': 'https://schema.org',
@@ -35,16 +46,19 @@ export function PetSchema({ animal, siteUrl }: PetSchemaProps) {
       '@type': 'WebPage',
       '@id': url,
     },
+    author: {
+      '@type': 'Organization',
+      name: 'oneco',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'oneco',
+    },
     about: {
-      '@type': 'Pet',
+      '@type': 'Thing',
       name: `${animal.location}の${animal.species}`,
-      animal: {
-        '@type': 'Animal',
-        ...(animal.color && { additionalProperty: { '@type': 'PropertyValue', name: '毛色', value: animal.color } }),
-      },
       ...(animal.image_urls.length > 0 && { image: animal.image_urls[0] }),
-      ...(animal.color && { color: animal.color }),
-      ...(animal.sex && { gender: animal.sex }),
+      additionalProperty,
     },
     locationCreated: {
       '@type': 'Place',
