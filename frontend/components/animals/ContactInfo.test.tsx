@@ -1,8 +1,17 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { ContactInfo } from './ContactInfo';
 
+const trackPhoneClickMock = vi.fn();
+vi.mock('@/lib/analytics', () => ({
+  trackPhoneClick: (...args: unknown[]) => trackPhoneClickMock(...args),
+}));
+
 describe('ContactInfo', () => {
+  beforeEach(() => {
+    trackPhoneClickMock.mockReset();
+  });
+
   const baseProps = {
     location: '高知県中央小動物管理センター',
     phone: '088-831-7939',
@@ -54,5 +63,23 @@ describe('ContactInfo', () => {
     expect(
       screen.getByText(/最新の掲載状況を元のサイトでもご確認ください/),
     ).toBeInTheDocument();
+  });
+
+  it('電話番号タップで trackPhoneClick を呼ぶ', () => {
+    render(
+      <ContactInfo {...baseProps} prefecture="高知県" animalId="abc" />,
+    );
+    const link = screen.getByRole('link', { name: '088-831-7939' });
+    fireEvent.click(link);
+    expect(trackPhoneClickMock).toHaveBeenCalledWith({
+      phone: '088-831-7939',
+      prefecture: '高知県',
+      animalId: 'abc',
+    });
+  });
+
+  it('phone が null のときは trackPhoneClick を呼ばない', () => {
+    render(<ContactInfo {...baseProps} phone={null} />);
+    expect(trackPhoneClickMock).not.toHaveBeenCalled();
   });
 });
