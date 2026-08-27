@@ -130,10 +130,12 @@ def _threads_oauth_expired_detail(resp: Any) -> str | None:
         body = resp.json()
         error = body.get("error", {})
         code = error.get("code")
-        error_type = error.get("type")
     except Exception:
         return None
-    if code == _THREADS_OAUTH_EXPIRED_CODE or error_type == "OAuthException":
+    # type: "OAuthException" は認証エラー専用ではなく汎用エラーラッパーであり、
+    # レート制限 (code=4 等) にも使われる。code=190 単独で判定し、
+    # 一時障害を失効と誤検知しないようにする (2026-08-28 reviewer指摘)。
+    if code == _THREADS_OAUTH_EXPIRED_CODE:
         message = error.get("message", "")
         return f"HTTP 400 OAuthException code={code} (失効の疑い): {message}"
     return None

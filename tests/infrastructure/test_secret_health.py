@@ -137,6 +137,22 @@ class TestCheckThreads:
         assert result.ok is True
         assert result.status_code == 400
 
+    def test_400_oauth_exception_rate_limit_not_treated_as_expired(self):
+        """type=OAuthException は認証エラー専用ではなく汎用エラーラッパーであり、
+        レート制限 (code=4) にも使われる。code=190 以外は失効と誤検知せず
+        一時障害 (ok=True) のままにする (2026-08-28 reviewer指摘)。"""
+        body = {
+            "error": {
+                "message": "Application request limit reached",
+                "type": "OAuthException",
+                "code": 4,
+            }
+        }
+        result = check_threads("EAAB_valid", client=_client_returning(400, body))
+        assert result.configured is True
+        assert result.ok is True
+        assert result.status_code == 400
+
     def test_400_unparsable_body_falls_back_to_transient_ok(self):
         """body が空/不正で json() が失敗してもクラッシュせず一時障害扱いにフォールバック"""
         result = check_threads("EAAB_valid", client=_client_returning(400, None))
