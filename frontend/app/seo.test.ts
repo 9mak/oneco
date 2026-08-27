@@ -40,6 +40,22 @@ describe('SEO: title デフォルト値の非ブランド検索語', () => {
   });
 });
 
+/**
+ * 2026-08-28のreviewer指摘で、openGraph.title / twitter.title がブランド名
+ * "oneco" 単体のままで title.default と揃っておらず、トップページを
+ * SNSシェアした際のプレビューで非ブランド検索語が露出しない点を検出。
+ * 再発防止のリグレッションテスト。
+ */
+describe('SEO: OGP/Twitter title の非ブランド検索語', () => {
+  it('openGraph.title / twitter.title は title.default と同じ値を持つ', () => {
+    const title = rootMetadata.title;
+    const defaultTitle = typeof title === 'object' && title && 'default' in title ? title.default : undefined;
+    expect(defaultTitle).toBeDefined();
+    expect(rootMetadata.openGraph?.title).toBe(defaultTitle);
+    expect(rootMetadata.twitter?.title).toBe(defaultTitle);
+  });
+});
+
 describe('SEO: sitemap 静的ページ列挙', () => {
   beforeEach(() => {
     // ビルド/テスト環境では API 不在。res.ok=false で動物 fetch を空にフォールバック。

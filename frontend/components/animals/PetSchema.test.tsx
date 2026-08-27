@@ -8,6 +8,12 @@ import type { AnimalPublic } from '@/types/animal';
  * schema.org に実在しない型であることを curl で実測 (https://schema.org/Pet,
  * https://schema.org/Animal ともに404)。実在する型への是正を担保する
  * リグレッションテスト。
+ *
+ * 2026-08-28のreviewer指摘で、`about`(@type: Thing) 直下の `additionalProperty`
+ * も domainIncludes 不適合と判明 (公式JSON-LDコンテキストを実測すると
+ * additionalProperty の domainIncludes は MerchantReturnPolicy / Offer /
+ * Place / Product / QualitativeValue / QuantitativeValue のみで Thing を
+ * 含まない)。`identifier` (domainIncludes: Thing) に是正した。
  */
 
 const baseAnimal: AnimalPublic = {
@@ -40,25 +46,26 @@ describe('PetSchema', () => {
     expect(json).not.toContain('"@type":"Animal"');
   });
 
-  it('about は実在する @type: Thing で、性別・所在地を additionalProperty (PropertyValue) で表現する', () => {
+  it('about は実在する @type: Thing で、性別・所在地を identifier (PropertyValue) で表現する', () => {
     const { container } = render(<PetSchema animal={baseAnimal} siteUrl="https://oneco.example.com" />);
     const data = getJsonLd(container);
     expect(data.about['@type']).toBe('Thing');
-    expect(Array.isArray(data.about.additionalProperty)).toBe(true);
+    expect(data.about.additionalProperty).toBeUndefined();
+    expect(Array.isArray(data.about.identifier)).toBe(true);
 
-    const props: Array<{ name: string; value: string }> = data.about.additionalProperty;
+    const props: Array<{ '@type': string; name: string; value: string }> = data.about.identifier;
     expect(props.every((p) => p['@type'] === 'PropertyValue')).toBe(true);
     expect(props.find((p) => p.name === '性別')?.value).toBe('男の子');
     expect(props.find((p) => p.name === '所在地')?.value).toBe('高知市');
     expect(props.find((p) => p.name === '毛色')?.value).toBe('茶色');
   });
 
-  it('color が null の場合は毛色の additionalProperty を含めない', () => {
+  it('color が null の場合は毛色の identifier を含めない', () => {
     const { container } = render(
       <PetSchema animal={{ ...baseAnimal, color: null }} siteUrl="https://oneco.example.com" />,
     );
     const data = getJsonLd(container);
-    const props: Array<{ name: string }> = data.about.additionalProperty;
+    const props: Array<{ name: string }> = data.about.identifier;
     expect(props.find((p) => p.name === '毛色')).toBeUndefined();
   });
 

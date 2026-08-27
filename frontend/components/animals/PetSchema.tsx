@@ -14,8 +14,15 @@ interface PetSchemaProps {
  *
  * 注: schema.org には `Pet` / `Animal` という型は存在しない
  * (https://schema.org/Pet, https://schema.org/Animal は404、2026-08-26確認)。
- * about には汎用の `Thing` を使い、性別・毛色・所在地は
- * `additionalProperty` (PropertyValue の配列) で表現する。
+ * about には汎用の `Thing` を使う。
+ *
+ * 性別・毛色・所在地の表現には `additionalProperty` を使わない。公式 JSON-LD
+ * コンテキスト (https://schema.org/version/latest/schemaorg-current-https.jsonld、
+ * 2026-08-28実測) 上、`additionalProperty` の domainIncludes は
+ * MerchantReturnPolicy / Offer / Place / Product / QualitativeValue /
+ * QuantitativeValue のみで `Thing` を含まないため。代わりに `identifier`
+ * (domainIncludes: Thing, rangeIncludes: PropertyValue) を使い、
+ * PropertyValue の配列で性別・毛色・所在地を表現する。
  */
 export function PetSchema({ animal, siteUrl }: PetSchemaProps) {
   const categoryLabel =
@@ -28,7 +35,7 @@ export function PetSchema({ animal, siteUrl }: PetSchemaProps) {
   const headline = `${animal.prefecture ?? ''} ${animal.location}の${animal.species}（${categoryLabel}）`.trim();
   const url = `${siteUrl}/animals/${animal.id}`;
 
-  const additionalProperty = [
+  const identifier = [
     { '@type': 'PropertyValue', name: '性別', value: animal.sex },
     { '@type': 'PropertyValue', name: '所在地', value: animal.location },
     ...(animal.color ? [{ '@type': 'PropertyValue', name: '毛色', value: animal.color }] : []),
@@ -58,7 +65,7 @@ export function PetSchema({ animal, siteUrl }: PetSchemaProps) {
       '@type': 'Thing',
       name: `${animal.location}の${animal.species}`,
       ...(animal.image_urls.length > 0 && { image: animal.image_urls[0] }),
-      additionalProperty,
+      identifier,
     },
     locationCreated: {
       '@type': 'Place',
