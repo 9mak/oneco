@@ -1,7 +1,7 @@
 あかし動物センター（迷子犬）:
-  consecutive_failures: 3
+  consecutive_failures: 4
   last_error: 'HTTP エラー: 404 Client Error: Not Found for url: https://www.city.akashi.lg.jp/kankyou/dobutsu/info/maigo/dog.html'
-  last_failed_at: '2026-08-20T15:02:41+00:00'
+  last_failed_at: '2026-08-28T15:02:18+00:00'
 あかし動物センター（迷子猫）:
   consecutive_failures: 7
   last_error: 'HTTP エラー: 404 Client Error: Not Found for url: https://www.city.akashi.lg.jp/kankyou/dobutsu/info/maigo/cat.html'
@@ -223,9 +223,9 @@
     , waiting until \"networkidle\"\n"
   last_failed_at: '2026-08-12T16:10:47+00:00'
 群馬県動物愛護センター東部支所（保護犬）:
-  consecutive_failures: 0
-  last_error: '行要素が見つかりません (PR #244 で adapter 修理済み・手動リセット)'
-  last_failed_at: '2026-07-10T17:00:36+00:00'
+  consecutive_failures: 1
+  last_error: 'HTTP エラー: 404 Client Error: Not Found for url: https://www.pref.gunma.jp/page/179441.html'
+  last_failed_at: '2026-08-28T15:01:45+00:00'
 豊中市（迷子犬猫）:
   consecutive_failures: 0
   last_error: '件数低下異常: 前回 8 件 → 今回 0 件 (adapter 破損 or サイト構造変更の可能性)'
