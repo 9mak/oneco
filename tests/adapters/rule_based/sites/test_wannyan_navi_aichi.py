@@ -266,6 +266,22 @@ class TestWannyanNaviAichiAdapterDetailExtraction:
         assert all("logo" not in u.lower() for u in raw.image_urls)
         assert all("/animal/abc123" in u for u in raw.image_urls)
 
+        # normalize() 経由でも主要フィールドが期待通りに変換されること
+        # (T042/T114: raw のみの確認では normalize 段の退行を検知できない)。
+        # 実際に adapter.normalize() を実行して確認した値: raw.species="柴犬"
+        # は「犬」の文字を含むため正しく "犬" に変換される (city_sasebo.py の
+        # "雑種" のような犬猫の文字を含まない品種名では誤分類されるリスクが
+        # 残る点は本 adapter の未検証範囲)。sex "オス"→"男の子"、
+        # age "3歳"→36ヶ月、shelter_date "2026年4月10日"→date(2026, 4, 10)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.species == "犬"
+        assert animal_data.sex == "男の子"
+        assert animal_data.age_months == 36
+        assert animal_data.size == "中型"
+        assert animal_data.shelter_date.isoformat() == "2026-04-10"
+        assert animal_data.location == "愛知県動物愛護センター"
+        assert animal_data.phone == "0568-22-8311"
+
     def test_extract_animal_details_supports_two_column_table(self, assert_raw_animal):
         """`<th>` を持たない 2 列テーブルからも値を抽出できる"""
         adapter = WannyanNaviAichiAdapter(_site_aichi())

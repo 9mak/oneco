@@ -247,6 +247,19 @@ class TestHyogoDouaiAdapter:
         assert raw.source_url == detail_url
         assert raw.category == "sheltered"
 
+        # normalize() 経由でも主要フィールドが期待通りに変換されること
+        # (T042/T114: raw のみの確認では normalize 段の退行を検知できない)。
+        # 実際に adapter.normalize() を実行して確認した値: sex "オス"→"男の子"、
+        # size "中"→"中型"、shelter_date "令和8年5月10日"→date(2026, 5, 10)。
+        # phone は固定電話 (0791局番) のため PII 除去対象外でそのまま残る。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.sex == "男の子"
+        assert animal_data.size == "中型"
+        assert animal_data.color == "茶白"
+        assert animal_data.shelter_date.isoformat() == "2026-05-10"
+        assert animal_data.location == "龍野支所"
+        assert animal_data.phone == "0791-63-5142"
+
     def test_extract_animal_details_raises_when_no_fields(self):
         """detail ページから 1 フィールドも抽出できないと ParsingError"""
         adapter = HyogoDouaiAdapter(_site())
