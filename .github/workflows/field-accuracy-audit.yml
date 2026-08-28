@@ -1,0 +1,96 @@
+name: Field Accuracy Audit
+
+# adapter の出力値と本番 API 公開値を突き合わせ、致命8フィールド
+# (status/phone/source_url/location/prefecture/category/species/image_urls) の
+# 値の食い違いを検出する監査 (scripts/full_publication_audit.py, T045 → 自動化 T101)。
+#
+# T105 (weekly-count-audit.yml / scripts/site_count_audit.py) との違い:
+# T105 は adapter を経由せず「件数」の一致 (掲載漏れ・残骸疑い) を見る。
+# こちらは adapter の出力と API の値そのものが正確か (フィールド単位の食い違い) を見る。
+# 検出領域が異なるため両方残す。api_only/adapter_only (件数の乖離) は T105 の担当領域と
+# 重複するため、このワークフローの通知対象からは意図的に除外している
+# (src/data_collector/infrastructure/field_accuracy_notify.py 参照)。
+#
+# 設計判断:
+# - 頻度は T105 (週次) より低い月次 (JST 毎月1日 10:00) にする。理由:
+#   1. 負荷が T105 より重い。T105 (site_count_audit.py) は 211 サイトの一覧ページのみを
+#      fetch するのに対し、このスクリプトは一覧ページに加えて公開中の全個体詳細ページ
+#      (2026-08-15 実測で約745件) まで実 HTTP で取得する。かつ full_publication_audit.py
+#      には site_count_audit.py のような同一ホスト連続アクセス時の礼儀的 sleep が無く、
+#      211件の自治体・保護団体サイトへの累積アクセス頻度は週次にすると相対的に重い
+#      (T048 で GitHub Actions ランナーの IP 帯が一部自治体サイトからアクセスペナルティを
+#      受けた実績があり、収集本体は Cloud Run Jobs へ退避済み。このバッチはランナーから
+#      実行するため必要以上に頻度を上げない)。
+#   2. 検知対象の性質が違う。T105 が捕まえる「ページ送り未対応」等の掲載数バグは
+#      サイト構造由来で気づかれるまで固定化し続けるため早期発見の価値が高い一方、
+#      T045/T046 (2026-08-09〜08-15) の実績では致命フィールド不一致はほぼ収束しており
+#      (第2回監査24件→recheckで全件解消)、残る不一致は主にコード変更 (デプロイ) に
+#      伴う退行であり、日々発生し続けるものではない。月次でも「次回デプロイ後の
+#      検知が最大1か月遅れる」程度のリスクで、環境負荷とのバランスで妥当と判断した。
+#   3. workflow_dispatch を残すため、致命フィールドに関わる adapter/normalize 変更を
+#      デプロイした直後は手動実行で即時確認できる。
+# - JST 毎月1日 10:00: 収集は Cloud Run Jobs (JST 0:00 開始・所要 約20分) 移設済みなので
+#   その後を狙う。T105 (JST 日曜1:00) や secret-health/sns-publish (JST 9:00 daily) と
+#   時刻を分離し、同じ曜日・時間帯に重ねない (JST 9台前半という近さはあるが、T105 が
+#   日曜固定なのに対しこちらは日付固定で曜日が毎月ずれるため、同一曜日・同一時刻に
+#   継続して重なることはない)。
+# - 乖離ゼロなら通知しない: 誤通知疲労を避ける (secret-health.yml / weekly-count-audit.yml
+#   と同じ思想)。
+# - 通知対象は致命フィールドの値の食い違い (field_mismatch) のみ: api_only (もういない
+#   疑い) / adapter_only (掲載漏れ疑い) は「件数」の乖離であり T105 の担当と重複するため
+#   対象外にする (詳細は field_accuracy_notify.py のモジュール docstring)。
+# - 2段階 recheck (検知→翌日再照合→確定) は自動化しない: full_publication_audit.py は
+#   --recheck オプションを既に持つが、ワークフローで自動連携させるには前回 JSON
+#   artifact の受け渡し・翌日ジョブのスケジューリングが必要で複雑度が増す。月次実行の
+#   通知本文に「単日結果は確定でない・--recheck で確認してから対応する」旨を明記する
+#   ことで、確定判断は人が能動的に recheck するフローに委ねる (T105 も同じ単純通知)。
+# - レポートは commit せず artifact 保存のみ: weekly-count-audit.yml と同じ理由
+#   (単日ノイズを含むスナップショットで main の履歴を汚さない)。
+# - timeout 90分: 2026-08-15 の実測 (211サイト・ローカル実行で約11分) に対し、
+#   GitHub Actions ランナー側のネットワーク差・失敗サイトの再試行分を見込んで
+#   大きめの余裕を持たせる (T105 が 10-20分想定に対し timeout 45分 = 約2.5倍の
+#   マージンを踏襲しつつ、詳細ページ分の追加リクエスト量を考慮してさらに広げた)。
+
+on:
+  schedule:
+    - cron: '0 1 1 * *'  # 毎月1日 UTC 1:00 = JST 1日 10:00
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        # full_publication_audit.py は NotificationClient を import する。
+        # secret-health.yml / weekly-count-audit.yml と同じ理由で editable install が必要
+        # (requests/pyyaml だけを入れても infrastructure/__init__.py の eager import 経路で
+        # ModuleNotFoundError になる)。
+        run: pip install -e .
+
+      - name: Run field accuracy audit
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python3 scripts/full_publication_audit.py
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: field-accuracy-audit-report
+          path: |
+            reports/full_audit_*.json
+            reports/full_audit_*.md
+          retention-days: 90
+          if-no-files-found: warn

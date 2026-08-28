@@ -25,6 +25,14 @@ requires_js のサイトは adapter が実行できないため監査対象外 (
 出力 (既定 reports/):
     full_audit_YYYYMMDD.json   全比較結果 (機械可読・再照合の入力)
     full_audit_YYYYMMDD.md     サイト別サマリと不一致の一覧 (人が読む)
+
+通知 (T101):
+    致命フィールドの値の食い違い (field_mismatch) を持つサイトが1件でもあれば
+    DISCORD_WEBHOOK_URL (環境変数, GitHub Actions secret) 宛に Discord 通知する
+    (data_collector.infrastructure.field_accuracy_notify)。api_only / adapter_only
+    (件数の乖離) は scripts/site_count_audit.py (T105) が別途監視しているため対象外。
+    未設定なら通知は no-op でスキップされる (.github/workflows/field-accuracy-audit.yml
+    が実行する)。--recheck 実行時は通知しない (再照合は人が能動的に確認する用途のため)。
 """
 
 from __future__ import annotations
@@ -32,6 +40,7 @@ from __future__ import annotations
 import argparse
 import importlib
 import json
+import os
 import pkgutil
 import sys
 import time
@@ -56,6 +65,8 @@ for _, _name, _ in pkgutil.iter_modules(_sites_pkg.__path__):
         pass
 
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry  # noqa: E402
+from data_collector.infrastructure.field_accuracy_notify import maybe_notify  # noqa: E402
+from data_collector.infrastructure.notification_client import NotificationClient  # noqa: E402
 from data_collector.llm.config import SiteConfig  # noqa: E402
 
 DEFAULT_API_BASE = "https://oneco-api-tvlsrcvyuq-an.a.run.app"
@@ -388,11 +399,19 @@ def main() -> int:
     stamp = date.today().strftime("%Y%m%d")
     json_path = out_dir / f"full_audit_{stamp}.json"
     md_path = out_dir / f"full_audit_{stamp}.md"
-    json_path.write_text(
-        json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8"
-    )
+    json_path.write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
     write_markdown(result, md_path)
     print(f"\n[audit] 出力: {json_path}\n[audit] 出力: {md_path}", file=sys.stderr)
+
+    # 致命フィールド不一致があれば Discord 通知 (T101)。DISCORD_WEBHOOK_URL 未設定時は
+    # NotificationClient が no-op でログ警告のみ (ローカル ad hoc 実行では通常未設定なので
+    # 安全にスキップされる)。
+    notify_config: dict[str, str] = {}
+    discord_webhook = os.environ.get("DISCORD_WEBHOOK_URL")
+    if discord_webhook:
+        notify_config["discord_webhook_url"] = discord_webhook
+    notified = maybe_notify(result, NotificationClient(notify_config))
+    print(f"[audit] Discord 通知: {'送信' if notified else '不一致なし/対象外'}", file=sys.stderr)
     return 0
 
 
