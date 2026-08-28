@@ -162,7 +162,14 @@ def _llm_judge_page_animals(html: str) -> str:
         client = OpenAI(api_key=api_key, base_url=_GROQ_BASE_URL)
         response = client.chat.completions.create(
             model=_JUDGE_MODEL,
-            max_tokens=10,
+            # openai/gpt-oss-120b は reasoning モデル。reasoning_effort 未指定
+            # (既定 "medium") だと max_tokens=10 では reasoning トークンだけで
+            # 使い切り content が常に空になる (2026-08-28 実測:
+            # reasoning_tokens=8/10, content="")。"low" に抑えても reasoning は
+            # 数十トークン発生する (実測: 数件のサンプルで 6〜42) ため、
+            # 1語の分類結果に対しても十分な余裕を持たせる。
+            reasoning_effort="low",
+            max_tokens=300,
             temperature=0,
             messages=[
                 {

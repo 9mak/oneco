@@ -54,7 +54,15 @@ from data_collector.llm.config import SiteConfig  # noqa: E402
 
 DEFAULT_MODEL = "openai/gpt-oss-120b"  # Groq (既存 GroqProvider と揃える)
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
-MAX_HTML_CHARS = 6000  # 圧縮後の list/detail HTML 各上限 (Groq 無料枠 TPM 12000 に収める)
+# 圧縮後の list/detail HTML 各上限 (Groq 無料枠 TPM に収める狙いで設定した値)。
+# 2026-08-28 実測: 現在の openai/gpt-oss-120b の org TPM 上限は 8000 であり
+# (このコメントが元々前提にしていた 12000 より低い)、山梨県 adapter
+# (500行、single_page で list_html のみ) では MAX_HTML_CHARS=6000 のままだと
+# 入力だけで約 9931 token になり 413 (Request too large, Limit 8000) になる。
+# 本 PR の主題 (reasoning トークン対策) とは別問題のため値は据え置くが、
+# 大きい adapter ファイル + 実サイズ HTML では現行の TPM 枠を超過しうる点は
+# 既知の未解決事項として残る (対応は別途判断)。
+MAX_HTML_CHARS = 6000
 DETAIL_SAMPLE_COUNT = 5
 # max_tokens は Groq の "Requested" トークンに 1:1 で効く (実出力長と無関係、
 # 予約分として毎回カウントされる)。SEARCH/REPLACE ブロックは変更箇所だけの
@@ -301,6 +309,17 @@ def _resolve_model(provider: str, explicit_model: str | None) -> str:
     return GEMINI_DEFAULT_MODEL if provider == "gemini" else DEFAULT_MODEL
 
 
+# reasoning_effort をサポートするモデル (Groq ドキュメント 2026-08-28 時点:
+# openai/gpt-oss-* と qwen/qwen3* のみ)。非対応モデルに送ると 400
+# ("`reasoning_effort` is not supported with this model") で落ちるため、
+# --model で他モデルを明示指定された場合は付けない。
+_REASONING_EFFORT_MODEL_PREFIXES = ("openai/gpt-oss", "qwen/qwen3")
+
+
+def _supports_reasoning_effort(model: str) -> bool:
+    return model.startswith(_REASONING_EFFORT_MODEL_PREFIXES)
+
+
 def ask_llm_for_fix(
     adapter_code: str,
     adapter_file: Path,
@@ -357,16 +376,23 @@ def _ask_groq_for_fix(
     # 並列 dispatch で org 全体の TPM/min を食い合うと 429 (rate_limit) になる。
     # 単発が無料枠内なら、待てば次の分でリセットされるので backoff リトライする。
     # (413 = 単発がサイズ超過は待っても無駄なので、そちらは縮小側で対処済み。)
+    create_kwargs: dict[str, Any] = dict(
+        model=model,
+        max_tokens=MAX_OUTPUT_TOKENS,
+        messages=[
+            {"role": "system", "content": system_msg},
+            {"role": "user", "content": user_msg},
+        ],
+    )
+    if _supports_reasoning_effort(model):
+        # reasoning_effort 未指定 (既定 "medium") だと reasoning トークンだけで
+        # MAX_OUTPUT_TOKENS を使い切り content が空になりうる (2026-08-28 実測:
+        # text_generator.py/zero_count_verifier.py と同根の問題。詳細は
+        # 振り返りメモ参照)。"low" に抑えて SEARCH/REPLACE 本文の余地を残す。
+        create_kwargs["reasoning_effort"] = "low"
     for attempt in range(RATE_LIMIT_MAX_RETRIES):
         try:
-            response = client.chat.completions.create(
-                model=model,
-                max_tokens=MAX_OUTPUT_TOKENS,
-                messages=[
-                    {"role": "system", "content": system_msg},
-                    {"role": "user", "content": user_msg},
-                ],
-            )
+            response = client.chat.completions.create(**create_kwargs)
             break
         except RateLimitError as e:
             if attempt == RATE_LIMIT_MAX_RETRIES - 1:

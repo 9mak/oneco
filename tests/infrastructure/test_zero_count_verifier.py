@@ -195,6 +195,39 @@ class TestLlmJudgePageAnimals:
         monkeypatch.setattr(openai, "OpenAI", FakeClient)
         assert _llm_judge_page_animals(self._JUDGABLE_HTML) == "unclear"
 
+    def test_reasoning_truncated_empty_response_returns_unclear(self, monkeypatch):
+        """2026-08-27 reviewer 指摘 (PR #294 F-02): openai/gpt-oss-120b は
+        reasoning モデルで、reasoning_effort 未指定 (既定 "medium") だと
+        max_tokens=10 では reasoning トークンだけで使い切り content が常に
+        空になる (実測: reasoning_tokens=8/10, content="")。この切り詰め
+        ケースをモックし、(1) 安全側の unclear に丸まること
+        (2) 再発防止のため reasoning_effort="low" が実際に送られていること
+        の両方を確認する。"""
+        monkeypatch.setenv("GROQ_API_KEY", "test-key")
+
+        import openai
+
+        captured_kwargs: dict = {}
+
+        def fake_create(**kwargs):
+            captured_kwargs.update(kwargs)
+            msg = type("M", (), {"content": ""})()  # reasoning 切り詰めで空文字
+            return type("Resp", (), {"choices": [type("C", (), {"message": msg})()]})()
+
+        class FakeClient:
+            def __init__(self, **_kw):
+                self.chat = type(
+                    "Chat",
+                    (),
+                    {"completions": type("Comp", (), {"create": staticmethod(fake_create)})()},
+                )()
+
+        monkeypatch.setattr(openai, "OpenAI", FakeClient)
+        assert _llm_judge_page_animals(self._JUDGABLE_HTML) == "unclear"
+        assert captured_kwargs.get("reasoning_effort") == "low"
+        # reasoning + completion (1語の分類結果) 両方に足りるだけの余裕を持たせてあること
+        assert captured_kwargs.get("max_tokens", 0) >= 100
+
     @staticmethod
     def _patch_fake_client(monkeypatch, response_text: str) -> None:
         import openai

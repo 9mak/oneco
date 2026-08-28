@@ -202,7 +202,14 @@ class TextGenerator:
                 {"role": "user", "content": user_prompt},
             ],
             temperature=0.7,
-            max_tokens=400,
+            # openai/gpt-oss-120b は reasoning モデルで、reasoning_effort 未指定
+            # (既定 "medium") だと reasoning トークンだけで max_tokens を使い切り
+            # content が常に空になる (2026-08-28 実測: max_tokens=400 で
+            # reasoning_tokens=398/400, content=""。詳細は振り返りメモ参照)。
+            # "low" に抑えても reasoning は数十トークン発生するため、
+            # reasoning+completion 両方に足りるよう max_tokens も引き上げる。
+            reasoning_effort="low",
+            max_tokens=1500,
             timeout=self._timeout,
         )
         content = resp.choices[0].message.content

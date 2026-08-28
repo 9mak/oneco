@@ -191,6 +191,25 @@ class TestGroqGenerator:
         text = gen.generate(_animal(), platform="threads")
         assert "自治体" in text
 
+    def test_generate_falls_back_when_reasoning_truncates_output(self):
+        """2026-08-27 reviewer 指摘 (PR #294 F-01): openai/gpt-oss-120b は
+        reasoning モデルで、reasoning_effort 未指定 (既定 "medium") だと
+        reasoning トークンだけで max_tokens を使い切り content が常に空になる
+        (実測: max_tokens=400 で reasoning_tokens=398/400, content="",
+        finish_reason="length")。この切り詰めケースをモックし、
+        (1) フォールバック文面へ正しく落ちること
+        (2) 再発防止のため reasoning_effort="low" が実際に送られていること
+        の両方を確認する。"""
+        fake = _FakeGroqClient(return_text="")  # reasoning 切り詰めで空文字
+        gen = TextGenerator(client=fake)
+        text = gen.generate(_animal(), platform="threads")
+
+        assert "自治体" in text
+        call = fake.calls[0]
+        assert call.get("reasoning_effort") == "low"
+        # reasoning + completion 両方に足りるだけの余裕を持たせてあること
+        assert call.get("max_tokens", 0) >= 1000
+
     def test_no_client_uses_fallback(self):
         """client=None なら全件フォールバック (GROQ_API_KEY 未設定環境用)"""
         gen = TextGenerator(client=None)
