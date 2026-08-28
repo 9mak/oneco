@@ -14,6 +14,18 @@
 - PDF テキストは行ごとに走査し「収容日」が現れた行を新ブロック開始とみなす
 - 同一行内に複数フィールドが含まれていても正規表現で個別抽出
 - 2 サイトとも同一テンプレート想定のため単一 adapter で Registry 登録
+
+T066 (2026-08-29 実PDF確認): 実際の PDF (`documents/inu0827.pdf` 等) は
+先頭に「22-3543」のような管理番号が付き、これが 1 頭分のブロック開始になる
+(香川県の「個体管理番号」と同型)。ブロック開始の検出をこの番号にも対応させ、
+`source_url` の安定化 (management_number 優先) に使う。
+実 PDF は 2 段組みで、同じ物理行に 2 頭分のフィールドが横並びで入っている
+(例: `22-3543 市町村名 鉾田市田崎 23-3799 市町村名 茨城町小幡`)。
+本 adapter の正規表現はいずれも `.search()` で行内の最初の一致だけを拾う
+実装のため、右列 (2 頭目) のデータはブロックとして起票されず欠落する
+既知の別問題がある (2026-08-29 実 PDF 検証で 143 頭中 72 頭のみ抽出を確認)。
+これは 2 段組みテーブル抽出の別バグであり T066 のスコープ外
+(source_url 安定化) のため本修正では着手しない。
 """
 
 from __future__ import annotations
@@ -43,6 +55,10 @@ _COLOR_RE = re.compile(r"(?:毛色|色)\s*[:：]?\s*([^\s　]+)")
 _SIZE_RE = re.compile(r"(?:体格|大きさ|体重)\s*[:：]?\s*([^\s　]+)")
 # 「収容場所: ○○市△△町」「発見場所: ○○市」
 _LOCATION_RE = re.compile(r"(?:収容場所|発見場所|保護場所)\s*[:：]?\s*([^\n]+?)(?:\s{2,}|$)")
+# 「22-3543 市町村名 鉾田市田崎」— 実 PDF (T066 確認) ではこれが 1 頭分の
+# ブロック開始になる。「市町村名」の直前という文脈で固定し、本文中の他の
+# 数字 (収容日の年など) を誤って拾わないようにする。
+_MGMT_NUMBER_RE = re.compile(r"(\d{2}-\d{3,6})(?=\s*市町村名)")
 
 
 class PrefIbarakiPdfAdapter(PdfTableAdapter):
@@ -57,10 +73,12 @@ class PrefIbarakiPdfAdapter(PdfTableAdapter):
     def _parse_pdf_text(self, pdf_text: str) -> list[dict]:
         """PDF テキストから動物 dict のリストを抽出する
 
-        ・収容日が現れた行を新しい動物ブロックの開始とみなす
+        ・管理番号 (例: 「22-3543」) が現れた行を新しい動物ブロックの開始と
+          みなす。管理番号が無い旧レイアウトでは収容日をブロック開始とする
+          (香川県 adapter と同じ二段構え。T066)
         ・以降の行から ラベル付きフィールド (種類/性別/年齢/毛色/体格/収容場所)
           を正規表現で取り出す
-        ・次の収容日が現れた時点で前のブロックを確定して dict 化する
+        ・次の管理番号 (または収容日) が現れた時点で前のブロックを確定する
         """
         if not pdf_text:
             return []
@@ -72,30 +90,38 @@ class PrefIbarakiPdfAdapter(PdfTableAdapter):
         lines = [ln.strip() for ln in pdf_text.splitlines() if ln.strip()]
 
         for line in lines:
-            shelter_match = _SHELTER_DATE_RE.search(line)
-            if shelter_match:
-                # 新しい動物ブロックの開始 → 直前ブロックを確定
+            # 実 PDF は管理番号が 1 頭分の先頭に来る (収容日より前)。
+            # こちらを優先してブロックを切る。
+            mgmt_match = _MGMT_NUMBER_RE.search(line)
+            if mgmt_match:
                 if current is not None and self._is_record_valid(current):
                     records.append(current)
+                current = self._new_record()
+                current["management_number"] = mgmt_match.group(1)
+                continue
+
+            shelter_match = _SHELTER_DATE_RE.search(line)
+            if shelter_match:
                 y, mo, d = (
                     shelter_match.group(1),
                     shelter_match.group(2),
                     shelter_match.group(3),
                 )
-                current = {
-                    "species": "",
-                    "sex": "",
-                    "age": "",
-                    "color": "",
-                    "size": "",
-                    "shelter_date": f"{int(y):04d}-{int(mo):02d}-{int(d):02d}",
-                    "location": "",
-                }
+                iso_date = f"{int(y):04d}-{int(mo):02d}-{int(d):02d}"
+                if current is not None and not current.get("shelter_date"):
+                    # 管理番号で開始済みのブロックに収容日を足す
+                    current["shelter_date"] = iso_date
+                else:
+                    # 管理番号を持たない旧レイアウト: 収容日がブロック開始
+                    if current is not None and self._is_record_valid(current):
+                        records.append(current)
+                    current = self._new_record()
+                    current["shelter_date"] = iso_date
                 # 同一行に他フィールドが含まれている場合も後続パターンで拾う
                 # (continue せずに下記の各種マッチへフォールスルー)
 
             if current is None:
-                # 収容日より前の見出し行などはスキップ
+                # 収容日/管理番号より前の見出し行などはスキップ
                 continue
 
             self._extract_field(line, current)
@@ -107,6 +133,20 @@ class PrefIbarakiPdfAdapter(PdfTableAdapter):
         return records
 
     # ─────────────────── ヘルパー ───────────────────
+
+    @staticmethod
+    def _new_record() -> dict:
+        """空の動物レコードを作る"""
+        return {
+            "species": "",
+            "sex": "",
+            "age": "",
+            "color": "",
+            "size": "",
+            "shelter_date": "",
+            "location": "",
+            "management_number": "",
+        }
 
     @staticmethod
     def _extract_field(line: str, record: dict) -> None:
@@ -131,6 +171,25 @@ class PrefIbarakiPdfAdapter(PdfTableAdapter):
         if not record.get("shelter_date"):
             return False
         return any(record.get(k) for k in ("species", "sex", "age", "color", "size", "location"))
+
+    # ─────────────────── source_url (T066) ───────────────────
+
+    def _public_source_url(self, pdf_url: str, idx: int) -> str:
+        """管理番号があれば安定キーとして source_url に使う
+
+        茨城県の PDF ファイル名も自治体側の日次差し替えで毎日変わる
+        (例: `inu0827.pdf` → `inu0828.pdf`)。管理番号 (例: `22-3543`) は
+        自治体が個体ごとに割り振る一意 ID で PDF 差し替えの影響を受けない
+        ため、取得できていればこちらを優先する。取得できない個体 (管理番号
+        の無い旧レイアウトや、2 段組み PDF の右列など) は
+        `_pdf_filename_source_url` の (ファイル名+row) にフォールバックする
+        (このフォールバックはこれまで通り不安定)。
+        """
+        records = self._pdf_cache.get(pdf_url) or []
+        management_number = records[idx].get("management_number", "") if idx < len(records) else ""
+        if management_number:
+            return f"{self.site_config.list_url}#animal={management_number}"
+        return self._pdf_filename_source_url(pdf_url, idx)
 
 
 # ─────────────────── サイト登録 ───────────────────
