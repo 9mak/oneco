@@ -1,0 +1,44 @@
+{
+  "displayName": "oneco-collector 実行失敗 / 実行記録なし",
+  "documentation": {
+    "content": "oneco-collector (Cloud Run Job, asia-northeast1) の夜間収集が失敗した、または想定される時間内に実行完了の記録がありません。\n\n**調査手順**:\n1. Cloud Logging で `resource.type=\"cloud_run_job\" AND resource.labels.job_name=\"oneco-collector\"` を検索し、直近の実行ログを確認する。\n2. `run.googleapis.com/job/completed_execution_count` の `result` ラベルが `failed` の実行を探す（OOM・非ゼロ終了・taskTimeout超過はすべてこの結果に集約される）。\n3. `gcloud run jobs executions list --job=oneco-collector --region=asia-northeast1 --project=oneco-app` で直近の実行一覧と終了理由を確認する。\n4. 「実行記録なし」条件が発火した場合は、Cloud Scheduler `oneco-collector-nightly` が起動できているか（IAM権限・イメージ pull 失敗等）を先に疑う。\n\n背景: T109 (2026-08)。詳細は infra/collector-alerts/README.md を参照。",
+    "mimeType": "text/markdown"
+  },
+  "combiner": "OR",
+  "conditions": [
+    {
+      "displayName": "実行失敗 (OOM・非ゼロ終了・taskTimeout超過等)",
+      "conditionThreshold": {
+        "filter": "resource.type=\"cloud_run_job\" AND resource.label.job_name=\"oneco-collector\" AND metric.type=\"run.googleapis.com/job/completed_execution_count\" AND metric.label.result!=\"succeeded\"",
+        "comparison": "COMPARISON_GT",
+        "thresholdValue": 0,
+        "duration": "0s",
+        "trigger": {
+          "count": 1
+        },
+        "aggregations": [
+          {
+            "alignmentPeriod": "3600s",
+            "perSeriesAligner": "ALIGN_SUM",
+            "crossSeriesReducer": "REDUCE_SUM"
+          }
+        ]
+      }
+    },
+    {
+      "displayName": "25時間以上、実行完了の記録がない（起動できていない疑い）",
+      "conditionAbsent": {
+        "filter": "resource.type=\"cloud_run_job\" AND resource.label.job_name=\"oneco-collector\" AND metric.type=\"run.googleapis.com/job/completed_execution_count\"",
+        "duration": "90000s",
+        "aggregations": [
+          {
+            "alignmentPeriod": "3600s",
+            "perSeriesAligner": "ALIGN_COUNT",
+            "crossSeriesReducer": "REDUCE_SUM"
+          }
+        ]
+      }
+    }
+  ],
+  "enabled": true
+}
