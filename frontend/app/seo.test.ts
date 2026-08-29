@@ -1,6 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+vi.mock('next/font/google', () => ({
+  Geist: () => ({ variable: '--font-geist-sans', className: 'geist-sans' }),
+  Geist_Mono: () => ({ variable: '--font-geist-mono', className: 'geist-mono' }),
+}));
+
+vi.mock('@next/third-parties/google', () => ({
+  GoogleAnalytics: () => null,
+}));
+
 import { metadata as statsMetadata } from './stats/page';
+import { metadata as rootMetadata } from './layout';
 
 /**
  * 2026-06-16 のSEO監査で、(1) /stats が layout の既定 canonical '/' を継承して
@@ -10,6 +20,39 @@ import { metadata as statsMetadata } from './stats/page';
 describe('SEO: canonical 上書き', () => {
   it('/stats は自己URLを canonical に指定する (ホーム継承しない)', () => {
     expect(statsMetadata.alternates?.canonical).toBe('/stats');
+  });
+});
+
+/**
+ * 2026-08-26のSEO監査で、トップページの title デフォルト値が
+ * ブランド名 "oneco" 単体のみで、非ブランド検索語（保護犬・保護猫・里親等）を
+ * 含まず検索流入を取りこぼしている点を検出。再発防止のリグレッションテスト。
+ */
+describe('SEO: title デフォルト値の非ブランド検索語', () => {
+  it('title.default はブランド名単体ではなく保護犬・保護猫・里親を含む', () => {
+    const title = rootMetadata.title;
+    const defaultTitle = typeof title === 'object' && title && 'default' in title ? title.default : undefined;
+    expect(defaultTitle).toBeDefined();
+    expect(defaultTitle).not.toBe('oneco');
+    expect(defaultTitle).toMatch(/保護犬/);
+    expect(defaultTitle).toMatch(/保護猫/);
+    expect(defaultTitle).toMatch(/里親/);
+  });
+});
+
+/**
+ * 2026-08-28のreviewer指摘で、openGraph.title / twitter.title がブランド名
+ * "oneco" 単体のままで title.default と揃っておらず、トップページを
+ * SNSシェアした際のプレビューで非ブランド検索語が露出しない点を検出。
+ * 再発防止のリグレッションテスト。
+ */
+describe('SEO: OGP/Twitter title の非ブランド検索語', () => {
+  it('openGraph.title / twitter.title は title.default と同じ値を持つ', () => {
+    const title = rootMetadata.title;
+    const defaultTitle = typeof title === 'object' && title && 'default' in title ? title.default : undefined;
+    expect(defaultTitle).toBeDefined();
+    expect(rootMetadata.openGraph?.title).toBe(defaultTitle);
+    expect(rootMetadata.twitter?.title).toBe(defaultTitle);
   });
 });
 
