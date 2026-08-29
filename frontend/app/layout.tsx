@@ -24,13 +24,14 @@ const geistMono = Geist_Mono({
 
 const SITE_URL = getSiteUrl();
 const SITE_NAME = 'oneco';
+const SITE_TITLE_DEFAULT = 'oneco - 全国の保護犬・保護猫を探せる里親募集ポータル';
 const SITE_DESCRIPTION =
   '全国の自治体に保護されている犬・猫の情報を一元化したポータルサイト。譲渡対象動物・迷子情報を都道府県別・条件別に検索できます。';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: SITE_NAME,
+    default: SITE_TITLE_DEFAULT,
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
@@ -45,12 +46,12 @@ export const metadata: Metadata = {
     locale: 'ja_JP',
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: SITE_NAME,
+    title: SITE_TITLE_DEFAULT,
     description: SITE_DESCRIPTION,
   },
   twitter: {
     card: 'summary_large_image',
-    title: SITE_NAME,
+    title: SITE_TITLE_DEFAULT,
     description: SITE_DESCRIPTION,
   },
   robots: {
