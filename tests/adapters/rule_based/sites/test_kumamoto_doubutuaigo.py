@@ -307,9 +307,16 @@ class TestKumamotoDoubutuAigoAdapterListExtraction:
         # 一覧ページの取得は 1 ページ目 + 2 ページ目のちょうど 2 回
         assert len(fetched) == 2
         assert "page:2" in fetched[1]
+        # 2 ページ目に next が無く正常終端した = 打ち切りではない (T059)
+        assert adapter.list_truncated is False
 
-    def test_fetch_animal_list_pagination_stops_on_visited_page(self):
-        """next が既訪ページを指しても無限ループしない"""
+    def test_fetch_animal_list_pagination_stops_on_visited_page(self, caplog):
+        """next が既訪ページを指しても無限ループしない
+
+        循環検知による打ち切りは、上限到達と同じく prune を止める安全弁
+        シグナル (list_truncated) を立て、必ず警告ログを残す必要がある (T059)。
+        従来はここが無警告の silent break だった。
+        """
         looping = """
         <html><body>
         <div class="animal-list"><a href="/animals/detail/animal_id:201">a</a></div>
@@ -319,11 +326,17 @@ class TestKumamotoDoubutuAigoAdapterListExtraction:
         </body></html>
         """
         adapter = KumamotoDoubutuAigoAdapter(_site_center_dog())
-        with patch.object(adapter, "_http_get", return_value=looping) as mock_get:
+        with (
+            patch.object(adapter, "_http_get", return_value=looping) as mock_get,
+            caplog.at_level("WARNING"),
+        ):
             result = adapter.fetch_animal_list()
         assert len(result) == 1
         # next が list_url 自身を指すため、既訪検知により 2 ページ目の取得は走らない
         assert mock_get.call_count == 1
+        # 循環検知による打ち切り = 未取得ページが残り得るため prune スキップ対象
+        assert adapter.list_truncated is True
+        assert any("循環" in rec.message for rec in caplog.records)
 
     def test_fetch_animal_list_warns_when_page_cap_reached(self, caplog):
         """上限ページ数に達したら取得を打ち切り、warning を残す"""
@@ -349,6 +362,8 @@ class TestKumamotoDoubutuAigoAdapterListExtraction:
         assert mock_get.call_count == KumamotoDoubutuAigoAdapter.MAX_LIST_PAGES
         assert len(result) == KumamotoDoubutuAigoAdapter.MAX_LIST_PAGES
         assert any("上限" in rec.message for rec in caplog.records)
+        # 上限到達による打ち切り = 未取得ページが残り得るため prune スキップ対象 (T059)
+        assert adapter.list_truncated is True
 
 
 class TestKumamotoDoubutuAigoAdapterDetailExtraction:

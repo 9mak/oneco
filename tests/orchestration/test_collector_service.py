@@ -24,6 +24,11 @@ class TestCollectorService:
         adapter = Mock()
         adapter.prefecture_code = "39"
         adapter.municipality_name = "高知県"
+        # Mock() は未設定属性への参照でも自動生成した子 Mock (truthy) を返すため、
+        # list_truncated (T059) を明示的に False で初期化しないと
+        # `getattr(adapter, "list_truncated", False)` が常に truthy になり
+        # _collection_complete が意図せず False になってしまう。
+        adapter.list_truncated = False
         return adapter
 
     @pytest.fixture
@@ -316,6 +321,39 @@ class TestCollectorService:
         assert len(result) == 2  # 失敗1件はスキップ
         assert collector_service._collection_complete is False
 
+    def test_collection_incomplete_when_adapter_list_truncated(
+        self, collector_service, mock_adapter, sample_animal_data
+    ):
+        """adapter.list_truncated=True (一覧ページ送りの打ち切り) の run も
+        _collection_complete=False（prune 禁止）。soft-stop や detail 失敗と
+        違い一覧側のシグナルだが、同じ安全弁として合流させる (T059)。
+        """
+        urls = [(f"https://x/{i}", "adoption") for i in range(3)]
+        mock_adapter.fetch_animal_list.return_value = urls
+        mock_adapter.list_truncated = True
+        mock_adapter.extract_animal_details.return_value = Mock()
+        mock_adapter.normalize.return_value = sample_animal_data[0]
+
+        result = collector_service._collect_with_retry()
+        assert len(result) == 3  # detail 抽出自体はすべて成功
+        assert collector_service._collection_complete is False
+
+    def test_collection_complete_when_adapter_has_no_list_truncated_attr(
+        self, collector_service, mock_adapter, sample_animal_data
+    ):
+        """list_truncated 属性を持たない adapter (テストダブル等) でも
+        従来どおり動作する (getattr の既定 False にフォールバック)。
+        """
+        urls = [(f"https://x/{i}", "adoption") for i in range(3)]
+        mock_adapter.fetch_animal_list.return_value = urls
+        mock_adapter.extract_animal_details.return_value = Mock()
+        mock_adapter.normalize.return_value = sample_animal_data[0]
+        del mock_adapter.list_truncated  # Mock からも属性を削除して未定義を再現
+
+        result = collector_service._collect_with_retry()
+        assert len(result) == 3
+        assert collector_service._collection_complete is True
+
     def test_collect_with_retry_retries_on_network_error(
         self, collector_service, mock_adapter, sample_animal_data
     ):
@@ -503,6 +541,11 @@ class TestCollectorServiceWithRepository:
         adapter = Mock()
         adapter.prefecture_code = "39"
         adapter.municipality_name = "高知県"
+        # Mock() は未設定属性への参照でも自動生成した子 Mock (truthy) を返すため、
+        # list_truncated (T059) を明示的に False で初期化しないと
+        # `getattr(adapter, "list_truncated", False)` が常に truthy になり
+        # _collection_complete が意図せず False になってしまう。
+        adapter.list_truncated = False
         return adapter
 
     @pytest.fixture
@@ -673,6 +716,10 @@ class TestCollectorServiceImageURLHashRecording:
         adapter = Mock()
         adapter.prefecture_code = "39"
         adapter.municipality_name = "高知県"
+        # Mock() は未設定属性への参照でも自動生成した子 Mock (truthy) を返すため、
+        # list_truncated (T059) を明示的に False で初期化する (詳細は上記
+        # TestCollectorService.mock_adapter のコメント参照)。
+        adapter.list_truncated = False
         return adapter
 
     @pytest.fixture
@@ -863,6 +910,11 @@ class TestCollectorServiceWithNotificationManager:
         adapter = Mock()
         adapter.prefecture_code = "39"
         adapter.municipality_name = "高知県"
+        # Mock() は未設定属性への参照でも自動生成した子 Mock (truthy) を返すため、
+        # list_truncated (T059) を明示的に False で初期化しないと
+        # `getattr(adapter, "list_truncated", False)` が常に truthy になり
+        # _collection_complete が意図せず False になってしまう。
+        adapter.list_truncated = False
         return adapter
 
     @pytest.fixture
@@ -1081,6 +1133,10 @@ class TestCollectorServiceLlmSkip:
         adapter = Mock()
         adapter.prefecture_code = "39"
         adapter.municipality_name = "高知県"
+        # Mock() は未設定属性への参照でも自動生成した子 Mock (truthy) を返すため、
+        # list_truncated (T059) を明示的に False で初期化する (詳細は上記
+        # TestCollectorService.mock_adapter のコメント参照)。
+        adapter.list_truncated = False
         return adapter
 
     @pytest.fixture

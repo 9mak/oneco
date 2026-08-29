@@ -27,6 +27,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any, ClassVar
 
 from bs4 import BeautifulSoup
@@ -35,6 +36,8 @@ from ....domain.models import RawAnimalData
 from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..wordpress_list import FieldSpec, WordPressListAdapter
+
+logger = logging.getLogger(__name__)
 
 
 class HyogoDouaiAdapter(WordPressListAdapter):
@@ -119,6 +122,14 @@ class HyogoDouaiAdapter(WordPressListAdapter):
 
         サマリーテーブルそのものが見つからない (テンプレート崩壊)
         場合は ParsingError を出す。
+
+        peek 中の個別 detail 取得失敗 (ネットワークエラー等) は、従来は
+        サイト全体の異常ではないとみなし無警告でスキップしていたが、
+        その支所に実在する動物を確認できないまま除外することになり、
+        一覧のページ送り打ち切りと同型の掲載漏れリスクがある (T059)。
+        検知したら `self.list_truncated` を立てて必ずログに残す。
+        CollectorService はこのフラグを見て prune_disappeared (消滅同期
+        削除) をスキップする。
         """
         html = self._http_get(self.site_config.list_url)
         soup = BeautifulSoup(html, "html.parser")
@@ -151,15 +162,26 @@ class HyogoDouaiAdapter(WordPressListAdapter):
         category = self.site_config.category
         # peek 結果を per-run キャッシュ (run 毎に reset)
         self._detail_html_cache = {}
+        truncated = False
         for url in candidates:
             try:
                 detail_html = self._http_get(url)
-            except Exception:
-                # 個別 detail の取得失敗はサイト全体の異常ではないのでスキップ
+            except Exception as e:
+                # 個別 detail の取得失敗はサイト全体の異常ではないためサイトごと
+                # 例外にはしないが、この支所に実在する動物を確認できないまま
+                # 除外することになるため、一覧の打ち切りと同様に扱う。
+                truncated = True
+                logger.warning(
+                    "[%s] detail ページの peek に失敗しました (skip): %s",
+                    self.site_config.name,
+                    url,
+                    extra={"error": str(e)},
+                )
                 continue
             if self._has_animal_data(detail_html):
                 self._detail_html_cache[url] = detail_html
                 valid.append((url, category))
+        self.list_truncated = truncated
         return valid
 
     def _has_animal_data(self, html: str) -> bool:

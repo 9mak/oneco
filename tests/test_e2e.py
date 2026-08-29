@@ -287,6 +287,11 @@ class TestE2ECollectorServiceFlow:
         adapter = Mock()
         adapter.prefecture_code = "39"
         adapter.municipality_name = "高知県"
+        # Mock() は未設定属性への参照でも自動生成した子 Mock (truthy) を返すため、
+        # list_truncated (T059) を明示的に False で初期化しないと
+        # `getattr(adapter, "list_truncated", False)` が常に truthy になり
+        # _collection_complete が意図せず False になってしまう。
+        adapter.list_truncated = False
 
         # URL-カテゴリのタプルリストを返す
         adapter.fetch_animal_list.return_value = [
