@@ -577,19 +577,23 @@ sites:
   # ===================================================================
 
   # 【茨城県】日次 PDF 公表
+  # pdf_link_pattern は旧 "kouhyou" 部分文字列マッチ → 実サイトの現在の
+  # ファイル名 (documents/inu0827.pdf 等) と一致せず consecutive_zero_runs
+  # が64まで積み上がっていたため T117 で更新 (pref_ibaraki_pdf.py の
+  # PDF_LINK_SELECTOR と同一に保つ)
   - name: "茨城県（収容中の動物たち）"
     prefecture: "茨城県"
     prefecture_code: "08"
     list_url: "https://www.pref.ibaraki.jp/hokenfukushi/doshise/hogo/syuuyou.html"
     category: "sheltered"
-    pdf_link_pattern: "a[href*='kouhyou'][href$='.pdf']"
+    pdf_link_pattern: "a[href*='documents/inu'][href$='.pdf'], a[href*='documents/neko'][href$='.pdf']"
 
   - name: "茨城県（迷い犬・猫情報）"
     prefecture: "茨城県"
     prefecture_code: "08"
     list_url: "https://www.pref.ibaraki.jp/hokenfukushi/doshise/hogo/mayoiinuneko.html"
     category: "lost"
-    pdf_link_pattern: "a[href*='kouhyou'][href$='.pdf']"
+    pdf_link_pattern: "a[href*='documents/inu'][href$='.pdf'], a[href*='documents/neko'][href$='.pdf']"
 
   # 【栃木県動物愛護指導センター】専用ドメイン、静的 HTML
   - name: "栃木県動物愛護指導センター（保護動物）"

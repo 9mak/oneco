@@ -6,8 +6,8 @@
 - 「収容中の動物たち」 (sheltered)
 - 「迷い犬・猫情報」 (lost)
 
-いずれも一覧 HTML から `a[href*='kouhyou'][href$='.pdf']` で PDF リンクを
-抽出し、各 PDF に複数頭の動物情報が表または箇条書き形式で記載される。
+いずれも一覧 HTML から PDF リンクを抽出し、各 PDF に複数頭の動物情報が
+表または箇条書き形式で記載される。
 
 実装方針:
 - `PdfTableAdapter` を継承し、`PDF_LINK_SELECTOR` と `_parse_pdf_text` を実装
@@ -19,22 +19,37 @@ T066 (2026-08-29 実PDF確認): 実際の PDF (`documents/inu0827.pdf` 等) は
 先頭に「22-3543」のような管理番号が付き、これが 1 頭分のブロック開始になる
 (香川県の「個体管理番号」と同型)。ブロック開始の検出をこの番号にも対応させ、
 `source_url` の安定化 (management_number 優先) に使う。
-実 PDF は 2 段組みで、同じ物理行に 2 頭分のフィールドが横並びで入っている
-(例: `22-3543 市町村名 鉾田市田崎 23-3799 市町村名 茨城町小幡`)。
-本 adapter の正規表現はいずれも `.search()` で行内の最初の一致だけを拾う
-実装のため、右列 (2 頭目) のデータはブロックとして起票されず欠落する
-既知の別問題がある (2026-08-29 実 PDF 検証で 143 頭中 72 頭のみ抽出を確認)。
-これは 2 段組みテーブル抽出の別バグであり T066 のスコープ外
-(source_url 安定化) のため本修正では着手しない。
+
+T117 (2026-08-29 実PDF確認): 実 PDF は 1 ページに動物情報が左右 2 列で
+並ぶ2段組みレイアウト。基底クラス (`PdfTableAdapter`) の既定実装
+(`page.extract_text()` をページ丸ごと呼ぶ) だと、pdfplumber が座標順に
+文字列を連結する際に左列と右列の行が交互に混ざり、1 物理行に2頭分の
+フィールド (管理番号や収容日が2つ等。例:
+`22-3543 市町村名 鉾田市田崎 23-3799 市町村名 茨城町小幡`) が同居して
+しまう。本 adapter の正規表現はいずれも `.search()` で行内の最初の一致
+だけを拾う実装のため、右列 (2頭目) が丸ごと欠落していた (実測: 143頭中
+72頭のみ抽出)。T066時点ではこれを「2段組みテーブル抽出の別バグ・スコープ
+外」としていたが、`_extract_pdf_text` をオーバーライドし、ページを左右
+半分に `crop()` してから個別に `extract_text()` することで列を分離して
+解消した。列分離後のテキストは1段組みと同じ構造になるため
+`_parse_pdf_text` 側は変更不要 (T066 の管理番号優先ブロック検出もそのまま
+両列に効く)。
 """
 
 from __future__ import annotations
 
+import io
 import re
 from typing import ClassVar
 
+from ...municipality_adapter import NetworkError, ParsingError
 from ..pdf_table import PdfTableAdapter
 from ..registry import SiteAdapterRegistry
+
+try:
+    import pdfplumber
+except ImportError:  # pragma: no cover
+    pdfplumber = None  # type: ignore[assignment]
 
 # ─────────────────── パース用パターン ───────────────────
 
@@ -65,8 +80,49 @@ class PrefIbarakiPdfAdapter(PdfTableAdapter):
     """茨城県 (収容中の動物たち / 迷い犬・猫情報) PDF 用 rule-based adapter"""
 
     # 一覧ページから PDF リンクを抽出するセレクタ
-    # sites.yaml の pdf_link_pattern と同一: kouhyou を含む .pdf リンク
-    PDF_LINK_SELECTOR: ClassVar[str] = "a[href*='kouhyou'][href$='.pdf']"
+    # sites.yaml の pdf_link_pattern と同一。
+    #
+    # 旧セレクタ `a[href*='kouhyou'][href$='.pdf']` は実サイトの現在の
+    # ファイル名 (`documents/inu0827.pdf` / `documents/neko0827.pdf`) と
+    # 一致せず、`data/site_baselines.yaml` 上で
+    # 「茨城県（収容中の動物たち）」「茨城県（迷い犬・猫情報）」がいずれも
+    # consecutive_zero_runs=64 (収集のたび PDF リンク 0 件) になっていた
+    # ことを実測で確認した (T117 調査時点)。犬猫別ファイル名の "inu"/"neko"
+    # は日付部分 (MMDD) が変わっても残る安定した部分文字列のため、これを
+    # 基準にする。年間集計 PDF (`r7syuuyousuu.pdf` 等) は対象外にしたいため
+    # `kouhyou` 同様に部分文字列マッチを使う。
+    PDF_LINK_SELECTOR: ClassVar[str] = (
+        "a[href*='documents/inu'][href$='.pdf'], a[href*='documents/neko'][href$='.pdf']"
+    )
+
+    # ─────────────────── _extract_pdf_text 実装 (2段組み対応) ───────────────────
+
+    def _extract_pdf_text(self, pdf_bytes: bytes) -> str:
+        """PDF テキストを列ごとに分割してから抽出する
+
+        実 PDF は1ページに動物情報が左右2列で並ぶ2段組みレイアウト。
+        ページ中央 (`page.width / 2`) で左右に `crop()` してからそれぞれ
+        `extract_text()` することで列を分離する (実測で列間に十分な余白が
+        あり、単語がまたがって欠けることは無いことを確認済み)。
+        列を分離した状態で連結するため、基底クラスと違い1ページにつき
+        テキストブロックが2つ (左列・右列) 生成される。
+        """
+        if pdfplumber is None:  # pragma: no cover
+            raise NetworkError("pdfplumber が利用不可")
+        try:
+            with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+                blocks: list[str] = []
+                for page in pdf.pages:
+                    mid_x = page.width / 2
+                    left = page.crop((0, 0, mid_x, page.height))
+                    right = page.crop((mid_x, 0, page.width, page.height))
+                    for column in (left, right):
+                        text = column.extract_text()
+                        if text:
+                            blocks.append(text)
+                return "\n\n".join(blocks)
+        except Exception as e:
+            raise ParsingError(f"PDF テキスト抽出失敗: {e}") from e
 
     # ─────────────────── _parse_pdf_text 実装 ───────────────────
 
@@ -180,9 +236,11 @@ class PrefIbarakiPdfAdapter(PdfTableAdapter):
         茨城県の PDF ファイル名も自治体側の日次差し替えで毎日変わる
         (例: `inu0827.pdf` → `inu0828.pdf`)。管理番号 (例: `22-3543`) は
         自治体が個体ごとに割り振る一意 ID で PDF 差し替えの影響を受けない
-        ため、取得できていればこちらを優先する。取得できない個体 (管理番号
-        の無い旧レイアウトや、2 段組み PDF の右列など) は
-        `_pdf_filename_source_url` の (ファイル名+row) にフォールバックする
+        ため、取得できていればこちらを優先する。T117 で2段組み PDF の
+        右列 (2頭目) も左列と同様に正しく管理番号を取得できるようになった
+        ため、取得できない個体は基本的に管理番号の無い旧レイアウトのみに
+        限られる。それでも取得できない場合は `_pdf_filename_source_url`
+        の (ファイル名+row) にフォールバックする
         (このフォールバックはこれまで通り不安定)。
         """
         records = self._pdf_cache.get(pdf_url) or []
