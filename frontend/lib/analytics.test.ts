@@ -73,4 +73,46 @@ describe('analytics', () => {
       trackExternalLinkClick({ linkUrl: 'https://example.gov' }),
     ).not.toThrow();
   });
+
+  it('GA Measurement ID 未設定なら trackPhoneClick は sendGAEvent を呼ばない', async () => {
+    delete process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+    const { trackPhoneClick } = await reload();
+    trackPhoneClick({ phone: '088-831-7939' });
+    expect(sendGAEventMock).not.toHaveBeenCalled();
+  });
+
+  it('Measurement ID 設定済みなら contact_phone_click を sendGAEvent に渡す', async () => {
+    process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID = 'G-TEST';
+    const { trackPhoneClick } = await reload();
+    trackPhoneClick({
+      phone: '088-831-7939',
+      prefecture: '高知県',
+      animalId: 'abc',
+    });
+    expect(sendGAEventMock).toHaveBeenCalledWith('event', 'contact_phone_click', {
+      phone: '088-831-7939',
+      prefecture: '高知県',
+      animal_id: 'abc',
+    });
+  });
+
+  it('trackPhoneClick は undefined パラメータを送信ペイロードから除外する', async () => {
+    process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID = 'G-TEST';
+    const { trackPhoneClick } = await reload();
+    trackPhoneClick({ phone: '088-831-7939' });
+    expect(sendGAEventMock).toHaveBeenCalledWith('event', 'contact_phone_click', {
+      phone: '088-831-7939',
+    });
+  });
+
+  it('trackPhoneClick は sendGAEvent が throw しても黙殺する', async () => {
+    process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID = 'G-TEST';
+    sendGAEventMock.mockImplementation(() => {
+      throw new Error('GA down');
+    });
+    const { trackPhoneClick } = await reload();
+    expect(() =>
+      trackPhoneClick({ phone: '088-831-7939' }),
+    ).not.toThrow();
+  });
 });

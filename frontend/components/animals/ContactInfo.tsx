@@ -6,6 +6,8 @@
 
 'use client';
 
+import { trackPhoneClick } from '@/lib/analytics';
+
 interface ContactInfoProps {
   /** 収容場所 */
   location: string;
@@ -13,9 +15,23 @@ interface ContactInfoProps {
   phone: string | null;
   /** カテゴリ ("adoption": 譲渡対象, "lost": 迷子, "sheltered": 収容中) */
   category: 'adoption' | 'lost' | 'sheltered';
+  /** 計測用: 動物の都道府県 */
+  prefecture?: string;
+  /** 計測用: 動物 ID */
+  animalId?: string;
 }
 
-export function ContactInfo({ location, phone, category }: ContactInfoProps) {
+export function ContactInfo({
+  location,
+  phone,
+  category,
+  prefecture,
+  animalId,
+}: ContactInfoProps) {
+  const handlePhoneClick = () => {
+    if (!phone) return;
+    trackPhoneClick({ phone, prefecture, animalId });
+  };
   // カテゴリ別案内文
   const categoryMessage = {
     adoption: '譲渡についてはお電話でお問い合わせください',
@@ -42,6 +58,7 @@ export function ContactInfo({ location, phone, category }: ContactInfoProps) {
           <dd>
             <a
               href={`tel:${phone}`}
+              onClick={handlePhoneClick}
               className="text-base text-[var(--color-primary-700)] hover:text-[var(--color-primary-800)] underline focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary-500)] rounded"
             >
               {phone}
