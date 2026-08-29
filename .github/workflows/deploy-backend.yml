@@ -52,6 +52,17 @@ permissions:
   contents: read
   id-token: write
 
+# 同一ワークフローの多重実行を直列化する (deploy-collector.yml と同型)。
+# 2026-08-07 に PR を数秒差で 3 件連続マージした際、本ワークフローが並行実行され
+# 最古コミットのビルドが後勝ちでデプロイされ、さらに alembic upgrade head の並行
+# 実行で DuplicatePreparedStatementError が発生した (T040)。
+# cancel-in-progress は false にする: true にすると進行中のデプロイ (Cloud Run へ
+# の反映や alembic migration) を中断してしまい、中途半端な状態が残るリスクがある。
+# 代わりにキューイングして直列化し、後続の push は先行デプロイの完了を待つ。
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: false
+
 env:
   GCP_REGION: ${{ vars.GCP_REGION || 'asia-northeast1' }}
   GCP_AR_REPO: ${{ vars.GCP_AR_REPO || 'oneco' }}
