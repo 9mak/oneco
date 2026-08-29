@@ -40,8 +40,11 @@ _SHELTER_DATE_WAREKI_RE = re.compile(
 # 令和元年 = 1<<西暦 2019 年。令和 N 年 = 2018 + N。
 _REIWA_EPOCH = 2018
 
-# 「個体管理番号 2630166」— 実 PDF ではこれが 1 頭分のブロック開始になる。
-_MGMT_NUMBER_RE = re.compile(r"個体管理番号\s*[:：]?\s*([A-Za-z0-9\-]+)")
+# 「個体管理番号 2630166」「管理番号 2620063」— 実 PDF ではこれが 1 頭分の
+# ブロック開始になる。事務所によりラベル表記が割れる (T066 で実PDF確認: 中讃は
+# 「個体管理番号」、東讃・西讃は「個体」を付けない「管理番号」)。
+# 「個体」を任意にして両方拾う。
+_MGMT_NUMBER_RE = re.compile(r"(?:個体)?管理番号\s*[:：]?\s*([A-Za-z0-9\-]+)")
 # 「動物の種類 犬 種類 雑種 2～3週齢」の「種類 雑種」部分 (品種)。
 # 「動物の種類」に先に食われないよう、直前が「物の」でないことを要求する。
 _BREED_RE = re.compile(r"(?<!動物の)種類\s*[:：]?\s*([^\s　]+)")
@@ -192,6 +195,30 @@ class PrefKagawaPdfAdapter(PdfTableAdapter):
         if valid and not record.get("species"):
             record["species"] = "その他"
         return valid
+
+    # ─────────────────── source_url (T066) ───────────────────
+
+    def _public_source_url(self, pdf_url: str, idx: int) -> str:
+        """個体管理番号があれば安定キーとして source_url に使う
+
+        T022 の既定 (`<list_url>#pdf=<ファイル名>&row=N`) は PDF ファイル名を
+        一意性の根拠にしていたが、香川県の PDF は自治体側の日次差し替えで
+        ファイル名自体が毎日変わる (例: `20260827.pdf` → `20260828.pdf`)。
+        そのため同一個体でも収容が続く限り毎日 source_url が変わり、
+        `diff_detector` が「別個体の新規登録」として delete+insert してしまう
+        (2026-08-26 監査で 86 頭中 68 頭が汚染継続を確認)。
+
+        個体管理番号は自治体が個体ごとに割り振る一意 ID で PDF 差し替えの
+        影響を受けないため、取得できていればこちらを優先する。取得できない
+        個体 (レイアウト崩れ等で `_MGMT_NUMBER_RE` が拾えなかった場合) は
+        `_pdf_filename_source_url` の (ファイル名+row) にフォールバックする
+        (このフォールバックはこれまで通り不安定)。
+        """
+        records = self._pdf_cache.get(pdf_url) or []
+        management_number = records[idx].get("management_number", "") if idx < len(records) else ""
+        if management_number:
+            return f"{self.site_config.list_url}#animal={management_number}"
+        return self._pdf_filename_source_url(pdf_url, idx)
 
 
 # ─────────────────── サイト登録 ───────────────────

@@ -263,6 +263,77 @@ class TestNormalize:
         assert hasattr(normalized, "species")
 
 
+# ─────────────────── source_url 安定性テスト (T066) ───────────────────
+
+
+class TestStableSourceUrl:
+    """個体管理番号ベースの source_url が PDF ファイル名の変化に影響されないこと
+
+    香川県の PDF は自治体側の日次差し替えでファイル名自体が毎日変わる
+    (例: 20260827.pdf → 20260828.pdf)。T022 の (ファイル名+row) 方式では
+    同一個体でも収容が続く限り毎日 source_url が変わってしまうため、
+    個体管理番号を安定キーとして使う (2026-08-26 監査で 86 頭中 68 頭が
+    汚染継続していたことを受けた修正)。
+    """
+
+    def test_source_url_uses_management_number_when_available(self):
+        """個体管理番号があれば `#animal=<番号>` 形式の source_url になる"""
+        adapter = PrefKagawaPdfAdapter(_site())
+
+        with (
+            patch.object(adapter, "_http_get", return_value=_LIST_HTML),
+            patch.object(adapter, "_download_pdf", return_value=b"PDF"),
+            patch.object(adapter, "_extract_pdf_text", return_value=_REAL_PDF_TEXT),
+        ):
+            urls = adapter.fetch_animal_list()
+            first_url, category = urls[0]
+            raw = adapter.extract_animal_details(first_url, category=category)
+
+        assert raw.source_url == (adapter.site_config.list_url + "#animal=2630166")
+
+    def test_source_url_survives_pdf_filename_change(self):
+        """同一個体は PDF ファイル名 (差し替え) が変わっても同じ source_url を維持する
+
+        自治体側の日次差し替えで PDF ファイル名が変わっても、抽出される
+        個体管理番号は同一個体である限り変わらない想定のため、
+        source_url も変わらない (ファイル名/URL自体はキーに使わない)。
+        """
+        adapter = PrefKagawaPdfAdapter(_site())
+        records = adapter._parse_pdf_text(_REAL_PDF_TEXT)
+
+        adapter._pdf_cache["https://www.pref.kagawa.lg.jp/documents/375/20260827.pdf"] = records
+        url_before = adapter._public_source_url(
+            "https://www.pref.kagawa.lg.jp/documents/375/20260827.pdf", 0
+        )
+        adapter._pdf_cache = {}
+        adapter._pdf_cache["https://www.pref.kagawa.lg.jp/documents/375/20260828.pdf"] = records
+        url_after = adapter._public_source_url(
+            "https://www.pref.kagawa.lg.jp/documents/375/20260828.pdf", 0
+        )
+
+        assert url_before != adapter.site_config.list_url  # そもそも組み立てられている
+        assert "20260827.pdf" not in url_before
+        assert "20260828.pdf" not in url_after
+        assert url_before == url_after == adapter.site_config.list_url + "#animal=2630166"
+
+    def test_source_url_falls_back_to_filename_when_no_management_number(self):
+        """個体管理番号が取れない個体は従来の (ファイル名+row) にフォールバックする"""
+        adapter = PrefKagawaPdfAdapter(_site())
+
+        with (
+            patch.object(adapter, "_http_get", return_value=_LIST_HTML),
+            patch.object(adapter, "_download_pdf", return_value=b"PDF"),
+            patch.object(adapter, "_extract_pdf_text", return_value=_PDF_TEXT_TWO_ANIMALS),
+        ):
+            urls = adapter.fetch_animal_list()
+            first_url, category = urls[0]
+            raw = adapter.extract_animal_details(first_url, category=category)
+
+        assert raw.source_url.startswith(adapter.site_config.list_url + "#pdf=")
+        assert raw.source_url.endswith("&row=0")
+        assert "#animal=" not in raw.source_url
+
+
 # 実 PDF (中讃保健所 r8-7-31.pdf / 2026-08-03 取得) の pdfplumber 抽出結果。
 # 上の合成データと違い、実物は
 #   - 見出しが「収容日時」で日付が **和暦**
@@ -366,6 +437,26 @@ class TestRealPdfLayout:
         # 「掲載開始： 令和8年8月1日」等が動物として混入していれば 3 件を超える
         assert len(records) == 3
         assert all(r["management_number"] for r in records)
+
+    def test_extracts_management_number_without_kotai_prefix(self):
+        """「個体」の付かない「管理番号」表記でも抽出できる (T066)
+
+        2026-08-29 に東讃・西讃の実 PDF を確認すると「個体管理番号」ではなく
+        「管理番号」表記だった (中讃のみ「個体管理番号」)。事務所によって
+        ラベル表記が割れているため両対応が必要。
+        """
+        text = """管理番号 2620063
+収容日時 令和8年8月27日 9:00
+引取り場所 さぬき市 志度
+動物の種類 犬 種類 雑種 8歳齢超
+毛色 茶 性別 メス 体格 中
+"""
+        adapter = PrefKagawaPdfAdapter(_site())
+        records = adapter._parse_pdf_text(text)
+
+        assert len(records) == 1
+        assert records[0]["management_number"] == "2620063"
+        assert records[0]["shelter_date"] == "2026-08-27"
 
     def test_species_falls_back_to_other_when_unknown(self):
         """species を特定できない行でも空文字のままにしない
