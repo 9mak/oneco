@@ -16,6 +16,7 @@ from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.pref_kyoto import (
     PrefKyotoAdapter,
 )
+from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
 
 
@@ -117,6 +118,59 @@ class TestPrefKyotoAdapter:
             PrefKyotoAdapter._infer_species_from_site_name("京都府 山城南保健所（飼い主不明動物）")
             == ""
         )
+
+    def test_extract_animal_details_from_synthetic_table(self):
+        """データ行入りテーブルがある場合に RawAnimalData を構築できる
+
+        実フィクスチャは 0 件状態のため (T114 監査時点でこのファイルには
+        extract_animal_details を一度も呼ぶテストが無かった)、抽出ロジック
+        および normalize() 経由の変換を検証する synthetic HTML を追加する。
+        """
+        html = """
+        <html><body>
+          <div id="tmp_contents">
+            <h1>迷子犬情報</h1>
+            <table>
+              <tr><th>種類</th><td>柴犬</td></tr>
+              <tr><th>毛色</th><td>茶</td></tr>
+              <tr><th>性別</th><td>オス</td></tr>
+              <tr><th>体格</th><td>中</td></tr>
+              <tr><th>年齢</th><td>2歳</td></tr>
+              <tr><th>保護日</th><td>令和8年5月1日</td></tr>
+              <tr><th>保護場所</th><td>宇治市</td></tr>
+            </table>
+          </div>
+        </body></html>
+        """
+        adapter = PrefKyotoAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            assert len(urls) == 1
+            raw = adapter.extract_animal_details(urls[0][0], category=urls[0][1])
+
+        assert isinstance(raw, RawAnimalData)
+        # species はサイト名 (迷子犬) から推定される (テーブル値の「柴犬」は不使用)
+        assert raw.species == "犬"
+        assert raw.sex == "オス"
+        assert raw.color == "茶"
+        assert raw.size == "中"
+        assert raw.age == "2歳"
+        assert raw.shelter_date == "令和8年5月1日"
+        assert raw.location == "宇治市"
+        assert raw.category == "lost"
+
+        # normalize() 経由でも主要フィールドが期待通りに変換されること
+        # (T042/T114: raw のみの確認では normalize 段の退行を検知できない)。
+        # 実際に adapter.normalize() を実行して確認した値: sex "オス"→"男の子"、
+        # size "中"→"中型"、age "2歳"→24ヶ月、
+        # shelter_date "令和8年5月1日"→date(2026, 5, 1)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.species == "犬"
+        assert animal_data.sex == "男の子"
+        assert animal_data.size == "中型"
+        assert animal_data.age_months == 24
+        assert animal_data.shelter_date.isoformat() == "2026-05-01"
+        assert animal_data.location == "宇治市"
 
     def test_all_five_sites_registered(self):
         """5 つの京都府サイト名すべてが Registry に登録されている

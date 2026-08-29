@@ -163,6 +163,8 @@ class TestHyogoDouaiAdapter:
             assert u.startswith("https://hyogo-douai.sakura.ne.jp/")
         for _, cat in result:
             assert cat == "sheltered"
+        # peek が全件成功しているので打ち切りではない (T059)
+        assert adapter.list_truncated is False
 
     def test_fetch_animal_list_skips_detail_without_animal_data(self, fixture_html):
         """detail ページに動物個別データが無い (真の 0 件) link は除外される
@@ -180,6 +182,43 @@ class TestHyogoDouaiAdapter:
             result = adapter.fetch_animal_list()
 
         assert result == [], "全 detail が空ならば結果も空 (真の 0 件)"
+        # peek 自体は成功しており「動物データが無い」だけなので打ち切りではない (T059)
+        assert adapter.list_truncated is False
+
+    def test_fetch_animal_list_marks_truncated_when_detail_peek_fails(self, fixture_html, caplog):
+        """detail peek が失敗した候補は、従来は無警告でスキップされていた (T059)
+
+        peek 失敗はその支所に実在する動物を確認できないまま除外することに
+        なり、一覧ページ送りの打ち切りと同型の掲載漏れリスクがある。
+        list_truncated を立てて必ず警告ログを残し、CollectorService 側で
+        prune_disappeared をスキップさせる必要がある。
+        """
+        from data_collector.adapters.municipality_adapter import NetworkError
+
+        html = _load_hyogo_html(fixture_html)
+        detail_html = _build_detail_html_dog()
+        adapter = HyogoDouaiAdapter(_site())
+
+        def _fake_get(url: str, **_kwargs: object) -> str:
+            if url == LIST_URL:
+                return html
+            if url.endswith("hogo3.html"):
+                raise NetworkError("detail unreachable", url=url)
+            return detail_html
+
+        with (
+            patch.object(adapter, "_http_get", side_effect=_fake_get),
+            caplog.at_level("WARNING"),
+        ):
+            result = adapter.fetch_animal_list()
+
+        urls = [u for u, _ in result]
+        # hogo3.html は peek 失敗で除外され、hogo5.html のみ残る
+        assert len(result) == 1
+        assert urls[0].endswith("hogo5.html")
+        # peek 失敗による除外 = 未取得個体が残り得るため prune スキップ対象
+        assert adapter.list_truncated is True
+        assert any("peek" in rec.message for rec in caplog.records)
 
     def test_fetch_animal_list_caches_detail_html_for_extract(self, fixture_html):
         """fetch_animal_list の peek で取得した detail HTML が
@@ -246,6 +285,19 @@ class TestHyogoDouaiAdapter:
             assert u.startswith("https://hyogo-douai.sakura.ne.jp/")
         assert raw.source_url == detail_url
         assert raw.category == "sheltered"
+
+        # normalize() 経由でも主要フィールドが期待通りに変換されること
+        # (T042/T114: raw のみの確認では normalize 段の退行を検知できない)。
+        # 実際に adapter.normalize() を実行して確認した値: sex "オス"→"男の子"、
+        # size "中"→"中型"、shelter_date "令和8年5月10日"→date(2026, 5, 10)。
+        # phone は固定電話 (0791局番) のため PII 除去対象外でそのまま残る。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.sex == "男の子"
+        assert animal_data.size == "中型"
+        assert animal_data.color == "茶白"
+        assert animal_data.shelter_date.isoformat() == "2026-05-10"
+        assert animal_data.location == "龍野支所"
+        assert animal_data.phone == "0791-63-5142"
 
     def test_extract_animal_details_raises_when_no_fields(self):
         """detail ページから 1 フィールドも抽出できないと ParsingError"""

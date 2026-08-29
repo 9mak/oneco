@@ -168,6 +168,17 @@ class TestCityNaraAdapter:
         assert raw.source_url == url
         assert raw.category == "sheltered"
 
+        # normalize() 経由でも breed (個体識別フィールド) が脱落しないこと
+        # (T042/T114: raw のみの確認では normalize 段のサイレントドロップを
+        # 検知できない)。実際に adapter.normalize() を実行して確認した値:
+        # sex "メス"→"女の子"、shelter_date "2026年5月10日"→date(2026, 5, 10)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.breed == "柴犬"
+        assert animal_data.sex == "女の子"
+        assert animal_data.size == "中型"
+        assert animal_data.shelter_date.isoformat() == "2026-05-10"
+        assert animal_data.location == "奈良市三条本町"
+
     def test_extract_animal_details_skips_template_tables(self):
         """テンプレート table が動物テーブルと混在しても動物だけが抽出対象
 

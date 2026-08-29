@@ -134,6 +134,19 @@ class TestCityOtsuAdapter:
         assert raw.source_url == first_url
         assert raw.category == "lost"
 
+        # normalize() 経由でも breed (個体識別フィールド) が脱落しないこと
+        # (T042/T114: raw のみの確認では normalize 段のサイレントドロップを
+        # 検知できない)。実際に adapter.normalize() を実行して確認した値:
+        # sex "オス"→"男の子"、size "中"→"中型"、
+        # shelter_date "令和8年5月7日 10時30分"→date(2026, 5, 7)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.breed == "柴犬"
+        assert animal_data.species == "その他"
+        assert animal_data.sex == "男の子"
+        assert animal_data.size == "中型"
+        assert animal_data.shelter_date.isoformat() == "2026-05-07"
+        assert animal_data.location == "大津市仰木の里"
+
     def test_empty_placeholder_row_excluded(self):
         """全セルが空 + 日時テンプレ文字のみの行はデータ扱いされない"""
         html = """

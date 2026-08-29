@@ -139,6 +139,22 @@ class PdfTableAdapter(RuleBasedAdapter):
         差分検知 (`diff_detector`) は `source_url` をユニークキーに使うため、
         PDF ファイル名と行番号を fragment に残して一意性を保つ。fragment は
         サーバーに送られないので、遷移先は list ページのままになる。
+
+        注意 (T066): PDF ファイル名自体が自治体側の日次差し替えで変わるサイト
+        (香川・茨城) では、この方式でも同一個体の source_url が収容が続く限り
+        毎日変わってしまう。個体管理番号のような安定 ID が取れるサブクラスは
+        `_pdf_filename_source_url` を直接フォールバックとして使い、
+        `_public_source_url` をオーバーライドして安定 ID を優先すること
+        (`sites/pref_kagawa_pdf.py` `sites/pref_ibaraki_pdf.py` 参照)。
+        """
+        return self._pdf_filename_source_url(pdf_url, idx)
+
+    def _pdf_filename_source_url(self, pdf_url: str, idx: int) -> str:
+        """`_public_source_url` の既定フォールバック実装 (ファイル名 + row)
+
+        サブクラスが `_public_source_url` をオーバーライドしても
+        `self._public_source_url(...)` を再帰呼び出しせずにこの既定計算だけ
+        安全に呼べるよう、別名で公開する。
         """
         pdf_name = pdf_url.rsplit("/", 1)[-1]
         return f"{self.site_config.list_url}#pdf={pdf_name}&row={idx}"

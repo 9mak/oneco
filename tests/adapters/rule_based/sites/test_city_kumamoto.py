@@ -185,6 +185,20 @@ class TestCityKumamotoAdapterDetailExtraction:
         assert all("/common/upload/common/" not in u for u in raw.image_urls)
         assert all("/upload/kiji/" in u for u in raw.image_urls)
 
+        # normalize() 経由でも breed (個体識別フィールド) と主要フィールドが
+        # 脱落しないこと (T042/T114: raw のみの確認では normalize 段の
+        # サイレントドロップを検知できない)。実際に adapter.normalize() を
+        # 実行して確認した値: sex "オス"→"男の子"、
+        # shelter_date "2026年4月27日"→date(2026, 4, 27)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.breed == "雑種"
+        assert animal_data.sex == "男の子"
+        assert animal_data.size == "中型"
+        assert animal_data.color == "黒白"
+        assert animal_data.shelter_date.isoformat() == "2026-04-27"
+        assert animal_data.location == "北区植木町石川"
+        assert animal_data.phone == "096-380-2153"
+
     def test_extract_animal_details_supports_two_column_table(self, assert_raw_animal):
         """`<th>` を持たない 2 列テーブルからも値を抽出できる"""
         adapter = CityKumamotoAdapter(_site_cat())
@@ -204,6 +218,14 @@ class TestCityKumamotoAdapterDetailExtraction:
             location="中央区桜町",
             category="lost",
         )
+
+        # normalize() 経由でも breed が脱落しないこと (2 列テーブル経路も
+        # `<th>/<td>` 経路と同じ RawAnimalData 構築コードを通るため、
+        # 個体識別フィールドのドロップが再発しないか確認する)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.breed == "三毛猫"
+        assert animal_data.sex == "女の子"
+        assert animal_data.shelter_date.isoformat() == "2026-04-21"
 
     def test_extract_animal_details_infers_species_from_list_url_when_empty(
         self,

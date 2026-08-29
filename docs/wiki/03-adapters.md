@@ -29,7 +29,7 @@ MunicipalityAdapter (ABC)                  adapters/municipality_adapter.py
 ## sites.yaml（`src/data_collector/config/sites.yaml`）
 
 - 211 エントリ / 47都道府県。category 内訳: sheltered 96 / lost 66 / adoption 49
-- `default_provider: groq / llama-3.3-70b-versatile`（フォールバック用に保持）
+- `default_provider: groq / openai/gpt-oss-120b`（フォールバック用に保持）
 
 ## サイト追加手順
 

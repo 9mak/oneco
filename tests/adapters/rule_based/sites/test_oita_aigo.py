@@ -674,6 +674,8 @@ class TestOitaAigoPagination:
         # 仮想 URL は list_url 基準の通し index (既存公開分の #row=N を変えない)
         assert urls[0] == "https://oita-aigo.com/information_catlist/anytimecat/#row=0"
         assert urls[2] == "https://oita-aigo.com/information_catlist/anytimecat/#row=2"
+        # 全ページを next 無しで正常終端している = 打ち切りではない (T059)
+        assert adapter.list_truncated is False
 
     def test_page2_row_is_extractable(self):
         """通し index の仮想 URL で 2 ページ目のカードも抽出できる"""
@@ -696,11 +698,55 @@ class TestOitaAigoPagination:
             result = adapter.fetch_animal_list()
         assert len(result) == 1
         assert mocked.call_count == 1
+        # next が無く自然終端した正常系なので打ち切りではない (T059)
+        assert adapter.list_truncated is False
 
     def test_self_referencing_next_terminates(self):
-        """next が自分自身を指しても visited 集合で 1 回で止まる"""
+        """next が自分自身を指しても visited 集合で 1 回で止まる
+
+        循環検知による打ち切りは、上限到達と同じく prune を止める安全弁
+        シグナル (list_truncated) を立て、必ず警告ログを残す必要がある (T059)。
+        従来はここが無警告の silent break だった。
+        """
         adapter = OitaAigoAdapter(_adoption_cat_site())
-        with patch.object(adapter, "_http_get", return_value=_PAGE_SELF_NEXT_HTML) as mocked:
+        with (
+            patch.object(adapter, "_http_get", return_value=_PAGE_SELF_NEXT_HTML) as mocked,
+            patch("data_collector.adapters.rule_based.sites.oita_aigo.logger") as mock_logger,
+        ):
             result = adapter.fetch_animal_list()
         assert len(result) == 1
         assert mocked.call_count == 1
+        # 循環検知による打ち切り = 未取得ページが残り得るため prune スキップ対象
+        assert adapter.list_truncated is True
+        # 循環検知は必ず警告ログを残す (従来は無警告だった穴の回帰防止)
+        assert mock_logger.warning.called
+        warning_text = " ".join(str(c) for c in mock_logger.warning.call_args_list)
+        assert "循環" in warning_text
+
+    def test_max_pages_reached_sets_truncated(self):
+        """上限ページ数に達した打ち切りでも list_truncated が立つ (T059)
+
+        既存の warning ログは打ち切り理由の可視化として残っていたが、
+        CollectorService の完全性判定には伝播していなかった穴を塞ぐ。
+        """
+        adapter = OitaAigoAdapter(_adoption_cat_site())
+        base = "https://oita-aigo.com/information_catlist/anytimecat/page/"
+
+        def _get(url, **kwargs):
+            # 常に next で別の未訪問ページを指す → MAX_LIST_PAGES 上限に到達させる
+            try:
+                n = int(url.rstrip("/").rsplit("/", 1)[-1])
+            except ValueError:
+                n = 1
+            return f"""
+            <html><body>
+              <div class="information_box"><dl><dt>性別</dt><dd>オス</dd></dl></div>
+              <a rel="next" href="{base}{n + 1}/">»</a>
+            </body></html>
+            """
+
+        with patch.object(adapter, "_http_get", side_effect=_get):
+            result = adapter.fetch_animal_list()
+
+        assert len(result) == adapter.MAX_LIST_PAGES
+        assert adapter.list_truncated is True

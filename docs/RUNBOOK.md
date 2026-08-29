@@ -14,9 +14,10 @@ oneco は「人が手をかけなくても回り続ける」ことを目標に�
 |---|---|---|---|
 | `uptime check 失敗` | uptime-check.yml（30分毎） | 高（本番ダウン） | [A. 外形監視ダウン](#a-外形監視ダウン) |
 | `シークレット失効検知` | secret-health.yml（日次） | 中（機能劣化） | [B. シークレット失効](#b-シークレット失効) |
-| `収集完了: 失敗率 …` `件数ゼロ回帰` `フィールド品質ドリフト` | data-collector（日次） | 低 | [C. 収集の異常](#c-収集の異常) |
+| `収集完了: 失敗率 …` `件数ゼロ回帰` `フィールド品質ドリフト` | 収集ジョブ（GCP Cloud Run Jobs、日次） | 低 | [C. 収集の異常](#c-収集の異常) |
 | `SNS publisher (Threads) failed` | sns-publish.yml（日次） | 低 | [D. SNS 投稿失敗](#d-sns-投稿失敗) |
 | auto-fix PR が溜まっている（GitHub 上） | auto-fix-adapter（自己修復） | 低 | [E. auto-fix PR の確認](#e-auto-fix-pr-の確認) |
+| （Discord 通知なし。予算超過はメールのみ。症状は A の外形監視ダウンとして出る） | 予算アラート → `stop-billing` Function | 高（本番ダウン） | [F. 課金遮断/予算アラート](#f-課金遮断予算アラート) |
 
 ---
 
@@ -36,7 +37,7 @@ oneco は「人が手をかけなくても回り続ける」ことを目標に�
    ```bash
    gcloud run services logs read oneco-api --region asia-northeast1 --limit 50 --project oneco-app
    ```
-   よくある原因: 環境変数欠落 / DB 接続断 / Supabase 側のメンテ。
+   よくある原因: 環境変数欠落 / DB 接続断 / Supabase 側のメンテ / 予算超過による課金停止（→ [F](#f-課金遮断予算アラート)）。
 3. frontend が落ちているなら Vercel ダッシュボードのデプロイ状態を確認。
 4. 復旧後、配線確認したいときは手動で通知パスをテスト:
    ```bash
@@ -87,7 +88,21 @@ gh workflow run secret-health.yml             # 手動チェックを回して�
 
 データ収集の劣化シグナル。**緊急度は低い**（データは前回分が残り、翌日の自動実行で回収されることが多い）。
 
-- **失敗率が高い**: 一過性（自治体サイトの一時メンテ・GitHub runner の IP ブロック）が大半。数日続くなら該当サイトの adapter を確認。
+収集本体は GCP Cloud Run Jobs（`oneco-collector` / `asia-northeast1`）で実行される（2026-08-14 移設。旧 GitHub Actions runner の IP 帯が自治体サイトから累積アクセスペナルティを受けていたため）。Cloud Scheduler が毎日 JST 0:00 に起動する。`.github/workflows/data-collector.yml` は GCP が使えないときの手動フォールバック（`workflow_dispatch` のみ）として残している。
+
+- 実行履歴とログの確認:
+  ```bash
+  gcloud run jobs executions list --job=oneco-collector --region asia-northeast1 --project oneco-app --limit 5
+  gcloud logging read 'resource.type=cloud_run_job AND resource.labels.job_name=oneco-collector' \
+    --project oneco-app --limit 50 --format 'value(timestamp,textPayload)'
+  ```
+- 手動で今すぐ回したい場合:
+  ```bash
+  gcloud run jobs execute oneco-collector --region asia-northeast1 --project oneco-app
+  # GCP 側が使えない場合の代替経路 (GitHub Actions フォールバック)
+  gh workflow run "Data Collector" --ref main
+  ```
+- **失敗率が高い**: 一過性（自治体サイトの一時メンテ）が大半。数日続くなら該当サイトの adapter を確認。
 - **件数ゼロ回帰**（過去 ≥1 件 → 今 0 件が継続）: そのサイトの HTML 構造変更の疑い。`data/site_baselines.yaml` に記録されている。
 - **連続失敗でスキップされたサイト**: `data/broken_sites.yaml` に溜まる。`consecutive_failures >= 3` で自動スキップ。ただし **`BROKEN_SITE_RECHECK_DAYS=7` で7日後に自動再チェック**されるので、サイト側が直れば自動復活する。手動で即復活させたいときだけ:
   ```bash
@@ -106,10 +121,11 @@ gh workflow run secret-health.yml             # 手動チェックを回して�
 - run ログで原因を確認:
   ```bash
   gh run list --workflow "SNS Publish (Threads)" --limit 5
-  gh run view <run-id> --log | grep -iE "error|401|400|reason"
+  gh run view <run-id> --log | grep -iE "error|401|400|reason|OAuthException|\"code\""
   ```
 - `401` → Threads token 失効 → [B](#b-シークレット失効) の Threads 手順
-- `400` → container 処理タイミング（Step 3 のポーリングで大幅減のはず）。単発なら放置で翌日回収。
+- `400` で body に `OAuthException` / `"code":190` を含む → **これも token 失効**（Meta は失効を 401 でなく 400 + `error.code=190` (OAuthException) で返すことがある。2026-08-22 に実際に発生）→ [B](#b-シークレット失効) の Threads 手順
+- `400` で上記が無い（container 処理タイミング等） → 一時障害。単発なら放置で翌日回収
 - 文章が fallback テンプレになっている → Groq 失効 → [B](#b-シークレット失効) の Groq 手順
 
 ---
@@ -130,17 +146,40 @@ auto-fix-adapter（自己修復ループ）の段階リリース状態に応じ�
 
 ---
 
+## F. 課金遮断/予算アラート
+
+**症状**: `oneco-api` を含むサイト全体が突然応答しなくなる。Discord 通知は無い（予算アラートは請求先アカウント管理者宛のメールのみ、GCP 標準機能）。[A. 外形監視ダウン](#a-外形監視ダウン) の通知経由で気づくことが多い。
+
+月額予算 ¥500（`oneco-monthly-cap-500`）の 100% 到達で Cloud Function `stop-billing` が `oneco-app` プロジェクトの課金を自動解除し、Cloud Run 含む全リソースが停止する仕組みが入っている（2026-07-30 に無料トライアル失効で本番が落ちた事故の再発防止）。
+
+1. [A](#a-外形監視ダウン) の手順で生死確認 → Cloud Run ログすら取得できない/プロジェクトが無効化されている挙動なら課金停止を疑う。
+2. GCP 請求コンソール（Billing）で `oneco-app` の課金アカウントのリンク状態を確認する。「この projects に請求先アカウントがありません」等になっていれば課金停止が発動している。
+3. 復旧: 請求コンソールから `oneco-app` に課金アカウントを再リンクする（**自動では戻らない、手動操作必須**）。
+4. 復旧後、生死を再確認:
+   ```bash
+   curl -sS -o /dev/null -w '%{http_code}\n' https://oneco-api-tvlsrcvyuq-an.a.run.app/health
+   ```
+5. 予算上限の変更や仕組みの詳細は [infra/stop-billing/README.md](../infra/stop-billing/README.md) 参照:
+   ```bash
+   gcloud billing budgets list --billing-account=01F439-B06BD4-15DEF1
+   gcloud billing budgets update <ID> --budget-amount=1000JPY
+   ```
+
+> 予算のコスト集計には数時間〜1日程度の遅延があり、¥500 ちょうどでは止まらない（多少の超過はありうる）。課金解除パス自体は本番未検証（テストすると実際にサイトが落ちるため）。
+
+---
+
 ## 平常時に自動で回っているもの（参考）
 
 これらは通知が来ない限り放置でよい:
 
-- **Backend / Frontend CI/CD**: push で自動テスト → Cloud Run / Vercel 自動デプロイ（alembic migration も自動）
-- **Data Collector**: 毎日 JST 0:00、211 サイト収集 → 本番 DB 直書き
+- **Backend / Frontend / Collector CI/CD**: push で自動テスト・自動ビルド → Cloud Run（API）/ Cloud Run Jobs（Collector）/ Vercel 自動デプロイ（alembic migration も自動）
+- **Data Collector**: 毎日 JST 0:00、GCP Cloud Run Jobs（`oneco-collector`）で 211 サイト収集 → 本番 DB 直書き
 - **SNS Threads**: 毎日 JST 9:00 自動投稿
-- **Uptime Check**: 30 分毎に死活監視
+- **Uptime Check**: 30 分毎に死活監視（収集鮮度チェック込み）
 - **Secret Health**: 毎日 JST 9:00 にトークン失効チェック
 - **件数ゼロ回帰検知**: 永続ベースラインで毎 run チェック
-- **GCP コスト**: ゼロスケール + Artifact Registry 自動クリーンアップで月 ¥0
+- **GCP コスト**: ゼロスケール + Artifact Registry 自動クリーンアップで月 ¥0。予算 ¥500 到達時は自動遮断（→ [F](#f-課金遮断予算アラート)）
 
 ## よく使うコマンド
 

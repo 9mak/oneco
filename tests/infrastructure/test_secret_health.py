@@ -22,15 +22,19 @@ from data_collector.infrastructure.secret_health import (
 )
 
 
-def _resp(status_code: int) -> MagicMock:
+def _resp(status_code: int, json_body: dict | None = None) -> MagicMock:
     r = MagicMock()
     r.status_code = status_code
+    if json_body is None:
+        r.json.side_effect = ValueError("no JSON body")
+    else:
+        r.json.return_value = json_body
     return r
 
 
-def _client_returning(status_code: int) -> MagicMock:
+def _client_returning(status_code: int, json_body: dict | None = None) -> MagicMock:
     client = MagicMock()
-    client.get.return_value = _resp(status_code)
+    client.get.return_value = _resp(status_code, json_body)
     return client
 
 
@@ -104,6 +108,56 @@ class TestCheckThreads:
         result = check_threads(None, client=_client_returning(200))
         assert result.configured is False
         assert result.ok is True
+
+    def test_400_oauth_exception_code_190_is_expired(self):
+        """Meta は失効トークンを 401/403 ではなく HTTP 400 + code=190 で返す
+        (2026-08-22 実障害: 4日間 secret-health が誤って ok 扱いし続けた)。"""
+        body = {
+            "error": {
+                "message": "Session has expired... Please log in again.",
+                "type": "OAuthException",
+                "code": 190,
+            }
+        }
+        result = check_threads("EAAB_expired", client=_client_returning(400, body))
+        assert result.configured is True
+        assert result.ok is False
+        assert result.status_code == 400
+
+    def test_400_unrelated_error_treated_as_transient_ok(self):
+        """code=190/OAuthException に該当しない 400 は従来どおり一時障害扱い"""
+        body = {
+            "error": {
+                "message": "Invalid parameter",
+                "type": "GraphMethodException",
+                "code": 100,
+            }
+        }
+        result = check_threads("EAAB_valid", client=_client_returning(400, body))
+        assert result.ok is True
+        assert result.status_code == 400
+
+    def test_400_oauth_exception_rate_limit_not_treated_as_expired(self):
+        """type=OAuthException は認証エラー専用ではなく汎用エラーラッパーであり、
+        レート制限 (code=4) にも使われる。code=190 以外は失効と誤検知せず
+        一時障害 (ok=True) のままにする (2026-08-28 reviewer指摘)。"""
+        body = {
+            "error": {
+                "message": "Application request limit reached",
+                "type": "OAuthException",
+                "code": 4,
+            }
+        }
+        result = check_threads("EAAB_valid", client=_client_returning(400, body))
+        assert result.configured is True
+        assert result.ok is True
+        assert result.status_code == 400
+
+    def test_400_unparsable_body_falls_back_to_transient_ok(self):
+        """body が空/不正で json() が失敗してもクラッシュせず一時障害扱いにフォールバック"""
+        result = check_threads("EAAB_valid", client=_client_returning(400, None))
+        assert result.ok is True
+        assert result.status_code == 400
 
     def test_token_sent_as_param_not_logged_in_url(self):
         """access_token は params で渡す (検証だけ。漏えい対策は別途)"""
