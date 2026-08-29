@@ -10,7 +10,7 @@
 | Container Registry | Artifact Registry | `asia-northeast1` |
 | Database | Supabase PostgreSQL | `aws-1-ap-northeast-2` |
 | Frontend | Vercel | 自動（CDN） |
-| Data Collector | GitHub Actions | - |
+| Data Collector | Google Cloud Run Jobs（`oneco-collector`。Cloud Scheduler 0:00 JST 起動） | `asia-northeast1` |
 
 ---
 
@@ -111,28 +111,39 @@ Supabase ダッシュボード → Table Editor → `animals` テーブルでデ
 
 ---
 
-## Data Collector（GitHub Actions）
+## Data Collector（GCP Cloud Run Jobs）
 
 ### 自動実行
 
-毎日 JST 00:00 に `.github/workflows/data-collector.yml` が自動実行されます。
+毎日 JST 00:00 に Cloud Scheduler が Cloud Run Jobs `oneco-collector`（`asia-northeast1`）を起動します。実行内容は `scripts/collector_entrypoint.sh`（リポジトリを shallow clone → `alembic upgrade head` → `python -m data_collector` → 状態ファイルを commit&push）。
+
+`.github/workflows/data-collector.yml`（GitHub Actions 版）は GCP 側が使えないときの手動フォールバックとしてのみ残しています（`workflow_dispatch` のみ、定期実行はしません）。
+
+### デプロイ
+
+`src/**`・`Dockerfile.collector`・`cloudbuild-collector.yaml`・`scripts/collector_entrypoint.sh` 等を `main` に push すると `.github/workflows/deploy-collector.yml` が自動でイメージを再ビルドし、`gcloud run jobs update` で Cloud Run Job の image / 環境変数を宣言的に更新します（WIF キーレス認証、`deploy-backend.yml` と同じ仕組み）。ジョブ構成（timeout・CPU・メモリ等）はこのステップに完全宣言されており、GCP コンソール側での手変更は次回デプロイで上書きされます。実行スケジュール自体（Cloud Scheduler）はこのワークフローの対象外です。
 
 ### 手動実行
 
 ```bash
-# GitHub CLI から手動トリガー（workflow_dispatch 権限が必要）
+# GCP 側を直接実行
+gcloud run jobs execute oneco-collector --region asia-northeast1 --project oneco-app
+
+# GCP が使えない場合の代替経路（GitHub Actions フォールバック、workflow_dispatch 権限が必要）
 gh workflow run "Data Collector" --ref main
 ```
 
-### 必要な GitHub Secrets
+障害対応の詳細手順（実行履歴・ログの見方等）は [docs/RUNBOOK.md#c-収集の異常](docs/RUNBOOK.md#c-収集の異常) 参照。
 
-GitHub リポジトリの Settings → Secrets and variables → Actions で設定：
+### 必要な Secrets
+
+Cloud Run Job（`oneco-collector`）本体は GCP Secret Manager の Secret（`DATABASE_URL` / `GROQ_API_KEY` / `DISCORD_WEBHOOK_URL` / `GIT_DEPLOY_KEY`）を参照します（`sync-collector-secrets.yml` で GitHub Secrets から複製）。以下の GitHub Secrets は、GitHub Actions 側で動くワークフロー（collector のフォールバック実行 `data-collector.yml` に加え、`sns-publish.yml` / `secret-health.yml` 等）が使うものです：
 
 | Secret 名 | 説明 | 必須 |
 |-----------|------|------|
 | `DATABASE_URL` | Supabase PostgreSQL 接続 URL | ✅ |
 | `GROQ_API_KEY` | Groq API キー（デフォルト LLM プロバイダ。抽出セレクタ生成等に使用） | ✅ |
-| `ANTHROPIC_API_KEY` | Claude API キー（フォールバック LLM プロバイダ） | - |
+| `ANTHROPIC_API_KEY` | Claude API キー。secrets 定義はあるが **実装未着手**（`src` 内に参照コードなし。`PROVIDER_REGISTRY` は現状 Groq のみ、`src/data_collector/__main__.py:50` 付近のコメント参照）。設定しても収集の挙動は変わらない | - |
 | `SLACK_WEBHOOK_URL` | 運用アラート通知用 Slack Incoming Webhook（収集失敗 / 連続失敗サイト / フィールド品質ドリフト / 件数ゼロ回帰） | - |
 | `DISCORD_WEBHOOK_URL` | 運用アラート通知用 Discord Webhook（Slack と同内容・併用可。どちらか設定すれば発火） | - |
 | `THREADS_ACCESS_TOKEN` | Threads Graph API の long-lived access token。`sns-publish.yml` で使用。未設定だと SNS publisher は `no_api_client` で停止 | - |
@@ -141,6 +152,7 @@ GitHub リポジトリの Settings → Secrets and variables → Actions で設�
 > 監視アラートは `SLACK_WEBHOOK_URL` / `DISCORD_WEBHOOK_URL` のどちらか（または両方）を設定した時点で発火する。未設定なら no-op（収集自体は継続）。
 > Discord Webhook の作り方: 対象サーバー → チャンネルの「編集」→「連携サービス」→「ウェブフック」→「新しいウェブフック」→ URL をコピー。
 > ゼロ件回帰の連続閾値は `ONECO_ZERO_DROP_THRESHOLD`（既定 2）で調整可能。
+> GCP 実行（`oneco-collector`）には `DISCORD_WEBHOOK_URL` のみ複製されている（`SLACK_WEBHOOK_URL` は Secret Manager 未登録）。Slack 通知は GitHub Actions フォールバック実行時のみ発火する。
 
 ### SNS Publisher (Threads) repo variables
 
@@ -159,9 +171,11 @@ GitHub リポジトリの Settings → Secrets and variables → Actions → **V
 
 ### 収集失敗の対処
 
-1. **Groq レート制限/クォータ超過**: 時間をおいて再実行で解消（必要なら `ANTHROPIC_API_KEY` を設定してフォールバック）。
+1. **Groq レート制限/クォータ超過**: 時間をおいて再実行で解消（`ANTHROPIC_API_KEY` によるフォールバックは前述の通り未実装のため使えない）。
 2. **ネットワークタイムアウト**: 外部自治体サイトの問題。数日中に自動回復。
-3. **DB 保存失敗**: GitHub Actions のログで `Failed to save animal to database:` の後のエラー内容を確認。
+3. **DB 保存失敗**: Cloud Run Jobs のログ（フォールバック実行時は GitHub Actions のログ）で `Failed to save animal to database:` の後のエラー内容を確認。
+
+詳しい障害対応手順（実行履歴の見方・手動再実行等）は [docs/RUNBOOK.md#c-収集の異常](docs/RUNBOOK.md#c-収集の異常) 参照。
 
 ---
 
@@ -170,13 +184,18 @@ GitHub リポジトリの Settings → Secrets and variables → Actions → **V
 ```
 git push → GitHub Actions
                │
-               ├─ backend.yml        ─▶ Lint → Test → Build
-               ├─ deploy-backend.yml ─▶ alembic → Cloud Build → Cloud Run デプロイ（自動）
-               ├─ frontend.yml       ─▶ Lint → Test → Vercel デプロイ（自動）
-               └─ data-collector.yml（スケジュール）─▶ データ収集
+               ├─ backend.yml          ─▶ Lint → Test → Build
+               ├─ deploy-backend.yml   ─▶ alembic → Cloud Build → Cloud Run デプロイ（自動）
+               ├─ frontend.yml         ─▶ Lint → Test → Vercel デプロイ（自動）
+               └─ deploy-collector.yml ─▶ Cloud Build → Cloud Run Jobs (oneco-collector) 更新（自動）
+
+Cloud Scheduler (0:00 JST) ─▶ Cloud Run Jobs (oneco-collector) ─▶ データ収集
+  ※ data-collector.yml（GitHub Actions）は GCP 障害時の手動フォールバックのみ。定期実行はしない
 ```
 
 Backend（Cloud Run）は `deploy-backend.yml` により `main` への push で自動デプロイされる（`src/`・`Dockerfile`・`requirements.txt`・`pyproject.toml`・`alembic/` 変更時）。WIF でキーレス認証し、push 時は `alembic upgrade head` も自動適用される。手動デプロイは `workflow_dispatch`（`run_migration` トグルあり）または上記の `gcloud run deploy` で可能。
+
+Data Collector（Cloud Run Jobs）は `deploy-collector.yml` により同じく `main` への push で自動デプロイされる（`src/`・`Dockerfile.collector`・`cloudbuild-collector.yaml`・`scripts/collector_entrypoint.sh` 変更時）。同じ WIF 認証を使うがデプロイのみで、実行スケジュール（Cloud Scheduler）はこのワークフローの対象外。
 
 ---
 
