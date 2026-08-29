@@ -6,23 +6,42 @@
 - 「収容中の動物たち」 (sheltered)
 - 「迷い犬・猫情報」 (lost)
 
-いずれも一覧 HTML から `a[href*='kouhyou'][href$='.pdf']` で PDF リンクを
-抽出し、各 PDF に複数頭の動物情報が表または箇条書き形式で記載される。
+いずれも一覧 HTML から PDF リンクを抽出し、各 PDF に複数頭の動物情報が
+表または箇条書き形式で記載される。
 
 実装方針:
 - `PdfTableAdapter` を継承し、`PDF_LINK_SELECTOR` と `_parse_pdf_text` を実装
 - PDF テキストは行ごとに走査し「収容日」が現れた行を新ブロック開始とみなす
 - 同一行内に複数フィールドが含まれていても正規表現で個別抽出
 - 2 サイトとも同一テンプレート想定のため単一 adapter で Registry 登録
+
+2段組み PDF への対応 (T117):
+実 PDF (`documents/inu0827.pdf` 等) は 1 ページに動物情報が左右 2 列で
+並ぶ2段組みレイアウト。基底クラス (`PdfTableAdapter`) の既定実装
+(`page.extract_text()` をページ丸ごと呼ぶ) だと、pdfplumber が座標順に
+文字列を連結する際に左列と右列の行が交互に混ざり、1 物理行に2頭分の
+フィールド (「収容日」が2つ等) が同居してしまう。`_parse_pdf_text` は
+`.search()` で1行につき最初の一致しか拾わないため、右列 (2頭目) が
+丸ごと欠落していた (実測: 143頭中72頭のみ抽出)。
+`_extract_pdf_text` をオーバーライドし、ページを左右半分に `crop()` して
+から個別に `extract_text()` することで列を分離する。列分離後のテキストは
+1段組みと同じ構造になるため `_parse_pdf_text` 側は変更不要。
 """
 
 from __future__ import annotations
 
+import io
 import re
 from typing import ClassVar
 
+from ...municipality_adapter import NetworkError, ParsingError
 from ..pdf_table import PdfTableAdapter
 from ..registry import SiteAdapterRegistry
+
+try:
+    import pdfplumber
+except ImportError:  # pragma: no cover
+    pdfplumber = None  # type: ignore[assignment]
 
 # ─────────────────── パース用パターン ───────────────────
 
@@ -49,8 +68,49 @@ class PrefIbarakiPdfAdapter(PdfTableAdapter):
     """茨城県 (収容中の動物たち / 迷い犬・猫情報) PDF 用 rule-based adapter"""
 
     # 一覧ページから PDF リンクを抽出するセレクタ
-    # sites.yaml の pdf_link_pattern と同一: kouhyou を含む .pdf リンク
-    PDF_LINK_SELECTOR: ClassVar[str] = "a[href*='kouhyou'][href$='.pdf']"
+    # sites.yaml の pdf_link_pattern と同一。
+    #
+    # 旧セレクタ `a[href*='kouhyou'][href$='.pdf']` は実サイトの現在の
+    # ファイル名 (`documents/inu0827.pdf` / `documents/neko0827.pdf`) と
+    # 一致せず、`data/site_baselines.yaml` 上で
+    # 「茨城県（収容中の動物たち）」「茨城県（迷い犬・猫情報）」がいずれも
+    # consecutive_zero_runs=64 (収集のたび PDF リンク 0 件) になっていた
+    # ことを実測で確認した (T117 調査時点)。犬猫別ファイル名の "inu"/"neko"
+    # は日付部分 (MMDD) が変わっても残る安定した部分文字列のため、これを
+    # 基準にする。年間集計 PDF (`r7syuuyousuu.pdf` 等) は対象外にしたいため
+    # `kouhyou` 同様に部分文字列マッチを使う。
+    PDF_LINK_SELECTOR: ClassVar[str] = (
+        "a[href*='documents/inu'][href$='.pdf'], a[href*='documents/neko'][href$='.pdf']"
+    )
+
+    # ─────────────────── _extract_pdf_text 実装 (2段組み対応) ───────────────────
+
+    def _extract_pdf_text(self, pdf_bytes: bytes) -> str:
+        """PDF テキストを列ごとに分割してから抽出する
+
+        実 PDF は1ページに動物情報が左右2列で並ぶ2段組みレイアウト。
+        ページ中央 (`page.width / 2`) で左右に `crop()` してからそれぞれ
+        `extract_text()` することで列を分離する (実測で列間に十分な余白が
+        あり、単語がまたがって欠けることは無いことを確認済み)。
+        列を分離した状態で連結するため、基底クラスと違い1ページにつき
+        テキストブロックが2つ (左列・右列) 生成される。
+        """
+        if pdfplumber is None:  # pragma: no cover
+            raise NetworkError("pdfplumber が利用不可")
+        try:
+            with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+                blocks: list[str] = []
+                for page in pdf.pages:
+                    mid_x = page.width / 2
+                    left = page.crop((0, 0, mid_x, page.height))
+                    right = page.crop((mid_x, 0, page.width, page.height))
+                    for column in (left, right):
+                        text = column.extract_text()
+                        if text:
+                            blocks.append(text)
+                return "\n\n".join(blocks)
+        except Exception as e:
+            raise ParsingError(f"PDF テキスト抽出失敗: {e}") from e
 
     # ─────────────────── _parse_pdf_text 実装 ───────────────────
 
