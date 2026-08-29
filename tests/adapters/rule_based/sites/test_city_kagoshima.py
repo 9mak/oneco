@@ -105,6 +105,20 @@ class TestCityKagoshimaAdapter:
         assert raw.source_url == first_url
         assert raw.category == "sheltered"
 
+        # normalize() 経由でも主要フィールドが期待通りに変換されること
+        # (raw の確認だけでは normalize 段の退行 (T042/T114) を検知できない)。
+        # 実際に adapter.normalize() を実行して確認した値:
+        # sex "オス"→"男の子"、size "小"→"小型"、age "10歳"→120ヶ月、
+        # shelter_date は date(2026, 4, 30) に変換される。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.species == "犬"
+        assert animal_data.sex == "男の子"
+        assert animal_data.size == "小型"
+        assert animal_data.age_months == 120
+        assert animal_data.shelter_date.isoformat() == "2026-04-30"
+        assert animal_data.phone == "099-264-1237"
+        assert animal_data.location == "光山二丁目"
+
     def test_returned_animals_are_excluded(self, fixture_html):
         """h2 タイトルに「飼い主の元に戻りました」を含むブロックは除外される
 
@@ -409,6 +423,10 @@ class TestCityKagoshimaAdapter:
 
         # 5.5kg → 5kg 以上 15kg 未満 = "中"
         assert raw.size == "中"
+        # normalize() を通すと DataNormalizer._cap_size() が単漢字を体格の
+        # 正規形に変換する ("中" → "中型")。raw だけの確認では
+        # normalize 段のマッピング崩れを検知できない。
+        assert adapter.normalize(raw).size == "中型"
 
     def test_size_from_weight_inside_freeform_text(self):
         """「その他：…体重5.5kg…」の自由記述からも size を推定する

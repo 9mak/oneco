@@ -70,6 +70,15 @@ def test_extract_returns_raw_data():
     assert raw.sex == "メス"
     assert raw.age == "約6歳3ヵ月"
 
+    # normalize() 経由でも name (個体識別フィールド) が脱落しないこと
+    # (T042/T114: raw のみの確認では normalize 段のサイレントドロップを
+    # 検知できない)。実際に adapter.normalize() を実行して確認した値:
+    # sex "メス"→"女の子"、age "約6歳3ヵ月"→75ヶ月 (6*12+3)。
+    animal_data = adapter.normalize(raw)
+    assert animal_data.name == "道南 ふわ"
+    assert animal_data.sex == "女の子"
+    assert animal_data.age_months == 75
+
 
 def test_real_fixture_handles_gracefully(fixture_html):
     html = fixture_html("nyantomo_jp")
@@ -125,6 +134,10 @@ def test_phone_mapped_by_location_hakodate():
         raw = adapter.extract_animal_details(f"{adapter.site_config.list_url}#row=0")
     assert raw.location == "函館市愛護センター"
     assert raw.phone == "0138-32-1524"
+
+    # normalize() 経由でも固定電話番号は PII 除去対象外でそのまま残ること
+    animal_data = adapter.normalize(raw)
+    assert animal_data.phone == "0138-32-1524"
 
 
 def test_phone_mapped_by_location_donan():

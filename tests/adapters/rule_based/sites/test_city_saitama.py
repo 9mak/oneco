@@ -200,6 +200,20 @@ class TestCitySaitamaAdapter:
         assert raw.source_url == first_url
         assert raw.category == "sheltered"
 
+        # normalize() 経由でも breed / management_number (個体識別フィールド)
+        # が脱落しないこと (T042/T114: raw のみの確認では normalize 段の
+        # サイレントドロップを検知できない)。実際に adapter.normalize() を
+        # 実行して確認した値: sex "オス"→"男の子"、size "中"→"中型"、
+        # age "3歳"→36ヶ月、shelter_date "令和8年5月10日"→date(2026, 5, 10)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.breed == "柴犬"
+        assert animal_data.management_number == "R07-001"
+        assert animal_data.sex == "男の子"
+        assert animal_data.size == "中型"
+        assert animal_data.age_months == 36
+        assert animal_data.shelter_date.isoformat() == "2026-05-10"
+        assert animal_data.location == "さいたま市浦和区常盤"
+
     def test_species_inference_for_cat_other_site(self):
         """サイト名 "さいたま市（保護猫・その他）" のときは species が "猫" になる"""
         html = _build_html_with_one_card()

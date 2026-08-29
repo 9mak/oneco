@@ -216,6 +216,12 @@ class TestCityMatsuyamaAdapterFixture:
         assert raw.source_url == url
         assert raw.category == "lost"
 
+        # normalize() 経由でも management_number (個体識別フィールド) が
+        # 脱落しないこと (実フィクスチャ経由の end-to-end 検証)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.management_number == "R7No.310"
+        assert animal_data.location == "松山市動物愛護センター（はぴまるの丘）"
+
     def test_extract_last_entry_is_cat_from_fixture(self, fixture_html):
         """フィクスチャの最終件 (index 5) は猫カード"""
         html = _load_matsuyama_html(fixture_html)
@@ -291,6 +297,15 @@ class TestCityMatsuyamaAdapterSynthetic:
         assert raw.image_urls == [
             "https://www.city.matsuyama.ehime.jp/kurashi/kurashi/aigo/index.images/inu.R7No.999.jpg"
         ]
+
+        # normalize() 経由でも management_number (個体識別フィールド) が
+        # 脱落しないこと (T042/T114: raw のみの確認では normalize 段の
+        # サイレントドロップを検知できない)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.management_number == "R7No.999"
+        assert animal_data.description == "新しい飼い主募集中"
+        assert animal_data.location == "松山市動物愛護センター（はぴまるの丘）"
+        assert animal_data.phone == "089-923-9435"
 
     def test_extract_synthetic_cat_species_inferred_by_section(self):
         """猫セクション (aigo_sec06) 配下の <li> は species='猫'"""

@@ -72,6 +72,17 @@ def test_extract_detail_returns_raw_data():
     assert raw.location == "豊橋市"
     assert raw.image_urls == ["https://toyohashi-aikuru.jp/wp-content/uploads/dog1.jpg"]
 
+    # normalize() 経由でも主要フィールドが期待通りに変換されること
+    # (T042/T114: raw のみの確認では normalize 段の退行を検知できない)。
+    # 実際に adapter.normalize() を実行して確認した値: sex "オス"→"男の子"、
+    # age "3歳"→36ヶ月、shelter_date "2026-04-01"→date(2026, 4, 1)。
+    animal_data = adapter.normalize(raw)
+    assert animal_data.sex == "男の子"
+    assert animal_data.age_months == 36
+    assert animal_data.size == "中型"
+    assert animal_data.shelter_date.isoformat() == "2026-04-01"
+    assert animal_data.location == "豊橋市"
+
 
 def test_species_inferred_from_animal_type_query():
     """detail に種別が無い時、URL クエリから推定"""

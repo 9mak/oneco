@@ -108,6 +108,27 @@ class TestCitySaseboAdapter:
         assert raw.source_url == first_url
         assert raw.category == "sheltered"
 
+        # normalize() 経由で判明した既知バグ (T114 監査で発見、2026-08):
+        # ソースコードのコメント (city_sasebo.py L142-144) は「species は
+        # サイト名から犬/猫を推定する」と書かれているが、実装は
+        # `species = breed` を先に代入し、breed が非空ならサイト名推定に
+        # フォールバックしない。breed="雑種" (犬/猫の文字を含まない) の
+        # 個体は DataNormalizer._normalize_species() で "その他" に
+        # 誤分類され、フロントの犬/猫フィルタから脱落する。
+        # 本テストは現在の実際の挙動 (バグを含む) を記録するリグレッション
+        # テストであり、正しい仕様ではない。修正は別タスクで扱う。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.species == "その他", (
+            "既知バグ: breed='雑種' は species 推定にサイト名 (犬) が使われず "
+            "'その他' に誤分類される (T114 発見)。動物種フィルタから漏れる "
+            "本番影響がある可能性が高いため、別途 city_sasebo.py L145 の "
+            "species/breed 代入順序の修正を検討すること。"
+        )
+        assert animal_data.breed == "雑種"
+        assert animal_data.sex == "男の子"
+        assert animal_data.shelter_date.isoformat() == "2026-03-13"
+        assert animal_data.location == "山祇町"
+
     def test_image_urls_filter_excludes_template(self, fixture_html):
         """`/shared/` 配下のロゴ・テンプレ画像は image_urls に含まれない"""
         html = _load_sasebo_html(fixture_html)

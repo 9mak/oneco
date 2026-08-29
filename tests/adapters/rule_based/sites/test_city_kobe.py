@@ -154,6 +154,17 @@ class TestCityKobeAdapter:
         assert raw.source_url == first_url
         assert raw.category == "sheltered"
 
+        # normalize() 経由でも主要フィールドが期待通りに変換されること
+        # (T042/T114: raw のみの確認では normalize 段の退行を検知できない)。
+        # 実際に adapter.normalize() を実行して確認した値: sex "オス"→"男の子"、
+        # size "中"→"中型"、shelter_date "令和8年5月10日"→date(2026, 5, 10)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.sex == "男の子"
+        assert animal_data.size == "中型"
+        assert animal_data.color == "茶"
+        assert animal_data.shelter_date.isoformat() == "2026-05-10"
+        assert animal_data.location == "神戸市中央区"
+
     def test_extract_animal_details_cat_row(self):
         """2 件目 (収容猫一覧 配下) のデータ行から RawAnimalData を構築できる"""
         html = _build_html_with_dog_and_cat()

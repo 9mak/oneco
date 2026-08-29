@@ -205,6 +205,18 @@ class TestCityOkayamaAdapterDetailExtraction:
         assert all(not u.endswith(".gif") for u in raw.image_urls)
         assert all("/uploaded/image/" in u for u in raw.image_urls)
 
+        # normalize() 経由でも breed (個体識別フィールド) が脱落しないこと
+        # (T042/T114: raw のみの確認では normalize 段のサイレントドロップを
+        # 検知できない)。実際に adapter.normalize() を実行して確認した値:
+        # sex "オス"→"男の子"、shelter_date "2026年5月14日"→date(2026, 5, 14)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.breed == "雑種"
+        assert animal_data.sex == "男の子"
+        assert animal_data.size == "中型"
+        assert animal_data.shelter_date.isoformat() == "2026-05-14"
+        assert animal_data.location == "岡山市北区"
+        assert animal_data.phone == "086-803-1000"
+
     def test_extract_animal_details_supports_two_column_table(self, assert_raw_animal):
         """`<th>` を持たない 2 列テーブルからも値を抽出できる"""
         adapter = CityOkayamaAdapter(_site())

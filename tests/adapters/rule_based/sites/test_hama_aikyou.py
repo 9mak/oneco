@@ -200,6 +200,18 @@ class TestHamaAikyouAdapter:
         assert raw.source_url == first_url
         assert raw.category == "lost"
 
+        # normalize() 経由でも breed (個体識別フィールド) が脱落しないこと
+        # (T042/T114: raw のみの確認では normalize 段のサイレントドロップを
+        # 検知できない)。実際に adapter.normalize() を実行して確認した値:
+        # sex "オス"→"男の子"、shelter_date "令和8年5月10日"→date(2026, 5, 10)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.breed == "雑種"
+        assert animal_data.sex == "男の子"
+        assert animal_data.color == "茶白"
+        assert animal_data.shelter_date.isoformat() == "2026-05-10"
+        assert "中央区" in animal_data.location
+        assert "○○町" in animal_data.location
+
     def test_species_inference_for_cat(self):
         """行テキストに「猫」が含まれるとき species は「猫」になる
 

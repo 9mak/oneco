@@ -185,6 +185,20 @@ class TestCityKitakyushuAdapter:
         # phone は北九州市保健福祉局生活衛生課の代表電話を全件共通利用 (2026-05 観測)
         assert raw.phone == "093-581-1800"
 
+        # normalize() 経由でも主要フィールドが期待通りに変換されること
+        # (T042/T114: raw のみの確認では normalize 段の退行を検知できない)。
+        # 実際に adapter.normalize() を実行して確認した値: sex "メス"→"女の子"、
+        # size "小"→"小型"。shelter_date は年なし表記 "5月11日" を当年/前年で
+        # 補完するため、実行日によって年が変わりうる (月日のみ固定で検証する)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.sex == "女の子"
+        assert animal_data.size == "小型"
+        assert animal_data.color == "茶・白"
+        assert animal_data.shelter_date.month == 5
+        assert animal_data.shelter_date.day == 11
+        assert animal_data.location == "小倉南区"
+        assert animal_data.phone == "093-581-1800"
+
     def test_extract_animal_details_real_fixture(self, fixture_html):
         """実フィクスチャの 1 行目を抽出できる"""
         html = _load_kitakyushu_html(fixture_html)
@@ -203,6 +217,12 @@ class TestCityKitakyushuAdapter:
         assert raw.sex == "メス"
         assert raw.color == "茶・白"
         assert raw.size == "小"
+
+        # normalize() 経由でも breed (個体識別フィールド) が脱落しないこと
+        animal_data = adapter.normalize(raw)
+        assert animal_data.breed == "柴"
+        assert animal_data.sex == "女の子"
+        assert animal_data.size == "小型"
 
     def test_fetch_animal_list_returns_empty_when_no_target_table(self):
         """対象テーブル (収容表/譲渡) が無い場合は空リスト (在庫 0 件)"""
@@ -414,6 +434,12 @@ class TestCityKitakyushuAdoptionTable:
         assert raw.breed == "雑種"
         # phone は引き続き共通の代表電話
         assert raw.phone == "093-581-1800"
+
+        # normalize() 経由でも breed が脱落しないこと (譲渡犬テーブルは
+        # 保護犬テーブルと列構造が異なる別経路のため個別に確認する)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.breed == "雑種"
+        assert "男の子" == animal_data.sex
 
     def test_shelter_table_still_has_no_age_or_images(self):
         """保護犬テーブル (構造的に age/image 無し) の挙動は変更しない

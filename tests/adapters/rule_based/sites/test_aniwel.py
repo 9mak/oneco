@@ -196,6 +196,18 @@ class TestAniwelAdapter:
         assert "約2歳" in raw.age
         assert raw.image_urls == ["https://aniwel.jp/wp-content/uploads/2025/01/test-150x150.jpg"]
 
+        # normalize() 経由でも主要フィールドが期待通りに変換されること
+        # (T042/T114: raw のみの確認では normalize 段の退行を検知できない)。
+        # 実際に adapter.normalize() を実行して確認した値: sex "オス"→"男の子"、
+        # age "約2歳"→24ヶ月。shelter_date は元データに無いため収集日
+        # フォールバック (shelter_date_estimated=True) になる。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.sex == "男の子"
+        assert animal_data.age_months == 24
+        assert animal_data.phone == "0157-57-3612"
+        assert animal_data.location == "アニウェル北海道（北見市）"
+        assert animal_data.shelter_date_estimated is True
+
     def test_empty_archive_returns_empty_list(self):
         """カードが 0 件の archive ページでは空リストを返す (例外を投げない)"""
         html = _archive_body_html(cards_html="")

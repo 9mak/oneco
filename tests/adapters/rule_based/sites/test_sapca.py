@@ -103,6 +103,18 @@ class TestSapcaAdapterDetailExtraction:
             category="sheltered",
         )
 
+        # normalize() 経由でも主要フィールドが期待通りに変換されること
+        # (T042/T114: raw のみの確認では normalize 段の退行を検知できない)。
+        # 実際に adapter.normalize() を実行して確認した値: sex "オス"→"男の子"、
+        # age "不明"→None、shelter_date "2026-05-01"→date(2026, 5, 1)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.sex == "男の子"
+        assert animal_data.age_months is None
+        assert animal_data.size == "中型"
+        assert animal_data.shelter_date.isoformat() == "2026-05-01"
+        assert animal_data.location == "湖南市"
+        assert animal_data.phone == "0748-75-1911"
+
     def test_extract_filters_template_images_and_keeps_uploads(self):
         adapter = SapcaAdapter(_site())
         with patch.object(adapter, "_http_get", return_value=DETAIL_HTML):

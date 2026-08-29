@@ -99,6 +99,21 @@ class TestKyotoAniLoveAdapter:
         # age (推定年齢) は "成犬"
         assert raw.age == "成犬"
 
+        # normalize() 経由でも breed (個体識別フィールド) が脱落しないこと
+        # (T042/T114: raw のみの確認では normalize 段のサイレントドロップを
+        # 検知できない)。実際に adapter.normalize() を実行して確認した値:
+        # sex "オス"→"男の子"、size "中"→"中型"。shelter_date は年なし表記
+        # "３月１７日" を当年/前年で補完するため、実行日によって年が変わり
+        # うる (月日のみ固定で検証する)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.breed == "柴"
+        assert animal_data.sex == "男の子"
+        assert animal_data.size == "中型"
+        assert animal_data.shelter_date.month == 3
+        assert animal_data.shelter_date.day == 17
+        assert animal_data.location == "南区西九条比永城町"
+        assert animal_data.phone == "075-671-0336"
+
     def test_extract_animal_details_second_row(self, fixture_html, assert_raw_animal):
         """2 件目のカードから RawAnimalData を構築できる
 
@@ -134,6 +149,14 @@ class TestKyotoAniLoveAdapter:
         assert raw.age == "成犬"
         # 品種(ポメラニアン)は species_detail として抽出され breed に保存される
         assert raw.breed == "ポメラニアン"
+
+        # normalize() 経由でも breed が脱落しないこと
+        animal_data = adapter.normalize(raw)
+        assert animal_data.breed == "ポメラニアン"
+        assert animal_data.sex == "女の子"
+        assert animal_data.size == "小型"
+        assert animal_data.shelter_date.month == 5
+        assert animal_data.shelter_date.day == 2
 
     def test_species_inferred_for_cat_site(self, fixture_html):
         """猫サイトでは species が "猫" に推定される

@@ -305,6 +305,20 @@ class TestShuyojohoTokyoAdapterDetailExtraction:
         assert "bnr_tokyo.jpg" not in raw.image_urls[0]
         assert raw.source_url == detail_url
 
+        # normalize() 経由でも breed (個体識別フィールド) が脱落しないこと
+        # (T042/T114: raw のみの確認では normalize 段のサイレントドロップを
+        # 検知できない)。実際に adapter.normalize() を実行して確認した値:
+        # sex "オス(去勢含む)"→"男の子"、size "中"→"中型"、
+        # shelter_date "2026/05/15"→date(2026, 5, 15)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.species == "猫"
+        assert animal_data.breed == "雑種"
+        assert animal_data.sex == "男の子"
+        assert animal_data.size == "中型"
+        assert animal_data.shelter_date.isoformat() == "2026-05-15"
+        assert animal_data.phone == "03-3790-0861"
+        assert animal_data.location == "練馬区 氷川台2丁目"
+
     def test_extract_animal_details_dog(self, assert_raw_animal):
         """犬の詳細ページから各フィールドが抽出できる"""
         adapter = ShuyojohoTokyoAdapter(_site_dog())

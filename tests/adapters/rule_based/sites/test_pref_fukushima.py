@@ -109,6 +109,20 @@ class TestPrefFukushimaAdapter:
         assert raw.source_url == first_url
         assert raw.category == "lost"
 
+        # normalize() 経由でも主要フィールドが期待通りに変換されること
+        # (T042/T114: raw のみの確認では normalize 段の退行を検知できない)。
+        # 実際に adapter.normalize() を実行して確認した値: sex "メス"→"女の子"、
+        # size "中"→"中型"、age "6歳"→72ヶ月、shelter_date (雑多な注記付き
+        # "令和8年4月28日（火曜日）（n080428-1）") →date(2026, 4, 28)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.sex == "女の子"
+        assert animal_data.size == "中型"
+        assert animal_data.age_months == 72
+        assert animal_data.color == "茶白"
+        assert animal_data.shelter_date.isoformat() == "2026-04-28"
+        assert animal_data.location == "伊達市梁川町広瀬町"
+        assert animal_data.phone == "024-953-6400"
+
     def test_extract_second_row_handles_label_variants(self, fixture_html):
         """2 件目の表記揺れラベルでもフィールドが取り出される
 

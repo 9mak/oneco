@@ -138,6 +138,18 @@ class TestZaidanFukuokaDouaiAdapterDetailExtraction:
         # 相対 URL が絶対 URL に変換されている
         assert all(u.startswith("https://www.zaidan-fukuoka-douai.or.jp/") for u in raw.image_urls)
 
+        # normalize() 経由でも主要フィールドが期待通りに変換されること
+        # (T042/T114: raw のみの確認では normalize 段の退行を検知できない)。
+        # 実際に adapter.normalize() を実行して確認した値: sex "オス"→"男の子"、
+        # age "推定3歳"→36ヶ月、shelter_date "2026年5月14日"→date(2026, 5, 14)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.sex == "男の子"
+        assert animal_data.age_months == 36
+        assert animal_data.size == "中型"
+        assert animal_data.shelter_date.isoformat() == "2026-05-14"
+        assert animal_data.location == "京築保健福祉環境事務所"
+        assert animal_data.phone == "0930-23-2380"
+
     def test_extract_raises_on_empty_html(self):
         """テーブルが見当たらない HTML では例外を出す
 
@@ -491,6 +503,9 @@ class TestZaidanFukuokaDouaiAdapterCenterCategory:
                 category="adoption",
             )
         assert raw.size == "大型", f"16kg は大型のはず: got {raw.size!r}"
+        # normalize() を通しても adapter が既に正規形 ("大型") で渡した値は
+        # そのまま保持される (DataNormalizer._cap_size の二重変換なし確認)
+        assert adapter.normalize(raw).size == "大型"
 
     def test_size_class_label_takes_precedence_over_weight(self):
         """`大きさ` 欄に「中型」等の体格語が含まれる場合はそちらを優先する (回帰防止)
