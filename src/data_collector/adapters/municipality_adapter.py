@@ -81,6 +81,14 @@ class MunicipalityAdapter(ABC):
         self.prefecture_code = prefecture_code
         self.municipality_name = municipality_name
         self._throttle = RequestThrottle()
+        # 一覧ページ送りの上限到達・循環検知・detail peek 失敗等により、
+        # fetch_animal_list がサイト上の全件を確実に列挙できなかった場合に
+        # True へセットする (T059)。CollectorService はこのフラグを
+        # soft_stopped_at / detail_failures と同じ扱いで完全性判定に合流させ、
+        # 部分列挙の run で prune_disappeared (消滅同期削除) をスキップする
+        # 安全弁として使う。既定 False = 完全に列挙できた前提（従来互換）。
+        # 該当しない adapter は何もセットしなくてよい。
+        self.list_truncated: bool = False
 
     def _polite_wait(self, interval_sec: float | None = None) -> None:
         """HTTP 取得の直前に呼び、最小アクセス間隔を保証する。"""

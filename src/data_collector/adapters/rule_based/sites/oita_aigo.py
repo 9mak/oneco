@@ -107,6 +107,12 @@ class OitaAigoAdapter(SinglePageTableAdapter):
         内部キーとして使うが、source_url には採用しない (T053)。掲載順の
         入れ替わりで row 番号と実個体の対応がズレるため、実際の source_url は
         `extract_animal_details` がカード固有の詳細 URL から決定する。
+
+        上限到達・循環検知いずれで打ち切った場合も `self.list_truncated` を
+        立てる。CollectorService はこのフラグを見て prune_disappeared
+        (消滅同期削除) をスキップする (T059)。打ち切り区間に未取得の
+        実在個体が残っている可能性があり、部分集合のまま消滅判定すると
+        誤って公開から削除してしまうため。
         """
         if self._rows_cache is not None:
             return self._rows_cache
@@ -114,8 +120,19 @@ class OitaAigoAdapter(SinglePageTableAdapter):
         rows: list[Tag] = []
         visited_pages: set[str] = set()
         page_url = self.site_config.list_url
+        truncated = False
         for _ in range(self.MAX_LIST_PAGES):
             if page_url in visited_pages:
+                # next リンクが既訪問ページを指す異常系 (循環)。この先に未取得の
+                # ページが残っている可能性があるため、上限到達と同様の打ち切りと
+                # みなす (従来は無警告のまま silent break していた)。
+                truncated = True
+                logger.warning(
+                    "[%s] 一覧のページ送りで循環を検知しました (既訪問ページへの"
+                    "再遷移: %s)。未取得のページが残っている可能性があります",
+                    self.site_config.name,
+                    page_url,
+                )
                 break
             visited_pages.add(page_url)
             html = self._http_get(page_url)
@@ -131,6 +148,7 @@ class OitaAigoAdapter(SinglePageTableAdapter):
         else:
             # 上限で打ち切った = まだ next が残っている可能性があり、
             # 静かな掲載漏れになるため必ずログに残す。
+            truncated = True
             logger.warning(
                 "[%s] 一覧のページ送りが上限 %d ページに達しました。"
                 "未取得のページが残っている可能性があります: %s",
@@ -139,6 +157,7 @@ class OitaAigoAdapter(SinglePageTableAdapter):
                 page_url,
             )
 
+        self.list_truncated = truncated
         self._rows_cache = rows
         return rows
 

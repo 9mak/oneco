@@ -92,8 +92,9 @@ class CollectorService:
         self.notification_manager_client = notification_manager_client
         self.logger = logging.getLogger(__name__)
         self._structure_changed = False
-        # 収集が「サイト全件を失敗なく列挙できた」かどうか。soft-stop や detail 抽出
-        # 失敗で部分取得になった run では prune_disappeared をスキップする
+        # 収集が「サイト全件を失敗なく列挙できた」かどうか。soft-stop・detail 抽出
+        # 失敗・一覧ページ送りの打ち切り (adapter.list_truncated, T059) で部分取得に
+        # なった run では prune_disappeared をスキップする
         # （部分集合で消滅判定すると、まだ実在する個体を誤って削除してしまうため）。
         self._collection_complete = True
         # 並列収集 (parallel_runner) でサイト間の lock 衝突を避けるため、
@@ -256,6 +257,10 @@ class CollectorService:
             try:
                 # 一覧ページから個体詳細 URL リストとカテゴリを取得
                 detail_url_category_pairs = self.adapter.fetch_animal_list()
+                # 一覧ページ送りの上限到達・循環検知・detail peek 失敗等で、adapter が
+                # サイト上の全件を列挙しきれなかった場合に True (T059)。属性未定義の
+                # adapter (テストダブル等) は getattr の既定 False で従来どおり扱う。
+                list_truncated = bool(getattr(self.adapter, "list_truncated", False))
 
                 # 各個体詳細ページから情報を抽出・正規化
                 collected_data = []
@@ -314,9 +319,19 @@ class CollectorService:
                         extra={"skipped": skipped, "extracted": extracted},
                     )
 
+                if list_truncated:
+                    self.logger.warning(
+                        "一覧ページ送りが打ち切られたため、prune_disappeared をスキップします "
+                        "(打ち切り区間に実在個体が含まれる可能性があるため部分列挙として扱う)",
+                        extra={"municipality": self.adapter.municipality_name},
+                    )
+
                 # この run がサイト全件を失敗なく列挙できたか。soft-stop でも detail
-                # 失敗でも無い場合のみ「完全」とし、prune_disappeared を許可する。
-                self._collection_complete = soft_stopped_at is None and detail_failures == 0
+                # 失敗でも一覧ページ送りの打ち切り (上限到達/循環検知/peek 失敗) でも
+                # 無い場合のみ「完全」とし、prune_disappeared を許可する。
+                self._collection_complete = (
+                    soft_stopped_at is None and detail_failures == 0 and not list_truncated
+                )
 
                 return collected_data
 
