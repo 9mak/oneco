@@ -36,6 +36,18 @@ export function trackExternalLinkClick(params: {
   });
 }
 
+export function trackPhoneClick(params: {
+  phone: string;
+  prefecture?: string;
+  animalId?: string;
+}): void {
+  send('contact_phone_click', {
+    phone: params.phone,
+    prefecture: params.prefecture,
+    animal_id: params.animalId,
+  });
+}
+
 export function trackSearchUsed(params: {
   queryLength: number;
   // 結果件数を知り得ない呼び出し元（Suspense 外に常駐する FilterPanel 等）では

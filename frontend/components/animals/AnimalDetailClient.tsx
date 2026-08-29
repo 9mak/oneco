@@ -208,6 +208,8 @@ export function AnimalDetailClient({ animal }: AnimalDetailClientProps) {
                 location={animal.location}
                 phone={animal.phone}
                 category={animal.category}
+                prefecture={animal.prefecture ?? undefined}
+                animalId={String(animal.id)}
               />
 
               {/* 元のページを見るボタン */}
