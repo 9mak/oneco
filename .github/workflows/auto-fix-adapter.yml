@@ -17,10 +17,10 @@ on:
         required: true
         type: string
       model:
-        description: 'Groq model (デフォルト: llama-3.3-70b-versatile)'
+        description: 'Groq model (デフォルト: openai/gpt-oss-120b)'
         required: false
         type: string
-        default: 'llama-3.3-70b-versatile'
+        default: 'openai/gpt-oss-120b'
       dry_run:
         description: 'dry-run (PR を作らずパッチ適用までで止める)'
         required: false

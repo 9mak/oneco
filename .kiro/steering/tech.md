@@ -14,7 +14,7 @@
 - FastAPI / SQLAlchemy async + asyncpg / alembic
 - スクレイピング: httpx + BeautifulSoup、JS 必須サイト(27件)は Playwright、PDF は pdfplumber
 - **抽出はデフォルト rule-based**（サイト別 adapter、`sites.yaml` の `default_extraction: rule-based`）
-- **LLM は Groq `llama-3.3-70b-versatile` のみ**。用途は adapter 自己修復（SEARCH/REPLACE 方式）と抽出フォールバック。**Anthropic API は不採用**（コスト方針）
+- **LLM は Groq `openai/gpt-oss-120b` のみ**。用途は adapter 自己修復（SEARCH/REPLACE 方式）と抽出フォールバック。**Anthropic API は不採用**（コスト方針）
 - Lint: ruff（`check` + `format --check` の2段。CI で強制）。mypy は既知エラー約120件のためゲート無効
 
 ## Frontend

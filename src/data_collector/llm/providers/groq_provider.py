@@ -1,7 +1,7 @@
 """
 Groq API (OpenAI互換) を使った構造化抽出プロバイダー
 
-llama-3.3-70b-versatile 等の無料枠モデルを使用。
+openai/gpt-oss-120b 等の無料枠モデルを使用。
 """
 
 import json
@@ -194,7 +194,7 @@ class GroqProvider(LlmProvider):
 
     def __init__(
         self,
-        model: str = "llama-3.3-70b-versatile",
+        model: str = "openai/gpt-oss-120b",
         api_key: str | None = None,
         max_retries: int = 3,
     ) -> None:

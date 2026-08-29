@@ -60,6 +60,6 @@ Vercel (Next.js frontend)  ── ISR/SSG で配信
 |---|---|
 | Backend | Python 3.11 / FastAPI / SQLAlchemy (async) + asyncpg / alembic / pdfplumber / Playwright (JS必須27サイト) |
 | Frontend | Next.js 16 App Router / React 19 / Tailwind CSS v4 / Auth.js v5 / d3-geo (日本地図) |
-| LLM | Groq `llama-3.3-70b-versatile`（adapter 自己修復専用。Anthropic は不採用） |
+| LLM | Groq `openai/gpt-oss-120b`（adapter 自己修復専用。Anthropic は不採用） |
 | CI/CD | GitHub Actions（9ワークフロー → [一覧](09-workflows.md)）/ ruff / pytest / Vitest / Playwright E2E |
 | インフラ | Cloud Run + Artifact Registry (WIF) / Vercel / Supabase |

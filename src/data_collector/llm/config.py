@@ -90,7 +90,7 @@ class ExtractionConfig(BaseModel):
     """グローバル抽出設定"""
 
     default_provider: str = "groq"
-    default_model: str = "llama-3.3-70b-versatile"
+    default_model: str = "openai/gpt-oss-120b"
     # default_extraction: 各サイトに extraction フィールドが指定されていない時のデフォルト
     # "llm": LLM 抽出（default_provider/model を使用） / "rule-based": rule-based 抽出
     default_extraction: str = "llm"
