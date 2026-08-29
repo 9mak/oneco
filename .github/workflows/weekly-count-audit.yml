@@ -1,0 +1,75 @@
+name: Weekly Count Audit
+
+# 実サイト掲載数と oneco 公開数を adapter を経由せず突き合わせる週次監査
+# (scripts/site_count_audit.py, T046 → 自動化 T105)。
+#
+# 背景: 手動実行 (2026-08-19) で大分県 (実サイト65頭 vs API 32件、猫が1ページ目のみ収集)
+# ・秋田ワンニャピア (実サイト10頭 vs API 0件、JS 必須判定の誤り) の掲載漏れを発見した実績が
+# あり、人手が入らなくても回る状態 (W002) の一手として推奨されていたため自動化する。
+#
+# 設計判断:
+# - 週次 (JST 日曜 1:00) で十分: 掲載数の系統的な取り漏らし (adapter バグ・JS 判定誤り) は
+#   突発の障害でなく構造的に固定化するもの。secret-health.yml (日次で十分と判断) と同じく
+#   uptime-check.yml (30分毎) ほどの密度は不要。
+# - JST 1:00 に設定: 収集は Cloud Run Jobs (JST 0:00 開始・所要 約20分) に移設済みなので、
+#   その直後を狙って収集済みの最新公開数と突き合わせる。secret-health / sns-publish
+#   (いずれも JST 9:00 daily) とは時間帯を分離し、輻輳や通知の紛れを避ける。
+# - 乖離ゼロなら通知しない: 誤通知疲労を避ける (secret-health.yml と同じ思想)。
+# - 通知対象は undercount_suspect / overcount_suspect / zero_suspect のみで
+#   pagination_detected は含めない: 次ページリンクの有無だけを示す情報フラグで、
+#   件数比較とは独立に立つため単体では乖離の証拠にならない
+#   (src/data_collector/infrastructure/count_audit_notify.py 参照)。
+# - 閾値・判定基準は追加しない: 既存の site_count_audit.py のフラグをそのまま使う
+#   (新しい判定基準の追加はスコープ外)。
+# - レポートは commit せず artifact 保存のみ: このスクリプトは docstring に明記の通り
+#   「undercount/overcount は当日の掲載入れ替わりを含む」単日ノイズの多いスナップショット。
+#   週次実行のたびに main へ自動コミットすると、確定情報でないデータで履歴が汚れ、
+#   actions: write / contents: write 権限も余分に必要になる。既存の reports/zero_audit_*.md は
+#   人が内容を確認して確定させた後の個別コミットであり、自動連続コミットの前例ではないため
+#   踏襲しない。週をまたいだ比較が要る場合は artifact (90日保持) を参照する。
+# - timeout 45分: 対象サイト約210件 (JS 必須 約25件はスキップ)。1件ごとに fetch +
+#   礼儀的スリープ (同一ホスト連続時1.5秒/それ以外0.5秒) を挟むため実測10〜20分程度を
+#   想定しつつ、失敗サイトのタイムアウト (25秒/件) 積み増しを見込んで余裕を持たせる。
+
+on:
+  schedule:
+    - cron: '0 16 * * 6'  # 毎週 UTC 土曜 16:00 = JST 日曜 1:00
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        # site_count_audit.py は NotificationClient を import する。secret-health.yml と
+        # 同じ理由で editable install が必要 (requests/pyyaml/bs4 単体だけを入れても
+        # infrastructure/__init__.py の eager import 経路で ModuleNotFoundError になる)。
+        run: pip install -e .
+
+      - name: Run site count audit
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python3 scripts/site_count_audit.py
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: site-count-audit-report
+          path: |
+            reports/site_count_audit_*.json
+            reports/site_count_audit_*.md
+          retention-days: 90
+          if-no-files-found: warn

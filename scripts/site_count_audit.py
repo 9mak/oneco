@@ -32,12 +32,20 @@ undercount / overcount は当日の掲載入れ替わりを含むため、単日
 
 出力 (既定 reports/):
     site_count_audit_YYYYMMDD.json / .md
+
+通知 (T105):
+    undercount_suspect / overcount_suspect / zero_suspect のいずれかが立った
+    ホストがあれば DISCORD_WEBHOOK_URL (環境変数, GitHub Actions secret) 宛に
+    Discord 通知する (data_collector.infrastructure.count_audit_notify)。
+    pagination_detected はそれ単体では通知対象にしない (件数比較と無関係な情報フラグのため)。
+    未設定なら通知は no-op でスキップされる (.github/workflows/weekly-count-audit.yml が週次実行)。
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 import time
@@ -50,6 +58,9 @@ from urllib.parse import urljoin, urlparse
 import requests
 import yaml
 from bs4 import BeautifulSoup
+
+from data_collector.infrastructure.count_audit_notify import maybe_notify
+from data_collector.infrastructure.notification_client import NotificationClient
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -366,6 +377,18 @@ def main() -> None:
     json_path.write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
     write_markdown(result, md_path)
     print(f"[count-audit] 出力: {json_path} / {md_path}", file=sys.stderr)
+
+    # 乖離 (undercount/overcount/zero_suspect) があれば Discord 通知 (T105)。
+    # DISCORD_WEBHOOK_URL 未設定時は NotificationClient が no-op でログ警告のみ
+    # (ローカル ad hoc 実行では通常未設定なので安全にスキップされる)。
+    notify_config: dict[str, str] = {}
+    discord_webhook = os.environ.get("DISCORD_WEBHOOK_URL")
+    if discord_webhook:
+        notify_config["discord_webhook_url"] = discord_webhook
+    notified = maybe_notify(result, NotificationClient(notify_config))
+    print(
+        f"[count-audit] Discord 通知: {'送信' if notified else '乖離なし/対象外'}", file=sys.stderr
+    )
 
 
 if __name__ == "__main__":
