@@ -76,7 +76,7 @@ class TestSiteConfigLoader:
         assert site.provider is None
         assert site.model is None
         assert config.extraction.default_provider == "groq"
-        assert config.extraction.default_model == "llama-3.3-70b-versatile"
+        assert config.extraction.default_model == "openai/gpt-oss-120b"
 
     def test_load_file_not_found(self, tmp_path: Path):
         with pytest.raises(FileNotFoundError, match="設定ファイルが見つかりません"):
@@ -235,7 +235,7 @@ class TestResolveProvider:
         config = SitesConfig(
             extraction=ExtractionConfig(
                 default_provider="groq",
-                default_model="llama-3.3-70b-versatile",
+                default_model="openai/gpt-oss-120b",
             ),
             sites=[
                 SiteConfig(
@@ -313,7 +313,7 @@ class TestLoadAppliesInferredLicense:
         cfg.write_text(
             "extraction:\n"
             "  default_provider: groq\n"
-            "  default_model: llama-3.3-70b-versatile\n"
+            "  default_model: openai/gpt-oss-120b\n"
             "  default_extraction: rule-based\n"
             "sites:\n"
             "  - name: 政府公式サイト\n"
@@ -337,7 +337,7 @@ class TestLoadAppliesInferredLicense:
         cfg.write_text(
             "extraction:\n"
             "  default_provider: groq\n"
-            "  default_model: llama-3.3-70b-versatile\n"
+            "  default_model: openai/gpt-oss-120b\n"
             "  default_extraction: rule-based\n"
             "sites:\n"
             "  - name: 明示済みサイト\n"
