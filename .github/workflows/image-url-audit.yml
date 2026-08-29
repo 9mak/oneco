@@ -1,0 +1,83 @@
+name: Image URL Audit
+
+# 公開中の個体の image_urls が掲載元ページ (source_url) に実在するかを機械照合する
+# (W002 Acceptance「画像URLが元ページに実在するかを自動照合する」, T102)。
+#
+# 背景: 熊本の別個体写真混入事故 (T020, PR #263) では、detail ページ下部の
+# 「おすすめ」欄の他個体サムネイルを adapter の img セレクタが拾い、公開個体の
+# image_urls に別の子の写真が混入していた。この種の「元サイトと違う子の写真が
+# 公開される」致命リスクを検知する機械的な手段が無く、おまえさんの目視監査に
+# 依存していたため、定期実行の監査として自動化する。
+#
+# 設計判断:
+# - 日次 (JST 12:00) + 1/7 ローテーション (scripts/image_url_audit.py の既定) で
+#   7日で全件一巡させる。全件を毎回チェックすると自治体サイトへの負荷が大きい
+#   ため (個体ごとに detail ページ + 画像 URL への fetch が必要で site_count_audit.py
+#   の一覧ページ1回 fetch より高コスト)、weekly-count-audit.yml (T105, 週次)
+#   より保守的に「日次だが対象は毎回1/7」という形で負荷を抑える。
+# - JST 12:00 に設定: secret-health.yml / sns-publish.yml (JST 9:00) ・
+#   data-collector (JST 0:00 開始) ・weekly-count-audit.yml (JST 日曜 1:00) と
+#   時間帯を分離し、輻輳や通知の紛れを避ける。
+# - 乖離ゼロなら通知しない: 誤通知疲労を避ける (secret-health.yml / count_audit_notify.py
+#   と同じ思想)。通知対象は image_not_found_on_page / image_broken_link の確定的な
+#   異常のみで、ページ/画像取得の一時障害 (timeout/5xx) は含めない。
+# - レポートは commit せず artifact 保存のみ: image_not_found_on_page は
+#   「収集後にサイト側の掲載が入れ替わった」だけでも起こりうる単日ノイズを含む
+#   スナップショットのため、weekly-count-audit.yml と同じく自動コミットで
+#   main の履歴を汚さない。
+# - timeout 30分: 1/7 ローテーションで対象は現状 1,100+ 件の約1/7 (≒160件)。
+#   single_page 型サイトはページキャッシュ・画像URLキャッシュで重複 fetch を避ける
+#   ため実際のネットワークアクセス数はこれより少ない見込みだが、礼儀的スリープ
+#   (同一ホスト連続時1.5秒) や失敗時のタイムアウト (最大20秒/回) 積み増しを
+#   見込んで余裕を持たせる。
+
+on:
+  schedule:
+    - cron: '0 3 * * *'  # 毎日 UTC 3:00 = JST 12:00
+  workflow_dispatch:
+    inputs:
+      rotation_days:
+        description: '全体を何日で一巡させるか (既定7。1指定で全件実行・デバッグ用)'
+        required: false
+        type: string
+        default: '7'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        # image_url_audit.py は NotificationClient を import する。secret-health.yml /
+        # weekly-count-audit.yml と同じ理由で editable install が必要
+        # (requests/pyyaml/bs4 単体だけを入れても infrastructure/__init__.py の
+        # eager import 経路で ModuleNotFoundError になる)。
+        run: pip install -e .
+
+      - name: Run image URL audit
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          ROTATION_DAYS: ${{ inputs.rotation_days || '7' }}
+        run: python3 scripts/image_url_audit.py --rotation-days "$ROTATION_DAYS"
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: image-url-audit-report
+          path: |
+            reports/image_url_audit_*.json
+            reports/image_url_audit_*.md
+          retention-days: 90
+          if-no-files-found: warn
