@@ -174,6 +174,19 @@ class TestDouaicenterAdapterDetailExtraction:
             category="adoption",
         )
 
+        # normalize() 経由でも主要フィールドが期待通りに変換されること
+        # (T042/T114: raw のみの確認では normalize 段の退行を検知できない)。
+        # 実際に adapter.normalize() を実行して確認した値: sex "メス"→"女の子"、
+        # age "3歳"→36ヶ月、shelter_date "2026-03-15"→date(2026, 3, 15)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.species == "犬"
+        assert animal_data.sex == "女の子"
+        assert animal_data.age_months == 36
+        assert animal_data.size == "中型"
+        assert animal_data.shelter_date.isoformat() == "2026-03-15"
+        assert animal_data.phone == "0166-25-5271"
+        assert animal_data.location == "旭川市動物愛護センター"
+
     def test_extract_filters_template_images_and_keeps_uploads(self):
         adapter = DouaicenterAdapter(_adoption_dog_site())
         with patch.object(adapter, "_http_get", return_value=DETAIL_HTML):
@@ -225,6 +238,13 @@ class TestDouaicenterAdapterCenterPhoneFallback:
                 category="sheltered",
             )
         assert raw.phone == "090-6995-1114"
+
+        # normalize() 経由では携帯番号 (090) が個人情報として除去され None に
+        # なること (T042/T114: raw のみの確認では PII 保護ロジックの退行を
+        # 検知できない)。DataNormalizer._sanitize_public_phone() が
+        # 070/080/090/050 プレフィックスの番号を公開 phone から落とす仕様。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.phone is None
 
 
 class TestDouaicenterAdapterRegistry:

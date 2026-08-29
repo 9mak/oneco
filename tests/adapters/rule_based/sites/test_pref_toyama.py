@@ -152,6 +152,21 @@ class TestPrefToyamaAdapter:
         assert raw.source_url == url
         assert raw.category == "lost"
 
+        # normalize() 経由でも breed (個体識別フィールド) が脱落しないこと
+        # (T042/T114: raw のみの確認では normalize 段のサイレントドロップを
+        # 検知できない)。raw.species="柴犬" は「犬」の文字を含むため
+        # DataNormalizer._normalize_species() で正しく "犬" に変換される
+        # (下の test_extract_animal_details_with_multiple_tables で
+        # "キジトラ" 等・犬猫の文字を含まない品種名では誤分類される既知の
+        # 挙動を記録している)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.species == "犬"
+        assert animal_data.breed == "柴犬"
+        assert animal_data.sex == "男の子"
+        assert animal_data.size == "中型"
+        assert animal_data.shelter_date.isoformat() == "2026-05-10"
+        assert animal_data.location == "富山市新総曲輪"
+
     def test_extract_animal_details_with_multiple_tables(self):
         """複数の動物テーブル = 複数動物として扱われる
 
@@ -188,6 +203,23 @@ class TestPrefToyamaAdapter:
         assert raws[1].species == "キジトラ"
         assert raws[1].sex == "オス"
         assert raws[1].category == "lost"
+
+        # normalize() 経由で判明した既知バグ (T114 監査で発見、2026-08、
+        # city_sasebo.py の "雑種" 事例と同型): raw.species は「種類」ラベルの
+        # 品種名がそのまま入り (breed とも同一値)、site_config.name も
+        # "犬猫" 併記で判定不能なため、DataNormalizer._normalize_species() の
+        # 文字列部分一致に頼っている。「三毛猫」は "猫" を含むため正しく
+        # 変換されるが、「キジトラ」(毛柄のみ・犬猫いずれの文字も含まない)
+        # は "その他" に誤分類され、動物種フィルタから漏れる。
+        # 本テストは現在の実際の挙動 (バグを含む) を記録するリグレッション
+        # テストであり、正しい仕様ではない。修正は別タスクで扱う。
+        animal_datas = [adapter.normalize(r) for r in raws]
+        assert animal_datas[0].species == "猫"
+        assert animal_datas[1].species == "その他", (
+            "既知バグ: breed='キジトラ' (犬猫の文字を含まない毛柄表記) は "
+            "species 推定で 'その他' に誤分類される (T114 発見、"
+            "city_sasebo.py と同型のパターン)。"
+        )
 
     def test_infer_species_from_site_name_default_empty(self):
         """富山県の実サイト名は犬・猫 (ねこ) を併記するため空文字を返す"""

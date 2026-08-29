@@ -149,6 +149,18 @@ class TestYokosukaDoubutuAdapter:
         assert raw.source_url == detail_url
         assert raw.category == "sheltered"
 
+        # normalize() 経由でも主要フィールドが期待通りに変換されること
+        # (T042/T114: raw のみの確認では normalize 段の退行を検知できない)。
+        # 実際に adapter.normalize() を実行して確認した値: sex "メス"→"女の子"、
+        # shelter_date (和暦+曜日注記 "R8.5.14（木曜日）") →date(2026, 5, 14)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.species == "犬"
+        assert animal_data.sex == "女の子"
+        assert animal_data.color == "黒白"
+        assert animal_data.shelter_date.isoformat() == "2026-05-14"
+        assert animal_data.location == "池田町"
+        assert animal_data.phone == "046-869-0040"
+
     def test_all_six_sites_registered(self):
         """6 つの横須賀市サイト名すべてが Registry に登録されている"""
         expected = [
@@ -375,6 +387,8 @@ class TestYokosukaDoubutuAdapter:
                 category="adoption",
             )
         assert raw.size == "大", f"体重29Kg → size=大: got {raw.size!r}"
+        # normalize() 経由で単漢字が体格の正規形に変換されること ("大" → "大型")
+        assert adapter.normalize(raw).size == "大型"
 
     def test_size_inferred_from_weight_cell_medium(self):
         """「体重: 9.6Kg」セルから size="中" 推定 (5kg 以上 15kg 未満)"""

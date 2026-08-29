@@ -223,6 +223,17 @@ class TestCityMachidaAdapterExtractFields:
         assert "2025年10月1日" in raw.shelter_date
         assert raw.category == "lost"
 
+        # normalize() 経由でも breed (個体識別フィールド) が脱落しないこと
+        # (T042/T114: raw のみの確認では normalize 段のサイレントドロップを
+        # 検知できない)。実際に adapter.normalize() を実行して確認した値:
+        # sex "メス"→"女の子"、shelter_date "2025年10月1日午後"→date(2025, 10, 1)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.breed == "柴犬"
+        assert animal_data.sex == "女の子"
+        assert animal_data.color == "茶"
+        assert animal_data.shelter_date.isoformat() == "2025-10-01"
+        assert animal_data.location == "町田市本町田"
+
     def test_phone_extracted_from_contact_aside(self):
         """`<aside class="contact"><p class="contact__tel">電話：042-722-6727</p>`
         からページ共通の問い合わせ先電話番号を取得する
@@ -340,6 +351,12 @@ class TestCityMachidaAdapterSizeInference:
         """
         raw = self._extract_one(animals_html)
         assert raw.size == "小"
+        # normalize() 経由で DataNormalizer._cap_size() が単漢字を体格の
+        # 正規形に変換すること ("小" → "小型")。raw だけの確認では
+        # normalize 段のマッピング崩れ (T114) を検知できない。
+        # normalize() は raw_data のみに依存する純粋な変換なので、
+        # インスタンスは新規作成でよい (fetch/extract の再実行は不要)。
+        assert CityMachidaAdapter(_site()).normalize(raw).size == "小型"
 
     @pytest.mark.parametrize(
         ("feature_text", "expected_size"),

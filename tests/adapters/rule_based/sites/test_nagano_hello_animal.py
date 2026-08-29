@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from unittest.mock import patch
 
 import pytest
@@ -127,6 +128,25 @@ class TestNaganoExtract:
             "https://www.pref.nagano.lg.jp/dobutsuaigo/joto/inu-neko/images/yamato.jpg"
         ]
         assert raw.category == "adoption"
+
+        # normalize() 経由でも主要フィールドが期待通りに変換されること
+        # (T042/T114: raw のみの確認では normalize 段の退行を検知できない)。
+        # 実際に adapter.normalize() を実行して確認した値:
+        # sex "オス（去勢済み）"→"男の子"、size "中型犬"→"中型"。
+        # age_months は生年月 (2021-05-01) からの経過月数で日次変動するため、
+        # 同じ生年月日ロジックで期待値を動的に算出する (kochi_adapter の
+        # 誕生日テストと同じ方式)。shelter_date は元データに無いため
+        # 収集日フォールバック (shelter_date_estimated=True) になる。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.sex == "男の子"
+        assert animal_data.size == "中型"
+        assert animal_data.color == "薄茶"
+        assert animal_data.phone == "0267-24-5071"
+        assert animal_data.location == "長野県動物愛護センター（ハローアニマル）"
+        today = date.today()
+        expected_age_months = (today.year - 2021) * 12 + (today.month - 5)
+        assert animal_data.age_months == expected_age_months
+        assert animal_data.shelter_date_estimated is True
 
     def test_second_block(self):
         """2匹目: はな/メス/小型犬/茶白"""

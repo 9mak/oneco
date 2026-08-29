@@ -162,6 +162,23 @@ class TestCitySendaiAdapter:
         assert raw.source_url == first_url
         assert raw.category == "adoption"
 
+        # normalize() 経由でも management_number/name/breed (個体識別
+        # フィールド) が脱落しないこと (T042/T114: raw のみの確認では
+        # normalize 段のサイレントドロップを検知できない)。実際に
+        # adapter.normalize() を実行して確認した値: sex "去勢雄"→"男の子"、
+        # age "10歳"→120ヶ月。size "約16kg" は体格語を含まないため
+        # DataNormalizer._cap_size() が体重のみと判定して None に落ちる
+        # (誤分類ではなく安全側の欠損、既存仕様)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.management_number == "D24018"
+        assert animal_data.name == "平助"
+        assert animal_data.breed == "柴犬"
+        assert animal_data.sex == "男の子"
+        assert animal_data.age_months == 120
+        assert animal_data.size is None
+        assert animal_data.shelter_date.isoformat() == "2026-04-17"
+        assert animal_data.phone == "022-258-1626"
+
     def test_extract_animal_details_first_row_from_fixture(self, fixture_html):
         """実フィクスチャ 1 件目から期待される値が取れる"""
         html = _load_sendai_html(fixture_html)
@@ -332,6 +349,18 @@ class TestDatatableLayout:
             assert r.sex, f"{r.management_number} の性別が空"
             assert r.color, f"{r.management_number} の毛色が空"
 
+        # normalize() 経由でも全件の management_number (個体識別フィールド)
+        # が脱落しないこと (5 頭全件を end-to-end で確認)。
+        animal_datas = [adapter.normalize(r) for r in raws]
+        assert {a.management_number for a in animal_datas} == {
+            "C25093",
+            "C25103",
+            "C25113",
+            "C25114",
+            "C25115",
+        }
+        assert all(a.species == "猫" for a in animal_datas)
+
     def test_koneko_datatable_yields_all_animals(self, fixture_html):
         """譲渡子猫ページ (列構成が譲渡猫と異なる) でも取得できる
 
@@ -365,3 +394,9 @@ class TestDatatableLayout:
         assert raws[0].management_number == "D24018"
         assert raws[0].name == "平助"
         assert raws[0].breed == "柴犬"
+
+        # normalize() 経由でも個体識別フィールドが脱落しないこと
+        animal_data = adapter.normalize(raws[0])
+        assert animal_data.management_number == "D24018"
+        assert animal_data.name == "平助"
+        assert animal_data.breed == "柴犬"

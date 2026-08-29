@@ -155,6 +155,19 @@ class TestCityMitoAdapter:
         assert raw.source_url == url
         assert raw.category == "lost"
 
+        # normalize() 経由で raw.species ("柴犬") が DataNormalizer._normalize_species()
+        # により "犬" に変換されること (T042/T114: raw のみの確認では normalize
+        # 段の分類ロジックの退行を検知できない)。実際に adapter.normalize() を
+        # 実行して確認した値: sex "メス"→"女の子"、size "中"→"中型"、
+        # shelter_date "2026年5月10日"→date(2026, 5, 10)。
+        animal_data = adapter.normalize(raw)
+        assert animal_data.species == "犬"
+        assert animal_data.sex == "女の子"
+        assert animal_data.size == "中型"
+        assert animal_data.color == "茶"
+        assert animal_data.shelter_date.isoformat() == "2026-05-10"
+        assert animal_data.location == "水戸市笠原町"
+
     def test_extract_animal_details_with_multiple_tables(self):
         """複数 table = 複数動物として扱われる"""
         synthetic_html = """
