@@ -142,7 +142,16 @@ class CitySaseboAdapter(SinglePageTableAdapter):
         # 末尾括弧 `（雑種、オス）` から取り出した種別は品種名 (雑種/柴犬等)。
         # これを品種(breed)として保存し、species はサイト名から犬/猫を推定する。
         breed, sex = self._parse_species_and_sex(text)
-        species = breed
+        # breed (雑種/キジトラ等) 自体に犬猫の文字が無いことが多いため、
+        # まず breed から推定を試み、それが失敗した場合のみサイト名に
+        # フォールバックする。佐世保市は「保護犬」「保護猫」が別サイト
+        # (URL の `_dog`/`_cat` で分離) のため、サイト名は常に犬/猫いずれか
+        # に確定できる、当サイトで最も信頼できる情報源。
+        # 旧実装は `species = breed` を直接代入しており、breed が非空文字
+        # (例: "キジトラ") であるだけでサイト名フォールバックに進まず、
+        # DataNormalizer._normalize_species() で "その他" に誤分類されて
+        # いた (実測: 本番 id=479, 佐世保市保護猫サイトの "キジトラ" 個体)。
+        species = self._infer_species_from_breed(breed)
         if not species:
             # サイト名から動物種別をフォールバック推定
             species = self._infer_species_from_site_name(self.site_config.name)
@@ -321,6 +330,21 @@ class CitySaseboAdapter(SinglePageTableAdapter):
         if "犬" in name:
             return "犬"
         return "その他"
+
+    @staticmethod
+    def _infer_species_from_breed(breed: str) -> str:
+        """末尾括弧の品種表記 (柴犬/雑種/三毛猫/キジトラ等) から動物種別を推定する
+
+        「雑種」「キジトラ」等、犬猫の文字を含まない品種名では判定できず
+        空文字を返す (呼出側でサイト名にフォールバックする想定)。
+        """
+        if not breed:
+            return ""
+        if "犬" in breed:
+            return "犬"
+        if "猫" in breed:
+            return "猫"
+        return ""
 
 
 # ─────────────────── サイト登録 ───────────────────

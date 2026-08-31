@@ -152,6 +152,11 @@ class CityTakatsukiAdapter(SinglePageTableAdapter):
         trs = [tr for tr in table.find_all("tr") if isinstance(tr, Tag)]
 
         fields: dict[str, str] = {}
+        # 「犬種」「猫種」はラベル自体が動物種別を明示する。値セルは品種名
+        # (雑種等、犬猫の文字を含まない) のことがあり breed 推定に頼れない
+        # ため、ラベルから直接確定しておく (mito/toyama の実データで確認した
+        # 同型パターンに対する予防的修正)。
+        species_from_label = ""
         for tr in trs:
             cells = [c for c in tr.find_all(["td", "th"]) if isinstance(c, Tag)]
             if len(cells) < 2:
@@ -161,6 +166,11 @@ class CityTakatsukiAdapter(SinglePageTableAdapter):
             value_text = re.sub(r"[ 　]+", " ", value_text).strip()
             for label_cell in cells[:-1]:
                 label_text = label_cell.get_text(separator="", strip=True)
+                if not species_from_label:
+                    if "犬種" in label_text:
+                        species_from_label = "犬"
+                    elif "猫種" in label_text:
+                        species_from_label = "猫"
                 matched = False
                 for label, field in self._LABEL_TO_FIELD.items():
                     if field in fields:
@@ -172,11 +182,15 @@ class CityTakatsukiAdapter(SinglePageTableAdapter):
                 if matched:
                     break
 
-        # species: テーブル値から推定 (具体名 → 犬/猫 への正規化)、
-        # 取得できない場合はサイト名から推定 (高槻市の「迷子犬猫」では
-        # 犬/猫の特定不可なので通常は空文字)。
+        # species: 「犬種」「猫種」ラベルを最優先、次にテーブル値からの推定
+        # (具体名 → 犬/猫 への正規化)、それでも不明ならサイト名から推定
+        # (高槻市の「迷子犬猫」では犬/猫の特定不可なので通常は空文字)。
+        # 旧実装は `_infer_species_from_breed(x) or x` で breed 推定が失敗
+        # した場合 (例: "雑種") でも x 自体をそのまま species に採用して
+        # しまい、サイト名フォールバックへ進めないバグがあったため
+        # `or x` を廃止する。
         species_raw = fields.get("species", "")
-        species = self._infer_species_from_breed(species_raw) or species_raw
+        species = species_from_label or self._infer_species_from_breed(species_raw)
         if not species:
             species = self._infer_species_from_site_name(self.site_config.name)
 

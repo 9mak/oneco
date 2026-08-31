@@ -157,6 +157,11 @@ class PrefToyamaAdapter(SinglePageTableAdapter):
         }
 
         fields: dict[str, str] = {}
+        # 「犬種」「猫種」はラベル自体が動物種別を明示する。値セルは品種名
+        # (雑種等、犬猫の文字を含まない) のことがあり breed 推定に頼れない
+        # ため、ラベルから直接確定しておく (city_mito.py の実データ実測で
+        # 確認した同型パターンに対する予防的修正)。
+        species_from_label = ""
         for tr in trs:
             cells = [c for c in tr.find_all(["td", "th"]) if isinstance(c, Tag)]
             if len(cells) < 2:
@@ -166,6 +171,11 @@ class PrefToyamaAdapter(SinglePageTableAdapter):
             value_text = re.sub(r"[ 　]+", " ", value_text).strip()
             for label_cell in cells[:-1]:
                 label_text = label_cell.get_text(separator="", strip=True)
+                if not species_from_label:
+                    if "犬種" in label_text:
+                        species_from_label = "犬"
+                    elif "猫種" in label_text:
+                        species_from_label = "猫"
                 matched = False
                 for label, field in label_to_field.items():
                     if field in fields:
@@ -177,9 +187,12 @@ class PrefToyamaAdapter(SinglePageTableAdapter):
                 if matched:
                     break
 
-        # species: テーブル値を優先し、無ければサイト名から推定 (空可)
-        species = fields.get("species", "") or self._infer_species_from_site_name(
-            self.site_config.name
+        # species: 「犬種」「猫種」ラベルを最優先、次にテーブル値、
+        # 最後にサイト名から推定する (空可)
+        species = (
+            species_from_label
+            or fields.get("species", "")
+            or self._infer_species_from_site_name(self.site_config.name)
         )
 
         try:
