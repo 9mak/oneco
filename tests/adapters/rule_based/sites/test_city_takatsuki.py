@@ -262,6 +262,46 @@ class TestCityTakatsukiAdapter:
         animal_data = adapter.normalize(raw)
         assert animal_data.species == "猫"
 
+    def test_extract_animal_details_with_dual_field_row_layout(self):
+        """1 行に 2 フィールドが並ぶレイアウトでも全フィールドを正しく抽出する (T122)
+
+        city_mito.py の実データ (wayback snapshot 2025-11-14) で確認した
+        `<tr><th>収容日時</th><td>...</td><th>年齢</th><td>...</td></tr>` の
+        ような構造は高槻市 adapter でもコード構造上同型のバグを持ちうる
+        (現状ライブ 0 件のため未発現)。修正前は行内の末尾セルのみを値として
+        扱っていたため、1 個目のラベル (収容日) に 2 個目のラベル (年齢) の
+        値が誤って混入していた。セルを 2 個ずつ (ラベル, 値) のペアとして
+        処理する修正で、隣接フィールドの値が混入しないことを検証する。
+        """
+        synthetic_html = """
+        <html><body>
+        <div class="detail_free">
+          <table>
+            <tr><th>収容日</th><td>2026年5月10日</td><th>年齢</th><td>成犬</td></tr>
+            <tr><th>収容場所</th><td>高槻市富田町</td><th>毛色</th><td>茶</td></tr>
+          </table>
+        </div>
+        </body></html>
+        """
+        adapter = CityTakatsukiAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=synthetic_html):
+            urls = adapter.fetch_animal_list()
+            url, category = urls[0]
+            raw = adapter.extract_animal_details(url, category=category)
+
+        assert raw.shelter_date == "2026年5月10日", (
+            f"収容日ラベルの値のみが入るはず (年齢の値が混入していないか): got {raw.shelter_date!r}"
+        )
+        assert raw.location == "高槻市富田町", (
+            f"収容場所ラベルの値のみが入るはず (毛色の値が混入していないか): got {raw.location!r}"
+        )
+        assert raw.age == "成犬"
+        assert raw.color == "茶"
+
+        animal_data = adapter.normalize(raw)
+        assert animal_data.shelter_date.isoformat() == "2026-05-10"
+        assert animal_data.location == "高槻市富田町"
+
     def test_infer_species_from_site_name_returns_empty_for_dog_and_cat(self):
         """サイト名「迷子犬猫」は犬・猫の両方を含むため空文字"""
         assert CityTakatsukiAdapter._infer_species_from_site_name("高槻市（迷子犬猫）") == ""

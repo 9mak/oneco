@@ -150,37 +150,39 @@ class CityMitoAdapter(SinglePageTableAdapter):
         }
 
         fields: dict[str, str] = {}
-        # 「犬種」「猫種」はラベル自体が動物種別を明示する。実測 (2025-11
-        # wayback snapshot) では 1 行に 2 フィールドが並ぶレイアウト
-        # (例: `犬種｜雑種｜首輪｜無し`) が使われており、この場合
-        # value_cell (末尾セル) は「犬種」の値ではなく隣接フィールド
-        # (首輪) の値になってしまうため、値ではなくラベルから種別を
-        # 直接確定する。
+        # 水戸市 CMS の実テンプレートは 1 行に 2 組の「ラベル/値」ペアが
+        # 並ぶレイアウトを使う (実測 2025-11 wayback snapshot:
+        # `収容日時｜令和7年10月9日｜年齢｜成犬（若め）` のように th/td が
+        # 4 個並ぶ)。旧実装は行内の末尾セルのみを値として扱い、行内の
+        # 全ラベルセル (犬種/収容日時/収容場所 等) にその末尾セルの値を
+        # 割り当てようとしていたため、2 個目以降のラベル (年齢・毛色等)
+        # の値が 1 個目のラベルに誤って混入していた
+        # (T122: shelter_date に年齢の値、location に毛色の値が入るバグ)。
+        # セルを 2 個ずつ (ラベル, 値) のペアとして処理することで、
+        # 隣接フィールドの値が混入しないようにする。奇数個の余りセル
+        # (対応する値が無い) は無視する。
         species_from_label = ""
         for tr in trs:
             cells = [c for c in tr.find_all(["td", "th"]) if isinstance(c, Tag)]
             if len(cells) < 2:
                 continue
-            value_cell = cells[-1]
-            value_text = value_cell.get_text(separator=" ", strip=True)
-            value_text = re.sub(r"[ 　]+", " ", value_text).strip()
-            for label_cell in cells[:-1]:
+            for i in range(0, len(cells) - 1, 2):
+                label_cell = cells[i]
+                value_cell = cells[i + 1]
                 label_text = label_cell.get_text(separator="", strip=True)
+                value_text = value_cell.get_text(separator=" ", strip=True)
+                value_text = re.sub(r"[ 　]+", " ", value_text).strip()
                 if not species_from_label:
                     if "犬種" in label_text:
                         species_from_label = "犬"
                     elif "猫種" in label_text:
                         species_from_label = "猫"
-                matched = False
                 for label, field in label_to_field.items():
                     if field in fields:
                         continue
                     if label in label_text:
                         fields[field] = value_text
-                        matched = True
                         break
-                if matched:
-                    break
 
         # species: 「犬種」「猫種」ラベルを最優先、次にテーブル値、
         # 最後にサイト名から推定する (水戸市の実サイト名は犬猫いずれも

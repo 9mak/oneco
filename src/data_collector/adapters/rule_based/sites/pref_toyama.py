@@ -157,35 +157,37 @@ class PrefToyamaAdapter(SinglePageTableAdapter):
         }
 
         fields: dict[str, str] = {}
-        # 「犬種」「猫種」はラベル自体が動物種別を明示する。値セルは品種名
-        # (雑種等、犬猫の文字を含まない) のことがあり breed 推定に頼れない
-        # ため、ラベルから直接確定しておく (city_mito.py の実データ実測で
-        # 確認した同型パターンに対する予防的修正)。
+        # 富山県の動物テーブルも水戸市と同様、1 行に 2 組の「ラベル/値」
+        # ペアが並ぶレイアウトになりうる (T122: city_mito.py の実データ
+        # 実測で確認した同型構造)。旧実装は行内の末尾セルのみを値として
+        # 扱い、行内の全ラベルセルにその末尾セルの値を割り当てようと
+        # していたため、2 個目以降のラベルの値が 1 個目のラベルに誤って
+        # 混入する潜在バグがあった (現状ライブ 0 件のため未発現)。
+        # セルを 2 個ずつ (ラベル, 値) のペアとして処理することで、
+        # 隣接フィールドの値が混入しないようにする。奇数個の余りセル
+        # (対応する値が無い) は無視する。
         species_from_label = ""
         for tr in trs:
             cells = [c for c in tr.find_all(["td", "th"]) if isinstance(c, Tag)]
             if len(cells) < 2:
                 continue
-            value_cell = cells[-1]
-            value_text = value_cell.get_text(separator=" ", strip=True)
-            value_text = re.sub(r"[ 　]+", " ", value_text).strip()
-            for label_cell in cells[:-1]:
+            for i in range(0, len(cells) - 1, 2):
+                label_cell = cells[i]
+                value_cell = cells[i + 1]
                 label_text = label_cell.get_text(separator="", strip=True)
+                value_text = value_cell.get_text(separator=" ", strip=True)
+                value_text = re.sub(r"[ 　]+", " ", value_text).strip()
                 if not species_from_label:
                     if "犬種" in label_text:
                         species_from_label = "犬"
                     elif "猫種" in label_text:
                         species_from_label = "猫"
-                matched = False
                 for label, field in label_to_field.items():
                     if field in fields:
                         continue
                     if label in label_text:
                         fields[field] = value_text
-                        matched = True
                         break
-                if matched:
-                    break
 
         # species: 「犬種」「猫種」ラベルを最優先、次にテーブル値、
         # 最後にサイト名から推定する (空可)

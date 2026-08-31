@@ -203,14 +203,25 @@ class TestCityMitoAdapter:
         assert raws[1].category == "sheltered"
 
     def test_extract_animal_details_with_real_world_dual_field_row_layout(self):
-        """実サイトの「1行に2フィールド」レイアウトでも species を正しく推定する (T118 修正)
+        """実サイトの「1行に2フィールド」レイアウトで全フィールドを正しく抽出する (T118/T122 修正)
 
-        wayback snapshot (2025-11) で確認した実際の水戸市テーブル構造:
-        `<tr><th>犬種</th><td>雑種</td><th>首輪</th><td>無し</td></tr>` のように
-        1 行に 2 組の label/value ペアが並ぶ。旧実装は末尾セルのみを値として
-        扱うため、「犬種」ラベルにマッチした際 value に隣接フィールド (首輪)
-        の値が入り、species が「無し」(犬猫の文字を含まない) になって
-        "その他" に誤分類されていた (実測: 本番 id=523/524)。
+        wayback snapshot (2025-11-14, 2043.html) で確認した実際の水戸市
+        テーブル構造そのもの:
+        `<tr><th>収容日時</th><td>令和7年10月9日</td><th>年齢</th><td>成犬（若め）</td></tr>`
+        のように 1 行に 2 組の label/value ペアが並ぶ。
+
+        - T118 (species): 旧実装は末尾セルのみを値として扱うため、「犬種」
+          ラベルにマッチした際 value に隣接フィールド (首輪) の値が入り、
+          species が「無し」(犬猫の文字を含まない) になって "その他" に
+          誤分類されていた (実測: 本番 id=523/524)。
+        - T122 (shelter_date/location/color/age): T118 修正後も、行内の
+          末尾セルのみを値として扱う構造自体は残っていたため、1 個目の
+          ラベル (収容日時/収容場所) に 2 個目のラベル (年齢/毛色) の値が
+          誤って割り当てられていた。実測: shelter_date に "成犬（若め）"
+          (年齢の値)、location に "茶黒" (毛色の値) が入り、color/age は
+          常に空文字になっていた (reviewer が T118 PR #307 検証中に発見)。
+          セルを 2 個ずつ (ラベル, 値) のペアとして処理する修正により、
+          各ラベルが隣接する自分の値セルのみを参照するようになった。
         """
         synthetic_html = """
         <html><body>
@@ -238,8 +249,24 @@ class TestCityMitoAdapter:
             raw = adapter.extract_animal_details(url, category=category)
 
         assert raw.species == "犬", f"「犬種」ラベルから種別を確定できるはず: got {raw.species!r}"
+        # T122 回帰テスト: 修正前は shelter_date="成犬（若め）" (年齢の値が混入)、
+        # location="茶黒" (毛色の値が混入) になっていた。
+        assert raw.shelter_date == "令和7年10月9日", (
+            f"収容日時ラベルの値のみが入るはず (年齢の値が混入していないか): got {raw.shelter_date!r}"
+        )
+        assert raw.location == "水戸市鯉渕町", (
+            f"収容場所ラベルの値のみが入るはず (毛色の値が混入していないか): got {raw.location!r}"
+        )
+        assert raw.age == "成犬（若め）"
+        assert raw.color == "茶黒"
+        assert raw.size == "中"
+
         animal_data = adapter.normalize(raw)
         assert animal_data.species == "犬"
+        # 令和7年10月9日 = 2025-10-09。normalize() 経由で日付が実際に
+        # パースできる (= 当日日付フォールバックしていない) ことまで確認する。
+        assert animal_data.shelter_date.isoformat() == "2025-10-09"
+        assert animal_data.location == "水戸市鯉渕町"
 
     def test_infer_species_from_site_name_default_empty(self):
         """水戸市 2 サイトの実名は犬/猫を含まないため空文字を返す"""
