@@ -1346,6 +1346,11 @@ class TestCollectorServicePruneSafetyValve:
         mock_snapshot_store,
         site_baseline_tracker,
         prune_zero_threshold: int = 8,
+        # このクラスのテストは主に「削除条件(閾値+verdict)そのものの判定」を
+        # 検証する目的なので、既定で dry-run ゲートを ON (=実削除相当) にしておく。
+        # ゲート自体 (既定 False / 通知) の検証は
+        # TestCollectorServicePruneDryRunGate で別途行う。
+        full_delete_enabled: bool = True,
     ):
         service = CollectorService(
             adapter=adapter,
@@ -1355,6 +1360,7 @@ class TestCollectorServicePruneSafetyValve:
             snapshot_store=mock_snapshot_store,
             site_baseline_tracker=site_baseline_tracker,
             prune_zero_threshold=prune_zero_threshold,
+            full_delete_enabled=full_delete_enabled,
         )
         service.LOCK_FILE = tmp_path / ".collector.lock"
         return service
@@ -1556,6 +1562,163 @@ class TestCollectorServicePruneSafetyValve:
         assert service._should_force_empty_prune("テストサイト") is False
 
 
+class TestCollectorServicePruneDryRunGate:
+    """T106 PR #308 reviewer指摘 (F-02) 対応: full_delete_enabled (dry-run ゲート)
+    の既定値・挙動を検証する。
+
+    zero_count_verifier の NONE 判定はソフト404/ページ移転等のサイト構造変化を
+    誤検知しうるため、削除条件 (閾値+verdict==none) を満たしても
+    full_delete_enabled=False (既定) の間は実削除せず、候補をログ/Discord通知
+    するだけに留める。
+    """
+
+    from src.data_collector.infrastructure.site_baseline_tracker import SiteBaselineTracker
+
+    @pytest.fixture
+    def mock_adapter_with_list_url(self):
+        adapter = Mock()
+        adapter.prefecture_code = "39"
+        adapter.municipality_name = "テストサイト"
+        adapter.list_truncated = False
+        adapter.site_config = Mock(list_url="https://example.com/list")
+        return adapter
+
+    @pytest.fixture
+    def mock_diff_detector(self):
+        detector = Mock()
+        detector.detect_diff.return_value = DiffResult(new=[], updated=[], deleted_candidates=[])
+        return detector
+
+    @pytest.fixture
+    def mock_output_writer(self):
+        writer = Mock()
+        writer.write_output.return_value = Path("output/animals.json")
+        return writer
+
+    @pytest.fixture
+    def mock_notification_client(self):
+        return Mock()
+
+    @pytest.fixture
+    def mock_snapshot_store(self):
+        store = Mock()
+        store.load_snapshot.return_value = []
+        store.load_animal_map.return_value = {}
+        return store
+
+    def _eligible_tracker(self, tmp_path, site_name: str, threshold: int = 8):
+        """閾値ちょうど到達 (今runを含めて threshold 回連続0件) の tracker を作る"""
+        tracker = self.SiteBaselineTracker(tmp_path / "baselines.yaml")
+        for _ in range(threshold - 1):
+            tracker.record(site_name, 0)
+        return tracker
+
+    def test_full_delete_enabled_defaults_to_false(
+        self,
+        mock_adapter_with_list_url,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+    ):
+        """コンストラクタで明示しなければ既定は無効 (dry-run) であること"""
+        service = CollectorService(
+            adapter=mock_adapter_with_list_url,
+            diff_detector=mock_diff_detector,
+            output_writer=mock_output_writer,
+            notification_client=mock_notification_client,
+            snapshot_store=mock_snapshot_store,
+        )
+        assert service.full_delete_enabled is False
+
+    def test_gate_disabled_skips_deletion_and_notifies_candidate(
+        self,
+        tmp_path,
+        mock_adapter_with_list_url,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+        monkeypatch,
+        caplog,
+    ):
+        """削除条件(閾値+verdict==none)を満たしていても、gate=False (既定) の間は
+        実削除の判定を返さず、候補をログ(DRY-RUN)+Discord通知で可視化するだけ"""
+        import logging
+
+        from src.data_collector.infrastructure.zero_count_verifier import ZeroCountVerification
+        from src.data_collector.orchestration import collector_service as cs_module
+
+        monkeypatch.setattr(
+            cs_module,
+            "verify_zero_count",
+            lambda adapter, list_url: ZeroCountVerification(
+                should_flag=False, reason="サイト側に明示的な0件メッセージあり", verdict="none"
+            ),
+        )
+
+        tracker = self._eligible_tracker(tmp_path, "テストサイト")
+        service = CollectorService(
+            adapter=mock_adapter_with_list_url,
+            diff_detector=mock_diff_detector,
+            output_writer=mock_output_writer,
+            notification_client=mock_notification_client,
+            snapshot_store=mock_snapshot_store,
+            site_baseline_tracker=tracker,
+            full_delete_enabled=False,
+        )
+        service.LOCK_FILE = tmp_path / ".collector.lock"
+
+        with caplog.at_level(logging.WARNING):
+            result = service._should_force_empty_prune("テストサイト")
+
+        assert result is False
+        assert any("DRY-RUN" in r.getMessage() for r in caplog.records)
+        mock_notification_client.send_alert.assert_called_once()
+        args, _kwargs = mock_notification_client.send_alert.call_args
+        # send_alert(level, title, details) の title に候補である旨が含まれる
+        assert "dry-run" in args[1].lower() or "候補" in args[1]
+
+    def test_gate_enabled_permits_deletion_without_dry_run_notification(
+        self,
+        tmp_path,
+        mock_adapter_with_list_url,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+        monkeypatch,
+    ):
+        """gate=True なら同じ条件で実削除を許可し、dry-run通知は送らない"""
+        from src.data_collector.infrastructure.zero_count_verifier import ZeroCountVerification
+        from src.data_collector.orchestration import collector_service as cs_module
+
+        monkeypatch.setattr(
+            cs_module,
+            "verify_zero_count",
+            lambda adapter, list_url: ZeroCountVerification(
+                should_flag=False, reason="サイト側に明示的な0件メッセージあり", verdict="none"
+            ),
+        )
+
+        tracker = self._eligible_tracker(tmp_path, "テストサイト")
+        service = CollectorService(
+            adapter=mock_adapter_with_list_url,
+            diff_detector=mock_diff_detector,
+            output_writer=mock_output_writer,
+            notification_client=mock_notification_client,
+            snapshot_store=mock_snapshot_store,
+            site_baseline_tracker=tracker,
+            full_delete_enabled=True,
+        )
+        service.LOCK_FILE = tmp_path / ".collector.lock"
+
+        result = service._should_force_empty_prune("テストサイト")
+
+        assert result is True
+        mock_notification_client.send_alert.assert_not_called()
+
+
 class TestCollectorServicePruneSafetyValveIntegration:
     """db_connection 経由の run_collection() 全体で、残骸の完全削除が実際に
     行われる/行われないことを確認する統合テスト。"""
@@ -1639,7 +1802,7 @@ class TestCollectorServicePruneSafetyValveIntegration:
 
         return asyncio.run(_count())
 
-    def test_confirmed_long_term_zero_deletes_residual_records(
+    def test_confirmed_long_term_zero_with_gate_enabled_deletes_residual_records(
         self,
         tmp_path,
         mock_adapter_zero_count,
@@ -1649,7 +1812,8 @@ class TestCollectorServicePruneSafetyValveIntegration:
         mock_snapshot_store,
         monkeypatch,
     ):
-        """連続8回0件 + 0件検証確定NONE → run_collection() 実行で残骸が実際に削除される"""
+        """連続8回0件 + 0件検証確定NONE + full_delete_enabled=True →
+        run_collection() 実行で残骸が実際に削除される"""
         import asyncio
 
         from src.data_collector.infrastructure.site_baseline_tracker import SiteBaselineTracker
@@ -1681,6 +1845,7 @@ class TestCollectorServicePruneSafetyValveIntegration:
                 snapshot_store=mock_snapshot_store,
                 db_connection=db_connection,
                 site_baseline_tracker=tracker,
+                full_delete_enabled=True,
             )
             service.LOCK_FILE = tmp_path / ".collector.lock"
 
@@ -1689,6 +1854,64 @@ class TestCollectorServicePruneSafetyValveIntegration:
             assert result.success
             assert result.total_collected == 0
             assert self._count_animals(db_connection) == 0
+        finally:
+            asyncio.run(db_connection.close())
+
+    def test_confirmed_long_term_zero_with_gate_disabled_does_not_delete(
+        self,
+        tmp_path,
+        mock_adapter_zero_count,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+        monkeypatch,
+    ):
+        """PR #308 reviewer指摘 (F-02) 対応の dry-run ゲート検証:
+        連続8回0件 + 0件検証確定NONE の条件を満たしていても、
+        full_delete_enabled を明示しない (既定 False) 限りは run_collection()
+        経由でも実際には削除されず、候補としてDiscord通知されるだけ"""
+        import asyncio
+
+        from src.data_collector.infrastructure.site_baseline_tracker import SiteBaselineTracker
+        from src.data_collector.infrastructure.zero_count_verifier import ZeroCountVerification
+        from src.data_collector.orchestration import collector_service as cs_module
+
+        monkeypatch.setattr(
+            cs_module,
+            "verify_zero_count",
+            lambda adapter, list_url: ZeroCountVerification(
+                should_flag=False, reason="サイト側に明示的な0件メッセージあり", verdict="none"
+            ),
+        )
+
+        site_name = "テストサイト"
+        db_connection = self._setup_db_with_existing_animal(tmp_path, site_name)
+        assert self._count_animals(db_connection) == 1
+
+        tracker = SiteBaselineTracker(tmp_path / "baselines.yaml")
+        for _ in range(7):  # この run を含めて8回連続0件
+            tracker.record(site_name, 0)
+
+        try:
+            service = CollectorService(
+                adapter=mock_adapter_zero_count,
+                diff_detector=mock_diff_detector,
+                output_writer=mock_output_writer,
+                notification_client=mock_notification_client,
+                snapshot_store=mock_snapshot_store,
+                db_connection=db_connection,
+                site_baseline_tracker=tracker,
+                # full_delete_enabled は明示せず、既定 False (dry-run) のままにする
+            )
+            service.LOCK_FILE = tmp_path / ".collector.lock"
+
+            result = service.run_collection()
+
+            assert result.success
+            assert result.total_collected == 0
+            assert self._count_animals(db_connection) == 1  # 削除されない (dry-run)
+            mock_notification_client.send_alert.assert_called_once()
         finally:
             asyncio.run(db_connection.close())
 
