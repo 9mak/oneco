@@ -353,22 +353,32 @@ sites:
     single_page: true
 
   # 【福岡市わんにゃんよかネット】パラメータ駆動
-  # T108(2026-08-31): 犬/猫保護中 (sorting_id=4) は静的HTMLに一覧テーブルが
-  # 直接出力されており requires_js: false で取得可能と確認 (在庫0件時も
+  # T108(2026-08-31): 犬/猫保護中 (sorting_id=4) は一覧ページ自体は静的HTMLに
+  # テーブルが直接出力されており取得可能と確認済み (在庫0件時も
   # 「データが見つかりませんでした」と静的表示される)。
+  # ただし2026-08-31時点で両サイトとも在庫0件のため、detail ページ
+  # (extract_animal_details) の静的HTTP取得は実データで一度も検証できて
+  # いない。FIELD_SELECTORS もラベル推測ベースであり、仮に detail ページが
+  # 実は JS 必須だった場合、static fetch は空/不正な HTML を返し
+  # ParsingError で個体データ抽出に失敗しうる (reviewer Major指摘、
+  # PR #311)。list/detail 双方を静的HTTPで確認できるまで requires_js: true
+  # を維持し (list が静的なのは確認済みなので機能上のリスクは無いが、
+  # detail 未検証のリスクを踏まえ安全側の Playwright 経路に倒す)、
+  # 在庫が非ゼロになった時点で detail ページの実データ検証を行った上で
+  # 改めて false へのフラグ反転を検討する (フォローアップ課題)。
   - name: "福岡市わんにゃん（犬保護中）"
     prefecture: "福岡県"
     prefecture_code: "40"
     list_url: "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/index?type_id=1&sorting_id=4"
     category: "sheltered"
-    requires_js: false
+    requires_js: true
 
   - name: "福岡市わんにゃん（猫保護中）"
     prefecture: "福岡県"
     prefecture_code: "40"
     list_url: "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/index?type_id=2&sorting_id=4"
     category: "sheltered"
-    requires_js: false
+    requires_js: true
 
   # 犬譲渡/猫譲渡 (sorting_id=5) は T046/T108 で既知の別問題: ページ内容が
   # 「5秒後に https://zuttoissho.com/mukaeru/ へ自動遷移」の JS リダイレクト
