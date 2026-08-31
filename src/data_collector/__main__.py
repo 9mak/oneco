@@ -34,6 +34,7 @@ from .infrastructure.output_writer import OutputWriter
 from .infrastructure.site_baseline_tracker import (
     PersistentZeroSite,
     SiteBaselineTracker,
+    SuddenDropRegression,
     ZeroCountRegression,
 )
 from .infrastructure.snapshot_store import SnapshotStore
@@ -689,6 +690,7 @@ def _send_run_summary_alert(
     persistent_zero_sites: list[PersistentZeroSite] | None = None,
     auto_fix_result: dict[str, Any] | None = None,
     content_anomalies: list[ContentAnomaly] | None = None,
+    sudden_drops: list[SuddenDropRegression] | None = None,
 ) -> None:
     """1 回の run 終了時に Slack / Discord へサマリアラートを送る。
 
@@ -730,6 +732,14 @@ def _send_run_summary_alert(
     山梨県 breed に体格比較文混入、高知県 name に運営告知文混入)を検知する。
     auto-fix 候補には含めない (内容不正は adapter の追加ロジックが必要な
     ケースが多く、既存の LLM 自動修復ワーカーの対象範囲外のため)。
+
+    sudden_drops: `SiteBaselineTracker.detect_sudden_drops` の検知結果。
+    大分65→32型のように0件にはならないが1回の収集で件数が前回比50%以上
+    急減したサイト(T107)。zero_count_regressions は複数run連続0件しか
+    検知できず、この種の部分的な件数低下は盲点だった。content_anomalies と
+    同様、auto-fix 候補には含めない (件数変動の原因調査には adapter の
+    コード修正以外の要因(サイト側の在庫変化・保健所都合等)が多く含まれ、
+    LLM 自動修復ワーカーの対象範囲外のため)。
     """
     if total_sites == 0:
         return
@@ -749,6 +759,7 @@ def _send_run_summary_alert(
     regressions = list(zero_count_regressions) if zero_count_regressions else []
     persistent_zeros = list(persistent_zero_sites) if persistent_zero_sites else []
     anomalies = list(content_anomalies) if content_anomalies else []
+    drops = list(sudden_drops) if sudden_drops else []
     # auto-fix dispatch 失敗の signal: attempted > invoked
     af = auto_fix_result or {}
     af_attempted = int(af.get("attempted", 0))
@@ -761,6 +772,7 @@ def _send_run_summary_alert(
         or bool(regressions)
         or bool(persistent_zeros)
         or bool(anomalies)
+        or bool(drops)
         or af_dispatch_failed
     )
 
@@ -780,6 +792,8 @@ def _send_run_summary_alert(
         message += f", 長期0件サイト {len(persistent_zeros)} 件"
     if anomalies:
         message += f", 内容不正疑い {len(anomalies)} 件"
+    if drops:
+        message += f", 件数急減 {len(drops)} 件"
     details: dict[str, Any] = {
         "total_sites": total_sites,
         "succeeded": total_succeeded,
@@ -823,6 +837,15 @@ def _send_run_summary_alert(
         if len(anomalies) > 10:
             sample += f" ... (+{len(anomalies) - 10} more)"
         details["content_anomalies_sample"] = sample
+    if drops:
+        details["sudden_drops_count"] = len(drops)
+        sample = "; ".join(
+            f"[{d.site_name}] {d.previous_count}→{d.current_count} (-{d.drop_ratio:.0%})"
+            for d in drops[:10]
+        )
+        if len(drops) > 10:
+            sample += f" ... (+{len(drops) - 10} more)"
+        details["sudden_drops_sample"] = sample
     # 自己修復ループ Phase 1→2 橋渡しの結果。attempted > invoked = silent failure。
     # candidates > 0 でも disabled なら kill switch off (info only)。
     if af:
@@ -1075,11 +1098,41 @@ def main():
             # 実測で公開 729 頭中 317 頭 (43%) が計測から漏れていた (2026-08-03)。
             # best-effort: 失敗しても収集は止めない。
             zero_regressions: list[ZeroCountRegression] = []
+            sudden_drops: list[SuddenDropRegression] = []
             try:
                 baseline_path = Path(
                     os.environ.get("SITE_BASELINE_PATH", "data/site_baselines.yaml")
                 )
                 baseline_tracker = SiteBaselineTracker(baseline_path)
+                # 部分的な件数激減検知 (T107): 大分65→32型のように0件にはならない
+                # が1回の収集で前回比50%以上減るケースを検知する。累積 high_water
+                # 比では長野県譲渡猫(0.60)・仙台市譲渡猫(0.67)等の正常な自然減少
+                # サイトと区別できなかったため、「直近1回の前回比」だけを見る方式
+                # を採用 (実データ調査で確定)。
+                #
+                # **必ず baseline_tracker.record() より前に呼ぶ**: record() は
+                # 呼び出しの都度 last_count を今回値へ即座に上書きするため、
+                # record() の後に呼ぶと「前回」の値が失われ検知できなくなる。
+                sudden_drop_ratio = float(os.environ.get("ONECO_SUDDEN_DROP_RATIO", "0.5"))
+                sudden_drop_min_previous = int(
+                    os.environ.get("ONECO_SUDDEN_DROP_MIN_PREVIOUS_COUNT", "3")
+                )
+                sudden_drops = baseline_tracker.detect_sudden_drops(
+                    succeeded_site_counts,
+                    drop_ratio_threshold=sudden_drop_ratio,
+                    min_previous_count=sudden_drop_min_previous,
+                )
+                if sudden_drops:
+                    logger.warning(
+                        f"件数急減検知: {len(sudden_drops)} サイト "
+                        f"(前回比{sudden_drop_ratio:.0%}以上減)"
+                    )
+                    for d in sudden_drops[:10]:
+                        logger.warning(
+                            f"  [{d.site_name}] {d.previous_count} → {d.current_count} "
+                            f"(-{d.drop_ratio:.0%})"
+                        )
+
                 for site_name, collected in succeeded_site_counts.items():
                     baseline_tracker.record(site_name, collected)
                 zero_drop_threshold = int(os.environ.get("ONECO_ZERO_DROP_THRESHOLD", "2"))
@@ -1197,6 +1250,7 @@ def main():
                 persistent_zero_sites=persistent_zero_sites,
                 auto_fix_result=auto_fix_result,
                 content_anomalies=content_anomalies,
+                sudden_drops=sudden_drops,
             )
 
             # 進捗ログ

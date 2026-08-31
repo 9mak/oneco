@@ -455,6 +455,82 @@ def test_content_anomalies_sample_truncated():
     assert "more" in details["content_anomalies_sample"]
 
 
+def test_sudden_drop_alone_triggers_warning():
+    """失敗0・回帰0でも急減 (1run前回比50%以上減) があれば WARNING を出す (T107)"""
+    from src.data_collector.infrastructure.site_baseline_tracker import SuddenDropRegression
+
+    client = MagicMock()
+    drops = [
+        SuddenDropRegression(
+            site_name="大分県動物愛護センター",
+            previous_count=65,
+            current_count=32,
+            drop_ratio=(65 - 32) / 65,
+        ),
+    ]
+    _send_run_summary_alert(
+        notification_client=client,
+        broken_tracker=_make_tracker(0),
+        total_sites=209,
+        total_succeeded=209,
+        total_failed=0,
+        threshold=3,
+        logger=_make_logger(),
+        sudden_drops=drops,
+    )
+    assert client.send_alert.called
+    args, _ = client.send_alert.call_args
+    assert args[0] == NotificationLevel.WARNING
+    details = client.send_alert.call_args[0][2]
+    assert details.get("sudden_drops_count") == 1
+    sample = details.get("sudden_drops_sample", "")
+    assert "大分県動物愛護センター" in sample
+    assert "65" in sample
+    assert "32" in sample
+
+
+def test_sudden_drop_empty_does_not_change_behavior():
+    """sudden_drops が None / 空なら既存判定そのまま (後方互換)"""
+    client = MagicMock()
+    _send_run_summary_alert(
+        notification_client=client,
+        broken_tracker=_make_tracker(0),
+        total_sites=10,
+        total_succeeded=10,
+        total_failed=0,
+        threshold=3,
+        logger=_make_logger(),
+        sudden_drops=[],
+    )
+    client.send_alert.assert_not_called()
+
+
+def test_sudden_drop_sample_truncated():
+    """急減サンプルは先頭10件に切り詰め、残数を表示する"""
+    from src.data_collector.infrastructure.site_baseline_tracker import SuddenDropRegression
+
+    client = MagicMock()
+    drops = [
+        SuddenDropRegression(
+            site_name=f"サイト{i}", previous_count=10, current_count=4, drop_ratio=0.6
+        )
+        for i in range(15)
+    ]
+    _send_run_summary_alert(
+        notification_client=client,
+        broken_tracker=_make_tracker(0),
+        total_sites=209,
+        total_succeeded=209,
+        total_failed=0,
+        threshold=3,
+        logger=_make_logger(),
+        sudden_drops=drops,
+    )
+    details = client.send_alert.call_args[0][2]
+    assert details["sudden_drops_count"] == 15
+    assert "more" in details["sudden_drops_sample"]
+
+
 def test_zero_count_regression_sample_truncated():
     """回帰サンプルは先頭 10 件に切り詰め、残数を表示する"""
     from src.data_collector.infrastructure.site_baseline_tracker import ZeroCountRegression
