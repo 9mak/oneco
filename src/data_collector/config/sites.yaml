@@ -580,7 +580,11 @@ sites:
   # pdf_link_pattern は旧 "kouhyou" 部分文字列マッチ → 実サイトの現在の
   # ファイル名 (documents/inu0827.pdf 等) と一致せず consecutive_zero_runs
   # が64まで積み上がっていたため T117 で更新 (pref_ibaraki_pdf.py の
-  # PDF_LINK_SELECTOR と同一に保つ)
+  # PDF_LINK_SELECTOR と同一に保つ)。
+  # pdf_link_pattern はルールベース経路 (pref_ibaraki_pdf.py の
+  # `_pdf_link_selector()`) では実際には参照されず、LLM フォールバック経路
+  # (llm/adapter.py) 向けのドキュメント兼用フィールド。実装側のセレクタと
+  # 乖離しないよう常に同期させる。
   - name: "茨城県（収容中の動物たち）"
     prefecture: "茨城県"
     prefecture_code: "08"
@@ -588,12 +592,18 @@ sites:
     category: "sheltered"
     pdf_link_pattern: "a[href*='documents/inu'][href$='.pdf'], a[href*='documents/neko'][href$='.pdf']"
 
+  # T119 (2026-08-31): 旧 list_url (mayoiinuneko.html) は実サイト側で構造
+  # 変更され PDF への直接リンクを持たないハブページ化していた (64日間 PDF
+  # リンク0件)。真の一覧は同ページ内「動物指導センター公表情報」リンク先の
+  # kouji.html にあり、ファイル名も documents/kouhyou*.pdf と別規則のため
+  # list_url と pdf_link_pattern を両方更新する
+  # (pref_ibaraki_pdf.py の _pdf_link_selector() と同一に保つ)。
   - name: "茨城県（迷い犬・猫情報）"
     prefecture: "茨城県"
     prefecture_code: "08"
-    list_url: "https://www.pref.ibaraki.jp/hokenfukushi/doshise/hogo/mayoiinuneko.html"
+    list_url: "https://www.pref.ibaraki.jp/hokenfukushi/doshise/hogo/kouji.html"
     category: "lost"
-    pdf_link_pattern: "a[href*='documents/inu'][href$='.pdf'], a[href*='documents/neko'][href$='.pdf']"
+    pdf_link_pattern: "a[href*='documents/kouhyou'][href$='.pdf']"
 
   # 【栃木県動物愛護指導センター】専用ドメイン、静的 HTML
   - name: "栃木県動物愛護指導センター（保護動物）"

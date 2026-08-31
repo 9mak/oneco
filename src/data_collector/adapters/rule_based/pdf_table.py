@@ -60,7 +60,7 @@ class PdfTableAdapter(RuleBasedAdapter):
     def fetch_animal_list(self) -> list[tuple[str, str]]:
         list_html = self._http_get(self.site_config.list_url)
         soup = BeautifulSoup(list_html, "html.parser")
-        pdf_links = soup.select(self.PDF_LINK_SELECTOR)
+        pdf_links = soup.select(self._pdf_link_selector())
         # PDF リンク 0 件は「現在公開中の収容情報 PDF がない」真ゼロとして扱う。
         # 茨城県や香川県の保健福祉事務所サイト等では、月次/週次の収容 PDF が
         # 翌期に差し替わる過程で一時的に 0 件になる正常状態が発生する。
@@ -128,6 +128,18 @@ class PdfTableAdapter(RuleBasedAdapter):
         raise NotImplementedError("subclass must implement _parse_pdf_text")
 
     # ─────────────────── ヘルパー ───────────────────
+
+    def _pdf_link_selector(self) -> str:
+        """PDF リンク抽出に使う CSS セレクタを返す
+
+        既定では `PDF_LINK_SELECTOR` クラス変数をそのまま返す。1 つの adapter
+        クラスで複数サイト (category) を兼用しており、category ごとに PDF の
+        ファイル名規則が異なる場合は、サブクラスで本メソッドをオーバーライド
+        して `self.site_config.category` に応じたセレクタを返すこと
+        (T119: `sites/pref_ibaraki_pdf.py` 参照。他の `PdfTableAdapter` 系
+        サブクラスは本メソッドをオーバーライドしないため影響を受けない)。
+        """
+        return self.PDF_LINK_SELECTOR
 
     def _public_source_url(self, pdf_url: str, idx: int) -> str:
         """人がリンクを踏んだときに開ける URL を返す

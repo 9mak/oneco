@@ -34,6 +34,45 @@ T117 (2026-08-29 実PDF確認): 実 PDF は 1 ページに動物情報が左右 
 解消した。列分離後のテキストは1段組みと同じ構造になるため
 `_parse_pdf_text` 側は変更不要 (T066 の管理番号優先ブロック検出もそのまま
 両列に効く)。
+
+T119 (2026-08-31 実PDF確認): 「迷い犬・猫情報」サイトは実サイト側で構造
+変更され、旧 `list_url` (`mayoiinuneko.html`) が PDF への直接リンクを
+持たないハブページ化していた (64日間 PDF リンク0件)。真の一覧は同ページ内
+「動物指導センター公表情報」リンク先の `kouji.html` にあり、実測で
+`documents/kouhyou*.pdf` 形式の PDF が存在することを確認した。この PDF は
+「収容中の動物たち」(`documents/inu`/`documents/neko`) と同じ2段組み
+レイアウトだが、ファイル名パターンが異なるため `_pdf_link_selector` を
+`site_config.category` で分岐させた。
+
+さらに実 PDF を比較した結果、2 カテゴリでラベルの意味が入れ替わっている
+ことが判明した:
+- 「収容中の動物たち」: `種類`=動物種別 (犬/猫)、`犬猫種`=品種 (雑種 等)
+- 「迷い犬・猫情報」: `種類`=品種 (柴犬/雑種 等)、`犬猫種`=動物種別 (犬/猫)
+このため `種類` ラベル値をそのまま species とする既存ロジックのままだと、
+「迷い犬・猫情報」の品種が "雑種" 等 犬/猫の文字を含まない場合に
+`DataNormalizer._normalize_species` で「その他」に誤分類される
+(T118 と同型の species 誤分類パターン)。ラベル文字列 (`犬猫種`) 自体は
+バナー画像テキストの混入で壊れることがあるため (実測:
+`種類 シーズー帰れた犬ワ猫種ン！ 犬` — 「おうちに帰れたワン！」という
+「収容動物が飼い主の元へ戻った」ことを示す告知バナーが同じセルに重なって
+文字が混入していた)、ラベル文字列ではなく「行末が犬/猫/その他という
+1トークンで終わっているか」で判定する `_SPECIES_LINE_END_RE` を追加し、
+`種類` ベースの既存抽出より優先する。実 PDF 全6件・12頭ぶんで行末が必ず
+犬/猫のいずれかであることを確認済み。「収容中の動物たち」の実 PDF
+(`種類 猫 犬猫種 雑種` 等) は行末が「雑種」等になり本パターンにマッチしない
+ため、既存の `種類` ベース抽出に変わらずフォールバックし、この副修正での
+挙動変化はない。
+
+また「迷い犬・猫情報」PDF は管理番号直後のラベルが `市町村名` ではなく
+`市町村地区名` (6文字) であるため、`_MGMT_NUMBER_RE` の先読みに
+`市町村地区名` を追加した (`収容中の動物たち` 側の `市町村名` 表記とは
+文字列として完全に別物のため、既存側への影響はない)。あわせて
+`市町村地区名` ラベルの値を location として抽出できるよう `_LOCATION_RE`
+にも追加した。`収容中の動物たち` 側は `市町村地区名` という表記を使わない
+ため (実 PDF で `市町村名` のみ確認)、location 抽出は「迷い犬・猫情報」
+限定で有効になり、`収容中の動物たち` 側の location (現状 100% 欠落・
+`field_quality_drift.yaml` で追跡中の既知ギャップ) は本タスクのスコープ
+外として意図的に変更していない。
 """
 
 from __future__ import annotations
@@ -69,11 +108,26 @@ _COLOR_RE = re.compile(r"(?:毛色|色)\s*[:：]?\s*([^\s　]+)")
 # 「体格: 中」「大きさ: 中型」「体重: 5kg」
 _SIZE_RE = re.compile(r"(?:体格|大きさ|体重)\s*[:：]?\s*([^\s　]+)")
 # 「収容場所: ○○市△△町」「発見場所: ○○市」
-_LOCATION_RE = re.compile(r"(?:収容場所|発見場所|保護場所)\s*[:：]?\s*([^\n]+?)(?:\s{2,}|$)")
+# 「市町村地区名 笠間市大田町」(T119: 「迷い犬・猫情報」PDF のラベル。
+# 「収容中の動物たち」側は「市町村名」表記でこの語は出現しないため、
+# location 抽出は事実上「迷い犬・猫情報」限定で有効になる)
+_LOCATION_RE = re.compile(
+    r"(?:収容場所|発見場所|保護場所|市町村地区名)\s*[:：]?\s*([^\n]+?)(?:\s{2,}|$)"
+)
 # 「22-3543 市町村名 鉾田市田崎」— 実 PDF (T066 確認) ではこれが 1 頭分の
 # ブロック開始になる。「市町村名」の直前という文脈で固定し、本文中の他の
 # 数字 (収容日の年など) を誤って拾わないようにする。
-_MGMT_NUMBER_RE = re.compile(r"(\d{2}-\d{3,6})(?=\s*市町村名)")
+# 「迷い犬・猫情報」(T119) は同じ位置のラベルが「市町村地区名」(6文字) の
+# ため、こちらも先読みに追加する ( 「市町村名」と文字列として完全に別物の
+# ため、「収容中の動物たち」側の挙動に影響はない)。
+_MGMT_NUMBER_RE = re.compile(r"(\d{2}-\d{3,6})(?=\s*(?:市町村名|市町村地区名))")
+# 行末が「犬」「猫」「その他」の1トークンで終わっている行から species を
+# 拾う (T119)。「迷い犬・猫情報」PDF は「犬猫種」ラベルの値 (行末) が
+# 動物種別で、「種類」ラベルの値は品種名 (柴犬・雑種等) という
+# 「収容中の動物たち」とは逆の意味になっている。ラベル文字列 (「犬猫種」)
+# 自体はバナー画像テキストの混入で壊れることがある実測があるため、
+# ラベル文字列に依存せず行末アンカーで判定する。
+_SPECIES_LINE_END_RE = re.compile(r"(?:^|\s)(犬|猫|その他)\s*$")
 
 
 class PrefIbarakiPdfAdapter(PdfTableAdapter):
@@ -94,6 +148,24 @@ class PrefIbarakiPdfAdapter(PdfTableAdapter):
     PDF_LINK_SELECTOR: ClassVar[str] = (
         "a[href*='documents/inu'][href$='.pdf'], a[href*='documents/neko'][href$='.pdf']"
     )
+
+    # 「迷い犬・猫情報」(category="lost") 用セレクタ (T119)。
+    # 実サイト (`kouji.html`) の現行ファイル名 `documents/kouhyou0828.pdf` 等
+    # (末尾に `-1` が付く枝番あり: `kouhyou0824-1.pdf`) に対応する。
+    _LOST_PDF_LINK_SELECTOR: ClassVar[str] = "a[href*='documents/kouhyou'][href$='.pdf']"
+
+    def _pdf_link_selector(self) -> str:
+        """category に応じて PDF リンクセレクタを切り替える (T119)
+
+        「収容中の動物たち」(sheltered) と「迷い犬・猫情報」(lost) は
+        同一 adapter クラスを共有するが、実サイトの PDF ファイル名規則が
+        異なる (前者: `documents/inu*.pdf` / `documents/neko*.pdf`、
+        後者: `documents/kouhyou*.pdf`) ため、`site_config.category` で
+        判定する。
+        """
+        if self.site_config.category == "lost":
+            return self._LOST_PDF_LINK_SELECTOR
+        return self.PDF_LINK_SELECTOR
 
     # ─────────────────── _extract_pdf_text 実装 (2段組み対応) ───────────────────
 
@@ -154,7 +226,13 @@ class PrefIbarakiPdfAdapter(PdfTableAdapter):
                     records.append(current)
                 current = self._new_record()
                 current["management_number"] = mgmt_match.group(1)
-                continue
+                # T119: 「迷い犬・猫情報」PDF は管理番号と同じ行に
+                # 「市町村地区名 <地名>」が同居する (例:
+                # 「26-0572 市町村地区名 笠間市大田町」)。continue せずに
+                # 下記の _extract_field へフォールスルーさせて location を
+                # 拾う (収容中の動物たちの「市町村名」表記はこの行に他の
+                # ラベルを伴わないため、フォールスルーしても新規に何かを
+                # 誤って拾うことはない)。
 
             shelter_match = _SHELTER_DATE_RE.search(line)
             if shelter_match:
@@ -207,6 +285,18 @@ class PrefIbarakiPdfAdapter(PdfTableAdapter):
     @staticmethod
     def _extract_field(line: str, record: dict) -> None:
         """1 行から各属性を抽出し record を埋める (空欄のみ上書き)"""
+        # T119: 「迷い犬・猫情報」PDF は「種類」ラベルの値が品種名で、行末の
+        # 「犬猫種」ラベルの値 (犬/猫/その他) が動物種別という「収容中の
+        # 動物たち」とは逆の構造。ラベル文字列自体が壊れることがある実測が
+        # あるため、ラベルに依存せず行末アンカーで先に判定する。
+        # 「収容中の動物たち」の実 PDF (例:「種類 猫 犬猫種 雑種」) は行末が
+        # 「雑種」等になり本パターンにマッチしないため、下の `_SPECIES_RE`
+        # ベース抽出にそのままフォールバックし挙動は変わらない。
+        if not record.get("species"):
+            m = _SPECIES_LINE_END_RE.search(line)
+            if m:
+                record["species"] = m.group(1)
+
         for key, pattern in (
             ("species", _SPECIES_RE),
             ("sex", _SEX_RE),
