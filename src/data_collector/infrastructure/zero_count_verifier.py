@@ -31,6 +31,17 @@ threshold 回連続0件」を検知するが、baseline 1〜2件の薄いサイ�
   (実測 3 件/日程度) で、Groq 無料枠に収まる。
 
 判定に必要な情報が取れない(例外)場合は安全側に倒して True にする。
+
+verdict フィールド (T106 で追加): should_flag/reason は既存呼び出し元
+(_verify_zero_regressions の通知判定) 向けの二値集約だが、「サイト側が本当に
+空だと確定できたか」まで区別しないと、prune (消滅同期削除) の許可判定には
+使えない。「再取得したら実は件数があった」(should_flag=False だが真の0件では
+ない) と「明示的0件メッセージ/LLM NONE」(真に0件と確定) はどちらも
+should_flag=False に丸められてしまうため、verdict で明示的に区別する:
+    - "none": サイト側が本当に空だと確定できた (明示メッセージ or LLM NONE)
+    - "transient_nonzero": 再取得したら件数があった (今回の0件は一時的な揺らぎ)
+    - "listed": LLM が実ページに掲載ありと判定 (adapter 0件と矛盾、破損濃厚)
+    - "unclear": 判定不能 (JS必須・APIキー未設定・例外等、安全側)
 """
 
 from __future__ import annotations
@@ -39,9 +50,11 @@ import os
 import re
 import sys
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Literal, Protocol
 
 from bs4 import BeautifulSoup
+
+ZeroCountVerdict = Literal["none", "transient_nonzero", "listed", "unclear"]
 
 _GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 _JUDGE_MODEL = "openai/gpt-oss-120b"
@@ -86,10 +99,17 @@ class ZeroCountVerification:
 
     should_flag=True: 壊れている疑いが濃厚。修理候補として残すべき。
     should_flag=False: 正常(在庫の一時的な揺らぎ、またはサイト側の明示的な0件)。
+
+    verdict: should_flag=False の内訳を区別するための詳細判定 (T106 で追加)。
+    「本当に空だと確定できたか」(= "none") だけが prune 許可判定の対象になり、
+    "transient_nonzero" (再取得したら件数があった = 今回は真の0件ではない) は
+    should_flag=False でも prune 許可対象にしてはならない。デフォルト "unclear"
+    は既存呼び出し元 (should_flag のみ参照) との後方互換のための安全側の値。
     """
 
     should_flag: bool
     reason: str
+    verdict: ZeroCountVerdict = "unclear"
 
 
 def _has_explicit_zero_message(html: str) -> bool:
@@ -218,11 +238,16 @@ def verify_zero_count(adapter: _ListFetchableAdapter, list_url: str) -> ZeroCoun
         urls = adapter.fetch_animal_list()
     except Exception as e:
         return ZeroCountVerification(
-            should_flag=True, reason=f"再取得で例外が発生 ({type(e).__name__}: {e})"
+            should_flag=True,
+            reason=f"再取得で例外が発生 ({type(e).__name__}: {e})",
+            verdict="unclear",
         )
     if urls:
         return ZeroCountVerification(
-            should_flag=False, reason=f"再取得したら{len(urls)}件あった(一時的な揺らぎ)"
+            should_flag=False,
+            reason=f"再取得したら{len(urls)}件あった(一時的な揺らぎ)",
+            # 真の0件ではない (今回はたまたま在庫が揺らいだだけ) ため "none" にしない。
+            verdict="transient_nonzero",
         )
 
     try:
@@ -231,26 +256,34 @@ def verify_zero_count(adapter: _ListFetchableAdapter, list_url: str) -> ZeroCoun
         return ZeroCountVerification(
             should_flag=True,
             reason=f"0件確定後のHTML再取得で例外が発生 ({type(e).__name__}: {e})",
+            verdict="unclear",
         )
 
     if _has_explicit_zero_message(html):
         return ZeroCountVerification(
-            should_flag=False, reason="サイト側に明示的な0件メッセージあり"
+            should_flag=False,
+            reason="サイト側に明示的な0件メッセージあり",
+            verdict="none",
         )
 
     # パターンで判定できない残りは LLM 分類にかける。NONE のみ正常扱いし、
     # LISTED (掲載があるのに adapter は 0 件 = 破損濃厚) / UNCLEAR は候補に残す。
-    verdict = _llm_judge_page_animals(html)
-    if verdict == "none":
+    llm_verdict = _llm_judge_page_animals(html)
+    if llm_verdict == "none":
         return ZeroCountVerification(
-            should_flag=False, reason="LLM分類: ページ上も0件表示 (正常な0件)"
+            should_flag=False,
+            reason="LLM分類: ページ上も0件表示 (正常な0件)",
+            verdict="none",
         )
-    if verdict == "listed":
+    if llm_verdict == "listed":
         return ZeroCountVerification(
             should_flag=True,
             reason="LLM分類: 実ページには動物の掲載があるのに adapter は0件 (破損濃厚)",
+            verdict="listed",
         )
 
     return ZeroCountVerification(
-        should_flag=True, reason="再取得も0件で、0件メッセージも見当たらない"
+        should_flag=True,
+        reason="再取得も0件で、0件メッセージも見当たらない",
+        verdict="unclear",
     )

@@ -170,6 +170,7 @@ def run_llm_sites(
     logger: logging.Logger,
     broken_tracker: BrokenSitesTracker | None = None,
     collected_urls_by_site: dict[str, list[str]] | None = None,
+    site_baseline_tracker: SiteBaselineTracker | None = None,
 ) -> tuple[int, int, list[str], dict[str, int]]:
     """LLMベースのサイト群を収集
 
@@ -177,6 +178,14 @@ def run_llm_sites(
         collected_urls_by_site: 渡された場合、`{site_name: [source_url, ...]}`
             を書き込む。品質メトリクスをサイト別に集計するために使う
             (snapshot の URL からはサイトを復元できないため)。
+        site_baseline_tracker: T106 の prune 安全弁強化用。今 run 開始前の
+            consecutive_zero_runs を読む読み取り専用参照として CollectorService
+            に渡す (この関数の中で record() は呼ばない。record() は main() が
+            全サイト収集後にまとめて呼ぶ)。None なら CollectorService 側は
+            従来通り無条件で prune の安全弁 (0件時 no-op) を維持する。
+            LlmAdapter は _http_get() を持たないため、実質的にこの機能は
+            発火しない (verify_zero_count が AttributeError → 安全側 False) が、
+            将来 LlmAdapter が対応した際に自動的に有効化されるよう渡しておく。
 
     Returns:
         (成功サイト数, 失敗サイト数, 0件で完了したサイト名一覧,
@@ -249,6 +258,7 @@ def run_llm_sites(
                 notification_client=notification_client,
                 snapshot_store=snapshot_store,
                 db_connection=db_connection,
+                site_baseline_tracker=site_baseline_tracker,
             )
 
             # SIGALRM タイムアウトでハング対策
@@ -307,6 +317,7 @@ def run_rule_based_sites(
     broken_tracker: BrokenSitesTracker | None = None,
     previous_site_counts: dict[str, int] | None = None,
     collected_urls_by_site: dict[str, list[str]] | None = None,
+    site_baseline_tracker: SiteBaselineTracker | None = None,
 ) -> tuple[int, int, list[str], dict[str, int]]:
     """rule-based 抽出方式でサイト群をドメイン単位の並列で収集
 
@@ -331,6 +342,10 @@ def run_rule_based_sites(
             ログに記録するために使う。在庫はけ (真の 0 件) と adapter 破損は
             件数だけでは区別できないため、スキップ対象化 (record_failure) は
             せず、本物の破損は list_error/detail_error/timeout で検知する。
+        site_baseline_tracker: T106 の prune 安全弁強化用。今 run 開始前の
+            consecutive_zero_runs を読む読み取り専用参照として CollectorService
+            に渡す (record() はこの関数では呼ばない。全サイト収集後に main() が
+            まとめて呼ぶ)。None なら CollectorService 側は従来通り安全弁を維持する。
 
     Returns:
         (成功サイト数, 失敗サイト数, 0件で完了したサイト名一覧,
@@ -403,6 +418,7 @@ def run_rule_based_sites(
             notification_client=notification_client,
             snapshot_store=snapshot_store,
             db_connection=db_connection,
+            site_baseline_tracker=site_baseline_tracker,
         )
         result = service.run_collection(soft_deadline=soft)
         prev_count = previous_site_counts.get(site.name, 0)
@@ -426,6 +442,7 @@ def run_rule_based_sites(
                     notification_client=notification_client,
                     snapshot_store=snapshot_store,
                     db_connection=db_connection,
+                    site_baseline_tracker=site_baseline_tracker,
                 )
                 # フォールバック側も soft deadline を共有 (残り時間で打ち切り)
                 fallback_result = llm_service.run_collection(soft_deadline=soft)
@@ -958,6 +975,10 @@ def main():
                 broken_tracker=broken_tracker,
                 previous_site_counts=previous_site_counts,
                 collected_urls_by_site=collected_urls_by_site,
+                # T106: consecutive_zero_runs は「今 run 開始前」の状態を読む
+                # 読み取り専用参照として渡す (record() は後段でこの run 分を
+                # まとめて呼ぶため、ここでは呼ばない)。
+                site_baseline_tracker=_prev_baseline,
             )
 
             # LLM サイト群（rule-based 化されてないサイト）
@@ -971,6 +992,7 @@ def main():
                 logger=logger,
                 broken_tracker=broken_tracker,
                 collected_urls_by_site=collected_urls_by_site,
+                site_baseline_tracker=_prev_baseline,
             )
 
             total_succeeded = rule_succeeded + llm_succeeded

@@ -223,7 +223,13 @@ class AnimalRepository:
 
         return self._to_pydantic(orm_animal)
 
-    async def prune_disappeared(self, source_site: str, seen_source_urls: set[str]) -> int:
+    async def prune_disappeared(
+        self,
+        source_site: str,
+        seen_source_urls: set[str],
+        *,
+        allow_full_prune: bool = False,
+    ) -> int:
         """指定サイトで今回の収集に出てこなかった動物（= ソースから消えた）を削除する。
 
         ソースに掲載が無い＝もういない、とみなしてライブから外し、ポータルを
@@ -232,23 +238,34 @@ class AnimalRepository:
         Args:
             source_site: 対象サイトの識別名 (SiteConfig.name)
             seen_source_urls: 今回の収集で確認できた source_url の集合
+            allow_full_prune: seen_source_urls が空でも、対象サイトの残存
+                レコードを全削除してよいかの明示フラグ (T106 で追加)。デフォルト
+                False = 既存の安全弁を維持 (何もしない)。呼び出し元
+                (CollectorService._should_force_empty_prune) が
+                「連続 N 回以上 0 件、かつ zero_count_verifier が確定 NONE」の
+                ときだけ True を渡す。それ以外 (adapter 破損の可能性がある通常の
+                0 件 run) は False のままにして誤削除を防ぐ。
 
         Returns:
             削除した件数
 
         安全策:
-        - seen_source_urls が空（収集0件 / adapter 破損の可能性）のときは、サイト
-          全体を誤って消さないよう **何もしない**。
+        - seen_source_urls が空（収集0件 / adapter 破損の可能性）かつ
+          allow_full_prune=False（既定）のときは、サイト全体を誤って消さない
+          よう **何もしない**。この既定の安全弁は allow_full_prune の追加で
+          弱めていない。
         - source_site でスコープするため、他サイトや未タグ(NULL)の行は消さない。
         - 万一まだ在籍する子を誤って消しても、次回収集で再登録されるため復旧可能。
         """
-        if not seen_source_urls:
+        if not seen_source_urls and not allow_full_prune:
             return 0
-        stmt = (
-            delete(Animal)
-            .where(Animal.source_site == source_site)
-            .where(Animal.source_url.notin_(seen_source_urls))
-        )
+        stmt = delete(Animal).where(Animal.source_site == source_site)
+        if seen_source_urls:
+            # notin_() の空集合渡し (allow_full_prune=True かつ 0 件収集時) は
+            # SQLAlchemy バージョン依存の挙動になりうるため、意図を明示するために
+            # 空でないときだけ notin_ フィルタを付ける (空のときは source_site
+            # 一致行を無条件で全削除する設計)。
+            stmt = stmt.where(Animal.source_url.notin_(seen_source_urls))
         result = await self.session.execute(stmt)
         await self.session.commit()
         return result.rowcount or 0

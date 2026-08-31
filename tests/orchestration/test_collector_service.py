@@ -1284,3 +1284,445 @@ class TestCollectorServiceLlmSkip:
         # "skipped 3" のような件数情報がログに含まれる
         log_text = " ".join(r.getMessage() for r in caplog.records)
         assert "skip" in log_text.lower() or "スキップ" in log_text
+
+
+class TestCollectorServicePruneSafetyValve:
+    """T106: 連続 N 回0件 + zero_count_verifier 確定 NONE のときだけ、0 件収集時の
+    prune (消滅同期削除) 安全弁を外して残骸を完全削除できることを検証する。
+
+    consecutive_zero_runs は「今回 run 開始前」の永続状態なので、この run 自身の
+    0 件を含めた連続回数は _should_force_empty_prune 内部で +1 される。
+    """
+
+    from src.data_collector.infrastructure.site_baseline_tracker import SiteBaselineTracker
+
+    @pytest.fixture
+    def mock_adapter_with_list_url(self):
+        adapter = Mock()
+        adapter.prefecture_code = "39"
+        adapter.municipality_name = "テストサイト"
+        adapter.list_truncated = False
+        adapter.site_config = Mock(list_url="https://example.com/list")
+        return adapter
+
+    @pytest.fixture
+    def mock_diff_detector(self):
+        detector = Mock()
+        detector.detect_diff.return_value = DiffResult(new=[], updated=[], deleted_candidates=[])
+        return detector
+
+    @pytest.fixture
+    def mock_output_writer(self):
+        writer = Mock()
+        writer.write_output.return_value = Path("output/animals.json")
+        return writer
+
+    @pytest.fixture
+    def mock_notification_client(self):
+        return Mock()
+
+    @pytest.fixture
+    def mock_snapshot_store(self):
+        store = Mock()
+        store.load_snapshot.return_value = []
+        store.load_animal_map.return_value = {}
+        return store
+
+    def _make_baseline_tracker(self, tmp_path, site_name: str, prior_consecutive_zero_runs: int):
+        """site_name の consecutive_zero_runs が指定値になっている
+        SiteBaselineTracker を作る (直近の非ゼロ実績 → 0 を N 回連続記録)。"""
+        tracker = self.SiteBaselineTracker(tmp_path / "baselines.yaml")
+        for _ in range(prior_consecutive_zero_runs):
+            tracker.record(site_name, 0)
+        return tracker
+
+    def _service(
+        self,
+        tmp_path,
+        adapter,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+        site_baseline_tracker,
+        prune_zero_threshold: int = 8,
+    ):
+        service = CollectorService(
+            adapter=adapter,
+            diff_detector=mock_diff_detector,
+            output_writer=mock_output_writer,
+            notification_client=mock_notification_client,
+            snapshot_store=mock_snapshot_store,
+            site_baseline_tracker=site_baseline_tracker,
+            prune_zero_threshold=prune_zero_threshold,
+        )
+        service.LOCK_FILE = tmp_path / ".collector.lock"
+        return service
+
+    def test_no_tracker_never_forces_prune(
+        self,
+        tmp_path,
+        mock_adapter_with_list_url,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+    ):
+        """site_baseline_tracker 未設定 (既定 None) では常に False (従来挙動)"""
+        service = self._service(
+            tmp_path,
+            mock_adapter_with_list_url,
+            mock_diff_detector,
+            mock_output_writer,
+            mock_notification_client,
+            mock_snapshot_store,
+            site_baseline_tracker=None,
+        )
+        assert service._should_force_empty_prune("テストサイト") is False
+
+    def test_below_threshold_does_not_force_prune_and_skips_verification(
+        self,
+        tmp_path,
+        mock_adapter_with_list_url,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+        monkeypatch,
+    ):
+        """7回目 (閾値8未満) は削除しない。無駄な0件検証(ネットワーク)も呼ばない"""
+        from src.data_collector.orchestration import collector_service as cs_module
+
+        called = False
+
+        def _fail_if_called(*_args, **_kwargs):
+            nonlocal called
+            called = True
+            raise AssertionError("閾値未達なのに verify_zero_count が呼ばれた")
+
+        monkeypatch.setattr(cs_module, "verify_zero_count", _fail_if_called)
+
+        tracker = self._make_baseline_tracker(tmp_path, "テストサイト", 6)  # +1 run = 7回目
+        service = self._service(
+            tmp_path,
+            mock_adapter_with_list_url,
+            mock_diff_detector,
+            mock_output_writer,
+            mock_notification_client,
+            mock_snapshot_store,
+            site_baseline_tracker=tracker,
+        )
+
+        assert service._should_force_empty_prune("テストサイト") is False
+        assert called is False
+
+    def test_threshold_reached_with_none_verdict_forces_prune(
+        self,
+        tmp_path,
+        mock_adapter_with_list_url,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+        monkeypatch,
+    ):
+        """8回目(閾値到達)、かつ0件検証が確定NONE → 削除を許可する"""
+        from src.data_collector.infrastructure.zero_count_verifier import ZeroCountVerification
+        from src.data_collector.orchestration import collector_service as cs_module
+
+        monkeypatch.setattr(
+            cs_module,
+            "verify_zero_count",
+            lambda adapter, list_url: ZeroCountVerification(
+                should_flag=False, reason="サイト側に明示的な0件メッセージあり", verdict="none"
+            ),
+        )
+
+        tracker = self._make_baseline_tracker(tmp_path, "テストサイト", 7)  # +1 run = 8回目
+        service = self._service(
+            tmp_path,
+            mock_adapter_with_list_url,
+            mock_diff_detector,
+            mock_output_writer,
+            mock_notification_client,
+            mock_snapshot_store,
+            site_baseline_tracker=tracker,
+        )
+
+        assert service._should_force_empty_prune("テストサイト") is True
+
+    @pytest.mark.parametrize("verdict", ["listed", "unclear", "transient_nonzero"])
+    def test_threshold_reached_with_non_none_verdict_does_not_force_prune(
+        self,
+        tmp_path,
+        mock_adapter_with_list_url,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+        monkeypatch,
+        verdict,
+    ):
+        """8回目(閾値到達)でも0件検証がNONE以外なら削除を許可しない"""
+        from src.data_collector.infrastructure.zero_count_verifier import ZeroCountVerification
+        from src.data_collector.orchestration import collector_service as cs_module
+
+        monkeypatch.setattr(
+            cs_module,
+            "verify_zero_count",
+            lambda adapter, list_url: ZeroCountVerification(
+                should_flag=True, reason="検証結果", verdict=verdict
+            ),
+        )
+
+        tracker = self._make_baseline_tracker(tmp_path, "テストサイト", 7)  # +1 run = 8回目
+        service = self._service(
+            tmp_path,
+            mock_adapter_with_list_url,
+            mock_diff_detector,
+            mock_output_writer,
+            mock_notification_client,
+            mock_snapshot_store,
+            site_baseline_tracker=tracker,
+        )
+
+        assert service._should_force_empty_prune("テストサイト") is False
+
+    def test_missing_list_url_does_not_force_prune(
+        self,
+        tmp_path,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+        monkeypatch,
+    ):
+        """閾値到達でも list_url が特定できないアダプタ(例: LlmAdapter互換外)では
+        検証しようがないため削除を許可しない"""
+        from src.data_collector.orchestration import collector_service as cs_module
+
+        adapter = Mock()
+        adapter.municipality_name = "テストサイト"
+        adapter.list_truncated = False
+        adapter.site_config = None  # list_url を特定できない
+
+        def _fail_if_called(*_args, **_kwargs):
+            raise AssertionError("list_url 未特定なのに verify_zero_count が呼ばれた")
+
+        monkeypatch.setattr(cs_module, "verify_zero_count", _fail_if_called)
+
+        tracker = self._make_baseline_tracker(tmp_path, "テストサイト", 7)
+        service = self._service(
+            tmp_path,
+            adapter,
+            mock_diff_detector,
+            mock_output_writer,
+            mock_notification_client,
+            mock_snapshot_store,
+            site_baseline_tracker=tracker,
+        )
+
+        assert service._should_force_empty_prune("テストサイト") is False
+
+    def test_verification_exception_does_not_force_prune(
+        self,
+        tmp_path,
+        mock_adapter_with_list_url,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+        monkeypatch,
+    ):
+        """0件検証中の例外は安全側 (削除しない) に倒す"""
+        from src.data_collector.orchestration import collector_service as cs_module
+
+        def _raise(*_args, **_kwargs):
+            raise RuntimeError("network down")
+
+        monkeypatch.setattr(cs_module, "verify_zero_count", _raise)
+
+        tracker = self._make_baseline_tracker(tmp_path, "テストサイト", 7)
+        service = self._service(
+            tmp_path,
+            mock_adapter_with_list_url,
+            mock_diff_detector,
+            mock_output_writer,
+            mock_notification_client,
+            mock_snapshot_store,
+            site_baseline_tracker=tracker,
+        )
+
+        assert service._should_force_empty_prune("テストサイト") is False
+
+
+class TestCollectorServicePruneSafetyValveIntegration:
+    """db_connection 経由の run_collection() 全体で、残骸の完全削除が実際に
+    行われる/行われないことを確認する統合テスト。"""
+
+    @pytest.fixture
+    def mock_adapter_zero_count(self):
+        adapter = Mock()
+        adapter.prefecture_code = "39"
+        adapter.municipality_name = "テストサイト"
+        adapter.list_truncated = False
+        adapter.site_config = Mock(list_url="https://example.com/list")
+        adapter.fetch_animal_list.return_value = []  # 今回 0 件
+        return adapter
+
+    @pytest.fixture
+    def mock_diff_detector(self):
+        detector = Mock()
+        detector.detect_diff.return_value = DiffResult(new=[], updated=[], deleted_candidates=[])
+        return detector
+
+    @pytest.fixture
+    def mock_output_writer(self):
+        writer = Mock()
+        writer.write_output.return_value = Path("output/animals.json")
+        return writer
+
+    @pytest.fixture
+    def mock_notification_client(self):
+        return Mock()
+
+    @pytest.fixture
+    def mock_snapshot_store(self):
+        store = Mock()
+        store.load_snapshot.return_value = []
+        store.load_animal_map.return_value = {}
+        return store
+
+    def _setup_db_with_existing_animal(self, tmp_path, site_name: str):
+        import asyncio
+
+        from src.data_collector.infrastructure.database.connection import (
+            DatabaseConnection,
+            DatabaseSettings,
+        )
+        from src.data_collector.infrastructure.database.models import Animal, Base
+
+        db_path = tmp_path / "test.db"
+        db_settings = DatabaseSettings(database_url=f"sqlite+aiosqlite:///{db_path}")
+        db_connection = DatabaseConnection(db_settings)
+
+        async def _setup():
+            async with db_connection.engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            async with db_connection.get_session() as session:
+                session.add(
+                    Animal(
+                        species="犬",
+                        shelter_date=date(2026, 1, 5),
+                        location="テスト県",
+                        source_url="https://example.com/gone",
+                        category="adoption",
+                        source_site=site_name,
+                    )
+                )
+                await session.commit()
+
+        asyncio.run(_setup())
+        return db_connection
+
+    def _count_animals(self, db_connection) -> int:
+        import asyncio
+
+        from sqlalchemy import select
+
+        from src.data_collector.infrastructure.database.models import Animal
+
+        async def _count():
+            async with db_connection.get_session() as session:
+                res = await session.execute(select(Animal))
+                return len(list(res.scalars().all()))
+
+        return asyncio.run(_count())
+
+    def test_confirmed_long_term_zero_deletes_residual_records(
+        self,
+        tmp_path,
+        mock_adapter_zero_count,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+        monkeypatch,
+    ):
+        """連続8回0件 + 0件検証確定NONE → run_collection() 実行で残骸が実際に削除される"""
+        import asyncio
+
+        from src.data_collector.infrastructure.site_baseline_tracker import SiteBaselineTracker
+        from src.data_collector.infrastructure.zero_count_verifier import ZeroCountVerification
+        from src.data_collector.orchestration import collector_service as cs_module
+
+        monkeypatch.setattr(
+            cs_module,
+            "verify_zero_count",
+            lambda adapter, list_url: ZeroCountVerification(
+                should_flag=False, reason="サイト側に明示的な0件メッセージあり", verdict="none"
+            ),
+        )
+
+        site_name = "テストサイト"
+        db_connection = self._setup_db_with_existing_animal(tmp_path, site_name)
+        assert self._count_animals(db_connection) == 1
+
+        tracker = SiteBaselineTracker(tmp_path / "baselines.yaml")
+        for _ in range(7):  # この run を含めて8回連続0件
+            tracker.record(site_name, 0)
+
+        try:
+            service = CollectorService(
+                adapter=mock_adapter_zero_count,
+                diff_detector=mock_diff_detector,
+                output_writer=mock_output_writer,
+                notification_client=mock_notification_client,
+                snapshot_store=mock_snapshot_store,
+                db_connection=db_connection,
+                site_baseline_tracker=tracker,
+            )
+            service.LOCK_FILE = tmp_path / ".collector.lock"
+
+            result = service.run_collection()
+
+            assert result.success
+            assert result.total_collected == 0
+            assert self._count_animals(db_connection) == 0
+        finally:
+            asyncio.run(db_connection.close())
+
+    def test_default_zero_count_run_does_not_delete_residual_records(
+        self,
+        tmp_path,
+        mock_adapter_zero_count,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+    ):
+        """site_baseline_tracker 未設定の通常0件runでは、既存の安全弁通り何も消えない
+        (回帰防止: T106 導入前の既定挙動が変わっていないことの確認)"""
+        import asyncio
+
+        db_connection = self._setup_db_with_existing_animal(tmp_path, "テストサイト")
+        assert self._count_animals(db_connection) == 1
+
+        try:
+            service = CollectorService(
+                adapter=mock_adapter_zero_count,
+                diff_detector=mock_diff_detector,
+                output_writer=mock_output_writer,
+                notification_client=mock_notification_client,
+                snapshot_store=mock_snapshot_store,
+                db_connection=db_connection,
+            )
+            service.LOCK_FILE = tmp_path / ".collector.lock"
+
+            result = service.run_collection()
+
+            assert result.success
+            assert result.total_collected == 0
+            assert self._count_animals(db_connection) == 1  # 削除されない
+        finally:
+            asyncio.run(db_connection.close())

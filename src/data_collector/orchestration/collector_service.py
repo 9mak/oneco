@@ -16,12 +16,23 @@ from ..domain.models import AnimalData
 from ..infrastructure.notification_client import NotificationClient, NotificationLevel
 from ..infrastructure.notification_manager_client import NotificationManagerClient
 from ..infrastructure.output_writer import OutputWriter
+from ..infrastructure.site_baseline_tracker import SiteBaselineTracker
 from ..infrastructure.snapshot_store import SnapshotStore
+from ..infrastructure.zero_count_verifier import verify_zero_count
 from .soft_deadline import SoftDeadline
 
 if TYPE_CHECKING:
     from ..infrastructure.database.connection import DatabaseConnection
     from ..infrastructure.database.repository import AnimalRepository
+
+# 「連続何回0件が続いたら、残存レコードの完全削除 (prune) を許可するか」の既定閾値
+# (T106)。実測分布 (2026-08-30時点、data/site_baselines.yaml):
+# 211サイト中102サイトが0件継続中で、consecutive_zero_runs は 1-2回=3件・
+# 3-5回=6件・6-10回=5件・11-30回=15件・31回以上=73件と分布する。1-2回は
+# zero_count_verifier 導入の動機そのものである在庫の自然増減(baseline 1-2件の
+# 薄いサイトで誤検知が多い)、11回以降は長期化とみなせるため、その中間かつ
+# 安全側の値として 8 を採用する。
+DEFAULT_PRUNE_ZERO_THRESHOLD = 8
 
 
 class CollectionResult(BaseModel):
@@ -81,6 +92,8 @@ class CollectorService:
         repository: Optional["AnimalRepository"] = None,
         db_connection: Optional["DatabaseConnection"] = None,
         notification_manager_client: NotificationManagerClient | None = None,
+        site_baseline_tracker: SiteBaselineTracker | None = None,
+        prune_zero_threshold: int = DEFAULT_PRUNE_ZERO_THRESHOLD,
     ):
         self.adapter = adapter
         self.diff_detector = diff_detector
@@ -90,6 +103,11 @@ class CollectorService:
         self.repository = repository
         self.db_connection = db_connection
         self.notification_manager_client = notification_manager_client
+        # T106: 連続 N 回0件 + zero_count_verifier 確定 NONE のときだけ、空
+        # seen_source_urls での prune (残存レコード全削除) を許可するための
+        # 依存。None (既定) なら従来通り無条件で許可しない (安全弁は不変)。
+        self.site_baseline_tracker = site_baseline_tracker
+        self.prune_zero_threshold = prune_zero_threshold
         self.logger = logging.getLogger(__name__)
         self._structure_changed = False
         # 収集が「サイト全件を失敗なく列挙できた」かどうか。soft-stop・detail 抽出
@@ -389,6 +407,58 @@ class CollectorService:
         """
         return str(uuid.uuid4())
 
+    def _should_force_empty_prune(self, site_name: str) -> bool:
+        """0 件収集時に既定の安全弁 (no-op) を外し、残骸を完全削除してよいか判定する。
+
+        T106: 「連続 N 回以上 0 件、かつ zero_count_verifier が確定 NONE (サイト側が
+        本当に空だと判定できるケース)」の場合のみ True を返す。それ以外
+        (依存未設定・閾値未達・NONE 以外の判定・検証失敗) はすべて False とし、
+        既存の安全弁 (prune_disappeared の allow_full_prune=False 相当) を維持する。
+
+        Args:
+            site_name: SiteBaselineTracker に記録されているサイト識別名
+                (SiteConfig.name と一致させる。prune_disappeared の source_site と同じ)
+
+        判定に使う consecutive_zero_runs は「今回 run 開始前」の永続状態
+        (site_baseline_tracker.record() はこの run 分をまだ記録していない) なので、
+        今回の 0 件を含めた連続回数は +1 して比較する。
+        """
+        if self.site_baseline_tracker is None:
+            return False
+        prior_consecutive_zero_runs = self.site_baseline_tracker.consecutive_zero_runs(site_name)
+        consecutive_including_this_run = prior_consecutive_zero_runs + 1
+        if consecutive_including_this_run < self.prune_zero_threshold:
+            return False
+
+        list_url = getattr(getattr(self.adapter, "site_config", None), "list_url", None)
+        if not list_url:
+            self.logger.warning(
+                f"[{site_name}] 連続{consecutive_including_this_run}回0件だが "
+                "list_url が特定できず0件検証を実行できないため削除は許可しない"
+            )
+            return False
+
+        try:
+            verification = verify_zero_count(self.adapter, list_url=list_url)  # type: ignore[arg-type]
+        except Exception as e:
+            self.logger.warning(f"[{site_name}] prune 許可判定の0件検証に失敗: {e}")
+            return False
+
+        if verification.verdict != "none":
+            self.logger.info(
+                f"[{site_name}] 連続{consecutive_including_this_run}回0件だが "
+                f"0件検証の判定={verification.verdict} ({verification.reason}) のため "
+                "残骸削除は許可しない"
+            )
+            return False
+
+        self.logger.warning(
+            f"[{site_name}] 連続{consecutive_including_this_run}回0件 "
+            f"(閾値{self.prune_zero_threshold}) かつ0件検証が確定NONE "
+            f"({verification.reason}) → 残存レコードの完全削除を許可"
+        )
+        return True
+
     def _save_to_database(self, collected_data: list[AnimalData]) -> None:
         """
         収集データをデータベースに永続化
@@ -456,10 +526,19 @@ class CollectorService:
                     else:
                         try:
                             seen_urls = {str(a.source_url) for a in collected_data}
-                            removed = await repo.prune_disappeared(site_name, seen_urls)
+                            # T106: 0 件収集が長期継続し、かつ zero_count_verifier で
+                            # サイト側の空を確定できた場合のみ、既定の安全弁 (0 件時
+                            # no-op) を明示的に外して残骸の完全削除を許可する。
+                            allow_full_prune = not seen_urls and self._should_force_empty_prune(
+                                site_name
+                            )
+                            removed = await repo.prune_disappeared(
+                                site_name, seen_urls, allow_full_prune=allow_full_prune
+                            )
                             if removed:
                                 self.logger.info(
                                     f"[{site_name}] ソースから消えた {removed} 件を削除（同期）"
+                                    + ("（残骸全削除）" if allow_full_prune else "")
                                 )
                         except Exception as e:
                             self.logger.warning(f"[{site_name}] 消滅同期削除に失敗: {e}")
