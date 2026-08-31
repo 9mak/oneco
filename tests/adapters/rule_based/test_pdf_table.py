@@ -63,6 +63,17 @@ class _SamplePdfAdapter(PdfTableAdapter):
 
 
 class TestPdfTableAdapter:
+    def test_default_pdf_link_selector_hook_returns_class_variable(self):
+        """`_pdf_link_selector()` の既定実装は `PDF_LINK_SELECTOR` をそのまま返す (T119)
+
+        category に応じてセレクタを切り替えたいサブクラス (茨城県等) だけが
+        本メソッドをオーバーライドする。それ以外のサブクラスは既定のまま
+        `PDF_LINK_SELECTOR` を返すことを確認し、フック追加が既存 adapter の
+        挙動に影響しないことを保証する。
+        """
+        adapter = _SamplePdfAdapter(_site())
+        assert adapter._pdf_link_selector() == adapter.PDF_LINK_SELECTOR == "a[href$='.pdf']"
+
     def test_fetch_animal_list_extracts_pdf_links(self):
         adapter = _SamplePdfAdapter(_site())
         with (
