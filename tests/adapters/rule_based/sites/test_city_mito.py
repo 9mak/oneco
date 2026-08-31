@@ -202,6 +202,45 @@ class TestCityMitoAdapter:
         assert raws[1].sex == "オス"
         assert raws[1].category == "sheltered"
 
+    def test_extract_animal_details_with_real_world_dual_field_row_layout(self):
+        """実サイトの「1行に2フィールド」レイアウトでも species を正しく推定する (T118 修正)
+
+        wayback snapshot (2025-11) で確認した実際の水戸市テーブル構造:
+        `<tr><th>犬種</th><td>雑種</td><th>首輪</th><td>無し</td></tr>` のように
+        1 行に 2 組の label/value ペアが並ぶ。旧実装は末尾セルのみを値として
+        扱うため、「犬種」ラベルにマッチした際 value に隣接フィールド (首輪)
+        の値が入り、species が「無し」(犬猫の文字を含まない) になって
+        "その他" に誤分類されていた (実測: 本番 id=523/524)。
+        """
+        synthetic_html = """
+        <html><body>
+        <div id="main_body">
+        <table>
+            <tr><th>管理番号</th><td>公表174</td><th>体格</th><td>中</td></tr>
+            <tr><th>収容日時</th><td>令和7年10月9日</td><th>年齢</th><td>成犬（若め）</td></tr>
+            <tr><th>収容場所</th><td>水戸市鯉渕町</td><th>毛色</th><td>茶黒</td></tr>
+            <tr><th>犬種</th><td>雑種</td><th>首輪</th><td>無し</td></tr>
+            <tr><th>性別</th><td>雄</td><th>その他</th><td></td></tr>
+        </table>
+        </div>
+        </body></html>
+        """
+        sheltered_site = _site(
+            name="水戸市（愛護センター収容中の動物たち）",
+            list_url="https://www.city.mito.lg.jp/site/doubutsuaigo/2043.html",
+            category="sheltered",
+        )
+        adapter = CityMitoAdapter(sheltered_site)
+        with patch.object(adapter, "_http_get", return_value=synthetic_html):
+            urls = adapter.fetch_animal_list()
+            assert len(urls) == 1
+            url, category = urls[0]
+            raw = adapter.extract_animal_details(url, category=category)
+
+        assert raw.species == "犬", f"「犬種」ラベルから種別を確定できるはず: got {raw.species!r}"
+        animal_data = adapter.normalize(raw)
+        assert animal_data.species == "犬"
+
     def test_infer_species_from_site_name_default_empty(self):
         """水戸市 2 サイトの実名は犬/猫を含まないため空文字を返す"""
         for name in (

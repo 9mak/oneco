@@ -228,6 +228,63 @@ class TestCityNaraAdapter:
             result = adapter.fetch_animal_list()
         assert result == []
 
+    def test_extract_animal_details_breed_without_dog_cat_kanji_does_not_leak_into_species(self):
+        """breed 推定に失敗した品種名 (雑種) が species にそのまま残らない (T118 修正)
+
+        旧実装は `_infer_species_from_breed(x) or x` で breed 推定が失敗して
+        (例: "雑種") もサイト名フォールバックへ進めず、species に "雑種" が
+        そのまま残っていた (site_config.name も犬猫併記で判定不能なため、
+        最終的な正規化結果は "その他" のままだが、raw.species に breed の
+        生値が残るのは意図しない挙動)。
+        """
+        synthetic_html = """
+        <html><body>
+        <div id="main_body">
+          <table>
+            <tr><th>種類</th><td>雑種</td></tr>
+            <tr><th>性別</th><td>オス</td></tr>
+          </table>
+        </div>
+        </body></html>
+        """
+        adapter = CityNaraAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=synthetic_html):
+            urls = adapter.fetch_animal_list()
+            url, category = urls[0]
+            raw = adapter.extract_animal_details(url, category=category)
+
+        assert raw.species == "", (
+            f"サイト名 (犬猫併記で判定不能) にフォールバックし空文字のはず: got {raw.species!r}"
+        )
+        animal_data = adapter.normalize(raw)
+        assert animal_data.species == "その他"
+
+    def test_extract_animal_details_with_dog_and_cat_species_labels(self):
+        """「犬種」「猫種」ラベルはラベル自体から種別を確定できる (T118 修正)
+
+        値セルが「雑種」等 (犬猫の文字を含まない品種名) でも、ラベルが
+        「犬種」「猫種」であれば種別を確定できる。
+        """
+        synthetic_html = """
+        <html><body>
+        <div id="main_body">
+          <table>
+            <tr><th>犬種</th><td>雑種</td></tr>
+            <tr><th>性別</th><td>オス</td></tr>
+          </table>
+        </div>
+        </body></html>
+        """
+        adapter = CityNaraAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=synthetic_html):
+            urls = adapter.fetch_animal_list()
+            url, category = urls[0]
+            raw = adapter.extract_animal_details(url, category=category)
+
+        assert raw.species == "犬"
+        animal_data = adapter.normalize(raw)
+        assert animal_data.species == "犬"
+
     def test_infer_species_from_site_name_returns_empty_for_dog_and_cat(self):
         """サイト名に犬・猫の両方を含む場合は空文字"""
         assert CityNaraAdapter._infer_species_from_site_name("奈良市（保護犬猫）") == ""

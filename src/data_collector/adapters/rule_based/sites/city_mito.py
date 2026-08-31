@@ -150,6 +150,13 @@ class CityMitoAdapter(SinglePageTableAdapter):
         }
 
         fields: dict[str, str] = {}
+        # 「犬種」「猫種」はラベル自体が動物種別を明示する。実測 (2025-11
+        # wayback snapshot) では 1 行に 2 フィールドが並ぶレイアウト
+        # (例: `犬種｜雑種｜首輪｜無し`) が使われており、この場合
+        # value_cell (末尾セル) は「犬種」の値ではなく隣接フィールド
+        # (首輪) の値になってしまうため、値ではなくラベルから種別を
+        # 直接確定する。
+        species_from_label = ""
         for tr in trs:
             cells = [c for c in tr.find_all(["td", "th"]) if isinstance(c, Tag)]
             if len(cells) < 2:
@@ -159,6 +166,11 @@ class CityMitoAdapter(SinglePageTableAdapter):
             value_text = re.sub(r"[ 　]+", " ", value_text).strip()
             for label_cell in cells[:-1]:
                 label_text = label_cell.get_text(separator="", strip=True)
+                if not species_from_label:
+                    if "犬種" in label_text:
+                        species_from_label = "犬"
+                    elif "猫種" in label_text:
+                        species_from_label = "猫"
                 matched = False
                 for label, field in label_to_field.items():
                     if field in fields:
@@ -170,9 +182,13 @@ class CityMitoAdapter(SinglePageTableAdapter):
                 if matched:
                     break
 
-        # species: テーブル値を優先し、無ければサイト名から推定
-        species = fields.get("species", "") or self._infer_species_from_site_name(
-            self.site_config.name
+        # species: 「犬種」「猫種」ラベルを最優先、次にテーブル値、
+        # 最後にサイト名から推定する (水戸市の実サイト名は犬猫いずれも
+        # 含まないため通常は空文字)。
+        species = (
+            species_from_label
+            or fields.get("species", "")
+            or self._infer_species_from_site_name(self.site_config.name)
         )
 
         try:

@@ -204,22 +204,57 @@ class TestPrefToyamaAdapter:
         assert raws[1].sex == "オス"
         assert raws[1].category == "lost"
 
-        # normalize() 経由で判明した既知バグ (T114 監査で発見、2026-08、
-        # city_sasebo.py の "雑種" 事例と同型): raw.species は「種類」ラベルの
-        # 品種名がそのまま入り (breed とも同一値)、site_config.name も
-        # "犬猫" 併記で判定不能なため、DataNormalizer._normalize_species() の
-        # 文字列部分一致に頼っている。「三毛猫」は "猫" を含むため正しく
-        # 変換されるが、「キジトラ」(毛柄のみ・犬猫いずれの文字も含まない)
-        # は "その他" に誤分類され、動物種フィルタから漏れる。
-        # 本テストは現在の実際の挙動 (バグを含む) を記録するリグレッション
-        # テストであり、正しい仕様ではない。修正は別タスクで扱う。
+        # normalize() 経由での挙動確認 (T114 監査で発見、T118 で調査確定):
+        # 「種類」ラベルの品種名がそのまま species に入り (breed とも同一値)、
+        # site_config.name も "犬猫" 併記で判定不能。DataNormalizer
+        # ._normalize_species() の文字列部分一致に頼るため、「三毛猫」は
+        # "猫" を含み正しく変換されるが、「キジトラ」(毛柄のみ・犬猫いずれの
+        # 文字も含まない) は "その他" に分類される。
+        # これは実装バグではなく、当実データ (「種類」ラベルのみ・サイト名
+        # 併記・URL 上の犬猫区分なし) には species を確定する追加の手がかりが
+        # 存在しないための構造的な限界であり、T118 では「犬種」「猫種」の
+        # ように種別を明示するラベルがある場合のみ確実に推定する
+        # (test_extract_animal_details_with_dog_and_cat_species_labels 参照)。
         animal_datas = [adapter.normalize(r) for r in raws]
         assert animal_datas[0].species == "猫"
         assert animal_datas[1].species == "その他", (
-            "既知バグ: breed='キジトラ' (犬猫の文字を含まない毛柄表記) は "
-            "species 推定で 'その他' に誤分類される (T114 発見、"
-            "city_sasebo.py と同型のパターン)。"
+            "既知の限界: breed='キジトラ' (犬猫の文字を含まない毛柄表記) かつ "
+            "ラベルも「種類」(犬猫を明示しない) のため、種別を確定する手がかりが "
+            "無く 'その他' に分類される。"
         )
+
+    def test_extract_animal_details_with_dog_and_cat_species_labels(self):
+        """「犬種」「猫種」ラベルはラベル自体から種別を確定できる (T118 修正)
+
+        値セルが「雑種」等 (犬猫の文字を含まない品種名) でも、ラベルが
+        「犬種」「猫種」であれば種別を確定できる。city_mito.py の実データ
+        実測 (2025-11 wayback snapshot) で確認した同型パターン。
+        """
+        synthetic_html = """
+        <html><body>
+        <div id="tmp_main">
+        <table>
+            <tr><th>犬種</th><td>雑種</td></tr>
+            <tr><th>性別</th><td>オス</td></tr>
+        </table>
+        <table>
+            <tr><th>猫種</th><td>キジトラ</td></tr>
+            <tr><th>性別</th><td>メス</td></tr>
+        </table>
+        </div>
+        </body></html>
+        """
+        adapter = PrefToyamaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=synthetic_html):
+            urls = adapter.fetch_animal_list()
+            assert len(urls) == 2
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
+
+        assert raws[0].species == "犬"
+        assert raws[1].species == "猫"
+        animal_datas = [adapter.normalize(r) for r in raws]
+        assert animal_datas[0].species == "犬"
+        assert animal_datas[1].species == "猫"
 
     def test_infer_species_from_site_name_default_empty(self):
         """富山県の実サイト名は犬・猫 (ねこ) を併記するため空文字を返す"""

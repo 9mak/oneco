@@ -90,8 +90,10 @@ class TestCitySaseboAdapter:
         # 同一ページから複数取得しても HTTP は 1 回だけ (キャッシュ確認)
         assert mock_get.call_count == 1
         assert isinstance(raw, RawAnimalData)
-        # 末尾括弧 "（雑種、オス）" から犬種と性別を取得
-        assert raw.species == "雑種"
+        # 末尾括弧 "（雑種、オス）" から犬種と性別を取得。
+        # breed="雑種" 自体は犬猫の文字を含まないため、species はサイト名
+        # (佐世保市「保護犬」) からの推定で確定する (T118 修正)。
+        assert raw.species == "犬"
         # 犬種 (雑種) は品種(breed)としても保存される
         assert raw.breed == "雑種"
         assert raw.sex == "オス"
@@ -108,21 +110,16 @@ class TestCitySaseboAdapter:
         assert raw.source_url == first_url
         assert raw.category == "sheltered"
 
-        # normalize() 経由で判明した既知バグ (T114 監査で発見、2026-08):
-        # ソースコードのコメント (city_sasebo.py L142-144) は「species は
-        # サイト名から犬/猫を推定する」と書かれているが、実装は
-        # `species = breed` を先に代入し、breed が非空ならサイト名推定に
-        # フォールバックしない。breed="雑種" (犬/猫の文字を含まない) の
-        # 個体は DataNormalizer._normalize_species() で "その他" に
-        # 誤分類され、フロントの犬/猫フィルタから脱落する。
-        # 本テストは現在の実際の挙動 (バグを含む) を記録するリグレッション
-        # テストであり、正しい仕様ではない。修正は別タスクで扱う。
+        # normalize() 経由で species 誤分類バグ (T118) の修正を検証する。
+        # breed="雑種" (犬/猫の文字を含まない) でも、佐世保市は「保護犬」
+        # 「保護猫」が別サイト (URL の `_dog`/`_cat` で分離) のため、
+        # サイト名から犬/猫を確実に推定できる。修正前は `species = breed`
+        # を直接代入しており breed が非空なら常にサイト名推定へフォール
+        # バックせず "その他" に誤分類されていた (実測: 本番 id=479 の
+        # 佐世保市保護猫サイト「キジトラ」個体で確認)。
         animal_data = adapter.normalize(raw)
-        assert animal_data.species == "その他", (
-            "既知バグ: breed='雑種' は species 推定にサイト名 (犬) が使われず "
-            "'その他' に誤分類される (T114 発見)。動物種フィルタから漏れる "
-            "本番影響がある可能性が高いため、別途 city_sasebo.py L145 の "
-            "species/breed 代入順序の修正を検討すること。"
+        assert animal_data.species == "犬", (
+            "breed='雑種' はサイト名 (佐世保市「保護犬」) から '犬' と推定できる"
         )
         assert animal_data.breed == "雑種"
         assert animal_data.sex == "男の子"
@@ -171,6 +168,44 @@ class TestCitySaseboAdapter:
         with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             with pytest.raises(Exception):
                 adapter.fetch_animal_list()
+
+    def test_extract_animal_details_cat_site_breed_without_cat_kanji(self):
+        """猫サイトで breed が「猫」の文字を含まない場合もサイト名から '猫' に推定される
+
+        本番 id=479 (佐世保市保護猫サイト、breed="キジトラ") の実害を再現する
+        リグレッションテスト。
+        """
+        synthetic_html = """
+        <html><body>
+        <div id="tmp_contents">
+        <a href="/hokenhukusi/seikat/20251115_cat01.html">
+            <img src="/images/1/img_0001.jpg">
+            <span class="space_lft1">令</span>和7年11月15日（土曜日）新田町（キジトラ、オス）
+        </a>
+        </div>
+        </body></html>
+        """
+        adapter = CitySaseboAdapter(_site(cat=True))
+        with patch.object(adapter, "_http_get", return_value=synthetic_html):
+            urls = adapter.fetch_animal_list()
+            assert len(urls) == 1
+            url, category = urls[0]
+            raw = adapter.extract_animal_details(url, category=category)
+
+        assert raw.breed == "キジトラ"
+        animal_data = adapter.normalize(raw)
+        assert animal_data.species == "猫", (
+            "breed='キジトラ' は犬猫の文字を含まないが、サイト名"
+            "(佐世保市「保護猫」) から '猫' と推定できるはず"
+        )
+
+    def test_infer_species_from_breed(self):
+        """末尾括弧の品種表記からの species 推定 (柴犬→犬, 三毛猫→猫, 雑種/キジトラ→空)"""
+        assert CitySaseboAdapter._infer_species_from_breed("柴犬") == "犬"
+        assert CitySaseboAdapter._infer_species_from_breed("三毛猫") == "猫"
+        assert CitySaseboAdapter._infer_species_from_breed("雑種") == ""
+        assert CitySaseboAdapter._infer_species_from_breed("キジトラ") == ""
+        assert CitySaseboAdapter._infer_species_from_breed("") == ""
 
     def test_extract_animal_details_with_unknown_url(self, fixture_html):
         """未知の detail URL を渡した場合は ParsingError を出す"""
