@@ -35,6 +35,18 @@ import yaml
 
 logger = logging.getLogger(__name__)
 
+# detect_sudden_drops のデフォルト閾値 (T107)。
+# 前回比でこの割合以上減少したら検知対象とする (0.5 = 50%以上減)。
+# 大分65→32型 (比率0.49) を検知しつつ、実測 (data/site_baselines.yaml) で
+# 確認した長野県譲渡猫(0.60)・仙台市譲渡猫(0.67)等の正常な自然減少水準は
+# 誤検知しない値として選定 (2026-08-31 実データ調査)。
+_SUDDEN_DROP_RATIO_THRESHOLD = 0.5
+# 前回件数がこの値未満の薄いベースラインは対象外 (誤検知回避)。
+# zero_count_verifier.py の知見 (2026-07-24 実測: 検知15件中14件が
+# baseline 1〜2件) を踏まえ、母数3件未満は在庫の自然な増減の影響が大きい
+# として除外する。
+_SUDDEN_DROP_MIN_PREVIOUS_COUNT = 3
+
 
 @dataclass(frozen=True)
 class ZeroCountRegression:
@@ -44,6 +56,23 @@ class ZeroCountRegression:
     baseline_count: int  # last_nonzero_count（過去の非ゼロ件数）
     consecutive_zero_runs: int
     last_nonzero_at: str | None
+
+
+@dataclass(frozen=True)
+class SuddenDropRegression:
+    """直近1回の収集で前回比 `drop_ratio_threshold` 以上件数が減少したサイトの検知結果
+
+    detect_zero_count_regressions は「過去≥1件のサイトが複数run連続で0件」を
+    検知するが、大分65→32件のように0にはならないが1回の収集で急減する
+    部分的な件数低下は捉えられない (last_count は今回値で即座に上書きされ、
+    0件でなければ consecutive_zero_runs も増えないため)。このクラスは
+    1 run 単位の前回比急減を表す (T107)。
+    """
+
+    site_name: str
+    previous_count: int
+    current_count: int
+    drop_ratio: float  # 減少率 (0.0〜1.0、例: 65→32なら約0.508)
 
 
 @dataclass(frozen=True)
@@ -138,6 +167,58 @@ class SiteBaselineTracker:
                         last_nonzero_at=(
                             str(entry["last_nonzero_at"]) if entry.get("last_nonzero_at") else None
                         ),
+                    )
+                )
+        return out
+
+    def detect_sudden_drops(
+        self,
+        current_counts: dict[str, int],
+        *,
+        drop_ratio_threshold: float = _SUDDEN_DROP_RATIO_THRESHOLD,
+        min_previous_count: int = _SUDDEN_DROP_MIN_PREVIOUS_COUNT,
+    ) -> list[SuddenDropRegression]:
+        """今回の収集件数を前回の `last_count` と比較し、1 run での急減を検知する。
+
+        大分65→32型のように0件にはならないが1回の収集で大きく減るケースを
+        捉える。累積の high_water 比では長野県譲渡猫(0.60)・仙台市譲渡猫(0.67)
+        等の正常な自然減少サイトと区別できなかったため、「直近1回の前回比」
+        だけを見る設計にしている (T107)。
+
+        **呼び出しタイミングは record() より前** であること。record() は
+        呼び出しの都度 `last_count` を今回値へ即座に上書きするため、
+        record() の後に呼ぶと「前回」の値が既に失われ「前回比」が取れない。
+
+        Args:
+            current_counts: {site_name: 今回の収集件数}
+            drop_ratio_threshold: この割合以上の減少で検知する
+                (デフォルト 0.5 = 50%以上減)
+            min_previous_count: 前回件数がこの値未満なら対象外とする
+                (デフォルト 3。薄いベースラインは在庫の自然な増減で
+                誤検知しやすいため)
+
+        完全に0件になったケース (current_count == 0) は既存の
+        detect_zero_count_regressions / detect_persistent_zero_sites が
+        担当するため対象外。前回データが無い(初回収集)サイトも対象外。
+        """
+        out: list[SuddenDropRegression] = []
+        for site_name, raw_count in current_counts.items():
+            current_count = int(raw_count)
+            if current_count <= 0:
+                continue
+            previous_count = int(self._entry(site_name).get("last_count", 0))
+            if previous_count < min_previous_count:
+                continue
+            if current_count >= previous_count:
+                continue
+            drop_ratio = (previous_count - current_count) / previous_count
+            if drop_ratio >= drop_ratio_threshold:
+                out.append(
+                    SuddenDropRegression(
+                        site_name=site_name,
+                        previous_count=previous_count,
+                        current_count=current_count,
+                        drop_ratio=drop_ratio,
                     )
                 )
         return out
