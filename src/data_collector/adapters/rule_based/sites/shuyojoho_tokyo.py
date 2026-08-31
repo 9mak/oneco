@@ -3,10 +3,13 @@
 対象ドメイン: https://shuyojoho.metro.tokyo.lg.jp/
 
 特徴:
-- 東京都動物愛護相談センターの専用検索 DB。一覧 / 詳細とも JavaScript
-  により描画されるため (sites.yaml で `requires_js: true`)、
-  `PlaywrightFetchMixin` を多重継承して `_http_get` を Playwright
-  実装に差し替える。
+- 東京都動物愛護相談センターの専用検索 DB。T108 (2026-08-31) で一覧・詳細
+  とも静的 HTTP GET のみで取得可能と確認し、sites.yaml の `requires_js`
+  を 2 サイトとも false に修正した (旧コメントの「JavaScript により描画
+  される」は誤りだった。0 件時は「現在、犬の収容情報はありません。」の
+  ような静的メッセージが表示される)。`PlaywrightFetchMixin` は多重継承
+  したまま残しており、将来サイトが JS 化した場合は `requires_js: true`
+  に戻すだけで復旧できる。
 - 2 サイトを単一 adapter で扱う:
 
   * `https://shuyojoho.metro.tokyo.lg.jp/`     東京都収容動物情報（犬）

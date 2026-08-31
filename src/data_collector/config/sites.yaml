@@ -16,30 +16,35 @@ sites:
   # ===================================================================
   # 徳島県
   # ===================================================================
-  # 【対応状況】Playwright対応済み。現在収容0件のため取得件数は0になる場合あり。
-  # /stray/ = センターに収容されている動物（jQuery .load() で動的読み込み）
+  # 【対応状況】T108(2026-08-31) 実データを iframe URL に直接静的 HTTP GET
+  # して取得できることを確認したため requires_js: false に修正。
+  # 現在収容0件のため取得件数は0になる場合あり。
+  # /stray/ = センターに収容されている動物（実データは iframe 内の
+  # animalinfo/list1/ ページに静的出力。adapter が iframe URL を直接 fetch する）
   - name: "徳島県動物愛護管理センター（収容中）"
     prefecture: "徳島県"
     prefecture_code: "36"
     list_url: "https://douai-tokushima.com/stray/"
     category: "lost"
-    requires_js: true
+    requires_js: false
 
   # 【徳島県動物愛護管理センター 譲渡予定】douai-tokushima.com の譲渡犬・譲渡猫ページ
-  # 動的ページのため requires_js: true
+  # T108(2026-08-31): 実データは iframe (animalinfo/list4_1 / list4_2) に
+  # 静的出力されている。adapter が iframe URL を直接 fetch するため
+  # requires_js: false で取得可能と確認済み。
   - name: "徳島県動物愛護管理センター（譲渡犬）"
     prefecture: "徳島県"
     prefecture_code: "36"
     list_url: "https://douai-tokushima.com/transfer/doglist"
     category: "adoption"
-    requires_js: true
+    requires_js: false
 
   - name: "徳島県動物愛護管理センター（譲渡猫）"
     prefecture: "徳島県"
     prefecture_code: "36"
     list_url: "https://douai-tokushima.com/transfer/catlist"
     category: "adoption"
-    requires_js: true
+    requires_js: false
 
   # ===================================================================
   # 香川県
@@ -61,7 +66,8 @@ sites:
     list_link_pattern: "a[href*='ani_infodetail']"
     category: "lost"
 
-  # 【さぬき動物愛護センター】PDF形式。Playwrightでページを取得しPDFリンクを抽出。
+  # 【さぬき動物愛護センター】PDF形式。一覧ページ自体は静的HTMLにPDFリンクが
+  # 直接出力されている (T108(2026-08-31) 確認)。requires_js: false で取得可能。
   # PDFはPdfFetcherでダウンロード＆テキスト抽出してLLMに渡す。
   # PDFは複数頭の一覧表形式のため pdf_multi_animal: true で全頭を個別抽出する。
   # 確認済みPDF URL例: /documents/6103/0318dog.pdf, /documents/6103/0321cat.pdf
@@ -70,7 +76,7 @@ sites:
     prefecture_code: "37"
     list_url: "https://www.pref.kagawa.lg.jp/s-doubutuaigo/sanukidouaicenter/jyouto/s04u6e190311095146.html"
     category: "adoption"
-    requires_js: true
+    requires_js: false
     pdf_link_pattern: "a[href*='/documents/6103/'][href$='.pdf']"
     pdf_multi_animal: true
 
@@ -278,15 +284,16 @@ sites:
   # ===================================================================
   # 沖縄県
   # ===================================================================
-  # 【沖縄県動物愛護管理センター】専用ドメイン、動的DB、URL構造化
+  # 【沖縄県動物愛護管理センター】専用ドメイン、URL構造化
   # 個別詳細URL: /animals/{accommodate,missing,protection}_view/{ID}
+  # T108(2026-08-31): 一覧・詳細とも静的HTTP GETで取得可能と確認。requires_js: false。
   - name: "沖縄県動物愛護管理センター（収容犬）"
     prefecture: "沖縄県"
     prefecture_code: "47"
     list_url: "https://www.aniwel-pref.okinawa/animals/accommodate/dogs"
     list_link_pattern: "a[href*='/animals/accommodate_view/']"
     category: "sheltered"
-    requires_js: true
+    requires_js: false
 
   - name: "沖縄県動物愛護管理センター（収容猫）"
     prefecture: "沖縄県"
@@ -294,7 +301,7 @@ sites:
     list_url: "https://www.aniwel-pref.okinawa/animals/accommodate/cats"
     list_link_pattern: "a[href*='/animals/accommodate_view/']"
     category: "sheltered"
-    requires_js: true
+    requires_js: false
 
   - name: "沖縄県動物愛護管理センター（行方不明犬）"
     prefecture: "沖縄県"
@@ -302,7 +309,7 @@ sites:
     list_url: "https://www.aniwel-pref.okinawa/animals/missing/dogs"
     list_link_pattern: "a[href*='/animals/missing_view/']"
     category: "lost"
-    requires_js: true
+    requires_js: false
 
   - name: "沖縄県動物愛護管理センター（行方不明猫）"
     prefecture: "沖縄県"
@@ -310,21 +317,21 @@ sites:
     list_url: "https://www.aniwel-pref.okinawa/animals/missing/cats"
     list_link_pattern: "a[href*='/animals/missing_view/']"
     category: "lost"
-    requires_js: true
+    requires_js: false
 
   - name: "沖縄県動物愛護管理センター（迷い込み保護犬）"
     prefecture: "沖縄県"
     prefecture_code: "47"
     list_url: "https://www.aniwel-pref.okinawa/animals/protection/dogs"
     category: "sheltered"
-    requires_js: true
+    requires_js: false
 
   - name: "沖縄県動物愛護管理センター（迷い込み保護猫）"
     prefecture: "沖縄県"
     prefecture_code: "47"
     list_url: "https://www.aniwel-pref.okinawa/animals/protection/cats"
     category: "sheltered"
-    requires_js: true
+    requires_js: false
 
   # ===================================================================
   # 九州・沖縄バッチ2: 政令指定都市・中核市
@@ -345,7 +352,20 @@ sites:
     category: "adoption"
     single_page: true
 
-  # 【福岡市わんにゃんよかネット】パラメータ駆動・動的、要 JS 検証
+  # 【福岡市わんにゃんよかネット】パラメータ駆動
+  # T108(2026-08-31): 犬/猫保護中 (sorting_id=4) は一覧ページ自体は静的HTMLに
+  # テーブルが直接出力されており取得可能と確認済み (在庫0件時も
+  # 「データが見つかりませんでした」と静的表示される)。
+  # ただし2026-08-31時点で両サイトとも在庫0件のため、detail ページ
+  # (extract_animal_details) の静的HTTP取得は実データで一度も検証できて
+  # いない。FIELD_SELECTORS もラベル推測ベースであり、仮に detail ページが
+  # 実は JS 必須だった場合、static fetch は空/不正な HTML を返し
+  # ParsingError で個体データ抽出に失敗しうる (reviewer Major指摘、
+  # PR #311)。list/detail 双方を静的HTTPで確認できるまで requires_js: true
+  # を維持し (list が静的なのは確認済みなので機能上のリスクは無いが、
+  # detail 未検証のリスクを踏まえ安全側の Playwright 経路に倒す)、
+  # 在庫が非ゼロになった時点で detail ページの実データ検証を行った上で
+  # 改めて false へのフラグ反転を検討する (フォローアップ課題)。
   - name: "福岡市わんにゃん（犬保護中）"
     prefecture: "福岡県"
     prefecture_code: "40"
@@ -360,6 +380,13 @@ sites:
     category: "sheltered"
     requires_js: true
 
+  # 犬譲渡/猫譲渡 (sorting_id=5) は T046/T108 で既知の別問題: ページ内容が
+  # 「5秒後に https://zuttoissho.com/mukaeru/ へ自動遷移」の JS リダイレクト
+  # 通知のみで、譲渡動物データ自体がこのドメインに存在しない (2026-08 観測)。
+  # JS を実行しても遷移先は本 adapter の想定外ドメイン/構造であり
+  # requires_js を false にしても true のままでも収集結果は変わらない
+  # (どちらでも 0 件)。sites.yaml 上は要調査サイトとして requires_js: true を
+  # 維持し、フォローアップで zuttoissho.com 向け新規 adapter を検討する。
   - name: "福岡市わんにゃん（犬譲渡）"
     prefecture: "福岡県"
     prefecture_code: "40"
@@ -461,15 +488,17 @@ sites:
   # 九州・沖縄バッチ3: 動的 DB サイト（熊本・大分専用ドメイン + 那覇市）
   # ===================================================================
 
-  # 【熊本県動物愛護センター】動的 DB、個別詳細あり
+  # 【熊本県動物愛護センター】個別詳細あり
   # 譲渡: type_id:2, 迷子: type_id:1 / animal_id:1=犬, 2=猫
+  # T108(2026-08-31): 一覧 (0件時は「0件中 0～0件目を表示」の静的ページネーション
+  # 表示) ・詳細 (dt/dd 定義リスト) とも静的HTTP GETで取得可能と確認。
   - name: "熊本県動愛（センター譲渡犬）"
     prefecture: "熊本県"
     prefecture_code: "43"
     list_url: "https://www.kumamoto-doubutuaigo.jp/animals/index/type_id:2/animal_id:1"
     list_link_pattern: "a[href*='/animals/detail/']"
     category: "adoption"
-    requires_js: true
+    requires_js: false
 
   - name: "熊本県動愛（センター譲渡猫）"
     prefecture: "熊本県"
@@ -477,7 +506,7 @@ sites:
     list_url: "https://www.kumamoto-doubutuaigo.jp/animals/index/type_id:2/animal_id:2"
     list_link_pattern: "a[href*='/animals/detail/']"
     category: "adoption"
-    requires_js: true
+    requires_js: false
 
   - name: "熊本県動愛（団体譲渡犬）"
     prefecture: "熊本県"
@@ -485,7 +514,7 @@ sites:
     list_url: "https://www.kumamoto-doubutuaigo.jp/animals/group/type_id:2/animal_id:1"
     list_link_pattern: "a[href*='/animals/detail/']"
     category: "adoption"
-    requires_js: true
+    requires_js: false
 
   - name: "熊本県動愛（団体譲渡猫）"
     prefecture: "熊本県"
@@ -493,7 +522,7 @@ sites:
     list_url: "https://www.kumamoto-doubutuaigo.jp/animals/group/type_id:2/animal_id:2"
     list_link_pattern: "a[href*='/animals/detail/']"
     category: "adoption"
-    requires_js: true
+    requires_js: false
 
   - name: "熊本県動愛（個人保護犬）"
     prefecture: "熊本県"
@@ -501,7 +530,7 @@ sites:
     list_url: "https://www.kumamoto-doubutuaigo.jp/post_animals/index/type_id:2/animal_id:1"
     list_link_pattern: "a[href*='/post_animals/detail/']"
     category: "sheltered"
-    requires_js: true
+    requires_js: false
 
   - name: "熊本県動愛（個人保護猫）"
     prefecture: "熊本県"
@@ -509,7 +538,7 @@ sites:
     list_url: "https://www.kumamoto-doubutuaigo.jp/post_animals/index/type_id:2/animal_id:2"
     list_link_pattern: "a[href*='/post_animals/detail/']"
     category: "sheltered"
-    requires_js: true
+    requires_js: false
 
   - name: "熊本県動愛（迷子犬）"
     prefecture: "熊本県"
@@ -517,7 +546,7 @@ sites:
     list_url: "https://www.kumamoto-doubutuaigo.jp/animals/index/type_id:1/animal_id:1"
     list_link_pattern: "a[href*='/animals/detail/']"
     category: "lost"
-    requires_js: true
+    requires_js: false
 
   - name: "熊本県動愛（迷子猫）"
     prefecture: "熊本県"
@@ -525,7 +554,7 @@ sites:
     list_url: "https://www.kumamoto-doubutuaigo.jp/animals/index/type_id:1/animal_id:2"
     list_link_pattern: "a[href*='/animals/detail/']"
     category: "lost"
-    requires_js: true
+    requires_js: false
 
   # 【熊本市動物愛護センター】静的 list + 動的 search 混在
   - name: "熊本市（迷子犬一覧）"
@@ -712,20 +741,22 @@ sites:
     category: "sheltered"
     single_page: true
 
-  # 【東京都】専用検索 DB（最大データ量見込み）、要 JS
+  # 【東京都】専用検索 DB（最大データ量見込み）
+  # T108(2026-08-31): 一覧・詳細とも静的HTTP GETで取得可能と確認
+  # (0件時は「現在、犬の収容情報はありません。」の静的表示)。
   - name: "東京都収容動物情報（犬）"
     prefecture: "東京都"
     prefecture_code: "13"
     list_url: "https://shuyojoho.metro.tokyo.lg.jp/"
     category: "sheltered"
-    requires_js: true
+    requires_js: false
 
   - name: "東京都収容動物情報（猫等）"
     prefecture: "東京都"
     prefecture_code: "13"
     list_url: "https://shuyojoho.metro.tokyo.lg.jp/cat"
     category: "sheltered"
-    requires_js: true
+    requires_js: false
 
   # 【神奈川県】静的 HTML、4 URL
   - name: "神奈川県動物愛護センター（保護犬）"

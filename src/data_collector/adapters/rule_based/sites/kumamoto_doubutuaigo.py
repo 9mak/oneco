@@ -3,9 +3,14 @@
 対象ドメイン: https://www.kumamoto-doubutuaigo.jp/
 
 特徴:
-- 動的 DB サイト。一覧 / 詳細ともに JavaScript で動物データを描画する
-  ため、`PlaywrightFetchMixin` を多重継承して `_http_get` を Playwright
-  実装に差し替える (sites.yaml で `requires_js: true`)。
+- T108 (2026-08-31) で一覧・詳細とも静的 HTTP GET のみで取得可能と確認し、
+  sites.yaml の `requires_js` を 8 サイト全てで false に修正した
+  (旧コメントの「JavaScript で動物データを描画する」は誤りだった。
+  在庫 0 件のページは「0件中 0～0件目を表示」という静的なページネーション
+  表示になる)。`PlaywrightFetchMixin` は多重継承したまま残しており、
+  `_http_get` は `site_config.requires_js` に応じて Playwright / 静的 HTTP
+  を切り替える。将来サイトが JS 化した場合は `requires_js: true` に
+  戻すだけで復旧できる。
 - list ページの URL パスで以下の 8 種類に分かれており、いずれも同一
   テンプレート / detail 構造を共有するため 1 adapter で対応する:
 
@@ -22,9 +27,9 @@
   `animal_id` が species (1=犬, 2=猫) と対応する。
 
 - detail ページは `/animals/detail/...` または `/post_animals/detail/...`
-  形式。実 HTML が入手できていないため、自治体 DB 系で広く見られる
-  `<dt>/<dd>` 定義リスト・`<th>/<td>` テーブルを前提に
-  `WordPressListAdapter` の標準実装に乗せる。
+  形式。T108 で実際に静的 HTTP GET した結果 `<dt>/<dd>` 定義リストで
+  「ナンバー/写真/種類/毛色/性別/年齢/首輪の有無/保護した日/備考/連絡先」
+  等が確認できた。`WordPressListAdapter` の標準実装に乗せる。
 - detail 内で species ラベルが空のときは list URL の `animal_id:N` から
   「犬」「猫」を推定する。
 - 在庫 0 件の状態が日常的に発生し得るため、一覧から 1 件も detail

@@ -6,9 +6,26 @@
 - 福岡市保健福祉局の動物管理情報サイト。一覧ページは
   `?type_id={1=犬,2=猫}&sorting_id={4=保護,5=譲渡}` の URL パラメータで
   4 種類のビュー (犬保護中 / 猫保護中 / 犬譲渡 / 猫譲渡) を切り替える。
-- ページ全体が JavaScript で動的に描画される SPA 構造のため、`requests`
-  ベースの fetch では一覧テーブルが空 HTML として返る。本 adapter は
-  `PlaywrightFetchMixin` を組み合わせて JS 実行後の HTML を取得する。
+- T108 (2026-08-31) で犬保護中/猫保護中 (sorting_id=4) は一覧ページ自体は
+  静的 HTML にテーブルがそのまま出力されていることを確認した (旧コメントの
+  「ページ全体が JavaScript で動的に描画される SPA」は誤りだった)。
+  ただし両サイトとも 2026-08-31 時点で在庫 0 件のため、detail ページ
+  (`extract_animal_details`) の静的 HTTP 取得は実データで検証できていない
+  (reviewer Major 指摘、PR #311)。list/detail 双方を実データで確認できる
+  まで sites.yaml の `requires_js` は true (Playwright 経由) を維持する。
+  在庫が非ゼロになった時点で detail ページを実データ検証した上で
+  `requires_js: false` への反転を再検討する (フォローアップ課題)。
+  `PlaywrightFetchMixin` は多重継承したままで、
+  `PlaywrightFetchMixin._http_get` が `site_config.requires_js` を見て
+  Playwright / 静的 HTTP を切り替えるため、検証が済み次第フラグ変更のみで
+  静的 HTTP に切り替えられる。
+- 犬譲渡/猫譲渡 (sorting_id=5) は別問題として `requires_js: true` を維持:
+  ページ本文が「5秒後に https://zuttoissho.com/mukaeru/ へ自動遷移」する
+  JS リダイレクト通知のみで、譲渡動物データ自体がこのドメインに存在しない
+  (T046/T108 で確認)。JS を実行しても本 adapter が想定する
+  `wannyan.city.fukuoka.lg.jp` の HTML 構造は得られず 0 件のままなので、
+  フォールバックとして zuttoissho.com 向けの新規 adapter が必要
+  (本ファイルのスコープ外、フォローアップ課題)。
 - 一覧ページは `<table>` の各 `<tr>` に「番号 / 写真 / 収容日 / 状況 /
   区 / 場所 / その他特徴 / 詳細」の列が並び、最後の「詳細」セルに
   detail ページへの `<a href="/yokanet/animal/animal_posts/view/...">`
@@ -47,14 +64,22 @@ class WannyanFukuokaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
     扱う。`type_id` パラメータで動物種別を、`sorting_id` で保護/譲渡を
     判定する (URL 解析は species 推定でのみ利用)。
 
-    JavaScript で一覧テーブルが描画されるため、`PlaywrightFetchMixin` を
-    第一基底に配置して `_http_get` を Playwright 版で上書きする。
+    `PlaywrightFetchMixin` を第一基底に配置し、4 サイトとも現状
+    `requires_js: true` (Playwright 経由) を維持している。
+    犬保護中/猫保護中は T108 (2026-08-31) で一覧テーブルが静的 HTML に
+    直接出力されていることを確認済みだが (旧コメントの「JavaScript で
+    一覧テーブルが描画される」は誤りだった)、2026-08-31 時点で両サイトとも
+    在庫 0 件のため detail ページの静的 HTTP 取得が実データで未検証
+    (reviewer Major 指摘、PR #311)。在庫が非ゼロになり detail ページを
+    実データ検証できてから `requires_js: false` への反転を検討する。
+    犬譲渡/猫譲渡は別問題 (zuttoissho.com への JS リダイレクトのみで
+    データ自体が別ドメインに移動済み) で `requires_js: true` を維持する。
     """
 
-    # Playwright が一覧テーブルの描画完了を待つセレクタ。
-    # わんにゃんよかネットは <table> 配下に動物の <tr> 行を JS で挿入する。
-    # 0 件のときは「データが見つかりませんでした。」のメッセージのみ表示
-    # されるが、いずれにせよ <table> 自体は静的 HTML に存在する想定。
+    # WAIT_SELECTOR は Playwright 経由の場合に参照される。わんにゃんよか
+    # ネットの <table> 自体は静的 HTML に存在するため、0 件のときは
+    # 「データが見つかりませんでした。」のメッセージのみが static に
+    # 表示される (犬保護中/猫保護中で確認済み)。
     WAIT_SELECTOR: ClassVar[str | None] = "table"
 
     # 一覧ページの「詳細」列に置かれる detail リンクを抽出する。
