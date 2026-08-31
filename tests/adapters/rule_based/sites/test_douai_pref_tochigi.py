@@ -3,8 +3,13 @@
 list ページのフィクスチャと、detail ページの想定構造を持つ in-line HTML を
 用いて、WordPressListAdapter を介した抽出フローと registry 登録を検証する。
 
-栃木県動物愛護指導センターは 3 サイト (保護動物 / 譲渡動物 / 迷子動物) で
-同一テンプレートを共有する list+detail 構造。
+T121 (2026-08-31) で「譲渡動物」「迷子動物」は実データの所在が別ページ/
+別ドメインと判明したため専用 adapter (douai_pref_tochigi_puppy.py /
+douai_pref_tochigi_stray.py) に分離した。本ファイルは「保護動物」1 サイトの
+みを扱う。以下の `_generic_adoption_category_site()` /
+`_generic_lost_category_site()` は実際の登録サイトではなく、
+WordPressListAdapter 共通ロジック (category の受け渡し等) を汎用的に
+検証するための合成 SiteConfig である点に注意。
 """
 
 from __future__ import annotations
@@ -35,10 +40,10 @@ def _custody_site() -> SiteConfig:
     )
 
 
-def _adoption_site() -> SiteConfig:
-    """譲渡動物サイト (adoption)"""
+def _generic_adoption_category_site() -> SiteConfig:
+    """category="adoption" での汎用挙動検証用の合成 SiteConfig (実サイトではない)"""
     return SiteConfig(
-        name="栃木県動物愛護指導センター（譲渡動物）",
+        name="栃木県動物愛護指導センター（adoption カテゴリ検証用）",
         prefecture="栃木県",
         prefecture_code="09",
         list_url="https://www.douai.pref.tochigi.lg.jp/jyouto/",
@@ -47,10 +52,10 @@ def _adoption_site() -> SiteConfig:
     )
 
 
-def _lost_site() -> SiteConfig:
-    """迷子動物サイト (lost)"""
+def _generic_lost_category_site() -> SiteConfig:
+    """category="lost" での汎用挙動検証用の合成 SiteConfig (実サイトではない)"""
     return SiteConfig(
-        name="栃木県動物愛護指導センター（迷子動物）",
+        name="栃木県動物愛護指導センター（lost カテゴリ検証用）",
         prefecture="栃木県",
         prefecture_code="09",
         list_url="https://www.douai.pref.tochigi.lg.jp/work/custody-lostanimal/",
@@ -166,7 +171,7 @@ class TestDouaiPrefTochigiListExtraction:
           </main>
         </body></html>
         """
-        adapter = DouaiPrefTochigiAdapter(_adoption_site())
+        adapter = DouaiPrefTochigiAdapter(_generic_adoption_category_site())
         with patch.object(adapter, "_http_get", return_value=list_html):
             result = adapter.fetch_animal_list()
         urls = [u for u, _cat in result]
@@ -183,7 +188,7 @@ class TestDouaiPrefTochigiDetailExtraction:
     """detail ページからの RawAnimalData 構築"""
 
     def test_extract_animal_details_returns_raw_data(self, assert_raw_animal):
-        adapter = DouaiPrefTochigiAdapter(_lost_site())
+        adapter = DouaiPrefTochigiAdapter(_generic_lost_category_site())
         with patch.object(adapter, "_http_get", return_value=DETAIL_HTML):
             raw = adapter.extract_animal_details(
                 "https://www.douai.pref.tochigi.lg.jp/news/maigo-001/",
@@ -206,7 +211,7 @@ class TestDouaiPrefTochigiDetailExtraction:
         )
 
     def test_extract_filters_template_images_and_keeps_uploads(self):
-        adapter = DouaiPrefTochigiAdapter(_lost_site())
+        adapter = DouaiPrefTochigiAdapter(_generic_lost_category_site())
         with patch.object(adapter, "_http_get", return_value=DETAIL_HTML):
             raw = adapter.extract_animal_details(
                 "https://www.douai.pref.tochigi.lg.jp/news/maigo-001/"
@@ -223,7 +228,7 @@ class TestDouaiPrefTochigiNormalize:
     """RawAnimalData → AnimalData 変換"""
 
     def test_normalize_returns_animal_data(self):
-        adapter = DouaiPrefTochigiAdapter(_lost_site())
+        adapter = DouaiPrefTochigiAdapter(_generic_lost_category_site())
         with patch.object(adapter, "_http_get", return_value=DETAIL_HTML):
             raw = adapter.extract_animal_details(
                 "https://www.douai.pref.tochigi.lg.jp/news/maigo-001/",
@@ -238,17 +243,27 @@ class TestDouaiPrefTochigiNormalize:
 
 
 class TestDouaiPrefTochigiRegistry:
-    """3 サイトすべてが registry に登録されていること"""
+    """「保護動物」が registry に登録されていること
 
-    EXPECTED_SITE_NAMES = (
-        "栃木県動物愛護指導センター（保護動物）",
-        "栃木県動物愛護指導センター（譲渡動物）",
-        "栃木県動物愛護指導センター（迷子動物）",
-    )
+    「譲渡動物」「迷子動物」は T121 で専用 adapter に移管したため、
+    その registry 登録は test_douai_pref_tochigi_puppy.py /
+    test_douai_pref_tochigi_stray.py で検証する。
+    """
 
-    @pytest.mark.parametrize("site_name", EXPECTED_SITE_NAMES)
-    def test_site_registered_to_adapter(self, site_name):
+    def test_custody_site_registered_to_adapter(self):
+        site_name = "栃木県動物愛護指導センター（保護動物）"
         cls = SiteAdapterRegistry.get(site_name)
         assert cls is DouaiPrefTochigiAdapter, (
             f"{site_name} が DouaiPrefTochigiAdapter に紐付いていません: {cls}"
         )
+
+    @pytest.mark.parametrize(
+        "site_name",
+        (
+            "栃木県動物愛護指導センター（譲渡動物）",
+            "栃木県動物愛護指導センター（迷子動物）",
+        ),
+    )
+    def test_old_site_names_are_no_longer_registered(self, site_name):
+        """旧サイト名は sites.yaml から削除済みのため registry にも存在しない"""
+        assert SiteAdapterRegistry.get(site_name) is None
