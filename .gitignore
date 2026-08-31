@@ -46,11 +46,15 @@ htmlcov/
 .hypothesis/
 
 # Data Collector Runtime
+# 状態ファイル (broken_sites/site_baselines/field_quality_drift/animals.json/
+# snapshots/latest.json) は専用の private リポジトリ 9mak/oneco-state へ
+# 分離済み (T112)。このリポジトリでは追跡しない。
 .collector.lock
-snapshots/*
-!snapshots/latest.json
-output/*
-!output/animals.json
+snapshots/
+output/
+data/broken_sites.yaml
+data/site_baselines.yaml
+data/field_quality_drift.yaml
 
 # Environment variables
 .env

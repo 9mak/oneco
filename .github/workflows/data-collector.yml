@@ -89,10 +89,18 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          # 監視状態ファイル (broken_sites / site_baselines / field_quality_drift) は
-          # run 跨ぎで状態を保持するため必ず commit する。存在しないファイルを
-          # git add に渡すと pathspec エラーで stage 全体が中断するため、存在する
-          # ものだけを個別に add する。
+          # T112 (2026-08-31): 状態ファイル (broken_sites / site_baselines /
+          # field_quality_drift / animals.json / snapshots/latest.json) は
+          # 専用の private リポジトリ 9mak/oneco-state へ分離し、このリポジトリの
+          # .gitignore で無視するようにした。この GitHub Actions フォールバック
+          # (GCP 障害時の手動 workflow_dispatch のみ) は 9mak/oneco-state への
+          # 書き込み資格情報を持たないため、以下の git add は gitignore により
+          # 常に no-op になり「No changes to commit」で正常終了する
+          # (= このフォールバック実行では状態ファイルが run 跨ぎで永続化されない、
+          # 既知の許容トレードオフ。恒久修正するなら 9mak/oneco-state 用の
+          # deploy key を GitHub Secrets にも登録し、SSH 経由の push に切り替える
+          # 必要がある)。存在しないファイルを git add に渡すと pathspec エラーで
+          # stage 全体が中断するため、存在するものだけを個別に add する。
           for f in output/animals.json snapshots/latest.json \
                    data/broken_sites.yaml data/site_baselines.yaml \
                    data/field_quality_drift.yaml; do

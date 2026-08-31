@@ -115,7 +115,7 @@ Supabase ダッシュボード → Table Editor → `animals` テーブルでデ
 
 ### 自動実行
 
-毎日 JST 00:00 に Cloud Scheduler が Cloud Run Jobs `oneco-collector`（`asia-northeast1`）を起動します。実行内容は `scripts/collector_entrypoint.sh`（リポジトリを shallow clone → `alembic upgrade head` → `python -m data_collector` → 状態ファイルを commit&push）。
+毎日 JST 00:00 に Cloud Scheduler が Cloud Run Jobs `oneco-collector`（`asia-northeast1`）を起動します。実行内容は `scripts/collector_entrypoint.sh`（`9mak/oneco` を認証なし HTTPS で shallow clone → `alembic upgrade head` → `9mak/oneco-state`（状態ファイル専用の private リポジトリ、deploy key 認証）から前回状態を復元 → `python -m data_collector` → 状態ファイルを `9mak/oneco-state` へ commit&push）。9mak/oneco 自体への書き込みは行いません（T112: deploy key の権限範囲をアプリ本体から状態ファイル専用リポジトリへ縮小）。
 
 `.github/workflows/data-collector.yml`（GitHub Actions 版）は GCP 側が使えないときの手動フォールバックとしてのみ残しています（`workflow_dispatch` のみ、定期実行はしません）。
 
@@ -137,7 +137,11 @@ gh workflow run "Data Collector" --ref main
 
 ### 必要な Secrets
 
-Cloud Run Job（`oneco-collector`）本体は GCP Secret Manager の Secret（`DATABASE_URL` / `GROQ_API_KEY` / `DISCORD_WEBHOOK_URL` / `GIT_DEPLOY_KEY`）を参照します（`sync-collector-secrets.yml` で GitHub Secrets から複製）。以下の GitHub Secrets は、GitHub Actions 側で動くワークフロー（collector のフォールバック実行 `data-collector.yml` に加え、`sns-publish.yml` / `secret-health.yml` 等）が使うものです：
+Cloud Run Job（`oneco-collector`）本体は GCP Secret Manager の Secret（`DATABASE_URL` / `GROQ_API_KEY` / `DISCORD_WEBHOOK_URL` / `GIT_STATE_DEPLOY_KEY`）を参照します（`sync-collector-secrets.yml` で GitHub Secrets から複製されるのは `DATABASE_URL` / `GROQ_API_KEY` / `DISCORD_WEBHOOK_URL` のみ。`GIT_STATE_DEPLOY_KEY` は `gcloud secrets` で直接登録する）。
+
+> `GIT_STATE_DEPLOY_KEY`（旧 `GIT_DEPLOY_KEY`, T112 で改称）: `9mak/oneco-state`（状態ファイル 5 点専用の private リポジトリ）への読み書き専用 deploy key。9mak/oneco 本体への書き込み権限は持たない。9mak/oneco 自体は public repo のため、collector の `alembic upgrade head` 用ソース取得は認証なし HTTPS clone で行う。
+
+以下の GitHub Secrets は、GitHub Actions 側で動くワークフロー（collector のフォールバック実行 `data-collector.yml` に加え、`sns-publish.yml` / `secret-health.yml` 等）が使うものです：
 
 | Secret 名 | 説明 | 必須 |
 |-----------|------|------|
