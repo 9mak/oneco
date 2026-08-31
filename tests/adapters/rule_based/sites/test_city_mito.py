@@ -268,6 +268,85 @@ class TestCityMitoAdapter:
         assert animal_data.shelter_date.isoformat() == "2025-10-09"
         assert animal_data.location == "水戸市鯉渕町"
 
+    def test_extract_animal_details_with_odd_cell_row_falls_back_to_shared_value(self):
+        """奇数セル行では末尾の値が失われず、旧来の共有値方式で処理される (T122 M-1 再発防止)
+
+        `<tr><th>種類</th><th>性別</th><td>柴犬</td></tr>` のような 3 セル行
+        (ラベル候補 2 個 + 共有値 1 個) に T122 のペア処理をそのまま適用
+        すると、`(cells[0], cells[1])` = (種類, 性別) を誤って (ラベル, 値)
+        ペアとして扱い、本来の値 `cells[2]` ("柴犬") を無視して
+        species="性別" になってしまう退行があった (reviewer 指摘 M-1)。
+        奇数セル行は末尾セルを全ラベル候補で共有する旧実装セマンティクス
+        にフォールバックし、最初にマッチしたラベル (「種類」) が
+        正しく値 "柴犬" を採用することを検証する。
+        """
+        synthetic_html = """
+        <html><body>
+        <div id="main_body">
+        <table>
+            <tr><th>種類</th><th>性別</th><td>柴犬</td></tr>
+        </table>
+        </div>
+        </body></html>
+        """
+        adapter = CityMitoAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=synthetic_html):
+            urls = adapter.fetch_animal_list()
+            url, category = urls[0]
+            raw = adapter.extract_animal_details(url, category=category)
+
+        assert raw.species == "柴犬", (
+            f"奇数セル行では末尾セルが共有値として採用されるはず: got {raw.species!r}"
+        )
+        animal_data = adapter.normalize(raw)
+        assert animal_data.species == "犬"
+
+    def test_extract_animal_details_duplicate_label_in_row_prefers_non_empty_value(self):
+        """同一行内の重複ラベルでは、空値が後続の有効値を握り潰さない (T122 M-2 再発防止)
+
+        `<tr><th>年齢</th><td></td><th>年齢</th><td>成犬</td></tr>` のように
+        同一行に同じラベルが 2 回現れ、1 個目の値が空、2 個目の値が非空の
+        変則行で、T122 のペア処理は 1 個目の空値でフィールドを確定させて
+        しまい、2 個目の有効値 "成犬" を握り潰す退行があった (reviewer
+        指摘 M-2)。既に埋まっているフィールドでも値が空文字の場合は
+        後続の非空値で上書きできることを検証する (順序が逆でも結果が
+        変わらないことも合わせて確認する)。
+        """
+        html_empty_first = """
+        <html><body>
+        <div id="main_body">
+        <table>
+            <tr><th>年齢</th><td></td><th>年齢</th><td>成犬</td></tr>
+        </table>
+        </div>
+        </body></html>
+        """
+        adapter = CityMitoAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html_empty_first):
+            urls = adapter.fetch_animal_list()
+            url, category = urls[0]
+            raw = adapter.extract_animal_details(url, category=category)
+        assert raw.age == "成犬", f"空値の後の有効値が採用されるはず: got {raw.age!r}"
+
+        # 順序を逆にしても (有効値が先) 結果が変わらないこと
+        html_valid_first = """
+        <html><body>
+        <div id="main_body">
+        <table>
+            <tr><th>年齢</th><td>成犬</td><th>年齢</th><td></td></tr>
+        </table>
+        </div>
+        </body></html>
+        """
+        adapter2 = CityMitoAdapter(_site())
+        with patch.object(adapter2, "_http_get", return_value=html_valid_first):
+            urls2 = adapter2.fetch_animal_list()
+            url2, category2 = urls2[0]
+            raw2 = adapter2.extract_animal_details(url2, category=category2)
+        assert raw2.age == "成犬", (
+            f"先に見つかった有効値が空値で上書きされないはず: got {raw2.age!r}"
+        )
+
     def test_infer_species_from_site_name_default_empty(self):
         """水戸市 2 サイトの実名は犬/猫を含まないため空文字を返す"""
         for name in (
