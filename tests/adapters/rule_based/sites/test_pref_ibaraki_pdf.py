@@ -8,6 +8,15 @@ PDF 系 rule-based adapter の動作を検証する。
 - _http_get / _download_pdf を mock し、合成 PDF テキストでテスト
 - `_extract_pdf_text` は実 PDF が2段組みレイアウトのため pdfplumber を
   モックして列分離ロジック (T117) を検証する
+
+T119 (2026-08-31): 「迷い犬・猫情報」は旧 list_url (mayoiinuneko.html) が
+ハブページ化し PDF リンク0件になっていたため kouji.html (documents/
+kouhyou*.pdf) へ変更した。実 PDF を確認した結果、「収容中の動物たち」とは
+「種類」「犬猫種」ラベルの意味が入れ替わっている (前者は種類=品種・
+犬猫種=動物種別、後者は種類=動物種別・犬猫種=品種) ことが判明したため、
+それを踏まえた `_REAL_LOST_PDF_TEXT` 系フィクスチャを追加している
+(実際に `documents/kouhyou0828.pdf` 等をダウンロードして pdfplumber で
+抽出したテキストを基にしている)。
 """
 
 from __future__ import annotations
@@ -91,15 +100,78 @@ _REAL_PDF_TEXT = """成犬収容頭数 2026年8月27日現在 1 /9
 一次判定結果 ×
 """
 
+# 実 PDF (documents/kouhyou0828.pdf / 2026-08-31 取得) の pdfplumber 抽出
+# 結果そのもの (T119)。「収容中の動物たち」とはラベルの意味が逆転しており、
+# 「種類」が品種 (柴犬・雑種)、「犬猫種」が動物種別 (犬・猫)。ラベルは
+# 「市町村地区名」(「収容中の動物たち」の「市町村名」より2文字長い)。
+_REAL_LOST_PDF_TEXT = """令和8年(2026年)8月28日 (金)
+お問い合わせ 茨城県動物指
+26-0572 市町村地区名 笠間市大田町
+収容日 2026/8/28 公表期限 2026/9/8
+種類 柴犬 犬猫種 犬
+毛色 茶 性別 オス
+体格 中 首輪 茶色
+備考
+26-0573 市町村地区名 行方市荒宿
+収容日 2026/8/28 公表期限 2026/9/8
+種類 雑種 犬猫種 猫
+毛色 黒 性別 メス
+体格 中 首輪 無
+負傷
+備考
+"""
 
-def _site(name: str = "茨城県（収容中の動物たち）") -> SiteConfig:
+# 実 PDF (documents/kouhyou0820.pdf / 2026-08-31 取得) より、26-0548 の
+# セルに「おうちに帰れたワン！」(飼い主の元へ戻ったことを示す告知バナー) の
+# テキストが重なって混入した実例 (T119)。「犬猫種」というラベル文字列自体が
+# 「犬ワ猫種ン！」のように分断され、ラベルベースの抽出では species を
+# 拾えなくなる。行末アンカーの `_SPECIES_LINE_END_RE` はこのケースでも
+# 行末の「犬」を正しく拾えることを確認する。
+_REAL_LOST_PDF_TEXT_WITH_BANNER_CORRUPTION = """26-0548 市町村地区名 牛久市奥原町
+おうちに
+収容日 2026/8/20 公表期限 2026/8/31
+種類 シーズー帰れた犬ワ猫種ン！ 犬
+毛色 白黒 性別 オス
+体格 小 首輪 無
+備考
+"""
+
+_SHELTERED_LIST_URL = "https://www.pref.ibaraki.jp/hokenfukushi/doshise/hogo/syuuyou.html"
+# T119: 旧 list_url (mayoiinuneko.html) はハブページ化していたため、
+# 実サイトで「動物指導センター公表情報」リンク先として確認した kouji.html
+# へ変更した (documents/kouhyou*.pdf を6件確認済み)。
+_LOST_LIST_URL = "https://www.pref.ibaraki.jp/hokenfukushi/doshise/hogo/kouji.html"
+
+# href は実サイト (kouji.html) の現行ファイル名規則を模す。
+# `kouhyou0824-1.pdf` のような枝番付きファイル名も対象に含む。
+_LOST_LIST_HTML = """
+<html><head><title>茨城県 動物指導センター公表情報</title></head>
+<body>
+  <h1>動物指導センター公表情報</h1>
+  <p><a href="/hokenfukushi/doshise/hogo/documents/kouhyou0827.pdf">8月27日公表（PDF）</a></p>
+  <p><a href="/hokenfukushi/doshise/hogo/documents/kouhyou0828.pdf">8月28日公表（PDF）</a></p>
+  <p><a href="/hokenfukushi/doshise/hogo/index.html">トップへ戻る</a></p>
+</body></html>
+"""
+
+
+def _site(
+    name: str = "茨城県（収容中の動物たち）",
+    category: str = "sheltered",
+    list_url: str = _SHELTERED_LIST_URL,
+) -> SiteConfig:
     return SiteConfig(
         name=name,
         prefecture="茨城県",
         prefecture_code="08",
-        list_url=("https://www.pref.ibaraki.jp/hokenfukushi/doshise/hogo/syuuyou.html"),
-        category="sheltered",
+        list_url=list_url,
+        category=category,
     )
+
+
+def _lost_site(name: str = "茨城県（迷い犬・猫情報）") -> SiteConfig:
+    """「迷い犬・猫情報」(category="lost") 用の SiteConfig (T119)"""
+    return _site(name, category="lost", list_url=_LOST_LIST_URL)
 
 
 # ─────────────────── _parse_pdf_text 単体テスト ───────────────────
@@ -131,7 +203,7 @@ class TestParsePdfText:
 
     def test_parses_one_animal_with_slash_date(self):
         """日付区切りが '/' でも、発見場所ラベルでもパースできる"""
-        adapter = PrefIbarakiPdfAdapter(_site("茨城県（迷い犬・猫情報）"))
+        adapter = PrefIbarakiPdfAdapter(_lost_site())
         records = adapter._parse_pdf_text(_PDF_TEXT_ONE_ANIMAL)
 
         assert len(records) == 1
@@ -162,6 +234,76 @@ class TestParsePdfText:
         assert records[0]["species"] == "犬"
         assert records[1]["management_number"] == "22-3566"
         assert records[1]["shelter_date"] == "2023-03-11"
+
+    def test_parses_real_lost_pdf_with_swapped_species_breed_labels(self):
+        """「迷い犬・猫情報」実PDFは「種類」「犬猫種」の意味が逆転している (T119)
+
+        「収容中の動物たち」は 種類=動物種別・犬猫種=品種 だが、
+        「迷い犬・猫情報」は 種類=品種 (柴犬・雑種)・犬猫種=動物種別 (犬・猫)。
+        「種類」ラベル値をそのまま species とすると、品種が犬/猫の文字を
+        含まない場合 (例: 「雑種」) に DataNormalizer で「その他」に
+        誤分類される (T118 と同型)。行末アンカーで正しく動物種別側を
+        拾えることを確認する。
+        """
+        adapter = PrefIbarakiPdfAdapter(_lost_site())
+        records = adapter._parse_pdf_text(_REAL_LOST_PDF_TEXT)
+
+        assert len(records) == 2
+        first, second = records
+
+        assert first["management_number"] == "26-0572"
+        assert first["shelter_date"] == "2026-08-28"
+        assert first["species"] == "犬"  # 「種類」は柴犬 (品種) だが正しく犬
+        assert first["sex"] == "オス"
+        assert first["color"] == "茶"
+        assert first["location"] == "笠間市大田町"
+
+        assert second["management_number"] == "26-0573"
+        assert second["shelter_date"] == "2026-08-28"
+        # 「種類」は「雑種」(犬/猫の文字を含まない品種名) だが、行末の
+        # 「犬猫種 猫」から正しく猫と判定できる (誤分類なら「その他」になる)
+        assert second["species"] == "猫"
+        assert second["sex"] == "メス"
+        assert second["color"] == "黒"
+        assert second["location"] == "行方市荒宿"
+
+    def test_parses_species_despite_banner_text_corruption(self):
+        """告知バナーの文字混入で「犬猫種」ラベルが分断されても species を拾える (T119)
+
+        実 PDF (documents/kouhyou0820.pdf) では「おうちに帰れたワン！」という
+        告知バナーが該当セルに重なり、「種類 シーズー帰れた犬ワ猫種ン！ 犬」
+        のように「犬猫種」という文字列自体が分断されている。ラベル文字列に
+        依存しない行末アンカーであれば、この壊れたテキストでも正しく
+        species="犬" を拾えることを確認する。
+        """
+        adapter = PrefIbarakiPdfAdapter(_lost_site())
+        records = adapter._parse_pdf_text(_REAL_LOST_PDF_TEXT_WITH_BANNER_CORRUPTION)
+
+        assert len(records) == 1
+        assert records[0]["management_number"] == "26-0548"
+        assert records[0]["species"] == "犬"
+        assert records[0]["location"] == "牛久市奥原町"
+
+
+# ─────────────────── _pdf_link_selector category 分岐テスト (T119) ───────────────────
+
+
+class TestPdfLinkSelector:
+    """category に応じて PDF リンクセレクタが切り替わることを確認する"""
+
+    def test_sheltered_category_uses_inu_neko_selector(self):
+        adapter = PrefIbarakiPdfAdapter(_site())
+        selector = adapter._pdf_link_selector()
+        assert "documents/inu" in selector
+        assert "documents/neko" in selector
+        assert "kouhyou" not in selector
+
+    def test_lost_category_uses_kouhyou_selector(self):
+        adapter = PrefIbarakiPdfAdapter(_lost_site())
+        selector = adapter._pdf_link_selector()
+        assert "documents/kouhyou" in selector
+        assert "documents/inu" not in selector
+        assert "documents/neko" not in selector
 
 
 # ─────────────────── _extract_pdf_text 2段組み対応テスト (T117) ───────────────────
@@ -419,6 +561,59 @@ class TestFetchAndExtract:
         with patch.object(adapter, "_http_get", return_value=empty_html):
             result = adapter.fetch_animal_list()
         assert result == []
+
+    def test_lost_category_fetches_from_kouji_html_with_kouhyou_selector(self):
+        """「迷い犬・猫情報」は kouji.html 一覧から documents/kouhyou*.pdf を拾う (T119)
+
+        旧 list_url (mayoiinuneko.html) はハブページ化し PDF への直接リンクを
+        持たなくなっていたため kouji.html に変更した。ファイル名規則も
+        documents/inu・documents/neko とは異なる documents/kouhyou のため、
+        category="lost" 側のセレクタで正しく2 PDF ぶんのリンクを拾えることを
+        確認する。
+        """
+        adapter = PrefIbarakiPdfAdapter(_lost_site())
+
+        with (
+            patch.object(adapter, "_http_get", return_value=_LOST_LIST_HTML),
+            patch.object(adapter, "_download_pdf", return_value=b"PDF"),
+            patch.object(adapter, "_extract_pdf_text", return_value=_REAL_LOST_PDF_TEXT),
+        ):
+            result = adapter.fetch_animal_list()
+
+        # kouhyou0827.pdf・kouhyou0828.pdf それぞれ2頭ぶん (_REAL_LOST_PDF_TEXT) → 合計4件
+        assert len(result) == 4
+        for url, cat in result:
+            assert "documents/kouhyou" in url
+            assert cat == "lost"
+
+    def test_lost_category_extract_and_normalize_yields_correct_species(self):
+        """「迷い犬・猫情報」を実PDF形式で抽出 → normalize() まで通し species が正しい (T119)
+
+        CLAUDE.md 最重要ルール: adapter テストは `adapter.normalize(raw)` を
+        実行した実際の値でアサートする。「種類」ラベル (品種) をそのまま
+        species にすると「雑種」のような犬/猫の文字を含まない品種名が
+        normalize 段で「その他」に誤分類される (T118 と同型)。ここでは
+        26-0573 (種類=雑種・犬猫種=猫) が正しく "猫" に normalize されることを
+        実際に確認する。
+        """
+        adapter = PrefIbarakiPdfAdapter(_lost_site())
+
+        with (
+            patch.object(adapter, "_http_get", return_value=_LOST_LIST_HTML),
+            patch.object(adapter, "_download_pdf", return_value=b"PDF"),
+            patch.object(adapter, "_extract_pdf_text", return_value=_REAL_LOST_PDF_TEXT),
+        ):
+            urls = adapter.fetch_animal_list()
+            # 2 頭目 (26-0573: 種類=雑種・犬猫種=猫) を狙って取得する
+            second_url, category = urls[1]
+            raw = adapter.extract_animal_details(second_url, category=category)
+            normalized = adapter.normalize(raw)
+
+        assert raw.species == "猫"
+        assert raw.management_number == "26-0573"
+        assert raw.category == "lost"
+        assert normalized.species == "猫"  # 誤分類なら "その他" になる
+        assert normalized.category == "lost"
 
 
 # ─────────────────── 登録テスト ───────────────────
