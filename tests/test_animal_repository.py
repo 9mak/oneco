@@ -500,6 +500,95 @@ async def test_prune_disappeared_empty_seen_is_noop(repository, async_session):
 
 
 @pytest.mark.asyncio
+async def test_prune_disappeared_allow_full_prune_deletes_all_for_site(repository, async_session):
+    """allow_full_prune=True かつ seen が空なら、対象サイトの残存レコードを全削除する
+
+    (T106: 連続 N 回0件 + zero_count_verifier 確定 NONE のときだけ呼び出し元が
+    明示的に True を渡す想定)。他サイトの行には触れないことも確認する。
+    """
+    from sqlalchemy import select
+
+    site = "高知サイト"
+    other = "徳島サイト"
+    async_session.add_all(
+        [
+            Animal(
+                species="犬",
+                shelter_date=date(2026, 1, 5),
+                location="高知県",
+                source_url="https://ex.com/gone-1",
+                category="adoption",
+                source_site=site,
+            ),
+            Animal(
+                species="猫",
+                shelter_date=date(2026, 1, 5),
+                location="高知県",
+                source_url="https://ex.com/gone-2",
+                category="adoption",
+                source_site=site,
+            ),
+            Animal(
+                species="犬",
+                shelter_date=date(2026, 1, 5),
+                location="徳島県",
+                source_url="https://ex.com/other-site",
+                category="adoption",
+                source_site=other,
+            ),
+        ]
+    )
+    await async_session.commit()
+
+    removed = await repository.prune_disappeared(site, set(), allow_full_prune=True)
+
+    assert removed == 2
+    urls = {r.source_url for r in (await async_session.execute(select(Animal))).scalars().all()}
+    assert urls == {"https://ex.com/other-site"}  # 対象サイトのみ全削除、他サイトは無傷
+
+
+@pytest.mark.asyncio
+async def test_prune_disappeared_allow_full_prune_with_seen_urls_behaves_normally(
+    repository, async_session
+):
+    """allow_full_prune=True でも seen_source_urls が非空なら、その集合に含まれる
+    URL は残す (allow_full_prune は「空のとき全削除」だけを意味し、seen 集合が
+    ある通常ケースの挙動は変えない)。"""
+    from sqlalchemy import select
+
+    site = "高知サイト"
+    async_session.add_all(
+        [
+            Animal(
+                species="犬",
+                shelter_date=date(2026, 1, 5),
+                location="高知県",
+                source_url="https://ex.com/keep",
+                category="adoption",
+                source_site=site,
+            ),
+            Animal(
+                species="猫",
+                shelter_date=date(2026, 1, 5),
+                location="高知県",
+                source_url="https://ex.com/gone",
+                category="adoption",
+                source_site=site,
+            ),
+        ]
+    )
+    await async_session.commit()
+
+    removed = await repository.prune_disappeared(
+        site, {"https://ex.com/keep"}, allow_full_prune=True
+    )
+
+    assert removed == 1
+    urls = {r.source_url for r in (await async_session.execute(select(Animal))).scalars().all()}
+    assert urls == {"https://ex.com/keep"}
+
+
+@pytest.mark.asyncio
 async def test_list_animals_pagination(repository, async_session):
     """list_animals()がページネーションを正しく適用するか"""
     # テストデータを10件挿入

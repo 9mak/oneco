@@ -52,6 +52,8 @@ class TestVerifyZeroCount:
 
         assert result.should_flag is False
         assert "再取得" in result.reason
+        # 真の0件ではない (今回はたまたま在庫が揺らいだだけ) ので "none" にはしない (T106)
+        assert result.verdict == "transient_nonzero"
 
     def test_explicit_zero_message_is_not_flagged(self):
         """再取得も0件だが、サイト側に明示的な「該当なし」メッセージがある → 正常な0件"""
@@ -63,6 +65,7 @@ class TestVerifyZeroCount:
 
         assert result.should_flag is False
         assert "メッセージ" in result.reason
+        assert result.verdict == "none"
 
     def test_no_message_and_still_zero_is_flagged(self, monkeypatch):
         """再取得も0件・メッセージ無し・LLM判定も不能 → 壊れている疑い、要修理候補"""
@@ -75,6 +78,7 @@ class TestVerifyZeroCount:
 
         assert result.should_flag is True
         assert result.reason
+        assert result.verdict == "unclear"
 
     def test_various_zero_message_phrasings_are_recognized(self):
         phrasings = [
@@ -93,6 +97,7 @@ class TestVerifyZeroCount:
             adapter = _FakeAdapter(urls=[], html=f"<body>{html}</body>")
             result = verify_zero_count(adapter, list_url="https://example.com/")
             assert result.should_flag is False, f"failed to recognize: {html!r}"
+            assert result.verdict == "none", f"failed to recognize: {html!r}"
 
     def test_list_fetch_exception_is_flagged_conservatively(self):
         """再取得で例外 → 安全側に倒して修理候補として残す"""
@@ -100,6 +105,7 @@ class TestVerifyZeroCount:
         result = verify_zero_count(adapter, list_url="https://example.com/")
 
         assert result.should_flag is True
+        assert result.verdict == "unclear"
 
     def test_html_fetch_exception_is_flagged_conservatively(self):
         """0件確定後のHTML再取得で例外 → 安全側に倒して修理候補として残す"""
@@ -107,6 +113,7 @@ class TestVerifyZeroCount:
         result = verify_zero_count(adapter, list_url="https://example.com/")
 
         assert result.should_flag is True
+        assert result.verdict == "unclear"
 
 
 class TestLlmJudgeIntegration:
@@ -127,6 +134,7 @@ class TestLlmJudgeIntegration:
 
         assert result.should_flag is True
         assert "掲載" in result.reason
+        assert result.verdict == "listed"
 
     def test_llm_none_unflags(self, monkeypatch):
         """LLM が NONE (ページ上も0件表示) → 正常な0件として除外"""
@@ -135,6 +143,7 @@ class TestLlmJudgeIntegration:
         result = verify_zero_count(adapter, list_url="https://example.com/")
 
         assert result.should_flag is False
+        assert result.verdict == "none"
 
     def test_llm_unclear_keeps_flag(self, monkeypatch):
         """LLM が UNCLEAR (判断不能、JS必須ページ等) → 安全側で候補に残す"""
@@ -143,6 +152,7 @@ class TestLlmJudgeIntegration:
         result = verify_zero_count(adapter, list_url="https://example.com/")
 
         assert result.should_flag is True
+        assert result.verdict == "unclear"
 
 
 class TestLlmJudgePageAnimals:

@@ -171,6 +171,8 @@ def run_llm_sites(
     logger: logging.Logger,
     broken_tracker: BrokenSitesTracker | None = None,
     collected_urls_by_site: dict[str, list[str]] | None = None,
+    site_baseline_tracker: SiteBaselineTracker | None = None,
+    full_delete_enabled: bool = False,
 ) -> tuple[int, int, list[str], dict[str, int]]:
     """LLMベースのサイト群を収集
 
@@ -178,6 +180,18 @@ def run_llm_sites(
         collected_urls_by_site: 渡された場合、`{site_name: [source_url, ...]}`
             を書き込む。品質メトリクスをサイト別に集計するために使う
             (snapshot の URL からはサイトを復元できないため)。
+        site_baseline_tracker: T106 の prune 安全弁強化用。今 run 開始前の
+            consecutive_zero_runs を読む読み取り専用参照として CollectorService
+            に渡す (この関数の中で record() は呼ばない。record() は main() が
+            全サイト収集後にまとめて呼ぶ)。None なら CollectorService 側は
+            従来通り無条件で prune の安全弁 (0件時 no-op) を維持する。
+            LlmAdapter は _http_get() を持たないため、実質的にこの機能は
+            発火しない (verify_zero_count が AttributeError → 安全側 False) が、
+            将来 LlmAdapter が対応した際に自動的に有効化されるよう渡しておく。
+        full_delete_enabled: T106 PR #308 reviewer指摘 (F-02) 対応の dry-run
+            ゲート。False (既定) の間は、条件 (連続N回0件+verdict==none) を
+            満たしても実削除せず、候補をログ/Discord通知するだけに留める。
+            ONECO_PRUNE_FULL_DELETE_ENABLED=true のときだけ True になる。
 
     Returns:
         (成功サイト数, 失敗サイト数, 0件で完了したサイト名一覧,
@@ -250,6 +264,8 @@ def run_llm_sites(
                 notification_client=notification_client,
                 snapshot_store=snapshot_store,
                 db_connection=db_connection,
+                site_baseline_tracker=site_baseline_tracker,
+                full_delete_enabled=full_delete_enabled,
             )
 
             # SIGALRM タイムアウトでハング対策
@@ -308,6 +324,8 @@ def run_rule_based_sites(
     broken_tracker: BrokenSitesTracker | None = None,
     previous_site_counts: dict[str, int] | None = None,
     collected_urls_by_site: dict[str, list[str]] | None = None,
+    site_baseline_tracker: SiteBaselineTracker | None = None,
+    full_delete_enabled: bool = False,
 ) -> tuple[int, int, list[str], dict[str, int]]:
     """rule-based 抽出方式でサイト群をドメイン単位の並列で収集
 
@@ -332,6 +350,14 @@ def run_rule_based_sites(
             ログに記録するために使う。在庫はけ (真の 0 件) と adapter 破損は
             件数だけでは区別できないため、スキップ対象化 (record_failure) は
             せず、本物の破損は list_error/detail_error/timeout で検知する。
+        site_baseline_tracker: T106 の prune 安全弁強化用。今 run 開始前の
+            consecutive_zero_runs を読む読み取り専用参照として CollectorService
+            に渡す (record() はこの関数では呼ばない。全サイト収集後に main() が
+            まとめて呼ぶ)。None なら CollectorService 側は従来通り安全弁を維持する。
+        full_delete_enabled: T106 PR #308 reviewer指摘 (F-02) 対応の dry-run
+            ゲート。False (既定) の間は、条件 (連続N回0件+verdict==none) を
+            満たしても実削除せず、候補をログ/Discord通知するだけに留める。
+            ONECO_PRUNE_FULL_DELETE_ENABLED=true のときだけ True になる。
 
     Returns:
         (成功サイト数, 失敗サイト数, 0件で完了したサイト名一覧,
@@ -404,6 +430,8 @@ def run_rule_based_sites(
             notification_client=notification_client,
             snapshot_store=snapshot_store,
             db_connection=db_connection,
+            site_baseline_tracker=site_baseline_tracker,
+            full_delete_enabled=full_delete_enabled,
         )
         result = service.run_collection(soft_deadline=soft)
         prev_count = previous_site_counts.get(site.name, 0)
@@ -427,6 +455,8 @@ def run_rule_based_sites(
                     notification_client=notification_client,
                     snapshot_store=snapshot_store,
                     db_connection=db_connection,
+                    site_baseline_tracker=site_baseline_tracker,
+                    full_delete_enabled=full_delete_enabled,
                 )
                 # フォールバック側も soft deadline を共有 (残り時間で打ち切り)
                 fallback_result = llm_service.run_collection(soft_deadline=soft)
@@ -944,6 +974,24 @@ def main():
                 f"件数低下監視対象 {len(drop_watch_eligible)} サイト"
             )
 
+            # T106 PR #308 reviewer指摘 (F-02) 対応の dry-run ゲート。
+            # zero_count_verifier の NONE 判定 (ソフト404/ページ移転等のサイト
+            # 構造変化を誤って NONE と判定しうる) を本番DBの完全削除に直結させる
+            # 前に、まず候補をログ/Discord通知だけで可視化し、人間が1〜2 run分
+            # 確認してから明示的に有効化できるようにする。既定は無効 (実削除しない)。
+            _prune_full_delete_enabled = (
+                os.environ.get("ONECO_PRUNE_FULL_DELETE_ENABLED", "false").lower() == "true"
+            )
+            logger.info(
+                "T106 長期0件サイトの完全削除: "
+                + (
+                    "有効 (実削除する)"
+                    if _prune_full_delete_enabled
+                    else "無効 (dry-run: 候補をログ/通知のみ)"
+                )
+                + " [ONECO_PRUNE_FULL_DELETE_ENABLED]"
+            )
+
             # 前回件数の計算が終わったら snapshot / output をリセット。
             # CollectorService が **サイトごと** に save_snapshot / write_output を
             # 呼ぶ仕様のため、両ファイルは merge モードで累積される。run の境界を
@@ -981,6 +1029,11 @@ def main():
                 broken_tracker=broken_tracker,
                 previous_site_counts=previous_site_counts,
                 collected_urls_by_site=collected_urls_by_site,
+                # T106: consecutive_zero_runs は「今 run 開始前」の状態を読む
+                # 読み取り専用参照として渡す (record() は後段でこの run 分を
+                # まとめて呼ぶため、ここでは呼ばない)。
+                site_baseline_tracker=_prev_baseline,
+                full_delete_enabled=_prune_full_delete_enabled,
             )
 
             # LLM サイト群（rule-based 化されてないサイト）
@@ -994,6 +1047,8 @@ def main():
                 logger=logger,
                 broken_tracker=broken_tracker,
                 collected_urls_by_site=collected_urls_by_site,
+                site_baseline_tracker=_prev_baseline,
+                full_delete_enabled=_prune_full_delete_enabled,
             )
 
             total_succeeded = rule_succeeded + llm_succeeded

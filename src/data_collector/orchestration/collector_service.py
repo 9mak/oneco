@@ -16,12 +16,32 @@ from ..domain.models import AnimalData
 from ..infrastructure.notification_client import NotificationClient, NotificationLevel
 from ..infrastructure.notification_manager_client import NotificationManagerClient
 from ..infrastructure.output_writer import OutputWriter
+from ..infrastructure.site_baseline_tracker import SiteBaselineTracker
 from ..infrastructure.snapshot_store import SnapshotStore
+from ..infrastructure.zero_count_verifier import ZeroCountVerification, verify_zero_count
 from .soft_deadline import SoftDeadline
 
 if TYPE_CHECKING:
     from ..infrastructure.database.connection import DatabaseConnection
     from ..infrastructure.database.repository import AnimalRepository
+
+# 「連続何回0件が続いたら、残存レコードの完全削除 (prune) を許可するか」の既定閾値
+# (T106)。実測分布 (2026-08-30時点、data/site_baselines.yaml):
+# 211サイト中102サイトが0件継続中で、consecutive_zero_runs は 1-2回=3件・
+# 3-5回=6件・6-10回=5件・11-30回=15件・31回以上=73件と分布する。1-2回は
+# zero_count_verifier 導入の動機そのものである在庫の自然増減(baseline 1-2件の
+# 薄いサイトで誤検知が多い)、11回以降は長期化とみなせるため、その中間かつ
+# 安全側の値として 8 を採用する。
+DEFAULT_PRUNE_ZERO_THRESHOLD = 8
+
+# T106 PR #308 reviewer指摘 (F-02) への対応: zero_count_verifier の NONE 判定は
+# 元々「通知フィルタ用の曖昧な判定」として設計されており、ソフト404・ページ移転
+# (HTTP 200 のまま内容だけ差し替わる) 等でサイト構造が変化した場合に誤って NONE
+# と判定するリスクがある。本番DBの完全削除という不可逆操作の直接根拠に格上げする
+# 前に、まず実際にどのサイトが削除候補になるかをログ/通知で可視化して人間が
+# 確認できる期間 (dry-run) を設ける。既定は無効 (実削除しない) とし、
+# ONECO_PRUNE_FULL_DELETE_ENABLED=true を明示指定したときだけ実削除を有効化する。
+DEFAULT_FULL_DELETE_ENABLED = False
 
 
 class CollectionResult(BaseModel):
@@ -81,6 +101,9 @@ class CollectorService:
         repository: Optional["AnimalRepository"] = None,
         db_connection: Optional["DatabaseConnection"] = None,
         notification_manager_client: NotificationManagerClient | None = None,
+        site_baseline_tracker: SiteBaselineTracker | None = None,
+        prune_zero_threshold: int = DEFAULT_PRUNE_ZERO_THRESHOLD,
+        full_delete_enabled: bool = DEFAULT_FULL_DELETE_ENABLED,
     ):
         self.adapter = adapter
         self.diff_detector = diff_detector
@@ -90,6 +113,16 @@ class CollectorService:
         self.repository = repository
         self.db_connection = db_connection
         self.notification_manager_client = notification_manager_client
+        # T106: 連続 N 回0件 + zero_count_verifier 確定 NONE のときだけ、空
+        # seen_source_urls での prune (残存レコード全削除) を許可するための
+        # 依存。None (既定) なら従来通り無条件で許可しない (安全弁は不変)。
+        self.site_baseline_tracker = site_baseline_tracker
+        self.prune_zero_threshold = prune_zero_threshold
+        # T106 PR #308 reviewer指摘 (F-02) 対応の dry-run ゲート。False (既定) の
+        # 間は、条件 (連続N回0件 + verdict==none) を満たしても実削除せず、候補を
+        # ログ/通知するだけに留める。True で初めて prune_disappeared に
+        # allow_full_prune=True が渡る。
+        self.full_delete_enabled = full_delete_enabled
         self.logger = logging.getLogger(__name__)
         self._structure_changed = False
         # 収集が「サイト全件を失敗なく列挙できた」かどうか。soft-stop・detail 抽出
@@ -389,6 +422,103 @@ class CollectorService:
         """
         return str(uuid.uuid4())
 
+    def _evaluate_prune_candidate(self, site_name: str) -> tuple[int, ZeroCountVerification] | None:
+        """「連続 N 回以上 0 件、かつ zero_count_verifier が確定 NONE」の条件を
+        満たすかどうかだけを判定する (実削除の可否/dry-run ゲートは含まない)。
+
+        Returns:
+            条件を満たす場合は (今回を含めた連続0件回数, 検証結果) のタプル。
+            満たさない場合 (依存未設定・閾値未達・NONE 以外の判定・検証失敗・
+            list_url 未特定) は None。
+
+        判定に使う consecutive_zero_runs は「今回 run 開始前」の永続状態
+        (site_baseline_tracker.record() はこの run 分をまだ記録していない) なので、
+        今回の 0 件を含めた連続回数は +1 して比較する。
+        """
+        if self.site_baseline_tracker is None:
+            return None
+        prior_consecutive_zero_runs = self.site_baseline_tracker.consecutive_zero_runs(site_name)
+        consecutive_including_this_run = prior_consecutive_zero_runs + 1
+        if consecutive_including_this_run < self.prune_zero_threshold:
+            return None
+
+        list_url = getattr(getattr(self.adapter, "site_config", None), "list_url", None)
+        if not list_url:
+            self.logger.warning(
+                f"[{site_name}] 連続{consecutive_including_this_run}回0件だが "
+                "list_url が特定できず0件検証を実行できないため削除は許可しない"
+            )
+            return None
+
+        try:
+            verification = verify_zero_count(self.adapter, list_url=list_url)  # type: ignore[arg-type]
+        except Exception as e:
+            self.logger.warning(f"[{site_name}] prune 許可判定の0件検証に失敗: {e}")
+            return None
+
+        if verification.verdict != "none":
+            self.logger.info(
+                f"[{site_name}] 連続{consecutive_including_this_run}回0件だが "
+                f"0件検証の判定={verification.verdict} ({verification.reason}) のため "
+                "残骸削除は許可しない"
+            )
+            return None
+
+        return consecutive_including_this_run, verification
+
+    def _should_force_empty_prune(self, site_name: str) -> bool:
+        """0 件収集時に既定の安全弁 (no-op) を外し、残骸を完全削除してよいか判定する。
+
+        T106: 「連続 N 回以上 0 件、かつ zero_count_verifier が確定 NONE (サイト側が
+        本当に空だと判定できるケース)」の場合のみ実削除の候補になる。それ以外は
+        すべて False とし、既存の安全弁 (prune_disappeared の
+        allow_full_prune=False 相当) を維持する。
+
+        PR #308 reviewer指摘 (F-02) 対応: 条件を満たしても
+        `full_delete_enabled=False` (既定、dry-run) の間は実削除せず、候補を
+        ログ・Discord通知で可視化するだけに留める。zero_count_verifier の
+        NONE 判定は元々「通知フィルタ用の曖昧な判定」であり、ソフト404/
+        ページ移転等のサイト構造変化を誤って NONE と判定するリスクがあるため、
+        本番DBの不可逆な完全削除に直結させる前に、まず候補を人間が確認できる
+        観察期間を設ける。
+
+        Args:
+            site_name: SiteBaselineTracker に記録されているサイト識別名
+                (SiteConfig.name と一致させる。prune_disappeared の source_site と同じ)
+        """
+        candidate = self._evaluate_prune_candidate(site_name)
+        if candidate is None:
+            return False
+        consecutive_including_this_run, verification = candidate
+
+        if not self.full_delete_enabled:
+            self.logger.warning(
+                f"[DRY-RUN][{site_name}] 連続{consecutive_including_this_run}回0件 "
+                f"(閾値{self.prune_zero_threshold}) かつ0件検証が確定NONE "
+                f"({verification.reason}) → 完全削除の候補だが "
+                "ONECO_PRUNE_FULL_DELETE_ENABLED が無効のため実削除はスキップ "
+                "(候補として記録のみ)"
+            )
+            self.notification_client.send_alert(
+                NotificationLevel.WARNING,
+                "[dry-run] 長期0件サイトの完全削除候補を検知",
+                {
+                    "site": site_name,
+                    "consecutive_zero_runs": consecutive_including_this_run,
+                    "threshold": self.prune_zero_threshold,
+                    "verification_reason": verification.reason,
+                    "note": "ONECO_PRUNE_FULL_DELETE_ENABLED=true で実削除を有効化できます",
+                },
+            )
+            return False
+
+        self.logger.warning(
+            f"[{site_name}] 連続{consecutive_including_this_run}回0件 "
+            f"(閾値{self.prune_zero_threshold}) かつ0件検証が確定NONE "
+            f"({verification.reason}) → 残存レコードの完全削除を許可"
+        )
+        return True
+
     def _save_to_database(self, collected_data: list[AnimalData]) -> None:
         """
         収集データをデータベースに永続化
@@ -456,10 +586,19 @@ class CollectorService:
                     else:
                         try:
                             seen_urls = {str(a.source_url) for a in collected_data}
-                            removed = await repo.prune_disappeared(site_name, seen_urls)
+                            # T106: 0 件収集が長期継続し、かつ zero_count_verifier で
+                            # サイト側の空を確定できた場合のみ、既定の安全弁 (0 件時
+                            # no-op) を明示的に外して残骸の完全削除を許可する。
+                            allow_full_prune = not seen_urls and self._should_force_empty_prune(
+                                site_name
+                            )
+                            removed = await repo.prune_disappeared(
+                                site_name, seen_urls, allow_full_prune=allow_full_prune
+                            )
                             if removed:
                                 self.logger.info(
                                     f"[{site_name}] ソースから消えた {removed} 件を削除（同期）"
+                                    + ("（残骸全削除）" if allow_full_prune else "")
                                 )
                         except Exception as e:
                             self.logger.warning(f"[{site_name}] 消滅同期削除に失敗: {e}")
