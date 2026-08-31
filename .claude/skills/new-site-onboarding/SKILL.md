@@ -39,9 +39,12 @@ description: 新しい自治体・保護団体サイトをoneco のデータ収�
 
 - `list_url`, `category`, `prefecture`, `prefecture_code`等を登録
 - list_urlのホストが `.jp` / `.okinawa` 以外の場合、
-  `frontend/next.config.ts` の `remotePatterns` にも同じホストを追加する
+  `frontend/next.config.ts` の `remotePatterns` にも同じホストを追加する必要がある
   (`tests/test_image_remote_patterns.py`がこの一致をCIで強制するので、
-  漏れると即座にテスト失敗で気づける)
+  漏れると即座にテスト失敗で気づける)。手動編集の代わりに
+  `python3 scripts/sync_remote_patterns.py --fix` を実行すれば不足ホストを
+  自動追記できる (T104。50件上限を超える場合はワイルドカード方針の見直しが
+  必要なため書き込まずエラーで止まる)
 
 ### 4. adapter 実装(silent drop 予防 3 ルール、最重要)
 

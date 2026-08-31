@@ -49,7 +49,7 @@ Kiro-style Spec Driven Development implementation on AI-DLC (AI Development Life
 3. **adapter で `normalize()` を override したら、RawAnimalData 再構築時に全フィールドを名前付き引数で明示的に引き継ぐ** (可能なら `_default_normalize` 委譲)
 
 ### CI が強制するチェック
-- `tests/test_image_remote_patterns.py`: `sites.yaml` のホストが `frontend/next.config.ts` の `remotePatterns` に一致することを担保 (列挙漏れで silent failure 経験あり、PR #179)
+- `tests/test_image_remote_patterns.py`: `sites.yaml` のホストが `frontend/next.config.ts` の `remotePatterns` に一致することを担保 (列挙漏れで silent failure 経験あり、PR #179)。`python3 scripts/sync_remote_patterns.py --fix` で不足ホストを自動追記できる (T104)
 - `ruff check src/ tests/` + `ruff format --check src/ tests/`: 個別ファイル単位の format 確認だけでは不十分。**全体で format 通っているか必ず確認** (PR #177/#178 でCI落ち再発)
 
 ## Steering Configuration
