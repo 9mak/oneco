@@ -6,9 +6,20 @@
 - 福岡市保健福祉局の動物管理情報サイト。一覧ページは
   `?type_id={1=犬,2=猫}&sorting_id={4=保護,5=譲渡}` の URL パラメータで
   4 種類のビュー (犬保護中 / 猫保護中 / 犬譲渡 / 猫譲渡) を切り替える。
-- ページ全体が JavaScript で動的に描画される SPA 構造のため、`requests`
-  ベースの fetch では一覧テーブルが空 HTML として返る。本 adapter は
-  `PlaywrightFetchMixin` を組み合わせて JS 実行後の HTML を取得する。
+- T108 (2026-08-31) で犬保護中/猫保護中 (sorting_id=4) は静的 HTML に
+  一覧テーブルがそのまま出力されていることを確認した (旧コメントの
+  「ページ全体が JavaScript で動的に描画される SPA」は誤りだった)。
+  sites.yaml の `requires_js` はこの 2 サイトのみ false に修正済み。
+  `PlaywrightFetchMixin` は多重継承したまま残しており、
+  `PlaywrightFetchMixin._http_get` が `site_config.requires_js` を見て
+  Playwright / 静的 HTTP を切り替える。
+- 犬譲渡/猫譲渡 (sorting_id=5) は別問題として `requires_js: true` を維持:
+  ページ本文が「5秒後に https://zuttoissho.com/mukaeru/ へ自動遷移」する
+  JS リダイレクト通知のみで、譲渡動物データ自体がこのドメインに存在しない
+  (T046/T108 で確認)。JS を実行しても本 adapter が想定する
+  `wannyan.city.fukuoka.lg.jp` の HTML 構造は得られず 0 件のままなので、
+  フォールバックとして zuttoissho.com 向けの新規 adapter が必要
+  (本ファイルのスコープ外、フォローアップ課題)。
 - 一覧ページは `<table>` の各 `<tr>` に「番号 / 写真 / 収容日 / 状況 /
   区 / 場所 / その他特徴 / 詳細」の列が並び、最後の「詳細」セルに
   detail ページへの `<a href="/yokanet/animal/animal_posts/view/...">`
@@ -47,14 +58,17 @@ class WannyanFukuokaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
     扱う。`type_id` パラメータで動物種別を、`sorting_id` で保護/譲渡を
     判定する (URL 解析は species 推定でのみ利用)。
 
-    JavaScript で一覧テーブルが描画されるため、`PlaywrightFetchMixin` を
-    第一基底に配置して `_http_get` を Playwright 版で上書きする。
+    `PlaywrightFetchMixin` を第一基底に配置しているが、犬保護中/猫保護中
+    (`requires_js: false`) では `_http_get` が静的 HTTP に委譲されるため
+    実際には使われない。犬譲渡/猫譲渡 (`requires_js: true`) 用に残している
+    (T108 (2026-08-31): 一覧テーブルは静的 HTML に直接出力されており、
+    旧コメントの「JavaScript で一覧テーブルが描画される」は誤りだった)。
     """
 
-    # Playwright が一覧テーブルの描画完了を待つセレクタ。
-    # わんにゃんよかネットは <table> 配下に動物の <tr> 行を JS で挿入する。
-    # 0 件のときは「データが見つかりませんでした。」のメッセージのみ表示
-    # されるが、いずれにせよ <table> 自体は静的 HTML に存在する想定。
+    # WAIT_SELECTOR は requires_js: true (犬譲渡/猫譲渡) で Playwright
+    # 経由の場合にのみ参照される。わんにゃんよかネットの <table> 自体は
+    # 静的 HTML に存在するため、0 件のときは「データが見つかりませんでした。」
+    # のメッセージのみが static に表示される。
     WAIT_SELECTOR: ClassVar[str | None] = "table"
 
     # 一覧ページの「詳細」列に置かれる detail リンクを抽出する。

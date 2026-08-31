@@ -11,7 +11,11 @@
 - 沖縄県動物愛護管理センター（迷い込み保護猫）/animals/protection/cats
 
 特徴:
-- JavaScript で動物 DB を動的描画するため `PlaywrightFetchMixin` を併用する。
+- T108 (2026-08-31) で一覧・詳細とも静的 HTTP GET のみで取得可能と確認し、
+  sites.yaml の `requires_js` を 6 サイト全てで false に修正した (旧コメントは
+  「JavaScript で動物 DB を動的描画する」としていたが誤りだった)。
+  `PlaywrightFetchMixin` は多重継承したまま残しており、将来サイトが
+  JS 化した場合は `requires_js: true` に戻すだけで復旧できる。
 - 一覧ページから個別詳細ページへのリンクは
   `/animals/{accommodate,missing,protection}_view/{ID}` の共通パターン。
   3 系統の prefix を 1 つの LIST_LINK_SELECTOR (`a[href*='_view/']`) で拾う。

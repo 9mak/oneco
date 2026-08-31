@@ -6,8 +6,11 @@
 - 香川県さぬき動物愛護センターの「譲渡犬猫」情報ページ。本文中に PDF への
   リンク (`/documents/6103/0805dog.pdf` 等) が並び、各 PDF が一覧表形式で
   複数頭の譲渡候補動物を掲載する。
-- 一覧ページ自体が JS で DOM を組み立てるため Playwright で取得する
-  (`PlaywrightFetchMixin` を `PdfTableAdapter` と多重継承)。
+- 一覧ページは PDF リンクを含めすべて静的 HTML で出力されている
+  (T108 (2026-08-31) 確認。旧コメントは「JS で DOM を組み立てる」としていたが
+  誤りだった)。sites.yaml の `requires_js` は false に修正済み。
+  `PlaywrightFetchMixin` は `PdfTableAdapter` と多重継承したまま残しており、
+  サイトが将来 JS 化した場合は `requires_js: true` に戻すだけで復旧できる。
 - PDF は罫線のある表なので `extract_tables()` で読み、管理番号を持つ行を
   1 頭として展開する。列位置はヘッダ行から動的に決める (犬は「大きさ」列が
   あり猫は代わりに「FeLV/FIV」列がある、といった差があるため)。
