@@ -4,7 +4,12 @@
 
 特徴:
 - baserCMS で構築された自治体サイト。動物データは外部 iframe に
-  EUC-JP エンコードの HTML として埋め込まれる動的構造。
+  EUC-JP エンコードの HTML として埋め込まれる構造 (ラッパページ側で iframe
+  を JS 無しで読み込んでいるだけで、iframe 先の実データページ自体は
+  静的 HTML)。T108 (2026-08-31) で iframe URL への直接静的 HTTP GET のみで
+  一覧・詳細相当のデータが取得できることを確認し、sites.yaml の
+  `requires_js` を全 3 サイトで false に修正した (旧実装は
+  `PlaywrightFetchMixin` を保持したまま誤って true 設定されていた)。
 - ラッパページ (sites.yaml の `list_url`) と実データ用 iframe URL の
   対応関係:
       /stray/             → /animalinfo/list1/   (収容中 = 1ページ)
