@@ -21,7 +21,7 @@
 
 - Next.js 16 App Router / React 19 / Tailwind CSS v4 / Auth.js v5 (GitHub OAuth, admin 専用)
 - ISR（トップ 300s / archive 1800s）+ SSG（`/areas/[prefecture]` は force-static、日本語スラッグ × ISR の 500 事件対策 PR #229）
-- 画像ホストは `next.config.ts` の `remotePatterns` に列挙必須（`tests/test_image_remote_patterns.py` が sites.yaml との一致を CI で強制）
+- 画像ホストは `next.config.ts` の `remotePatterns` に列挙必須（`tests/test_image_remote_patterns.py` が sites.yaml との一致を CI で強制。`scripts/sync_remote_patterns.py --fix` で自動追記可能）
 
 ## Testing
 

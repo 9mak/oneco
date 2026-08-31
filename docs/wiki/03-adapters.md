@@ -36,7 +36,7 @@ MunicipalityAdapter (ABC)                  adapters/municipality_adapter.py
 > ⚠️ CONTRIBUTING.md に古い「YAML だけでコード変更不要」という記述があった時期があるが、現在のデフォルトは rule-based であり **adapter コードの実装が必要**。
 
 1. **`config/sites.yaml` にエントリ追加**（name / url / prefecture / category / requires_js 等）
-   - ⚠️ 画像ホストが増える場合は `frontend/next.config.ts` の `remotePatterns` にも追加。`tests/test_image_remote_patterns.py` が CI で一致を強制する
+   - ⚠️ 画像ホストが増える場合は `frontend/next.config.ts` の `remotePatterns` にも追加。`tests/test_image_remote_patterns.py` が CI で一致を強制する。`python3 scripts/sync_remote_patterns.py --fix` で不足ホストを自動追記できる (T104)
 2. **robots.txt を確認**: `python scripts/monitoring/check_robots.py`
 3. **サイト構造に合う基底クラスを選ぶ**
    - 1ページに table でまとまっている → `SinglePageTableAdapter`

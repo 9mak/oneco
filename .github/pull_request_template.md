@@ -49,6 +49,7 @@ PR の概要を 1-3 文で。「何を変えたか」より「なぜ変えたか
 
 ### `sites.yaml` に新しい自治体を追加した
 - [ ] 新ホストが `.jp` / `.okinawa` 以外なら `frontend/next.config.ts` の `remotePatterns` にも追加した
+  (`python3 scripts/sync_remote_patterns.py --fix` で自動追記可能)
 - [ ] `tests/test_image_remote_patterns.py` が pass する (自動検出される)
 
 ### `_PII_PHONE_RE` などの PII regex を拡張した
