@@ -7,13 +7,21 @@ Phase A の SnapshotStore は「2 日目以降の LLM 抽出をスキップ」�
 本スクリプトは production DB に既に保存されている動物データを REST API
 経由で取得し、`snapshots/latest.json` に書き込んで bootstrap する。
 
-実行後、`git add snapshots/latest.json && git commit && git push` すれば
-次回の data-collector workflow で **既知 URL の LLM 抽出がスキップされる** ため、
-新規動物の抽出だけに Groq の token 予算を使えるようになる。
+状態ファイル (snapshots/latest.json 含む) は専用の private リポジトリ
+`9mak/oneco-state` に分離されている (T112)。実行後は `--out` で
+`9mak/oneco-state` のローカル clone 内の `snapshots/latest.json` を
+直接指定して書き込み、そのリポジトリ側で
+`git add snapshots/latest.json && git commit && git push` すれば
+次回の収集ジョブで **既知 URL の LLM 抽出がスキップされる** ため、
+新規動物の抽出だけに Groq の token 予算を使えるようになる
+(AnimalData のインポートに `src/` が必要なため、本スクリプト自体は
+9mak/oneco の checkout から実行すること)。
 
 使い方:
-    python3 scripts/maintenance/bootstrap_snapshot.py
-    python3 scripts/maintenance/bootstrap_snapshot.py --api-base https://...
+    python3 scripts/maintenance/bootstrap_snapshot.py \\
+        --out /path/to/oneco-state/snapshots/latest.json
+    python3 scripts/maintenance/bootstrap_snapshot.py --api-base https://... \\
+        --out /path/to/oneco-state/snapshots/latest.json
 """
 
 from __future__ import annotations
