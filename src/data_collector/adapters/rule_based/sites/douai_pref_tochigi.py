@@ -1,14 +1,11 @@
-"""栃木県動物愛護指導センター rule-based adapter
+"""栃木県動物愛護指導センター（保護動物） rule-based adapter
 
 対象ドメイン: https://www.douai.pref.tochigi.lg.jp/
 
 特徴:
 - WordPress テーマ `serum_tcd096` (TCD 系) で構築された自治体サイト。
-- 同一ドメイン上で 3 サイト (保護動物 / 譲渡動物 / 迷子動物) が
-  共通テンプレートを使用しているため、1 つの adapter で全サイトを賄う。
-- 一覧ページのレイアウトはタクソノミー (`/work_category/custody/` 等) と
-  固定ページ (`/jyouto/`, `/work/custody-lostanimal/`) で混在しており、
-  実データ (詳細記事) は `/news/<slug>/` 形式の WordPress 投稿として
+- 一覧ページのレイアウトはタクソノミー (`/work_category/custody/`) で、
+  実データ (詳細記事) があれば `/news/<slug>/` 形式の WordPress 投稿として
   公開される運用になっている。一覧ページのテンプレートには
   `#treatment_list .post_list .item a` でサブセクション (＝親カテゴリ
   ページ等) のカードが並ぶことがあり、これらも『一覧 → 詳細』の
@@ -20,6 +17,25 @@
   がそのまま機能する。
 - 動物写真は `/wp/wp-content/uploads/...` 配下に置かれるため、
   基底の `_filter_image_urls` (uploads 配下のみ採用) がそのまま機能する。
+
+T121 調査 (2026-08-31) の結果 — 「保護動物」が恒常的に 0 件な理由:
+  もともと 1 つの adapter が「保護動物 / 譲渡動物 / 迷子動物」の 3 サイトを
+  束ねていたが、実際にサイトを調査したところ 3 サイトとも
+  `/work_category/custody/` 等の登録 URL はテーマ改修で「案内リンク集
+  ページ」化しており、実データを一切含まないことが判明した。
+    - 譲渡動物 (子犬/子猫) の実データは固定ページ `/work/puppy/`
+      `/work/kitten/` にテーブル形式で存在する → `douai_pref_tochigi_puppy.py`
+      (`DouaiPrefTochigiPuppyAdapter`) に分離。
+    - 迷子動物の実データは全く別ドメイン `douai.sakura.ne.jp` の
+      静的サイトに list+detail 形式で存在する →
+      `douai_pref_tochigi_stray.py` (`DouaiPrefTochigiStrayAdapter`) に分離。
+    - 保護動物 (`/work_category/custody/`) は、ページ内で唯一実質的な
+      リンク先が「迷子のペットを探している方へ」= 上記の迷子動物データと
+      同一で、このドメイン単独で独立した「保護動物」データソースは
+      存在しない。そのため本 adapter は URL を変更せず据え置いており、
+      0 件が現状のサイト構造として真である
+      (0 リンク = 真の 0 件、という `WordPressListAdapter.fetch_animal_list`
+      の既存仕様どおり)。
 """
 
 from __future__ import annotations
@@ -31,11 +47,12 @@ from ..wordpress_list import FieldSpec, WordPressListAdapter
 
 
 class DouaiPrefTochigiAdapter(WordPressListAdapter):
-    """栃木県動物愛護指導センター 共通アダプター
+    """栃木県動物愛護指導センター（保護動物）用アダプター
 
-    保護動物 / 譲渡動物 / 迷子動物 の 3 サイトで共通テンプレートを
-    使用するため、サイト名ごとにクラスを分けず registry に複数の
-    site_name を 1 クラスで束ねる。
+    T121 以前は 保護動物 / 譲渡動物 / 迷子動物 の 3 サイトを本クラスで
+    束ねていたが、譲渡動物・迷子動物は実データの所在が別ページ/別ドメイン
+    と判明したため専用 adapter に分離した (モジュール docstring 参照)。
+    本クラスは「保護動物」1 サイトのみを扱う。
     """
 
     # 一覧ページの detail link 候補は `/news/<slug>/` 形式の WordPress 個別記事のみ。
@@ -74,12 +91,6 @@ class DouaiPrefTochigiAdapter(WordPressListAdapter):
 
 
 # ─────────────────── サイト登録 ───────────────────
-# 同一テンプレート上で運用される 3 サイトを同一 adapter にマップする。
-_SITE_NAMES = (
-    "栃木県動物愛護指導センター（保護動物）",
-    "栃木県動物愛護指導センター（譲渡動物）",
-    "栃木県動物愛護指導センター（迷子動物）",
-)
-
-for _name in _SITE_NAMES:
-    SiteAdapterRegistry.register(_name, DouaiPrefTochigiAdapter)
+# 譲渡動物・迷子動物は douai_pref_tochigi_puppy.py / douai_pref_tochigi_stray.py
+# へ移管したため、本 adapter は「保護動物」のみを登録する。
+SiteAdapterRegistry.register("栃木県動物愛護指導センター（保護動物）", DouaiPrefTochigiAdapter)

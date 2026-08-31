@@ -1,7 +1,7 @@
 {
-  "total_sources": 211,
+  "total_sources": 213,
   "total_prefectures": 47,
-  "total_hosts": 91,
+  "total_hosts": 92,
   "by_prefecture": {
     "三重県": [
       {
@@ -570,7 +570,7 @@
       {
         "name": "名古屋市（飼主不明動物）",
         "host": "www.city.nagoya.jp",
-        "url": "https://www.city.nagoya.jp/kurashi/pet/1015473/1015489/1015493.html"
+        "url": "https://www.city.nagoya.jp/kurashi/pet/1015473/1015489/1015494.html"
       },
       {
         "name": "岡崎市（保護動物）",
@@ -654,14 +654,24 @@
         "url": "https://www.douai.pref.tochigi.lg.jp/work_category/custody/"
       },
       {
-        "name": "栃木県動物愛護指導センター（譲渡動物）",
+        "name": "栃木県動物愛護指導センター（子犬譲渡）",
         "host": "www.douai.pref.tochigi.lg.jp",
-        "url": "https://www.douai.pref.tochigi.lg.jp/jyouto/"
+        "url": "https://www.douai.pref.tochigi.lg.jp/work/puppy/"
       },
       {
-        "name": "栃木県動物愛護指導センター（迷子動物）",
+        "name": "栃木県動物愛護指導センター（子猫譲渡）",
         "host": "www.douai.pref.tochigi.lg.jp",
-        "url": "https://www.douai.pref.tochigi.lg.jp/work/custody-lostanimal/"
+        "url": "https://www.douai.pref.tochigi.lg.jp/work/kitten/"
+      },
+      {
+        "name": "栃木県動物愛護指導センター（迷子動物・犬）",
+        "host": "douai.sakura.ne.jp",
+        "url": "https://douai.sakura.ne.jp/wp/maigo/html/stray/dog/list.html"
+      },
+      {
+        "name": "栃木県動物愛護指導センター（迷子動物・猫）",
+        "host": "douai.sakura.ne.jp",
+        "url": "https://douai.sakura.ne.jp/wp/maigo/html/stray/cat/list.html"
       }
     ],
     "沖縄県": [
