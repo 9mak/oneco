@@ -6,13 +6,16 @@
 # (T048 で特定、GCP asia-northeast1 からは 130 件連続で劣化ゼロを実測済み)。
 #
 # コードはイメージに焼く (main への push ごとに deploy-collector.yml が再ビルド)。
-# 状態ファイル (data/*.yaml, output/, snapshots/) は実行時に clone した
-# リポジトリを CWD にすることで、相対パスのまま読み書きし、実行後に push する。
+# 実行時に 9mak/oneco (public, 認証なし HTTPS) を shallow clone して CWD にし、
+# 状態ファイル (data/*.yaml, output/, snapshots/) だけ 9mak/oneco-state (private,
+# deploy key 認証) との間でコピー/push する (T112: 書き込み可 deploy key の
+# 権限範囲を状態ファイル専用リポジトリへ縮小。詳細は collector_entrypoint.sh)。
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# git / openssh-client: 状態ファイルの clone & push (deploy key 認証) に必要
+# git / openssh-client: 状態ファイル専用リポジトリ (9mak/oneco-state) の
+# clone & push (deploy key 認証) に必要
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     git \

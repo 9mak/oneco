@@ -68,6 +68,10 @@ jobs:
       #   Cloud Run Jobs の既定 (10分) のままだと毎晩サイレントに打ち切られる
       # - SITE_TIMEOUT_SEC/JS: 旧 Actions 版と同値 (コード既定の 300/360 より厳しい)
       # - SLACK_WEBHOOK_URL は GitHub secrets に存在しないため設定しない (Discord のみ)
+      # - GIT_STATE_DEPLOY_KEY (T112, 2026-08-31): 旧 GIT_DEPLOY_KEY から改称。
+      #   9mak/oneco 本体への読み書き両用鍵から、状態ファイル専用の private
+      #   リポジトリ 9mak/oneco-state だけに書き込める鍵へ縮小した。
+      #   Secret Manager 側の新規シークレット登録・値の反映は別途 CCC が実施する。
       - name: Update Cloud Run Job (image + declared config)
         run: |
           gcloud run jobs update "$JOB_NAME" \
@@ -76,7 +80,7 @@ jobs:
             --image "asia-northeast1-docker.pkg.dev/${GCP_PROJECT_ID}/oneco/oneco-collector:${GITHUB_SHA}" \
             --service-account "oneco-collector-job@${GCP_PROJECT_ID}.iam.gserviceaccount.com" \
             --set-env-vars "SITE_TIMEOUT_SEC=120,SITE_TIMEOUT_JS_SEC=180" \
-            --set-secrets "DATABASE_URL=DATABASE_URL:latest,GROQ_API_KEY=GROQ_API_KEY:latest,DISCORD_WEBHOOK_URL=DISCORD_WEBHOOK_URL:latest,GIT_DEPLOY_KEY=GIT_DEPLOY_KEY:latest" \
+            --set-secrets "DATABASE_URL=DATABASE_URL:latest,GROQ_API_KEY=GROQ_API_KEY:latest,DISCORD_WEBHOOK_URL=DISCORD_WEBHOOK_URL:latest,GIT_STATE_DEPLOY_KEY=GIT_STATE_DEPLOY_KEY:latest" \
             --task-timeout 18000 \
             --cpu 2 \
             --memory 2Gi \
