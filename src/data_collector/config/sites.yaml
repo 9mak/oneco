@@ -596,6 +596,19 @@ sites:
     pdf_link_pattern: "a[href*='documents/inu'][href$='.pdf'], a[href*='documents/neko'][href$='.pdf']"
 
   # 【栃木県動物愛護指導センター】専用ドメイン、静的 HTML
+  # T121 調査 (2026-08-31): 旧登録の 3 URL は WordPress テーマ改修で
+  # 「案内リンク集ページ」化しており、実データへのリンクを持たない。
+  # 実データの所在を調査した結果:
+  #   - 譲渡動物 (子犬/子猫): 固定ページ `/work/puppy/` `/work/kitten/` に
+  #     1 ページ内テーブル形式で掲載 (詳細ページ無し)。旧 `/jyouto/` は
+  #     案内のみで実データを持たない。
+  #   - 迷子動物: 全く別ドメイン `douai.sakura.ne.jp` の静的 HTML
+  #     (`/wp/maigo/html/stray/{dog,cat}/list.html`) に一覧+詳細形式で掲載。
+  #     旧 `/work/custody-lostanimal/` はこのページへの案内リンクのみ。
+  #   - 保護動物 (`/work_category/custody/`): 唯一の実質的なリンク先も
+  #     「迷子のペットを探している方へ」= 上記の迷子動物データと同一。
+  #     このドメイン単独の独立した「保護動物」データソースは存在しない
+  #     ため URL は変更せず据え置く (0 件は現状のサイト構造として真)。
   - name: "栃木県動物愛護指導センター（保護動物）"
     prefecture: "栃木県"
     prefecture_code: "09"
@@ -603,19 +616,33 @@ sites:
     category: "sheltered"
     list_link_pattern: "a[href*='/news/']"
 
-  - name: "栃木県動物愛護指導センター（譲渡動物）"
+  - name: "栃木県動物愛護指導センター（子犬譲渡）"
     prefecture: "栃木県"
     prefecture_code: "09"
-    list_url: "https://www.douai.pref.tochigi.lg.jp/jyouto/"
+    list_url: "https://www.douai.pref.tochigi.lg.jp/work/puppy/"
     category: "adoption"
-    list_link_pattern: "a[href*='/news/']"
+    single_page: true
 
-  - name: "栃木県動物愛護指導センター（迷子動物）"
+  - name: "栃木県動物愛護指導センター（子猫譲渡）"
     prefecture: "栃木県"
     prefecture_code: "09"
-    list_url: "https://www.douai.pref.tochigi.lg.jp/work/custody-lostanimal/"
+    list_url: "https://www.douai.pref.tochigi.lg.jp/work/kitten/"
+    category: "adoption"
+    single_page: true
+
+  - name: "栃木県動物愛護指導センター（迷子動物・犬）"
+    prefecture: "栃木県"
+    prefecture_code: "09"
+    list_url: "https://douai.sakura.ne.jp/wp/maigo/html/stray/dog/list.html"
     category: "lost"
-    list_link_pattern: "a[href*='/news/']"
+    list_link_pattern: "a[href$='.html']"
+
+  - name: "栃木県動物愛護指導センター（迷子動物・猫）"
+    prefecture: "栃木県"
+    prefecture_code: "09"
+    list_url: "https://douai.sakura.ne.jp/wp/maigo/html/stray/cat/list.html"
+    category: "lost"
+    list_link_pattern: "a[href$='.html']"
 
   # 【群馬県】3 ページ（県動愛犬・東部支所犬・猫）
   - name: "群馬県動物愛護センター（保護犬）"
