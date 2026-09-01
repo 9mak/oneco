@@ -262,6 +262,100 @@ class TestCityTakatsukiAdapter:
         animal_data = adapter.normalize(raw)
         assert animal_data.species == "猫"
 
+    def test_extract_animal_details_with_dual_field_row_layout(self):
+        """1 行に 2 フィールドが並ぶレイアウトでも全フィールドを正しく抽出する (T122)
+
+        city_mito.py の実データ (wayback snapshot 2025-11-14) で確認した
+        `<tr><th>収容日時</th><td>...</td><th>年齢</th><td>...</td></tr>` の
+        ような構造は高槻市 adapter でもコード構造上同型のバグを持ちうる
+        (現状ライブ 0 件のため未発現)。修正前は行内の末尾セルのみを値として
+        扱っていたため、1 個目のラベル (収容日) に 2 個目のラベル (年齢) の
+        値が誤って混入していた。セルを 2 個ずつ (ラベル, 値) のペアとして
+        処理する修正で、隣接フィールドの値が混入しないことを検証する。
+        """
+        synthetic_html = """
+        <html><body>
+        <div class="detail_free">
+          <table>
+            <tr><th>収容日</th><td>2026年5月10日</td><th>年齢</th><td>成犬</td></tr>
+            <tr><th>収容場所</th><td>高槻市富田町</td><th>毛色</th><td>茶</td></tr>
+          </table>
+        </div>
+        </body></html>
+        """
+        adapter = CityTakatsukiAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=synthetic_html):
+            urls = adapter.fetch_animal_list()
+            url, category = urls[0]
+            raw = adapter.extract_animal_details(url, category=category)
+
+        assert raw.shelter_date == "2026年5月10日", (
+            f"収容日ラベルの値のみが入るはず (年齢の値が混入していないか): got {raw.shelter_date!r}"
+        )
+        assert raw.location == "高槻市富田町", (
+            f"収容場所ラベルの値のみが入るはず (毛色の値が混入していないか): got {raw.location!r}"
+        )
+        assert raw.age == "成犬"
+        assert raw.color == "茶"
+
+        animal_data = adapter.normalize(raw)
+        assert animal_data.shelter_date.isoformat() == "2026-05-10"
+        assert animal_data.location == "高槻市富田町"
+
+    def test_extract_animal_details_with_odd_cell_row_falls_back_to_shared_value(self):
+        """奇数セル行では末尾の値が失われず、旧来の共有値方式で処理される (T122 M-1 再発防止)
+
+        `<tr><th>種類</th><th>性別</th><td>柴犬</td></tr>` のような 3 セル行
+        (ラベル候補 2 個 + 共有値 1 個) にペア処理をそのまま適用すると、
+        本来の値 `cells[2]` を無視して species="性別" になってしまう
+        退行があった (reviewer 指摘 M-1)。奇数セル行は末尾セルを全ラベル
+        候補で共有する旧実装セマンティクスにフォールバックすることを
+        検証する。
+        """
+        synthetic_html = """
+        <html><body>
+        <div class="detail_free">
+          <table>
+            <tr><th>種類</th><th>性別</th><td>柴犬</td></tr>
+          </table>
+        </div>
+        </body></html>
+        """
+        adapter = CityTakatsukiAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=synthetic_html):
+            urls = adapter.fetch_animal_list()
+            url, category = urls[0]
+            raw = adapter.extract_animal_details(url, category=category)
+
+        assert raw.species == "犬", (
+            f"奇数セル行では末尾セルが共有値として採用され柴犬→犬に正規化されるはず: got {raw.species!r}"
+        )
+
+    def test_extract_animal_details_duplicate_label_in_row_prefers_non_empty_value(self):
+        """同一行内の重複ラベルでは、空値が後続の有効値を握り潰さない (T122 M-2 再発防止)
+
+        `<tr><th>年齢</th><td></td><th>年齢</th><td>成犬</td></tr>` のように
+        同一行に同じラベルが 2 回現れ、1 個目の値が空、2 個目の値が非空の
+        変則行で、ペア処理は 1 個目の空値でフィールドを確定させてしまい
+        2 個目の有効値を握り潰す退行があった (reviewer 指摘 M-2)。
+        """
+        synthetic_html = """
+        <html><body>
+        <div class="detail_free">
+          <table>
+            <tr><th>年齢</th><td></td><th>年齢</th><td>成犬</td></tr>
+          </table>
+        </div>
+        </body></html>
+        """
+        adapter = CityTakatsukiAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=synthetic_html):
+            urls = adapter.fetch_animal_list()
+            url, category = urls[0]
+            raw = adapter.extract_animal_details(url, category=category)
+
+        assert raw.age == "成犬", f"空値の後の有効値が採用されるはず: got {raw.age!r}"
+
     def test_infer_species_from_site_name_returns_empty_for_dog_and_cat(self):
         """サイト名「迷子犬猫」は犬・猫の両方を含むため空文字"""
         assert CityTakatsukiAdapter._infer_species_from_site_name("高槻市（迷子犬猫）") == ""
