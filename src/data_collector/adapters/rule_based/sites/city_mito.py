@@ -107,10 +107,18 @@ class CityMitoAdapter(SinglePageTableAdapter):
     ) -> RawAnimalData:
         """1 個の `<table>` から RawAnimalData を構築する
 
-        水戸市 CMS のテーブルは「項目名 / 値」が左右に並ぶ縦並び構造を
-        想定する (CityMachidaAdapter と同等)。テーブル内の各 `<tr>` から
-        最後のセルを値、それ以前のいずれかのセルにラベルが含まれている
-        ものとして読み取る。
+        水戸市 CMS のテーブルは行ごとに 2 種類のレイアウトが混在しうる
+        (T122):
+
+        - 偶数セル行: 「ラベル/値」ペアが 1 行に 1 組以上並ぶ (実測:
+          `収容日時｜令和7年10月9日｜年齢｜成犬（若め）` のように th/td が
+          4 個並ぶ)。セルを 2 個ずつ (ラベル, 値) のペアとして処理し、
+          各ラベルは隣接する値のみを参照する (単純な「ラベル 1・値 1」の
+          2 セル行もこの経路で処理される)。
+        - 奇数セル行: 末尾 1 セルを値として、それ以前の全セルをラベル
+          候補として共有する旧来レイアウト (例: ラベル候補が複数並び
+          値が 1 個だけの変則行)。最初にマッチしたラベルが値を採用する
+          (CityMachidaAdapter と同等の旧実装セマンティクス)。
         """
         rows = self._load_rows()
         idx = self._parse_row_index(virtual_url)
@@ -150,37 +158,62 @@ class CityMitoAdapter(SinglePageTableAdapter):
         }
 
         fields: dict[str, str] = {}
-        # 「犬種」「猫種」はラベル自体が動物種別を明示する。実測 (2025-11
-        # wayback snapshot) では 1 行に 2 フィールドが並ぶレイアウト
-        # (例: `犬種｜雑種｜首輪｜無し`) が使われており、この場合
-        # value_cell (末尾セル) は「犬種」の値ではなく隣接フィールド
-        # (首輪) の値になってしまうため、値ではなくラベルから種別を
-        # 直接確定する。
         species_from_label = ""
+
+        def _assign(label_text: str, value_text: str) -> bool:
+            """label_text に一致するフィールドへ value_text を割り当てる
+
+            テーブル内で最初に見つかった非空値を優先し、既に非空の値が
+            入っているフィールドは上書きしない。ただし空文字が先に
+            入っていた場合は後続の非空値で上書きできるようにする (T122
+            M-2: 同一行内に重複ラベルが並ぶ変則行で、先に見つかった空値
+            が後続の有効値を握り潰してしまう退行を防ぐ)。戻り値は実際に
+            割り当てが行われたか。
+            """
+            nonlocal species_from_label
+            if not species_from_label:
+                if "犬種" in label_text:
+                    species_from_label = "犬"
+                elif "猫種" in label_text:
+                    species_from_label = "猫"
+            for label, field in label_to_field.items():
+                if fields.get(field):
+                    continue
+                if label in label_text:
+                    fields[field] = value_text
+                    return True
+            return False
+
         for tr in trs:
             cells = [c for c in tr.find_all(["td", "th"]) if isinstance(c, Tag)]
             if len(cells) < 2:
                 continue
-            value_cell = cells[-1]
-            value_text = value_cell.get_text(separator=" ", strip=True)
-            value_text = re.sub(r"[ 　]+", " ", value_text).strip()
-            for label_cell in cells[:-1]:
-                label_text = label_cell.get_text(separator="", strip=True)
-                if not species_from_label:
-                    if "犬種" in label_text:
-                        species_from_label = "犬"
-                    elif "猫種" in label_text:
-                        species_from_label = "猫"
-                matched = False
-                for label, field in label_to_field.items():
-                    if field in fields:
-                        continue
-                    if label in label_text:
-                        fields[field] = value_text
-                        matched = True
+            if len(cells) % 2 == 0:
+                # 偶数セル: 2 個ずつ (ラベル, 値) のペアとして処理する
+                # (水戸市 CMS の実テンプレートで確認した 1 行複数
+                # フィールドレイアウト)。全ペアを無条件に処理する。
+                for i in range(0, len(cells), 2):
+                    label_cell = cells[i]
+                    value_cell = cells[i + 1]
+                    label_text = label_cell.get_text(separator="", strip=True)
+                    value_text = value_cell.get_text(separator=" ", strip=True)
+                    value_text = re.sub(r"[ 　]+", " ", value_text).strip()
+                    _assign(label_text, value_text)
+            else:
+                # 奇数セル: 末尾 1 セルを値として全ラベル候補で共有する
+                # 旧来レイアウトにフォールバックする (T122 M-1: 偶数ペア
+                # 処理をそのまま奇数セル行に適用すると末尾の値が失われ、
+                # ラベル文字列同士が誤って (ラベル, 値) ペア扱いされて
+                # しまう退行があったため)。最初にマッチしたラベル候補が
+                # 値を採用し、以降のラベル候補は評価しない (旧実装と
+                # 同じセマンティクス)。
+                value_cell = cells[-1]
+                value_text = value_cell.get_text(separator=" ", strip=True)
+                value_text = re.sub(r"[ 　]+", " ", value_text).strip()
+                for label_cell in cells[:-1]:
+                    label_text = label_cell.get_text(separator="", strip=True)
+                    if _assign(label_text, value_text):
                         break
-                if matched:
-                    break
 
         # species: 「犬種」「猫種」ラベルを最優先、次にテーブル値、
         # 最後にサイト名から推定する (水戸市の実サイト名は犬猫いずれも
