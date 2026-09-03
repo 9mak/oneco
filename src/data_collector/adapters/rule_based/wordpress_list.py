@@ -94,9 +94,8 @@ class WordPressListAdapter(RuleBasedAdapter):
         visited_pages: set[str] = set()
         page_url = self.site_config.list_url
         truncated = False
-        first_page_links = 0
 
-        for page_index in range(self.MAX_LIST_PAGES):
+        for _ in range(self.MAX_LIST_PAGES):
             if page_url in visited_pages:
                 # next リンクが既訪問ページを指す異常系 (循環)。この先に未取得の
                 # ページが残っている可能性があるため、上限到達と同様に打ち切り扱い。
@@ -112,11 +111,7 @@ class WordPressListAdapter(RuleBasedAdapter):
 
             html = self._http_get(page_url)
             soup = BeautifulSoup(html, "html.parser")
-            links = soup.select(self.LIST_LINK_SELECTOR)
-            if page_index == 0:
-                first_page_links = len(links)
-
-            for link in links:
+            for link in soup.select(self.LIST_LINK_SELECTOR):
                 href = link.get("href")
                 if not href or not isinstance(href, str):
                     continue
@@ -148,13 +143,15 @@ class WordPressListAdapter(RuleBasedAdapter):
 
         self.list_truncated = truncated
 
-        # 1 ページ目の detail link 0 件は「現在その種別の収容動物がいない」真ゼロと
-        # して扱う。_http_get が成功し HTML パースまで通っているのにリンクだけ無い
-        # 状態は、例えば douaicenter.jp/animal/list/protect/dog のように動物がいない
-        # カテゴリでよく発生する。サイト DOM 構造変化による偽陰性は
-        # scripts/adapter_live_test.py / zero_count_audit で別途検出する運用。
-        if first_page_links == 0:
-            return []
+        # 全ページを通して detail link 0 件なら「現在その種別の収容動物がいない」
+        # 真ゼロとして空リストを返す。_http_get が成功し HTML パースまで通って
+        # いるのにリンクだけ無い状態は、例えば douaicenter.jp/animal/list/protect/dog
+        # のように動物がいないカテゴリでよく発生する。サイト DOM 構造変化による
+        # 偽陰性は scripts/adapter_live_test.py / zero_count_audit で別途検出する運用。
+        #
+        # 判定は 1 ページ目だけでなく全ページの集計で行う。1 ページ目が空でも next が
+        # あり 2 ページ目以降に実データがある構成では、1 ページ目基準だと収集済みの
+        # データを無警告で握り潰してしまうため。
         return urls
 
     def extract_animal_details(self, detail_url: str, category: str = "adoption") -> RawAnimalData:

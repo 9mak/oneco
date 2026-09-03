@@ -306,9 +306,32 @@ class TestWordPressListAdapterPagination:
         assert len(result) == 2
         assert adapter.list_truncated is True
 
-    def test_empty_first_page_is_true_zero(self):
-        """1 ページ目に detail link が無ければ従来どおり真ゼロ扱い"""
+    def test_all_pages_empty_is_true_zero(self):
+        """全ページに detail link が無ければ従来どおり真ゼロ扱い"""
         adapter = _PagedWPAdapter(_site())
         with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
             assert adapter.fetch_animal_list() == []
+        assert adapter.list_truncated is False
+
+    def test_empty_first_page_still_collects_later_pages(self):
+        """1 ページ目が空でも next があれば 2 ページ目以降を握り潰さない
+
+        真ゼロ判定を 1 ページ目のリンク数で行うと、この構成で収集済みの
+        2 ページ目以降が無警告で捨てられる。
+        """
+        empty_with_next = """
+        <html><body>
+          <div class="paging">
+            <span class="next"><a href="/list/page:2" rel="next">next &gt;</a></span>
+          </div>
+        </body></html>
+        """
+        adapter = _PagedWPAdapter(_site())
+        pages = {
+            "https://example.com/list/": empty_with_next,
+            "https://example.com/list/page:2": PAGE2_HTML,
+        }
+        with patch.object(adapter, "_http_get", side_effect=lambda url: pages[url]):
+            result = adapter.fetch_animal_list()
+        assert [u for u, _ in result] == ["https://example.com/animals/3"]
         assert adapter.list_truncated is False
