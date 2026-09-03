@@ -61,6 +61,44 @@ DETAIL_HTML_DOG = """
 </body></html>
 """
 
+# 実サイト (https://www.city.okayama.jp/kurashi/0000077577.html, 2026-09-03
+# 実機取得で確認) を模した detail HTML。T125 調査で判明した実際のラベルは
+# 「収容日/収容場所/連絡先」ではなく「保護日/保護場所」であり、電話番号は
+# テーブルではなく本文末尾の `<section class="kiji_aside ...">` 内の
+# 自由文 (`<p>電話: 086-803-1259　ファクス: ...</p>`) にのみ存在する。
+# 写真は実写真に加えて `/module/access_log.cgi` `/module/get_trend.cgi` の
+# アクセス解析用トラッキングピクセルが img タグとして混入する。
+DETAIL_HTML_REAL_SITE = """
+<html><head><title>1D2026049保護犬個別情報 | 岡山市</title></head><body>
+<div class="mol_tableblock block_index_1">
+  <table><caption>1D2026049保護犬個別情報</caption>
+    <tbody>
+      <tr><th scope="row">保護日</th><td>令和8年8月18日</td></tr>
+      <tr><th scope="row">保護場所</th><td>岡山市中区国府市場</td></tr>
+      <tr><th scope="row">種類</th><td>雑種</td></tr>
+      <tr><th scope="row">性別</th><td>メス</td></tr>
+      <tr><th scope="row">毛色</th><td>茶</td></tr>
+      <tr><th scope="row">推定年齢</th><td>成犬</td></tr>
+      <tr><th scope="row">装着物</th><td>なし</td></tr>
+      <tr><th scope="row">掲載期限</th><td>令和8年9月16日</td></tr>
+    </tbody>
+  </table>
+</div>
+<img src="/module/access_log.cgi?html=0000077577" style="display:none" alt="">
+<img src="https://www.city.okayama.jp/module/get_trend.cgi?77577" alt="" width="1" height="1" style="display:none">
+<img class="mol_imageblock_img_medium" src="./cmsfiles/contents/0000077/77577/IMG_3328.JPG" alt="1D2026049">
+<section class="kiji_aside syosai_sonota">
+  <h2>お問い合わせ</h2>
+  <h3>保健福祉局保健所衛生課 動物衛生係</h3>
+  <p>所在地: 〒700-8546 岡山市北区鹿田町一丁目1番1号</p>
+  <p>電話: 086-803-1259　ファクス: 086-803-1757</p>
+</section>
+<footer>
+  <p>電話：<a href="tel:086-803-1000">086-803-1000</a>（代表）</p>
+</footer>
+</body></html>
+"""
+
 # detail ページを模した最小 HTML (`<td>/<td>` 2 列テーブル版)。
 # `<th>` を持たないレイアウトでもラベルベースで値が取れること。
 DETAIL_HTML_2COL = """
@@ -287,6 +325,69 @@ class TestCityOkayamaAdapterDetailExtraction:
                 adapter.extract_animal_details(
                     "https://www.city.okayama.jp/kurashi/0000067714.html"
                 )
+
+
+class TestCityOkayamaAdapterRealSiteStructure:
+    """T125: 実サイト構造 (2026-09-03 実機取得で確認) での抽出検証
+
+    TASK.md T125 で判明したとおり、実サイトのラベルは「収容日/収容場所/連絡先」
+    ではなく「保護日/保護場所」であり、電話番号はテーブルではなく本文末尾の
+    お問い合わせセクション (自由文) にしかない。この差異により、致命8フィールド
+    のうち location と phone が常に欠落していた (location は "不明" にフォール
+    バック、phone は null のまま)。management_number も未抽出だった。
+    """
+
+    def test_extract_animal_details_uses_real_site_labels(self, assert_raw_animal):
+        """実サイトのラベル (保護日/保護場所) からも shelter_date/location が取れる"""
+        adapter = CityOkayamaAdapter(_site())
+        detail_url = "https://www.city.okayama.jp/kurashi/0000077577.html"
+        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_REAL_SITE):
+            raw = adapter.extract_animal_details(detail_url, category="sheltered")
+
+        assert_raw_animal(
+            raw,
+            species="犬",
+            breed="雑種",
+            sex="メス",
+            age="成犬",
+            color="茶",
+            shelter_date="令和8年8月18日",
+            location="岡山市中区国府市場",
+        )
+
+    def test_extract_animal_details_extracts_phone_from_contact_section(self):
+        """電話番号はテーブルではなく `section.kiji_aside` の自由文から取れる
+
+        フッタの市代表電話 (086-803-1000) ではなく、本文お問い合わせ欄の
+        部署直通番号 (086-803-1259) が採用されること。
+        """
+        adapter = CityOkayamaAdapter(_site())
+        detail_url = "https://www.city.okayama.jp/kurashi/0000077577.html"
+        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_REAL_SITE):
+            raw = adapter.extract_animal_details(detail_url, category="sheltered")
+
+        assert raw.phone == "086-803-1259"
+
+    def test_extract_animal_details_extracts_management_number_from_title(self):
+        """タイトル/h1 先頭の管理番号 (例: "1D2026049") が management_number に入る"""
+        adapter = CityOkayamaAdapter(_site())
+        detail_url = "https://www.city.okayama.jp/kurashi/0000077577.html"
+        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_REAL_SITE):
+            raw = adapter.extract_animal_details(detail_url, category="sheltered")
+
+        assert raw.management_number == "1D2026049"
+
+    def test_extract_animal_details_excludes_tracking_pixels_from_images(self):
+        """`/module/access_log.cgi` `/module/get_trend.cgi` のトラッキングピクセルは
+        image_urls から除外され、実写真のみが残ること"""
+        adapter = CityOkayamaAdapter(_site())
+        detail_url = "https://www.city.okayama.jp/kurashi/0000077577.html"
+        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_REAL_SITE):
+            raw = adapter.extract_animal_details(detail_url, category="sheltered")
+
+        assert all("/module/" not in u for u in raw.image_urls)
+        assert any("IMG_3328.JPG" in u for u in raw.image_urls)
+        assert len(raw.image_urls) == 1
 
 
 class TestCityOkayamaAdapterSpeciesInference:
