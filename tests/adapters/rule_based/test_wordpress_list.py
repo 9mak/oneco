@@ -186,3 +186,129 @@ class TestWordPressListAdapter:
         assert raw.breed == "柴犬"
         assert raw.management_number == "2026-001"
         assert raw.description == "人懐っこい"
+
+
+# ─────────────────── ページ送り (T132) ───────────────────
+
+PAGE1_HTML = """
+<html><body>
+  <div class="card"><a class="more" href="/animals/1">animal1</a></div>
+  <div class="card"><a class="more" href="/animals/2">animal2</a></div>
+  <div class="paging">
+    <span class="current">1</span>
+    <span><a href="/list/page:2">2</a></span>
+    <span class="next"><a href="/list/page:2" rel="next">next &gt;</a></span>
+  </div>
+</body></html>
+"""
+
+PAGE2_HTML = """
+<html><body>
+  <div class="card"><a class="more" href="/animals/3">animal3</a></div>
+  <div class="paging">
+    <span class="prev"><a href="/list/" rel="prev">&lt; previous</a></span>
+    <span class="current">2</span>
+  </div>
+</body></html>
+"""
+
+
+class _PagedWPAdapter(_SampleWPAdapter):
+    """next リンクを辿るサイト (沖縄 aniwel の `<div class="paging">` 構造)"""
+
+    NEXT_PAGE_SELECTOR = ".paging a[rel='next']"
+
+
+class TestWordPressListAdapterPagination:
+    """一覧のページ送り未追随による掲載漏れ (T132)
+
+    `WordPressListAdapter.fetch_animal_list` は list_url の 1 ページ目しか
+    読んでいなかった。沖縄県動物愛護管理センターの行方不明犬 (2ページ) と
+    行方不明猫 (3ページ) で 2 ページ目以降が丸ごと未収集になり、
+    実サイト111件に対し本番 API は86件、URL 集合の差は25件 (全て
+    `missing_view`) だった。
+    """
+
+    def test_follows_next_link_and_collects_all_pages(self):
+        adapter = _PagedWPAdapter(_site())
+        pages = {
+            "https://example.com/list/": PAGE1_HTML,
+            "https://example.com/list/page:2": PAGE2_HTML,
+        }
+        with patch.object(adapter, "_http_get", side_effect=lambda url: pages[url]):
+            result = adapter.fetch_animal_list()
+
+        urls = [u for u, _cat in result]
+        assert urls == [
+            "https://example.com/animals/1",
+            "https://example.com/animals/2",
+            "https://example.com/animals/3",
+        ]
+        assert adapter.list_truncated is False
+
+    def test_without_selector_reads_only_first_page(self):
+        """NEXT_PAGE_SELECTOR 未定義の派生クラスは従来どおり 1 ページのみ"""
+        adapter = _SampleWPAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=PAGE1_HTML) as m:
+            result = adapter.fetch_animal_list()
+        assert len(result) == 2
+        assert m.call_count == 1
+
+    def test_dedupes_urls_across_pages(self):
+        """ページ間で同じ detail URL が重複しても 1 件に畳む"""
+        page2_dup = PAGE2_HTML.replace("/animals/3", "/animals/2")
+        adapter = _PagedWPAdapter(_site())
+        pages = {
+            "https://example.com/list/": PAGE1_HTML,
+            "https://example.com/list/page:2": page2_dup,
+        }
+        with patch.object(adapter, "_http_get", side_effect=lambda url: pages[url]):
+            result = adapter.fetch_animal_list()
+        assert len(result) == 2
+
+    def test_cycle_detection_sets_list_truncated(self):
+        """next が既訪問ページを指したら打ち切り、list_truncated を立てる
+
+        部分集合のまま prune_disappeared が走ると、未取得ページに載っている
+        実在個体を誤って公開から消してしまうため (T059)。
+        """
+        loop_html = PAGE1_HTML.replace('href="/list/page:2" rel="next"', 'href="/list/" rel="next"')
+        adapter = _PagedWPAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=loop_html):
+            result = adapter.fetch_animal_list()
+        assert len(result) == 2
+        assert adapter.list_truncated is True
+
+    def test_page_limit_sets_list_truncated(self):
+        """上限ページ数に達したら打ち切り、list_truncated を立てる"""
+
+        class _TinyLimitAdapter(_PagedWPAdapter):
+            MAX_LIST_PAGES = 2
+
+        adapter = _TinyLimitAdapter(_site())
+        # 各ページが常に「次の」新しいページを指し続ける
+        counter = {"n": 0}
+
+        def _fake_get(url: str) -> str:
+            counter["n"] += 1
+            n = counter["n"]
+            return f"""
+            <html><body>
+              <div class="card"><a class="more" href="/animals/{n}">a{n}</a></div>
+              <div class="paging"><span class="next">
+                <a href="/list/page:{n + 1}" rel="next">next</a>
+              </span></div>
+            </body></html>
+            """
+
+        with patch.object(adapter, "_http_get", side_effect=_fake_get):
+            result = adapter.fetch_animal_list()
+        assert len(result) == 2
+        assert adapter.list_truncated is True
+
+    def test_empty_first_page_is_true_zero(self):
+        """1 ページ目に detail link が無ければ従来どおり真ゼロ扱い"""
+        adapter = _PagedWPAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value="<html><body></body></html>"):
+            assert adapter.fetch_animal_list() == []
+        assert adapter.list_truncated is False

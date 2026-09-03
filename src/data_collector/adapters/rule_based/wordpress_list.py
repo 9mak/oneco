@@ -12,6 +12,7 @@ WordPress 系（および類似の構造）の自治体サイトで、
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import ClassVar
 
@@ -20,6 +21,8 @@ from bs4 import BeautifulSoup, Tag
 from ...domain.models import AnimalData, RawAnimalData
 from ..municipality_adapter import ParsingError
 from .base import RuleBasedAdapter
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -48,11 +51,16 @@ class WordPressListAdapter(RuleBasedAdapter):
     - `LIST_LINK_SELECTOR`: 一覧ページ内の detail link CSS セレクタ
     - `FIELD_SELECTORS`: フィールド名 -> FieldSpec の辞書
     - `IMAGE_SELECTOR`: 画像 img 要素のセレクタ（複数取得）
+    - `NEXT_PAGE_SELECTOR`: 一覧が複数ページに分かれる場合の「次へ」リンクの
+      CSS セレクタ（省略時は 1 ページ目のみ読む従来動作）
     """
 
     LIST_LINK_SELECTOR: ClassVar[str] = ""
     FIELD_SELECTORS: ClassVar[dict[str, FieldSpec]] = {}
     IMAGE_SELECTOR: ClassVar[str] = "img"
+    # 空文字 = ページ送りを辿らない。定義した派生クラスだけが複数ページを読む。
+    NEXT_PAGE_SELECTOR: ClassVar[str] = ""
+    MAX_LIST_PAGES: ClassVar[int] = 10
 
     def __init_subclass__(cls, **kwargs) -> None:
         super().__init_subclass__(**kwargs)
@@ -64,30 +72,89 @@ class WordPressListAdapter(RuleBasedAdapter):
     # ─────────────────── MunicipalityAdapter 実装 ───────────────────
 
     def fetch_animal_list(self) -> list[tuple[str, str]]:
-        html = self._http_get(self.site_config.list_url)
-        soup = BeautifulSoup(html, "html.parser")
+        """一覧ページから detail URL を集める。
 
-        links = soup.select(self.LIST_LINK_SELECTOR)
-        # detail link 0 件は「現在その種別の収容動物がいない」真ゼロとして扱う。
-        # _http_get が成功し HTML パースまで通っているのにリンクだけ無い状態は、
-        # 例えば douaicenter.jp/animal/list/protect/dog のように動物がいない
-        # カテゴリでよく発生する。サイト DOM 構造変化による偽陰性は
-        # scripts/adapter_live_test.py / zero_count_audit で別途検出する運用。
-        if not links:
-            return []
+        `NEXT_PAGE_SELECTOR` を定義した派生クラスでは「次へ」リンクを最後まで
+        辿る。定義していない派生クラスは list_url の 1 ページ目だけを読む
+        従来動作のまま。
 
+        沖縄県動物愛護管理センターの行方不明犬 (2ページ) / 行方不明猫 (3ページ)
+        で 2 ページ目以降が丸ごと未収集になり、実サイト111件に対し本番 API は
+        86件、URL 集合の差は25件 (全て `missing_view`) だった (T132)。
+
+        上限到達・循環検知いずれで打ち切った場合も `self.list_truncated` を
+        立てる。CollectorService はこのフラグを見て prune_disappeared
+        (消滅同期削除) をスキップする (T059)。打ち切り区間に未取得の実在個体が
+        残っている可能性があり、部分集合のまま消滅判定すると誤って公開から
+        削除してしまうため。
+        """
         urls: list[tuple[str, str]] = []
         seen: set[str] = set()
         category = self.site_config.category
-        for link in links:
-            href = link.get("href")
-            if not href or not isinstance(href, str):
-                continue
-            absolute = self._absolute_url(href)
-            if absolute in seen:
-                continue
-            seen.add(absolute)
-            urls.append((absolute, category))
+        visited_pages: set[str] = set()
+        page_url = self.site_config.list_url
+        truncated = False
+        first_page_links = 0
+
+        for page_index in range(self.MAX_LIST_PAGES):
+            if page_url in visited_pages:
+                # next リンクが既訪問ページを指す異常系 (循環)。この先に未取得の
+                # ページが残っている可能性があるため、上限到達と同様に打ち切り扱い。
+                truncated = True
+                logger.warning(
+                    "[%s] 一覧のページ送りで循環を検知しました (既訪問ページへの"
+                    "再遷移: %s)。未取得のページが残っている可能性があります",
+                    self.site_config.name,
+                    page_url,
+                )
+                break
+            visited_pages.add(page_url)
+
+            html = self._http_get(page_url)
+            soup = BeautifulSoup(html, "html.parser")
+            links = soup.select(self.LIST_LINK_SELECTOR)
+            if page_index == 0:
+                first_page_links = len(links)
+
+            for link in links:
+                href = link.get("href")
+                if not href or not isinstance(href, str):
+                    continue
+                absolute = self._absolute_url(href, base=page_url)
+                if absolute in seen:
+                    continue
+                seen.add(absolute)
+                urls.append((absolute, category))
+
+            if not self.NEXT_PAGE_SELECTOR:
+                break
+            next_link = soup.select_one(self.NEXT_PAGE_SELECTOR)
+            next_href = next_link.get("href") if isinstance(next_link, Tag) else None
+            if not next_href or not isinstance(next_href, str):
+                break
+            page_url = self._absolute_url(next_href, base=page_url)
+        else:
+            # 上限で打ち切った = まだ next が残っている可能性があり、
+            # 静かな掲載漏れになるため必ずログに残す。
+            if self.NEXT_PAGE_SELECTOR:
+                truncated = True
+                logger.warning(
+                    "[%s] 一覧のページ送りが上限 %d ページに達しました。"
+                    "未取得のページが残っている可能性があります: %s",
+                    self.site_config.name,
+                    self.MAX_LIST_PAGES,
+                    page_url,
+                )
+
+        self.list_truncated = truncated
+
+        # 1 ページ目の detail link 0 件は「現在その種別の収容動物がいない」真ゼロと
+        # して扱う。_http_get が成功し HTML パースまで通っているのにリンクだけ無い
+        # 状態は、例えば douaicenter.jp/animal/list/protect/dog のように動物がいない
+        # カテゴリでよく発生する。サイト DOM 構造変化による偽陰性は
+        # scripts/adapter_live_test.py / zero_count_audit で別途検出する運用。
+        if first_page_links == 0:
+            return []
         return urls
 
     def extract_animal_details(self, detail_url: str, category: str = "adoption") -> RawAnimalData:
