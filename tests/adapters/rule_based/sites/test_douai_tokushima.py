@@ -86,13 +86,13 @@ STRAY_HTML = """
               <img src="../list1_1/photo/photo2-17788280710.JPG" alt="">
             </a>
           </td>
-          <th colspan="2">発見日</th>
+          <th colspan="2">収容日</th>
         </tr>
-        <tr><td colspan="2" aria-label="発見日">2026/5/15</td></tr>
-        <tr><th colspan="2">内容情報</th></tr>
+        <tr><td colspan="2" aria-label="収容日">2026/5/15</td></tr>
+        <tr><th colspan="2">収容場所</th></tr>
         <tr>
-          <td colspan="2" aria-label="内容情報">
-            徳島市南町道路上で保護<br>
+          <td colspan="2" aria-label="収容場所">
+            徳島市南町<br>道路上で保護
           </td>
         </tr>
         <tr><th>種類</th><th>性別</th></tr>
@@ -224,6 +224,66 @@ CAT_TRANSFER_HTML = """
 # 在庫 0 件 (iframe は読み込めるが ul.news 配下に <li> が無い)
 EMPTY_HTML = '<html><body><ul class="news"></ul></body></html>'
 
+# 収容中の実データは種別ごとの iframe に分かれる。
+# STRAY_HTML は 2 件 (犬・猫) を含む従来のフィクスチャで、
+# 種別分割後は「犬の iframe」に相当する扱いで使う。
+_STRAY_IFRAME_DOG = "https://douai-tokushima.com/animalinfo/list1_1/"
+_STRAY_IFRAME_CAT = "https://douai-tokushima.com/animalinfo/list1_2/"
+_STRAY_IFRAME_OTHER = "https://douai-tokushima.com/animalinfo/list1_3/"
+
+
+def _one_stray_card(
+    *, photo: str | None, shelter_date: str, place: str, age: str, kind: str = "雑種"
+) -> str:
+    """収容中カード 1 件分の `<li>`"""
+    photo_cell = (
+        f'<td class="photo" rowspan="10"><img src="photo/{photo}" alt=""></td>'
+        if photo
+        else ""
+    )
+    return f"""
+    <li>
+      <table class="f_a">
+        <tr>{photo_cell}<th colspan="2">収容日</th></tr>
+        <tr><td colspan="2" aria-label="収容日">{shelter_date}</td></tr>
+        <tr><th colspan="2">収容場所</th></tr>
+        <tr><td colspan="2" aria-label="収容場所">{place}</td></tr>
+        <tr><th>種類</th><th>性別</th></tr>
+        <tr><td aria-label="種類">{kind}</td><td aria-label="性別">オス</td></tr>
+        <tr><th>推定年齢</th><th>体格</th></tr>
+        <tr><td aria-label="推定年齢">{age}</td><td aria-label="体格">小型</td></tr>
+        <tr><th>毛色</th><th>その他特徴</th></tr>
+        <tr><td aria-label="毛色">黒</td><td aria-label="その他特徴">--</td></tr>
+      </table>
+    </li>
+    """
+
+
+def _stray_page(cards: str, next_href: str | None = None) -> str:
+    pager = (
+        f'<div class="pagination"><div class="next"><a href="{next_href}">'
+        "<span>次へ ></span></a></div></div>"
+        if next_href
+        else ""
+    )
+    return f'<html><body><ul class="news">{cards}</ul>{pager}</body></html>'
+
+
+def _stray_pages(dog: str, cat: str = EMPTY_HTML, other: str = EMPTY_HTML) -> dict[str, str]:
+    """収容中 3 iframe 分の URL → HTML マップ"""
+    return {_STRAY_IFRAME_DOG: dog, _STRAY_IFRAME_CAT: cat, _STRAY_IFRAME_OTHER: other}
+
+
+def _fetcher(pages: dict[str, str]):
+    """URL ごとに HTML を返す _http_get の side_effect"""
+
+    def _get(url: str) -> str:
+        if url not in pages:
+            raise AssertionError(f"想定外の URL を fetch した: {url}")
+        return pages[url]
+
+    return _get
+
 
 # ─────────────────── iframe URL マッピング ───────────────────
 
@@ -231,14 +291,21 @@ EMPTY_HTML = '<html><body><ul class="news"></ul></body></html>'
 class TestIframeUrlMapping:
     """ラッパ list_url → iframe URL の差し替えが正しく行われること"""
 
-    def test_stray_uses_list1_iframe(self):
+    def test_stray_uses_three_species_iframes(self):
+        """収容中は種別ごとの 3 iframe を読む (サマリー list1/ ではない)
+
+        `/animalinfo/list1/` は「最新の情報を3件表示しています」と明記された
+        サマリーページで、全件は list1_1 (犬) / list1_2 (猫) / list1_3 (その他)
+        にある。ここを取り違えて 68 件が掲載漏れになっていた (T135)。
+        """
         adapter = DouaiTokushimaAdapter(_stray_site())
-        with patch.object(adapter, "_http_get", return_value=STRAY_HTML) as mock_get:
+        pages = _stray_pages(STRAY_HTML)
+        with patch.object(adapter, "_http_get", side_effect=_fetcher(pages)) as mock_get:
             adapter.fetch_animal_list()
-        # ラッパ /stray/ ではなく iframe URL を fetch する
-        assert mock_get.called
-        called_url = mock_get.call_args.args[0]
-        assert called_url == "https://douai-tokushima.com/animalinfo/list1/"
+        called = [c.args[0] for c in mock_get.call_args_list]
+        assert called == [_STRAY_IFRAME_DOG, _STRAY_IFRAME_CAT, _STRAY_IFRAME_OTHER]
+        # サマリーページは読まない
+        assert "https://douai-tokushima.com/animalinfo/list1/" not in called
 
     def test_dog_transfer_uses_list4_1_iframe(self):
         adapter = DouaiTokushimaAdapter(_dog_site())
@@ -261,17 +328,47 @@ class TestIframeUrlMapping:
 class TestDouaiTokushimaListExtraction:
     """fetch_animal_list が `<ul.news > li>` 単位で行を返すこと"""
 
-    def test_stray_fetch_returns_two_rows(self):
+    def test_stray_fetch_returns_rows_from_each_iframe(self):
         adapter = DouaiTokushimaAdapter(_stray_site())
-        with patch.object(adapter, "_http_get", return_value=STRAY_HTML):
+        cat_html = _stray_page(
+            _one_stray_card(photo="photo2-cat1.JPG", shelter_date="2026/6/1", place="鳴門市", age="幼猫")
+        )
+        pages = _stray_pages(STRAY_HTML, cat=cat_html)
+        with patch.object(adapter, "_http_get", side_effect=_fetcher(pages)):
             result = adapter.fetch_animal_list()
-        assert len(result) == 2
-        # 仮想 URL は iframe URL を base にする
+        assert len(result) == 3
         urls = [u for u, _ in result]
-        assert urls[0] == "https://douai-tokushima.com/animalinfo/list1/#row=0"
-        assert urls[1] == "https://douai-tokushima.com/animalinfo/list1/#row=1"
+        # 仮想 URL の base は由来した iframe、キーは写真ファイル名 (掲載順に依存しない)
+        assert urls[0] == f"{_STRAY_IFRAME_DOG}#animal=photo2-17788280710"
+        assert urls[1] == f"{_STRAY_IFRAME_DOG}#animal=photo2-17788280720"
+        assert urls[2] == f"{_STRAY_IFRAME_CAT}#animal=photo2-cat1"
         # category は site_config.category 由来
         assert all(c == "lost" for _, c in result)
+
+    def test_virtual_url_is_stable_when_a_new_animal_is_listed_first(self):
+        """先頭に新しい個体が入っても既存個体の仮想 URL が変わらない
+
+        `#row=N` 方式では全個体の URL がずれ、diff_detector が別個体の
+        新規登録とみなして delete+insert する (shelter_date 破壊・SNS 再投稿)。
+        T057 (山梨)・T066 (香川) と同型の identity 不安定を避ける (T135)。
+        """
+        adapter = DouaiTokushimaAdapter(_stray_site())
+        with patch.object(adapter, "_http_get", side_effect=_fetcher(_stray_pages(STRAY_HTML))):
+            before = [u for u, _ in adapter.fetch_animal_list()]
+
+        newcomer = _one_stray_card(
+            photo="photo2-99999.JPG", shelter_date="2026/9/4", place="阿波市", age="若犬"
+        )
+        with_newcomer = STRAY_HTML.replace('<ul class="news">', f'<ul class="news">{newcomer}', 1)
+        adapter2 = DouaiTokushimaAdapter(_stray_site())
+        with patch.object(
+            adapter2, "_http_get", side_effect=_fetcher(_stray_pages(with_newcomer))
+        ):
+            after = [u for u, _ in adapter2.fetch_animal_list()]
+
+        assert after[0] == f"{_STRAY_IFRAME_DOG}#animal=photo2-99999"
+        # 既存 2 件の URL は変わらない
+        assert after[1:] == before
 
     def test_dog_fetch_returns_one_row_with_adoption_category(self):
         adapter = DouaiTokushimaAdapter(_dog_site())
@@ -279,7 +376,9 @@ class TestDouaiTokushimaListExtraction:
             result = adapter.fetch_animal_list()
         assert len(result) == 1
         url, cat = result[0]
-        assert url == "https://douai-tokushima.com/animalinfo/list4_1#row=0"
+        assert url == (
+            "https://douai-tokushima.com/animalinfo/list4_1#animal=photo2-17781453580"
+        )
         assert cat == "adoption"
 
     def test_empty_inventory_returns_empty_list_without_error(self):
@@ -290,6 +389,64 @@ class TestDouaiTokushimaListExtraction:
         assert result == []
 
 
+class TestDouaiTokushimaPagination:
+    """収容中の全件一覧は `index.cgi?Start=N` でページ送りされる (T135)"""
+
+    def test_follows_next_link_across_pages(self):
+        adapter = DouaiTokushimaAdapter(_stray_site())
+        page1 = _stray_page(
+            _one_stray_card(photo="photo2-p1.JPG", shelter_date="2026/8/28", place="A市", age="若犬"),
+            next_href="index.cgi?Start=10",
+        )
+        page2 = _stray_page(
+            _one_stray_card(photo="photo2-p2.JPG", shelter_date="2026/7/10", place="B市", age="成犬")
+        )
+        pages = _stray_pages(page1)
+        pages[f"{_STRAY_IFRAME_DOG}index.cgi?Start=10"] = page2
+        with patch.object(adapter, "_http_get", side_effect=_fetcher(pages)):
+            result = adapter.fetch_animal_list()
+        urls = [u for u, _ in result]
+        assert urls == [
+            f"{_STRAY_IFRAME_DOG}#animal=photo2-p1",
+            f"{_STRAY_IFRAME_DOG}#animal=photo2-p2",
+        ]
+        assert adapter.list_truncated is False
+
+    def test_cycle_detection_sets_list_truncated(self):
+        """next が既訪問ページを指したら打ち切り、list_truncated を立てる"""
+        adapter = DouaiTokushimaAdapter(_stray_site())
+        looping = _stray_page(
+            _one_stray_card(photo="photo2-x.JPG", shelter_date="2026/8/1", place="A市", age="若犬"),
+            next_href=_STRAY_IFRAME_DOG,
+        )
+        with patch.object(adapter, "_http_get", side_effect=_fetcher(_stray_pages(looping))):
+            result = adapter.fetch_animal_list()
+        assert len(result) == 1
+        assert adapter.list_truncated is True
+
+    def test_page_limit_sets_list_truncated(self):
+        """上限ページ数に達したら打ち切り、list_truncated を立てる"""
+        adapter = DouaiTokushimaAdapter(_stray_site())
+        counter = {"n": 0}
+
+        def _get(url: str) -> str:
+            if url in (_STRAY_IFRAME_CAT, _STRAY_IFRAME_OTHER):
+                return EMPTY_HTML
+            counter["n"] += 1
+            n = counter["n"]
+            return _stray_page(
+                _one_stray_card(
+                    photo=f"photo2-{n}.JPG", shelter_date="2026/8/1", place="A市", age="若犬"
+                ),
+                next_href=f"index.cgi?Start={n * 10}",
+            )
+
+        with patch.object(adapter, "_http_get", side_effect=_get):
+            result = adapter.fetch_animal_list()
+        assert len(result) == DouaiTokushimaAdapter.MAX_LIST_PAGES
+        assert adapter.list_truncated is True
+
+
 # ─────────────────── detail (aria-label 抽出) ───────────────────
 
 
@@ -298,7 +455,7 @@ class TestDouaiTokushimaDetailExtraction:
 
     def test_stray_extract_first_row_dog(self, assert_raw_animal):
         adapter = DouaiTokushimaAdapter(_stray_site())
-        with patch.object(adapter, "_http_get", return_value=STRAY_HTML):
+        with patch.object(adapter, "_http_get", side_effect=_fetcher(_stray_pages(STRAY_HTML))):
             urls = adapter.fetch_animal_list()
             url, category = urls[0]
             raw = adapter.extract_animal_details(url, category=category)
@@ -321,16 +478,31 @@ class TestDouaiTokushimaDetailExtraction:
             category="lost",
             source_url=url,
         )
-        # location は固定でセンター名
-        assert raw.location == "徳島県動物愛護管理センター"
+        # location は個体ごとの「収容場所」を使う。
+        # 従来は実サイトに無い aria-label (「内容情報」) を見ていたため
+        # 全件センター名固定になっていた (T135)。
+        assert raw.location == "徳島市南町"
         # phone はセンター代表電話を全動物カードで共通利用する (2026-05 観測)
         assert raw.phone == "088-636-6122"
 
-    def test_stray_extract_second_row_cat(self, assert_raw_animal):
+    def test_stray_species_comes_from_source_iframe(self, assert_raw_animal):
+        """収容中の犬猫は「どの iframe から取れた行か」で確定する
+
+        種類セルは「雑種」固定で犬猫が判別できない。従来は画像パスに含まれる
+        `list1_1` / `list1_2` を見ていたが、種別ごとの全件ページでは画像が
+        `photo/...` の相対パスになり、この目印が消える (T135)。
+        """
         adapter = DouaiTokushimaAdapter(_stray_site())
-        with patch.object(adapter, "_http_get", return_value=STRAY_HTML):
+        cat_html = _stray_page(
+            _one_stray_card(
+                photo="photo2-cat1.JPG", shelter_date="2026/5/14", place="鳴門市撫養町", age="幼猫"
+            )
+        )
+        with patch.object(
+            adapter, "_http_get", side_effect=_fetcher(_stray_pages(STRAY_HTML, cat=cat_html))
+        ):
             urls = adapter.fetch_animal_list()
-            url, category = urls[1]
+            url, category = urls[-1]
             raw = adapter.extract_animal_details(url, category=category)
         assert_raw_animal(
             raw,
@@ -338,10 +510,9 @@ class TestDouaiTokushimaDetailExtraction:
             sex="オス",
             # 「幼猫」→「3ヶ月」(子猫相当)
             age="3ヶ月",
-            color="キジ白",
-            size="小型",
             shelter_date="2026/5/14",
         )
+        assert raw.location == "鳴門市撫養町"
 
     def test_dog_transfer_uses_species_hint_when_table_lacks_kind(self, assert_raw_animal):
         """譲渡犬テーブルには `<td aria-label="種類">` が無いが、
@@ -389,8 +560,8 @@ class TestDouaiTokushimaDetailExtraction:
           <ul class="news">
             <li>
               <table class="f_a">
-                <tr><th colspan="2">発見日</th></tr>
-                <tr><td colspan="2" aria-label="発見日">2026/6/15</td></tr>
+                <tr><th colspan="2">収容日</th></tr>
+                <tr><td colspan="2" aria-label="収容日">2026/6/15</td></tr>
                 <tr><th>種類</th><th>性別</th></tr>
                 <tr>
                   <td aria-label="種類">雑種</td>
@@ -407,7 +578,10 @@ class TestDouaiTokushimaDetailExtraction:
         </body></html>
         """
         adapter = DouaiTokushimaAdapter(_stray_site())
-        with patch.object(adapter, "_http_get", return_value=no_photo_html):
+        # 「その他」iframe (list1_3) は犬猫が確定しないため、
+        # 推定年齢の語による fallback が効くことを確認する。
+        pages = _stray_pages(EMPTY_HTML, other=no_photo_html)
+        with patch.object(adapter, "_http_get", side_effect=_fetcher(pages)):
             urls = adapter.fetch_animal_list()
             raw = adapter.extract_animal_details(urls[0][0], category="lost")
             animal = adapter.normalize(raw)
@@ -426,13 +600,35 @@ class TestDouaiTokushimaDetailExtraction:
         assert all(u.startswith("https://douai-tokushima.com/") for u in raw.image_urls)
 
     def test_http_get_cached_across_list_and_detail(self):
-        """fetch + N件 extract で _http_get は 1 回しか呼ばれない"""
+        """fetch + N件 extract で _http_get は iframe 数 (3) 回だけ呼ばれる
+
+        detail 抽出のたびに再取得しないこと (キャッシュが効いていること) を見る。
+        """
         adapter = DouaiTokushimaAdapter(_stray_site())
-        with patch.object(adapter, "_http_get", return_value=STRAY_HTML) as mock_get:
+        with patch.object(
+            adapter, "_http_get", side_effect=_fetcher(_stray_pages(STRAY_HTML))
+        ) as mock_get:
             urls = adapter.fetch_animal_list()
             for url, cat in urls:
                 adapter.extract_animal_details(url, category=cat)
-        assert mock_get.call_count == 1
+        assert mock_get.call_count == 3
+
+    def test_unknown_animal_key_raises_parsing_error(self):
+        adapter = DouaiTokushimaAdapter(_stray_site())
+        with patch.object(adapter, "_http_get", side_effect=_fetcher(_stray_pages(STRAY_HTML))):
+            adapter.fetch_animal_list()
+            with pytest.raises(ParsingError):
+                adapter.extract_animal_details(f"{_STRAY_IFRAME_DOG}#animal=nonexistent")
+
+    def test_row_without_photo_falls_back_to_index_key(self):
+        """写真が無い個体は通し番号キーにフォールバックする"""
+        adapter = DouaiTokushimaAdapter(_stray_site())
+        no_photo = _stray_page(
+            _one_stray_card(photo=None, shelter_date="2026/8/1", place="A市", age="若犬")
+        )
+        with patch.object(adapter, "_http_get", side_effect=_fetcher(_stray_pages(no_photo))):
+            urls = [u for u, _ in adapter.fetch_animal_list()]
+        assert urls == [f"{_STRAY_IFRAME_DOG}#animal=row0"]
 
 
 # ─────────────────── color / size の etcs 推定 ───────────────────

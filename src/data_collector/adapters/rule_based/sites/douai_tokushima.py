@@ -12,9 +12,23 @@
   `PlaywrightFetchMixin` を保持したまま誤って true 設定されていた)。
 - ラッパページ (sites.yaml の `list_url`) と実データ用 iframe URL の
   対応関係:
-      /stray/             → /animalinfo/list1/   (収容中 = 1ページ)
+      /stray/             → /animalinfo/list1_1/ (収容中・犬)
+                            /animalinfo/list1_2/ (収容中・猫)
+                            /animalinfo/list1_3/ (収容中・その他)
       /transfer/doglist   → /animalinfo/list4_1  (譲渡犬)
       /transfer/catlist   → /animalinfo/list4_2  (譲渡猫)
+- 収容中は当初 `/animalinfo/list1/` 1 ページだけを見ていたが、これは
+  ページ自身に `最新の情報を3件表示しています。さらにご覧になる場合は
+  一覧ページをご確認ください。` と書かれた **サマリーページ** で、
+  種別ごとの全件は上記 3 つの iframe 側にある。2026-09-04 の実測で
+  収容中・犬は 8 ページ 71 件あり、oneco は 3 件しか取れていなかった
+  (68 件の掲載漏れ)。全件一覧は `<div class="pagination"><div class="next">
+  <a href="index.cgi?Start=10">` でページ送りされる (T135)。
+- 仮想 URL は当初 `#row=N` だったが、新しい個体が先頭に入るたび既存個体の
+  URL がずれるため、件数が増えると T057 (山梨)・T066 (香川) と同じ
+  identity 不安定による shelter_date 破壊と SNS 再投稿を引き起こす。
+  写真ファイル名 (`photo2-17878928180.JPG`) が個体ごとに一意なので、
+  T066 と同じ `#animal=<安定キー>` 方式に切り替えた (T135)。
 - iframe の HTML は `<ul class="news">` 配下に動物ごとの `<li>` が並び、
   各 `<li>` 内の `<table class="f_a">` (収容中) / `<table class="f_a3">`
   (譲渡) で動物情報が表現される。
@@ -33,9 +47,12 @@
 
 from __future__ import annotations
 
+import logging
 import re
 import unicodedata
+from dataclasses import dataclass
 from typing import ClassVar
+from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup, Tag
 
@@ -45,17 +62,52 @@ from ..playwright import PlaywrightFetchMixin
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
+logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class _RowEntry:
+    """1 個体分の `<li>` と、その行がどの iframe / ページ由来かの情報。
+
+    Attributes:
+        row: 動物 1 件を表す `<li>` 要素。
+        iframe_url: 由来する iframe のトップ URL。仮想 URL の base と
+            画像の相対パス解決に使う。
+        species_hint: その iframe に載る動物の species (判別不能なら空文字)。
+        key: 仮想 URL に載せる安定キー。
+    """
+
+    row: Tag
+    iframe_url: str
+    species_hint: str
+    key: str
+
 # ラッパページ URL → 実データ iframe URL のマッピング。
-# 各サイトの list_url (sites.yaml) と対応する iframe ソースの組。
-_IFRAME_URL_MAP: dict[str, str] = {
-    "https://douai-tokushima.com/stray/": ("https://douai-tokushima.com/animalinfo/list1/"),
+# 収容中は種別ごとに 3 つの iframe に分かれるため、値は常にタプルで持つ。
+_IFRAME_URL_MAP: dict[str, tuple[str, ...]] = {
+    "https://douai-tokushima.com/stray/": (
+        "https://douai-tokushima.com/animalinfo/list1_1/",
+        "https://douai-tokushima.com/animalinfo/list1_2/",
+        "https://douai-tokushima.com/animalinfo/list1_3/",
+    ),
     "https://douai-tokushima.com/transfer/doglist": (
-        "https://douai-tokushima.com/animalinfo/list4_1"
+        "https://douai-tokushima.com/animalinfo/list4_1",
     ),
     "https://douai-tokushima.com/transfer/catlist": (
-        "https://douai-tokushima.com/animalinfo/list4_2"
+        "https://douai-tokushima.com/animalinfo/list4_2",
     ),
 }
+
+# iframe URL のパス断片 → その iframe に載る動物の species。
+# 収容中の「種類」セルは「雑種」固定で犬猫が判別できないため、
+# どの iframe から取れた行かで確定させる (空文字 = 判別不能)。
+_IFRAME_SPECIES: tuple[tuple[str, str], ...] = (
+    ("list1_1", "犬"),
+    ("list1_2", "猫"),
+    ("list1_3", ""),
+    ("list4_1", "犬"),
+    ("list4_2", "猫"),
+)
 
 
 # サイト名 → species のヒント (収容中ページは犬猫混在のため空文字、
@@ -78,7 +130,10 @@ _LABEL_CANDIDATES: dict[str, tuple[str, ...]] = {
     "color": ("毛色",),
     # 譲渡側は table に体格列が無いが、収容中側は体格列がある
     "size": ("体格",),
-    "shelter_date": ("発見日",),
+    # 収容中ページの実表記は「収容日」。adapter 実装時に想定していた「発見日」は
+    # 実サイトに存在せず、shelter_date が常に空 → normalizer が収集日に
+    # フォールバックしていた (T135 で実 HTML を確認して発覚。T131 と同型)。
+    "shelter_date": ("収容日", "発見日"),
     # 譲渡カード (f_a3) のみ存在する自由記述フィールド。
     # color / size を直接持たないため、ここから体重・色キーワードを推定する。
     "etcs": ("その他の情報",),
@@ -188,49 +243,113 @@ class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
     # 契約として宣言だけしておく (基底のチェックは ROW_SELECTOR のみ)。
     COLUMN_FIELDS: ClassVar[dict[int, str]] = {}
 
+    # 全件一覧のページ送り。`<div class="pagination"><div class="next">
+    # <a href="index.cgi?Start=10">` 形式 (2026-09-04 実査)。
+    NEXT_PAGE_SELECTOR: ClassVar[str] = ".pagination .next a"
+    # 収容中・犬は実測 8 ページ。増加に余裕を持たせて 20 で打ち切る。
+    MAX_LIST_PAGES: ClassVar[int] = 20
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._entries_cache: list[_RowEntry] | None = None
+
     # ─────────────────── 抽出ロジック ───────────────────
 
-    def _load_rows(self) -> list[Tag]:
-        """iframe URL を直接 fetch して `<li>` 行をキャッシュ
+    def _load_entries(self) -> list[_RowEntry]:
+        """対応する全 iframe を、ページ送りを辿りながら読み込む
 
-        site_config.list_url はラッパページを指すが、実データは iframe
-        内の別ドキュメント。Playwright で iframe URL に直接アクセスし
-        JS 実行後の HTML を取り出す。
+        site_config.list_url はラッパページを指すが、実データは iframe 内の
+        別ドキュメント。収容中は種別ごとに 3 つの iframe に分かれ、かつ犬は
+        `index.cgi?Start=N` で複数ページに分割されている。
 
-        基底 (`SinglePageTableAdapter._load_rows`) の `list_url` 取得を
-        iframe URL に差し替える点だけが異なる。
+        上限到達・循環検知いずれで打ち切った場合も `self.list_truncated` を
+        立てる。CollectorService はこれを見て prune_disappeared をスキップする
+        (T059)。部分集合のまま消滅判定すると、未取得ページに載っている実在個体を
+        誤って公開から削除してしまうため。
         """
-        if self._rows_cache is not None:
-            return self._rows_cache
+        if self._entries_cache is not None:
+            return self._entries_cache
 
-        iframe_url = self._iframe_url()
-        if self._html_cache is None:
-            self._html_cache = self._http_get(iframe_url)
+        entries: list[_RowEntry] = []
+        truncated = False
+        used_keys: set[str] = set()
 
-        soup = BeautifulSoup(self._html_cache, "html.parser")
-        rows = soup.select(self.ROW_SELECTOR)
-        rows = [r for r in rows if isinstance(r, Tag)]
-        self._rows_cache = rows
-        return rows
+        for iframe_url in self._iframe_urls():
+            species_hint = self._species_for_iframe(iframe_url)
+            visited: set[str] = set()
+            page_url = iframe_url
+            for _ in range(self.MAX_LIST_PAGES):
+                if page_url in visited:
+                    truncated = True
+                    logger.warning(
+                        "[%s] 一覧のページ送りで循環を検知しました "
+                        "(既訪問ページへの再遷移: %s)",
+                        self.site_config.name,
+                        page_url,
+                    )
+                    break
+                visited.add(page_url)
+
+                html = self._http_get(page_url)
+                soup = BeautifulSoup(html, "html.parser")
+                for row in soup.select(self.ROW_SELECTOR):
+                    if not isinstance(row, Tag):
+                        continue
+                    key = self._stable_key(row, used_keys, len(entries))
+                    used_keys.add(key)
+                    entries.append(
+                        _RowEntry(
+                            row=row,
+                            iframe_url=iframe_url,
+                            species_hint=species_hint,
+                            key=key,
+                        )
+                    )
+
+                next_link = soup.select_one(self.NEXT_PAGE_SELECTOR)
+                next_href = next_link.get("href") if isinstance(next_link, Tag) else None
+                if not next_href or not isinstance(next_href, str):
+                    break
+                page_url = self._absolute_url(next_href, base=page_url)
+            else:
+                truncated = True
+                logger.warning(
+                    "[%s] 一覧のページ送りが上限 %d ページに達しました: %s",
+                    self.site_config.name,
+                    self.MAX_LIST_PAGES,
+                    page_url,
+                )
+
+        self.list_truncated = truncated
+        self._entries_cache = entries
+        return entries
+
+    def _load_rows(self) -> list[Tag]:
+        """基底 (`SinglePageTableAdapter`) 互換の行リスト"""
+        return [e.row for e in self._load_entries()]
 
     def fetch_animal_list(self) -> list[tuple[str, str]]:
-        """動物一覧 (在庫 0 件でも ParsingError を出さず空リストを返す)"""
-        rows = self._load_rows()
+        """動物一覧 (在庫 0 件でも ParsingError を出さず空リストを返す)
+
+        仮想 URL は `<iframe URL>#animal=<安定キー>`。`#row=N` は掲載順が
+        変わるたびに既存個体の URL がずれ、diff_detector が別個体の新規登録と
+        みなして delete+insert する (= shelter_date 破壊・SNS 再投稿) ため
+        使わない (T057 山梨・T066 香川と同型・T135)。
+        """
         category = self.site_config.category
-        # 仮想 URL の base は iframe URL にして source_url を実データ側に揃える。
-        base = self._iframe_url()
-        return [(f"{base}#row={i}", category) for i in range(len(rows))]
+        return [(f"{e.iframe_url}#animal={e.key}", category) for e in self._load_entries()]
 
     def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
-        """`#row=N` に対応する `<li>` から aria-label でフィールドを抽出"""
-        rows = self._load_rows()
-        idx = self._parse_row_index(virtual_url)
-        if idx >= len(rows):
+        """`#animal=<キー>` に対応する `<li>` から aria-label でフィールドを抽出"""
+        entries = self._load_entries()
+        key = self._parse_animal_key(virtual_url)
+        entry = next((e for e in entries if e.key == key), None)
+        if entry is None:
             raise ParsingError(
-                f"row index {idx} out of range (total {len(rows)})",
+                f"animal key が一覧に見つかりません: {key} (total {len(entries)})",
                 url=virtual_url,
             )
-        row = rows[idx]
+        row = entry.row
 
         fields: dict[str, str] = {}
         for name, labels in _LABEL_CANDIDATES.items():
@@ -247,13 +366,19 @@ class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
             # 収容中ページ (hint="") は種類セルが「雑種」で犬猫不明。ソースは
             # 犬/猫を画像パス (list1_1=犬 / list1_2=猫) と推定年齢 (若犬/若猫)
             # で明示分類しているため、これを拾って確定する (色推測ではない)。
+            elif entry.species_hint:
+                # 収容中は iframe が種別ごとに分かれている (list1_1=犬 / list1_2=猫)
+                # ため、どの iframe から取れた行かで確定する。
+                fields["species"] = entry.species_hint
             elif inferred := self._infer_sheltered_species(row, fields.get("age", "")):
                 fields["species"] = inferred
 
-        # 譲渡カード (`f_a3`) は所在地セルを持たない。
-        # その他センターからの動物はセンター施設に収容されているため、
-        # location は固定で「徳島県動物愛護管理センター」を使う。
-        location = "徳島県動物愛護管理センター"
+        # 収容中カードは個体ごとの「収容場所」を持つ (例: 吉野川市山川町井上)。
+        # 譲渡カード (`f_a3`) は所在地セルを持たないため、その場合のみ
+        # センター施設名にフォールバックする。
+        location = self._extract_location(row)
+        if not location:
+            location = "徳島県動物愛護管理センター"
 
         # 全フィールド空 = HTML 構造が想定外
         if not any(fields.values()):
@@ -306,7 +431,7 @@ class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
                 shelter_date=fields.get("shelter_date", ""),
                 location=location,
                 phone=phone,
-                image_urls=self._extract_row_images(row, virtual_url),
+                image_urls=self._extract_row_images(row, entry.iframe_url),
                 source_url=virtual_url,
                 category=category,
             )
@@ -315,8 +440,10 @@ class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
 
     # ─────────────────── ヘルパー ───────────────────
 
-    def _iframe_url(self) -> str:
-        """site_config.list_url に対応する iframe URL を返す
+    def _iframe_urls(self) -> tuple[str, ...]:
+        """site_config.list_url に対応する iframe URL 群を返す
+
+        収容中は種別ごとに 3 つ、譲渡は 1 つ。
 
         Raises:
             ParsingError: 未知の list_url に対しては明示的に失敗させる
@@ -331,6 +458,61 @@ class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
             f"未対応の list_url: {url} (iframe URL マッピングなし)",
             url=url,
         )
+
+    def _extract_location(self, row: Tag) -> str:
+        """`<td aria-label="収容場所">` の先頭行だけを location として返す
+
+        このセルは `吉野川市山川町井上<br>近隣住民の方からご連絡を受け、28日
+        当センターに収容いたしました。` のように、地名のあとに `<br>` 区切りで
+        経緯の説明文が続く。セル全体を取ると location に長い説明が混ざるため、
+        最初の `<br>` より前だけを採用する。
+        """
+        td = row.find("td", attrs={"aria-label": "収容場所"})
+        if not isinstance(td, Tag):
+            return ""
+        parts: list[str] = []
+        for node in td.children:
+            if isinstance(node, Tag) and node.name == "br":
+                break
+            text = node.get_text(strip=True) if isinstance(node, Tag) else str(node).strip()
+            if text:
+                parts.append(text)
+        return " ".join(parts).strip()
+
+    @staticmethod
+    def _species_for_iframe(iframe_url: str) -> str:
+        """iframe URL のパス断片から、そこに載る動物の species を返す"""
+        for marker, species in _IFRAME_SPECIES:
+            if marker in iframe_url:
+                return species
+        return ""
+
+    @staticmethod
+    def _stable_key(row: Tag, used: set[str], fallback_index: int) -> str:
+        """掲載順が変わっても不変な個体キーを返す
+
+        写真ファイル名 (`photo/photo2-17878928180.JPG`) は個体ごとに一意で、
+        掲載順にも PDF 差し替えにも影響されないため安定キーに使える
+        (T066 香川の個体管理番号と同じ役割)。写真が無い個体や、万一同じ
+        ファイル名が複数行に現れた場合は通し番号にフォールバックする
+        (このフォールバックは従来どおり不安定)。
+        """
+        for img in row.find_all("img"):
+            src = img.get("src")
+            if not isinstance(src, str) or not src:
+                continue
+            stem = src.rsplit("/", 1)[-1].rsplit(".", 1)[0]
+            if stem and stem not in used:
+                return stem
+        return f"row{fallback_index}"
+
+    @staticmethod
+    def _parse_animal_key(virtual_url: str) -> str:
+        """`<iframe URL>#animal=<キー>` からキーを取り出す"""
+        fragment = urlparse(virtual_url).fragment
+        if not fragment.startswith("animal="):
+            raise ParsingError(f"無効な仮想 URL: {virtual_url} (#animal=<キー> 形式が必要)")
+        return fragment.split("=", 1)[1]
 
     def _extract_by_aria_labels(self, row: Tag, labels: tuple[str, ...]) -> str:
         """`<td aria-label="...">値</td>` から値を抽出
