@@ -1,24 +1,23 @@
-"""WannyanNaviAichiAdapter のテスト
+"""WannyanNaviAichiAdapter のテスト (T123 再設計版)
 
-愛知県わんにゃんナビ (wannyan-navi.pref.aichi.jp) 用 rule-based adapter
-の動作を検証する。
+愛知県わんにゃんナビ (wannyan-navi.pref.aichi.jp) は Bubble.io 製 SPA で、
+一覧カードに `<a href>` が一切存在しない (実サイトを Playwright で
+レンダリングして確認済み)。そのため本 adapter は:
 
-- Playwright で取得された一覧 HTML から詳細リンク候補を抽出
-  (`/dog/...`, `/cat/...`, `/animal/...` 等の動物詳細パス)
-- ナビゲーションリンク (`/about`, `/contact`, `/login`, SNS 等) が
-  除外されること
-- 0 件 (詳細リンクが 1 件も無い) の場合に空リストを返すこと
-- 詳細ページ HTML を模した最小 HTML (`<th>/<td>` テーブルおよび
-  `<td>/<td>` 2 列テーブル) からの RawAnimalData 構築
-- 動物種別 (犬/猫) が detail URL のパス (`/dog`/`/cat`) から
-  推定されること
-- サイト名「愛知県わんにゃんナビ」が SiteAdapterRegistry に
-  登録されていること
-- `PlaywrightFetchMixin` を継承していること
+- `fetch_animal_list`: 一覧ページ読み込み時に発生する elasticsearch
+  レスポンス (`/elasticsearch/search`, `/elasticsearch/msearch`) から
+  record id (`_id`) を収集し、detail URL
+  (`?page=list_dc_m&no=<id>`) を組み立てる。
+  `_collect_record_ids_via_network` (Playwright 呼び出し本体) を patch し、
+  Playwright 自体は呼び出さない。
+- `extract_animal_details`: `_http_get` を patch し、detail ページの
+  実測 DOM 構造 (Bubble のフラットな `.bubble-element.Text` / `.HTML`
+  要素の並び。「基本情報」「特徴」見出しをアンカーに周辺テキストを分類)
+  を模した固定 HTML から RawAnimalData を構築する。
 
-NOTE: Playwright 自体は呼び出さず、`_http_get` を patch して固定 HTML を
-返すことで JS 実行を擬似する。これは熊本市・福岡市等の同パターン
-adapter テストと同じ方針。
+NOTE: フィールド HTML は 2026-09-03 に実サイトを Playwright で
+レンダリングして観測した実際の DOM 構造 (クラス名は除きタグ構造/文言の
+出現順) を再現したもの。
 """
 
 from __future__ import annotations
@@ -32,119 +31,61 @@ from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.wannyan_navi_aichi import (
     WannyanNaviAichiAdapter,
 )
-from data_collector.adapters.rule_based.wordpress_list import (
-    WordPressListAdapter,
-)
+from data_collector.adapters.rule_based.wordpress_list import WordPressListAdapter
 from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
 
-# 一覧ページ HTML (Bubble.io JS 描画後を想定)。
-# 動物カード `<a>` と、混入し得るナビゲーション/SNS リンクを併記。
-LIST_HTML = """
+# 実測 (2026-09-03) の detail ページ本文相当。見出し「基本情報」「特徴」を
+# アンカーに、間のテキストを [管理番号, 場所, 品種, 毛色, 性別, 年齢] の順で
+# 並べた実際の表示順を再現する。
+DETAIL_HTML_CAT = """
 <html><body>
-<header>
-  <a href="/about">サイトについて</a>
-  <a href="/contact">お問合せ</a>
-  <a href="/login">ログイン</a>
-</header>
-<main>
-  <div class="animal-card">
-    <a href="/dog/abc123">
-      <img src="https://cdn.bubble.io/animal/abc123.jpg" alt="犬">
-      <p>柴犬</p>
-    </a>
-  </div>
-  <div class="animal-card">
-    <a href="/dog/def456">
-      <img src="https://cdn.bubble.io/animal/def456.jpg" alt="犬">
-      <p>雑種</p>
-    </a>
-  </div>
-  <div class="animal-card">
-    <a href="/cat/ghi789">
-      <img src="https://cdn.bubble.io/animal/ghi789.jpg" alt="猫">
-      <p>三毛猫</p>
-    </a>
-  </div>
-</main>
-<footer>
-  <a href="https://twitter.com/aichi_pref">公式X</a>
-  <a href="https://www.facebook.com/aichi">Facebook</a>
-  <a href="/policy">プライバシーポリシー</a>
-  <a href="/sitemap">サイトマップ</a>
-</footer>
+<div class="bubble-element Text"><div>掲載日：2026/08/27</div></div>
+<div class="bubble-element Text"><div>譲渡可能</div></div>
+<div class="bubble-element Text"><div>撮影日：2026/08/25（5歳2ヵ月）</div></div>
+<div class="bubble-element Text"><div>基本情報</div></div>
+<div class="bubble-element Text"><div>No . 尾263014</div></div>
+<div class="bubble-element Text"><div>尾張支所(一宮市)</div></div>
+<div class="bubble-element Text"><div>雑種</div></div>
+<div class="bubble-element Text"><div>白黒</div></div>
+<div class="bubble-element Text"><div>メス</div></div>
+<div class="bubble-element HTML"><div>5歳3ヵ月</div></div>
+<div class="bubble-element Text"><div>特徴</div></div>
+<div class="bubble-element Text"><div>センターでの生活も長くなりましたが、なかなか慣れてくれません。管理番号　稲6</div></div>
+<div class="bubble-element Text"><div>譲渡をご希望の方</div></div>
+<div class="bubble-element Text"><div>猫の飼い方講習会へ</div></div>
+<div class="bubble-element Text"><div>お問い合わせ</div></div>
+<div class="bubble-element Text"><div>尾張支所(一宮市)</div></div>
+<div class="bubble-element Text"><div>0586-78-2595</div></div>
+<div class="slickcarousel-Carousel">
+  <img src="https://c25bc61f28370d4f1d311a9752f3a7a0.cdn.bubble.io/cdn-cgi/image/w=1024,h=768/f1787632746587x721823384638467500/IMG_0121.jpeg">
+  <img src="https://c25bc61f28370d4f1d311a9752f3a7a0.cdn.bubble.io/cdn-cgi/image/w=128,h=/f1787632746587x721823384638467500/IMG_0121.jpeg">
+  <img src="https://c25bc61f28370d4f1d311a9752f3a7a0.cdn.bubble.io/cdn-cgi/image/w=1024,h=768/f1787633707279x949826051516787800/IMG_0122.jpeg">
+</div>
+<img src="https://c25bc61f28370d4f1d311a9752f3a7a0.cdn.bubble.io/f1776046529659x681337675419478700/logo.png">
 </body></html>
 """
 
-# 0 件状態の HTML (動物詳細リンクが存在しない)。
-LIST_HTML_EMPTY = """
-<html><body>
-<main>
-  <p>現在、譲渡対象の動物はいません。</p>
-</main>
-<footer>
-  <a href="/about">サイトについて</a>
-</footer>
-</body></html>
-"""
-
-# 完全に空の HTML (何のリンクも無い)。
-LIST_HTML_NO_LINKS = "<html><body><p>読み込み中…</p></body></html>"
-
-# 詳細ページ HTML (`<th>/<td>` テーブル形式)。
+# 犬の場合の講習会リンク文言違い (実サイトの犬個体 3 件で動作確認済み)。
 DETAIL_HTML_DOG = """
 <html><body>
-<header>
-  <img src="https://cdn.bubble.io/header_logo.png" alt="ロゴ">
-</header>
-<main>
-  <table>
-    <tbody>
-      <tr><th>種類</th><td>柴犬</td></tr>
-      <tr><th>性別</th><td>オス</td></tr>
-      <tr><th>年齢</th><td>3歳</td></tr>
-      <tr><th>毛色</th><td>赤</td></tr>
-      <tr><th>大きさ</th><td>中型</td></tr>
-      <tr><th>収容日</th><td>2026年4月10日</td></tr>
-      <tr><th>場所</th><td>愛知県動物愛護センター</td></tr>
-      <tr><th>連絡先</th><td>0568-22-8311</td></tr>
-    </tbody>
-  </table>
-  <div class="photo">
-    <img src="https://cdn.bubble.io/animal/abc123_1.jpg" alt="犬写真1">
-    <img src="https://cdn.bubble.io/animal/abc123_2.jpg" alt="犬写真2">
-  </div>
-</main>
-<footer>
-  <img src="https://cdn.bubble.io/footer_logo.png" alt="footer logo">
-</footer>
+<div class="bubble-element Text"><div>掲載日：2026/07/10</div></div>
+<div class="bubble-element Text"><div>基本情報</div></div>
+<div class="bubble-element Text"><div>No . 本264001</div></div>
+<div class="bubble-element Text"><div>本所</div></div>
+<div class="bubble-element Text"><div>柴犬</div></div>
+<div class="bubble-element Text"><div>茶</div></div>
+<div class="bubble-element Text"><div>オス</div></div>
+<div class="bubble-element HTML"><div>2歳0ヵ月</div></div>
+<div class="bubble-element Text"><div>特徴</div></div>
+<div class="bubble-element Text"><div>人懐っこい男の子です。</div></div>
+<div class="bubble-element Text"><div>犬の飼い方講習会へ</div></div>
+<div class="bubble-element Text"><div>0565-58-2323</div></div>
 </body></html>
 """
 
-# 詳細ページ HTML (`<td>/<td>` 2 列テーブル形式)。
-DETAIL_HTML_CAT_2COL = """
-<html><body>
-<table>
-  <tr><td>種類</td><td>三毛猫</td></tr>
-  <tr><td>性別</td><td>メス</td></tr>
-  <tr><td>毛色</td><td>三毛</td></tr>
-  <tr><td>収容日</td><td>2026年4月22日</td></tr>
-  <tr><td>場所</td><td>愛知県動物愛護センター</td></tr>
-</table>
-<img src="https://cdn.bubble.io/animal/ghi789.jpg" alt="猫写真">
-</body></html>
-"""
-
-# 詳細ページ HTML (`<dl>/<dt>/<dd>` 形式)。
-DETAIL_HTML_DL = """
-<html><body>
-<dl>
-  <dt>性別</dt><dd>オス</dd>
-  <dt>年齢</dt><dd>5歳</dd>
-  <dt>毛色</dt><dd>白</dd>
-</dl>
-</body></html>
-"""
+# 「基本情報」見出しが見つからない = 想定外の構造崩壊。
+DETAIL_HTML_NO_BASIC_INFO = "<html><body><p>読み込み中…</p></body></html>"
 
 
 def _site_aichi() -> SiteConfig:
@@ -152,7 +93,7 @@ def _site_aichi() -> SiteConfig:
         name="愛知県わんにゃんナビ",
         prefecture="愛知県",
         prefecture_code="23",
-        list_url="https://wannyan-navi.pref.aichi.jp/",
+        list_url="https://wannyan-navi.pref.aichi.jp/?page=list_dc",
         category="adoption",
     )
 
@@ -161,238 +102,352 @@ class TestWannyanNaviAichiAdapterClassStructure:
     """継承構造とクラス定数"""
 
     def test_inherits_playwright_fetch_mixin(self):
-        """JS 必須サイト対応のため PlaywrightFetchMixin を継承している"""
         assert issubclass(WannyanNaviAichiAdapter, PlaywrightFetchMixin)
 
     def test_inherits_wordpress_list_adapter(self):
-        """list+detail 構造の汎用基底 WordPressListAdapter を継承している"""
         assert issubclass(WannyanNaviAichiAdapter, WordPressListAdapter)
 
     def test_wait_selector_configured(self):
-        """Playwright の WAIT_SELECTOR が設定されている (None ではない)"""
         assert WannyanNaviAichiAdapter.WAIT_SELECTOR is not None
         assert WannyanNaviAichiAdapter.WAIT_SELECTOR != ""
 
-    def test_list_link_selector_defined(self):
-        """LIST_LINK_SELECTOR が空文字でない"""
-        assert WannyanNaviAichiAdapter.LIST_LINK_SELECTOR
-        assert WannyanNaviAichiAdapter.LIST_LINK_SELECTOR != ""
+    def test_image_selector_targets_carousel(self):
+        """カルーセル外のロゴ/アイコンを混入させないため carousel 限定"""
+        assert "slickcarousel-Carousel" in WannyanNaviAichiAdapter.IMAGE_SELECTOR
 
 
-class TestWannyanNaviAichiAdapterListExtraction:
-    """list ページからの detail URL 抽出"""
+class TestWannyanNaviAichiAdapterFetchAnimalList:
+    """一覧: elasticsearch レスポンスから収集した record id で detail URL 構築"""
 
-    def test_fetch_animal_list_extracts_detail_urls(self):
-        """`/dog/...` `/cat/...` パスの a タグから detail URL を抽出する"""
+    def test_fetch_animal_list_builds_detail_urls_from_ids(self):
         adapter = WannyanNaviAichiAdapter(_site_aichi())
-
-        with patch.object(adapter, "_http_get", return_value=LIST_HTML):
+        with patch.object(
+            adapter,
+            "_collect_record_ids_via_network",
+            return_value=["1787633087222x344897391285501950", "1787632379255x912025727444451300"],
+        ):
             result = adapter.fetch_animal_list()
 
-        assert len(result) == 3
+        assert len(result) == 2
         urls = [u for u, _cat in result]
-        # 動物詳細パスのみ含まれる
-        assert any("/dog/abc123" in u for u in urls)
-        assert any("/dog/def456" in u for u in urls)
-        assert any("/cat/ghi789" in u for u in urls)
-        # ナビゲーション/SNS は除外されている
-        assert all("/about" not in u for u in urls)
-        assert all("/contact" not in u for u in urls)
-        assert all("/login" not in u for u in urls)
-        assert all("/policy" not in u for u in urls)
-        assert all("/sitemap" not in u for u in urls)
-        assert all("twitter.com" not in u for u in urls)
-        assert all("facebook.com" not in u for u in urls)
-        # 全 URL が絶対 URL になっている
-        assert all(u.startswith("http") for u in urls)
-        # category は site_config.category 由来 (adoption)
+        assert (
+            "https://wannyan-navi.pref.aichi.jp/?page=list_dc_m&no=1787633087222x344897391285501950"
+            in urls
+        )
+        assert (
+            "https://wannyan-navi.pref.aichi.jp/?page=list_dc_m&no=1787632379255x912025727444451300"
+            in urls
+        )
         assert all(cat == "adoption" for _u, cat in result)
 
-    def test_fetch_animal_list_dedupes_urls(self):
-        """同一 URL が重複していても 1 件に集約される"""
-        dup_html = """
-        <html><body>
-        <a href="/dog/xx">A</a>
-        <a href="/dog/xx">A again</a>
-        </body></html>
-        """
+    def test_fetch_animal_list_dedupes_ids(self):
         adapter = WannyanNaviAichiAdapter(_site_aichi())
-        with patch.object(adapter, "_http_get", return_value=dup_html):
+        with patch.object(
+            adapter,
+            "_collect_record_ids_via_network",
+            return_value=["dup-id", "dup-id"],
+        ):
             result = adapter.fetch_animal_list()
-        urls = [u for u, _cat in result]
-        assert len(urls) == 1
-        assert len(urls) == len(set(urls))
+        assert len(result) == 1
 
-    def test_fetch_animal_list_returns_empty_for_no_animals(self):
-        """動物詳細リンクが 1 件も無いときは空リストを返す"""
+    def test_fetch_animal_list_returns_empty_for_zero_ids(self):
+        """record id が 1 件も観測できない = 譲渡対象 0 件の真のゼロとして扱う"""
         adapter = WannyanNaviAichiAdapter(_site_aichi())
-        with patch.object(adapter, "_http_get", return_value=LIST_HTML_EMPTY):
+        with patch.object(adapter, "_collect_record_ids_via_network", return_value=[]):
             result = adapter.fetch_animal_list()
         assert result == []
 
-    def test_fetch_animal_list_returns_empty_for_no_links_at_all(self):
-        """そもそも `<a>` が無い HTML でも空リスト"""
+    def test_collect_record_ids_via_network_harvests_search_hits(self):
+        """`/elasticsearch/search` (単数検索) レスポンスから _id を収集する"""
         adapter = WannyanNaviAichiAdapter(_site_aichi())
-        with patch.object(adapter, "_http_get", return_value=LIST_HTML_NO_LINKS):
-            result = adapter.fetch_animal_list()
-        assert result == []
+
+        class _FakeResponse:
+            url = "https://wannyan-navi.pref.aichi.jp/elasticsearch/search"
+
+            def json(self):
+                return {
+                    "hits": {
+                        "total": 2,
+                        "hits": [
+                            {"_id": "id-a", "_source": {}},
+                            {"_id": "id-b", "_source": {}},
+                        ],
+                    }
+                }
+
+        class _FakePage:
+            def __init__(self):
+                self._handler = None
+
+            def on(self, event, handler):
+                assert event == "response"
+                self._handler = handler
+
+            def goto(self, url, wait_until=None, timeout=None):
+                # 実際のブラウザ挙動 (レスポンス受信 → on_response 発火) を模す
+                self._handler(_FakeResponse())
+
+            def wait_for_timeout(self, ms):
+                pass
+
+        class _FakeContext:
+            def new_page(self):
+                return _FakePage()
+
+        class _FakeBrowser:
+            def new_context(self, user_agent=None):
+                return _FakeContext()
+
+            def close(self):
+                pass
+
+        class _FakeChromium:
+            def launch(self, headless=True):
+                return _FakeBrowser()
+
+        class _FakePlaywrightCtx:
+            def __enter__(self):
+                obj = type("P", (), {"chromium": _FakeChromium()})()
+                return obj
+
+            def __exit__(self, *exc):
+                return False
+
+        with patch(
+            "data_collector.adapters.rule_based.sites.wannyan_navi_aichi.sync_playwright",
+            return_value=_FakePlaywrightCtx(),
+        ):
+            ids = adapter._collect_record_ids_via_network()
+
+        assert ids == ["id-a", "id-b"]
+
+    def test_collect_record_ids_via_network_harvests_msearch_responses(self):
+        """`/elasticsearch/msearch` (複数検索まとめ) の入れ子構造からも収集する"""
+        adapter = WannyanNaviAichiAdapter(_site_aichi())
+
+        class _FakeResponse:
+            url = "https://wannyan-navi.pref.aichi.jp/elasticsearch/msearch"
+
+            def json(self):
+                return {
+                    "responses": [
+                        {"hits": {"hits": [{"_id": "id-x"}]}},
+                        {"hits": {"hits": [{"_id": "id-y"}, {"_id": "id-x"}]}},
+                    ]
+                }
+
+        class _FakePage:
+            def on(self, event, handler):
+                self._handler = handler
+
+            def goto(self, url, wait_until=None, timeout=None):
+                self._handler(_FakeResponse())
+
+            def wait_for_timeout(self, ms):
+                pass
+
+        class _FakeContext:
+            def new_page(self):
+                return _FakePage()
+
+        class _FakeBrowser:
+            def new_context(self, user_agent=None):
+                return _FakeContext()
+
+            def close(self):
+                pass
+
+        class _FakeChromium:
+            def launch(self, headless=True):
+                return _FakeBrowser()
+
+        class _FakePlaywrightCtx:
+            def __enter__(self):
+                return type("P", (), {"chromium": _FakeChromium()})()
+
+            def __exit__(self, *exc):
+                return False
+
+        with patch(
+            "data_collector.adapters.rule_based.sites.wannyan_navi_aichi.sync_playwright",
+            return_value=_FakePlaywrightCtx(),
+        ):
+            ids = adapter._collect_record_ids_via_network()
+
+        # 重複 "id-x" は 1 件に集約され、ソート済みで返る
+        assert ids == sorted({"id-x", "id-y"})
+
+    def test_collect_record_ids_via_network_ignores_non_elasticsearch_responses(self):
+        adapter = WannyanNaviAichiAdapter(_site_aichi())
+
+        class _FakeResponse:
+            url = "https://wannyan-navi.pref.aichi.jp/api/1.1/init/data"
+
+            def json(self):
+                raise AssertionError("elasticsearch 以外の URL では json() を呼ばない想定")
+
+        class _FakePage:
+            def on(self, event, handler):
+                self._handler = handler
+
+            def goto(self, url, wait_until=None, timeout=None):
+                self._handler(_FakeResponse())
+
+            def wait_for_timeout(self, ms):
+                pass
+
+        class _FakeContext:
+            def new_page(self):
+                return _FakePage()
+
+        class _FakeBrowser:
+            def new_context(self, user_agent=None):
+                return _FakeContext()
+
+            def close(self):
+                pass
+
+        class _FakeChromium:
+            def launch(self, headless=True):
+                return _FakeBrowser()
+
+        class _FakePlaywrightCtx:
+            def __enter__(self):
+                return type("P", (), {"chromium": _FakeChromium()})()
+
+            def __exit__(self, *exc):
+                return False
+
+        with patch(
+            "data_collector.adapters.rule_based.sites.wannyan_navi_aichi.sync_playwright",
+            return_value=_FakePlaywrightCtx(),
+        ):
+            ids = adapter._collect_record_ids_via_network()
+
+        assert ids == []
 
 
 class TestWannyanNaviAichiAdapterDetailExtraction:
     """detail ページからの RawAnimalData 構築"""
 
-    def test_extract_animal_details_returns_raw_data_dog(self, assert_raw_animal):
-        """`<th>/<td>` テーブルの詳細ページから各フィールドが抽出できる"""
+    def test_extract_animal_details_returns_raw_data_cat(self, assert_raw_animal):
         adapter = WannyanNaviAichiAdapter(_site_aichi())
-        detail_url = "https://wannyan-navi.pref.aichi.jp/dog/abc123"
-        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_DOG):
+        detail_url = "https://wannyan-navi.pref.aichi.jp/?page=list_dc_m&no=abc123"
+        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_CAT):
             raw = adapter.extract_animal_details(detail_url, category="adoption")
 
         assert isinstance(raw, RawAnimalData)
         assert_raw_animal(
             raw,
-            species="柴犬",
-            sex="オス",
-            age="3歳",
-            color="赤",
-            size="中型",
-            shelter_date="2026年4月10日",
-            location="愛知県動物愛護センター",
-            phone="0568-22-8311",
+            species="猫",
+            sex="メス",
+            age="5歳3ヵ月",
+            color="白黒",
+            shelter_date="2026/08/27",
+            location="尾張支所(一宮市)",
+            phone="0586-78-2595",
             category="adoption",
         )
-        # 動物写真 2 枚は採用、ロゴ画像は除外される
-        assert len(raw.image_urls) == 2
-        assert all("logo" not in u.lower() for u in raw.image_urls)
-        assert all("/animal/abc123" in u for u in raw.image_urls)
+        assert raw.breed == "雑種"
+        assert raw.management_number == "尾263014"
+        assert "稲6" in raw.description
 
         # normalize() 経由でも主要フィールドが期待通りに変換されること
         # (T042/T114: raw のみの確認では normalize 段の退行を検知できない)。
-        # 実際に adapter.normalize() を実行して確認した値: raw.species="柴犬"
-        # は「犬」の文字を含むため正しく "犬" に変換される (city_sasebo.py の
-        # "雑種" のような犬猫の文字を含まない品種名では誤分類されるリスクが
-        # 残る点は本 adapter の未検証範囲)。sex "オス"→"男の子"、
-        # age "3歳"→36ヶ月、shelter_date "2026年4月10日"→date(2026, 4, 10)。
         animal_data = adapter.normalize(raw)
-        assert animal_data.species == "犬"
-        assert animal_data.sex == "男の子"
-        assert animal_data.age_months == 36
-        assert animal_data.size == "中型"
-        assert animal_data.shelter_date.isoformat() == "2026-04-10"
-        assert animal_data.location == "愛知県動物愛護センター"
-        assert animal_data.phone == "0568-22-8311"
+        assert animal_data.species == "猫"
+        assert animal_data.sex == "女の子"
+        assert animal_data.age_months == 63  # "5歳3ヵ月" = 5*12+3
+        assert animal_data.color == "白黒"
+        assert animal_data.shelter_date.isoformat() == "2026-08-27"
+        assert animal_data.location == "尾張支所(一宮市)"
+        assert animal_data.phone == "0586-78-2595"
 
-    def test_extract_animal_details_supports_two_column_table(self, assert_raw_animal):
-        """`<th>` を持たない 2 列テーブルからも値を抽出できる"""
+    def test_extract_animal_details_dog_uses_dog_guide_link(self):
+        """「犬の飼い方講習会へ」から species=犬 と判定される"""
         adapter = WannyanNaviAichiAdapter(_site_aichi())
-        detail_url = "https://wannyan-navi.pref.aichi.jp/cat/ghi789"
-        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_CAT_2COL):
+        detail_url = "https://wannyan-navi.pref.aichi.jp/?page=list_dc_m&no=dog001"
+        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_DOG):
             raw = adapter.extract_animal_details(detail_url, category="adoption")
 
-        assert isinstance(raw, RawAnimalData)
-        assert_raw_animal(
-            raw,
-            species="三毛猫",
-            sex="メス",
-            color="三毛",
-            shelter_date="2026年4月22日",
-            location="愛知県動物愛護センター",
-            category="adoption",
-        )
-
-    def test_extract_animal_details_supports_dl_dt_dd(self):
-        """`<dl>/<dt>/<dd>` 形式の詳細ページからも抽出できる"""
-        adapter = WannyanNaviAichiAdapter(_site_aichi())
-        detail_url = "https://wannyan-navi.pref.aichi.jp/dog/dl-style"
-        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_DL):
-            raw = adapter.extract_animal_details(detail_url, category="adoption")
+        assert raw.species == "犬"
+        assert raw.breed == "柴犬"
+        assert raw.color == "茶"
         assert raw.sex == "オス"
-        assert raw.age == "5歳"
-        assert raw.color == "白"
-        # species ラベルは無いが detail URL `/dog/...` から「犬」が補完される
-        assert raw.species == "犬"
+        assert raw.age == "2歳0ヵ月"
+        assert raw.location == "本所"
+        assert raw.management_number == "本264001"
+        assert raw.phone == "0565-58-2323"
 
-    def test_extract_animal_details_infers_species_from_url_dog(self):
-        """species ラベル不在でも detail URL `/dog/` から「犬」が補完される"""
-        detail_html_no_species = """
-        <html><body>
-        <table>
-          <tr><th>性別</th><td>オス</td></tr>
-          <tr><th>毛色</th><td>白</td></tr>
-        </table>
-        </body></html>
-        """
+    def test_extract_animal_details_dedupes_images_by_bubble_file_id(self):
+        """同一写真の解像度違い (cdn-cgi リサイズ) は 1 枚に集約される"""
         adapter = WannyanNaviAichiAdapter(_site_aichi())
-        detail_url = "https://wannyan-navi.pref.aichi.jp/dog/55555"
-        with patch.object(adapter, "_http_get", return_value=detail_html_no_species):
+        detail_url = "https://wannyan-navi.pref.aichi.jp/?page=list_dc_m&no=abc123"
+        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_CAT):
             raw = adapter.extract_animal_details(detail_url, category="adoption")
-        assert raw.species == "犬"
 
-    def test_extract_animal_details_infers_species_from_url_cat(self):
-        """detail URL `/cat/` からは「猫」が補完される"""
-        detail_html_no_species = """
-        <html><body>
-        <table>
-          <tr><th>性別</th><td>メス</td></tr>
-        </table>
-        </body></html>
-        """
-        adapter = WannyanNaviAichiAdapter(_site_aichi())
-        detail_url = "https://wannyan-navi.pref.aichi.jp/cat/66666"
-        with patch.object(adapter, "_http_get", return_value=detail_html_no_species):
-            raw = adapter.extract_animal_details(detail_url, category="adoption")
-        assert raw.species == "猫"
+        # 3 img (うち2枚は同一ファイル id の解像度違い) → 2 枚に集約
+        assert len(raw.image_urls) == 2
+        assert all("logo" not in u.lower() for u in raw.image_urls)
 
-    def test_extract_raises_on_empty_html(self):
-        """1 フィールドも抽出できない HTML では ParsingError"""
+    def test_extract_animal_details_raises_on_missing_basic_info(self):
+        """「基本情報」見出しすら見つからない = 構造崩壊として ParsingError"""
         adapter = WannyanNaviAichiAdapter(_site_aichi())
-        with patch.object(
-            adapter,
-            "_http_get",
-            return_value="<html><body></body></html>",
-        ):
+        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_NO_BASIC_INFO):
             with pytest.raises(Exception):
-                adapter.extract_animal_details("https://wannyan-navi.pref.aichi.jp/dog/0")
+                adapter.extract_animal_details(
+                    "https://wannyan-navi.pref.aichi.jp/?page=list_dc_m&no=0"
+                )
 
 
-class TestWannyanNaviAichiAdapterUrlHelpers:
-    """URL 判定 / 種別推定ヘルパー"""
-
-    @pytest.mark.parametrize(
-        "href,expected",
-        [
-            ("/dog/abc123", True),
-            ("/cat/xxx", True),
-            ("/animal/123", True),
-            ("/version-test/dog/zzz", True),
-            ("/about", False),
-            ("/contact", False),
-            ("/login", False),
-            ("/signup", False),
-            ("/policy", False),
-            ("/sitemap", False),
-            ("https://twitter.com/aichi", False),
-            ("https://www.facebook.com/aichi", False),
-            ("mailto:foo@example.com", False),
-            ("tel:0568228311", False),
-            ("/", False),
-            ("", False),
-        ],
-    )
-    def test_is_detail_url(self, href, expected):
-        assert WannyanNaviAichiAdapter._is_detail_url(href) == expected
+class TestWannyanNaviAichiAdapterHelpers:
+    """内部ヘルパーの単体テスト"""
 
     @pytest.mark.parametrize(
-        "url,expected",
+        "text,expected",
         [
-            ("https://wannyan-navi.pref.aichi.jp/dog/abc123", "犬"),
-            ("https://wannyan-navi.pref.aichi.jp/cat/xyz", "猫"),
-            ("https://wannyan-navi.pref.aichi.jp/animal/123", ""),
+            ("猫の飼い方講習会へ", "猫"),
+            ("犬の飼い方講習会へ", "犬"),
+            ("お問い合わせ", ""),
             ("", ""),
         ],
     )
-    def test_infer_species_from_url(self, url, expected):
-        assert WannyanNaviAichiAdapter._infer_species_from_url(url) == expected
+    def test_infer_species_from_guide_link(self, text, expected):
+        soup = _soup_with_text(text)
+        assert WannyanNaviAichiAdapter._infer_species_from_guide_link(soup) == expected
+
+    @pytest.mark.parametrize(
+        "text,expected",
+        [
+            ("掲載日：2026/08/27", "2026/08/27"),
+            ("撮影日：2026/08/25（5歳2ヵ月）", ""),
+            ("", ""),
+        ],
+    )
+    def test_extract_posted_date(self, text, expected):
+        soup = _soup_with_text(text)
+        assert WannyanNaviAichiAdapter._extract_posted_date(soup) == expected
+
+    def test_classify_basic_info_assigns_known_fields(self):
+        segment = ["No . 尾263014", "尾張支所(一宮市)", "雑種", "白黒", "メス", "5歳3ヵ月"]
+        fields = WannyanNaviAichiAdapter._classify_basic_info(segment)
+        assert fields["management_number"] == "尾263014"
+        assert fields["location"] == "尾張支所(一宮市)"
+        assert fields["sex"] == "メス"
+        assert fields["age"] == "5歳3ヵ月"
+        assert fields["breed"] == "雑種"
+        assert fields["color"] == "白黒"
+
+    def test_classify_basic_info_handles_missing_values_gracefully(self):
+        # 性別・年齢が欠落しているケース
+        segment = ["No . 東264003", "知多支所(半田市)", "雑種", "三毛"]
+        fields = WannyanNaviAichiAdapter._classify_basic_info(segment)
+        assert fields["management_number"] == "東264003"
+        assert fields["location"] == "知多支所(半田市)"
+        assert fields["sex"] == ""
+        assert fields["age"] == ""
+        assert fields["breed"] == "雑種"
+        assert fields["color"] == "三毛"
 
 
 class TestWannyanNaviAichiAdapterRegistry:
@@ -401,11 +456,15 @@ class TestWannyanNaviAichiAdapterRegistry:
     SITE_NAME = "愛知県わんにゃんナビ"
 
     def test_site_registered_to_wannyan_navi_aichi_adapter(self):
-        # 他テストが registry を clear する場合の冪等性のため、
-        # 未登録なら再登録してから確認する。
         if SiteAdapterRegistry.get(self.SITE_NAME) is None:
             SiteAdapterRegistry.register(self.SITE_NAME, WannyanNaviAichiAdapter)
         cls = SiteAdapterRegistry.get(self.SITE_NAME)
         assert cls is WannyanNaviAichiAdapter, (
-            f"{self.SITE_NAME} が WannyanNaviAichiAdapter に 紐付いていません: {cls}"
+            f"{self.SITE_NAME} が WannyanNaviAichiAdapter に紐付いていません: {cls}"
         )
+
+
+def _soup_with_text(text: str):
+    from bs4 import BeautifulSoup
+
+    return BeautifulSoup(f"<html><body><p>{text}</p></body></html>", "html.parser")
