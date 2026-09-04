@@ -38,6 +38,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'oita-aigo.com' },
       { protocol: 'https', hostname: 'mie-dakc.server-shared.com' },
       { protocol: 'https', hostname: 'www.yokosuka-doubutu.com' },
+      { protocol: 'https', hostname: 'zuttoissho.com' },
     ],
     formats: ['image/webp', 'image/avif'], // WebP/AVIF自動変換
     /* 著作権配慮（著作権法47条の5「軽微利用」の趣旨）:

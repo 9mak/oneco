@@ -10,7 +10,8 @@ adapter の動作を検証する。
   `<td>/<td>` 2 列テーブル) からの RawAnimalData 構築
 - 動物種別 (犬/猫) が list URL の `type_id=1`/`type_id=2` または
   サイト名から推定されること
-- 4 サイトすべてが SiteAdapterRegistry に登録されていること
+- 犬保護中/猫保護中の 2 サイトが SiteAdapterRegistry に登録されていること
+  (犬譲渡/猫譲渡は T124 で ZuttoisshoFukuokaAdapter へ移管済み)
 - `PlaywrightFetchMixin` を継承していること
 
 NOTE: Playwright 自体は呼び出さず、`_http_get` を patch して固定 HTML を
@@ -439,16 +440,16 @@ class TestWannyanFukuokaAdapterSpeciesInference:
 
 
 class TestWannyanFukuokaAdapterRegistry:
-    """registry に 4 サイトすべて登録されていること
+    """registry に 2 サイトとも登録されていること
 
-    sites.yaml の `name` フィールドと完全一致する 4 サイト名で登録される。
+    sites.yaml の `name` フィールドと完全一致する 2 サイト名で登録される。
+    犬譲渡/猫譲渡は T124 (2026-09-03) で ZuttoisshoFukuokaAdapter
+    (zuttoissho_fukuoka.py) へ移管済みのため、ここでは対象外。
     """
 
     EXPECTED_SITE_NAMES = (
         "福岡市わんにゃん（犬保護中）",
         "福岡市わんにゃん（猫保護中）",
-        "福岡市わんにゃん（犬譲渡）",
-        "福岡市わんにゃん（猫譲渡）",
     )
 
     @pytest.mark.parametrize("site_name", EXPECTED_SITE_NAMES)

@@ -380,26 +380,30 @@ sites:
     category: "sheltered"
     requires_js: true
 
-  # 犬譲渡/猫譲渡 (sorting_id=5) は T046/T108 で既知の別問題: ページ内容が
-  # 「5秒後に https://zuttoissho.com/mukaeru/ へ自動遷移」の JS リダイレクト
-  # 通知のみで、譲渡動物データ自体がこのドメインに存在しない (2026-08 観測)。
-  # JS を実行しても遷移先は本 adapter の想定外ドメイン/構造であり
-  # requires_js を false にしても true のままでも収集結果は変わらない
-  # (どちらでも 0 件)。sites.yaml 上は要調査サイトとして requires_js: true を
-  # 維持し、フォローアップで zuttoissho.com 向け新規 adapter を検討する。
+  # 犬譲渡/猫譲渡 (旧 sorting_id=5) は T046/T108 で既知の通り
+  # wannyan.city.fukuoka.lg.jp 側は「5秒後に https://zuttoissho.com/mukaeru/
+  # へ自動遷移」の JS リダイレクト通知のみで、譲渡動物データ自体がこの
+  # ドメインに存在しない (2026-08 観測)。T124 (2026-09-03) の実査で、
+  # 実データは https://zuttoissho.com/omukae/animal/{dog,cat}/ (WordPress
+  # 標準 wp-pagenavi によるページ送りあり) へ完全移行済みと確認したため、
+  # list_url を zuttoissho.com 側へ差し替えた (name は移行前の識別性を保つ
+  # ため据え置き)。専用 adapter (`ZuttoisshoFukuokaAdapter`,
+  # zuttoissho_fukuoka.py) で処理し、静的 HTTP GET のみで取得可能なため
+  # requires_js: false (bot UA `oneco-collector/1.0` で 200 応答・
+  # wannyan.city.fukuoka.lg.jp と同一内容を確認済み)。
   - name: "福岡市わんにゃん（犬譲渡）"
     prefecture: "福岡県"
     prefecture_code: "40"
-    list_url: "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/index?type_id=1&sorting_id=5"
+    list_url: "https://zuttoissho.com/omukae/animal/dog/"
     category: "adoption"
-    requires_js: true
+    requires_js: false
 
   - name: "福岡市わんにゃん（猫譲渡）"
     prefecture: "福岡県"
     prefecture_code: "40"
-    list_url: "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/index?type_id=2&sorting_id=5"
+    list_url: "https://zuttoissho.com/omukae/animal/cat/"
     category: "adoption"
-    requires_js: true
+    requires_js: false
 
   # 【長崎市動物愛護管理センター】静的HTML、里親募集
   # 【長崎市】個体を掲載していないため常に0件（2026-08-05 確認・W001/T021）。

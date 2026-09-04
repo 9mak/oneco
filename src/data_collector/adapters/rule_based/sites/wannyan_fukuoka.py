@@ -5,7 +5,12 @@
 特徴:
 - 福岡市保健福祉局の動物管理情報サイト。一覧ページは
   `?type_id={1=犬,2=猫}&sorting_id={4=保護,5=譲渡}` の URL パラメータで
-  4 種類のビュー (犬保護中 / 猫保護中 / 犬譲渡 / 猫譲渡) を切り替える。
+  ビューを切り替える。本 adapter がカバーするのは犬保護中/猫保護中
+  (sorting_id=4) の 2 サイトのみ。犬譲渡/猫譲渡 (sorting_id=5) は
+  T124 (2026-09-03) で `zuttoissho_fukuoka.py`
+  (`ZuttoisshoFukuokaAdapter`) へ実装を移管した (下記「犬譲渡/猫譲渡」節
+  参照)。sites.yaml 上の site 名は変更せず (`福岡市わんにゃん（犬譲渡）`/
+  `（猫譲渡）`)、list_url のみ zuttoissho.com 側へ差し替えている。
 - T108 (2026-08-31) で犬保護中/猫保護中 (sorting_id=4) は一覧ページ自体は
   静的 HTML にテーブルがそのまま出力されていることを確認した (旧コメントの
   「ページ全体が JavaScript で動的に描画される SPA」は誤りだった)。
@@ -19,13 +24,14 @@
   `PlaywrightFetchMixin._http_get` が `site_config.requires_js` を見て
   Playwright / 静的 HTTP を切り替えるため、検証が済み次第フラグ変更のみで
   静的 HTTP に切り替えられる。
-- 犬譲渡/猫譲渡 (sorting_id=5) は別問題として `requires_js: true` を維持:
+- 犬譲渡/猫譲渡 (sorting_id=5, 旧 `wannyan.city.fukuoka.lg.jp` URL) は
   ページ本文が「5秒後に https://zuttoissho.com/mukaeru/ へ自動遷移」する
   JS リダイレクト通知のみで、譲渡動物データ自体がこのドメインに存在しない
-  (T046/T108 で確認)。JS を実行しても本 adapter が想定する
-  `wannyan.city.fukuoka.lg.jp` の HTML 構造は得られず 0 件のままなので、
-  フォールバックとして zuttoissho.com 向けの新規 adapter が必要
-  (本ファイルのスコープ外、フォローアップ課題)。
+  (T046/T108 で確認)。実データは `zuttoissho.com/omukae/animal/{dog,cat}/`
+  へ完全移行済みと判明したため、T124 (2026-09-03) で
+  `ZuttoisshoFukuokaAdapter` (`zuttoissho_fukuoka.py`) を新規実装し、
+  sites.yaml の該当 2 エントリの list_url をそちらへ差し替えた。
+  本 adapter (`WannyanFukuokaAdapter`) はもう犬譲渡/猫譲渡を扱わない。
 - 一覧ページは `<table>` の各 `<tr>` に「番号 / 写真 / 収容日 / 状況 /
   区 / 場所 / その他特徴 / 詳細」の列が並び、最後の「詳細」セルに
   detail ページへの `<a href="/yokanet/animal/animal_posts/view/...">`
@@ -36,11 +42,11 @@
 - 動物種別 (species) はラベル抽出を優先し、空のときは list URL の
   `type_id=1` (犬) / `type_id=2` (猫) パラメータから推定する。
 
-カバーサイト (4):
+カバーサイト (2):
 - 福岡市わんにゃん（犬保護中）
 - 福岡市わんにゃん（猫保護中）
-- 福岡市わんにゃん（犬譲渡）
-- 福岡市わんにゃん（猫譲渡）
+
+犬譲渡/猫譲渡は `zuttoissho_fukuoka.py` (`ZuttoisshoFukuokaAdapter`) を参照。
 """
 
 from __future__ import annotations
@@ -60,20 +66,19 @@ from ..wordpress_list import FieldSpec, WordPressListAdapter
 class WannyanFukuokaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
     """福岡市わんにゃんよかネット 共通 rule-based adapter
 
-    4 サイト (犬保護中 / 猫保護中 / 犬譲渡 / 猫譲渡) を共通テンプレートで
-    扱う。`type_id` パラメータで動物種別を、`sorting_id` で保護/譲渡を
-    判定する (URL 解析は species 推定でのみ利用)。
+    2 サイト (犬保護中 / 猫保護中、`sorting_id=4`) を共通テンプレートで
+    扱う。`type_id` パラメータで動物種別を推定する (URL 解析は species
+    推定でのみ利用)。犬譲渡/猫譲渡 (`sorting_id=5`) は T124 (2026-09-03)
+    で `ZuttoisshoFukuokaAdapter` (`zuttoissho_fukuoka.py`) へ移管済み。
 
-    `PlaywrightFetchMixin` を第一基底に配置し、4 サイトとも現状
-    `requires_js: true` (Playwright 経由) を維持している。
-    犬保護中/猫保護中は T108 (2026-08-31) で一覧テーブルが静的 HTML に
-    直接出力されていることを確認済みだが (旧コメントの「JavaScript で
-    一覧テーブルが描画される」は誤りだった)、2026-08-31 時点で両サイトとも
-    在庫 0 件のため detail ページの静的 HTTP 取得が実データで未検証
-    (reviewer Major 指摘、PR #311)。在庫が非ゼロになり detail ページを
-    実データ検証できてから `requires_js: false` への反転を検討する。
-    犬譲渡/猫譲渡は別問題 (zuttoissho.com への JS リダイレクトのみで
-    データ自体が別ドメインに移動済み) で `requires_js: true` を維持する。
+    `PlaywrightFetchMixin` を第一基底に配置し、`requires_js: true`
+    (Playwright 経由) を維持している。T108 (2026-08-31) で一覧テーブルが
+    静的 HTML に直接出力されていることを確認済みだが (旧コメントの
+    「JavaScript で一覧テーブルが描画される」は誤りだった)、2026-08-31
+    時点で両サイトとも在庫 0 件のため detail ページの静的 HTTP 取得が
+    実データで未検証 (reviewer Major 指摘、PR #311)。在庫が非ゼロになり
+    detail ページを実データ検証できてから `requires_js: false` への
+    反転を検討する。
     """
 
     # WAIT_SELECTOR は Playwright 経由の場合に参照される。わんにゃんよか
@@ -284,12 +289,12 @@ class WannyanFukuokaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
 
 
 # ─────────────────── サイト登録 ───────────────────
-# sites.yaml の `name` フィールドと完全一致する 4 サイト名で登録する。
+# sites.yaml の `name` フィールドと完全一致する 2 サイト名で登録する。
+# 犬譲渡/猫譲渡は T124 (2026-09-03) で ZuttoisshoFukuokaAdapter へ移管済み
+# (zuttoissho_fukuoka.py の登録ループ参照)。
 for _site_name in (
     "福岡市わんにゃん（犬保護中）",
     "福岡市わんにゃん（猫保護中）",
-    "福岡市わんにゃん（犬譲渡）",
-    "福岡市わんにゃん（猫譲渡）",
 ):
     if SiteAdapterRegistry.get(_site_name) is None:
         SiteAdapterRegistry.register(_site_name, WannyanFukuokaAdapter)
