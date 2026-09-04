@@ -82,6 +82,7 @@ class _RowEntry:
     species_hint: str
     key: str
 
+
 # ラッパページ URL → 実データ iframe URL のマッピング。
 # 収容中は種別ごとに 3 つの iframe に分かれるため、値は常にタプルで持つ。
 _IFRAME_URL_MAP: dict[str, tuple[str, ...]] = {
@@ -282,8 +283,7 @@ class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
                 if page_url in visited:
                     truncated = True
                     logger.warning(
-                        "[%s] 一覧のページ送りで循環を検知しました "
-                        "(既訪問ページへの再遷移: %s)",
+                        "[%s] 一覧のページ送りで循環を検知しました (既訪問ページへの再遷移: %s)",
                         self.site_config.name,
                         page_url,
                     )

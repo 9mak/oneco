@@ -237,9 +237,7 @@ def _one_stray_card(
 ) -> str:
     """収容中カード 1 件分の `<li>`"""
     photo_cell = (
-        f'<td class="photo" rowspan="10"><img src="photo/{photo}" alt=""></td>'
-        if photo
-        else ""
+        f'<td class="photo" rowspan="10"><img src="photo/{photo}" alt=""></td>' if photo else ""
     )
     return f"""
     <li>
@@ -331,7 +329,9 @@ class TestDouaiTokushimaListExtraction:
     def test_stray_fetch_returns_rows_from_each_iframe(self):
         adapter = DouaiTokushimaAdapter(_stray_site())
         cat_html = _stray_page(
-            _one_stray_card(photo="photo2-cat1.JPG", shelter_date="2026/6/1", place="鳴門市", age="幼猫")
+            _one_stray_card(
+                photo="photo2-cat1.JPG", shelter_date="2026/6/1", place="鳴門市", age="幼猫"
+            )
         )
         pages = _stray_pages(STRAY_HTML, cat=cat_html)
         with patch.object(adapter, "_http_get", side_effect=_fetcher(pages)):
@@ -361,9 +361,7 @@ class TestDouaiTokushimaListExtraction:
         )
         with_newcomer = STRAY_HTML.replace('<ul class="news">', f'<ul class="news">{newcomer}', 1)
         adapter2 = DouaiTokushimaAdapter(_stray_site())
-        with patch.object(
-            adapter2, "_http_get", side_effect=_fetcher(_stray_pages(with_newcomer))
-        ):
+        with patch.object(adapter2, "_http_get", side_effect=_fetcher(_stray_pages(with_newcomer))):
             after = [u for u, _ in adapter2.fetch_animal_list()]
 
         assert after[0] == f"{_STRAY_IFRAME_DOG}#animal=photo2-99999"
@@ -376,9 +374,7 @@ class TestDouaiTokushimaListExtraction:
             result = adapter.fetch_animal_list()
         assert len(result) == 1
         url, cat = result[0]
-        assert url == (
-            "https://douai-tokushima.com/animalinfo/list4_1#animal=photo2-17781453580"
-        )
+        assert url == ("https://douai-tokushima.com/animalinfo/list4_1#animal=photo2-17781453580")
         assert cat == "adoption"
 
     def test_empty_inventory_returns_empty_list_without_error(self):
@@ -395,11 +391,15 @@ class TestDouaiTokushimaPagination:
     def test_follows_next_link_across_pages(self):
         adapter = DouaiTokushimaAdapter(_stray_site())
         page1 = _stray_page(
-            _one_stray_card(photo="photo2-p1.JPG", shelter_date="2026/8/28", place="A市", age="若犬"),
+            _one_stray_card(
+                photo="photo2-p1.JPG", shelter_date="2026/8/28", place="A市", age="若犬"
+            ),
             next_href="index.cgi?Start=10",
         )
         page2 = _stray_page(
-            _one_stray_card(photo="photo2-p2.JPG", shelter_date="2026/7/10", place="B市", age="成犬")
+            _one_stray_card(
+                photo="photo2-p2.JPG", shelter_date="2026/7/10", place="B市", age="成犬"
+            )
         )
         pages = _stray_pages(page1)
         pages[f"{_STRAY_IFRAME_DOG}index.cgi?Start=10"] = page2
