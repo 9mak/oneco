@@ -53,6 +53,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import ClassVar
 
@@ -86,6 +87,8 @@ _DETAIL_PAGE_PARAM = "list_dc_m"
 # elasticsearch レスポンス判定用の URL 部分文字列。
 _ELASTICSEARCH_URL_HINT = "elasticsearch"
 
+logger = logging.getLogger(__name__)
+
 
 class WannyanNaviAichiAdapter(PlaywrightFetchMixin, WordPressListAdapter):
     """愛知県わんにゃんナビ rule-based adapter (T123 再設計版)
@@ -96,6 +99,12 @@ class WannyanNaviAichiAdapter(PlaywrightFetchMixin, WordPressListAdapter):
     詳細: `PlaywrightFetchMixin` 経由で deep link を単独ロードし、見出し
     テキストをアンカーにした構造的パースでフィールドを抽出する。
     """
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        # elasticsearch が報告する総件数 (`hits.total`)。収集した record id が
+        # これより少なければ打ち切りとみなす (T123 reviewer F-01)。
+        self._observed_total: int | None = None
 
     # `wait_until="networkidle"` (既定) だけで detail ページの描画完了後
     # HTML (実測 80KB 前後、bubble-element 100+ 個) を取得できることを実サイトで
@@ -121,7 +130,14 @@ class WannyanNaviAichiAdapter(PlaywrightFetchMixin, WordPressListAdapter):
 
         0 件 (record id が 1 つも観測できない) は「現在譲渡対象の個体がいない」
         真のゼロとして扱い、ParsingError にはしない。
+
+        elasticsearch レスポンスの `hits.total` が実際に拾えた id 件数より多い
+        場合は `self.list_truncated` を立てる。Bubble のクライアント側検索が
+        隠れた size 上限で結果を打ち切ると、無警告で収集漏れが起きたうえに
+        「全件取れた」と誤認されて prune_disappeared が実在個体を削除しうる
+        (T059 の安全弁と同じ扱い・T123 reviewer F-01)。
         """
+        self._observed_total = None
         ids = self._collect_record_ids_via_network()
         category = self.site_config.category
         base = self.site_config.list_url
@@ -133,6 +149,17 @@ class WannyanNaviAichiAdapter(PlaywrightFetchMixin, WordPressListAdapter):
                 continue
             seen.add(detail_url)
             urls.append((detail_url, category))
+
+        total = self._observed_total
+        if total is not None and total > len(urls):
+            self.list_truncated = True
+            logger.warning(
+                "[%s] elasticsearch は %d 件と報告しているが record id は %d 件しか"
+                "拾えませんでした。未取得の個体が残っている可能性があります",
+                self.site_config.name,
+                total,
+                len(urls),
+            )
         return urls
 
     def _collect_record_ids_via_network(self) -> list[str]:
@@ -157,6 +184,11 @@ class WannyanNaviAichiAdapter(PlaywrightFetchMixin, WordPressListAdapter):
                         record_id = hit.get("_id")
                         if isinstance(record_id, str) and record_id:
                             ids.add(record_id)
+                total = self._parse_hits_total(hits.get("total"))
+                if total is not None:
+                    # 複数の検索が飛ぶため、報告された最大件数を母数とみなす。
+                    current = self._observed_total
+                    self._observed_total = total if current is None else max(current, total)
             responses = data.get("responses")
             if isinstance(responses, list):
                 for sub in responses:
@@ -195,6 +227,26 @@ class WannyanNaviAichiAdapter(PlaywrightFetchMixin, WordPressListAdapter):
             ) from e
 
         return sorted(ids)
+
+    @staticmethod
+    def _parse_hits_total(total: object) -> int | None:
+        """`hits.total` を件数に正規化する
+
+        elasticsearch は版によって `total: 29` と
+        `total: {"value": 29, "relation": "eq"}` の両形式を返す。
+        `relation` が `gte` (概算) の場合は母数として信用できないため無視する。
+        """
+        if isinstance(total, bool):
+            return None
+        if isinstance(total, int):
+            return total
+        if isinstance(total, dict):
+            if total.get("relation") not in (None, "eq"):
+                return None
+            value = total.get("value")
+            if isinstance(value, int) and not isinstance(value, bool):
+                return value
+        return None
 
     # ─────────────────── 詳細: フィールド抽出 ───────────────────
 

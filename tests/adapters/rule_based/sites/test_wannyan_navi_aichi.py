@@ -468,3 +468,124 @@ def _soup_with_text(text: str):
     from bs4 import BeautifulSoup
 
     return BeautifulSoup(f"<html><body><p>{text}</p></body></html>", "html.parser")
+
+
+class TestWannyanNaviAichiTruncationDetection:
+    """`hits.total` と実際に拾えた id 件数の突き合わせ (T123 reviewer F-01)
+
+    Bubble のクライアント側検索が隠れた size 上限で結果を打ち切ると、
+    無警告で収集漏れが起きたうえに「全件取れた」と誤認されて
+    prune_disappeared が実在個体を削除しうる。T059 の安全弁と同じ扱いで
+    `list_truncated` を立てる。
+    """
+
+    @staticmethod
+    def _patch_playwright(adapter, payload):
+        """elasticsearch レスポンスを 1 回返す Playwright スタブを当てる"""
+
+        class _FakeResponse:
+            url = "https://wannyan-navi.pref.aichi.jp/elasticsearch/search"
+
+            def json(self):
+                return payload
+
+        class _FakePage:
+            def __init__(self):
+                self._handler = None
+
+            def on(self, event, handler):
+                self._handler = handler
+
+            def goto(self, url, wait_until=None, timeout=None):
+                self._handler(_FakeResponse())
+
+            def wait_for_timeout(self, ms):
+                pass
+
+        class _FakeContext:
+            def new_page(self):
+                return _FakePage()
+
+        class _FakeBrowser:
+            def new_context(self, user_agent=None):
+                return _FakeContext()
+
+            def close(self):
+                pass
+
+        class _FakeChromium:
+            def launch(self, headless=True):
+                return _FakeBrowser()
+
+        class _FakePlaywrightCtx:
+            def __enter__(self):
+                return type("P", (), {"chromium": _FakeChromium()})()
+
+            def __exit__(self, *exc):
+                return False
+
+        return patch(
+            "data_collector.adapters.rule_based.sites.wannyan_navi_aichi.sync_playwright",
+            return_value=_FakePlaywrightCtx(),
+        )
+
+    def test_total_matching_id_count_does_not_set_truncated(self):
+        adapter = WannyanNaviAichiAdapter(_site_aichi())
+        payload = {
+            "hits": {
+                "total": 2,
+                "hits": [{"_id": "id-a"}, {"_id": "id-b"}],
+            }
+        }
+        with self._patch_playwright(adapter, payload):
+            result = adapter.fetch_animal_list()
+        assert len(result) == 2
+        assert adapter.list_truncated is False
+
+    def test_total_greater_than_id_count_sets_truncated(self):
+        """報告件数より拾えた id が少なければ打ち切り扱いにする"""
+        adapter = WannyanNaviAichiAdapter(_site_aichi())
+        payload = {
+            "hits": {
+                "total": 29,
+                "hits": [{"_id": "id-a"}, {"_id": "id-b"}],
+            }
+        }
+        with self._patch_playwright(adapter, payload):
+            result = adapter.fetch_animal_list()
+        assert len(result) == 2
+        assert adapter.list_truncated is True
+
+    def test_object_form_total_is_supported(self):
+        """`total: {"value": N, "relation": "eq"}` 形式も件数として読む"""
+        adapter = WannyanNaviAichiAdapter(_site_aichi())
+        payload = {
+            "hits": {
+                "total": {"value": 5, "relation": "eq"},
+                "hits": [{"_id": "id-a"}],
+            }
+        }
+        with self._patch_playwright(adapter, payload):
+            adapter.fetch_animal_list()
+        assert adapter.list_truncated is True
+
+    def test_approximate_total_is_ignored(self):
+        """`relation: "gte"` は概算なので母数として使わない"""
+        adapter = WannyanNaviAichiAdapter(_site_aichi())
+        payload = {
+            "hits": {
+                "total": {"value": 10000, "relation": "gte"},
+                "hits": [{"_id": "id-a"}],
+            }
+        }
+        with self._patch_playwright(adapter, payload):
+            adapter.fetch_animal_list()
+        assert adapter.list_truncated is False
+
+    def test_missing_total_does_not_set_truncated(self):
+        """`hits.total` が無いレスポンスでは判定しない（従来動作を維持）"""
+        adapter = WannyanNaviAichiAdapter(_site_aichi())
+        payload = {"hits": {"hits": [{"_id": "id-a"}]}}
+        with self._patch_playwright(adapter, payload):
+            adapter.fetch_animal_list()
+        assert adapter.list_truncated is False
