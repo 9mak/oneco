@@ -100,9 +100,7 @@ class SnapshotStore:
         常に「差し替え前の完全なファイル」か「差し替え後の完全なファイル」の
         どちらかしか見えない。
         """
-        fd, tmp_name = tempfile.mkstemp(
-            dir=self.snapshot_dir, prefix=".latest-", suffix=".tmp"
-        )
+        fd, tmp_name = tempfile.mkstemp(dir=self.snapshot_dir, prefix=".latest-", suffix=".tmp")
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 json.dump(merged, f, ensure_ascii=False, indent=2)
