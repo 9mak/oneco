@@ -1486,11 +1486,15 @@ sites:
     category: "lost"
     single_page: true
 
-  # 【愛知県わんにゃんナビ】専用ドメイン、要 JS
+  # 【愛知県わんにゃんナビ】専用ドメイン、要 JS。Bubble.io 製 SPA で一覧に
+  # <a href> が存在しないため、list_url は "犬猫一覧" (すべての施設/犬猫/
+  # 性別/成子) を表示するトップレベルの一覧ページ (?page=list_dc) を直接
+  # 指す。ホームページ (トップ) はカルーセル的な一部個体のプレビューのみで
+  # 全件を含まないため list_url には使わない (T123, 2026-09-03 是正)。
   - name: "愛知県わんにゃんナビ"
     prefecture: "愛知県"
     prefecture_code: "23"
-    list_url: "https://wannyan-navi.pref.aichi.jp/"
+    list_url: "https://wannyan-navi.pref.aichi.jp/?page=list_dc"
     category: "adoption"
     requires_js: true
 
