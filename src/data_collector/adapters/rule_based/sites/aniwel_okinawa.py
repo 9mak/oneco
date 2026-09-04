@@ -78,6 +78,13 @@ class AniwelOkinawaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
     # accommodate / missing / protection の 3 prefix を共通で拾う。
     LIST_LINK_SELECTOR: ClassVar[str] = "a[href*='_view/']"
 
+    # 一覧は CakePHP 形式の `/animals/missing/cats/page:2` でページ送りされ、
+    # `<div class="paging">` 内の `<span class="next"><a rel="next">` が次ページを指す。
+    # 2026-09-04 実測で行方不明犬が2ページ・行方不明猫が3ページあり、
+    # 1ページ目しか読んでいなかったため実サイト111件に対し本番は86件、
+    # URL 集合の差25件 (全て missing_view) が掲載漏れになっていた (T132)。
+    NEXT_PAGE_SELECTOR: ClassVar[str] = ".paging a[rel='next']"
+
     # 詳細ページ `<table><th><td>` の実見出しラベル (2026-05 ブラウザ実査)。
     # 収容(accommodate)/行方不明(missing)/迷い込み(protection) の 3 系統で
     # ラベルが異なるため、`_extract_by_label` の部分一致 (label ⊂ th文字列) と
