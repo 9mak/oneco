@@ -224,6 +224,26 @@ CAT_TRANSFER_HTML = """
 # 在庫 0 件 (iframe は読み込めるが ul.news 配下に <li> が無い)
 EMPTY_HTML = '<html><body><ul class="news"></ul></body></html>'
 
+# 譲渡カード 1 件分のテンプレート（`番号` セルと写真ファイル名を差し替えられる）
+_TRANSFER_CARD_TEMPLATE = """
+    <li>
+      <table class="f_a3">
+        <tr>
+          <td class="photo" rowspan="8"><img src="photo/{photo}" alt=""></td>
+          <th colspan="2">番号</th>
+        </tr>
+        <tr><td colspan="2" aria-label="番号">No. {number}（愛称：テスト）</td></tr>
+        <tr><th>性別</th><th>推定生年月日</th></tr>
+        <tr>
+          <td aria-label="性別">オス</td>
+          <td aria-label="推定生年月日">２０２５年４月１日</td>
+        </tr>
+        <tr><th colspan="2">その他の情報</th></tr>
+        <tr><td colspan="2" aria-label="その他の情報">白い子です。４．９kg</td></tr>
+      </table>
+    </li>
+"""
+
 # 収容中の実データは種別ごとの iframe に分かれる。
 # STRAY_HTML は 2 件 (犬・猫) を含む従来のフィクスチャで、
 # 種別分割後は「犬の iframe」に相当する扱いで使う。
@@ -368,13 +388,14 @@ class TestDouaiTokushimaListExtraction:
         # 既存 2 件の URL は変わらない
         assert after[1:] == before
 
-    def test_dog_fetch_returns_one_row_with_adoption_category(self):
+    def test_dog_fetch_uses_official_number_as_key(self):
+        """譲渡カードは自治体発行の `番号` を安定キーに使う（T066 と同じ優先順位）"""
         adapter = DouaiTokushimaAdapter(_dog_site())
         with patch.object(adapter, "_http_get", return_value=DOG_TRANSFER_HTML):
             result = adapter.fetch_animal_list()
         assert len(result) == 1
         url, cat = result[0]
-        assert url == ("https://douai-tokushima.com/animalinfo/list4_1#animal=photo2-17781453580")
+        assert url == "https://douai-tokushima.com/animalinfo/list4_1#animal=D250420"
         assert cat == "adoption"
 
     def test_empty_inventory_returns_empty_list_without_error(self):
@@ -383,6 +404,46 @@ class TestDouaiTokushimaListExtraction:
         with patch.object(adapter, "_http_get", return_value=EMPTY_HTML):
             result = adapter.fetch_animal_list()
         assert result == []
+
+
+class TestDouaiTokushimaStableKey:
+    """安定キーの優先順位: 自治体発行の番号 → 写真ファイル名 → 通し番号 (T135)"""
+
+    def test_number_key_is_normalized_to_halfwidth(self):
+        """`番号` は全角・半角が混在するため NFKC 正規化して同一視する
+
+        実サイトには `No. D２６０１４９` と `No. D260149` の両方の表記がある。
+        """
+        html = DOG_TRANSFER_HTML.replace("Ｄ２５０４２０", "Ｄ２５０４２１")
+        adapter = DouaiTokushimaAdapter(_dog_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = [u for u, _ in adapter.fetch_animal_list()]
+        assert urls == ["https://douai-tokushima.com/animalinfo/list4_1#animal=D250421"]
+
+    def test_duplicate_number_falls_back_to_photo_filename(self):
+        """正規化すると同じ番号になる別個体は写真ファイル名にフォールバックする
+
+        2026-09-04 時点の実サイトには、譲渡犬に `No. D２６０１４９（愛称：ソフィー）`
+        と `No. D260149（愛称ジュディー）` という、正規化後に衝突する2頭が実在する。
+        番号をそのままキーにすると2頭目が1頭目を上書きして掲載漏れになる。
+        """
+        first = _TRANSFER_CARD_TEMPLATE.format(number="Ｄ２６０１４９", photo="photo2-aaa.JPG")
+        second = _TRANSFER_CARD_TEMPLATE.format(number="D260149", photo="photo2-bbb.JPG")
+        html = f'<html><body><ul class="news">{first}{second}</ul></body></html>'
+        adapter = DouaiTokushimaAdapter(_dog_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = [u for u, _ in adapter.fetch_animal_list()]
+        assert urls == [
+            "https://douai-tokushima.com/animalinfo/list4_1#animal=D260149",
+            "https://douai-tokushima.com/animalinfo/list4_1#animal=photo2-bbb",
+        ]
+
+    def test_sheltered_card_without_number_uses_photo_filename(self):
+        """収容中カードは `番号` セルを持たないため写真ファイル名が一次キーになる"""
+        adapter = DouaiTokushimaAdapter(_stray_site())
+        with patch.object(adapter, "_http_get", side_effect=_fetcher(_stray_pages(STRAY_HTML))):
+            urls = [u for u, _ in adapter.fetch_animal_list()]
+        assert urls[0] == f"{_STRAY_IFRAME_DOG}#animal=photo2-17788280710"
 
 
 class TestDouaiTokushimaPagination:

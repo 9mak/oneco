@@ -487,16 +487,28 @@ class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
                 return species
         return ""
 
-    @staticmethod
-    def _stable_key(row: Tag, used: set[str], fallback_index: int) -> str:
+    @classmethod
+    def _stable_key(cls, row: Tag, used: set[str], fallback_index: int) -> str:
         """掲載順が変わっても不変な個体キーを返す
 
-        写真ファイル名 (`photo/photo2-17878928180.JPG`) は個体ごとに一意で、
-        掲載順にも PDF 差し替えにも影響されないため安定キーに使える
-        (T066 香川の個体管理番号と同じ役割)。写真が無い個体や、万一同じ
-        ファイル名が複数行に現れた場合は通し番号にフォールバックする
-        (このフォールバックは従来どおり不安定)。
+        T066 (香川) が確立した「自治体が発行する個体番号を優先し、取れない
+        個体だけ別のキーにフォールバックする」優先順位に合わせる。
+
+        1. 譲渡カード (`f_a3`) の `番号` セル (`No. D260149（愛称：ソフィー）`)。
+           自治体発行の管理番号で、写真の差し替え・再撮影でも壊れない
+        2. 写真ファイル名 (`photo/photo2-17878928180.JPG`)。収容中カードは
+           `番号` セル自体を持たないため、こちらが実質の一次キーになる
+        3. 通し番号 (このフォールバックは掲載順に依存するため不安定)
+
+        番号は全角・半角が混在する (`D２６０１４９` と `D260149`) ため NFKC で
+        正規化して比較する。実サイトには**正規化すると同じ番号になる別個体**が
+        実在する (2026-09-04 時点の譲渡犬 D260149 が2頭) ので、既に使われている
+        キーは採用せず次の候補へ送る。
         """
+        number_key = cls._extract_number_key(row)
+        if number_key and number_key not in used:
+            return number_key
+
         for img in row.find_all("img"):
             src = img.get("src")
             if not isinstance(src, str) or not src:
@@ -505,6 +517,20 @@ class DouaiTokushimaAdapter(PlaywrightFetchMixin, SinglePageTableAdapter):
             if stem and stem not in used:
                 return stem
         return f"row{fallback_index}"
+
+    @staticmethod
+    def _extract_number_key(row: Tag) -> str:
+        """`<td aria-label="番号">No. D260149（愛称：ソフィー）</td>` から番号を返す
+
+        愛称が同じセルに同居するため、`No.` に続く英数字部分だけを取り出す。
+        該当セルが無い (収容中カード) 場合は空文字。
+        """
+        td = row.find("td", attrs={"aria-label": "番号"})
+        if not isinstance(td, Tag):
+            return ""
+        text = unicodedata.normalize("NFKC", td.get_text(separator=" ", strip=True))
+        m = re.search(r"No\.?\s*([A-Za-z0-9-]+)", text)
+        return m.group(1) if m else ""
 
     @staticmethod
     def _parse_animal_key(virtual_url: str) -> str:
