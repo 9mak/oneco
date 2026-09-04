@@ -292,3 +292,64 @@ class TestSnapshotStoreMergeOnSave:
         snapshot_dir = tmp_path / "snapshots"
         store = SnapshotStore(snapshot_dir=snapshot_dir)
         store.reset()  # 何も無い状態でも OK
+
+
+class TestSnapshotStoreConcurrentReadWrite:
+    """並列収集中の read-modify-write 競合 (T128)
+
+    save_snapshot は `self._lock` で直列化されているが load_animal_map は
+    ロック外で読んでいた。`Path.write_text` はファイルを truncate してから
+    書くため、書き込み途中の空ファイルを読み手が掴むと
+    `JSONDecodeError: Expecting value: line 1 column 1 (char 0)` になり、
+    fail-open で空 dict が返る（= LLM 抽出スキップが効かず全件再抽出になる）。
+    本番 collector で 2026-08-31 / 09-01 / 09-02 の各 run に実際に出ていた。
+    """
+
+    def test_concurrent_load_never_returns_empty_after_first_save(self, tmp_path):
+        """書き込みと並行して読んでも、一度書かれたデータが消えて見えない"""
+        import threading
+
+        snapshot_dir = tmp_path / "snapshots"
+        store = SnapshotStore(snapshot_dir=snapshot_dir)
+
+        # 読み手が「空ではないはず」と判断できるよう、先に 1 件書いておく
+        store.save_snapshot([_make_animal("https://seed.example.com/animals/0")])
+
+        iterations = 300
+        empty_reads: list[int] = []
+        stop = threading.Event()
+
+        def writer() -> None:
+            try:
+                for i in range(iterations):
+                    store.save_snapshot([_make_animal(f"https://site.example.com/animals/{i}")])
+            finally:
+                stop.set()
+
+        def reader() -> None:
+            while not stop.is_set():
+                loaded = store.load_animal_map()
+                if not loaded:
+                    empty_reads.append(1)
+
+        threads = [threading.Thread(target=writer)] + [
+            threading.Thread(target=reader) for _ in range(3)
+        ]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        assert empty_reads == [], (
+            f"書き込み中の snapshot を {len(empty_reads)} 回 空として読んだ "
+            "(fail-open により LLM 抽出スキップが無効化される)"
+        )
+
+    def test_save_leaves_no_temp_file_behind(self, tmp_path):
+        """atomic 書き込みの一時ファイルが残らない"""
+        snapshot_dir = tmp_path / "snapshots"
+        store = SnapshotStore(snapshot_dir=snapshot_dir)
+        store.save_snapshot([_make_animal("https://example.com/a/1")])
+
+        leftovers = [p.name for p in snapshot_dir.iterdir() if p.name != "latest.json"]
+        assert leftovers == []
