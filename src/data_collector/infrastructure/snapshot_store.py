@@ -19,6 +19,8 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
+import tempfile
 from pathlib import Path
 
 from ..domain.models import AnimalData
@@ -85,10 +87,27 @@ class SnapshotStore:
             merged = [e for e in existing if e.get("source_url") not in new_urls]
             merged.extend(item.model_dump(mode="json") for item in items)
 
-            self._snapshot_path.write_text(
-                json.dumps(merged, ensure_ascii=False, indent=2),
-                encoding="utf-8",
-            )
+            self._write_atomic(merged)
+
+    def _write_atomic(self, merged: list[dict]) -> None:
+        """同ディレクトリの一時ファイルへ書いてから `os.replace` で差し替える。
+
+        `Path.write_text` はファイルを truncate してから書くため、書き込み中は
+        `latest.json` が空 or 途中状態で見える。ロックを取らない
+        `load_animal_map()` がその瞬間を掴むと JSONDecodeError になり、
+        fail-open で空 dict を返して LLM 抽出スキップが無効化されていた (T128)。
+        `os.replace` は同一ファイルシステム上で atomic なので、読み手からは
+        常に「差し替え前の完全なファイル」か「差し替え後の完全なファイル」の
+        どちらかしか見えない。
+        """
+        fd, tmp_name = tempfile.mkstemp(dir=self.snapshot_dir, prefix=".latest-", suffix=".tmp")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(merged, f, ensure_ascii=False, indent=2)
+            os.replace(tmp_name, self._snapshot_path)
+        except BaseException:
+            Path(tmp_name).unlink(missing_ok=True)
+            raise
 
     def reset(self) -> None:
         """次回 run の累積を fresh から始めるため snapshot ファイルを削除する。
