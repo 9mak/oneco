@@ -17,12 +17,30 @@
   お知らせ判定はできない。本 adapter は detail URL を一覧として返し、
   detail ページ抽出時に 1 フィールドも取れない場合 (お知らせ記事等) は
   `ParsingError` を出す既定動作に任せる。
-- 詳細ページの実 HTML は本リポジトリ内に fixture として入手できていない
-  ため、自治体 CMS 共通で多用される `<th>項目名</th><td>値</td>` の
-  テーブル、または `<dt>項目名</dt><dd>値</dd>` の定義リストいずれかで
-  各フィールドが並ぶ前提で `WordPressListAdapter` の既定実装に乗せる。
+- 詳細ページの実 HTML は当初本リポジトリ内に fixture として入手できて
+  いなかったため、自治体 CMS 共通で多用される `<th>項目名</th><td>値</td>`
+  のテーブル、または `<dt>項目名</dt><dd>値</dd>` の定義リストいずれかで
+  各フィールドが並ぶ前提で `WordPressListAdapter` の既定実装に乗せていた。
   さらに `<th>` を持たない 2 カラムテーブル
   (`<td>label</td><td>value</td>`) にもフォールバックする。
+- T125 (2026-09-03) で実サイト (`0000077577.html` 等) を実機取得し、
+  以下の差異を確認・修正した:
+  - shelter_date / location の実ラベルは「収容日」「収容場所」ではなく
+    「保護日」「保護場所」(旧ラベルも後方互換で残す)。誤ラベルのまま
+    だと常に空文字となり、location は DataNormalizer 側で「不明」に
+    フォールバックしていた (致命8フィールドの1つが常時欠落)。
+  - 電話番号はテーブル/定義リストではなく、本文末尾の
+    `<section class="kiji_aside ...">` 内の自由文
+    (`<p>電話: 086-803-1259　ファクス: ...</p>`) にのみ存在する。
+    ラベル抽出 (dt/dd, th/td) では原理的に拾えないため、当該セクション
+    のテキストを正規表現で正規化する専用抽出を追加した。
+    フッタの市代表電話 (例: 086-803-1000) と混同しないよう、
+    `kiji_aside` セクション内に限定して探す。
+  - 個体識別用の管理番号 (例: "1D2026049") はタイトル/h1 先頭に
+    `<ID>保護犬個別情報` / `<ID>保護猫個別情報` の形で現れるため、
+    先頭部分を management_number として抽出する。
+  - 写真取得時に `/module/access_log.cgi` `/module/get_trend.cgi` の
+    アクセス解析用トラッキングピクセルが img として混入するため除外する。
 - 動物種別 (species) はラベル抽出を優先し、空のときは記事タイトル
   (例: "1D2026023保護犬個別情報") またはサイト名から「犬/猫」を推定する。
 - 在庫 0 件 (記事リンク 0 件) のときは ParsingError ではなく空リストを返す。
@@ -54,8 +72,11 @@ class CityOkayamaAdapter(WordPressListAdapter):
     # 自然に除外される。
     LIST_LINK_SELECTOR: ClassVar[str] = "ul.category_end li a"
 
-    # detail ページの想定ラベル。実 HTML が入手できていないため、
-    # 自治体 CMS 共通で見られる一般的な見出しを採用する。
+    # detail ページのラベル。T125 (2026-09-03) で実サイトを実機取得し、
+    # shelter_date/location は実ラベル (保護日/保護場所) を優先しつつ
+    # 旧想定ラベル (収容日/収容場所) も後方互換で残す。size は実サイトの
+    # 詳細ページに対応する項目が無いため、他の自治体 CMS で見られる
+    # 一般的な見出しのまま残す (該当が無ければ空文字のまま無害)。
     FIELD_SELECTORS: ClassVar[dict[str, FieldSpec]] = {
         # 種類 / 品種 (例: "雑種", "柴犬", "三毛")
         "species": FieldSpec(label="種類"),
@@ -67,13 +88,26 @@ class CityOkayamaAdapter(WordPressListAdapter):
         "color": FieldSpec(label="毛色"),
         # 大きさ (体格)
         "size": FieldSpec(label="大きさ"),
-        # 収容日 / 保護日
-        "shelter_date": FieldSpec(label="収容日"),
-        # 収容場所 / 発見場所
-        "location": FieldSpec(label="収容場所"),
-        # 連絡先 (電話番号)
+        # 保護日 (実ラベル) / 収容日 (旧想定ラベル、後方互換)
+        "shelter_date": FieldSpec(label=("保護日", "収容日")),
+        # 保護場所 (実ラベル) / 収容場所 (旧想定ラベル、後方互換)
+        "location": FieldSpec(label=("保護場所", "収容場所")),
+        # 連絡先 (電話番号)。実サイトはテーブルにこのラベルを持たず
+        # `section.kiji_aside` の自由文にのみ電話番号があるため、
+        # ここで空だった場合は extract_animal_details 内で
+        # _extract_phone_from_contact_section によるフォールバック抽出を行う。
         "phone": FieldSpec(label="連絡先"),
     }
+
+    # detail ページ本文末尾の「お問い合わせ」欄。電話番号がテーブル化されて
+    # おらず自由文でしか取得できないため、専用抽出のスコープをこのクラスに限定する
+    # (フッタの市代表電話と混同しないため)。
+    CONTACT_SECTION_CLASS: ClassVar[str] = "kiji_aside"
+
+    # タイトル/h1 先頭の管理番号。例: "1D2026049保護犬個別情報" → "1D2026049"
+    _MANAGEMENT_NUMBER_RE: ClassVar[re.Pattern[str]] = re.compile(
+        r"^([0-9A-Za-z]{3,20})(?=保護[犬猫]個別情報)"
+    )
 
     # 動物写真は detail ページ内 `<img>` から拾い、テンプレート由来
     # (/css/img/, /design_img/, /images/, favicon 等) を除外する。
@@ -135,6 +169,14 @@ class CityOkayamaAdapter(WordPressListAdapter):
             value = self._extract_field(soup, spec)
             fields[name] = value
 
+        # 電話番号はテーブル/定義リストに存在せず、本文末尾の
+        # `section.kiji_aside` 内の自由文にのみ書かれているサイトがある
+        # (T125)。ラベル抽出で拾えなかった場合のみフォールバックする。
+        if not fields.get("phone"):
+            contact_text = self._extract_contact_section_text(soup)
+            if contact_text:
+                fields["phone"] = contact_text
+
         if not any(fields.values()):
             raise ParsingError(
                 "detail ページから 1 フィールドも抽出できませんでした",
@@ -146,18 +188,26 @@ class CityOkayamaAdapter(WordPressListAdapter):
         # (二重バグ・mie_dakc 同型)。species はタイトル/h1/site 名から犬/猫を推定し、
         # 品種は breed として保存する。推定不能なら従来どおり品種テキストを species に残す。
         breed = fields.get("species", "")
-        title_text = ""
+        title_only_text = ""
         title_el = soup.find("title")
         if isinstance(title_el, Tag):
-            title_text = title_el.get_text(strip=True)
+            title_only_text = title_el.get_text(strip=True)
+        h1_text = ""
         h1_el = soup.find("h1")
         if isinstance(h1_el, Tag):
-            title_text = f"{title_text} {h1_el.get_text(strip=True)}"
+            h1_text = h1_el.get_text(strip=True)
+        title_text = f"{title_only_text} {h1_text}"
         species = (
             self._infer_species_from_text(title_text)
             or self._infer_species_from_text(self.site_config.name)
             or breed
         )
+
+        # 個体識別用の管理番号。タイトル/h1 先頭に
+        # "<ID>保護犬個別情報" / "<ID>保護猫個別情報" の形で現れる (T125)。
+        management_number = self._extract_management_number(
+            title_only_text
+        ) or self._extract_management_number(h1_text)
 
         image_urls = self._extract_images(soup, detail_url)
 
@@ -175,19 +225,55 @@ class CityOkayamaAdapter(WordPressListAdapter):
                 image_urls=image_urls,
                 source_url=detail_url,
                 category=category,
+                management_number=management_number,
             )
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=detail_url) from e
 
     # ─────────────────── 抽出ヘルパー拡張 ───────────────────
 
-    def _extract_by_label(self, soup: BeautifulSoup, label: str) -> str:
+    def _extract_contact_section_text(self, soup: BeautifulSoup) -> str:
+        """本文末尾の「お問い合わせ」欄 (`section.kiji_aside`) のテキストを返す
+
+        電話番号がテーブル/定義リスト化されておらず自由文
+        (`<p>電話: 086-803-1259　ファクス: ...</p>`) でしか書かれていない
+        サイトがあるため (T125)、ラベル抽出では拾えない。`_normalize_phone`
+        に渡す前提でテキストをそのまま返す (正規表現抽出は呼び出し側で行う)。
+        フッタの市代表電話 (例: 086-803-1000) と混同しないよう、
+        `kiji_aside` セクション内に限定して探す。
+        """
+        for section in soup.find_all("section"):
+            if not isinstance(section, Tag):
+                continue
+            classes = section.get("class") or []
+            if self.CONTACT_SECTION_CLASS not in classes:
+                continue
+            text = section.get_text(" ", strip=True)
+            if "電話" in text:
+                return text
+        return ""
+
+    def _extract_management_number(self, text: str) -> str:
+        """タイトル/h1 先頭の管理番号を抽出する
+
+        例: "1D2026049保護犬個別情報" → "1D2026049"
+        """
+        if not text:
+            return ""
+        m = self._MANAGEMENT_NUMBER_RE.match(text)
+        return m.group(1) if m else ""
+
+    def _extract_by_label(self, soup: BeautifulSoup, label: str | tuple[str, ...]) -> str:
         """基底の `<dt>/<dd>`, `<th>/<td>` に加えて `<td>/<td>` パターンも探す
 
         本サイトの詳細ページは実 HTML が入手できていないが、自治体 CMS では
         `<th>` を持たない 2 列テーブル (左 td: ラベル, 右 td: 値) も
         頻出するため、フォールバックとして対応する
         (city_oita / city_kumamoto と同等の方針)。
+
+        `label` は基底クラスと同様、単一ラベルの str または複数候補の
+        tuple/list を OR 検索として受け取れる (T125: 実ラベル/旧想定ラベル
+        の後方互換のため shelter_date/location で tuple を使用する)。
         """
         # まず基底の dl / th-td パターンを試す
         value = super()._extract_by_label(soup, label)
@@ -195,11 +281,12 @@ class CityOkayamaAdapter(WordPressListAdapter):
             return value
 
         # フォールバック: <td>label</td><td>value</td> の 2 列テーブル
+        labels = (label,) if isinstance(label, str) else tuple(label)
         for td in soup.find_all("td"):
             if not isinstance(td, Tag):
                 continue
             cell_text = td.get_text(strip=True)
-            if not cell_text or label not in cell_text:
+            if not cell_text or not any(lbl in cell_text for lbl in labels):
                 continue
             sibling = td.find_next_sibling("td")
             if sibling is None:
@@ -210,10 +297,13 @@ class CityOkayamaAdapter(WordPressListAdapter):
         return ""
 
     def _filter_image_urls(self, urls: list[str], base_url: str) -> list[str]:
-        """テンプレート (/css/, /design_img/, /images/) の装飾画像を除外する
+        """テンプレート装飾画像・トラッキングピクセルを除外する
 
         岡山市 CMS は `/css/img/`, `/design_img/`, `/images/` 配下に
         ロゴ・装飾画像を置いているため、これらを除外したリストを返す。
+        また `/module/access_log.cgi` `/module/get_trend.cgi` はアクセス
+        解析用トラッキングピクセル (実画像ではない) として img タグに
+        埋め込まれているため、`/module/` 配下も除外する (T125)。
         除外後に 0 件になった場合は元リストを返す (フェイルセーフ)。
         """
         filtered = [
@@ -223,6 +313,7 @@ class CityOkayamaAdapter(WordPressListAdapter):
             and "/css/" not in u
             and "/design_img/" not in u
             and "/images/clearspacer" not in u
+            and "/module/" not in u
             and not u.endswith(".ico")
             and not u.endswith(".gif")
         ]
