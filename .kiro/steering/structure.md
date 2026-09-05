@@ -17,7 +17,7 @@ oneco/
 │   │   ├── orchestration/       # collector_service / parallel_runner
 │   │   ├── llm/                 # Groq フォールバック (通常収集では未使用)
 │   │   ├── services/            # archive_service / scheduler
-│   │   └── config/sites.yaml    # 全211サイト定義
+│   │   └── config/sites.yaml    # 全213サイト定義
 │   ├── syndication_service/     # RSS/Atom (/feeds) + sns_publisher (Threads)
 │   └── notification_manager/    # LINE 通知 (実装済み・本番未配線)
 ├── frontend/                    # Next.js 16 App Router (Vercel)

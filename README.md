@@ -8,7 +8,7 @@
 
 ### 主要機能
 
-- **自動データ収集**: 自治体サイト 211 件から保護動物情報を毎日自動収集（GitHub Actions）
+- **自動データ収集**: 自治体サイト 213 件から保護動物情報を毎日自動収集（GCP Cloud Run Jobs）
 - **rule-based 抽出**: サイト別 adapter で HTML・PDF を解析（LLM = Groq は adapter 自己修復専用）
 - **REST API**: FastAPI による動物データ API（フィルタ・ページング対応）
 - **Web ポータル**: Next.js による保護動物の検索・閲覧画面
@@ -16,10 +16,10 @@
 ## アーキテクチャ
 
 ```
-自治体サイト (211サイト / 47都道府県)
+自治体サイト (213サイト / 47都道府県)
      │ rule-based スクレイピング (サイト別 adapter)
      ▼
-GitHub Actions ──▶ Supabase PostgreSQL
+GCP Cloud Run Jobs ──▶ Supabase PostgreSQL
 (data-collector)          │
                           │ REST API
                           ▼

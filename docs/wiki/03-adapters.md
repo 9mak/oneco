@@ -13,11 +13,11 @@ MunicipalityAdapter (ABC)                  adapters/municipality_adapter.py
    ├─ WordPressListAdapter                 rule_based/wordpress_list.py
    ├─ PdfTableAdapter (pdfplumber)         rule_based/pdf_table.py
    └─ + PlaywrightFetchMixin (JS必須サイト) rule_based/playwright.py
-        └─ サイト個別 adapter 93ファイル    rule_based/sites/*.py
+        └─ サイト個別 adapter 96ファイル    rule_based/sites/*.py
 ```
 
-- 1ファイルが複数 site_name（例: 収容犬/収容猫）を登録するため、adapter ファイル数(93) < `sites.yaml` エントリ数(211)
-- JS 必須サイト（`requires_js: true`、27サイト）は `PlaywrightFetchMixin` が `_http_get` を override
+- 1ファイルが複数 site_name（例: 収容犬/収容猫）を登録するため、adapter ファイル数(96) < `sites.yaml` エントリ数(213)
+- JS 必須サイト（`requires_js: true`、3サイト）は `PlaywrightFetchMixin` が `_http_get` を override
 
 ## registry（`rule_based/registry.py`）
 
@@ -28,7 +28,7 @@ MunicipalityAdapter (ABC)                  adapters/municipality_adapter.py
 
 ## sites.yaml（`src/data_collector/config/sites.yaml`）
 
-- 211 エントリ / 47都道府県。category 内訳: sheltered 96 / lost 66 / adoption 49
+- 213 エントリ / 47都道府県。category 内訳: sheltered 96 / lost 67 / adoption 50
 - `default_provider: groq / openai/gpt-oss-120b`（フォールバック用に保持）
 
 ## サイト追加手順

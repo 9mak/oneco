@@ -38,7 +38,7 @@ class OutputWriter:
 
         CollectorService が **サイトごと** に呼び出すため、既存 animals.json を
         読み込み、source_url で dedupe (今回 data を優先) してから書き直す。
-        これにより run 内で 209 サイト分のデータが animals.json に累積される。
+        これにより run 内で全サイト分のデータが animals.json に累積される。
 
         diff カウントは「今回サイト分」の累積として加算される。
         run の境界をクリアにするためには、main の collection ループ開始前に

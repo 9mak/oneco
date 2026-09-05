@@ -3,7 +3,7 @@
 ## 全体図
 
 ```
-自治体・保護団体サイト (211サイト / 47都道府県)
+自治体・保護団体サイト (213サイト / 47都道府県)
      │  rule-based スクレイピング（LLM は adapter 修復専用）
      ▼
 GitHub Actions (data-collector.yml, 毎日 JST 0:00)
@@ -40,7 +40,7 @@ Vercel (Next.js frontend)  ── ISR/SSG で配信
 | `orchestration/` | `collector_service.py` (1サイト収集の実行本体)、`parallel_runner.py` (ドメイン単位並列)、`soft_deadline.py` |
 | `llm/` | Groq プロバイダー・fetcher・robots checker。**抽出のフォールバック用**（デフォルトは rule-based） |
 | `services/` | `archive_service.py` (180日で archive へ移動)、`scheduler.py` |
-| `config/sites.yaml` | 全サイト定義（211エントリ、`default_extraction: rule-based`） |
+| `config/sites.yaml` | 全サイト定義（213エントリ、`default_extraction: rule-based`） |
 
 - CLI: `python -m data_collector`（`__main__.py`）
 - API サーバー: `uvicorn run_server:app` → `infrastructure/api/app.py` の `create_app()`
@@ -58,7 +58,7 @@ Vercel (Next.js frontend)  ── ISR/SSG で配信
 
 | レイヤー | 技術 |
 |---|---|
-| Backend | Python 3.11 / FastAPI / SQLAlchemy (async) + asyncpg / alembic / pdfplumber / Playwright (JS必須27サイト) |
+| Backend | Python 3.11 / FastAPI / SQLAlchemy (async) + asyncpg / alembic / pdfplumber / Playwright (JS必須3サイト) |
 | Frontend | Next.js 16 App Router / React 19 / Tailwind CSS v4 / Auth.js v5 / d3-geo (日本地図) |
 | LLM | Groq `openai/gpt-oss-120b`（adapter 自己修復専用。Anthropic は不採用） |
 | CI/CD | GitHub Actions（9ワークフロー → [一覧](09-workflows.md)）/ ruff / pytest / Vitest / Playwright E2E |

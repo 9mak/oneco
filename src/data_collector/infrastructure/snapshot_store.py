@@ -64,7 +64,7 @@ class SnapshotStore:
 
         CollectorService が **サイトごと** に呼び出すため、過去呼び出しで書かれた
         既存ファイルを読み込み、source_url で dedupe (今回 items を優先) してから
-        書き直す。これにより、run 内で 209 サイト分のデータが累積される。
+        書き直す。これにより、run 内で全サイト分のデータが累積される。
 
         run の境界をクリアにするためには、main の collection ループ開始前に
         snapshot ファイルを削除すること (`SnapshotStore.reset()` を呼ぶ)。

@@ -16,7 +16,7 @@
 
 | ワークフロー | トリガー | 内容 |
 |---|---|---|
-| `data-collector.yml` | 手動のみ（`workflow_dispatch`） | GCP Cloud Run Jobs 側の定時収集が使えないときの代替実行。処理内容は GCP 版と同じ（alembic upgrade → `python -m data_collector` で 211 サイト収集 → `output/` `snapshots/` `data/*.yaml` を自動コミット。失敗時 Slack + Discord 通知。auto-fix の dispatch 元） |
+| `data-collector.yml` | 手動のみ（`workflow_dispatch`） | GCP Cloud Run Jobs 側の定時収集が使えないときの代替実行。処理内容は GCP 版と同じ（alembic upgrade → `python -m data_collector` で 213 サイト収集 → `output/` `snapshots/` `data/*.yaml` を自動コミット。失敗時 Slack + Discord 通知。auto-fix の dispatch 元） |
 
 ## CI（push / PR）
 
