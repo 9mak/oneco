@@ -29,8 +29,11 @@ requires_js のサイトは adapter が実行できないため監査対象外 (
 通知 (T101):
     致命フィールドの値の食い違い (field_mismatch) を持つサイトが1件でもあれば
     DISCORD_WEBHOOK_URL (環境変数, GitHub Actions secret) 宛に Discord 通知する
-    (data_collector.infrastructure.field_accuracy_notify)。api_only / adapter_only
-    (件数の乖離) は scripts/site_count_audit.py (T105) が別途監視しているため対象外。
+    (data_collector.infrastructure.field_accuracy_notify)。件数の乖離は原則
+    scripts/site_count_audit.py (T105) の担当だが、T105 はホスト単位の comparable
+    判定で 213 サイト中 178 サイトを構造的に見られない (T133)。そのため adapter_only
+    (掲載漏れ疑い) のうち count_audit_blind が立つサイトのものだけは併せて通知する
+    (T140)。api_only は引き続き対象外。
     未設定なら通知は no-op でスキップされる (.github/workflows/field-accuracy-audit.yml
     が実行する)。--recheck 実行時は通知しない (再照合は人が能動的に確認する用途のため)。
 """
@@ -88,6 +91,28 @@ COMPARE_FIELDS = [
 def load_sites_yaml() -> list[dict[str, Any]]:
     cfg = yaml.safe_load(open(ROOT / "src/data_collector/config/sites.yaml"))
     return cfg["sites"]
+
+
+def count_audit_blind_hosts(sites: list[dict[str, Any]]) -> set[str]:
+    """週次カウント監査 (scripts/site_count_audit.py, T105) が構造的に判定できないホスト。
+
+    同スクリプトの comparable 判定 (group_and_flag) はホスト単位で、ホスト内の全サイトが
+    list_link_pattern を持ち、PDF セレクタと requires_js を1件も含まないことを要求する。
+    そのため1サイトでもセレクタを欠くと、同居サイトごと undercount 判定の対象外になる。
+
+    実行時の HTTP 失敗による comparable=False はここでは判定できないので、返す集合は
+    「実行結果によらず構造的に判定不能なホスト」= 盲点の下限になる。
+    """
+    by_host: dict[str, list[dict[str, Any]]] = {}
+    for s in sites:
+        by_host.setdefault(attribute_host(s["list_url"]), []).append(s)
+    return {
+        host
+        for host, rows in by_host.items()
+        if not all(r.get("list_link_pattern") for r in rows)
+        or any(r.get("pdf_link_pattern") for r in rows)
+        or any(r.get("requires_js") for r in rows)
+    }
 
 
 def build_site_config(raw: dict[str, Any]) -> SiteConfig:
@@ -229,7 +254,10 @@ def run_audit(args: argparse.Namespace) -> dict[str, Any]:
     print(f"[audit] API 公開中 {len(api_animals)} 件", file=sys.stderr)
 
     api_by_url = {a["source_url"]: a for a in api_animals}
-    js_hosts = {attribute_host(s["list_url"]) for s in load_sites_yaml() if s.get("requires_js")}
+    # --sites で絞り込んでいても、ホスト単位の判定は sites.yaml 全体を基準にする
+    all_sites = load_sites_yaml()
+    js_hosts = {attribute_host(s["list_url"]) for s in all_sites if s.get("requires_js")}
+    blind_hosts = count_audit_blind_hosts(all_sites)
 
     site_results: list[dict[str, Any]] = []
     matched_urls: set[str] = set()
@@ -237,6 +265,7 @@ def run_audit(args: argparse.Namespace) -> dict[str, Any]:
         r = collect_site(raw_cfg)
         r["mismatches"] = []
         r["adapter_only"] = []
+        r["count_audit_blind"] = attribute_host(raw_cfg["list_url"]) in blind_hosts
         for an in r.get("animals", []):
             api_an = api_by_url.get(an["source_url"])
             if api_an is None:
