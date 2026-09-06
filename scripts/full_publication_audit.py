@@ -101,7 +101,13 @@ def count_audit_blind_hosts(sites: list[dict[str, Any]]) -> set[str]:
     そのため1サイトでもセレクタを欠くと、同居サイトごと undercount 判定の対象外になる。
 
     実行時の HTTP 失敗による comparable=False はここでは判定できないので、返す集合は
-    「実行結果によらず構造的に判定不能なホスト」= 盲点の下限になる。
+    「実行結果によらず構造的に判定不能なホスト」= 盲点の下限になる。構造上は問題ない
+    ホストが bot 対策等で恒常的に fetch 失敗する場合、どちらの監査からも漏れる隙間が
+    残る (T144)。
+
+    list_link_pattern と pdf_link_pattern を両方持つサイトは盲点側に倒す。
+    site_count_audit 側もセレクタ選択は list 優先だが is_pdf_selector が立つため
+    comparable=False になり、判定は対称になっている。
     """
     by_host: dict[str, list[dict[str, Any]]] = {}
     for s in sites:

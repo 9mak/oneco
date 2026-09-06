@@ -159,6 +159,38 @@ class TestEvaluate:
         assert "location" in detail_text
         assert "掲載漏れ" in detail_text
 
+    def test_combined_detail_cap_is_not_doubled(self):
+        """詳細行の上限は2カテゴリ合算で効かせる (reviewer F-01)
+
+        flagged と blind_missing に独立に上限をかけると、両者が重複しないサイト集合の
+        とき実質上限が倍になる。details は Discord 側で 2000 文字にハード切り詰めされ、
+        そのとき末尾に置いた「注意」(単日ノイズの免責と --recheck 手順) から先に消える。
+        """
+        site_results = [
+            _site(
+                f"mismatch{i}",
+                mismatches=[
+                    _mismatch(
+                        f"https://mismatch{i}.example.jp/1",
+                        [{"field": "phone", "site": "000", "api": None}],
+                    )
+                ],
+            )
+            for i in range(10)
+        ] + [
+            _site(
+                f"blind{i}",
+                adapter_only=[f"https://blind{i}.example.jp/1"],
+                count_audit_blind=True,
+            )
+            for i in range(10)
+        ]
+        _has_flags, _message, details = evaluate(_result(site_results))
+        site_keys = [k for k in details if k not in ("他", "注意")]
+        assert len(site_keys) <= 10
+        assert "注意" in details
+        assert details["他"] == "他 10 サイト (詳細はレポート参照)"
+
     def test_many_blind_missing_sites_truncated(self):
         site_results = [
             _site(

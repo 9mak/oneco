@@ -87,16 +87,18 @@ def evaluate(result: dict[str, Any]) -> tuple[bool, str, dict[str, Any]]:
         parts.append(f"{len(blind_missing)} サイト計 {total_missing} 件の掲載漏れ疑い")
     message = f"致命フィールド監査で {' / '.join(parts)}を検知 (要確認)"
 
+    # サイト名で集約してから上限を適用する。カテゴリごとに独立して切ると、両者が
+    # 重複しないサイト集合のとき実質上限が倍になり、Discord の 2000 文字ハード切り詰めで
+    # 末尾の「注意」(単日ノイズの免責と --recheck 手順) から先に落ちる。
     lines_by_site: dict[str, list[str]] = {}
-    for site in flagged[:_MAX_DETAIL_SITES]:
+    for site in flagged:
         lines_by_site.setdefault(site.get("name", "unknown"), []).append(_detail_line(site))
-    for site in blind_missing[:_MAX_DETAIL_SITES]:
+    for site in blind_missing:
         lines_by_site.setdefault(site.get("name", "unknown"), []).append(_missing_detail_line(site))
 
-    details: dict[str, Any] = {name: " / ".join(lines) for name, lines in lines_by_site.items()}
-    remaining = max(0, len(flagged) - _MAX_DETAIL_SITES) + max(
-        0, len(blind_missing) - _MAX_DETAIL_SITES
-    )
+    shown = list(lines_by_site.items())[:_MAX_DETAIL_SITES]
+    details: dict[str, Any] = {name: " / ".join(lines) for name, lines in shown}
+    remaining = len(lines_by_site) - len(shown)
     if remaining > 0:
         details["他"] = f"他 {remaining} サイト (詳細はレポート参照)"
     details["注意"] = _SINGLE_DAY_CAVEAT
