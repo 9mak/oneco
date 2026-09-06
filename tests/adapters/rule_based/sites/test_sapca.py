@@ -51,16 +51,34 @@ DETAIL_HTML = """
 class TestSapcaAdapterListExtraction:
     """list ページからの detail URL 抽出"""
 
-    def test_fetch_animal_list_extracts_detail_urls_from_fixture(self, fixture_html):
+    def test_fetch_animal_list_excludes_sumi_cards_from_fixture(self, fixture_html):
+        """フィクスチャの2件は両方 `li.sumi`「飼い主さんのところへ戻りました」なので0件になる (T134)
+
+        以前はこの2件を抽出することを期待値にしていたが、実データを読み直すと
+        どちらも既に飼い主のもとへ戻った個体で、募集中として公開してはいけない
+        ものだった。詳細ページは 200 のまま残るため prune では落ちない。
+        """
         adapter = SapcaAdapter(_site())
         html = fixture_html("sapca_jp")
         with patch.object(adapter, "_http_get", return_value=html):
             result = adapter.fetch_animal_list()
+        assert result == []
+
+    def test_fetch_animal_list_extracts_available_cards(self):
+        """`sumi` が付いていないカードは従来どおり抽出する"""
+        html = """
+        <html><body><ul class="list">
+          <li class="sumi lost-sumi"><a href="https://www.sapca.jp/lost/21056.html">
+            飼い主さんのところへ 戻りました</a></li>
+          <li><a href="https://www.sapca.jp/lost/21730.html">迷い犬 湖南市</a></li>
+        </ul></body></html>
+        """
+        adapter = SapcaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            result = adapter.fetch_animal_list()
 
         urls = [u for u, _cat in result]
-        # フィクスチャに含まれる 2 件の detail URL が抽出される
-        assert "https://www.sapca.jp/lost/21056.html" in urls
-        assert "https://www.sapca.jp/lost/21029.html" in urls
+        assert urls == ["https://www.sapca.jp/lost/21730.html"]
         # `/lost` 自体 (一覧ページ) や mailto などは混入しない
         for u in urls:
             assert u.endswith(".html")

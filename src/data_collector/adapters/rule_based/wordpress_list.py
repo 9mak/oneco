@@ -61,6 +61,11 @@ class WordPressListAdapter(RuleBasedAdapter):
     # 空文字 = ページ送りを辿らない。定義した派生クラスだけが複数ページを読む。
     NEXT_PAGE_SELECTOR: ClassVar[str] = ""
     MAX_LIST_PAGES: ClassVar[int] = 10
+    # 一覧リンクのテキスト (配下の img alt を含む) にこれらの語があれば除外する。
+    # 「個体ページは 200 のまま、タイトルに『返還しました』と書き足されただけ」という
+    # 状態は 404 にならないため prune_disappeared では捕捉できず、里親を探している人に
+    # 決着済みの子を見せ続けてしまう (T134)。空タプル = 従来どおり除外しない。
+    LINK_EXCLUDE_MARKERS: ClassVar[tuple[str, ...]] = ()
 
     def __init_subclass__(cls, **kwargs) -> None:
         super().__init_subclass__(**kwargs)
@@ -94,6 +99,7 @@ class WordPressListAdapter(RuleBasedAdapter):
         visited_pages: set[str] = set()
         page_url = self.site_config.list_url
         truncated = False
+        excluded = 0
 
         for _ in range(self.MAX_LIST_PAGES):
             if page_url in visited_pages:
@@ -118,6 +124,14 @@ class WordPressListAdapter(RuleBasedAdapter):
                 absolute = self._absolute_url(href, base=page_url)
                 if absolute in seen:
                     continue
+                if self._is_excluded_link(link):
+                    excluded += 1
+                    logger.info(
+                        "[%s] 決着済みの注記があるため除外しました: %s",
+                        self.site_config.name,
+                        absolute,
+                    )
+                    continue
                 seen.add(absolute)
                 urls.append((absolute, category))
 
@@ -141,7 +155,15 @@ class WordPressListAdapter(RuleBasedAdapter):
                     page_url,
                 )
 
+        # 除外は打ち切りではないので list_truncated は立てない。立てると
+        # prune_disappeared がスキップされ、除外した個体が DB に残り続けてしまう。
         self.list_truncated = truncated
+        if excluded:
+            logger.info(
+                "[%s] 決着済みの注記により計 %d 件を一覧から除外しました",
+                self.site_config.name,
+                excluded,
+            )
 
         # 全ページを通して detail link 0 件なら「現在その種別の収容動物がいない」
         # 真ゼロとして空リストを返す。_http_get が成功し HTML パースまで通って
@@ -153,6 +175,22 @@ class WordPressListAdapter(RuleBasedAdapter):
         # あり 2 ページ目以降に実データがある構成では、1 ページ目基準だと収集済みの
         # データを無警告で握り潰してしまうため。
         return urls
+
+    def _is_excluded_link(self, link: Tag) -> bool:
+        """一覧リンクが決着済み (返還・譲渡完了等) の注記を持つか。
+
+        リンクテキストだけでなく配下 img の alt も見る。サムネイルだけを
+        リンクにしている一覧では、個体名が alt にしか無いことがあるため。
+        """
+        if not self.LINK_EXCLUDE_MARKERS:
+            return False
+        parts = [link.get_text(" ", strip=True)]
+        for img in link.select("img"):
+            alt = img.get("alt")
+            if isinstance(alt, str):
+                parts.append(alt)
+        text = " ".join(parts)
+        return any(marker in text for marker in self.LINK_EXCLUDE_MARKERS)
 
     def extract_animal_details(self, detail_url: str, category: str = "adoption") -> RawAnimalData:
         html = self._http_get(detail_url)

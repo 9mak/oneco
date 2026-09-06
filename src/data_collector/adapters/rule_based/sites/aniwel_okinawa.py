@@ -78,6 +78,17 @@ class AniwelOkinawaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
     # accommodate / missing / protection の 3 prefix を共通で拾う。
     LIST_LINK_SELECTOR: ClassVar[str] = "a[href*='_view/']"
 
+    # 決着済みの個体を一覧から落とす (T134)。詳細ページは 200 のまま残るため
+    # 404 基準の prune では捕捉できない。一覧タイトルの注記だけが手がかりになる。
+    #
+    # 一覧ページ本文の凡例 (2026-09-06 実読):
+    #   「☆印が付いているものは、ボランティア団体に譲渡されたものです。」
+    #   「〇印が付いているものは、収容期間中に飼い主が現れなかった場合に、
+    #     ボランティア団体へ譲渡する予定になっているものです。」
+    # ☆ はセンターでは引き取れないため除外する (2026-09-06 おまえさん判断)。
+    # 〇 はまだセンターにいる = 募集中なので除外しない。
+    LINK_EXCLUDE_MARKERS: ClassVar[tuple[str, ...]] = ("返還しました", "☆")
+
     # 一覧は CakePHP 形式の `/animals/missing/cats/page:2` でページ送りされ、
     # `<div class="paging">` 内の `<span class="next"><a rel="next">` が次ページを指す。
     # 2026-09-04 実測で行方不明犬が2ページ・行方不明猫が3ページあり、

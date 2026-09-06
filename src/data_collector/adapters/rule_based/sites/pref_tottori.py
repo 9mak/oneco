@@ -40,6 +40,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import ClassVar
 
@@ -58,6 +59,16 @@ _PHONE_RE = re.compile(
 
 # 見出し span から所管 (中部/西部/東部 等) を抽出する正規表現。
 _OFFICE_RE = re.compile(r"(東部|中部|西部|鳥取市)[^\s　]*")
+
+logger = logging.getLogger(__name__)
+
+# 「詳細情報」列のインデックス (cells の並びは COLUMN_FIELDS のコメント参照)。
+_DETAIL_INFO_COLUMN = 8
+
+# 決着済み (飼い主のもとへ戻った) を示す注記。この列には
+# 「返還しました」(2026-09-06 実測) のように完了形で書き足される。
+# 「飼い主に返還する場合は…」のような案内文を誤検知しないよう完了形に限定する。
+_RESOLVED_NOTE_RE = re.compile(r"返還(?:しました|済み?)|戻りました")
 
 
 class PrefTottoriAdapter(SinglePageTableAdapter):
@@ -152,10 +163,34 @@ class PrefTottoriAdapter(SinglePageTableAdapter):
 
         基底実装は rows が空のとき例外を出すが、鳥取県のサイトは
         収容動物が居ない期間でもページ自体は存在するため、空リストを返す。
+
+        決着済み (飼い主のもとへ返還された) の行は除外する (T134)。鳥取県は
+        個体ページを持たず 1 ページの表で完結するため、返還された子は行が消える
+        のではなく「詳細情報」列に『返還しました』と書き足される。404 にならない
+        ので prune_disappeared では落ちない。
+
+        除外しても `#row=N` の N は詰めない。詰めると残った個体の仮想 URL が
+        ずれ、T057 (山梨)・T066 (香川) と同型の identity 破壊 (shelter_date の
+        上書き・SNS 再投稿) を起こす。
         """
         rows = self._load_rows()
         category = self.site_config.category
-        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(rows))]
+        urls: list[tuple[str, str]] = []
+        for i, row in enumerate(rows):
+            cells = row.find_all(["td", "th"])
+            note = ""
+            if len(cells) > _DETAIL_INFO_COLUMN:
+                note = cells[_DETAIL_INFO_COLUMN].get_text(" ", strip=True)
+            if note and _RESOLVED_NOTE_RE.search(note):
+                logger.info(
+                    "[%s] 決着済みのため除外しました (row=%d, 詳細情報=%r)",
+                    self.site_config.name,
+                    i,
+                    note,
+                )
+                continue
+            urls.append((f"{self.site_config.list_url}#row={i}", category))
+        return urls
 
     def extract_animal_details(self, virtual_url: str, category: str = "lost") -> RawAnimalData:
         """tr 1 件から RawAnimalData を構築する

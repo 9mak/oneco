@@ -412,3 +412,79 @@ class TestPrefTottoriAdapter:
                     "https://www.pref.tottori.lg.jp/221001.htm#row=999",
                     category="lost",
                 )
+
+
+def _row(detail_info: str = "") -> list[str]:
+    """詳細情報列だけを差し替えた 10 セルの行を作る"""
+    return [
+        "9月2日(水) 午後3時頃",
+        "米子警察署 (米子市上後藤で保護)",
+        "犬",
+        "柴系 雑種",
+        "茶色",
+        "オス",
+        "5歳",
+        "中型 銀色のスタッズ付き赤色首輪",
+        detail_info,
+        "午前5時20分頃、住民が保護。",
+    ]
+
+
+class TestResolvedRowExclusion:
+    """詳細情報列の決着済み注記による除外 (T134)
+
+    鳥取県は個体ページを持たず 1 ページの表で完結するため、返還された子は
+    行が消えるのではなく「詳細情報」列に『返還しました』と書き足される。
+    404 にならないので prune では落ちない。
+    """
+
+    def test_resolved_row_is_excluded(self):
+        html = _build_html_with_animals(seibu_rows=[_row("返還しました"), _row("")])
+        adapter = PrefTottoriAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            result = adapter.fetch_animal_list()
+        assert len(result) == 1
+
+    def test_row_index_is_not_compacted(self):
+        """除外しても #row=N は詰めない。
+
+        詰めると残った個体の仮想 URL がずれ、T057 (山梨)・T066 (香川) と同型の
+        identity 破壊 (shelter_date 上書き・SNS 再投稿) を起こす。
+        """
+        html = _build_html_with_animals(seibu_rows=[_row("返還しました"), _row("")])
+        adapter = PrefTottoriAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            result = adapter.fetch_animal_list()
+        assert result[0][0].endswith("#row=1")
+
+    def test_excluded_row_still_resolvable_by_index(self):
+        """行そのものは残すので、残った個体の詳細取得がずれない"""
+        html = _build_html_with_animals(seibu_rows=[_row("返還しました"), _row("")])
+        adapter = PrefTottoriAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            animal = adapter.extract_animal_details(urls[0][0], category="lost")
+        assert isinstance(animal, RawAnimalData)
+        assert animal.source_url.endswith("#row=1")
+
+    def test_normal_note_is_kept(self):
+        """決着を示さない備考は除外しない"""
+        html = _build_html_with_animals(seibu_rows=[_row("収容期限 9月9日まで")])
+        adapter = PrefTottoriAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            assert len(adapter.fetch_animal_list()) == 1
+
+    def test_guidance_sentence_is_not_false_positive(self):
+        """「飼い主に返還する場合は…」型の案内文を決着と誤判定しない"""
+        html = _build_html_with_animals(
+            seibu_rows=[_row("飼い主に返還する場合は手数料が必要です")]
+        )
+        adapter = PrefTottoriAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            assert len(adapter.fetch_animal_list()) == 1
+
+    def test_all_rows_resolved_returns_empty(self):
+        html = _build_html_with_animals(seibu_rows=[_row("返還しました")])
+        adapter = PrefTottoriAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            assert adapter.fetch_animal_list() == []
