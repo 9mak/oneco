@@ -6,7 +6,7 @@
 
 ```mermaid
 flowchart LR
-    subgraph "自治体サイト 211件"
+    subgraph "自治体サイト 213件"
         S1[徳島県]
         S2[高知県]
         S3[...]
@@ -44,7 +44,7 @@ flowchart LR
 ## 主要コンポーネント
 
 ### 1. Data Collector (`src/data_collector/`)
-**役割**: 211 サイトを巡回して動物データを抽出 → DB 投入
+**役割**: 213 サイトを巡回して動物データを抽出 → DB 投入
 
 - エントリ: `__main__.py`
 - 実行: GitHub Actions `.github/workflows/data-collector.yml` が毎日 JST 00:00 (UTC 15:00) に cron 実行
@@ -100,7 +100,7 @@ flowchart LR
 ```
 JST 00:00  GitHub Actions data-collector.yml が起動
    ↓
-   1. sites.yaml を読む (211 サイト)
+   1. sites.yaml を読む (213 サイト)
    2. broken_sites.yaml でスキップ判定
    3. 各サイトを rule-based adapter で取得・抽出
       - per-site timeout (通常 120s / Playwright 180s / sites.yaml で個別上書き可)

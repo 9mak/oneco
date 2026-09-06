@@ -21,7 +21,7 @@
 - [x] MVP公開（Cloud Run + Vercel + Supabase 本番稼働中）
 
 ### Phase 1 で当初想定を超えた成果
-- 四国 5サイトに留まらず、**全国 211サイト**まで拡張済（`src/data_collector/config/sites.yaml`）
+- 四国 5サイトに留まらず、**全国 213サイト**まで拡張済（`src/data_collector/config/sites.yaml`）
 - ※ 2026-05-15 に抽出方式を **rule-based デフォルト**へ転換（LLM コスト $0 化。LLM は adapter 自己修復の修理工に役割変更）
 - `image_hashes` テーブルへの URL ハッシュ蓄積（重複検出基盤）
 - フロント: お気に入り、キーワード検索、都道府県別マップ（地方別グリッド）、画像 onError フォールバック

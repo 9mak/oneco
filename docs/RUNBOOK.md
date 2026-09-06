@@ -174,7 +174,7 @@ auto-fix-adapter（自己修復ループ）の段階リリース状態に応じ�
 これらは通知が来ない限り放置でよい:
 
 - **Backend / Frontend / Collector CI/CD**: push で自動テスト・自動ビルド → Cloud Run（API）/ Cloud Run Jobs（Collector）/ Vercel 自動デプロイ（alembic migration も自動）
-- **Data Collector**: 毎日 JST 0:00、GCP Cloud Run Jobs（`oneco-collector`）で 211 サイト収集 → 本番 DB 直書き
+- **Data Collector**: 毎日 JST 0:00、GCP Cloud Run Jobs（`oneco-collector`）で 213 サイト収集 → 本番 DB 直書き
 - **SNS Threads**: 毎日 JST 9:00 自動投稿
 - **Uptime Check**: 30 分毎に死活監視（収集鮮度チェック込み）
 - **Secret Health**: 毎日 JST 9:00 にトークン失効チェック

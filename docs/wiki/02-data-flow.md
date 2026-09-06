@@ -5,7 +5,7 @@
 ## 全体の流れ
 
 ```
-config/sites.yaml (211サイト定義)
+config/sites.yaml (213サイト定義)
   → run_rule_based_sites() / run_llm_sites()        [__main__.py]
   → CollectorService.run_collection()               [orchestration/collector_service.py]
        ├ adapter が一覧/詳細ページを取得（ドメイン単位 politeness throttle）
