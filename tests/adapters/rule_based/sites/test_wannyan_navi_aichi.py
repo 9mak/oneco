@@ -449,6 +449,36 @@ class TestWannyanNaviAichiAdapterHelpers:
         assert fields["breed"] == "雑種"
         assert fields["color"] == "三毛"
 
+    def test_nan_age_does_not_leak_into_breed(self):
+        """Bubble.io が年齢を計算できないとき `NaN歳NaNヵ月` を描画する (T131)
+
+        `_AGE_PATTERN` は `\\d+` 前提なのでこれにマッチせず、値が remaining に落ちて
+        `breed` として公開されていた。本番実測で21件が `breed='NaN歳NaNヵ月'` の
+        まま公開され、動物カード・詳細ページ・OGP description に出ていた。
+        """
+        segment = ["No . 尾263014", "尾張支所(一宮市)", "雑種", "白黒", "メス", "NaN歳NaNヵ月"]
+        fields = WannyanNaviAichiAdapter._classify_basic_info(segment)
+        assert fields["age"] == ""
+        assert fields["breed"] == "雑種"
+        assert fields["color"] == "白黒"
+
+    def test_nan_age_does_not_shift_breed_and_color(self):
+        """NaN を捨てても品種・毛色の割り当て順がずれない"""
+        segment = ["No . 尾263014", "尾張支所(一宮市)", "NaN歳NaNヵ月", "雑種", "白黒", "メス"]
+        fields = WannyanNaviAichiAdapter._classify_basic_info(segment)
+        assert fields["age"] == ""
+        assert fields["breed"] == "雑種"
+        assert fields["color"] == "白黒"
+        assert fields["sex"] == "メス"
+
+    @pytest.mark.parametrize("invalid", ["NaN歳NaNヵ月", "NaN歳", "NaNヶ月", "NaN か月"])
+    def test_invalid_age_variants_are_dropped(self, invalid):
+        segment = ["No . 尾263014", "尾張支所(一宮市)", "雑種", invalid]
+        fields = WannyanNaviAichiAdapter._classify_basic_info(segment)
+        assert fields["age"] == ""
+        assert fields["breed"] == "雑種"
+        assert fields["color"] == ""
+
 
 class TestWannyanNaviAichiAdapterRegistry:
     """registry にサイト名が登録されていること"""
