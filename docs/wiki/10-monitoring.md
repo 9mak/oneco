@@ -21,8 +21,10 @@ Secret 監視   secret-health.yml (日次 JST9:00)
 
 Workflow 失敗  各 workflow の「Notify Discord on failure」ステップ
 
-課金アラート   GCP 予算 (oneco-monthly-cap-500, ¥500/月) → 100% 到達で stop-billing
-              Function が課金解除 (メール通知のみ、Discord 無し。→ RUNBOOK F 節)
+課金アラート   GCP 予算 (oneco-monthly-cap-500, ¥500/月) を budget-alerts topic 経由で
+              2つの Cloud Function が独立購読
+              ├ 90% 到達  → budget-alert が Discord 通知（早期警告、緩和措置なし）
+              └ 100% 到達 → stop-billing が課金解除（メール通知のみ、Discord 無し。→ RUNBOOK F 節）
 ```
 
 ## 各監視の詳細
@@ -48,11 +50,13 @@ Workflow 失敗  各 workflow の「Notify Discord on failure」ステップ
 - 状態は `data/broken_sites.yaml` / `data/site_baselines.yaml` / `data/field_quality_drift.yaml` に永続化（→ [データフロー](02-data-flow.md)）
 - 検知結果は [自己修復ループ](04-self-healing.md) のトリガーにもなる
 
-### 課金/予算監視（`infra/stop-billing`）
+### 課金/予算監視（`infra/stop-billing` + `infra/budget-alert`）
 
 - 月額予算 ¥500（`oneco-monthly-cap-500`）到達で Cloud Function `stop-billing` が `oneco-app` の課金を自動解除し、Cloud Run 含む全リソースが止まる（2026-07-30 の無料トライアル失効停止事故の再発防止）
-- 通知は GCP 標準の予算アラートメール（50/90/100%閾値）のみで、Discord 通知は無い。症状は uptime-check の外形監視ダウンとして間接的に検知される
-- 対応手順は [RUNBOOK.md#f-課金遮断予算アラート](../RUNBOOK.md#f-課金遮断予算アラート)、仕組みの詳細は [infra/stop-billing/README.md](../../infra/stop-billing/README.md)
+- 100%到達の通知は GCP 標準の予算アラートメール（50/90/100%閾値）のみで、Discord 通知は無い。症状は uptime-check の外形監視ダウンとして間接的に検知される
+- 90%到達は別の Cloud Function `budget-alert`（同じ `budget-alerts` Pub/Sub topic を独立サブスクリプションで購読、stop-billing のコード・IAMには変更なし）が Discord へ通知する（T143）。`costAmount / budgetAmount` を自前で計算し、GCS マーカーで月1回だけ通知する（dedup）。緩和措置は無い早期警告のみ
+- 予算のコスト集計には数時間〜1日程度の遅延があるため、90%通知が届いた時点で実コストが既に90%を超えている可能性がある
+- 対応手順は [RUNBOOK.md#f-課金遮断予算アラート](../RUNBOOK.md#f-課金遮断予算アラート)、仕組みの詳細は [infra/stop-billing/README.md](../../infra/stop-billing/README.md) / [infra/budget-alert/README.md](../../infra/budget-alert/README.md)
 
 ## 通知チャネル
 
