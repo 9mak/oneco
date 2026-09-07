@@ -185,6 +185,66 @@ class TestAnimalNetNagasakiAdapterDetailExtraction:
         assert raw.category == "adoption"
         assert raw.species == "ミックス（雑種）"
 
+    # ─────────── T147: 「品種」を breed としても残す ───────────
+
+    def test_breed_keeps_hinshu_value_after_species_is_overwritten(self):
+        """権威分類で species が上書きされても品種の値が breed に残る (T147)
+
+        「品種」の値は species の推定ソースとして使われるが、直後に
+        `?animal-type=dog|cat` 由来の権威分類・模様補正・サイト名補正で
+        「犬」「猫」に上書きされて失われていた。本番の長崎 48 件が全件
+        breed=null だったのはこれが原因。
+        """
+        html = """
+        <html><body><main>
+          <ul>
+            <li><p>品種</p><p>ミニチュア・ダックス・フンド</p></li>
+            <li><p>性別</p><p>オス</p></li>
+            <li><p>毛色</p><p>白茶</p></li>
+            <li><p>収容日</p><p>2026-09-01</p></li>
+            <li><p>収容場所</p><p>長崎県央保健所</p></li>
+            <li><p>連絡先</p><p>0957-26-3306</p></li>
+          </ul>
+        </main></body></html>
+        """
+        adapter = AnimalNetNagasakiAdapter(_site_syuuyou())
+        # 一覧由来の権威分類を「犬」として与える（fetch_animal_list 経由と同じ状態）
+        adapter._species_by_no = {"19602": "犬"}
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://animal-net.pref.nagasaki.jp/animal/no-19602/",
+                category="sheltered",
+            )
+            normalized = adapter.normalize(raw)
+
+        assert raw.species == "犬"  # 権威分類で上書きされる
+        assert raw.breed == "ミニチュア・ダックス・フンド"  # 品種は残る
+        assert normalized.breed == "ミニチュア・ダックス・フンド"
+        assert normalized.species == "犬"
+
+    def test_breed_does_not_take_bare_species_word(self):
+        """品種欄が無く species が「犬」「猫」そのものの場合は breed に入れない (T147)"""
+        html = """
+        <html><body><main>
+          <ul>
+            <li><p>性別</p><p>オス</p></li>
+            <li><p>毛色</p><p>白茶</p></li>
+            <li><p>収容日</p><p>2026-09-01</p></li>
+            <li><p>収容場所</p><p>長崎県央保健所</p></li>
+          </ul>
+        </main></body></html>
+        """
+        adapter = AnimalNetNagasakiAdapter(_site_syuuyou())
+        adapter._species_by_no = {"19602": "犬"}
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(
+                "https://animal-net.pref.nagasaki.jp/animal/no-19602/",
+                category="sheltered",
+            )
+
+        assert raw.species == "犬"
+        assert raw.breed == ""
+
     def test_cat_only_pattern_classifies_as_cat(self):
         """品種が「ミックス（雑種）」かつサイト名が犬猫両方でも、模様が猫固有柄
         (三毛/サビ/キジ/トラ) なら猫に確定する。

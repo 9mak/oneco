@@ -97,6 +97,13 @@ class AniwelOkinawaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
     #               抽出せずサイト名から犬/猫を補完する (extract_animal_details)
     FIELD_SELECTORS: ClassVar[dict[str, FieldSpec]] = {
         "species": FieldSpec(label="種類"),
+        # T147: 行方不明 (`missing_view`) と迷い込み保護 (`protection_view`) の
+        # 詳細ページは「品種」欄を持つ (例:「品種 ジャックラッセル」
+        # 「品種 雑種」)。未登録だったため本番の沖縄 95 件が全件 breed=null
+        # だった。センター収容 (`accommodate_view`) は記号/収容日/収容期限/
+        # 場所/毛色/性別/体格/推定年齢/首輪/備考 のみで品種欄そのものが無く、
+        # ここは空のままが正しい (2026-09-07 実ページで全項目を確認)。
+        "breed": FieldSpec(label="品種"),
         "sex": FieldSpec(label="性別"),
         "age": FieldSpec(label="年齢"),
         "color": FieldSpec(label="毛色"),

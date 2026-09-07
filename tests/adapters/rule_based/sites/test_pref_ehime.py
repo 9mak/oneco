@@ -226,6 +226,62 @@ class TestPrefEhimeAdapter:
         assert raw.shelter_date == "2024-03-15"
         assert raw.species == "猫"
 
+    # ─────────── T147: 「種類」列を breed として拾う ───────────
+
+    def test_table_layout_extracts_breed_from_shurui_column(self):
+        """「種類」列 (cells[2]) を breed に入れる (T147)
+
+        `COLUMN_FIELDS` に `2: "breed"` と宣言してあるのに、実際の列読み取りが
+        cells[1]/[3]/[4]/[5] しか見ておらず 2 を飛ばしていた。本番の愛媛
+        収容中 8 件が全件 breed=null だったのはこれが原因。
+        species の決め方 (見出し段落 → サイト名) は変えない。
+        """
+        html = (
+            "<html><head><title>愛媛県</title></head><body>"
+            "<p><strong>9月2日　今治市　犬</strong></p>"
+            "<table class='sp_table_wrap'>"
+            "<thead><tr>"
+            "<th>No.</th><th>拾得捕獲場所</th><th>種類</th>"
+            "<th>毛色</th><th>性別</th><th>体格</th><th>備考</th>"
+            "</tr></thead>"
+            "<tbody><tr>"
+            "<td>1</td><td>今治市大三島町</td><td>柴犬風</td>"
+            "<td>こげ茶</td><td>オス</td><td>小</td><td></td>"
+            "</tr></tbody></table>"
+            "</body></html>"
+        )
+        adapter = PrefEhimeAdapter(_site_lost())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+            normalized = adapter.normalize(raw)
+
+        assert raw.breed == "柴犬風"
+        assert normalized.breed == "柴犬風"
+        # 列がずれていないこと (breed を足したせいで他が動いていない)
+        assert raw.location == "今治市大三島町"
+        assert raw.color == "こげ茶"
+        assert raw.sex == "オス"
+        assert raw.size == "小"
+        assert normalized.species == "犬"
+
+    def test_table_layout_breed_empty_when_column_missing(self):
+        """列数が想定より少ないページで breed を空のままにする (T147)"""
+        html = (
+            "<html><head><title>愛媛県</title></head><body>"
+            "<table class='sp_table_wrap'>"
+            "<thead><tr><th>No.</th><th>拾得捕獲場所</th></tr></thead>"
+            "<tbody><tr><td>1</td><td>松山市</td></tr></tbody></table>"
+            "</body></html>"
+        )
+        adapter = PrefEhimeAdapter(_site_lost())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="lost")
+
+        assert raw.breed == ""
+        assert raw.location == "松山市"
+
     def test_species_inference_helper(self):
         """`_infer_species_from_site_name` の単体動作確認
 

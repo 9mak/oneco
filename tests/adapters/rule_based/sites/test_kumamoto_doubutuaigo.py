@@ -697,6 +697,60 @@ class TestKumamotoDoubutuAigoRealLabels:
         assert raw.sex == "オス"
         assert raw.color == "黒系"
 
+    # ─────────── T147: 「種類」を breed として拾う ───────────
+
+    def test_real_dog_detail_extracts_breed_from_shurui_label(self):
+        """「種類」の値を breed に入れる (T147)
+
+        species に使えない (犬/猫を判別できない) という理由で丸ごと捨てて
+        おり、本番の熊本県動愛 92 件が全件 breed=null だった。
+        species の推定経路は変えない。
+        """
+        adapter = KumamotoDoubutuAigoAdapter(_site_center_dog())
+        url = "https://www.kumamoto-doubutuaigo.jp/animals/detail/4726"
+        with patch.object(adapter, "_http_get", return_value=_REAL_DETAIL_DOG):
+            raw = adapter.extract_animal_details(url, category="adoption")
+            normalized = adapter.normalize(raw)
+
+        assert raw.breed == "雑種(ミックス)"
+        assert normalized.breed == "雑種(ミックス)"
+        # species は従来どおり URL から推定され、breed に引きずられない
+        assert normalized.species == "犬"
+
+    def test_breed_takes_the_animals_own_shurui_not_the_recommend_area(self):
+        """ページ下部の「こちらのページも見ています」の別個体を拾わない (T147)
+
+        実ページは本体の `<dl class="animal-detail">` のあとに別個体の
+        「種類」が複数並ぶ。最初に一致した `<dt>` を採る実装なので本体が
+        先に取れる。
+        """
+        html_with_recommend = _REAL_DETAIL_DOG.replace(
+            "</body>",
+            """
+            <div class="recommend-area">
+              <dl><dt>種類</dt><dd>チワワ</dd><dt>性別</dt><dd>メス</dd></dl>
+              <dl><dt>種類</dt><dd>秋田</dd><dt>性別</dt><dd>オス</dd></dl>
+            </div>
+            </body>""",
+        )
+        adapter = KumamotoDoubutuAigoAdapter(_site_center_dog())
+        url = "https://www.kumamoto-doubutuaigo.jp/animals/detail/4726"
+        with patch.object(adapter, "_http_get", return_value=html_with_recommend):
+            raw = adapter.extract_animal_details(url, category="adoption")
+
+        assert raw.breed == "雑種(ミックス)"
+
+    def test_breed_stays_empty_when_shurui_label_absent(self):
+        """「種類」欄が無いページで誤った値を入れない (T147)"""
+        html_without_breed = _REAL_DETAIL_DOG.replace("<dt>種類</dt><dd>雑種(ミックス)</dd>", "")
+        adapter = KumamotoDoubutuAigoAdapter(_site_center_dog())
+        url = "https://www.kumamoto-doubutuaigo.jp/animals/detail/4726"
+        with patch.object(adapter, "_http_get", return_value=html_without_breed):
+            raw = adapter.extract_animal_details(url, category="adoption")
+
+        assert raw.breed == ""
+        assert raw.species == "犬"
+
     def test_real_dog_detail_normalizes_to_dog_not_other(self):
         """正規化後の species が 'その他' ではなく '犬' になる (回帰防止の本丸)"""
         adapter = KumamotoDoubutuAigoAdapter(_site_center_dog())

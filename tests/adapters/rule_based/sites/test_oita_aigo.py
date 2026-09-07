@@ -420,6 +420,44 @@ class TestOitaAigoDetailPageFallback:
         # 体重推定の中(17kg → 大)は依然として使われる (詳細に「大きさ」が無い場合)
         assert raw.size == "大"
 
+    def test_anytimedog_breed_filled_from_shurui_label(self):
+        """譲渡犬の breed を詳細ページの「種類」で埋める (T147)
+
+        `LABEL_FIELDS` に「種類」が無く、本番の大分 74 件が全件 breed=null
+        だった。当初の調査は譲渡猫のページだけを見て「このサイトは品種を
+        出していない」と判断していたが、実際は犬と迷子情報だけが「種類」を
+        持つ非対称な構造だった (PR #328 reviewer F-01)。
+        """
+        adapter = OitaAigoAdapter(_adoption_dog_site())
+        fake = _make_http_get(
+            _LIST_WITH_DETAIL_LINK,
+            "https://oita-aigo.com/transferdoglist/24-0609-2/",
+            _DETAIL_DOG_HTML,
+        )
+        with patch.object(adapter, "_http_get", side_effect=fake):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="adoption")
+            normalized = adapter.normalize(raw)
+
+        assert raw.breed == "雑種"
+        assert normalized.breed == "雑種"
+        # species は URL / サイト名から独立に決まるので影響を受けない
+        assert normalized.species == "犬"
+
+    def test_lostchild_breed_filled_from_shurui_label(self):
+        """迷子情報の breed も「種類」で埋める (T147)"""
+        adapter = OitaAigoAdapter(_lostchild_site())
+        fake = _make_http_get(
+            _LIST_LOSTCHILD_WITH_DETAIL_LINK,
+            "https://oita-aigo.com/lostchild/r8-5-28/",
+            _DETAIL_LOSTCHILD_HTML,
+        )
+        with patch.object(adapter, "_http_get", side_effect=fake):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+
+        assert raw.breed == "ビーグル雑種"
+
     def test_lostchild_color_filled_from_keyword_label(self):
         """迷子カードの color を詳細ページの「毛色・長さ」で補完する"""
         adapter = OitaAigoAdapter(_lostchild_site())

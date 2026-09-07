@@ -449,6 +449,48 @@ class TestAniwelOkinawaRealLabels:
         assert raw.shelter_date == "2026年5月25日"  # 受付月日(5/26)ではなく保護日(5/25)
         assert raw.species == "犬"
 
+    # ─────────── T147: 「品種」欄を breed として拾う ───────────
+
+    def test_missing_extracts_breed_from_hinshu_label(self) -> None:
+        """行方不明: 「品種」欄を breed に入れる (T147)
+
+        未登録だったため本番の沖縄 95 件が全件 breed=null だった。
+        species はサイト名からの補完のままで変わらない。
+        """
+        adapter = AniwelOkinawaAdapter(_site(3))  # 行方不明猫
+        url = f"{_BASE}/animals/missing_view/24643"
+        with patch.object(adapter, "_http_get", return_value=_REAL_DETAIL_MISSING):
+            raw = adapter.extract_animal_details(url, category="lost")
+            normalized = adapter.normalize(raw)
+
+        assert raw.breed == "雑種（ミケネコ）"
+        assert normalized.breed == "雑種（ミケネコ）"
+        assert normalized.species == "猫"
+
+    def test_protection_extracts_breed_from_hinshu_label(self) -> None:
+        """迷い込み: 「品種」欄を breed に入れる (T147)"""
+        adapter = AniwelOkinawaAdapter(_site(4))  # 迷い込み保護犬
+        url = f"{_BASE}/animals/protection_view/24644"
+        with patch.object(adapter, "_http_get", return_value=_REAL_DETAIL_PROTECTION):
+            raw = adapter.extract_animal_details(url, category="sheltered")
+
+        assert raw.breed == "雑種"
+
+    def test_accommodate_has_no_breed_field(self) -> None:
+        """収容: 実ページに品種欄が無いので空のままが正しい (T147)
+
+        2026-09-07 に実ページの項目を全部確認した。記号 / 収容日 /
+        収容期限 / 場所 / 毛色 / 性別 / 体格 / 推定年齢 / 首輪 / 備考 のみ。
+        自治体が出していない情報なので、ここを埋めることはできない。
+        """
+        adapter = AniwelOkinawaAdapter(_site(0))  # 収容犬
+        url = f"{_BASE}/animals/accommodate_view/24639"
+        with patch.object(adapter, "_http_get", return_value=_REAL_DETAIL_ACCOMMODATE):
+            raw = adapter.extract_animal_details(url, category="sheltered")
+
+        assert raw.breed == ""
+        assert raw.species == "犬"
+
     def test_management_number_extracted_via_normalize(self) -> None:
         """個体識別: 記号(収容)/受付番号(行方不明) を management_number として抽出する。
 

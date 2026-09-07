@@ -318,6 +318,7 @@ class PrefEhimeAdapter(SinglePageTableAdapter):
                     break
 
         location = ""
+        breed = ""
         color = ""
         sex = ""
         size = ""
@@ -334,6 +335,13 @@ class PrefEhimeAdapter(SinglePageTableAdapter):
                 location = cells[self.LOCATION_COLUMN].get_text(  # type: ignore[index]
                     separator=" ", strip=True
                 )
+            # T147: 「種類」列 (cells[2]) は品種 (雑種・柴 等)。COLUMN_FIELDS に
+            # `2: "breed"` と宣言してあるのに、この手書きの列読み取りが 2 を
+            # 飛ばしており本番の愛媛 33 件が全件 breed=null だった。
+            # species はこれまでどおり見出し段落 → サイト名から決める
+            # (「種類」列の値は犬/猫を判別できないため。docstring L44 の方針)。
+            if len(cells) > 2:
+                breed = cells[2].get_text(separator=" ", strip=True)
             if len(cells) > 3:
                 color = cells[3].get_text(separator=" ", strip=True)
             if len(cells) > 4:
@@ -357,6 +365,7 @@ class PrefEhimeAdapter(SinglePageTableAdapter):
         try:
             return RawAnimalData(
                 species=species,
+                breed=breed,
                 sex=sex,
                 age="",
                 color=color,

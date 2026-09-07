@@ -70,6 +70,14 @@ class OitaAigoAdapter(SinglePageTableAdapter):
         "大きさ": "size",  # 詳細ページの体格 (中型/大型)
         "体格": "size",  # 念のための揺れ
         "仮名": "name",  # 個体識別: 仮名 (例 ぐりこ)。未登録で全件ドロップしていた
+        # T147: 品種。譲渡犬 (`/transferdoglist/`) と迷子情報 (`/lostchild/`) の
+        # 詳細ページだけが「種類」を持つ (例:「種類 雑種」「種類 チワワ雑種」)。
+        # 譲渡猫 (`/transfercatlist/`) には無く、そちらは
+        # 毛色 / 推定年齢 / 性別 / 不妊去勢 / ウイルス検査 / 備考欄 のみ。
+        # 同一ドメイン内でカテゴリごとに項目が非対称なため、猫だけを見て
+        # 「このサイトは品種を出していない」と判断すると取りこぼす
+        # (2026-09-07 実ページで全カテゴリを確認)。
+        "種類": "breed",
     }
 
     # 体重 → size 推定の境界 (kg)。
@@ -227,6 +235,7 @@ class OitaAigoAdapter(SinglePageTableAdapter):
                 shelter_date=shelter_date,
                 location=location,
                 phone=self._CENTER_TEL,
+                breed=fields.get("breed", ""),
                 name=fields.get("name", ""),
                 image_urls=self._extract_row_images(card, virtual_url),
                 source_url=source_url,

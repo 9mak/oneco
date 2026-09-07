@@ -84,6 +84,13 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
     #   - species: 「種類」値は "雑種(ミックス)" 等で犬/猫を判別できず その他化
     #     するため、ここでは抽出せず URL の animal_id / サイト名から犬/猫を推定
     #     する (extract_animal_details の補完ロジックに委ねる)。
+    #   - breed: その「種類」の値 ("雑種(ミックス)" "秋田" "柴" 等) こそが品種。
+    #     species に使えないという理由で丸ごと捨てており、本番の熊本県動愛
+    #     92 件が全件 breed=null になっていた (T147)。species には使わず
+    #     breed としてだけ拾う。詳細ページ下部の「このページを見ている人は
+    #     こちらのページも見ています」にも別個体の「種類」が並ぶが、
+    #     `_extract_by_label` が最初に一致した <dt> を返すため本体が先に
+    #     取れる (実ページで確認済み)。
     #   - location: 迷子犬は「捕獲場所」、譲渡犬は「捕獲場所」を持たず
     #     保健所の「所在地」のみで住所情報を提供する。tuple OR で
     #     捕獲場所 → 所在地 の順に探し、両方無いケースのみ部分一致
@@ -94,6 +101,7 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
     #   - phone: 「連絡先」は施設名なので「電話番号」を優先
     #   - size: 実サイトは「体重」のみで体格欄が無い ("大きさ" は温存=空→None)
     FIELD_SELECTORS: ClassVar[dict[str, FieldSpec]] = {
+        "breed": FieldSpec(label="種類"),
         "sex": FieldSpec(label="性別"),
         "age": FieldSpec(label="年齢"),
         "color": FieldSpec(label="毛色"),
@@ -282,6 +290,7 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
                 shelter_date=fields.get("shelter_date", ""),
                 location=fields.get("location", ""),
                 phone=self._normalize_phone(fields.get("phone", "")),
+                breed=fields.get("breed", ""),
                 management_number=fields.get("management_number", ""),
                 image_urls=image_urls,
                 source_url=detail_url,

@@ -160,6 +160,17 @@ class AnimalNetNagasakiAdapter(WordPressListAdapter):
             elif not fields.get(field):
                 fields[field] = value
 
+        # T147: 「品種」の値 (シー・ズー / ミックス（雑種） 等) は species の
+        # 推定ソースとして fields["species"] に入るが、この直後の権威分類や
+        # 模様・サイト名補正で「犬」「猫」に上書きされて失われる。本番の長崎
+        # 48 件が全件 breed=null だったのはこのため。上書きされる前にここで
+        # breed として確保する。既に「犬」「猫」そのものが入っている場合は
+        # 品種ではないので取らない。
+        if not fields.get("breed"):
+            candidate = fields.get("species", "")
+            if candidate and candidate not in ("犬", "猫"):
+                fields["breed"] = candidate
+
         # ソース自身の犬猫分類 (?animal-type=dog|cat) を最優先の権威ソースとして
         # 適用する。fetch_animal_list 経由で構築済みの場合のみ作動し、detail を
         # 直接呼ぶ既存経路では未設定 → 従来どおり品種/模様/サイト名補正に委ねる。
