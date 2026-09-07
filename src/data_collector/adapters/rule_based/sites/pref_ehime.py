@@ -42,6 +42,10 @@
       ことがあるため、最終的に空文字で「不明」扱いとなるケースもある)
     * 市町村 -> 場所のヒント (テーブル内の場所と通常一致)
     * 犬/猫/その他 -> species (テーブル内の「種類」は品種名なので利用しない)
+  2026-09 時点の収容中ページは見出しから市町村と種別が落ち、
+  「9月2日」のように日付だけになっている (T158)。この形でも収容日は
+  取れるようにし、場所はテーブルの「拾得捕獲場所」列を使う。
+  種別が消えたことで species は推定できず「その他」になる (T156 で継続調査)。
   ただし、すべてのテーブルでこのヘッダ段落が存在するとは限らないため
   `species` はサイト名 (収容中=未指定、譲渡予定=未指定) と段落見出しの
   両方から推定し、いずれも特定できなければ "その他" を返す。
@@ -73,6 +77,18 @@ _HEADER_LINE_RE = re.compile(
     r"[\s　]+([^\s　]+)"
     r"[\s　]+([^\s　]+)"
 )
+
+# T158: 収容中ページの見出しが日付だけになった書式 (2026-09 実測)。
+# 愛媛県は 2025-10 時点で「10月3日　犬」と種別を併記していたが、
+# 2026-09-05 更新時点では「9月2日」「9月4日」と日付のみになっている。
+# 3 要素前提の `_HEADER_LINE_RE` がマッチしなくなり、収容日が取れず
+# 「データ取得日」へフォールバックしていた (本番実測で 8 件全件)。
+# 日付以外の語を巻き込んで誤マッチしないよう、見出し全体が日付だけの
+# ときにしか使わない (「更新日：2026年9月5日」等を拾わないため)。
+_HEADER_DATE_ONLY_RE = re.compile(r"^(\d{1,2})\s*月\s*(\d{1,2})\s*日$")
+
+# 見出しテキストの前後から取り除く空白類 (ZWSP を含む)
+_HEADER_STRIP_CHARS = " \u3000\u200b\t\r\n"
 
 # 「更新日：YYYY年M月D日」形式から年を取り出す
 _UPDATE_YEAR_RE = re.compile(r"更新日[:：]\s*(\d{4})\s*年")
@@ -389,33 +405,50 @@ class PrefEhimeAdapter(SinglePageTableAdapter):
         Returns:
             (month_day, location, species_hint)。取れなかった要素は空文字。
         """
-        # table が `<div class="sp_table_wrap2">` 等で包まれているケースもあり、
-        # 直接の前兄弟と親要素の前兄弟の両方を探す。
+        # 見出しのマークアップは 2 通りある (2026-09 実測):
+        #   <div class="sp_table_wrap2"><strong>9月2日</strong> ... </div>
+        #   <div class="sp_table_wrap2"><p><strong>9月4日</strong></p> ... </div>
+        # `<p>` を起点に探すと前者を取りこぼすため、`<strong>` を直接近い順に辿る。
+        #
+        # T158: 以前は `find_all_previous(limit=10)` で「直前 10 要素」を見て
+        # いたが、この limit は全タグを数えるため、テーブルのセル内にある
+        # `<td><p>今治市大三島町</p><p>大平</p></td>` のような段落や直前の
+        # テーブル自身に食い潰され、見出しまで届かないことがあった。実測では
+        # 1 つの見出しにぶら下がる 6 テーブルのうち 1 つも収容日を取れていない
+        # 状態だった。テーブルの中にある `<strong>` (= 動物データのセル) は
+        # 見出し候補から除外する。
         candidates: list[Tag] = []
-        for sib in table.find_all_previous(limit=10):
-            if isinstance(sib, Tag) and sib.name == "p":
-                candidates.append(sib)
-                if len(candidates) >= 5:
-                    break
-
-        for p in candidates:
-            strong = p.find("strong")
-            if not isinstance(strong, Tag):
+        for prev in table.find_all_previous("strong"):
+            if not isinstance(prev, Tag):
                 continue
+            if prev.find_parent("table") is not None:
+                continue
+            candidates.append(prev)
+            if len(candidates) >= 8:
+                break
+
+        for strong in candidates:
             text = strong.get_text(separator=" ", strip=True)
             m = _HEADER_LINE_RE.search(text)
-            if not m:
-                continue
-            month, day, loc, sp_text = m.group(1), m.group(2), m.group(3), m.group(4)
-            month_day = f"{int(month):02d}-{int(day):02d}"
-            species_hint = ""
-            if "犬" in sp_text:
-                species_hint = "犬"
-            elif "猫" in sp_text:
-                species_hint = "猫"
-            elif sp_text:
-                species_hint = "その他"
-            return month_day, loc, species_hint
+            if m:
+                month, day, loc, sp_text = m.group(1), m.group(2), m.group(3), m.group(4)
+                month_day = f"{int(month):02d}-{int(day):02d}"
+                species_hint = ""
+                if "犬" in sp_text:
+                    species_hint = "犬"
+                elif "猫" in sp_text:
+                    species_hint = "猫"
+                elif sp_text:
+                    species_hint = "その他"
+                return month_day, loc, species_hint
+
+            # T158: 日付だけの見出し。収容日だけを取り、場所と種別は
+            # 見出しから得られないので空文字を返す (場所はテーブルの
+            # 「拾得捕獲場所」列、species はサイト名からの推定に委ねる)。
+            date_only = _HEADER_DATE_ONLY_RE.match(text.strip(_HEADER_STRIP_CHARS))
+            if date_only:
+                month, day = date_only.group(1), date_only.group(2)
+                return f"{int(month):02d}-{int(day):02d}", "", ""
         return "", "", ""
 
     def _build_shelter_date(self, month_day: str) -> str:
