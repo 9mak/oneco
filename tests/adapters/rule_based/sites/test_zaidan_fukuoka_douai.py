@@ -25,13 +25,18 @@ from data_collector.llm.config import SiteConfig
 # 詳細ページを模した最小 HTML (2026 年現行サイト構造)
 # - 写真は `<figure>` 配下の `<img>` で `/files/download/Animals/...`
 # - 各情報は `<table><tr><th>label</th><td>value</td></tr></table>` のテーブル
-# - HTML に「品種」項目はなく、species は list_url の dog/cat から adapter が補う
+# - HTML に「品種」項目 (table 行) はなく、species は list_url の dog/cat から補う
+# - 品種は見出し `<h3><span class="animals-type">` にだけ入る (T157)
 DETAIL_HTML = """
 <html><body>
 <div class="main">
   <div class="inner">
     <div class="detail-wrap">
       <h2>動物情報</h2>
+      <h3>
+        <span class="animals-no">No.D2234</span>
+        <span class="animals-type">雑種</span>
+      </h3>
       <figure class="detail-pht">
         <img src="/files/download/Animals/329e7da2-a4b5-4aad-896e-3a15acc1bfa0/image_01/main/l">
       </figure>
@@ -122,6 +127,8 @@ class TestZaidanFukuokaDouaiAdapterDetailExtraction:
             # 「品種」項目は detail HTML に無く、list_url `/animals/protections/dog`
             # から adapter が species を「犬」と補完する
             species="犬",
+            # 品種は見出し `span.animals-type` から拾う (T157)
+            breed="雑種",
             sex="オス",
             age="推定3歳",
             color="茶白",
@@ -170,6 +177,83 @@ class TestZaidanFukuokaDouaiAdapterDetailExtraction:
                 adapter.extract_animal_details(
                     "https://www.zaidan-fukuoka-douai.or.jp/animals/protection-detail/zzz"
                 )
+
+
+# 譲渡系 (`center-detail` / `group-detail`) の見出しは
+# 「品種、仮名「呼び名」」の形で呼び名が同居する (2026-09-07 実ページ)。
+DETAIL_HTML_WITH_KANA = """
+<html><body>
+<div class="main"><div class="inner"><div class="detail-wrap">
+  <h3>
+    <span class="animals-no">No.4958</span>
+    <span class="animals-type">雑種、仮名「チャルル」</span>
+  </h3>
+  <table class="animals-data">
+    <tr><th>性別</th><td>メス</td></tr>
+    <tr><th>毛色</th><td>白黒</td></tr>
+    <tr><th>大きさ（体重）</th><td>中型</td></tr>
+  </table>
+</div></div></div>
+</body></html>
+"""
+
+
+class TestZaidanFukuokaDouaiAdapterBreedHeading:
+    """T157: 見出しに埋め込まれた品種を拾う
+
+    本番の福岡財団 27 件が全件 breed=null だった。品種は table ではなく
+    見出し `<h3><span class="animals-type">` にしか出ないため、
+    `FIELD_SELECTORS` のラベル一致では取れない。
+    """
+
+    def test_breed_extracted_from_heading(self):
+        adapter = ZaidanFukuokaDouaiAdapter(_site_protections_dog())
+        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML):
+            raw = adapter.extract_animal_details(
+                "https://www.zaidan-fukuoka-douai.or.jp/animals/protection-detail/x",
+                category="sheltered",
+            )
+            animal = adapter.normalize(raw)
+
+        assert raw.breed == "雑種"
+        assert animal.breed == "雑種"
+        # species は従来通り list_url から補完される (品種で上書きしない)
+        assert raw.species == "犬"
+
+    def test_kana_name_is_not_mixed_into_breed(self):
+        """「雑種、仮名「チャルル」」から呼び名を落として品種だけ残す"""
+        adapter = ZaidanFukuokaDouaiAdapter(_site_centers_dog())
+        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_WITH_KANA):
+            raw = adapter.extract_animal_details(
+                "https://www.zaidan-fukuoka-douai.or.jp/animals/center-detail/x",
+                category="adoption",
+            )
+
+        assert raw.breed == "雑種"
+
+    def test_breed_heading_parsing_matrix(self):
+        """見出しテキストの分割を実在パターンで固定する"""
+        from bs4 import BeautifulSoup
+
+        cases = {
+            "雑種": "雑種",
+            "雑種、仮名「チャルル」": "雑種",
+            "雑種、仮名「リン」": "雑種",
+            "ミニチュアダックスフンド、仮名「もも」": "ミニチュアダックスフンド",
+            "仮名「ななし」": "",
+            "": "",
+        }
+        for text, expected in cases.items():
+            html = f'<html><body><h3><span class="animals-type">{text}</span></h3></body></html>'
+            soup = BeautifulSoup(html, "html.parser")
+            assert ZaidanFukuokaDouaiAdapter._breed_from_heading(soup) == expected, text
+
+    def test_missing_heading_leaves_breed_empty(self):
+        """見出しが無いページでは breed を空のままにする"""
+        from bs4 import BeautifulSoup
+
+        soup = BeautifulSoup("<html><body><p>no heading</p></body></html>", "html.parser")
+        assert ZaidanFukuokaDouaiAdapter._breed_from_heading(soup) == ""
 
 
 class TestZaidanFukuokaDouaiAdapterRegistry:

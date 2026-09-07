@@ -93,6 +93,16 @@ class ZaidanFukuokaDouaiAdapter(WordPressListAdapter):
         "/files/download/AnimalCompletes/",
     )
 
+    # 詳細ページ見出しから品種を取り出すための分割パターン。
+    # 見出しは `<h3><span class="animals-no">No.4958</span>
+    # <span class="animals-type">雑種、仮名「チャルル」</span></h3>` の形で、
+    # 品種と呼び名 (仮名) が 1 つの span に同居する。譲渡系
+    # (`center-detail` / `group-detail`) はほぼ全件が「品種、仮名「X」」形式で、
+    # 保健所収容 (`protection-detail`) は「雑種」のみ。`仮名` 以降と
+    # 鉤括弧以降を落として品種だけを残す (2026-09-07 実ページで確認)。
+    _BREED_HEADING_SELECTOR: ClassVar[str] = "h3 span.animals-type, span.animals-type"
+    _BREED_KANA_SPLIT_RE: ClassVar[re.Pattern[str]] = re.compile(r"[、,，]?\s*仮名|[「『]")
+
     # 譲渡カテゴリの詳細ページ (`/animals/center-detail/`, `/animals/group-detail/`)
     # は「保護した場所」欄を持たないため、location が空になったまま snapshot に
     # 出ると「不明」表示になる。譲渡対象動物は施設で会うことになるので、
@@ -169,12 +179,36 @@ class ZaidanFukuokaDouaiAdapter(WordPressListAdapter):
         ):
             fields["location"] = self._CENTER_FACILITY_NAME
 
+        # T157: 品種は table ではなく見出し (`span.animals-type`) にしかない。
+        # ラベル一致では取れず、本番の福岡財団 27 件が全件 breed=null だった。
+        if not fields.get("breed"):
+            breed = self._breed_from_heading(soup)
+            if breed:
+                fields["breed"] = breed
+
         # size: 体重のみ表記から体格を推定する。体格語が含まれていればそちらを優先。
         size_raw = fields.get("size", "")
         if size_raw and not self._contains_size_class(size_raw):
             estimated = self._weight_to_size_class(size_raw)
             if estimated:
                 fields["size"] = estimated
+
+    @classmethod
+    def _breed_from_heading(cls, soup: BeautifulSoup) -> str:
+        """詳細ページ見出しの `span.animals-type` から品種を取り出す
+
+        値は「雑種」または「雑種、仮名「チャルル」」の 2 形式。後者をそのまま
+        使うと呼び名が品種に混入するため、`仮名` と鉤括弧の手前で切る。
+        区切りが見つからない場合はテキスト全体を品種として扱う。
+        """
+        element = soup.select_one(cls._BREED_HEADING_SELECTOR)
+        if element is None:
+            return ""
+        text = element.get_text(" ", strip=True)
+        if not text:
+            return ""
+        breed = cls._BREED_KANA_SPLIT_RE.split(text, maxsplit=1)[0]
+        return breed.strip().strip("、,，").strip()
 
     @classmethod
     def _contains_size_class(cls, text: str) -> bool:

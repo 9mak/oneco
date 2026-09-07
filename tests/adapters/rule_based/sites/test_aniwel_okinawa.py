@@ -163,7 +163,8 @@ def _detail_html_table(**kwargs) -> str:
 # 実サイト (2026-05 時点) の `<table><th><td>` 構造を忠実に再現したフィクスチャ。
 # 3 系統 (収容/行方不明/迷い込み) でラベルが異なるのが要点。
 _REAL_DETAIL_ACCOMMODATE = """
-<html><body><main>
+<html><head><title>5/25　雑種(読谷村)　C-1 | 沖縄県動物愛護管理センター</title></head>
+<body><main>
   <table>
     <tr><th>記号</th><td>2026.5.25＿C-1</td></tr>
     <tr><th>収容日</th><td>2026年5月25日</td></tr>
@@ -175,6 +176,38 @@ _REAL_DETAIL_ACCOMMODATE = """
     <tr><th>推定年齢</th><td>3</td></tr>
     <tr><th>首輪</th><td>有り 青</td></tr>
     <tr><th>備考</th><td>Bw:2.7kg／マイクロチップ入り</td></tr>
+  </table>
+</main></body></html>
+"""
+
+# 品種がタイトルに入らない収容個体 (実ページ「9/4　O-11」)。
+# 記号だけのタイトルなので breed は空のままが正しい。
+_REAL_DETAIL_ACCOMMODATE_NO_BREED = """
+<html><head><title>9/4　O-11 | 沖縄県動物愛護管理センター</title></head>
+<body><main>
+  <table>
+    <tr><th>記号</th><td>2026.9.4＿O-11</td></tr>
+    <tr><th>収容日</th><td>2026年9月4日</td></tr>
+    <tr><th>場所</th><td>那覇市</td></tr>
+    <tr><th>毛色</th><td>キジトラ</td></tr>
+    <tr><th>性別</th><td>メス</td></tr>
+    <tr><th>体格</th><td>小</td></tr>
+    <tr><th>推定年齢</th><td>1</td></tr>
+  </table>
+</main></body></html>
+"""
+
+# 返還済みマーカーと市町村なし品種が同居する収容個体
+# (実ページ「8/31　パグ　O-1　☆」「9/4　雑種(南城市)　S-1　返還しました」)。
+_REAL_DETAIL_ACCOMMODATE_NO_CITY = """
+<html><head><title>8/31　パグ　O-1　☆ | 沖縄県動物愛護管理センター</title></head>
+<body><main>
+  <table>
+    <tr><th>記号</th><td>2026.8.31＿O-1</td></tr>
+    <tr><th>収容日</th><td>2026年8月31日</td></tr>
+    <tr><th>場所</th><td>沖縄市</td></tr>
+    <tr><th>性別</th><td>オス</td></tr>
+    <tr><th>体格</th><td>小</td></tr>
   </table>
 </main></body></html>
 """
@@ -476,20 +509,88 @@ class TestAniwelOkinawaRealLabels:
 
         assert raw.breed == "雑種"
 
-    def test_accommodate_has_no_breed_field(self) -> None:
-        """収容: 実ページに品種欄が無いので空のままが正しい (T147)
+    # ─────────── T157: タイトルに埋め込まれた品種を拾う ───────────
 
-        2026-09-07 に実ページの項目を全部確認した。記号 / 収容日 /
-        収容期限 / 場所 / 毛色 / 性別 / 体格 / 推定年齢 / 首輪 / 備考 のみ。
-        自治体が出していない情報なので、ここを埋めることはできない。
+    def test_accommodate_extracts_breed_from_page_title(self) -> None:
+        """収容: 品種欄は無いがタイトルに入っているので拾う (T157)
+
+        2026-09-07 に実ページの項目を全部確認した。表は 記号 / 収容日 /
+        収容期限 / 場所 / 毛色 / 性別 / 体格 / 推定年齢 / 首輪 / 備考 のみで
+        品種欄そのものが無い (T147 ではここまでで打ち切っていた)。
+        品種は `<title>` の「5/25　雑種(読谷村)　C-1」に入っている。
+        括弧内は市町村なので品種には含めない。
         """
         adapter = AniwelOkinawaAdapter(_site(0))  # 収容犬
         url = f"{_BASE}/animals/accommodate_view/24639"
         with patch.object(adapter, "_http_get", return_value=_REAL_DETAIL_ACCOMMODATE):
             raw = adapter.extract_animal_details(url, category="sheltered")
+            normalized = adapter.normalize(raw)
+
+        assert raw.breed == "雑種"
+        assert normalized.breed == "雑種"
+        assert raw.species == "犬"
+        # 品種を拾っても記号・場所は従来通り
+        assert raw.management_number == "2026.5.25＿C-1"
+        assert raw.location == "読谷村儀間"
+
+    def test_accommodate_without_breed_in_title_stays_empty(self) -> None:
+        """収容: タイトルが記号だけの個体は breed を空のままにする (T157)
+
+        実ページには「9/4　O-11」のように品種を持たない個体が混在する。
+        記号を品種として拾ってしまわないことを確認する。
+        """
+        adapter = AniwelOkinawaAdapter(_site(1))  # 収容猫
+        url = f"{_BASE}/animals/accommodate_view/25749"
+        with patch.object(adapter, "_http_get", return_value=_REAL_DETAIL_ACCOMMODATE_NO_BREED):
+            raw = adapter.extract_animal_details(url, category="sheltered")
 
         assert raw.breed == ""
-        assert raw.species == "犬"
+        assert raw.species == "猫"
+
+    def test_accommodate_breed_without_city_and_with_marker(self) -> None:
+        """収容: 市町村なし品種 + 装飾記号のタイトルでも品種だけを取る (T157)"""
+        adapter = AniwelOkinawaAdapter(_site(0))  # 収容犬
+        url = f"{_BASE}/animals/accommodate_view/25700"
+        with patch.object(adapter, "_http_get", return_value=_REAL_DETAIL_ACCOMMODATE_NO_CITY):
+            raw = adapter.extract_animal_details(url, category="sheltered")
+
+        assert raw.breed == "パグ"
+
+    def test_breed_field_takes_priority_over_title(self) -> None:
+        """「品種」欄がある系統ではタイトル解析を働かせない (T157)
+
+        行方不明ページはタイトルにも品種が入るが、欄の値を正とする。
+        """
+        adapter = AniwelOkinawaAdapter(_site(3))  # 行方不明猫
+        url = f"{_BASE}/animals/missing_view/24643"
+        titled = _REAL_DETAIL_MISSING.replace(
+            "<html><body><main>",
+            "<html><head><title>9/7＿No.130　ジャックラッセルテリア(うるま市）"
+            " | 沖縄県動物愛護管理センター</title></head><body><main>",
+        )
+        with patch.object(adapter, "_http_get", return_value=titled):
+            raw = adapter.extract_animal_details(url, category="lost")
+
+        assert raw.breed == "雑種（ミケネコ）"
+
+    def test_breed_from_page_title_parsing_matrix(self) -> None:
+        """タイトル解析の判定を実在パターンで固定する (T157)"""
+        from bs4 import BeautifulSoup
+
+        cases = {
+            "9/7　雑種(西原町)　S-1 | 沖縄県動物愛護管理センター": "雑種",
+            "9/4　雑種(南城市)　S-1　返還しました": "雑種",
+            "8/31　トイプードル(宜野湾市)　K-2　返還しました": "トイプードル",
+            "8/31　パグ　O-1　☆": "パグ",
+            "9/4　O-11": "",
+            "9/3　O-10": "",
+            "9/7＿No.130　ジャックラッセルテリア(うるま市）": "ジャックラッセルテリア",
+            "保護No.211　雑種(沖縄市)": "雑種",
+            "保護No.131　琉球犬(沖縄市)": "琉球犬",
+        }
+        for title, expected in cases.items():
+            soup = BeautifulSoup(f"<html><head><title>{title}</title></head></html>", "html.parser")
+            assert AniwelOkinawaAdapter._breed_from_page_title(soup) == expected, title
 
     def test_management_number_extracted_via_normalize(self) -> None:
         """個体識別: 記号(収容)/受付番号(行方不明) を management_number として抽出する。
