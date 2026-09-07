@@ -283,6 +283,91 @@ class TestParsePdfText:
         assert records[0]["management_number"] == "26-0548"
         assert records[0]["species"] == "犬"
         assert records[0]["location"] == "牛久市奥原町"
+        # ラベルが壊れている以上 breed は諦める (誤った値を入れない)
+        assert records[0]["breed"] == ""
+
+    # ─────────────────── T145: 「収容中の動物たち」の抽出漏れ ───────────────────
+
+    def test_sheltered_pdf_extracts_location_from_shichoson_mei_label(self):
+        """「市町村名」ラベルから location を拾える (T145)
+
+        T145 まで `_LOCATION_RE` は「市町村地区名」(迷い犬・猫情報の表記) しか
+        持たず、「収容中の動物たち」の実表記「市町村名」を見ていなかった。
+        2026-09-07 の実 PDF (inu0903.pdf) では「市町村名」行が 144 あるのに
+        現行パターンのヒットは 0 行で、location は実測 100% 欠落していた。
+        """
+        adapter = PrefIbarakiPdfAdapter(_site())
+        records = adapter._parse_pdf_text(_REAL_PDF_TEXT)
+
+        assert len(records) == 2
+        assert records[0]["location"] == "鉾田市田崎"
+        assert records[1]["location"] == "笠間市飯田"
+
+    def test_sheltered_pdf_extracts_breed_from_kenbyoushu_label(self):
+        """「犬猫種」の値を breed として拾う (T145)
+
+        「収容中の動物たち」は 種類=動物種別・犬猫種=品種。species だけを
+        拾って breed を捨てていたため、本番 breed 欠損 728 件のうち茨城分が
+        丸ごとここで発生していた。species を取り違えていないことも確認する。
+        """
+        adapter = PrefIbarakiPdfAdapter(_site())
+        records = adapter._parse_pdf_text(_REAL_PDF_TEXT)
+
+        assert [r["species"] for r in records] == ["犬", "犬"]
+        assert [r["breed"] for r in records] == ["雑種", "雑種"]
+
+    def test_lost_pdf_extracts_breed_from_swapped_labels(self):
+        """ラベルが逆転している「迷い犬・猫情報」でも breed を取り違えない (T145)
+
+        こちらは 種類=品種・犬猫種=動物種別。ラベル名ではなく「値が
+        犬/猫/その他 の 1 トークンか」で振り分けるため、同じ規則で読める。
+        """
+        adapter = PrefIbarakiPdfAdapter(_lost_site())
+        records = adapter._parse_pdf_text(_REAL_LOST_PDF_TEXT)
+
+        assert [r["species"] for r in records] == ["犬", "猫"]
+        assert [r["breed"] for r in records] == ["柴犬", "雑種"]
+
+    def test_sheltered_pdf_extracts_name_from_center_label(self):
+        """「センター名」はセンターで付けた個体の呼び名で、name に入れる (T145)
+
+        施設名ではない (実 PDF の値は シャルル・さむ・エーデル 等)。
+        """
+        adapter = PrefIbarakiPdfAdapter(_site())
+        records = adapter._parse_pdf_text(_REAL_PDF_TEXT)
+
+        assert [r["name"] for r in records] == ["シャルル", "さむ"]
+
+    def test_placeholder_center_name_is_not_used_as_name(self):
+        """呼び名が未設定の「センター名 0」を name にしない (T145)
+
+        実 PDF `neko0903.pdf` の 26-0558 が「収容日 2026/8/25 センター名 0」。
+        そのまま入れると公開ページに「0」という名前の猫が出る。
+        """
+        adapter = PrefIbarakiPdfAdapter(_site())
+        records = adapter._parse_pdf_text(
+            "26-0558 市町村名 行方市小貫\n"
+            "収容日 2026/8/25 センター名 0\n"
+            "種類 猫 犬猫種 雑種\n"
+            "毛色 サビ 性別 メス\n"
+            "体格 小 首輪 無\n"
+        )
+
+        assert len(records) == 1
+        assert records[0]["name"] == ""
+        assert records[0]["species"] == "猫"
+        assert records[0]["location"] == "行方市小貫"
+
+    def test_center_phone_is_filled_for_every_record(self):
+        """PDF に電話の記載が無いので、一覧ページ記載のセンター電話を入れる (T145)
+
+        `syuuyou.html` のお問い合わせ欄に「電話番号：0296-72-1200
+        FAX番号：0296-72-2271」とある。FAX ではなく電話の方を採る。
+        """
+        adapter = PrefIbarakiPdfAdapter(_site())
+        records = adapter._parse_pdf_text(_REAL_PDF_TEXT)
+
+        assert all(r["phone"] == "0296-72-1200" for r in records)
 
 
 # ─────────────────── _pdf_link_selector category 分岐テスト (T119) ───────────────────
@@ -614,6 +699,34 @@ class TestFetchAndExtract:
         assert raw.category == "lost"
         assert normalized.species == "猫"  # 誤分類なら "その他" になる
         assert normalized.category == "lost"
+
+    def test_sheltered_extract_and_normalize_keeps_location_breed_phone(self):
+        """「収容中の動物たち」を抽出 → normalize() まで通して致命フィールドが残る (T145)
+
+        CLAUDE.md 最重要ルール: adapter テストは `adapter.normalize(raw)` を
+        実行した実際の値でアサートする。T145 の対象 (location / phone) は
+        致命8フィールドに含まれるため、raw で埋めても normalize 段で
+        落ちていないことをここで担保する。
+        """
+        adapter = PrefIbarakiPdfAdapter(_site())
+
+        with (
+            patch.object(adapter, "_http_get", return_value=_LIST_HTML),
+            patch.object(adapter, "_download_pdf", return_value=b"PDF"),
+            patch.object(adapter, "_extract_pdf_text", return_value=_REAL_PDF_TEXT),
+        ):
+            urls = adapter.fetch_animal_list()
+            first_url, category = urls[0]
+            raw = adapter.extract_animal_details(first_url, category=category)
+            normalized = adapter.normalize(raw)
+
+        assert raw.location == "鉾田市田崎"
+        assert raw.breed == "雑種"
+        assert raw.name == "シャルル"
+        assert normalized.species == "犬"
+        assert normalized.location == "鉾田市田崎"
+        assert normalized.phone == "0296-72-1200"
+        assert normalized.breed == "雑種"
 
 
 # ─────────────────── 登録テスト ───────────────────

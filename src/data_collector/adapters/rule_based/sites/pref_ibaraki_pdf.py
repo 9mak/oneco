@@ -108,12 +108,29 @@ _COLOR_RE = re.compile(r"(?:毛色|色)\s*[:：]?\s*([^\s　]+)")
 # 「体格: 中」「大きさ: 中型」「体重: 5kg」
 _SIZE_RE = re.compile(r"(?:体格|大きさ|体重)\s*[:：]?\s*([^\s　]+)")
 # 「収容場所: ○○市△△町」「発見場所: ○○市」
-# 「市町村地区名 笠間市大田町」(T119: 「迷い犬・猫情報」PDF のラベル。
-# 「収容中の動物たち」側は「市町村名」表記でこの語は出現しないため、
-# location 抽出は事実上「迷い犬・猫情報」限定で有効になる)
+# 「市町村地区名 笠間市大田町」(T119:「迷い犬・猫情報」PDF のラベル)
+# 「市町村名 鉾田市田崎」(T145:「収容中の動物たち」PDF のラベル)
+#
+# T145 まで「市町村名」が入っておらず、「収容中の動物たち」側の location は
+# 実測 100% 欠落していた (2026-09-07 の実 PDF `inu0903.pdf` で
+# 「市町村名」行 144・現行パターンのヒット 0)。`市町村地区名` を先に置いて
+# 長い方を優先させる (交替は最左優先のため、この順序でないと
+# 「市町村地区名」に対して「市町村名」が部分一致を試みる無駄が出る)。
 _LOCATION_RE = re.compile(
-    r"(?:収容場所|発見場所|保護場所|市町村地区名)\s*[:：]?\s*([^\n]+?)(?:\s{2,}|$)"
+    r"(?:収容場所|発見場所|保護場所|市町村地区名|市町村名)\s*[:：]?\s*([^\n]+?)(?:\s{2,}|$)"
 )
+# 「種類 犬 犬猫種 雑種」(収容中の動物たち) / 「種類 雑種 犬猫種 犬」(迷い犬・猫情報)
+# — 2 サイトでラベルの意味が逆転している (T119 で確認済み)。ラベル名では
+# なく「値が 犬/猫/その他 の 1 トークンかどうか」で動物種別と品種を振り分け
+# れば、どちらの PDF でも同じ規則で読める。両方の値が揃う行のみ対象。
+_SPECIES_BREED_RE = re.compile(r"種類\s*[:：]?\s*([^\s　]+)\s+犬猫種\s*[:：]?\s*([^\s　]+)")
+_ANIMAL_SPECIES_TOKENS = frozenset({"犬", "猫", "その他"})
+# 「収容日 2023/3/1 センター名 シャルル」— センターで付けられた個体の呼び名。
+# 施設名ではない (実 PDF の値は シャルル・さむ・エーデル・さっちゃん・アモ 等)。
+_NAME_RE = re.compile(r"センター名\s*[:：]?\s*([^\s　]+)")
+# 呼び名が未設定の個体は「0」等が入る (実 PDF `neko0903.pdf` の 26-0558)。
+# そのまま name に入れると公開ページに「0」という名前で出るため弾く。
+_NAME_PLACEHOLDERS = frozenset({"0", "０", "-", "－", "―", "無", "なし", "不明"})
 # 「22-3543 市町村名 鉾田市田崎」— 実 PDF (T066 確認) ではこれが 1 頭分の
 # ブロック開始になる。「市町村名」の直前という文脈で固定し、本文中の他の
 # 数字 (収容日の年など) を誤って拾わないようにする。
@@ -132,6 +149,14 @@ _SPECIES_LINE_END_RE = re.compile(r"(?:^|\s)(犬|猫|その他)\s*$")
 
 class PrefIbarakiPdfAdapter(PdfTableAdapter):
     """茨城県 (収容中の動物たち / 迷い犬・猫情報) PDF 用 rule-based adapter"""
+
+    # 茨城県 保健医療部動物指導センター保護指導課 (笠間市日沢47) の代表電話。
+    # PDF 本文には「収容中の動物たち」側に電話の記載が無く (実測 0 件)、
+    # 一覧ページ `syuuyou.html` のお問い合わせ欄に
+    # 「電話番号：0296-72-1200 FAX番号：0296-72-2271」と明記されている。
+    # FAX ではなく電話の方を採る。T145 まで phone は未設定 = 常に null で、
+    # Success Signal「連絡先への到達数」の導線が茨城の全個体で欠けていた。
+    CENTER_PHONE: ClassVar[str] = "0296-72-1200"
 
     # 一覧ページから PDF リンクを抽出するセレクタ
     # sites.yaml の pdf_link_pattern と同一。
@@ -273,12 +298,15 @@ class PrefIbarakiPdfAdapter(PdfTableAdapter):
         """空の動物レコードを作る"""
         return {
             "species": "",
+            "breed": "",
+            "name": "",
             "sex": "",
             "age": "",
             "color": "",
             "size": "",
             "shelter_date": "",
             "location": "",
+            "phone": PrefIbarakiPdfAdapter.CENTER_PHONE,
             "management_number": "",
         }
 
@@ -292,10 +320,34 @@ class PrefIbarakiPdfAdapter(PdfTableAdapter):
         # 「収容中の動物たち」の実 PDF (例:「種類 猫 犬猫種 雑種」) は行末が
         # 「雑種」等になり本パターンにマッチしないため、下の `_SPECIES_RE`
         # ベース抽出にそのままフォールバックし挙動は変わらない。
+        # T145: 「種類」と「犬猫種」が同じ行に揃っている場合は、値そのものを
+        # 見て動物種別と品種を振り分ける。ラベルの意味が 2 サイトで逆転して
+        # いるため、ラベル名を信じると必ずどちらかで取り違える。
+        # 値が両方とも 犬/猫/その他 でない場合 (未知の表記) は species を
+        # 従来の経路に任せ、品種だけを「犬猫種」側の値から拾う。
+        sb = _SPECIES_BREED_RE.search(line)
+        if sb:
+            first, second = sb.group(1), sb.group(2)
+            if second in _ANIMAL_SPECIES_TOKENS:
+                species, breed = second, first
+            elif first in _ANIMAL_SPECIES_TOKENS:
+                species, breed = first, second
+            else:
+                species, breed = "", second
+            if species and not record.get("species"):
+                record["species"] = species
+            if breed and not record.get("breed"):
+                record["breed"] = breed
+
         if not record.get("species"):
             m = _SPECIES_LINE_END_RE.search(line)
             if m:
                 record["species"] = m.group(1)
+
+        if not record.get("name"):
+            m = _NAME_RE.search(line)
+            if m and m.group(1).strip() not in _NAME_PLACEHOLDERS:
+                record["name"] = m.group(1).strip()
 
         for key, pattern in (
             ("species", _SPECIES_RE),
