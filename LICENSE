@@ -1,5 +1,12 @@
 MIT License
 
+NOTE: This license covers the source code only. Collected animal data
+(data/, output/, snapshots/, and the production database) is reproduced
+from municipal government publications, remains the property of the
+respective municipalities, and is NOT covered by this license. See
+README.md "ライセンス" and https://oneco.jp/terms for the data terms.
+
+
 Copyright (c) 2026 oneco contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
