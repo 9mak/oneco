@@ -36,9 +36,13 @@ name: Field Accuracy Audit
 #   継続して重なることはない)。
 # - 乖離ゼロなら通知しない: 誤通知疲労を避ける (secret-health.yml / weekly-count-audit.yml
 #   と同じ思想)。
-# - 通知対象は致命フィールドの値の食い違い (field_mismatch) のみ: api_only (もういない
-#   疑い) / adapter_only (掲載漏れ疑い) は「件数」の乖離であり T105 の担当と重複するため
-#   対象外にする (詳細は field_accuracy_notify.py のモジュール docstring)。
+# - 通知対象は致命フィールドの値の食い違い (field_mismatch) と、T105 が構造的に見られない
+#   ホストの adapter_only (掲載漏れ疑い) の2つ。件数の乖離は原則 T105 の担当だが、T105 の
+#   comparable 判定はホスト単位で「全サイトが list_link_pattern を持ち PDF セレクタと
+#   requires_js を含まない」ことを要求するため、213 サイト中 178 サイトが判定不能である
+#   ことが T133 で確定した (確定済みの掲載漏れ5件中4件がこの盲点で発生)。重複を避ける
+#   絞り込みは維持しつつ、T105 が原理的に見られない範囲だけをここが引き受ける (T140)。
+#   api_only (もういない疑い) は引き続き対象外 (詳細は field_accuracy_notify.py の docstring)。
 # - 2段階 recheck (検知→翌日再照合→確定) は自動化しない: full_publication_audit.py は
 #   --recheck オプションを既に持つが、ワークフローで自動連携させるには前回 JSON
 #   artifact の受け渡し・翌日ジョブのスケジューリングが必要で複雑度が増す。月次実行の
