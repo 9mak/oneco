@@ -31,6 +31,8 @@ from __future__ import annotations
 import re
 from typing import ClassVar
 
+from bs4 import BeautifulSoup
+
 from ....domain.models import AnimalData, RawAnimalData
 from ..playwright import PlaywrightFetchMixin
 from ..registry import SiteAdapterRegistry
@@ -59,6 +61,36 @@ _DECORATION_PATH_PATTERNS = (
 # phone=null だったので空のときだけ補完する (将来 detail に番号が
 # 書かれるようになった場合に上書きしないため)。
 _DEFAULT_PHONE = "098-945-3043"
+
+# T157: センター収容 (`accommodate_view`) の詳細ページには品種欄そのものが無く、
+# 品種は `<title>` にだけ入る (例:「9/7　雑種(西原町)　S-1」)。ただし
+# 「9/4　O-11」のように品種を持たない個体も混在する。行方不明
+# (`missing_view`) / 迷い込み保護 (`protection_view`) は「品種」欄を持つが、
+# タイトルも同じ並び (例:「9/7＿No.130　ジャックラッセルテリア(うるま市）」
+# 「保護No.211　雑種(沖縄市)」) なので、欄が空のときの保険として同じ経路を通す。
+#
+# タイトルを全角/半角スペースで区切り、先頭から順に見て最初に「品種らしい」
+# トークンを品種とする。除外するのは以下 (2026-09-07 実ページで全パターン確認):
+#   - 数字を含むトークン: 日付「9/7」・受付番号「9/7＿No.130」「保護No.211」・
+#     記号「S-1」「O-11」がすべてここで落ちる
+#   - 状態語・装飾: 「返還しました」「☆」など
+# 括弧内は市町村 (例:「雑種(西原町)」) なので括弧の手前で切る。
+_TITLE_TOKEN_SPLIT_RE = re.compile(r"[\u3000\s]+")
+_TITLE_PAREN_SPLIT_RE = re.compile(r"[（(]")
+_TITLE_NON_BREED_WORDS = (
+    "返還",
+    "譲渡",
+    "死亡",
+    "収容",
+    "決定",
+    "終了",
+    "済",
+    "☆",
+    "★",
+    "NEW",
+)
+# 品種名としてありえない長さ (タイトル全体を誤って拾った場合の保険)
+_TITLE_BREED_MAX_LEN = 20
 
 
 class AniwelOkinawaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
@@ -123,6 +155,22 @@ class AniwelOkinawaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
 
     # ─────────────────── オーバーライド ───────────────────
 
+    def _postprocess_fields(
+        self, fields: dict[str, str], detail_url: str, soup: BeautifulSoup
+    ) -> None:
+        """品種欄が空のとき、ページタイトルから品種を補う (T157)
+
+        センター収容の詳細ページは品種欄そのものを持たないため、
+        `<title>` が唯一の品種の出どころになる。品種を持たない個体も
+        混在するので、判定できない場合は空のままにする。
+        """
+        super()._postprocess_fields(fields, detail_url, soup)
+        if fields.get("breed"):
+            return
+        breed = self._breed_from_page_title(soup)
+        if breed:
+            fields["breed"] = breed
+
     def extract_animal_details(self, detail_url: str, category: str = "adoption") -> RawAnimalData:
         """詳細ページ抽出。species/age/phone を補完し、装飾画像を除外する。
 
@@ -165,6 +213,32 @@ class AniwelOkinawaAdapter(PlaywrightFetchMixin, WordPressListAdapter):
             return "犬"
         if "猫" in name:
             return "猫"
+        return ""
+
+    @classmethod
+    def _breed_from_page_title(cls, soup: BeautifulSoup) -> str:
+        """ページタイトルから品種を取り出す。判定できなければ空文字を返す
+
+        「9/7　雑種(西原町)　S-1」→「雑種」、「9/4　O-11」→ 空文字。
+        """
+        title_tag = soup.title
+        if title_tag is None:
+            return ""
+        title = title_tag.get_text(" ", strip=True)
+        if not title:
+            return ""
+        head = title.split("|")[0]
+        for token in _TITLE_TOKEN_SPLIT_RE.split(head):
+            candidate = _TITLE_PAREN_SPLIT_RE.split(token, maxsplit=1)[0].strip()
+            if not candidate:
+                continue
+            if any(ch.isdigit() for ch in candidate):
+                continue
+            if any(word in candidate for word in _TITLE_NON_BREED_WORDS):
+                continue
+            if len(candidate) > _TITLE_BREED_MAX_LEN:
+                continue
+            return candidate
         return ""
 
     @staticmethod
