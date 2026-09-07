@@ -76,6 +76,12 @@ _FEATURE_HEADING = "特徴"
 _LOCATION_KEYWORDS = ("本所", "支所")
 _SEX_VALUES = {"オス", "メス", "不明"}
 _AGE_PATTERN = re.compile(r"\d+\s*歳|\d+\s*ヶ月|\d+\s*ヵ月|\d+\s*か月")
+# Bubble.io は生年月日が未入力の個体で年齢を計算できず `NaN歳NaNヵ月` を描画する。
+# `_AGE_PATTERN` は `\d+` 前提なのでこれを年齢と認識できず、値が remaining に落ちて
+# `breed` として公開されていた (T131: 本番21件が breed='NaN歳NaNヵ月' のまま
+# 動物カード・詳細ページ・OGP description に出ていた)。
+# 年齢欄の値であることは分かるので、age にも breed にも入れずに捨てる。
+_INVALID_AGE_PATTERN = re.compile(r"NaN\s*(?:歳|ヶ月|ヵ月|か月)")
 _MANAGEMENT_NO_PREFIX = re.compile(r"^No\s*[.．]?\s*")
 _POSTED_DATE_PATTERN = re.compile(r"掲載日[：:]\s*(\d{4}/\d{1,2}/\d{1,2})")
 _GUIDE_LINK_PATTERN = re.compile(r"(犬|猫)の飼い方講習会へ")
@@ -364,6 +370,9 @@ class WannyanNaviAichiAdapter(PlaywrightFetchMixin, WordPressListAdapter):
                 fields["sex"] = text
             elif not fields["age"] and _AGE_PATTERN.search(text):
                 fields["age"] = text
+            elif _INVALID_AGE_PATTERN.search(text):
+                # 年齢欄だが Bubble.io が計算できていない。品種として公開しない。
+                continue
             else:
                 remaining.append(text)
 
