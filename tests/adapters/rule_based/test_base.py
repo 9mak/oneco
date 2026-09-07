@@ -101,6 +101,102 @@ class TestNormalizePhone:
         adapter = _ConcreteAdapter(_site())
         assert adapter._normalize_phone("") == ""
 
+    # ─────────── T146: 表記ゆれと誤検出 ───────────
+
+    def test_rejects_management_number_without_leading_zero(self):
+        """管理番号を電話番号として拾わない (T146)
+
+        栃木県の迷子動物ページは管理番号を `2026-09-0007` 形式で表示する。
+        市外局番に先頭 0 を要求していなかったため、これが電話番号として
+        通っていた。日本の固定電話・携帯は必ず 0 で始まる。
+        """
+        adapter = _ConcreteAdapter(_site())
+        assert adapter._normalize_phone("管理番号 2026-09-0007") == ""
+        assert adapter._normalize_phone("2026-9-0007") == ""
+
+    def test_accepts_fullwidth_hyphen(self):
+        """全角ハイフン区切りを受ける (T146・三重県動物管理事務所の実表記)"""
+        adapter = _ConcreteAdapter(_site())
+        assert adapter._normalize_phone("TEL・FAX 059−256−4168") == "059-256-4168"
+
+    def test_accepts_paren_separators(self):
+        """半角/全角括弧区切りを受ける (T146・東大阪市/山梨県の実表記)"""
+        adapter = _ConcreteAdapter(_site())
+        assert adapter._normalize_phone("電話: 072(963)6211 ファクス") == "072-963-6211"
+        assert adapter._normalize_phone("電話番号：055（273）5034") == "055-273-5034"
+
+
+class TestSiteConfigPhoneFallback:
+    """sites.yaml の phone を抽出できなかったときだけ使う (T146)"""
+
+    @staticmethod
+    def _raw(phone: str) -> RawAnimalData:
+        return RawAnimalData(
+            species="犬",
+            sex="オス",
+            age="2歳",
+            color="茶",
+            size="中型",
+            shelter_date="2026-09-01",
+            location="高知市",
+            phone=phone,
+            image_urls=[],
+            source_url="https://example.com/list/#row=0",
+            category="sheltered",
+        )
+
+    def test_uses_site_config_phone_when_extraction_is_empty(self):
+        site = _site()
+        site.phone = "089-977-9200"
+        adapter = _ConcreteAdapter(site)
+
+        assert adapter.normalize(self._raw("")).phone == "089-977-9200"
+
+    def test_extracted_phone_wins_over_site_config(self):
+        """個体ごとに管轄が違うサイト (山梨・静岡) を壊さないための優先順位"""
+        site = _site()
+        site.phone = "089-977-9200"
+        adapter = _ConcreteAdapter(site)
+
+        assert adapter.normalize(self._raw("055-920-2102")).phone == "055-920-2102"
+
+    def test_site_config_phone_is_normalized(self):
+        """sites.yaml 側の表記ゆれも抽出値と同じ経路で整える"""
+        site = _site()
+        site.phone = "072(963)6211"
+        adapter = _ConcreteAdapter(site)
+
+        assert adapter.normalize(self._raw("")).phone == "072-963-6211"
+
+    def test_no_phone_anywhere_stays_empty(self):
+        adapter = _ConcreteAdapter(_site())
+        assert not adapter.normalize(self._raw("")).phone
+
+    @pytest.mark.parametrize(
+        "yaml_value",
+        [
+            "090-1234-5678",  # 携帯 (拾い主個人の番号でありうる)
+            "080-1111-2222",
+            "070-3333-4444",
+            "050-3000-4000",  # IP 電話
+            "0123-4567-8901",  # 12 桁 (電話番号として成立しない)
+        ],
+    )
+    def test_site_config_phone_goes_through_the_public_sanitizer(self, yaml_value):
+        """sites.yaml の値も公開前の検査を通す (PR #327 reviewer F-01)
+
+        当初の実装は正規化後の AnimalData を書き換える形で、
+        `DataNormalizer._normalize_phone` (桁数検証) と
+        `_sanitize_public_phone` (070/080/090/050 を落とす) を迂回していた。
+        sites.yaml に 1 行足すだけで個人の携帯を公開できてしまう構造だった
+        ため、raw 側に入れて同じ経路を通すようにした。
+        """
+        site = _site()
+        site.phone = yaml_value
+        adapter = _ConcreteAdapter(site)
+
+        assert not adapter.normalize(self._raw("")).phone
+
 
 class TestFilterImageUrls:
     def test_filters_template_paths(self):

@@ -75,6 +75,7 @@ sites:
     prefecture: "香川県"
     prefecture_code: "37"
     list_url: "https://www.pref.kagawa.lg.jp/s-doubutuaigo/sanukidouaicenter/jyouto/s04u6e190311095146.html"
+    phone: "087-849-1011"
     category: "adoption"
     requires_js: false
     pdf_link_pattern: "a[href*='/documents/6103/'][href$='.pdf']"
@@ -86,6 +87,7 @@ sites:
     prefecture: "香川県"
     prefecture_code: "37"
     list_url: "https://www.pref.kagawa.lg.jp/tosanhoken/tosanhoken/animal/sjiaen191105113550.html"
+    phone: "0879-29-8272"
     category: "lost"
     pdf_link_pattern: "a[href*='/documents/7023/'][href$='.pdf']"
 
@@ -95,6 +97,7 @@ sites:
     prefecture: "香川県"
     prefecture_code: "37"
     list_url: "https://www.pref.kagawa.lg.jp/chusanhoken/chusanhoken/inu-neko/s058kw191105221746.html"
+    phone: "0877-24-9964"
     category: "lost"
     pdf_link_pattern: "a[href*='/documents/375/'][href$='.pdf']"
 
@@ -104,6 +107,7 @@ sites:
     prefecture: "香川県"
     prefecture_code: "37"
     list_url: "https://www.pref.kagawa.lg.jp/seisanhoken/seisanhoken/doubutuaigo/sqvuo1191030100247.html"
+    phone: "0875-25-4383"
     category: "lost"
     pdf_link_pattern: "a[href*='/documents/6282/'][href$='.pdf']"
 
@@ -112,6 +116,7 @@ sites:
     prefecture: "香川県"
     prefecture_code: "37"
     list_url: "https://www.pref.kagawa.lg.jp/shozu/hoken/syuuyou_info.html"
+    phone: "0879-62-1374"
     category: "lost"
     pdf_link_pattern: "a[href$='.pdf']"
 
@@ -124,6 +129,7 @@ sites:
     prefecture: "愛媛県"
     prefecture_code: "38"
     list_url: "https://www.pref.ehime.jp/page/16976.html"
+    phone: "089-977-9200"
     category: "lost"
     single_page: true
 
@@ -133,6 +139,7 @@ sites:
     prefecture: "愛媛県"
     prefecture_code: "38"
     list_url: "https://www.pref.ehime.jp/page/17125.html"
+    phone: "089-977-9200"
     category: "adoption"
     single_page: true
 
@@ -210,6 +217,7 @@ sites:
     prefecture: "佐賀県"
     prefecture_code: "41"
     list_url: "https://www.pref.saga.lg.jp/kiji00349237/index.html"
+    phone: "0952-30-1350"
     category: "sheltered"
     single_page: true
 
@@ -217,6 +225,7 @@ sites:
     prefecture: "佐賀県"
     prefecture_code: "41"
     list_url: "https://www.pref.saga.lg.jp/kiji00334357/index.html"
+    phone: "0942-83-2162"
     category: "sheltered"
     single_page: true
 
@@ -224,6 +233,7 @@ sites:
     prefecture: "佐賀県"
     prefecture_code: "41"
     list_url: "https://www.pref.saga.lg.jp/kiji00365042/index.html"
+    phone: "0955-73-1131"
     category: "sheltered"
     single_page: true
 
@@ -231,6 +241,7 @@ sites:
     prefecture: "佐賀県"
     prefecture_code: "41"
     list_url: "https://www.pref.saga.lg.jp/kiji00334505/index.html"
+    phone: "0955-23-2103"
     category: "sheltered"
     single_page: true
 
@@ -238,6 +249,7 @@ sites:
     prefecture: "佐賀県"
     prefecture_code: "41"
     list_url: "https://www.pref.saga.lg.jp/kiji00334341/index.html"
+    phone: "0954-23-3501"
     category: "sheltered"
     single_page: true
 
@@ -245,6 +257,7 @@ sites:
     prefecture: "佐賀県"
     prefecture_code: "41"
     list_url: "https://www.pref.saga.lg.jp/kiji00314888/index.html"
+    phone: "0954-23-0532"
     category: "adoption"
     single_page: true
 
@@ -430,6 +443,7 @@ sites:
     prefecture: "長崎県"
     prefecture_code: "42"
     list_url: "https://www.city.sasebo.lg.jp/hokenhukusi/seikat/hogodoubutsu.html"
+    phone: "0956-42-3300"
     category: "sheltered"
     list_link_pattern: "a[href*='_dog']"
 
@@ -437,6 +451,7 @@ sites:
     prefecture: "長崎県"
     prefecture_code: "42"
     list_url: "https://www.city.sasebo.lg.jp/hokenhukusi/seikat/mayoinekohogo.html"
+    phone: "0956-42-3300"
     category: "sheltered"
     list_link_pattern: "a[href*='_cat']"
 
@@ -565,6 +580,7 @@ sites:
     prefecture: "熊本県"
     prefecture_code: "43"
     list_url: "https://www.city.kumamoto.jp/doubutuaigo/list03612.html"
+    phone: "096-380-2153"
     category: "lost"
     list_link_pattern: "a[href*='/doubutuaigo/kiji']"
 
@@ -572,6 +588,7 @@ sites:
     prefecture: "熊本県"
     prefecture_code: "43"
     list_url: "https://www.city.kumamoto.jp/doubutuaigo/list03615.html"
+    phone: "096-380-2153"
     category: "lost"
     list_link_pattern: "a[href*='/doubutuaigo/kiji']"
 
@@ -714,6 +731,7 @@ sites:
     prefecture: "千葉県"
     prefecture_code: "12"
     list_url: "https://www.pref.chiba.lg.jp/aigo/pet/inu-neko/shuuyou/shuu-inu.html"
+    phone: "0476-93-5711"
     category: "sheltered"
     single_page: true
 
@@ -721,6 +739,7 @@ sites:
     prefecture: "千葉県"
     prefecture_code: "12"
     list_url: "https://www.pref.chiba.lg.jp/aigo/pet/inu-neko/shuuyou/shuu-neko.html"
+    phone: "0476-93-5711"
     category: "sheltered"
     single_page: true
 
@@ -728,6 +747,7 @@ sites:
     prefecture: "千葉県"
     prefecture_code: "12"
     list_url: "https://www.pref.chiba.lg.jp/aigo/pet/sonohoka/inu-nekoigai/index.html"
+    phone: "0476-93-5711"
     category: "sheltered"
     single_page: true
 
@@ -735,6 +755,7 @@ sites:
     prefecture: "千葉県"
     prefecture_code: "12"
     list_url: "https://www.pref.chiba.lg.jp/aigo/pet/inu-neko/shuuyou/shuu-inu-tou.html"
+    phone: "04-7191-0050"
     category: "sheltered"
     single_page: true
 
@@ -742,6 +763,7 @@ sites:
     prefecture: "千葉県"
     prefecture_code: "12"
     list_url: "https://www.pref.chiba.lg.jp/aigo/pet/inu-neko/shuuyou/shuu-neko-tou.html"
+    phone: "04-7191-0050"
     category: "sheltered"
     single_page: true
 
@@ -837,6 +859,7 @@ sites:
     prefecture: "茨城県"
     prefecture_code: "08"
     list_url: "https://www.city.mito.lg.jp/site/doubutsuaigo/list358.html"
+    phone: "029-350-3800"
     category: "lost"
     single_page: true
 
@@ -844,6 +867,7 @@ sites:
     prefecture: "茨城県"
     prefecture_code: "08"
     list_url: "https://www.city.mito.lg.jp/site/doubutsuaigo/2043.html"
+    phone: "029-350-3800"
     category: "sheltered"
     single_page: true
 
@@ -852,6 +876,7 @@ sites:
     prefecture: "栃木県"
     prefecture_code: "09"
     list_url: "https://www.city.utsunomiya.lg.jp/kurashi/pet/pet/1005584.html"
+    phone: "028-626-1108"
     category: "lost"
     single_page: true
 
@@ -860,6 +885,7 @@ sites:
     prefecture: "群馬県"
     prefecture_code: "10"
     list_url: "https://www.city.maebashi.gunma.jp/soshiki/kenko/eiseikensa/gyomu/1/1/1/9484.html"
+    phone: "027-220-5777"
     category: "sheltered"
     list_link_pattern: "a[href*='/9484/']"
 
@@ -868,6 +894,7 @@ sites:
     prefecture: "埼玉県"
     prefecture_code: "11"
     list_url: "https://www.city.saitama.lg.jp/008/004/003/004/p003138.html"
+    phone: "048-840-4150"
     category: "sheltered"
     single_page: true
 
@@ -875,6 +902,7 @@ sites:
     prefecture: "埼玉県"
     prefecture_code: "11"
     list_url: "https://www.city.saitama.lg.jp/008/004/003/004/p019971.html"
+    phone: "048-840-4150"
     category: "sheltered"
     single_page: true
 
@@ -883,6 +911,7 @@ sites:
     prefecture: "埼玉県"
     prefecture_code: "11"
     list_url: "https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/hogo/koshigaya_contents_dog.html"
+    phone: "048-969-8511"
     category: "sheltered"
     single_page: true
 
@@ -890,6 +919,7 @@ sites:
     prefecture: "埼玉県"
     prefecture_code: "11"
     list_url: "https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/hogo/koshigaya_contents_cat.html"
+    phone: "048-969-8511"
     category: "sheltered"
     single_page: true
 
@@ -897,6 +927,7 @@ sites:
     prefecture: "埼玉県"
     prefecture_code: "11"
     list_url: "https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/hogo/hogo_kojin.html"
+    phone: "048-969-8511"
     category: "sheltered"
     single_page: true
 
@@ -948,6 +979,7 @@ sites:
     prefecture: "千葉県"
     prefecture_code: "12"
     list_url: "https://www.city.funabashi.lg.jp/kurashi/doubutsu/003/p013242.html"
+    phone: "047-435-3916"
     category: "sheltered"
     single_page: true
 
@@ -955,6 +987,7 @@ sites:
     prefecture: "千葉県"
     prefecture_code: "12"
     list_url: "https://www.city.funabashi.lg.jp/kurashi/doubutsu/003/joutoindex.html"
+    phone: "047-435-3916"
     category: "adoption"
     single_page: true
 
@@ -1039,6 +1072,7 @@ sites:
     prefecture: "神奈川県"
     prefecture_code: "14"
     list_url: "https://www.city.kawasaki.jp/350/page/0000077270.html"
+    phone: "044-589-7137"
     category: "sheltered"
     single_page: true
 
@@ -1046,6 +1080,7 @@ sites:
     prefecture: "神奈川県"
     prefecture_code: "14"
     list_url: "https://www.city.kawasaki.jp/350/page/0000109367.html"
+    phone: "044-589-7137"
     category: "sheltered"
     single_page: true
 
@@ -1053,6 +1088,7 @@ sites:
     prefecture: "神奈川県"
     prefecture_code: "14"
     list_url: "https://www.city.kawasaki.jp/350/page/0000074729.html"
+    phone: "044-589-7137"
     category: "sheltered"
     single_page: true
 
@@ -1083,6 +1119,7 @@ sites:
     prefecture: "滋賀県"
     prefecture_code: "25"
     list_url: "https://www.sapca.jp/lost"
+    phone: "0748-75-1911"
     list_link_pattern: "a[href*='/lost/'][href$='.html']"
     category: "sheltered"
 
@@ -1158,6 +1195,7 @@ sites:
     prefecture: "大阪府"
     prefecture_code: "27"
     list_url: "https://www.city.osaka.lg.jp/kenko/page/0000110901.html"
+    phone: "06-6685-3700"
     category: "lost"
     single_page: true
 
@@ -1165,6 +1203,7 @@ sites:
     prefecture: "大阪府"
     prefecture_code: "27"
     list_url: "https://www.city.osaka.lg.jp/kenko/page/0000117147.html"
+    phone: "06-6685-3700"
     category: "lost"
     single_page: true
 
@@ -1172,6 +1211,7 @@ sites:
     prefecture: "大阪府"
     prefecture_code: "27"
     list_url: "https://www.city.osaka.lg.jp/kenko/page/0000206024.html"
+    phone: "06-6685-3700"
     category: "adoption"
     single_page: true
 
@@ -1179,6 +1219,7 @@ sites:
     prefecture: "大阪府"
     prefecture_code: "27"
     list_url: "https://www.city.osaka.lg.jp/kenko/page/0000206027.html"
+    phone: "06-6685-3700"
     category: "adoption"
     single_page: true
 
@@ -1201,6 +1242,7 @@ sites:
     prefecture: "大阪府"
     prefecture_code: "27"
     list_url: "https://www.city.higashiosaka.lg.jp/0000005910.html"
+    phone: "072-963-6211"
     category: "sheltered"
     single_page: true
 
@@ -1322,6 +1364,7 @@ sites:
     prefecture: "広島県"
     prefecture_code: "34"
     list_url: "https://www.pref.hiroshima.lg.jp/site/apc/jouto-stray-dog-list.html"
+    phone: "0848-60-8511"
     category: "lost"
     single_page: true
 
@@ -1329,6 +1372,7 @@ sites:
     prefecture: "広島県"
     prefecture_code: "34"
     list_url: "https://www.pref.hiroshima.lg.jp/site/apc/jouto-stray-cat-list.html"
+    phone: "0848-60-8511"
     category: "lost"
     single_page: true
 
@@ -1352,6 +1396,7 @@ sites:
     prefecture: "広島県"
     prefecture_code: "34"
     list_url: "https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/237722.html"
+    phone: "084-970-1201"
     category: "sheltered"
     list_link_pattern: "a[href*='/soshiki/dobutsuaigo/']"
 
@@ -1359,6 +1404,7 @@ sites:
     prefecture: "広島県"
     prefecture_code: "34"
     list_url: "https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/60970.html"
+    phone: "084-970-1201"
     category: "sheltered"
     single_page: true
 
@@ -1506,6 +1552,7 @@ sites:
     # （犬猫等をお探しの方へ）」側 (2026-08-03 是正)。収容ゼロのときは
     # 全列 "-" のプレースホルダ行が置かれる。
     list_url: "https://www.city.nagoya.jp/kurashi/pet/1015473/1015489/1015494.html"
+    phone: "052-762-0380"
     category: "lost"
     single_page: true
 
@@ -1519,6 +1566,7 @@ sites:
     prefecture: "愛知県"
     prefecture_code: "23"
     list_url: "https://www.city.nagoya.jp/kurashi/pet/1015473/1015483/1015484.html"
+    phone: "052-762-0380"
     category: "adoption"
     single_page: true
 
@@ -1526,6 +1574,7 @@ sites:
     prefecture: "愛知県"
     prefecture_code: "23"
     list_url: "https://www.city.nagoya.jp/kurashi/pet/1015473/1015483/1015488.html"
+    phone: "052-762-1515"
     category: "adoption"
     single_page: true
 
@@ -1555,6 +1604,7 @@ sites:
     prefecture: "愛知県"
     prefecture_code: "23"
     list_url: "https://www.city.okazaki.lg.jp/1100/1107/1149/p008181.html"
+    phone: "0564-27-0402"
     category: "sheltered"
     pdf_link_pattern: "a[href$='.pdf']"
 

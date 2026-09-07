@@ -43,6 +43,20 @@ class SiteConfig(BaseModel):
     # terms_url: そのサイトの利用規約 / オープンデータ規約の URL
     license: str = "unknown"
     terms_url: str | None = None
+    # 問い合わせ先の電話番号 (T146)。個体ページから電話が取れないサイトの
+    # フォールバックとして `_default_normalize` が使う。個体ごとに管轄が違う
+    # サイト (山梨・静岡) では抽出値が優先されるので、ここは「そのサイトの
+    # 既定の窓口」を書く。
+    #
+    # **必ず人が一次ソースを見て 1 サイト 1 回選ぶこと。** ページから機械的に
+    # 拾ってはいけない: 実測で ①拾い主個人の携帯番号が個体ページに載っている
+    # サイトがある (www.douaicenter.jp) ②出現順の先頭が警察署の番号になる
+    # サイトがある (岡崎市・越谷市) ③ほぼ全サイトで直通・FAX・自治体代表が
+    # 並ぶ。詳細は projects/oneco/outputs/phone-null-survey-20260907.md。
+    #
+    # 同一ホスト・同一 adapter クラスでも事務所ごとに番号が違うことがある
+    # (香川の東讃/西讃/小豆) ため、adapter ではなくサイトエントリ単位で持つ。
+    phone: str | None = None
 
     @field_validator("name", "prefecture", "list_url")
     @classmethod

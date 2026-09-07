@@ -33,8 +33,23 @@ _DEFAULT_TIMEOUT_SEC = 30
 _MIN_HTML_SIZE_BYTES = 500
 
 # 電話番号抽出パターン
-# (a) ハイフン/スペース区切り: "088-826-2364", "088 826 2364"
-_PHONE_HYPHEN_RE = re.compile(r"\b(\d{2,4})[-\s](\d{1,4})[-\s](\d{4})\b")
+# (a) 区切りあり: "088-826-2364", "088 826 2364", "072(963)6211",
+#     "055（273）5034", "059−256−4168"
+#
+# T146 で 2 点直した:
+#  1. 市外局番に先頭 0 を要求する。以前は `\d{2,4}` で、"管理番号 2026-09-0007"
+#     (栃木県の迷子動物ページの実表記) が電話番号として通っていた。本番の
+#     全公開個体を実測した時点では実害 0 件 (76 種すべて `0` 始まりの正常な
+#     形式) だが、管理番号を電話抽出に通す adapter が 1 つできた時点で
+#     でたらめな番号を公開する。日本の固定電話・携帯は必ず 0 で始まる。
+#  2. 全角ハイフン (三重 `059−256−4168`)、半角括弧 (東大阪 `072(963)6211`)、
+#     全角括弧 (山梨 `055（273）5034`) を区切りとして受ける。いずれも実在の
+#     自治体ページの表記で、従来はすべて空文字に落ちていた。
+_PHONE_SEP_OPEN = r"[-\s‐‑‒–—―−－ー(（]"
+_PHONE_SEP_CLOSE = r"[-\s‐‑‒–—―−－ー)）]"
+_PHONE_HYPHEN_RE = re.compile(
+    rf"\b(0\d{{1,3}}){_PHONE_SEP_OPEN}(\d{{1,4}}){_PHONE_SEP_CLOSE}(\d{{4}})\b"
+)
 # (b) 区切りなし 10 桁: "0888262364" → 3-3-4 で分割
 _PHONE_PLAIN_RE = re.compile(r"\b(0\d{9})\b")
 # (c) 区切りなし 11 桁 (携帯): "09012345678" → 3-4-4 で分割
@@ -199,6 +214,20 @@ class RuleBasedAdapter(MunicipalityAdapter):
         ドメインで判別できないサイト（自治体共通基盤系等）では `prefecture=None`
         になるため、site_config.prefecture をフォールバックとして上書きする。
 
+        phone は `site_config.phone` をフォールバックする（T146）。個体ページに
+        電話が載っていないサイトが多く、本番実測で全公開個体の 22.6% が
+        phone=null だった。`site_config.phone`（sites.yaml に人が一次ソースから
+        1 回書く）を使うのは**抽出できなかったときだけ**で、個体ごとに管轄
+        保健所が違うサイトでは抽出値をそのまま残す。
+
+        **注入は DataNormalizer に渡す前に行う。** 正規化後の AnimalData を
+        書き換える形にすると `DataNormalizer._normalize_phone`（桁数 10/11 の
+        検証）と `_sanitize_public_phone`（070/080/090/050 = 個人の携帯・IP
+        電話を公開 phone から落とす）を迂回してしまい、sites.yaml に 1 行
+        足すだけでその安全策をすり抜けられる（PR #327 reviewer F-01）。
+        raw 側に入れておけば、人が書いた値も自治体ページから抽出した値と
+        まったく同じ検査を通る。
+
         Args:
             raw_data: 抽出した生データ
 
@@ -208,6 +237,8 @@ class RuleBasedAdapter(MunicipalityAdapter):
         Raises:
             ValidationError: DataNormalizer のバリデーション失敗時
         """
+        if not raw_data.phone and self.site_config.phone:
+            raw_data = raw_data.model_copy(update={"phone": self.site_config.phone})
         an = DataNormalizer.normalize(raw_data)
         if an.prefecture is None and self.site_config.prefecture:
             return an.model_copy(update={"prefecture": self.site_config.prefecture})
