@@ -5,8 +5,9 @@
 - 1 ページに `<table class="sp_table_wrap">` テーブルが並ぶ single_page 形式
 - 2 サイト (収容中、譲渡予定) すべての登録確認
 - フィクスチャは二重 UTF-8 mojibake 状態で保存されているため adapter 側で逆変換
-- テーブル直前の `<p><strong>{月日} {市町村} {犬|猫|...}</strong></p>` から
-  収容日 (月日) と species ヒントを取得
+- テーブル直前の `<strong>{月日} {市町村} {犬|猫|...}</strong>` から
+  収容日 (月日) と species ヒントを取得。2026-09 の収容中ページは
+  「9月2日」のように日付だけになっている (T158)
 - 在庫 0 件のページでも ParsingError を出さず空リストを返す
 """
 
@@ -325,6 +326,163 @@ class TestPrefEhimeAdapter:
 
         assert normalized is not None
         assert hasattr(normalized, "species")
+
+
+# T158: 2026-09 実測の収容中ページ。見出しから市町村と種別が落ち、
+# 日付だけになっている。加えて見出しのマークアップが 2 通り
+# (div 直下の <strong> / <p> 内の <strong>) 混在し、1 つの見出しに
+# 複数のテーブルがぶら下がる。
+_DATE_ONLY_HEADER_HTML = """
+<html><body><div class="detail_free">
+  <p>ページID：0016976 更新日：2026年9月5日</p>
+  <div class="sp_table_wrap2">
+    <strong>9月2日</strong>
+    <table class="sp_table_wrap">
+      <thead><tr><th>No.</th><th>拾得捕獲場所</th><th>種類</th><th>毛色</th>
+      <th>性別</th><th>体格</th><th>備考</th></tr></thead>
+      <tbody><tr><td>1</td><td><p>今治市大三島町</p></td><td>雑種</td>
+      <td>こげ茶</td><td>オス</td><td>小</td><td></td></tr></tbody>
+    </table>
+    <table class="sp_table_wrap">
+      <thead><tr><th>No.</th><th>拾得捕獲場所</th><th>種類</th><th>毛色</th>
+      <th>性別</th><th>体格</th><th>備考</th></tr></thead>
+      <tbody><tr><td>2</td><td><p>今治市大三島町</p></td><td>雑種</td>
+      <td>白茶</td><td>メス</td><td>小</td><td></td></tr></tbody>
+    </table>
+  </div>
+  <div class="sp_table_wrap2">
+    <p><strong>9月4日</strong></p>
+    <table class="sp_table_wrap">
+      <thead><tr><th>No.</th><th>拾得捕獲場所</th><th>種類</th><th>毛色</th>
+      <th>性別</th><th>体格</th><th>備考</th></tr></thead>
+      <tbody><tr><td>1</td><td><p>新居浜市田の上付近</p></td><td>雑種</td>
+      <td>薄黒茶</td><td>オス</td><td>大型</td><td><p>※赤色の首輪あり</p></td></tr></tbody>
+    </table>
+  </div>
+</div></body></html>
+"""
+
+# 旧書式 (2025-10 実測)。種別まで書かれていた頃の見出し。
+_LEGACY_HEADER_HTML = """
+<html><body><div class="detail_free">
+  <p>ページID：0016976 更新日：2025年10月3日</p>
+  <div class="sp_table_wrap2">
+    <p><strong>10月3日　八幡浜市　犬</strong></p>
+    <table class="sp_table_wrap">
+      <thead><tr><th>No.</th><th>拾得捕獲場所</th><th>種類</th><th>毛色</th>
+      <th>性別</th><th>体格</th><th>備考</th></tr></thead>
+      <tbody><tr><td>1</td><td><p>八幡浜市保内町</p></td><td>雑種</td>
+      <td>うす茶</td><td>オス</td><td>中</td><td></td></tr></tbody>
+    </table>
+  </div>
+</div></body></html>
+"""
+
+
+class TestDateOnlyHeader:
+    """T158: 日付だけになった見出しから収容日を取る
+
+    愛媛県は 2025-10 時点で「10月3日　犬」と種別まで書いていたが、
+    2026-09-05 更新時点では「9月2日」と日付だけになった。3 要素前提の
+    `_HEADER_LINE_RE` がマッチせず、本番実測で収容中 8 件すべての
+    収容日が「データ取得日」へフォールバックしていた。
+    """
+
+    def test_shelter_date_from_date_only_header(self):
+        adapter = PrefEhimeAdapter(_site_lost())
+        with patch.object(adapter, "_http_get", return_value=_DATE_ONLY_HEADER_HTML):
+            items = adapter.fetch_animal_list()
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in items]
+            animals = [adapter.normalize(r) for r in raws]
+
+        assert len(animals) == 3
+        assert [a.shelter_date.isoformat() for a in animals] == [
+            "2026-09-02",
+            "2026-09-02",
+            "2026-09-04",
+        ]
+
+    def test_all_tables_under_one_header_get_the_date(self):
+        """1 つの見出しにぶら下がる 2 件目以降も同じ収容日になる
+
+        以前は `find_all_previous(limit=10)` がテーブルのセル内 `<p>` や
+        直前のテーブルに食い潰され、2 件目以降が見出しに届かなかった。
+        """
+        adapter = PrefEhimeAdapter(_site_lost())
+        with patch.object(adapter, "_http_get", return_value=_DATE_ONLY_HEADER_HTML):
+            items = adapter.fetch_animal_list()
+            animals = [
+                adapter.normalize(adapter.extract_animal_details(u, category=c)) for u, c in items
+            ]
+
+        assert animals[0].shelter_date == animals[1].shelter_date
+
+    def test_location_comes_from_table_not_header(self):
+        """見出しに市町村が無くても場所はテーブルの列から取る"""
+        adapter = PrefEhimeAdapter(_site_lost())
+        with patch.object(adapter, "_http_get", return_value=_DATE_ONLY_HEADER_HTML):
+            items = adapter.fetch_animal_list()
+            animals = [
+                adapter.normalize(adapter.extract_animal_details(u, category=c)) for u, c in items
+            ]
+
+        assert animals[0].location == "今治市大三島町"
+        assert animals[2].location == "新居浜市田の上"
+
+    def test_species_stays_unknown_without_header_hint(self):
+        """種別が見出しから消えた分は推定せず「その他」のままにする
+
+        species は致命8フィールドの1つで、誤った値を公開する方が害が
+        大きい。判定材料が無い状態で犬と決め打ちしない (T156 で継続調査)。
+        """
+        adapter = PrefEhimeAdapter(_site_lost())
+        with patch.object(adapter, "_http_get", return_value=_DATE_ONLY_HEADER_HTML):
+            items = adapter.fetch_animal_list()
+            animals = [
+                adapter.normalize(adapter.extract_animal_details(u, category=c)) for u, c in items
+            ]
+
+        assert {a.species for a in animals} == {"その他"}
+
+    def test_legacy_header_format_still_works(self):
+        """種別まで書かれていた旧書式は従来通り収容日と species を取る"""
+        adapter = PrefEhimeAdapter(_site_lost())
+        with patch.object(adapter, "_http_get", return_value=_LEGACY_HEADER_HTML):
+            items = adapter.fetch_animal_list()
+            animals = [
+                adapter.normalize(adapter.extract_animal_details(u, category=c)) for u, c in items
+            ]
+
+        assert len(animals) == 1
+        assert animals[0].species == "犬"
+        assert animals[0].shelter_date.isoformat() == "2025-10-03"
+
+    def test_update_date_paragraph_is_not_used_as_header(self):
+        """「更新日：2026年9月5日」を見出しと誤認しない
+
+        日付だけの見出しを許した副作用で、ページ内の別の日付表記を
+        収容日として拾わないことを確認する。
+        """
+        html = """
+        <html><body><div class="detail_free">
+          <p><strong>更新日：2026年9月5日</strong></p>
+          <div class="sp_table_wrap2">
+            <table class="sp_table_wrap">
+              <thead><tr><th>No.</th><th>拾得捕獲場所</th><th>種類</th><th>毛色</th>
+              <th>性別</th><th>体格</th><th>備考</th></tr></thead>
+              <tbody><tr><td>1</td><td><p>松山市</p></td><td>雑種</td>
+              <td>白</td><td>オス</td><td>小</td><td></td></tr></tbody>
+            </table>
+          </div>
+        </div></body></html>
+        """
+        adapter = PrefEhimeAdapter(_site_lost())
+        with patch.object(adapter, "_http_get", return_value=html):
+            items = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(items[0][0], category=items[0][1])
+
+        # 見出しが取れないので収容日は既定 (データ取得日) にフォールバックする
+        assert raw.shelter_date == adapter.SHELTER_DATE_DEFAULT
 
 
 class TestSectionListLayout:
