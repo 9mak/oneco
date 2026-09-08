@@ -34,6 +34,9 @@ Workflow 失敗  各 workflow の「Notify Discord on failure」ステップ
               2つの Cloud Function が独立購読
               ├ 90% 到達  → budget-alert が Discord 通知（早期警告、緩和措置なし）
               └ 100% 到達 → stop-billing が課金解除（メール通知のみ、Discord 無し。→ RUNBOOK F 節）
+
+GA4 週次読上   ga4-weekly.yml (毎週月曜 JST9:10)
+              ユーザー数・動物詳細PV・external_link_click の前週比を Discord へ通知
 ```
 
 ## 各監視の詳細
@@ -85,6 +88,18 @@ Workflow 失敗  各 workflow の「Notify Discord on failure」ステップ
 - `count_audit_blind_hosts()` は週次掲載数監査の `comparable` 判定と対称になるよう `list_selector_resolution.resolve_list_selector()` を共有する。二重実装すると片方だけ直して判定がズレるため、必ず両スクリプトがこのモジュールを参照する
 - `api_only` (もういない疑い) は「消し忘れ」であり公開品質ゲートに効かないため通知対象外
 - 単日の掲載入れ替わりを含みうるため、通知本文には確定情報として扱わない注記を含め、`--recheck` での再照合を促す
+
+### GA4 週次読上（`ga4-weekly.yml` → `scripts/ga4_weekly_report.py`）
+
+- GA4 property `properties/541319394`（oneco, G-KEE66C1E8B）から直近7日 (JST 前日締め) と
+  前週7日を取得し、増減つきの Markdown レポート (workflow artifact, 400日保持) を出力する
+- Discord へはユーザー数 / 動物詳細ページ (`/animals/*`) 閲覧数 / `external_link_click` の
+  3指標のみ前週比つきで通知（詳細はレポート artifact 側）
+- 認証は WIF。GA4 閲覧専用サービスアカウント `oneco-ga4-mcp@oneco-app.iam.gserviceaccount.com`
+  を使う（deploy 用 SA とは別。roles: Viewer on GA4 property）
+- GA4 API 障害時はサイレントに成功終了せず、Discord へ失敗を通知した上で workflow も
+  failure にする（secret-health.yml と同じ二重ガード）
+- `--dry-run` でローカル確認可能（Discord 送信せず標準出力に表示）
 
 ### 課金/予算監視（`infra/stop-billing` + `infra/budget-alert`）
 
