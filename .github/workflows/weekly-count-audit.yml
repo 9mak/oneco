@@ -1,7 +1,8 @@
 name: Weekly Count Audit
 
 # 実サイト掲載数と oneco 公開数を adapter を経由せず突き合わせる週次監査
-# (scripts/site_count_audit.py, T046 → 自動化 T105)。
+# (scripts/site_count_audit.py, T046 → 自動化 T105 → セレクタ解決/ページ送り/閾値を
+# 見直した T141)。
 #
 # 背景: 手動実行 (2026-08-19) で大分県 (実サイト65頭 vs API 32件、猫が1ページ目のみ収集)
 # ・秋田ワンニャピア (実サイト10頭 vs API 0件、JS 必須判定の誤り) の掲載漏れを発見した実績が
@@ -19,8 +20,18 @@ name: Weekly Count Audit
 #   pagination_detected は含めない: 次ページリンクの有無だけを示す情報フラグで、
 #   件数比較とは独立に立つため単体では乖離の証拠にならない
 #   (src/data_collector/infrastructure/count_audit_notify.py 参照)。
-# - 閾値・判定基準は追加しない: 既存の site_count_audit.py のフラグをそのまま使う
-#   (新しい判定基準の追加はスコープ外)。
+# - 一覧セレクタは sites.yaml の list_link_pattern 手入力ではなく、adapter 実装
+#   (SiteAdapterRegistry 経由の LIST_LINK_SELECTOR / ROW_SELECTOR) から解決する
+#   (T141, src/data_collector/infrastructure/list_selector_resolution.py)。これにより
+#   ホスト単位の comparable (比較可能) 数が大幅に増える (T133 時点で213サイト中178サイトが
+#   構造的に判定不能だったが、この見直しで縮小する)。ページ送りも adapter の
+#   NEXT_PAGE_SELECTOR を辿り、循環・上限打ち切り時はそのホストを undercount 判定から除外
+#   する (pagination_truncated)。
+# - 通知には閾値を設けた (T141): comparable ホスト急増によるノイズを避けるため、
+#   |pattern_total - api_count| が max(2, API件数の20%) 未満の undercount/overcount は
+#   Discord へ通知しない (zero_suspect は質的判定のため対象外のまま)。上位15件を |delta|
+#   降順で表示し、残りは「他 N 件」に集約する。全件は artifact の *.md に残る
+#   (count_audit_notify.py 参照)。
 # - レポートは commit せず artifact 保存のみ: このスクリプトは docstring に明記の通り
 #   「undercount/overcount は当日の掲載入れ替わりを含む」単日ノイズの多いスナップショット。
 #   週次実行のたびに main へ自動コミットすると、確定情報でないデータで履歴が汚れ、
@@ -30,6 +41,9 @@ name: Weekly Count Audit
 # - timeout 45分: 対象サイト213件 (JS 必須 3件はスキップ)。1件ごとに fetch +
 #   礼儀的スリープ (同一ホスト連続時1.5秒/それ以外0.5秒) を挟むため実測10〜20分程度を
 #   想定しつつ、失敗サイトのタイムアウト (25秒/件) 積み増しを見込んで余裕を持たせる。
+#   T141 でページ送りを辿るサイトが増える (NEXT_PAGE_SELECTOR 定義済みの adapter のみ、
+#   上限 MAX_LIST_PAGES で打ち切り) 分の追加リクエストも見込んでいるが、対象は既存
+#   adapter 登録数の一部にとどまるため timeout は据え置く。
 
 on:
   schedule:

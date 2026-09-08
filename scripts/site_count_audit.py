@@ -44,8 +44,10 @@ undercount / overcount は当日の掲載入れ替わりを含むため、単日
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import os
+import pkgutil
 import re
 import sys
 import time
@@ -59,10 +61,26 @@ import requests
 import yaml
 from bs4 import BeautifulSoup
 
-from data_collector.infrastructure.count_audit_notify import maybe_notify
-from data_collector.infrastructure.notification_client import NotificationClient
-
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "src"))
+
+# サイト個別 adapter を import して SiteAdapterRegistry へ登録する (T141)。
+# full_publication_audit.py と同じ pkgutil トリック (site 単体の import 失敗で
+# 全体を落とさない)。
+import data_collector.adapters.rule_based.sites as _sites_pkg  # noqa: E402
+
+for _, _name, _ in pkgutil.iter_modules(_sites_pkg.__path__):
+    try:
+        importlib.import_module(f"data_collector.adapters.rule_based.sites.{_name}")
+    except Exception:
+        pass
+
+from data_collector.infrastructure.count_audit_notify import maybe_notify  # noqa: E402
+from data_collector.infrastructure.list_selector_resolution import (  # noqa: E402
+    resolve_list_selector,
+    resolve_pagination,
+)
+from data_collector.infrastructure.notification_client import NotificationClient  # noqa: E402
 
 # ゼロ表現キャナリーは zero_count_audit.py と共通 (scripts/ が sys.path に載る前提)
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -154,6 +172,80 @@ def count_pattern_links(soup: BeautifulSoup, page_url: str, selector: str) -> in
     return len(urls)
 
 
+def _collect_links(urls: set[str], soup: BeautifulSoup, page_url: str, selector: str) -> None:
+    try:
+        tags = soup.select(selector)
+    except Exception:
+        return
+    for a in tags:
+        href = a.get("href")
+        if href:
+            urls.add(urljoin(page_url, href))
+
+
+def count_pattern_links_paginated(
+    first_soup: BeautifulSoup,
+    list_url: str,
+    selector: str,
+    next_page_selector: str,
+    max_pages: int,
+) -> tuple[int, bool]:
+    """`selector` に一致するリンクをページ送りを辿って集計する (T141)。
+
+    `next_page_selector` が空なら1ページ目 (`first_soup`) だけを見る従来動作のまま。
+    `max_pages` に達した、または既訪問ページへ再遷移した (循環) 場合は
+    `pagination_truncated=True` を返す。
+    src/data_collector/adapters/rule_based/wordpress_list.py の
+    fetch_animal_list と同じ判定方針 (循環検知・上限到達をどちらも打ち切り扱いにする)。
+
+    ページ1件目は audit_site 側で既に fetch 済みの soup を再利用し、二重 fetch
+    (礼儀コスト・実行時間の増加) を避ける。
+    """
+    urls: set[str] = set()
+    if selector:
+        _collect_links(urls, first_soup, list_url, selector)
+
+    if not next_page_selector:
+        return len(urls), False
+
+    visited: set[str] = {list_url}
+    soup = first_soup
+    page_url = list_url
+    truncated = False
+    pages_fetched = 1
+    while True:
+        next_link = soup.select_one(next_page_selector)
+        next_href = next_link.get("href") if next_link else None
+        if not next_href or not isinstance(next_href, str):
+            break
+        next_url = urljoin(page_url, next_href)
+        if next_url in visited:
+            # next リンクが既訪問ページを指す循環。この先に未取得のページが
+            # 残っている可能性があるため打ち切り扱い。
+            truncated = True
+            break
+        if pages_fetched >= max_pages:
+            # まだ次ページが残っているのに上限に達した = 静かな取り漏らしの候補。
+            truncated = True
+            break
+        visited.add(next_url)
+        try:
+            res = requests.get(next_url, headers={"User-Agent": UA}, timeout=TIMEOUT)
+        except requests.RequestException:
+            truncated = True
+            break
+        if res.status_code != 200:
+            truncated = True
+            break
+        soup = BeautifulSoup(res.content, "html.parser")
+        pages_fetched += 1
+        if selector:
+            _collect_links(urls, soup, next_url, selector)
+        page_url = next_url
+
+    return len(urls), truncated
+
+
 def generic_signals(soup: BeautifulSoup, page_url: str) -> dict[str, int]:
     page_host = host_of(page_url)
     img_count = 0
@@ -179,14 +271,18 @@ def generic_signals(soup: BeautifulSoup, page_url: str) -> dict[str, int]:
 
 
 def audit_site(raw: dict[str, Any]) -> dict[str, Any]:
+    selector, selector_source, is_pdf_selector = resolve_list_selector(raw["name"], raw)
+    next_page_selector, max_pages = resolve_pagination(raw["name"])
     out: dict[str, Any] = {
         "name": raw["name"],
         "list_url": raw["list_url"],
         "host": host_of(raw["list_url"]),
         "category": raw.get("category"),
         "single_page": bool(raw.get("single_page")),
-        "selector": raw.get("list_link_pattern") or raw.get("pdf_link_pattern"),
-        "is_pdf_selector": bool(raw.get("pdf_link_pattern")),
+        "selector": selector,
+        "selector_source": selector_source,
+        "is_pdf_selector": is_pdf_selector,
+        "pagination_truncated": False,
     }
     if raw.get("requires_js"):
         out["status"] = "skipped_js"
@@ -206,7 +302,15 @@ def audit_site(raw: dict[str, Any]) -> dict[str, Any]:
     out["pagination"] = detect_pagination(soup, raw["list_url"])
     out["zero_canary"] = bool(ZERO_REGEX.search(soup.get_text()))
     out.update(generic_signals(soup, raw["list_url"]))
-    if out["selector"]:
+    if out["selector"] and not out["is_pdf_selector"]:
+        pattern_count, truncated = count_pattern_links_paginated(
+            soup, raw["list_url"], out["selector"], next_page_selector, max_pages
+        )
+        out["pattern_count"] = pattern_count
+        out["pagination_truncated"] = truncated
+    elif out["selector"]:
+        # PDF セレクタはページ送りを辿ってもリンク先 PDF 内の頭数は数えられない。
+        # 従来通り1ページ目のリンク数のみ参考値として残す (comparable では使わない)。
         out["pattern_count"] = count_pattern_links(soup, raw["list_url"], out["selector"])
     return out
 
@@ -226,7 +330,13 @@ def group_and_flag(
     for host, rows in by_host.items():
         api_count = api_by_host.get(host, 0)
         fetched = [r for r in rows if r["status"] == "ok"]
-        with_pattern = [r for r in fetched if r.get("pattern_count", -1) >= 0]
+        # ページ送りを上限・循環で打ち切ったサイトは pattern_count が不完全な下限値
+        # なので、掲載漏れ判定 (undercount) から除外する (T141)。
+        with_pattern = [
+            r
+            for r in fetched
+            if r.get("pattern_count", -1) >= 0 and not r.get("pagination_truncated")
+        ]
         # PDF セレクタはリンク先 PDF 内の頭数を数えられないため、掲載数比較には使わない
         comparable = (
             len(with_pattern) == len(rows)
@@ -234,10 +344,14 @@ def group_and_flag(
             and not any(r["is_pdf_selector"] for r in rows)
         )
         pattern_total = sum(r["pattern_count"] for r in with_pattern) if with_pattern else None
+        delta = (pattern_total - api_count) if comparable and pattern_total is not None else None
+        pagination_truncated = any(r.get("pagination_truncated") for r in fetched)
 
         flags: list[str] = []
         if any(r.get("pagination") for r in fetched):
             flags.append("pagination_detected")
+        if pagination_truncated:
+            flags.append("pagination_truncated")
         if comparable and pattern_total is not None:
             if pattern_total > api_count:
                 flags.append("undercount_suspect")
@@ -259,7 +373,9 @@ def group_and_flag(
                 "sites": [r["name"] for r in rows],
                 "api_count": api_count,
                 "pattern_total": pattern_total,
+                "delta": delta,
                 "comparable": comparable,
+                "pagination_truncated": pagination_truncated,
                 "statuses": sorted({r["status"] for r in rows}),
                 "flags": flags,
             }
@@ -272,26 +388,34 @@ def write_markdown(result: dict[str, Any], path: Path) -> None:
     lines: list[str] = []
     groups = result["groups"]
     flagged = [g for g in groups if g["flags"]]
+    comparable_groups = [g for g in groups if g["comparable"]]
     lines.append(f"# 実サイト掲載数 突き合わせ監査 (T046) {result['generated_at']}")
     lines.append("")
     lines.append(f"- API 公開中: {result['api_total']} 件")
     lines.append(f"- 対象サイト: {result['site_total']} (JS スキップ {result['js_skipped']})")
-    lines.append(f"- ホストグループ: {len(groups)} / フラグあり: **{len(flagged)}**")
+    lines.append(
+        f"- ホストグループ: {len(groups)} / 比較可能 (comparable): **{len(comparable_groups)}**"
+    )
+    lines.append(f"- フラグあり: **{len(flagged)}**")
+    lines.append(
+        "- Discord 通知には |delta| >= max(2, 20%) のホストのみ載る (全件はこの表を参照。 T141)"
+    )
     lines.append("")
     lines.append("undercount / overcount は当日の掲載入れ替わりを含むため、")
     lines.append("夜間収集後の再実行で残ったものだけを確定とする。")
     lines.append("")
 
-    lines.append("## フラグ付きホスト")
+    lines.append("## フラグ付きホスト (全件・通知の絞り込み前)")
     lines.append("")
-    lines.append("| ホスト | サイト | API | pattern | フラグ |")
-    lines.append("| --- | --- | ---: | ---: | --- |")
+    lines.append("| ホスト | サイト | API | pattern | delta | フラグ |")
+    lines.append("| --- | --- | ---: | ---: | ---: | --- |")
     for g in flagged:
         pt = g["pattern_total"] if g["pattern_total"] is not None else "-"
+        delta = g["delta"] if g["delta"] is not None else "-"
         if not g["comparable"]:
             pt = f"({pt})"
         lines.append(
-            f"| {g['host']} | {'<br>'.join(g['sites'])} | {g['api_count']} | {pt} "
+            f"| {g['host']} | {'<br>'.join(g['sites'])} | {g['api_count']} | {pt} | {delta} "
             f"| {', '.join(g['flags'])} |"
         )
     if not flagged:
@@ -309,11 +433,15 @@ def write_markdown(result: dict[str, Any], path: Path) -> None:
 
     lines.append("## サイト別詳細")
     lines.append("")
-    lines.append("| サイト | 状態 | pattern | ゼロ表現 | 画像 | 表行 | 番号 | 次頁 |")
-    lines.append("| --- | --- | ---: | :-: | ---: | ---: | ---: | :-: |")
+    lines.append(
+        "| サイト | 状態 | selector_source | pattern | 打切 | ゼロ表現 | 画像 | 表行 | 番号 | 次頁 |"
+    )
+    lines.append("| --- | --- | --- | ---: | :-: | :-: | ---: | ---: | ---: | :-: |")
     for r in result["site_results"]:
         lines.append(
-            f"| {r['name']} | {r['status']} | {r.get('pattern_count', '-')} "
+            f"| {r['name']} | {r['status']} | {r.get('selector_source', '-')} "
+            f"| {r.get('pattern_count', '-')} "
+            f"| {'Y' if r.get('pagination_truncated') else ''} "
             f"| {'Y' if r.get('zero_canary') else ''} | {r.get('same_host_imgs', '-')} "
             f"| {r.get('max_table_rows', '-')} | {r.get('number_hits', '-')} "
             f"| {'Y' if r.get('pagination') else ''} |"
