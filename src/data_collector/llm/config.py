@@ -10,6 +10,8 @@ from pathlib import Path
 import yaml
 from pydantic import BaseModel, field_validator
 
+from ..domain.quality_metrics import MONITORED_FIELDS
+
 SUPPORTED_PROVIDERS = {"anthropic", "groq"}
 
 
@@ -57,6 +59,28 @@ class SiteConfig(BaseModel):
     # 同一ホスト・同一 adapter クラスでも事務所ごとに番号が違うことがある
     # (香川の東讃/西讃/小豆) ため、adapter ではなくサイトエントリ単位で持つ。
     phone: str | None = None
+    # フィールド提供台帳 (T148/T149)。`{"breed": False}` のように書くと
+    # 「このサイトは breed を元ページに一切持たない」ことを明示する。
+    # `False` を書いたフィールドは欠損率の集計対象・ドリフト検知・
+    # never-populated 検知のすべてから除外される (何欠損率を出しても常に
+    # 「壊れている」わけではないため)。キーを省略したフィールドは
+    # デフォルトで「提供している」扱い。
+    #
+    # **一次ソースでページを実際に開いて確認したものだけを書くこと。**
+    # 推測で埋めない。判定根拠は projects/oneco/outputs/*-null-survey-*.md
+    # のような調査記録を必ず残す (このファイルのコメントに調査日を書く)。
+    fields: dict[str, bool] = {}
+
+    @field_validator("fields")
+    @classmethod
+    def validate_fields_keys(cls, v: dict[str, bool]) -> dict[str, bool]:
+        unknown = set(v) - set(MONITORED_FIELDS)
+        if unknown:
+            raise ValueError(
+                f"fields に未知のフィールド名: {sorted(unknown)}。"
+                f"監視対象フィールドのみ指定できます: {', '.join(MONITORED_FIELDS)}"
+            )
+        return v
 
     @field_validator("name", "prefecture", "list_url")
     @classmethod

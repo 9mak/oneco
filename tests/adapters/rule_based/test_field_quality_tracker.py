@@ -10,6 +10,7 @@ from src.data_collector.adapters.rule_based.field_quality_tracker import (
     HISTORY_LIMIT,
     FieldDrift,
     FieldQualityTracker,
+    NeverPopulatedAlert,
 )
 
 
@@ -88,3 +89,73 @@ class TestFieldQualityTracker:
         tracker.record("サイトA", {"location": 0.0}, sample_size=10, now=fixed)
         ts = tracker._state["サイトA"]["location"]["history"][0]["run_at"]
         assert "2026-05-28T12:00:00" in ts
+
+
+class TestNeverPopulated:
+    """T149: 初回から欠損 (never-populated) 検知のテスト"""
+
+    def test_fires_when_last_n_runs_all_full_missing(self, tmp_path):
+        """直近3回すべて100%欠損なら検知する"""
+        tracker = FieldQualityTracker(tmp_path / "drift.yaml")
+        for _ in range(3):
+            tracker.record("サイトA", {"breed": 1.0}, sample_size=10)
+        alerts = tracker.detect_never_populated()
+        assert len(alerts) == 1
+        a = alerts[0]
+        assert isinstance(a, NeverPopulatedAlert)
+        assert a.site_name == "サイトA"
+        assert a.field == "breed"
+        assert a.runs_checked == 3
+        assert a.missing_rate == pytest.approx(1.0)
+
+    def test_fires_from_first_run_if_history_shorter_than_min_runs(self, tmp_path):
+        """履歴が min_runs 未満でも、現有全 run が閾値以上なら初回から鳴らす"""
+        tracker = FieldQualityTracker(tmp_path / "drift.yaml")
+        tracker.record("サイトA", {"breed": 1.0}, sample_size=10)
+        alerts = tracker.detect_never_populated()
+        assert len(alerts) == 1
+        assert alerts[0].runs_checked == 1
+
+    def test_no_alert_if_one_of_recent_runs_below_threshold(self, tmp_path):
+        """直近 N 回のうち1回でも欠損率が閾値未満なら検知しない (=直っている)"""
+        tracker = FieldQualityTracker(tmp_path / "drift.yaml")
+        tracker.record("サイトA", {"breed": 1.0}, sample_size=10)
+        tracker.record("サイトA", {"breed": 1.0}, sample_size=10)
+        tracker.record("サイトA", {"breed": 0.2}, sample_size=10)
+        assert tracker.detect_never_populated() == []
+
+    def test_ledger_not_provided_suppresses_alert(self, tmp_path):
+        """台帳で false と宣言された field は 100%欠損でも検知しない"""
+        tracker = FieldQualityTracker(tmp_path / "drift.yaml")
+        for _ in range(3):
+            tracker.record("サイトA", {"breed": 1.0}, sample_size=10)
+        alerts = tracker.detect_never_populated(provided_fields={"サイトA": {"breed": False}})
+        assert alerts == []
+
+    def test_suppression_window_blocks_repeat_alert(self, tmp_path):
+        """suppress_days 以内の再アラートは抑制される"""
+        tracker = FieldQualityTracker(tmp_path / "drift.yaml")
+        base = datetime(2026, 9, 1, 0, 0, 0, tzinfo=UTC)
+        for _ in range(3):
+            tracker.record("サイトA", {"breed": 1.0}, sample_size=10, now=base)
+        alerts = tracker.detect_never_populated(now=base)
+        assert len(alerts) == 1
+        tracker.mark_never_populated_alerted(alerts, now=base)
+
+        # 3日後: 抑制期間内なので鳴らない
+        soon = base.replace(day=4)
+        assert tracker.detect_never_populated(now=soon) == []
+
+        # 8日後: 抑制期間を過ぎたので再度鳴る
+        later = base.replace(day=9)
+        alerts_later = tracker.detect_never_populated(now=later)
+        assert len(alerts_later) == 1
+
+    def test_recovering_field_does_not_alert(self, tmp_path):
+        """一度100%欠損でも直近が改善していれば鳴らさない (drift 検知の役目と分離)"""
+        tracker = FieldQualityTracker(tmp_path / "drift.yaml")
+        tracker.record("サイトA", {"breed": 1.0}, sample_size=10)
+        tracker.record("サイトA", {"breed": 1.0}, sample_size=10)
+        tracker.record("サイトA", {"breed": 1.0}, sample_size=10)
+        tracker.record("サイトA", {"breed": 0.0}, sample_size=10)
+        assert tracker.detect_never_populated() == []

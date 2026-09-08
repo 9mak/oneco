@@ -4,6 +4,11 @@
 #   requires_js: true  → Playwright（JS実行）で取得
 #   single_page: true  → 一覧ページに動物情報が直接記載（個別詳細ページなし）
 #   list_link_pattern  → 詳細リンクのCSSセレクター（静的HTML向け）
+#   fields: {breed: false} 等 → フィールド提供台帳 (T148/T149)。元サイトが
+#     構造的にそのフィールドを公開していないことを示す。欠損率の監視・
+#     ドリフト検知・never-populated アラートのすべてから除外される。
+#     一次ソースでページを実際に確認した場合のみ書くこと (推測禁止)。
+#     根拠は各エントリのコメントに調査記録の日付・出典を残す。
 
 extraction:
   default_provider: groq
@@ -142,6 +147,10 @@ sites:
     phone: "089-977-9200"
     category: "adoption"
     single_page: true
+    # breed-null-survey-20260907: ページ項目は 毛色/性別/推定年齢/コメント
+    # のみで品種欄そのものが無い (25件確認・T148)。抽出漏れではない。
+    fields:
+      breed: false
 
   # 【松山市 はぴまるの丘】静的HTML。犬・猫の収容情報がHTMLに直接埋め込まれている。
   # 正しいURL: /kurashi/kurashi/aigo/index.html（個別ページなし single_page形式）
@@ -613,6 +622,12 @@ sites:
     list_url: "https://oita-aigo.com/information_catlist/anytimecat/"
     category: "adoption"
     single_page: true
+    # breed-null-survey-20260907: ページ項目は 仮名/No./毛色/推定年齢/性別/
+    # 不妊去勢/猫免疫不全ウイルス/猫白血病ウイルス/備考欄 のみで品種欄が
+    # 無い (56件確認・T148)。譲渡犬・迷子情報ページには「種類」列がある
+    # ため猫ページ特有 (カテゴリ非対称、reviewer F-01 指摘で判明)。
+    fields:
+      breed: false
 
   # 【那覇市】PDF 配布形式
   - name: "那覇市（保護犬猫情報）"

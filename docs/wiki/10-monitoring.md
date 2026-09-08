@@ -17,6 +17,7 @@ Secret 監視   secret-health.yml (日次 JST9:00)
               ├ 連続失敗サイト            → WARNING
               ├ ゼロ件回帰 (baseline比較)  → WARNING
               ├ フィールド欠損率ドリフト   → WARNING
+              ├ 初回から欠損 (T149)        → WARNING (site×field ごと7日に1回)
               └ auto-fix dispatch 失敗    → WARNING
 
 Workflow 失敗  各 workflow の「Notify Discord on failure」ステップ
@@ -47,6 +48,16 @@ Workflow 失敗  各 workflow の「Notify Discord on failure」ステップ
 - 閾値は `ONECO_MAX_FAIL_RATIO` / `ONECO_MAX_ZERO_RATIO` で調整可能
 - 状態は `data/broken_sites.yaml` / `data/site_baselines.yaml` / `data/field_quality_drift.yaml` に永続化（→ [データフロー](02-data-flow.md)）
 - 検知結果は [自己修復ループ](04-self-healing.md) のトリガーにもなる
+
+### フィールド提供台帳 (T148/T149)
+
+- 背景: 欠損率監視は「adapter が壊れて取れなくなった」と「元サイトがそもそもそのフィールドを公開していない」を区別できなかった。大分譲渡猫（品種欄が無い）・愛媛譲渡予定（同）のように、後者は監視上は 100% 欠損のまま**恒久的に赤く**なる。区別しないまま「初回から100%欠損」を鳴らすと、これらが毎回鳴ってオオカミ少年化し、本当の抽出漏れが埋もれる（一次調査記録: CCC `projects/oneco/outputs/breed-null-survey-20260907.md` / `phone-null-survey-20260907.md`）
+- `sites.yaml` の各サイトエントリに `fields: {breed: false}` のように書くと、そのサイトはそのフィールドを提供していないと宣言できる (`SiteConfig.fields`)。キーを省略したフィールドはデフォルトで「提供している」扱い
+- **一次ソースでページを実際に確認したものだけを書く**（推測禁止）。根拠は各エントリのコメントに調査記録の日付を残す
+- `compute_missing_rates()` は `provided` 引数でこの台帳を受け取り、`False` のフィールドを結果から丸ごと除外する。history にも記録されないため、ドリフト検知にも T149 検知にも一切乗らない
+- T148: 監視対象フィールド (`MONITORED_FIELDS`) に `species` / `breed` を追加（従来は欠損トラッカーの監視対象外で抽出漏れが監視をすり抜けていた）
+- T149: `FieldQualityTracker.detect_never_populated()` が、台帳上「提供している」フィールドの直近3run（履歴がそれ未満なら現有全run）がすべて99%以上欠損している site×field を検知する。ドリフト検知（急増）では捉えられない「最初からずっと壊れている」ケースを別枠で拾う。同一 (site, field) の再通知は7日に1回に抑制する（`last_never_alert_at` を `data/field_quality_drift.yaml` に記録）。通知文言例: `⚠️ 初回から欠損: <site> / <field> 直近3回 100% 欠損（台帳では提供あり）`
+- `scripts/field_ledger_report.py` — サイトごとに台帳の提供有無と直近欠損率を並べて表示し、「100%欠損なのに台帳では not-provided と宣言されていない」候補を一覧する。台帳を拡張するときのワークリストとして使う（`python3 scripts/field_ledger_report.py`）
 
 ### 課金/予算監視（`infra/stop-billing`）
 

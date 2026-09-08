@@ -95,6 +95,24 @@ class TestSiteConfigLoader:
         with pytest.raises(ValidationError, match="1つ以上のサイト定義が必要"):
             SiteConfigLoader.load(path)
 
+    def test_load_yaml_with_fields_ledger(self, tmp_path: Path):
+        """T148: sites.yaml の fields: が SiteConfig.fields に反映される"""
+        config = {
+            "sites": [
+                {
+                    "name": "テストサイト",
+                    "prefecture": "テスト県",
+                    "prefecture_code": "99",
+                    "list_url": "https://example.com/",
+                    "fields": {"breed": False},
+                }
+            ],
+        }
+        path = tmp_path / "sites.yaml"
+        path.write_text(yaml.dump(config, allow_unicode=True), encoding="utf-8")
+        loaded = SiteConfigLoader.load(path)
+        assert loaded.sites[0].fields == {"breed": False}
+
 
 class TestSiteConfigValidation:
     def test_missing_name_raises(self):
@@ -203,6 +221,35 @@ class TestSiteConfigValidation:
             timeout_sec=300,
         )
         assert site.timeout_sec == 300
+
+    def test_fields_defaults_to_empty_dict(self):
+        site = SiteConfig(
+            name="テスト",
+            prefecture="テスト県",
+            prefecture_code="99",
+            list_url="https://example.com/",
+        )
+        assert site.fields == {}
+
+    def test_fields_accepts_known_field_false(self):
+        site = SiteConfig(
+            name="テスト",
+            prefecture="テスト県",
+            prefecture_code="99",
+            list_url="https://example.com/",
+            fields={"breed": False},
+        )
+        assert site.fields == {"breed": False}
+
+    def test_fields_unknown_key_raises(self):
+        with pytest.raises(ValidationError, match="未知のフィールド名"):
+            SiteConfig(
+                name="テスト",
+                prefecture="テスト県",
+                prefecture_code="99",
+                list_url="https://example.com/",
+                fields={"not_a_real_field": False},
+            )
 
 
 class TestExtractionConfigValidation:
