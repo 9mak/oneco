@@ -57,6 +57,18 @@ class SiteConfig(BaseModel):
     # 同一ホスト・同一 adapter クラスでも事務所ごとに番号が違うことがある
     # (香川の東讃/西讃/小豆) ため、adapter ではなくサイトエントリ単位で持つ。
     phone: str | None = None
+    # T156: 見出し・「種類」列のどちらからも犬/猫を判別できないサイト向けの
+    # 最終フォールバック。全 Wayback スナップショット等で犬しか出現しないと
+    # 確認済みのサイトにのみ、人が根拠コメント付きで設定する。
+    default_species: str | None = None
+    # dog/cat 以外を渡してしまう設定ミスを防ぐため厳密に検証する
+
+    @field_validator("default_species")
+    @classmethod
+    def validate_default_species(cls, v: str | None) -> str | None:
+        if v is not None and v not in ("dog", "cat"):
+            raise ValueError("default_species は 'dog' または 'cat' を指定してください")
+        return v
 
     @field_validator("name", "prefecture", "list_url")
     @classmethod

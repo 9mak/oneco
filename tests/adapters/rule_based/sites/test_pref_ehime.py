@@ -485,6 +485,86 @@ class TestDateOnlyHeader:
         assert raw.shelter_date == adapter.SHELTER_DATE_DEFAULT
 
 
+class TestSpeciesFallbackChain:
+    """T156: 見出しに犬/猫が無いときの species 推定優先順位
+
+    優先順位: 1) 見出し 2) 「種類」列 (品種) 3) sites.yaml の default_species
+    4) サイト名 (実質「その他」)。
+    """
+
+    def _html_with_breed(self, breed: str) -> str:
+        return f"""
+        <html><body><div class="detail_free">
+          <p>ページID：0016976 更新日：2026年9月5日</p>
+          <div class="sp_table_wrap2">
+            <strong>9月2日</strong>
+            <table class="sp_table_wrap">
+              <thead><tr><th>No.</th><th>拾得捕獲場所</th><th>種類</th><th>毛色</th>
+              <th>性別</th><th>体格</th><th>備考</th></tr></thead>
+              <tbody><tr><td>1</td><td><p>今治市大三島町</p></td><td>{breed}</td>
+              <td>黒</td><td>オス</td><td>中型</td><td></td></tr></tbody>
+            </table>
+          </div>
+        </div></body></html>
+        """
+
+    def test_species_inferred_from_breed_column_dog(self):
+        """「種類」列が犬を含む品種名 (柴犬風) なら犬と判定する"""
+        adapter = PrefEhimeAdapter(_site_lost())
+        html = self._html_with_breed("柴犬風")
+        with patch.object(adapter, "_http_get", return_value=html):
+            items = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(items[0][0], category=items[0][1])
+
+        assert raw.species == "犬"
+        assert raw.breed == "柴犬風"
+
+    def test_species_inferred_from_breed_column_cat(self):
+        """「種類」列が猫を含む品種名なら猫と判定する"""
+        adapter = PrefEhimeAdapter(_site_lost())
+        html = self._html_with_breed("キジトラ猫")
+        with patch.object(adapter, "_http_get", return_value=html):
+            items = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(items[0][0], category=items[0][1])
+
+        assert raw.species == "猫"
+
+    def test_ambiguous_breed_falls_back_to_default_species(self):
+        """「雑種」のように犬猫を判別できない品種名は default_species を使う"""
+        site = _site_lost()
+        site.default_species = "dog"
+        adapter = PrefEhimeAdapter(site)
+        html = self._html_with_breed("雑種")
+        with patch.object(adapter, "_http_get", return_value=html):
+            items = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(items[0][0], category=items[0][1])
+            animal = adapter.normalize(raw)
+
+        assert animal.species == "犬"
+
+    def test_no_default_species_configured_falls_back_to_other(self):
+        """default_species 未設定なら従来通り「その他」になる (譲渡予定など)"""
+        adapter = PrefEhimeAdapter(_site_lost())
+        html = self._html_with_breed("雑種")
+        with patch.object(adapter, "_http_get", return_value=html):
+            items = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(items[0][0], category=items[0][1])
+            animal = adapter.normalize(raw)
+
+        assert animal.species == "その他"
+
+    def test_header_hint_takes_priority_over_breed_and_default(self):
+        """見出しに犬/猫があれば「種類」列や default_species より優先する"""
+        site = _site_lost()
+        site.default_species = "dog"
+        adapter = PrefEhimeAdapter(site)
+        with patch.object(adapter, "_http_get", return_value=_LEGACY_HEADER_HTML):
+            items = adapter.fetch_animal_list()
+            animal = adapter.normalize(adapter.extract_animal_details(*items[0]))
+
+        assert animal.species == "犬"
+
+
 class TestSectionListLayout:
     """2026-08 時点の譲渡予定ページ (セクション見出し + 1 行 1 頭) レイアウト
 

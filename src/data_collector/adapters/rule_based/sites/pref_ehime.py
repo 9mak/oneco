@@ -45,10 +45,14 @@
   2026-09 時点の収容中ページは見出しから市町村と種別が落ち、
   「9月2日」のように日付だけになっている (T158)。この形でも収容日は
   取れるようにし、場所はテーブルの「拾得捕獲場所」列を使う。
-  種別が消えたことで species は推定できず「その他」になる (T156 で継続調査)。
-  ただし、すべてのテーブルでこのヘッダ段落が存在するとは限らないため
-  `species` はサイト名 (収容中=未指定、譲渡予定=未指定) と段落見出しの
-  両方から推定し、いずれも特定できなければ "その他" を返す。
+  見出しから種別が消えた場合 (T156)、`species` は次の優先順で推定する:
+    1. 見出し段落 (犬/猫を含む場合)
+    2. テーブルの「種類」列 (品種名。normalizer の犬/猫パターンで判定)
+    3. sites.yaml の `default_species` (収容中サイトは "dog" を設定済み。
+       根拠は sites.yaml のコメントを参照)
+    4. サイト名からの推定 (収容中/譲渡予定はいずれも犬猫を区別しないため
+       実質ここまで来ることはない想定)
+  いずれも特定できなければ "その他" を返す。
 - ページ全体 (data_collector が `requests` で取得した実 HTML) は UTF-8 で
   返却されるが、リポジトリに保存されたフィクスチャは UTF-8 バイト列を
   Latin-1 として解釈してから再 UTF-8 化された二重エンコーディング
@@ -66,9 +70,37 @@ from typing import ClassVar
 from bs4 import BeautifulSoup, Tag
 
 from ....domain.models import RawAnimalData
+from ....domain.normalizer import DataNormalizer
 from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
+
+# T156: species=その他 になっていた 8 件対応。優先順位は
+#   1. 見出し段落に犬/猫が明記されている (既存)
+#   2. 「種類」列 (品種) から犬/猫を推定する。品種特有の辞書は持たず、
+#      normalizer.DataNormalizer の犬/猫パターンをそのまま再利用する
+#      (「柴犬風」のように品種名に犬/猫の字を含むケースを拾う)。
+#   3. site_config.default_species (人が根拠付きで設定した最終フォールバック)
+_DOG_TO_SPECIES = "犬"
+_CAT_TO_SPECIES = "猫"
+
+
+def _infer_species_from_breed(breed: str) -> str:
+    """「種類」列 (品種) の文字列から犬/猫を推定する
+
+    「柴犬」「雑種(犬)」のように品種名が犬/猫の字・別称を含む場合のみ判定できる。
+    「雑種」単体のように犬猫どちらとも取れない品種名は判定不能として空文字を返す。
+    """
+    if not breed:
+        return ""
+    for pattern in DataNormalizer._SPECIES_DOG_PATTERNS:
+        if pattern in breed:
+            return _DOG_TO_SPECIES
+    for pattern in DataNormalizer._SPECIES_CAT_PATTERNS:
+        if pattern in breed:
+            return _CAT_TO_SPECIES
+    return ""
+
 
 # 「{月}月{日}日　{市町村}　{犬|猫|...}」を抽出する正規表現。
 # 全角/半角空白の両方を許容する。
@@ -375,8 +407,14 @@ class PrefEhimeAdapter(SinglePageTableAdapter):
         if not location and header_location:
             location = header_location
 
-        # species: 見出し段落のヒント -> サイト名 -> "その他" の優先順
-        species = header_species or self._infer_species_from_site_name(self.site_config.name)
+        # species: 見出し段落のヒント -> 「種類」列 (品種) -> sites.yaml の
+        # default_species -> サイト名 -> "その他" の優先順 (T156)
+        species = (
+            header_species
+            or _infer_species_from_breed(breed)
+            or self.site_config.default_species
+            or self._infer_species_from_site_name(self.site_config.name)
+        )
 
         try:
             return RawAnimalData(
