@@ -16,7 +16,7 @@ Cloud Billing 予算 (oneco-monthly-cap-500, ¥500/月, 閾値50/90/100%)
   → costAmount >= budgetAmount のとき projects.updateBillingInfo で課金解除
 ```
 
-- 閾値50/90/100%で請求先アカウント管理者宛にメール通知も飛ぶ（GCP標準機能）
+- 閾値50/90/100%で請求先アカウント管理者宛にメール通知も飛ぶ（GCP標準機能）。90%到達は別Function [infra/budget-alert](../budget-alert/README.md)（T143）が同じ`budget-alerts` topicを独立購読しDiscordにも通知する（stop-billing自体はDiscord通知を持たない。このFunctionのコード・IAMは budget-alert 追加時も変更されていない）
 - 実行SA: `462233676125-compute@developer.gserviceaccount.com`（`roles/billing.projectManager` を oneco-app に付与済み）
 
 ## デプロイ
