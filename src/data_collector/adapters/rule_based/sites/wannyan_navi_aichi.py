@@ -58,6 +58,7 @@ import re
 from typing import ClassVar
 
 from bs4 import BeautifulSoup, Tag
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
 from ....domain.models import RawAnimalData
@@ -112,12 +113,33 @@ class WannyanNaviAichiAdapter(PlaywrightFetchMixin, WordPressListAdapter):
         # これより少なければ打ち切りとみなす (T123 reviewer F-01)。
         self._observed_total: int | None = None
 
-    # `wait_until="networkidle"` (既定) だけで detail ページの描画完了後
-    # HTML (実測 80KB 前後、bubble-element 100+ 個) を取得できることを実サイトで
-    # 確認済み。photo carousel 等の存在に依存する selector にすると写真 0 枚の
-    # 個体で wait_for_selector がタイムアウトし detail 取得ごと失敗するため、
-    # ページ全体で必ず出現する `.bubble-element` を保険として待つ。
-    WAIT_SELECTOR: ClassVar[str | None] = ".bubble-element"
+    # `wait_until="networkidle"` (既定) + `.bubble-element` 待機だけでは
+    # 詳細コンテンツ (基本情報/特徴ブロック・連絡先フッター) が描画完了する
+    # 前に HTML を取得してしまう競合が実測された (T154 2026-09-08: 本番
+    # 35件中20件で `location`/`phone` が空になっており、同一 record_id を
+    # 手動で再取得すると正常に取れる。`.bubble-element` はページ読み込み
+    # 直後の骨格要素だけでも満たされてしまうため、実質待機なしと同義になっていた)。
+    # 「特徴」見出し (`_FEATURE_HEADING`、Bubble の text engine で検索) は
+    # 基本情報ブロックより後に描画される固定文言で、これが出れば連絡先
+    # フッターを含む本文全体の描画完了を実質的に保証できる。
+    #
+    # ただし `_extract_basic_info` / `_extract_description` は「特徴」見出し
+    # が見つからない個体 (プロフィール未記入等) を try/except ValueError で
+    # 許容する防御的実装になっており、そのような個体が実在しうることを示唆
+    # している (T154 reviewer F-01)。その個体で `text=特徴` を必須待機に
+    # すると `PLAYWRIGHT_TIMEOUT_MS` (30秒) 待った末に detail 取得自体が
+    # 失敗する新しい失敗モードになるため、`WAIT_SELECTOR` は主待機条件の
+    # 宣言 (`WAIT_SELECTOR is not None` の契約用) として残しつつ、実際の
+    # 取得は `_http_get` をオーバーライドしてタイムアウト時に骨格要素
+    # (`_FALLBACK_SETTLE_SELECTOR`) + 短い settle 待ちへフォールバックする。
+    WAIT_SELECTOR: ClassVar[str | None] = f"text={_FEATURE_HEADING}"
+
+    # 「特徴」見出し待機がタイムアウトした場合のフォールバック設定。
+    # `.bubble-element` は T154 是正前の待機条件そのもの (骨格要素、ほぼ
+    # 即座に見つかる)。追加で `_FALLBACK_SETTLE_MS` だけ猶予を持たせ、
+    # 「特徴」見出しが無い個体でも致命的タイムアウトにせず取得を継続する。
+    _FALLBACK_SETTLE_SELECTOR: ClassVar[str] = ".bubble-element"
+    _FALLBACK_SETTLE_MS: ClassVar[int] = 1500
 
     # 基底クラス (`WordPressListAdapter.__init_subclass__`) が
     # 空文字を拒否するため形式上定義するが、`fetch_animal_list` を
@@ -128,6 +150,70 @@ class WannyanNaviAichiAdapter(PlaywrightFetchMixin, WordPressListAdapter):
     # プラグインの固定クラス名で内部 id ハッシュより安定) 配下の img のみ。
     # ヘッダーロゴ / サイト共通アイコンはこの外側にあるため自然に除外される。
     IMAGE_SELECTOR: ClassVar[str] = ".slickcarousel-Carousel img"
+
+    # ─────────────────── detail 取得: 待機フォールバック ───────────────────
+
+    def _http_get(
+        self,
+        url: str,
+        *,
+        timeout: int = 30,
+        extra_headers: dict[str, str] | None = None,
+    ) -> str:
+        """detail ページを取得する。「特徴」見出し待機がタイムアウトしても
+
+        致命エラーにせず、骨格要素 (`_FALLBACK_SETTLE_SELECTOR`) + 短い
+        settle 待ちへフォールバックしてページ内容を返す (T154 reviewer F-01)。
+
+        一覧取得 (`_collect_record_ids_via_network`) は本メソッドを経由しない
+        ため影響しない。`requires_js: false` のサイトは基底 (静的 HTTP) に
+        委譲する既定動作を維持する。
+        """
+        if not getattr(self.site_config, "requires_js", True):
+            return super()._http_get(url, timeout=timeout, extra_headers=extra_headers)
+
+        self._polite_wait(getattr(self.site_config, "request_interval", None))
+        try:
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                try:
+                    context = browser.new_context(user_agent=ONECO_USER_AGENT)
+                    page = context.new_page()
+                    page.goto(
+                        url,
+                        wait_until="networkidle",
+                        timeout=self.PLAYWRIGHT_TIMEOUT_MS,
+                    )
+                    try:
+                        page.wait_for_selector(
+                            self.WAIT_SELECTOR, timeout=self.PLAYWRIGHT_TIMEOUT_MS
+                        )
+                    except PlaywrightTimeoutError:
+                        # 「特徴」見出しを持たない個体 (プロフィール未記入等)。
+                        # 骨格要素だけ確認し、追加の settle 待ちで妥協する
+                        # (致命的な NetworkError にはしない)。
+                        logger.warning(
+                            "[%s] detail ページで「%s」見出しの描画待機が"
+                            "タイムアウトしました。骨格要素 + %dms の settle "
+                            "待ちにフォールバックします: %s",
+                            self.site_config.name,
+                            _FEATURE_HEADING,
+                            self._FALLBACK_SETTLE_MS,
+                            url,
+                        )
+                        page.wait_for_selector(
+                            self._FALLBACK_SETTLE_SELECTOR,
+                            timeout=self.PLAYWRIGHT_TIMEOUT_MS,
+                        )
+                        page.wait_for_timeout(self._FALLBACK_SETTLE_MS)
+                    content = page.content()
+                finally:
+                    browser.close()
+        except NetworkError:
+            raise
+        except Exception as e:
+            raise NetworkError(f"Playwright fetch 失敗: {e}", url=url) from e
+        return content
 
     # ─────────────────── 一覧: record id 収集 ───────────────────
 

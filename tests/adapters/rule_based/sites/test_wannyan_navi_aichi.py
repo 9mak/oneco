@@ -619,3 +619,95 @@ class TestWannyanNaviAichiTruncationDetection:
         with self._patch_playwright(adapter, payload):
             adapter.fetch_animal_list()
         assert adapter.list_truncated is False
+
+
+class TestWannyanNaviAichiHttpGetFallback:
+    """`_http_get` の「特徴」見出し待機タイムアウト時フォールバック (T154 reviewer F-01)
+
+    「特徴」見出しを持たない個体 (プロフィール未記入等) で
+    `wait_for_selector(text=特徴)` がタイムアウトしても、致命的な
+    `NetworkError` にはせず骨格要素 + 短い settle 待ちで取得を継続する。
+    """
+
+    @staticmethod
+    def _patch_playwright_for_detail(*, feature_heading_times_out: bool):
+        """detail ページ取得用の Playwright スタブ
+
+        `feature_heading_times_out=True` のとき、1 回目の
+        `wait_for_selector` (「特徴」見出し) だけ `PlaywrightTimeoutError`
+        を送出し、2 回目 (フォールバック骨格要素) は成功させる。
+        """
+        from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
+        calls: list[str] = []
+
+        class _FakePage:
+            def goto(self, url, wait_until=None, timeout=None):
+                pass
+
+            def wait_for_selector(self, selector, timeout=None):
+                calls.append(selector)
+                if feature_heading_times_out and selector.startswith("text="):
+                    raise PlaywrightTimeoutError("Timeout waiting for selector")
+
+            def wait_for_timeout(self, ms):
+                calls.append(f"settle:{ms}")
+
+            def content(self):
+                return "<html><body>detail-html</body></html>"
+
+        class _FakeContext:
+            def new_page(self):
+                return _FakePage()
+
+        class _FakeBrowser:
+            def new_context(self, user_agent=None):
+                return _FakeContext()
+
+            def close(self):
+                pass
+
+        class _FakeChromium:
+            def launch(self, headless=True):
+                return _FakeBrowser()
+
+        class _FakePlaywrightCtx:
+            def __enter__(self):
+                return type("P", (), {"chromium": _FakeChromium()})()
+
+            def __exit__(self, *exc):
+                return False
+
+        patcher = patch(
+            "data_collector.adapters.rule_based.sites.wannyan_navi_aichi.sync_playwright",
+            return_value=_FakePlaywrightCtx(),
+        )
+        return patcher, calls
+
+    def test_feature_heading_timeout_falls_back_instead_of_raising(self):
+        """「特徴」見出し待機がタイムアウトしても NetworkError を送出しない"""
+        site = _site_aichi()
+        site.requires_js = True
+        adapter = WannyanNaviAichiAdapter(site)
+        patcher, calls = self._patch_playwright_for_detail(feature_heading_times_out=True)
+        with patcher:
+            html = adapter._http_get("https://wannyan-navi.pref.aichi.jp/?page=list_dc_m&no=1")
+
+        assert html == "<html><body>detail-html</body></html>"
+        # 1回目: 「特徴」見出し (タイムアウト) → 2回目: 骨格要素フォールバック
+        # → settle 待ち、の順で呼ばれる
+        assert calls[0].startswith("text=")
+        assert calls[1] == WannyanNaviAichiAdapter._FALLBACK_SETTLE_SELECTOR
+        assert calls[2] == f"settle:{WannyanNaviAichiAdapter._FALLBACK_SETTLE_MS}"
+
+    def test_feature_heading_found_does_not_use_fallback(self):
+        """「特徴」見出しが見つかるときはフォールバック経路を通らない"""
+        site = _site_aichi()
+        site.requires_js = True
+        adapter = WannyanNaviAichiAdapter(site)
+        patcher, calls = self._patch_playwright_for_detail(feature_heading_times_out=False)
+        with patcher:
+            html = adapter._http_get("https://wannyan-navi.pref.aichi.jp/?page=list_dc_m&no=1")
+
+        assert html == "<html><body>detail-html</body></html>"
+        assert calls == [WannyanNaviAichiAdapter.WAIT_SELECTOR]

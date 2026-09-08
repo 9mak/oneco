@@ -93,20 +93,94 @@ class TestPrefShizuokaAdapter:
             first_url, category = urls[0]
             raw = adapter.extract_animal_details(first_url, category=category)
 
-        # HTTP は 1 回だけ (キャッシュ確認: detail ページは fetch しない)
-        assert mock_get.call_count == 1
+        # HTTP は一覧取得 (キャッシュ) 1 回 + 電話番号抽出のための detail
+        # ページ取得 1 回 (T154)。fixture (一覧ページ) には `電話番号` の
+        # dt/dd が無いため phone は空文字に落ちる。
+        assert mock_get.call_count == 2
         assert isinstance(raw, RawAnimalData)
         # ページ見出し「迷い犬情報一覧」+ リンクテキスト「迷い犬情報」から犬と推定
         assert raw.species == "犬"
         # source_url は detail ページの絶対 URL
         assert raw.source_url == first_url
         assert raw.category == "sheltered"
-        # detail ページは fetch しないので残りフィールドは空文字
+        # 電話番号以外は detail ページの本文を fetch しないので空文字
         assert raw.shelter_date == ""
         assert raw.location == ""
         assert raw.sex == ""
         assert raw.color == ""
         assert raw.image_urls == []
+        assert raw.phone == ""
+
+    def test_extract_first_animal_phone_from_detail_page(self, fixture_html):
+        """detail ページの `<dt>電話番号</dt><dd>...</dd>` から phone を抽出する (T154)
+
+        個体ごとに管轄保健所 (連絡先) が異なるため sites.yaml の既定値は
+        使わず、detail ページを都度取得して個体固有の電話番号を取る。
+        """
+        list_html = fixture_html("pref_shizuoka_jp")
+        detail_html = """
+        <html><body><article id="content"><dl>
+            <dt>管理番号</dt><dd>2608TD004</dd>
+            <dt>連絡先</dt><dd>東部健康福祉センター　衛生薬務課</dd>
+            <dt>電話番号</dt><dd>055-920-2102</dd>
+        </dl></article></body></html>
+        """
+        adapter = PrefShizuokaAdapter(_site())
+
+        with patch.object(adapter, "_http_get", side_effect=[list_html, detail_html]):
+            urls = adapter.fetch_animal_list()
+            first_url, category = urls[0]
+            raw = adapter.extract_animal_details(first_url, category=category)
+
+        assert raw.phone == "055-920-2102"
+        normalized = adapter.normalize(raw)
+        assert normalized.phone == "055-920-2102"
+
+    def test_detail_phone_ignores_dt_outside_content(self, fixture_html):
+        """本文コンテナ外 (フッター等) の `<dt>電話番号</dt>` は拾わない (reviewer F-02)
+
+        `_extract_detail_phone` はページ全体スコープで `<dt>` を検索すると
+        フッター等の無関係な代表番号を本文より先に拾う懸念があったため、
+        `article#content` にスコープした。本文内の番号だけが返ることを
+        フッター側に別の番号を置いた合成 HTML で検証する。
+        """
+        list_html = fixture_html("pref_shizuoka_jp")
+        detail_html = """
+        <html><body>
+            <footer>
+                <dl><dt>電話番号</dt><dd>054-000-0000</dd></dl>
+            </footer>
+            <article id="content"><dl>
+                <dt>管理番号</dt><dd>2608TD004</dd>
+                <dt>電話番号</dt><dd>055-920-2102</dd>
+            </dl></article>
+        </body></html>
+        """
+        adapter = PrefShizuokaAdapter(_site())
+
+        with patch.object(adapter, "_http_get", side_effect=[list_html, detail_html]):
+            urls = adapter.fetch_animal_list()
+            first_url, category = urls[0]
+            raw = adapter.extract_animal_details(first_url, category=category)
+
+        assert raw.phone == "055-920-2102"
+
+    def test_detail_phone_fetch_failure_falls_back_to_empty(self, fixture_html):
+        """detail ページ取得が失敗しても致命エラーにせず phone="" にフォールバックする"""
+        list_html = fixture_html("pref_shizuoka_jp")
+        adapter = PrefShizuokaAdapter(_site())
+
+        def _side_effect(url, **kwargs):
+            if url.endswith("index.html"):
+                return list_html
+            raise RuntimeError("network down")
+
+        with patch.object(adapter, "_http_get", side_effect=_side_effect):
+            urls = adapter.fetch_animal_list()
+            first_url, category = urls[0]
+            raw = adapter.extract_animal_details(first_url, category=category)
+
+        assert raw.phone == ""
 
     def test_extract_second_animal(self, fixture_html):
         """2 件目も同様に RawAnimalData を構築できる"""

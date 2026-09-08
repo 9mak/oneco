@@ -474,10 +474,18 @@ sites:
     list_link_pattern: "a[href*='_cat']"
 
   # 【大分市】静的HTML
+  # phone (T155 2026-09-08): 出典
+  # https://www.city.oita.oita.jp/o245/doubutuaigo/center.html (おおいた動物
+  # 愛護センター公式ページ) フッター「お問い合わせ 福祉保健部衛生課
+  # 大分市動物愛護センター ... 電話番号：(097)588-2200」。
+  # https://www.city.oita.oita.jp/o150/kurashi/pet/inuneko.html でも同一番号
+  # 「大分市動物愛護センター（おおいた動物愛護センター内）電話番号：
+  # 097-588-2200」で裏取り済み。休日夜間の保健所代表 097-536-2222 とは別。
   - name: "大分市（保護犬）"
     prefecture: "大分県"
     prefecture_code: "44"
     list_url: "https://www.city.oita.oita.jp/kurashi/pet/inunohogo/index.html"
+    phone: "097-588-2200"
     category: "sheltered"
     single_page: true
 
@@ -693,10 +701,15 @@ sites:
   #     「迷子のペットを探している方へ」= 上記の迷子動物データと同一。
   #     このドメイン単独の独立した「保護動物」データソースは存在しない
   #     ため URL は変更せず据え置く (0 件は現状のサイト構造として真)。
+  # phone (5 サイト共通、T155 2026-09-08): 出典
+  # https://www.douai.pref.tochigi.lg.jp/contact-information/
+  # 「１　電話での問合せ　028-684-5458」= センター自身の一般問合せ窓口
+  # (迷子動物ドメイン douai.sakura.ne.jp も同一センターの運営)。
   - name: "栃木県動物愛護指導センター（保護動物）"
     prefecture: "栃木県"
     prefecture_code: "09"
     list_url: "https://www.douai.pref.tochigi.lg.jp/work_category/custody/"
+    phone: "028-684-5458"
     category: "sheltered"
     list_link_pattern: "a[href*='/news/']"
 
@@ -704,6 +717,7 @@ sites:
     prefecture: "栃木県"
     prefecture_code: "09"
     list_url: "https://www.douai.pref.tochigi.lg.jp/work/puppy/"
+    phone: "028-684-5458"
     category: "adoption"
     single_page: true
 
@@ -711,6 +725,7 @@ sites:
     prefecture: "栃木県"
     prefecture_code: "09"
     list_url: "https://www.douai.pref.tochigi.lg.jp/work/kitten/"
+    phone: "028-684-5458"
     category: "adoption"
     single_page: true
 
@@ -718,6 +733,7 @@ sites:
     prefecture: "栃木県"
     prefecture_code: "09"
     list_url: "https://douai.sakura.ne.jp/wp/maigo/html/stray/dog/list.html"
+    phone: "028-684-5458"
     category: "lost"
     list_link_pattern: "a[href$='.html']"
 
@@ -725,6 +741,7 @@ sites:
     prefecture: "栃木県"
     prefecture_code: "09"
     list_url: "https://douai.sakura.ne.jp/wp/maigo/html/stray/cat/list.html"
+    phone: "028-684-5458"
     category: "lost"
     list_link_pattern: "a[href$='.html']"
 
@@ -1360,10 +1377,14 @@ sites:
     single_page: true
 
   # 【岡山県動物愛護センター】写真付き表形式
+  # phone (T155 2026-09-08): 出典 https://www.pref.okayama.jp/page/859555.html
+  # 本文「動物の保護収容情報に関する問い合わせ先 ... 岡山県動物愛護センター
+  # ０８６－７２４－９５１２」(list_url 本体に記載、全角数字を半角化)。
   - name: "岡山県動物愛護センター（保護動物）"
     prefecture: "岡山県"
     prefecture_code: "33"
     list_url: "https://www.pref.okayama.jp/page/859555.html"
+    phone: "086-724-9512"
     category: "sheltered"
     single_page: true
 
@@ -1652,11 +1673,18 @@ sites:
     single_page: true
 
   # 【旭川市あにまある】専用ドメイン、URL構造化
+  # phone (8 サイト共通、T155 2026-09-08): 出典
+  # https://www.douaicenter.jp/about (施設案内ページ)「旭川市動物愛護センター
+  # あにまある TEL：0166-25-5271」。DouaicenterAdapter は既に同じ番号を
+  # `_CENTER_PHONE` としてコード内フォールバックしているが (市民保護
+  # ページの拾い主個人携帯は `_sanitize_public_phone` で別途落とす)、
+  # sites.yaml 側にも一次ソース付きで明示しておく。
   - name: "旭川市あにまある（譲渡犬）"
     prefecture: "北海道"
     prefecture_code: "01"
     list_url: "https://www.douaicenter.jp/animal/list/transfer/dog"
     list_link_pattern: "a[href*='/animal/']"
+    phone: "0166-25-5271"
     category: "adoption"
 
   - name: "旭川市あにまある（譲渡猫）"
@@ -1664,6 +1692,7 @@ sites:
     prefecture_code: "01"
     list_url: "https://www.douaicenter.jp/animal/list/transfer/cat"
     list_link_pattern: "a[href*='/animal/']"
+    phone: "0166-25-5271"
     category: "adoption"
 
   - name: "旭川市あにまある（譲渡その他）"
@@ -1671,6 +1700,7 @@ sites:
     prefecture_code: "01"
     list_url: "https://www.douaicenter.jp/animal/list/transfer/other"
     list_link_pattern: "a[href*='/animal/']"
+    phone: "0166-25-5271"
     category: "adoption"
 
   - name: "旭川市あにまある（収容犬）"
@@ -1678,6 +1708,7 @@ sites:
     prefecture_code: "01"
     list_url: "https://www.douaicenter.jp/animal/list/sheltered/dog"
     list_link_pattern: "a[href*='/animal/']"
+    phone: "0166-25-5271"
     category: "sheltered"
 
   - name: "旭川市あにまある（収容猫）"
@@ -1685,6 +1716,7 @@ sites:
     prefecture_code: "01"
     list_url: "https://www.douaicenter.jp/animal/list/sheltered/cat"
     list_link_pattern: "a[href*='/animal/']"
+    phone: "0166-25-5271"
     category: "sheltered"
 
   - name: "旭川市あにまある（収容その他）"
@@ -1692,6 +1724,7 @@ sites:
     prefecture_code: "01"
     list_url: "https://www.douaicenter.jp/animal/list/sheltered/other"
     list_link_pattern: "a[href*='/animal/']"
+    phone: "0166-25-5271"
     category: "sheltered"
 
   - name: "旭川市あにまある（市民保護犬）"
@@ -1699,6 +1732,7 @@ sites:
     prefecture_code: "01"
     list_url: "https://www.douaicenter.jp/other-animal/list/dog"
     list_link_pattern: "a[href*='/other-animal/']"
+    phone: "0166-25-5271"
     category: "sheltered"
 
   - name: "旭川市あにまある（市民保護猫）"
@@ -1706,6 +1740,7 @@ sites:
     prefecture_code: "01"
     list_url: "https://www.douaicenter.jp/other-animal/list/cat"
     list_link_pattern: "a[href*='/other-animal/']"
+    phone: "0166-25-5271"
     category: "sheltered"
 
   # 【道北 アニウェル北海道】里親募集

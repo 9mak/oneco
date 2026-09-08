@@ -44,6 +44,14 @@ _EMPTY_STATE_TEXT_PATTERN = re.compile(
     r"(?:動物|犬|猫|ペット)[^。]*?"
     r"(?:おりません|ありません|いません)"
 )
+# (b) 「現在は掲載しておりません」等、動物への言及を含まない告知文
+#     (2026-09 実測: 収容中の動物たちページが公表期間終了に伴い
+#     "こちらは公表期間終了後も元の飼い主を探している動物の情報になります。
+#     現在は掲載しておりません。" のみを返す状態を確認。動物への言及が
+#     直前の別文に分割されているため (a) にはマッチしない)。
+_EMPTY_STATE_NO_LISTING_PATTERN = re.compile(
+    r"(?:現在|今|ただ今)[^。]*?(?:掲載|公開|表示)[^。]*?(?:しておりません|していません)"
+)
 
 
 class CityMitoAdapter(SinglePageTableAdapter):
@@ -281,7 +289,9 @@ class CityMitoAdapter(SinglePageTableAdapter):
             # 本文コンテナ自体が無いのは想定外なので empty とは判定しない
             return False
         body_text = main_body.get_text(separator=" ", strip=True)
-        if _EMPTY_STATE_TEXT_PATTERN.search(body_text):
+        if _EMPTY_STATE_TEXT_PATTERN.search(body_text) or _EMPTY_STATE_NO_LISTING_PATTERN.search(
+            body_text
+        ):
             return True
         # 本文に table が無く、サブカテゴリ案内のみが並ぶインデックスページ
         has_table = main_body.find("table") is not None
