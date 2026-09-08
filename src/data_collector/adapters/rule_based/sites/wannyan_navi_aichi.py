@@ -112,12 +112,16 @@ class WannyanNaviAichiAdapter(PlaywrightFetchMixin, WordPressListAdapter):
         # これより少なければ打ち切りとみなす (T123 reviewer F-01)。
         self._observed_total: int | None = None
 
-    # `wait_until="networkidle"` (既定) だけで detail ページの描画完了後
-    # HTML (実測 80KB 前後、bubble-element 100+ 個) を取得できることを実サイトで
-    # 確認済み。photo carousel 等の存在に依存する selector にすると写真 0 枚の
-    # 個体で wait_for_selector がタイムアウトし detail 取得ごと失敗するため、
-    # ページ全体で必ず出現する `.bubble-element` を保険として待つ。
-    WAIT_SELECTOR: ClassVar[str | None] = ".bubble-element"
+    # `wait_until="networkidle"` (既定) + `.bubble-element` 待機だけでは
+    # 詳細コンテンツ (基本情報/特徴ブロック・連絡先フッター) が描画完了する
+    # 前に HTML を取得してしまう競合が実測された (T154 2026-09-08: 本番
+    # 35件中20件で `location`/`phone` が空になっており、同一 record_id を
+    # 手動で再取得すると正常に取れる。`.bubble-element` はページ読み込み
+    # 直後の骨格要素だけでも満たされてしまうため、実質待機なしと同義になっていた)。
+    # 「特徴」見出し (`_FEATURE_HEADING`、Bubble の text engine で検索) は
+    # 基本情報ブロックより後に描画される固定文言で、これが出れば連絡先
+    # フッターを含む本文全体の描画完了を実質的に保証できる。
+    WAIT_SELECTOR: ClassVar[str | None] = f"text={_FEATURE_HEADING}"
 
     # 基底クラス (`WordPressListAdapter.__init_subclass__`) が
     # 空文字を拒否するため形式上定義するが、`fetch_animal_list` を

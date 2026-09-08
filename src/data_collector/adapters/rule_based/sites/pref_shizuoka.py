@@ -138,9 +138,15 @@ class PrefShizuokaAdapter(SinglePageTableAdapter):
     def extract_animal_details(self, detail_url: str, category: str = "sheltered") -> RawAnimalData:
         """インデックスページ上のリンク行から RawAnimalData を構築する
 
-        detail ページは fetch せず、インデックス側で得られる情報
+        detail ページは基本的に fetch せず、インデックス側で得られる情報
         (管理番号 / リンク見出しから推定する species) のみで構成する。
         収容日 / 場所 / 性別等は detail 側にあるため空文字で埋める。
+
+        電話番号のみ例外的に detail ページを取得して抽出する (T154):
+        個体ごとに管轄保健所 (連絡先) が異なり、`sites.yaml` の既定値では
+        誤った窓口を案内しかねないため (phone-null-survey-20260907.md 4節)、
+        detail ページの `<dl><dt>電話番号</dt><dd>055-920-2102</dd></dl>`
+        から個体固有の番号を取る以外に安全な取得経路が無い。
         """
         rows = self._load_rows()
         anchor = self._find_row_anchor(rows, detail_url)
@@ -154,6 +160,7 @@ class PrefShizuokaAdapter(SinglePageTableAdapter):
         # 種別はリンクテキスト > サイト名 > ページ見出し の順で推定する。
         # 本ページ (1066835) は「迷い犬情報一覧」なので既定で「犬」。
         species = self._infer_species(text, self.site_config.name)
+        phone = self._extract_detail_phone(detail_url)
 
         try:
             return RawAnimalData(
@@ -164,13 +171,35 @@ class PrefShizuokaAdapter(SinglePageTableAdapter):
                 size="",
                 shelter_date=self.SHELTER_DATE_DEFAULT,
                 location="",
-                phone="",
+                phone=phone,
                 image_urls=[],
                 source_url=detail_url,
                 category=category,
             )
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=detail_url) from e
+
+    def _extract_detail_phone(self, detail_url: str) -> str:
+        """detail ページの `<dt>電話番号</dt><dd>...</dd>` から電話番号を取る
+
+        取得やパースに失敗しても致命扱いにはせず (電話番号はインデックス
+        側では取れない付加情報のため)、空文字にフォールバックする。
+        """
+        try:
+            html = self._http_get(detail_url)
+        except Exception:
+            return ""
+        soup = BeautifulSoup(html, "html.parser")
+        for dt in soup.find_all("dt"):
+            if not isinstance(dt, Tag):
+                continue
+            if dt.get_text(strip=True) != "電話番号":
+                continue
+            dd = dt.find_next_sibling("dd")
+            if dd is None:
+                continue
+            return self._normalize_phone(dd.get_text(strip=True))
+        return ""
 
     # ─────────────────── ヘルパー ───────────────────
 
