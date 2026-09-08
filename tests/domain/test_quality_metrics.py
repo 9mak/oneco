@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from datetime import date
 
+import pytest
+
 from src.data_collector.domain.models import AnimalData
 from src.data_collector.domain.quality_metrics import (
     MONITORED_FIELDS,
@@ -15,6 +17,8 @@ from src.data_collector.domain.quality_metrics import (
 
 def _make(
     *,
+    species: str = "犬",
+    breed: str | None = "柴犬",
     location: str = "練馬区",
     age_months: int | None = 24,
     size: str | None = "中型",
@@ -26,7 +30,8 @@ def _make(
     # 空リストとデフォルト指定を区別するため `is not None` 判定
     imgs = image_urls if image_urls is not None else ["https://example.lg.jp/img/1.jpg"]
     return AnimalData(
-        species="犬",
+        species=species,
+        breed=breed,
         shelter_date=date(2026, 5, 1),
         location=location,
         sex=sex,
@@ -57,6 +62,17 @@ class TestIsMissing:
     def test_image_urls_empty_is_missing(self):
         assert is_missing(_make(image_urls=[]), "image_urls") is True
 
+    def test_species_other_is_missing(self):
+        """T156/F-02: species='その他' は判別できなかったフォールバック値なので欠損扱い"""
+        assert is_missing(_make(species="その他"), "species") is True
+
+    def test_species_dog_or_cat_is_not_missing(self):
+        assert is_missing(_make(species="犬"), "species") is False
+        assert is_missing(_make(species="猫"), "species") is False
+
+    def test_breed_none_is_missing(self):
+        assert is_missing(_make(breed=None), "breed") is True
+
     def test_present_values_are_not_missing(self):
         a = _make()
         assert is_missing(a, "location") is False
@@ -65,6 +81,8 @@ class TestIsMissing:
         assert is_missing(a, "sex") is False
         assert is_missing(a, "phone") is False
         assert is_missing(a, "image_urls") is False
+        assert is_missing(a, "species") is False
+        assert is_missing(a, "breed") is False
 
 
 class TestComputeMissingRates:
@@ -75,15 +93,62 @@ class TestComputeMissingRates:
             assert rates[f] == 0.0
 
     def test_all_missing(self):
+        # species は required (validator が '犬'/'猫'/'その他' しか許さない) だが、
+        # 'その他' は「判別できなかった」フォールバック値として欠損扱いする (F-02)。
         animals = [
             _make(
-                location="不明", age_months=None, size=None, sex="不明", phone=None, image_urls=[]
+                species="その他",
+                breed=None,
+                location="不明",
+                age_months=None,
+                size=None,
+                sex="不明",
+                phone=None,
+                image_urls=[],
             )
             for _ in range(2)
         ]
         rates = compute_missing_rates(animals)
         for f in MONITORED_FIELDS:
             assert rates[f] == 1.0
+
+    def test_ehime_type_species_other_shows_up_as_missing(self):
+        """T156型の再現: 愛媛収容中8件相当 (見出し・種類列どちらからも犬/猫を
+        判別できず species='その他' に落ちるケース)。欠損率ベースの監視に
+        乗ることを保証する回帰テスト (F-02)。"""
+        animals = [_make(species="その他") for _ in range(8)] + [_make(species="犬")]
+        rates = compute_missing_rates(animals)
+        assert rates["species"] == pytest.approx(8 / 9)
+
+    def test_species_and_breed_are_monitored(self):
+        """T148: species/breed が監視対象フィールドに含まれる"""
+        assert "species" in MONITORED_FIELDS
+        assert "breed" in MONITORED_FIELDS
+
+    def test_breed_missing_counted(self):
+        animals = [_make(breed=None), _make(breed="柴犬")]
+        rates = compute_missing_rates(animals)
+        assert rates["breed"] == 0.5
+
+    def test_provided_false_excludes_field_entirely(self):
+        """T148/T149: provided={'breed': False} なら breed は結果に一切現れない"""
+        animals = [_make(breed=None) for _ in range(3)]
+        rates = compute_missing_rates(animals, provided={"breed": False})
+        assert "breed" not in rates
+        # 他のフィールドは通常通り計算される
+        assert rates["location"] == 0.0
+
+    def test_provided_true_or_absent_keeps_field(self):
+        animals = [_make(breed=None)]
+        rates = compute_missing_rates(animals, provided={"breed": True})
+        assert "breed" in rates
+        rates2 = compute_missing_rates(animals, provided={})
+        assert "breed" in rates2
+
+    def test_provided_false_with_empty_animals(self):
+        rates = compute_missing_rates([], provided={"breed": False})
+        assert "breed" not in rates
+        assert "location" in rates
 
     def test_partial_missing(self):
         animals = [

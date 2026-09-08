@@ -18,6 +18,8 @@ from .models import AnimalData
 
 # 自己修復の検知対象フィールド。これらの欠損率が前回比 +20% 以上急増
 # すると adapter のラベル/セレクタ不一致を疑うシグナルとして扱う。
+# species/breed は T148 で追加 (元は品質棚卸しで「欠損トラッカーの監視対象
+# 外」だったため、抽出漏れが監視をすり抜けていた)。
 MONITORED_FIELDS: tuple[str, ...] = (
     "location",
     "age_months",
@@ -25,6 +27,8 @@ MONITORED_FIELDS: tuple[str, ...] = (
     "sex",
     "phone",
     "image_urls",
+    "species",
+    "breed",
 )
 
 # 「不明扱い」とみなす文字列 (DataNormalizer の location="不明"/sex="不明"
@@ -52,16 +56,44 @@ def is_missing(animal: AnimalData, field: str) -> bool:
     """指定フィールドが欠損しているかを返す。
 
     None / "不明" 等のプレースホルダ文字列 / 空リスト を欠損とみなす。
+
+    species は `validate_species` により '犬'/'猫'/'その他' の3値しか
+    取れない required フィールドなので `is_missing_value` の汎用判定
+    (None/プレースホルダ文字列/空リスト) では絶対に True にならず、
+    species を MONITORED_FIELDS に足しても事実上 no-op になっていた
+    (reviewer 指摘 F-02, 2026-09-08)。'その他' は「見出し・種類列どちらからも
+    犬/猫を判別できなかった」フォールバック値 (T156 愛媛収容中8件が実例) で
+    あり、実質的に「値を取れなかった」ことを意味するため、species に限り
+    ここで欠損扱いにする。汎用の `is_missing_value` 自体は変えない
+    (`scripts/publication_audit.py` 等の他の呼び出し元は species を見て
+    いないため影響なし、かつ「その他」を種として正しく判定できているサイト
+    まで一律欠損にしてしまう副作用を避ける)。
     """
-    return is_missing_value(getattr(animal, field, None))
+    value = getattr(animal, field, None)
+    if field == "species" and value == "その他":
+        return True
+    return is_missing_value(value)
 
 
 def compute_missing_rates(
     animals: list[AnimalData],
     fields: Iterable[str] = MONITORED_FIELDS,
+    provided: dict[str, bool] | None = None,
 ) -> dict[str, float]:
-    """各フィールドの欠損率 (0.0-1.0) を返す。animals 空なら全 0.0。"""
+    """各フィールドの欠損率 (0.0-1.0) を返す。animals 空なら全 0.0。
+
+    Args:
+        provided: `SiteConfig.fields` 由来の「そのサイトがこのフィールドを
+            公開しているか」の台帳 (T148/T149)。`provided[field] is False` の
+            フィールドは元サイトが構造的に持たない項目なので、欠損率の
+            計算対象から**丸ごと除外**する (0.0 を返すのではなく、返り値の
+            dict にキー自体を含めない)。キーが無い場合は「提供している」
+            扱い (デフォルト全提供)。これにより history にも記録されず、
+            ドリフト検知・never-populated 検知のどちらにも乗らない。
+    """
     fields_tuple = tuple(fields)
+    if provided:
+        fields_tuple = tuple(f for f in fields_tuple if provided.get(f, True) is not False)
     if not animals:
         return dict.fromkeys(fields_tuple, 0.0)
     n = len(animals)

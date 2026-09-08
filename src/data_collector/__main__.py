@@ -23,7 +23,11 @@ from .adapters.rule_based import (
     sites as _rule_based_sites,  # noqa: F401  全 adapter を Registry に登録
 )
 from .adapters.rule_based.broken_tracker import BrokenSitesTracker
-from .adapters.rule_based.field_quality_tracker import FieldDrift, FieldQualityTracker
+from .adapters.rule_based.field_quality_tracker import (
+    FieldDrift,
+    FieldQualityTracker,
+    NeverPopulatedAlert,
+)
 from .adapters.rule_based.registry import SiteAdapterRegistry
 from .domain.content_anomaly import ContentAnomaly, detect_content_anomalies
 from .domain.diff_detector import DiffDetector
@@ -552,6 +556,13 @@ def run_rule_based_sites(
 # 全体失敗率がこの値を超えると CRITICAL、超えないが critical_sites>0 なら WARNING
 _RUN_FAIL_RATIO_CRITICAL = 0.2
 
+# T149 never-populated 通知の1 run あたりの表示件数上限 (Discord/Slack本文用)。
+# phone は台帳整備 (#338) 前提のまま先に運用に入るため、初回 run で愛知/栃木等
+# 複数サイト×phone が一斉発火すると通知が洪水化しうる (reviewer F-01,
+# 2026-09-08)。全件は logger.warning に出す (ログ/GitHub Actions artifact 側で
+# 追える)。通知本文だけをこの件数に絞る。
+NEVER_POPULATED_NOTIFY_CAP = 20
+
 # LLM コード修正では直せない失敗原因のパターン。
 # ネットワーク断・HTTP エラー (403/404/5xx)・タイムアウトは adapter コードを
 # いくらパッチしても直らないため、auto-fix の候補から除外する。
@@ -716,11 +727,13 @@ def _send_run_summary_alert(
     threshold: int,
     logger: logging.Logger,
     field_drifts: list[FieldDrift] | None = None,
+    never_populated_alerts: list[NeverPopulatedAlert] | None = None,
     zero_count_regressions: list[ZeroCountRegression] | None = None,
     persistent_zero_sites: list[PersistentZeroSite] | None = None,
     auto_fix_result: dict[str, Any] | None = None,
     content_anomalies: list[ContentAnomaly] | None = None,
     sudden_drops: list[SuddenDropRegression] | None = None,
+    fq_tracker: FieldQualityTracker | None = None,
 ) -> None:
     """1 回の run 終了時に Slack / Discord へサマリアラートを送る。
 
@@ -744,6 +757,11 @@ def _send_run_summary_alert(
     各サイトについて location/age_months 等の欠損率が前回比 +閾値 急増した
     場合に投入される。adapter のラベル/セレクタ不一致シグナルとして通知に
     含める。
+
+    never_populated_alerts: T149。台帳上「提供している」フィールドが直近
+    N回 (履歴が短ければ現有全run) ほぼ100%欠損しているケース。急増
+    (field_drifts) では捉えられない「最初からずっと壊れている」ケースを
+    別枠で検知する。site×field ごとに suppress_days 日に1回だけ含める。
 
     zero_count_regressions: 過去に ≥1 件あったが今 0 件が継続するサイト。
     snapshot とは独立した永続ベースライン (SiteBaselineTracker) で検知され、
@@ -786,6 +804,7 @@ def _send_run_summary_alert(
         total_succeeded == 0 and total_failed > 0
     )
     drifts = list(field_drifts) if field_drifts else []
+    never_populated = list(never_populated_alerts) if never_populated_alerts else []
     regressions = list(zero_count_regressions) if zero_count_regressions else []
     persistent_zeros = list(persistent_zero_sites) if persistent_zero_sites else []
     anomalies = list(content_anomalies) if content_anomalies else []
@@ -799,6 +818,7 @@ def _send_run_summary_alert(
         bool(critical_sites_list)
         or total_failed > 0
         or bool(drifts)
+        or bool(never_populated)
         or bool(regressions)
         or bool(persistent_zeros)
         or bool(anomalies)
@@ -816,6 +836,8 @@ def _send_run_summary_alert(
     )
     if drifts:
         message += f", フィールド品質ドリフト {len(drifts)} 件"
+    if never_populated:
+        message += f", 初回から欠損 {len(never_populated)} 件"
     if regressions:
         message += f", 件数ゼロ回帰 {len(regressions)} 件"
     if persistent_zeros:
@@ -844,6 +866,22 @@ def _send_run_summary_alert(
         if len(drifts) > 5:
             sample += f" ... (+{len(drifts) - 5} more)"
         details["field_drifts_sample"] = sample
+    if never_populated:
+        # 通知本文は上位 NEVER_POPULATED_NOTIFY_CAP 件までに絞り、残りは
+        # 「+N件」で件数だけ知らせる。全件は呼び出し側 (main()) のログに
+        # 出す (reviewer F-01, 2026-09-08: phone は #338 で台帳整備前提の
+        # まま初回運用に入るため、1 run で大量発火した場合に通知が
+        # 洪水化しないようキャップする)。
+        details["never_populated_count"] = len(never_populated)
+        capped = never_populated[:NEVER_POPULATED_NOTIFY_CAP]
+        sample = "; ".join(
+            f"⚠️ 初回から欠損: {a.site_name} / {a.field} 直近{a.runs_checked}回 "
+            f"{a.missing_rate:.0%} 欠損（台帳では提供あり）"
+            for a in capped
+        )
+        if len(never_populated) > NEVER_POPULATED_NOTIFY_CAP:
+            sample += f" ... (+{len(never_populated) - NEVER_POPULATED_NOTIFY_CAP}件)"
+        details["never_populated_sample"] = sample
     if regressions:
         details["zero_count_regressions_count"] = len(regressions)
         sample = "; ".join(
@@ -891,6 +929,14 @@ def _send_run_summary_alert(
         notification_client.send_alert(level, message, details)
     except Exception as e:
         logger.warning(f"run summary alert 送信失敗: {e}")
+        return
+    # 送信できた場合のみ抑制期間を開始する。送信前にマークすると、送信
+    # 失敗時も「直せていない状態」が抑制期間中サイレントに隠れてしまう。
+    if never_populated and fq_tracker is not None:
+        try:
+            fq_tracker.mark_never_populated_alerted(never_populated)
+        except Exception as e:
+            logger.warning(f"never-populated alert 抑制記録に失敗: {e}")
 
 
 def main():
@@ -1106,6 +1152,8 @@ def main():
             # 修復ワーカー (Phase 2) のシグナルとする。失敗しても収集
             # パイプラインは止めない (best-effort)。
             field_drifts: list[FieldDrift] = []
+            never_populated_alerts: list[NeverPopulatedAlert] = []
+            fq_tracker: FieldQualityTracker | None = None
             try:
                 fq_path = Path(
                     os.environ.get("FIELD_QUALITY_DRIFT_PATH", "data/field_quality_drift.yaml")
@@ -1117,8 +1165,14 @@ def main():
                 # フィールド品質ドリフト検知が無音化する。
                 animals_now = list(snapshot_store.load_animal_map().values())
                 site_groups = group_animals_by_site(animals_now, collected_urls_by_site)
+                # T148/T149: サイト×フィールド提供台帳 (sites.yaml の `fields:`)。
+                # ここで False と宣言されたフィールドは compute_missing_rates で
+                # 集計から除外され、history にも記録されない。
+                provided_fields_ledger = {s.name: s.fields for s in config.sites}
                 for site_name, animals in site_groups.items():
-                    rates = compute_missing_rates(animals)
+                    rates = compute_missing_rates(
+                        animals, provided=provided_fields_ledger.get(site_name)
+                    )
                     fq_tracker.record(site_name, rates, len(animals))
                 field_drifts = fq_tracker.detect_drifts()
                 if field_drifts:
@@ -1128,6 +1182,20 @@ def main():
                             f"  [{d.site_name}] {d.field}: "
                             f"{d.prev_rate:.0%} → {d.curr_rate:.0%} "
                             f"(+{d.delta:.0%})"
+                        )
+                never_populated_alerts = fq_tracker.detect_never_populated(
+                    provided_fields=provided_fields_ledger
+                )
+                if never_populated_alerts:
+                    logger.warning(f"フィールド初回から欠損検知: {len(never_populated_alerts)} 件")
+                    # Discord/Slack 通知は NEVER_POPULATED_NOTIFY_CAP 件に絞るが、
+                    # ログには全件出す (reviewer F-01: phone の台帳整備が
+                    # #338 待ちのため、初回運用時の洪水化を通知側だけで抑える)。
+                    for a in never_populated_alerts:
+                        logger.warning(
+                            f"  [{a.site_name}] {a.field}: "
+                            f"直近{a.runs_checked}回 {a.missing_rate:.0%} 欠損 "
+                            "（台帳では提供あり）"
                         )
             except Exception as e:
                 logger.warning(f"フィールド欠損率ドリフト検知失敗: {e}")
@@ -1301,11 +1369,13 @@ def main():
                 threshold=BROKEN_SITE_SKIP_THRESHOLD,
                 logger=logger,
                 field_drifts=field_drifts,
+                never_populated_alerts=never_populated_alerts,
                 zero_count_regressions=zero_regressions,
                 persistent_zero_sites=persistent_zero_sites,
                 auto_fix_result=auto_fix_result,
                 content_anomalies=content_anomalies,
                 sudden_drops=sudden_drops,
+                fq_tracker=fq_tracker,
             )
 
             # 進捗ログ

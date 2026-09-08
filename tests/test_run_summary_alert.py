@@ -555,3 +555,115 @@ def test_zero_count_regression_sample_truncated():
     details = client.send_alert.call_args[0][2]
     assert details["zero_count_regressions_count"] == 15
     assert "more" in details["zero_count_regressions_sample"]
+
+
+def test_never_populated_alone_triggers_warning():
+    """never_populated_alerts があれば WARNING を出す (T149)"""
+    from src.data_collector.adapters.rule_based.field_quality_tracker import NeverPopulatedAlert
+
+    client = MagicMock()
+    alerts = [NeverPopulatedAlert("サイトA", "breed", runs_checked=3, missing_rate=1.0)]
+    _send_run_summary_alert(
+        notification_client=client,
+        broken_tracker=_make_tracker(0),
+        total_sites=209,
+        total_succeeded=209,
+        total_failed=0,
+        threshold=3,
+        logger=_make_logger(),
+        never_populated_alerts=alerts,
+    )
+    assert client.send_alert.called
+    args, _ = client.send_alert.call_args
+    assert args[0] == NotificationLevel.WARNING
+    details = args[2]
+    assert details["never_populated_count"] == 1
+    assert "サイトA" in details["never_populated_sample"]
+    assert "初回から欠損" in details["never_populated_sample"]
+
+
+def test_never_populated_empty_does_not_change_behavior():
+    """never_populated_alerts が None / 空リストなら既存の判定そのまま (後方互換)"""
+    client = MagicMock()
+    _send_run_summary_alert(
+        notification_client=client,
+        broken_tracker=_make_tracker(0),
+        total_sites=209,
+        total_succeeded=209,
+        total_failed=0,
+        threshold=3,
+        logger=_make_logger(),
+        never_populated_alerts=[],
+    )
+    client.send_alert.assert_not_called()
+
+
+def test_never_populated_sample_capped_at_20_with_remaining_count():
+    """reviewer F-01: 通知本文は上位20件に絞り、残数を『+N件』で示す。
+    全件は logger 側で見る想定 (main() の呼び出し側で検証済み)。"""
+    from src.data_collector.adapters.rule_based.field_quality_tracker import NeverPopulatedAlert
+
+    client = MagicMock()
+    alerts = [
+        NeverPopulatedAlert(f"サイト{i}", "phone", runs_checked=3, missing_rate=1.0)
+        for i in range(25)
+    ]
+    _send_run_summary_alert(
+        notification_client=client,
+        broken_tracker=_make_tracker(0),
+        total_sites=209,
+        total_succeeded=209,
+        total_failed=0,
+        threshold=3,
+        logger=_make_logger(),
+        never_populated_alerts=alerts,
+    )
+    details = client.send_alert.call_args[0][2]
+    assert details["never_populated_count"] == 25
+    sample = details["never_populated_sample"]
+    assert sample.count("初回から欠損") == 20
+    assert "+5件" in sample
+
+
+def test_never_populated_marks_alerted_via_fq_tracker_after_successful_send():
+    """送信成功後にのみ fq_tracker.mark_never_populated_alerted を呼ぶ
+    (送信失敗時に抑制期間へ入って『直せていない状態』を隠さないための契約)。"""
+    from src.data_collector.adapters.rule_based.field_quality_tracker import NeverPopulatedAlert
+
+    client = MagicMock()
+    tracker = MagicMock()
+    alerts = [NeverPopulatedAlert("サイトA", "breed", runs_checked=3, missing_rate=1.0)]
+    _send_run_summary_alert(
+        notification_client=client,
+        broken_tracker=_make_tracker(0),
+        total_sites=209,
+        total_succeeded=209,
+        total_failed=0,
+        threshold=3,
+        logger=_make_logger(),
+        never_populated_alerts=alerts,
+        fq_tracker=tracker,
+    )
+    tracker.mark_never_populated_alerted.assert_called_once_with(alerts)
+
+
+def test_never_populated_does_not_mark_alerted_when_send_fails():
+    """送信失敗時は mark_never_populated_alerted を呼ばない"""
+    from src.data_collector.adapters.rule_based.field_quality_tracker import NeverPopulatedAlert
+
+    client = MagicMock()
+    client.send_alert.side_effect = RuntimeError("webhook down")
+    tracker = MagicMock()
+    alerts = [NeverPopulatedAlert("サイトA", "breed", runs_checked=3, missing_rate=1.0)]
+    _send_run_summary_alert(
+        notification_client=client,
+        broken_tracker=_make_tracker(0),
+        total_sites=209,
+        total_succeeded=209,
+        total_failed=0,
+        threshold=3,
+        logger=_make_logger(),
+        never_populated_alerts=alerts,
+        fq_tracker=tracker,
+    )
+    tracker.mark_never_populated_alerted.assert_not_called()
