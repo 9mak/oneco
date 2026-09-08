@@ -61,8 +61,16 @@ def _detail_line(site: dict[str, Any]) -> str:
     return f"不一致{len(mismatches)}件 [{', '.join(fields)}]"
 
 
+_MAX_EXAMPLE_URLS = 3
+
+
 def _missing_detail_line(site: dict[str, Any]) -> str:
-    return f"掲載漏れ疑い{len(site.get('adapter_only') or [])}件 (週次カウント監査の盲点)"
+    urls = site.get("adapter_only") or []
+    line = f"掲載漏れ疑い{len(urls)}件 (週次カウント監査の盲点)"
+    examples = urls[:_MAX_EXAMPLE_URLS]
+    if examples:
+        line += " 例: " + " / ".join(examples)
+    return line
 
 
 def evaluate(result: dict[str, Any]) -> tuple[bool, str, dict[str, Any]]:

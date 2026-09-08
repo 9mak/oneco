@@ -110,6 +110,30 @@ class TestEvaluate:
         _has_flags, _message, details = evaluate(result)
         assert "2件" in details["okinawa"]
 
+    def test_blind_missing_detail_includes_up_to_3_example_urls(self):
+        """T140 の 'compact (per-site count + up to 3 example URLs)' 要件"""
+        result = _result(
+            [
+                _site(
+                    "oita",
+                    adapter_only=[
+                        "https://oita.example.jp/1",
+                        "https://oita.example.jp/2",
+                        "https://oita.example.jp/3",
+                        "https://oita.example.jp/4",
+                    ],
+                    count_audit_blind=True,
+                )
+            ]
+        )
+        _has_flags, _message, details = evaluate(result)
+        detail = details["oita"]
+        assert "4件" in detail
+        assert "https://oita.example.jp/1" in detail
+        assert "https://oita.example.jp/2" in detail
+        assert "https://oita.example.jp/3" in detail
+        assert "https://oita.example.jp/4" not in detail
+
     def test_mismatch_and_blind_missing_both_reported(self):
         """両方あるときは1通にまとめ、どちらの件数も落とさない"""
         result = _result(
