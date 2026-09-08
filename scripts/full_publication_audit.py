@@ -69,6 +69,9 @@ for _, _name, _ in pkgutil.iter_modules(_sites_pkg.__path__):
 
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry  # noqa: E402
 from data_collector.infrastructure.field_accuracy_notify import maybe_notify  # noqa: E402
+from data_collector.infrastructure.list_selector_resolution import (  # noqa: E402
+    resolve_list_selector,
+)
 from data_collector.infrastructure.notification_client import NotificationClient  # noqa: E402
 from data_collector.llm.config import SiteConfig  # noqa: E402
 
@@ -97,27 +100,38 @@ def count_audit_blind_hosts(sites: list[dict[str, Any]]) -> set[str]:
     """週次カウント監査 (scripts/site_count_audit.py, T105) が構造的に判定できないホスト。
 
     同スクリプトの comparable 判定 (group_and_flag) はホスト単位で、ホスト内の全サイトが
-    list_link_pattern を持ち、PDF セレクタと requires_js を1件も含まないことを要求する。
-    そのため1サイトでもセレクタを欠くと、同居サイトごと undercount 判定の対象外になる。
+    一覧セレクタを解決でき (T141: data_collector.infrastructure.list_selector_resolution
+    経由で SiteAdapterRegistry の LIST_LINK_SELECTOR / ROW_SELECTOR → sites.yaml の
+    list_link_pattern の順で解決する)、PDF セレクタと requires_js を1件も含まないことを
+    要求する。そのため1サイトでもセレクタを欠くと、同居サイトごと undercount 判定の
+    対象外になる。
+
+    T141 以前は sites.yaml の list_link_pattern だけを見ており、adapter が実際に使う
+    セレクタとは独立の手入力値でトートロジーだった (213サイト中178サイトが盲点)。
+    registry 解決を導入したことでこの関数と site_count_audit.py の comparable 判定は
+    対称に扱えるセレクタ源が増え、盲点ホスト数は構造的に減る。
 
     実行時の HTTP 失敗による comparable=False はここでは判定できないので、返す集合は
     「実行結果によらず構造的に判定不能なホスト」= 盲点の下限になる。構造上は問題ない
     ホストが bot 対策等で恒常的に fetch 失敗する場合、どちらの監査からも漏れる隙間が
     残る (T144)。
 
-    list_link_pattern と pdf_link_pattern を両方持つサイトは盲点側に倒す。
-    site_count_audit 側もセレクタ選択は list 優先だが is_pdf_selector が立つため
+    PDF セレクタ (sites_yaml_pdf) しか解決できないサイトは盲点側に倒す。
+    site_count_audit 側もセレクタ選択は同じ優先順位だが is_pdf が立つため
     comparable=False になり、判定は対称になっている。
     """
     by_host: dict[str, list[dict[str, Any]]] = {}
     for s in sites:
         by_host.setdefault(attribute_host(s["list_url"]), []).append(s)
+
+    def _resolvable(site: dict[str, Any]) -> bool:
+        selector, _source, is_pdf = resolve_list_selector(site["name"], site)
+        return bool(selector) and not is_pdf
+
     return {
         host
         for host, rows in by_host.items()
-        if not all(r.get("list_link_pattern") for r in rows)
-        or any(r.get("pdf_link_pattern") for r in rows)
-        or any(r.get("requires_js") for r in rows)
+        if not all(_resolvable(r) for r in rows) or any(r.get("requires_js") for r in rows)
     }
 
 

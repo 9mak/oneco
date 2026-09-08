@@ -19,6 +19,14 @@ Secret 監視   secret-health.yml (日次 JST9:00)
               ├ フィールド欠損率ドリフト   → WARNING
               └ auto-fix dispatch 失敗    → WARNING
 
+掲載数監査     weekly-count-audit.yml (週次 JST日曜1:00) → scripts/site_count_audit.py
+              adapter 非経由で実サイト一覧と API 公開数を突き合わせ、乖離 (|delta| が
+              閾値以上) を Discord へ通知
+
+致命フィールド監査 field-accuracy-audit.yml (月次 JST毎月1日10:00) → scripts/full_publication_audit.py
+              adapter 出力と API を突き合わせ、致命8フィールドの食い違いと
+              週次掲載数監査の盲点ホストの掲載漏れ疑いを Discord へ通知
+
 Workflow 失敗  各 workflow の「Notify Discord on failure」ステップ
 
 課金アラート   GCP 予算 (oneco-monthly-cap-500, ¥500/月) → 100% 到達で stop-billing
@@ -47,6 +55,23 @@ Workflow 失敗  各 workflow の「Notify Discord on failure」ステップ
 - 閾値は `ONECO_MAX_FAIL_RATIO` / `ONECO_MAX_ZERO_RATIO` で調整可能
 - 状態は `data/broken_sites.yaml` / `data/site_baselines.yaml` / `data/field_quality_drift.yaml` に永続化（→ [データフロー](02-data-flow.md)）
 - 検知結果は [自己修復ループ](04-self-healing.md) のトリガーにもなる
+
+### 掲載数監査（`weekly-count-audit.yml` → `scripts/site_count_audit.py`, T046/T105/T141）
+
+- adapter を経由せず実サイト一覧ページを直接 fetch し、独立シグナル (一覧セレクタで拾えるリンク数・ゼロ表現・ページ送り有無) と API 公開数をホスト単位で突き合わせる。adapter 自体が系統的に取り漏らすケース (ページ送り未対応) を adapter 経由の監査 (下記) とは独立に検出する
+- 一覧セレクタは `data_collector.infrastructure.list_selector_resolution.resolve_list_selector()` で `SiteAdapterRegistry` から adapter class の `LIST_LINK_SELECTOR` → `ROW_SELECTOR` → sites.yaml の `list_link_pattern` の優先順で解決する (T141)。adapter を instantiate しないため HTTP/DB は発生しない。以前は sites.yaml の `list_link_pattern` のみを見ており、adapter が実際に使うセレクタと独立の手入力値でトートロジーだったため 213 サイト中 178 サイトが構造的に比較不能だった (T133)。registry 解決導入によりホスト単位の比較可能数がおよそ13ホスト→79ホスト (T140/T141 実装時点の sites.yaml 実測) へ拡大している
+- ページ送りは `resolve_pagination()` で adapter の `NEXT_PAGE_SELECTOR` / `MAX_LIST_PAGES` を引き、`count_pattern_links_paginated()` が循環検知・上限打ち切りを行いながら最後まで辿る (`WordPressListAdapter.fetch_animal_list()` と同じ方針)。打ち切った (`pagination_truncated=True`) サイトは pattern_count が不完全な下限値になるため、そのホストは undercount/overcount 判定 (`comparable`) から除外する
+- 大分・沖縄・徳島の掲載漏れ (T132) はいずれもページ送り未追従が原因で、セレクタ解決だけでは再現できない。`tests/scripts/test_site_count_audit.py::TestCountPatternLinksPaginated::test_follows_pagination_and_counts_all_pages` がこの型の回帰を固定する
+- 通知閾値 (T141): comparable ホスト急増によるノイズを避けるため、Discord 通知は `|pattern_total - api_count|` が `max(2, API件数の20%)` 以上のホストに限る (`data_collector.infrastructure.count_audit_notify`)。上位15件を |delta| 降順で表示し、残りは「他 N 件」に集約する。全件 (閾値未満も含む) は artifact の `reports/site_count_audit_*.md` に残る
+- `zero_suspect` (API 0件なのに掲載候補シグナルがある) は件数差ではなく質的判定のため閾値の対象外
+
+### 致命フィールド監査（`field-accuracy-audit.yml` → `scripts/full_publication_audit.py`, T045/T046/T101/T140）
+
+- adapter の出力を `adapter.normalize()` まで通した上で公開 API の全件と突き合わせ、致命8フィールド (status/phone/source_url/location/prefecture/category/species/image_urls) の食い違い (`field_mismatch`) を検出する
+- 掲載漏れ疑い (`adapter_only`: adapter には見えるが API に無い) のうち、上記の週次掲載数監査が構造的に比較できないホスト (`count_audit_blind_hosts()`, `resolve_list_selector()` で選択できない or PDF セレクタ or `requires_js`) に属するものだけを、コンパクトな形式 (サイトごとの件数 + 代表 URL 最大3件) で Discord 通知に含める (T140)。件数の乖離判定自体は原則週次掲載数監査の担当のため、その担当領域と重複しない範囲だけをここで拾う
+- `count_audit_blind_hosts()` は週次掲載数監査の `comparable` 判定と対称になるよう `list_selector_resolution.resolve_list_selector()` を共有する。二重実装すると片方だけ直して判定がズレるため、必ず両スクリプトがこのモジュールを参照する
+- `api_only` (もういない疑い) は「消し忘れ」であり公開品質ゲートに効かないため通知対象外
+- 単日の掲載入れ替わりを含みうるため、通知本文には確定情報として扱わない注記を含め、`--recheck` での再照合を促す
 
 ### 課金/予算監視（`infra/stop-billing`）
 

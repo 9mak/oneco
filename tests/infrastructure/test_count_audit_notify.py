@@ -18,12 +18,13 @@ from data_collector.infrastructure.count_audit_notify import evaluate, maybe_not
 from data_collector.infrastructure.notification_client import NotificationLevel
 
 
-def _group(host: str, flags: list[str], sites=None, api_count=0, pattern_total=None):
+def _group(host: str, flags: list[str], sites=None, api_count=0, pattern_total=None, delta=None):
     return {
         "host": host,
         "sites": sites or [host],
         "api_count": api_count,
         "pattern_total": pattern_total,
+        "delta": delta,
         "comparable": True,
         "statuses": ["ok"],
         "flags": flags,
@@ -130,17 +131,110 @@ class TestEvaluate:
         assert any("単日" in v or "確定" in v for v in details.values())
 
     def test_many_flagged_groups_truncated(self):
+        # T141: comparable ホストが約200に増える見込みを踏まえ上限を15へ広げたため、
+        # 上限を超えるには15より多い件数が要る
         groups = [
             _group(f"host{i}.example.jp", ["undercount_suspect"], api_count=i, pattern_total=i + 1)
-            for i in range(15)
+            for i in range(20)
         ]
         result = _result(groups)
         _has_flags, message, details = evaluate(result)
-        assert "15" in message
+        assert "20" in message
         # Discord 2000 文字上限を踏まえ、詳細行数に上限を設ける
         detail_host_keys = [k for k in details if k.startswith("host")]
-        assert len(detail_host_keys) < 15
+        assert len(detail_host_keys) <= 15
         assert any("他" in v for v in details.values())
+
+
+class TestMagnitudeThreshold:
+    """T141: comparable ホスト急増によるノイズ抑制のための |delta| 閾値 (max(2, 20%))"""
+
+    def test_delta_below_threshold_is_silenced(self):
+        # api=100, delta=1 は max(2, 20)=20 未満なので静音化
+        result = _result(
+            [
+                _group(
+                    "a.example.jp",
+                    ["undercount_suspect"],
+                    api_count=100,
+                    pattern_total=101,
+                    delta=1,
+                )
+            ]
+        )
+        has_flags, _message, _details = evaluate(result)
+        assert has_flags is False
+
+    def test_delta_at_absolute_floor_notifies(self):
+        # api=5, 20%=1 なので下限の2が閾値になり、delta=2 でちょうど通知
+        result = _result(
+            [_group("b.example.jp", ["undercount_suspect"], api_count=5, pattern_total=7, delta=2)]
+        )
+        has_flags, _message, details = evaluate(result)
+        assert has_flags is True
+        assert "b.example.jp" in details
+
+    def test_delta_just_below_absolute_floor_is_silenced(self):
+        result = _result(
+            [_group("c.example.jp", ["undercount_suspect"], api_count=5, pattern_total=6, delta=1)]
+        )
+        has_flags, _message, _details = evaluate(result)
+        assert has_flags is False
+
+    def test_delta_meets_ratio_threshold_notifies(self):
+        # api=100, 20%=20 が閾値。delta=25 は超える
+        result = _result(
+            [
+                _group(
+                    "d.example.jp",
+                    ["overcount_suspect"],
+                    api_count=100,
+                    pattern_total=75,
+                    delta=-25,
+                )
+            ]
+        )
+        has_flags, _message, details = evaluate(result)
+        assert has_flags is True
+        assert "d.example.jp" in details
+
+    def test_zero_suspect_ignores_magnitude_threshold(self):
+        """zero_suspect は件数差でなく質的判定なので閾値の対象外 (delta=None でも通知)"""
+        result = _result([_group("e.example.jp", ["zero_suspect"], api_count=0, delta=None)])
+        has_flags, _message, details = evaluate(result)
+        assert has_flags is True
+        assert "e.example.jp" in details
+
+    def test_missing_delta_does_not_silence_legacy_groups(self):
+        """delta キーの無い旧形式 group (T141以前) は静音化せず従来通り通知する"""
+        result = _result(
+            [_group("f.example.jp", ["undercount_suspect"], api_count=32, pattern_total=65)]
+        )
+        has_flags, _message, _details = evaluate(result)
+        assert has_flags is True
+
+    def test_details_sorted_by_absolute_delta_descending(self):
+        result = _result(
+            [
+                _group(
+                    "small.example.jp",
+                    ["undercount_suspect"],
+                    api_count=10,
+                    pattern_total=13,
+                    delta=3,
+                ),
+                _group(
+                    "large.example.jp",
+                    ["undercount_suspect"],
+                    api_count=10,
+                    pattern_total=30,
+                    delta=20,
+                ),
+            ]
+        )
+        _has_flags, _message, details = evaluate(result)
+        keys = [k for k in details if k.endswith(".example.jp")]
+        assert keys == ["large.example.jp", "small.example.jp"]
 
 
 class TestMaybeNotify:
