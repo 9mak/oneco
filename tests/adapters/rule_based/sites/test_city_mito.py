@@ -106,6 +106,28 @@ class TestCityMitoAdapter:
 
         assert result == []
 
+    def test_fetch_animal_list_returns_empty_for_publication_ended_text(self):
+        """公表期間終了に伴う「現在は掲載しておりません」告知も空リストとして扱う
+
+        2026-09 実測: 収容中の動物たちページ (2043.html) が
+        「こちらは公表期間終了後も元の飼い主を探している動物の情報になります。
+        現在は掲載しておりません。」という、動物への言及が「掲載しておりません」
+        と同一文中に無い告知文のみを返す状態になっていた (T153)。
+        """
+        synthetic_html = """
+        <html><body>
+        <div id="main_body">
+            <p>こちらは公表期間終了後も元の飼い主を探している動物の情報になります。</p>
+            <p>現在は掲載しておりません。</p>
+        </div>
+        </body></html>
+        """
+        adapter = CityMitoAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=synthetic_html):
+            result = adapter.fetch_animal_list()
+
+        assert result == []
+
     def test_raises_parsing_error_for_unrelated_html(self):
         """テーブルも empty state 判定要素も無い HTML では ParsingError"""
         adapter = CityMitoAdapter(_site())
