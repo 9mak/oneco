@@ -11,9 +11,11 @@
 - list ページ HTML 内で同一 detail URL は 1 度しか出現しない
   (画像 + ラベルが同じ `<a>` で囲まれているため) ので、
   `WordPressListAdapter` の seen 集合による重複除去で十分。
-- 既に飼い主に戻った/譲渡完了したカードには `class="sumi"` が付くが、
-  list_url から見える時点では運用上「掲載中」として扱い、ここでは
-  特別なフィルタは行わない (在庫 0 件も許容される)。
+- 既に飼い主に戻った/譲渡完了したカードには `class="sumi"` が付く。以前は
+  「list_url から見える時点では掲載中」として除外していなかったが、実際には
+  `飼い主さんのところへ 戻りました` と表示されている個体を募集中として公開し
+  続けていた (T134 で実測)。詳細ページは 200 のまま残るため 404 基準の
+  prune では落ちない。LIST_LINK_SELECTOR で `li.sumi` を除外する。
 """
 
 from __future__ import annotations
@@ -28,7 +30,11 @@ class SapcaAdapter(WordPressListAdapter):
     # `<ul class="list"> > <li> > <a href="/lost/{id}.html">` のリンクのみ抽出。
     # サイドバーやヘッダ側の `/lost` 自体へのリンクを取り込まないよう、
     # 末尾が `.html` で終わるパターンに限定する (sites.yaml と同等)。
-    LIST_LINK_SELECTOR = "ul.list a[href*='/lost/'][href$='.html']"
+    # `li.sumi` は飼い主のもとへ戻った/譲渡完了した個体なので除外する (T134)。
+    LIST_LINK_SELECTOR = "ul.list li:not(.sumi) a[href*='/lost/'][href$='.html']"
+
+    # 一覧構造が変わって `sumi` クラスが消えた場合の二重防御 (T134)。
+    LINK_EXCLUDE_MARKERS = ("戻りました", "決まりました")
 
     # detail ページの定義リスト/テーブル見出しに対応するラベル。
     # WordPressListAdapter._extract_by_label が <dt>/<th> のいずれにも対応する。

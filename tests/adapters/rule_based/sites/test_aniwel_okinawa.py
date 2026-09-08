@@ -748,3 +748,48 @@ class TestAniwelOkinawaPhoneInjection:
         assert raw.phone == "057-011-1222", (
             f"detail 側に phone があれば上書きしない: got {raw.phone!r}"
         )
+
+
+class TestResolvedAnimalExclusion:
+    """決着済み個体の一覧除外 (T134)
+
+    沖縄県は返還・団体譲渡が済んでも詳細ページを 200 のまま残し、一覧タイトルに
+    注記だけを足す。404 にならないため prune_disappeared では落ちない。
+    """
+
+    _LIST_HTML = """
+    <html><body>
+      <a href="/animals/accommodate_view/25728"><p>8/31 トイプードル(宜野湾市) K-2 返還しました</p></a>
+      <a href="/animals/accommodate_view/25714"><p>8/28 雑種(沖縄市) K-1 ☆</p></a>
+      <a href="/animals/accommodate_view/25727"><p>8/31 雑種(読谷村) K-1 〇</p></a>
+      <a href="/animals/accommodate_view/25999"><p>9/5 雑種(那覇市) K-3</p></a>
+    </body></html>
+    """
+
+    def test_excludes_returned_and_transferred(self):
+        """「返還しました」と「☆(団体へ譲渡済)」を落とす"""
+        adapter = AniwelOkinawaAdapter(_site(0))
+        with patch.object(adapter, "_http_get", return_value=self._LIST_HTML):
+            urls = [u for u, _ in adapter.fetch_animal_list()]
+        assert urls == [
+            f"{_BASE}/animals/accommodate_view/25727",
+            f"{_BASE}/animals/accommodate_view/25999",
+        ]
+
+    def test_keeps_pending_transfer_mark(self):
+        """「〇(団体へ譲渡予定)」はまだセンターにいるので残す。
+
+        一覧の凡例: 「〇印が付いているものは、収容期間中に飼い主が現れなかった
+        場合に、ボランティア団体へ譲渡する予定になっているものです。」
+        """
+        adapter = AniwelOkinawaAdapter(_site(0))
+        with patch.object(adapter, "_http_get", return_value=self._LIST_HTML):
+            urls = [u for u, _ in adapter.fetch_animal_list()]
+        assert f"{_BASE}/animals/accommodate_view/25727" in urls
+
+    def test_exclusion_does_not_block_prune(self):
+        """除外で list_truncated を立てない (立てると除外個体が DB に残り続ける)"""
+        adapter = AniwelOkinawaAdapter(_site(0))
+        with patch.object(adapter, "_http_get", return_value=self._LIST_HTML):
+            adapter.fetch_animal_list()
+        assert adapter.list_truncated is False

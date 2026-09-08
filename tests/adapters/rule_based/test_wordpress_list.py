@@ -335,3 +335,72 @@ class TestWordPressListAdapterPagination:
             result = adapter.fetch_animal_list()
         assert [u for u, _ in result] == ["https://example.com/animals/3"]
         assert adapter.list_truncated is False
+
+
+EXCLUDE_LIST_HTML = """
+<html><body>
+  <div class="card"><a class="more" href="/animals/1"><p>8/28 雑種(沖縄市) K-1 ☆</p></a></div>
+  <div class="card"><a class="more" href="/animals/2"><p>8/31 トイプードル K-2 返還しました</p></a></div>
+  <div class="card"><a class="more" href="/animals/3"><p>8/31 雑種(読谷村) K-1 〇</p></a></div>
+  <div class="card"><a class="more" href="/animals/4"><img alt="9/4 雑種 K-1 返還しました"></a></div>
+</body></html>
+"""
+
+
+class _ExcludingWPAdapter(_SampleWPAdapter):
+    LINK_EXCLUDE_MARKERS = ("返還しました", "☆")
+
+
+class TestWordPressListAdapterLinkExclude:
+    """一覧リンクの注記による除外 (T134)
+
+    自治体サイトには「個体ページは生きているが、タイトルに『返還しました』と
+    書き足されただけ」という状態がある。404 にならないため prune_disappeared では
+    捕捉できず、里親を探している人に「もう飼い主が見つかった子」を見せ続けてしまう。
+    """
+
+    def test_default_is_no_exclusion(self):
+        """既定は空タプル = 既存 adapter の挙動を変えない"""
+        adapter = _SampleWPAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=EXCLUDE_LIST_HTML):
+            result = adapter.fetch_animal_list()
+        assert len(result) == 4
+
+    def test_excludes_marked_links(self):
+        adapter = _ExcludingWPAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=EXCLUDE_LIST_HTML):
+            result = adapter.fetch_animal_list()
+        assert [u for u, _ in result] == ["https://example.com/animals/3"]
+
+    def test_matches_marker_in_img_alt(self):
+        """リンク配下が画像だけの場合もあるので alt も見る"""
+        html = """
+        <html><body>
+          <div class="card"><a class="more" href="/animals/9">
+            <img alt="9/4 雑種 K-1 返還しました"></a></div>
+        </body></html>
+        """
+        adapter = _ExcludingWPAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            assert adapter.fetch_animal_list() == []
+
+    def test_exclusion_does_not_set_truncated(self):
+        """除外は打ち切りではないので list_truncated を立てない。
+
+        立てると prune_disappeared がスキップされ、除外した個体が DB に残り続けて
+        本末転倒になる。
+        """
+        adapter = _ExcludingWPAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=EXCLUDE_LIST_HTML):
+            adapter.fetch_animal_list()
+        assert adapter.list_truncated is False
+
+    def test_all_links_excluded_returns_empty(self):
+        html = """
+        <html><body>
+          <div class="card"><a class="more" href="/animals/1"><p>返還しました</p></a></div>
+        </body></html>
+        """
+        adapter = _ExcludingWPAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            assert adapter.fetch_animal_list() == []
