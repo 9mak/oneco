@@ -39,3 +39,4 @@ numpy>=1.24.0
 # infra/budget-alert のユニットテスト用（tests/infra/test_budget_alert.py が google.api_core を import する）
 google-cloud-storage>=2.0,<3.0
 functions-framework>=3.0,<4.0
+google-analytics-data>=0.18,<1.0  # tests/scripts/test_ga4_weekly_report.py が import する（GA4 週次読上 T071）
