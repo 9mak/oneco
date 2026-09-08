@@ -138,7 +138,7 @@ auto-fix-adapter（自己修復ループ）の段階リリース状態に応じ�
   ```bash
   gh variable set ONECO_AUTO_FIX_DRY_RUN --body "false"   # 本番モード: 修理 PR を自動作成
   ```
-- **本番モード**: `label: auto-fix` の PR が作られる。CI が緑なら `auto-merge-fix-pr.yml` が自動マージ（完全自動には PAT `ONECO_AUTO_FIX_TOKEN` が必要。無ければ手動マージ）。
+- **本番モード**: `label: auto-fix` の PR が作られる。自動マージは 2026-09-08 に撤去したので、diff を見て手動でマージする（main はブランチ保護で CI 4本の通過が必須）。
 - PR が溜まる・怪しい修理がある場合は、diff を見て手動マージ or close。暴走時は緊急停止:
   ```bash
   gh variable set ONECO_AUTO_FIX_ENABLED --body "false"   # kill switch OFF

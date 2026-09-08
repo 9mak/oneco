@@ -44,7 +44,6 @@
 | ワークフロー | トリガー | 内容 |
 |---|---|---|
 | `auto-fix-adapter.yml` | 手動 dispatch のみ（site_name / model / dry_run）※通常は data-collector から自動 dispatch | Groq で adapter を修復、二重ガード通過で `auto-fix` ラベル付き PR 作成 |
-| `auto-merge-fix-pr.yml` | PR イベント（opened / labeled 等） | `auto-fix` ラベル PR に CI green 後の squash auto-merge を設定 |
 
 ## 補足
 

@@ -149,13 +149,14 @@ cd frontend && npm test
 | `uptime-check.yml` | 30分毎 | 外形監視（API / frontend）→ 失敗で Discord 通知 |
 | `secret-health.yml` | 毎日 JST 09:00 | Groq/Threads トークン失効検知 |
 | `auto-fix-adapter.yml` | dispatch | 壊れた adapter を LLM で自動修復し PR 作成 |
-| `auto-merge-fix-pr.yml` | PR イベント | auto-fix PR の自動マージ |
 
 詳細は [docs/wiki/09-workflows.md](docs/wiki/09-workflows.md) を参照。
 
 ## ライセンス
 
-[MIT License](LICENSE)
+ソースコードは [MIT License](LICENSE) です。
+
+**収集データは MIT の対象外です。** `data/`・`output/`・`snapshots/`・本番 DB に格納された保護動物の情報は各自治体が公開した情報の転載であり、著作権は各自治体に帰属します。サイトの[利用規約](https://oneco.jp/terms)に従い、掲載情報の商業目的での無断利用はできません。転載元からの撤去依頼には速やかに応じます。
 
 ## コントリビュート
 

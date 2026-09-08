@@ -6,8 +6,8 @@ name: Auto-fix adapter
 # 1 サイトについて scripts/auto_fix_adapter.py を実行する。
 # 二重ガード (ユニットテスト + live test 改善定量確認) を通過したら
 # fix/auto-<slug> ブランチで PR (label: auto-fix) を作成し、
-# label `auto-fix` 付きの PR は Phase 3 (.github/workflows/auto-merge-fix-pr.yml)
-# で CI green 後に自動マージされる。
+# label `auto-fix` 付きの PR は人が diff を確認してマージする
+# (自動マージ workflow は 2026-09-08 に撤去)。
 
 on:
   workflow_dispatch:

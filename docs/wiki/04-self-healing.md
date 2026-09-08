@@ -18,9 +18,12 @@ Phase 2: 修復               auto-fix-adapter.yml (workflow_dispatch)
    ├ 通過 → fix/auto-* ブランチで `auto-fix` ラベル付き PR 作成
    └ 失敗 → Issue 起票
         ▼
-Phase 3: 自動マージ          auto-merge-fix-pr.yml
-   `auto-fix` ラベル PR に CI green 後の squash auto-merge を有効化
+Phase 3: 人によるマージ（2026-09-08 に自動マージを撤去）
+   `auto-fix` ラベル PR は他の PR と同じく main のブランチ保護
+   （Lint / Test / Type Check / Build Package 必須）を通したうえで人が判断してマージ
 ```
+
+> **2026-09-08 変更**: `auto-merge-fix-pr.yml` は削除した。48回起動して修復 PR 0件という実績に対し、`auto-fix` ラベルだけでレビュー無しの本番デプロイに到達する経路を残す価値がなかったため。再設計は CCC の oneco T150。
 
 ## Phase 1 → 2 の安全弁（`__main__.py`）
 
