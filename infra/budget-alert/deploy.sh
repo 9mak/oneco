@@ -16,7 +16,8 @@
 #   GCP_PROJECT_ID          (既定: oneco-app)
 #   GCP_REGION               (既定: asia-northeast1)
 #   BUDGET_ALERT_BUCKET      (既定: ${GCP_PROJECT_ID}-budget-alert-markers)
-#   BUDGET_ALERT_SA          (既定: oneco-budget-alert@${GCP_PROJECT_ID}.iam.gserviceaccount.com)
+#   BUDGET_ALERT_SA          (既定: oneco-budget-alert@${GCP_PROJECT_ID}.iam.gserviceaccount.com。
+#                              カスタム指定時はローカルパート（@より前）をSA名として作成/確認する)
 #   DISCORD_SECRET_NAME      (既定: DISCORD_WEBHOOK_URL、stop-billingが使っているものと同じsecretを再利用)
 
 set -euo pipefail
@@ -35,10 +36,18 @@ done
 PROJECT_ID="${GCP_PROJECT_ID:-oneco-app}"
 REGION="${GCP_REGION:-asia-northeast1}"
 BUCKET="${BUDGET_ALERT_BUCKET:-${PROJECT_ID}-budget-alert-markers}"
-SA_NAME="oneco-budget-alert"
-SA_EMAIL="${BUDGET_ALERT_SA:-${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com}"
+SA_EMAIL="${BUDGET_ALERT_SA:-oneco-budget-alert@${PROJECT_ID}.iam.gserviceaccount.com}"
+# SA_NAME は常に SA_EMAIL のローカルパート（@より前）から導出する。
+# BUDGET_ALERT_SA でカスタムSAを指定した場合でも、存在確認(describe)と
+# 未存在時の作成(create)が同じSAを指すようにするため（F-03）。
+SA_NAME="${SA_EMAIL%%@*}"
 SECRET_NAME="${DISCORD_SECRET_NAME:-DISCORD_WEBHOOK_URL}"
 FUNCTION_NAME="budget-alert"
+# --source はリポジトリルートからの相対パスではなく、このスクリプトの位置基準の
+# 絶対パスにする。infra/budget-alert ディレクトリ内から実行した場合でも壊れない
+# ようにするため（F-04）。
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SOURCE_DIR="${SCRIPT_DIR}"
 
 run() {
   echo "+ $*"
@@ -94,7 +103,7 @@ echo "--- 5. Cloud Function デプロイ（gen2, budget-alerts topicを独立サ
 run gcloud functions deploy "${FUNCTION_NAME}" \
   --gen2 --project="${PROJECT_ID}" --region="${REGION}" \
   --runtime=python312 --trigger-topic=budget-alerts \
-  --entry-point=budget_alert --source=infra/budget-alert \
+  --entry-point=budget_alert --source="${SOURCE_DIR}" \
   --run-service-account="${SA_EMAIL}" \
   --set-secrets="DISCORD_WEBHOOK_URL=${SECRET_NAME}:latest" \
   --set-env-vars="BUDGET_ALERT_BUCKET=${BUCKET}" \

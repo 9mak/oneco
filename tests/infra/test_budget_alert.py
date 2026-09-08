@@ -7,6 +7,7 @@ infra/budget-alert は独立デプロイ単位（GCP依存のrequirements.txtを
 from __future__ import annotations
 
 import base64
+import datetime
 import json
 import sys
 from pathlib import Path
@@ -53,6 +54,39 @@ class TestParseAndRatio:
         """alertThresholdExceededは信用せず、costAmount/budgetAmountだけで計算する"""
         data = {"costAmount": 100, "budgetAmount": 500, "alertThresholdExceeded": 0.9}
         assert budget_alert_main._compute_ratio(data) == pytest.approx(0.2)
+
+
+class TestMonthKey:
+    def test_uses_cost_interval_start_not_processing_time(self):
+        """処理時刻でなく costIntervalStart 由来の月を使う（F-01）"""
+        data = {"costAmount": 450, "budgetAmount": 500, "costIntervalStart": "2026-08-01T00:00:00Z"}
+        assert budget_alert_main._month_key(data) == "2026-08"
+
+    def test_delayed_delivery_across_month_boundary_uses_original_period(self):
+        """8月分の通知が9月にずれ込んで処理されても、キーは8月のまま
+        （処理時刻基準だと9月のマーカーを誤って消費し、本物の9月90%通知が
+        抑止されてしまう。F-01のシナリオそのもの。costIntervalStartが有効な限り
+        処理時刻（今が9月であること）はキー算出に一切影響しない）"""
+        data = {
+            "costAmount": 495,
+            "budgetAmount": 500,
+            "costIntervalStart": "2026-08-28T00:00:00Z",
+        }
+        assert budget_alert_main._month_key(data) == "2026-08"
+
+    def test_missing_cost_interval_start_falls_back_to_now_with_error_log(self, caplog):
+        data = {"costAmount": 450, "budgetAmount": 500}
+        with caplog.at_level("ERROR"):
+            key = budget_alert_main._month_key(data)
+        assert key == datetime.datetime.now(datetime.UTC).strftime("%Y-%m")
+        assert any("フォールバック" in record.message for record in caplog.records)
+
+    def test_malformed_cost_interval_start_falls_back_to_now_with_error_log(self, caplog):
+        data = {"costAmount": 450, "budgetAmount": 500, "costIntervalStart": "not-a-date"}
+        with caplog.at_level("ERROR"):
+            key = budget_alert_main._month_key(data)
+        assert key == datetime.datetime.now(datetime.UTC).strftime("%Y-%m")
+        assert any("フォールバック" in record.message for record in caplog.records)
 
 
 class TestMarkNotified:
@@ -242,3 +276,46 @@ class TestBudgetAlertEntrypoint:
 
         mock_blob.upload_from_string.assert_called_once()
         mock_requests.post.assert_not_called()
+
+    def test_malformed_payload_is_swallowed_with_error_log_not_raised(self, monkeypatch, caplog):
+        """不正base64/JSONはPub/Subへ非2xxを返さず正常終了する（F-02）"""
+        self._make_env(monkeypatch)
+        event = MagicMock()
+        event.data = {"message": {"data": "not-valid-base64-json!!!"}}
+
+        with (
+            patch.object(budget_alert_main, "storage") as mock_storage,
+            patch.object(budget_alert_main, "requests") as mock_requests,
+            caplog.at_level("ERROR"),
+        ):
+            budget_alert_main.budget_alert(event)  # 例外を投げないことを確認
+
+        mock_storage.Client.assert_not_called()
+        mock_requests.post.assert_not_called()
+        assert any("握りつぶして正常終了" in record.message for record in caplog.records)
+
+    def test_gcs_non_precondition_error_is_swallowed_with_error_log(self, monkeypatch, caplog):
+        """PreconditionFailed以外のGCS例外（権限エラー等）も再配信を招かず正常終了する（F-02）"""
+        from google.api_core.exceptions import Forbidden
+
+        self._make_env(monkeypatch)
+        event = _cloud_event({"costAmount": 450, "budgetAmount": 500})
+
+        mock_bucket = MagicMock()
+        mock_blob = MagicMock()
+        mock_blob.upload_from_string.side_effect = Forbidden("no permission")
+        mock_bucket.blob.return_value = mock_blob
+        mock_client = MagicMock()
+        mock_client.bucket.return_value = mock_bucket
+
+        with (
+            patch.object(budget_alert_main, "storage") as mock_storage,
+            patch.object(budget_alert_main, "requests") as mock_requests,
+            caplog.at_level("ERROR"),
+        ):
+            mock_storage.Client.return_value = mock_client
+
+            budget_alert_main.budget_alert(event)  # 例外を投げないことを確認
+
+        mock_requests.post.assert_not_called()
+        assert any("握りつぶして正常終了" in record.message for record in caplog.records)
