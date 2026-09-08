@@ -1,0 +1,66 @@
+name: GA4 Weekly Readout
+
+# GA4 (property oneco / properties/541319394) の週次サマリを自動生成し Discord へ通知する
+# (T071③)。scripts/ga4_weekly_report.py が実処理を担う。
+#
+# 設計判断:
+# - 月曜 JST 9:10 実行: secret-health.yml (JST 9:00) と輻輳を避けるため 10 分ずらす。
+#   月曜朝に前週の実績を確認できるタイミングを狙う。
+# - 認証は Workload Identity Federation (WIF, キーレス)。deploy-backend.yml と同じ
+#   auth ステップ形状を踏襲するが、サービスアカウントは deploy 用 (GCP_SERVICE_ACCOUNT)
+#   ではなく GA4 閲覧専用の oneco-ga4-mcp@oneco-app.iam.gserviceaccount.com を使う
+#   (呼び出し元が事前に GitHub WIF pool principal へ roles/iam.workloadIdentityUser を
+#   バインド済み。デプロイ用 SA と混用しないようワークフロー内にハードコードする)。
+# - レポートは commit せず artifact 保存のみ (weekly-count-audit.yml と同じ判断。
+#   詳細は scripts/ga4_weekly_report.py のモジュール docstring 参照)。
+# - GA4 API 障害時はスクリプト側が Discord へ失敗通知した上で exit 1 にするため、
+#   ワークフロー側の追加の失敗通知ステップは設けない (二重通知を避ける)。
+
+on:
+  schedule:
+    - cron: '10 0 * * 1'  # 毎週 UTC 月曜 0:10 = JST 月曜 9:10
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Authenticate to GCP (Workload Identity Federation)
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          # GA4 閲覧専用 SA。deploy-backend.yml の GCP_SERVICE_ACCOUNT (デプロイ用) とは
+          # 別物であるため使い回さず、ここでハードコードする。
+          service_account: oneco-ga4-mcp@oneco-app.iam.gserviceaccount.com
+
+      - name: Install dependencies
+        # ga4_weekly_report.py は NotificationClient を import するため editable install
+        # が必要 (secret-health.yml と同じ理由)。[ga4] extra で google-analytics-data を追加。
+        run: pip install -e ".[ga4]"
+
+      - name: Run GA4 weekly report
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python3 scripts/ga4_weekly_report.py
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ga4-weekly-report
+          path: reports/ga4/ga4-weekly-*.md
+          retention-days: 400
+          if-no-files-found: warn
