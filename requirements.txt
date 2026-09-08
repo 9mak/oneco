@@ -35,3 +35,7 @@ httpx>=0.25.0
 # 「ローカル通過・CI失敗」が起きたため (1.4.0 で顕在化)。
 pytest-asyncio>=0.21.0,<2.0
 numpy>=1.24.0
+
+# infra/budget-alert のユニットテスト用（tests/infra/test_budget_alert.py が google.api_core を import する）
+google-cloud-storage>=2.0,<3.0
+functions-framework>=3.0,<4.0
