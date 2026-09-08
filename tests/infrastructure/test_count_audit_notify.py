@@ -198,6 +198,59 @@ class TestMagnitudeThreshold:
         assert has_flags is True
         assert "d.example.jp" in details
 
+    def test_total_outage_on_small_host_bypasses_threshold(self):
+        """reviewer F-01: api_count=1 → pattern_total=0 (全滅) は delta=-1 が
+        max(2, round(1*0.2))=2 未満でも必ず通知する"""
+        result = _result(
+            [
+                _group(
+                    "g.example.jp",
+                    ["overcount_suspect"],
+                    api_count=1,
+                    pattern_total=0,
+                    delta=-1,
+                )
+            ]
+        )
+        has_flags, _message, details = evaluate(result)
+        assert has_flags is True
+        assert "g.example.jp" in details
+
+    def test_total_outage_on_larger_host_bypasses_threshold(self):
+        """api_count=10 → pattern_total=0 (全滅) は delta=-10 が閾値2以上でも
+        従来通り通知される (回帰確認)"""
+        result = _result(
+            [
+                _group(
+                    "h.example.jp",
+                    ["overcount_suspect"],
+                    api_count=10,
+                    pattern_total=0,
+                    delta=-10,
+                )
+            ]
+        )
+        has_flags, _message, details = evaluate(result)
+        assert has_flags is True
+        assert "h.example.jp" in details
+
+    def test_reverse_total_outage_api_zero_bypasses_threshold(self):
+        """api_count=0 なのに実サイトには掲載がある (公開側が全滅) も必ず通知する"""
+        result = _result(
+            [
+                _group(
+                    "i.example.jp",
+                    ["undercount_suspect"],
+                    api_count=0,
+                    pattern_total=3,
+                    delta=3,
+                )
+            ]
+        )
+        has_flags, _message, details = evaluate(result)
+        assert has_flags is True
+        assert "i.example.jp" in details
+
     def test_zero_suspect_ignores_magnitude_threshold(self):
         """zero_suspect は件数差でなく質的判定なので閾値の対象外 (delta=None でも通知)"""
         result = _result([_group("e.example.jp", ["zero_suspect"], api_count=0, delta=None)])

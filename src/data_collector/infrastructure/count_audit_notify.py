@@ -30,6 +30,14 @@ SiteAdapterRegistry 経由のセレクタ解決に切り替えたことで、比
 件数差ではなく「ゼロ表現も掲載候補シグナルも無い」という質的な判定のため閾値の
 対象外 (従来通り1件でも立てば通知)。静音化したホストも group["flags"] 自体には
 残り、reports/*.md の全件表 (フラグ付きホスト表) では確認できる。
+
+全滅の例外 (T141 reviewer F-01): api_count が小さいホスト (例: 1件) では
+max(2, round(api_count*0.2)) がほぼ常に絶対下限の2に張り付くため、
+api_count=1 → pattern_total=0 (実サイトから完全消滅、delta=-1) のような
+100%全滅ケースが |delta|<2 として静音化されてしまう。これは「閾値未満の単日
+ノイズ」ではなく total outage であり本来の目的に反するため、片方が0件で
+もう片方が0件でない (全滅) 場合は件数の規模に関わらず必ず通知する
+(_passes_magnitude_threshold の特例、閾値判定より先に判定する)。
 """
 
 from __future__ import annotations
@@ -66,6 +74,12 @@ def _passes_magnitude_threshold(group: dict[str, Any]) -> bool:
     delta が None (comparable=False で算出不能) の場合は magnitude フラグは
     そもそも group["flags"] に立たないので True (フィルタしない) を返す。
     magnitude フラグを1つも持たないグループ (zero_suspect のみ等) も True でよい。
+
+    全滅 (delta = ±100%、片方が0件でもう片方が0件でない) は件数の規模に関わらず
+    必ず通知する (T141 reviewer F-01)。api_count が小さいホスト (例: 1件) では
+    max(2, round(api_count*0.2)) がほぼ常に2固定になり、api_count=1 →
+    pattern_total=0 (実サイトから完全消滅) のような |delta|=1 の全滅ケースが
+    静音化されてしまうため、この閾値判定より先に特例として拾う。
     """
     magnitude_flags = _MAGNITUDE_FLAGS.intersection(group.get("flags") or [])
     if not magnitude_flags:
@@ -74,6 +88,11 @@ def _passes_magnitude_threshold(group: dict[str, Any]) -> bool:
     if delta is None:
         return True
     api_count = group.get("api_count") or 0
+    pattern_total = group.get("pattern_total")
+    if api_count > 0 and pattern_total == 0:
+        return True  # 実サイト側が全滅 (掲載が丸ごと消えた)
+    if api_count == 0 and pattern_total is not None and pattern_total > 0:
+        return True  # API 側が全滅 (実サイトにはいるのに公開が丸ごと消えた)
     threshold = max(_MIN_ABS_DELTA, round(api_count * _MIN_RATIO))
     return abs(delta) >= threshold
 
