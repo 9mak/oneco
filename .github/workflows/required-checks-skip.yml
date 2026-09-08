@@ -1,0 +1,42 @@
+name: Required checks (skip for non-backend changes)
+
+# main のブランチ保護は Lint / Test / Type Check / Build Package を必須にしている。
+# backend.yml は paths フィルタで backend 以外の変更（docs のみ・frontend のみ）では
+# 起動しないため、そのままだと必須チェックが永久に pending となり PR がマージ不能になる。
+# GitHub 公式の回避策どおり、backend.yml と反対の paths-ignore で同名ジョブを
+# 成功終了させて必須チェックを満たす。
+# https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - 'src/**'
+      - 'tests/**'
+      - 'alembic/**'
+      - 'pyproject.toml'
+      - 'setup.py'
+      - 'requirements.txt'
+      - '.github/workflows/backend.yml'
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "backend 対象外の変更のため skip"
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "backend 対象外の変更のため skip"
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "backend 対象外の変更のため skip"
+  build:
+    name: Build Package
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "backend 対象外の変更のため skip"

@@ -14,7 +14,7 @@ oneco の体系ドキュメント。各ページはコードを一次ソース�
 | ページ | 内容 |
 |---|---|
 | [Adapter アーキテクチャ](03-adapters.md) | rule-based adapter の階層・registry・**サイト追加手順** |
-| [自己修復ループ](04-self-healing.md) | auto-fix-adapter の3フェーズ（検知 → LLM修復 → 自動マージ） |
+| [自己修復ループ](04-self-healing.md) | auto-fix-adapter の3フェーズ（検知 → LLM修復 → 人がマージ） |
 | [データベース](05-database.md) | スキーマ・Animal/Archive の関係・pgbouncer 接続の注意点 |
 | [REST API](06-api.md) | 公開/内部エンドポイント一覧 |
 
