@@ -168,13 +168,21 @@ class CityOsakaAdapter(SinglePageTableAdapter):
         # 管理番号は h3 「識別番号／A2605120001」から抽出
         management_number = self._extract_management_number(h3.get_text(strip=True))
 
-        # h3 直後の <div class="mol_imageblock"> を取得
-        imageblock = self._find_imageblock_after(h3)
+        # h3 直後の <div class="mol_imageblock"> を (複数あれば) すべて取得
+        #
+        # T131 (2026-09-09) で判明: 従来は「1 動物 = mol_imageblock 1 個
+        # (画像 + 属性 <p> をまとめて内包)」を前提に最初の 1 個だけを見ていたが、
+        # 実サイトは 1 動物につき mol_imageblock が複数連続する構造 (画像だけの
+        # ブロックの後に、属性 <p> だけの別 mol_imageblock が続く) に変わっており、
+        # 最初の 1 個しか見ないと age/breed/sex/size 等の属性値が常に空になっていた。
+        # 次の sub_h3_box (= 次の動物) に到達するまでのすべての mol_imageblock を
+        # 対象にする。
+        imageblocks = self._find_imageblocks_after(h3)
 
         fields: dict[str, str] = {}
         image_urls: list[str] = []
 
-        if imageblock is not None:
+        for imageblock in imageblocks:
             # 画像 URL を集める (a > img.mol_imageblock_img_large 優先、なければ全 img)
             for img in imageblock.find_all("img"):
                 src = img.get("src")
@@ -188,7 +196,9 @@ class CityOsakaAdapter(SinglePageTableAdapter):
                 # 別ウィンドウアイコン (new_window01.svg 等) は除外
                 if "new_window" in src or src.endswith(".svg"):
                     continue
-                image_urls.append(self._absolute_url(src, base=virtual_url))
+                url = self._absolute_url(src, base=virtual_url)
+                if url not in image_urls:
+                    image_urls.append(url)
 
             # 属性 <p> を解析 (内部 <br> 区切り、各行が "・ラベル／値" 形式)
             for p in imageblock.find_all("p"):
@@ -267,17 +277,26 @@ class CityOsakaAdapter(SinglePageTableAdapter):
         return False
 
     @staticmethod
-    def _find_imageblock_after(h3: Tag) -> Tag | None:
-        """h3 を含む sub_h3_box の次に出現する mol_imageblock を返す
+    def _find_imageblocks_after(h3: Tag) -> list[Tag]:
+        """h3 を含む sub_h3_box の次に出現する mol_imageblock 群を返す (T131)
 
-        テンプレート構造:
+        テンプレート構造 (2026-09-09 時点):
           <div class="sub_h3_box"><h3>識別番号／...</h3></div>
-          <div class="mol_imageblock clearfix">...</div>
+          <div class="mol_imageblock clearfix">...(画像のみ)...</div>
+          <div class="mol_imageblock clearfix">...(画像のみ)...</div>  (0〜複数)
+          <div class="mol_imageblock clearfix">...(属性 <p> を含む)...</div>
+          <a class="mol_anchor_name">...</a>
+          <div class="sub_h3_box">(次の動物)
+
+        画像と属性が同一 mol_imageblock に同居する形式と、画像専用/属性専用に
+        分かれた複数 mol_imageblock が連続する形式の両方に対応するため、次の
+        sub_h3_box (= 次の動物) に到達するまでのすべての mol_imageblock を集める。
         """
+        blocks: list[Tag] = []
         # h3 の直接の親 (div.sub_h3_box) の sibling を順に走査
         anchor: Tag | None = h3.parent if isinstance(h3.parent, Tag) else None
         if anchor is None:
-            return None
+            return blocks
         for sib in anchor.find_next_siblings():
             if not isinstance(sib, Tag):
                 continue
@@ -291,12 +310,13 @@ class CityOsakaAdapter(SinglePageTableAdapter):
             if sib.name == "div":
                 classes = sib.get("class") or []
                 if "mol_imageblock" in classes:
-                    return sib
+                    blocks.append(sib)
+                    continue
                 # 念のため内側に mol_imageblock がある場合も拾う
                 inner = sib.find("div", class_="mol_imageblock")
                 if isinstance(inner, Tag):
-                    return inner
-        return None
+                    blocks.append(inner)
+        return blocks
 
     @staticmethod
     def _split_label_value(line: str) -> tuple[str | None, str]:

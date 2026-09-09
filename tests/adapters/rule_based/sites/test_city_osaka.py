@@ -89,7 +89,71 @@ def _populated_html() -> str:
     )
 
 
+def _populated_html_split_imageblocks() -> str:
+    """動物 1 件を、画像専用/属性専用に分かれた複数 mol_imageblock で表現する合成 HTML
+
+    T131 (2026-09-09) で判明した実サイト (譲渡猫ページ 0000206027.html) の構造。
+    従来の adapter は「h3 の次に出る最初の mol_imageblock 1 個だけ」を見ており、
+    それが画像専用ブロックだと属性 <p> (性別/年齢/体格/種類) を一切拾えず
+    sex/age/size/breed が常に空になっていた (field-ledger-triage T131)。
+    """
+    return (
+        "<html><head><title>大阪市：譲渡猫情報</title></head><body>"
+        "<div class='sub_h2_box'><h2>譲渡猫一覧</h2></div>"
+        "<div class='sub_h3_box'><h3>識別番号／8-4-65（仮名：アポロちゃん）</h3></div>"
+        "<div class='mol_imageblock clearfix'>"
+        "<div class='mol_imageblock_img'>"
+        "<a href='./cmsfiles/contents/0000206/206027/8-4-65-1.JPG' target='_blank'>"
+        "<img class='mol_imageblock_img_large' "
+        "src='./cmsfiles/contents/0000206/206027/8-4-65-1.JPG' alt='猫が左上を見ている写真' />"
+        "</a></div></div>"
+        "<div class='mol_imageblock clearfix'>"
+        "<div class='mol_imageblock_img'>"
+        "<a href='./cmsfiles/contents/0000206/206027/8-4-65-2.JPG' target='_blank'>"
+        "<img class='mol_imageblock_img_large' "
+        "src='./cmsfiles/contents/0000206/206027/8-4-65-2.JPG' alt='猫の全身写真' />"
+        "</a></div></div>"
+        "<div class='mol_imageblock clearfix'>"
+        "<p>・撮影日／令和8年7月27日<br />"
+        "・種類／雑種<br />"
+        "・毛色／キジ<br />"
+        "・性別／メス（避妊済）<br />"
+        "・年齢／推定5歳<br />"
+        "・体格／中<br />"
+        "・性格／人懐こい性格です。<br />"
+        "・その他／混合ワクチン接種済</p>"
+        "</div>"
+        "<a class='mol_anchor_name'></a>"
+        "</body></html>"
+    )
+
+
 class TestCityOsakaAdapter:
+    def test_extract_animal_details_split_imageblocks(self):
+        """画像専用/属性専用に分かれた複数 mol_imageblock でも属性値を抽出できる (T131)"""
+        html = _populated_html_split_imageblocks()
+        site = SiteConfig(
+            name="大阪市（譲渡猫）",
+            prefecture="大阪府",
+            prefecture_code="27",
+            list_url="https://www.city.osaka.lg.jp/kenko/page/0000206027.html",
+            category="adoption",
+            single_page=True,
+        )
+        adapter = CityOsakaAdapter(site)
+
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(*urls[0])
+
+        assert raw.sex == "メス（避妊済）"
+        assert raw.age == "推定5歳"
+        assert raw.size == "中"
+        assert raw.breed == "雑種"
+        assert raw.color == "キジ"
+        # 画像専用ブロック 2 個分を両方拾う
+        assert len(raw.image_urls) == 2
+
     def test_fetch_animal_list_empty_when_no_stock(self, fixture_html):
         """在庫 0 件のフィクスチャ (110901) では空リストを返す
 
