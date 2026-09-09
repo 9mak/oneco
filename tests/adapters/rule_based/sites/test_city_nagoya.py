@@ -308,3 +308,5 @@ class TestMaigoDobutsuPage:
         assert r.color == "茶"
         assert r.sex == "オス"
         assert "中区栄" in r.location
+        # T131 Tier2: 「推定年齢」列が従来 _LABEL_TO_FIELD に無く常に空だった
+        assert r.age == "推定2歳"

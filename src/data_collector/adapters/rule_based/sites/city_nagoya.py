@@ -51,6 +51,11 @@ _LABEL_TO_FIELD: dict[str, str] = {
     "性別": "sex",
     "毛色": "color",
     "色": "color",
+    # 推定年齢 (field-ledger-triage-20260909 で「飼主のわからない犬猫等」
+    # ページの実ヘッダに存在すると確認。従来 _LABEL_TO_FIELD に無く常に
+    # age が空文字だった、T131 Tier2)。
+    "推定年齢": "age",
+    "年齢": "age",
     "体格": "size",
     "大きさ": "size",
     "サイズ": "size",
@@ -149,7 +154,10 @@ class CityNagoyaAdapter(SinglePageTableAdapter):
                 # 除外=破棄されていた (個体識別のサイレントドロップ)。
                 management_number=fields.get("management_number", ""),
                 sex=fields.get("sex", ""),
-                age="",
+                # T131 Tier2: 「推定年齢」列は従来 _LABEL_TO_FIELD に無く
+                # column_map に載らないため、値が取れていても常に "" で
+                # 破棄されていた (field-ledger-triage-20260909)。
+                age=fields.get("age", ""),
                 color=fields.get("color", ""),
                 size=fields.get("size", ""),
                 shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
