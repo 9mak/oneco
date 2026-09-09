@@ -385,6 +385,37 @@ class TestHttpGetEncoding:
         assert "高津区諏訪" in result
         assert "管理番号" in result
 
+    def test_meta_shift_jis_is_decoded_as_cp932(self):
+        """`<meta charset="Shift_JIS">` 宣言でも CP932 で復号する (PR #379 reviewer F-01)
+
+        実例 (mie-dakc.server-shared.com): Shift_JIS を宣言しているが本文に
+        CP932 拡張の丸数字 (①②③) を含み、"shift_jis" codec では U+FFFD に化ける。
+        """
+        adapter = _ConcreteAdapter(_site())
+        body_text = (
+            '<html><head><meta charset="Shift_JIS"></head><body>'
+            + "①迷い犬 ②迷い猫 ③譲渡 収容場所 津市 " * 6
+            + "</body></html>"
+        )
+        resp = requests.Response()
+        resp.status_code = 200
+        resp._content = body_text.encode("cp932")
+        resp.headers["Content-Type"] = "text/html"
+        with patch("requests.get", return_value=resp):
+            result = adapter._http_get("https://example.com/")
+
+        assert "①迷い犬 ②迷い猫 ③譲渡" in result
+        assert "\ufffd" not in result
+
+    def test_canonical_charset_aliases(self):
+        from data_collector.adapters.rule_based.base import _canonical_charset
+
+        assert _canonical_charset("Shift_JIS") == "cp932"
+        assert _canonical_charset("x-sjis") == "cp932"
+        assert _canonical_charset("Windows-31J") == "cp932"
+        assert _canonical_charset("UTF-8") == "UTF-8"
+        assert _canonical_charset("euc-jp") == "euc-jp"
+
     def test_respects_explicit_charset_in_header(self):
         """ヘッダに charset 明示がある場合はそれを尊重する (回帰防止)"""
         adapter = _ConcreteAdapter(_site())

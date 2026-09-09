@@ -77,6 +77,28 @@ _PHONE_PLAIN_RE = re.compile(r"\b(0\d{9})\b")
 _PHONE_MOBILE_RE = re.compile(r"\b(0[789]0\d{8})\b")
 
 
+# <meta charset> の宣言名を Python codec 名に寄せる。
+# 自治体サイトの "Shift_JIS" 宣言は実体が CP932（Windows 拡張。①②③ や ～ 等を含む）で
+# あることが多く、Python の "shift_jis" codec で厳密に復号すると丸数字が U+FFFD に化ける
+# （PR #379 reviewer F-01、実例: mie-dakc.server-shared.com）。CP932 は Shift_JIS の
+# 上位互換なので常に CP932 で読む。EUC-JP も同様に上位互換の eucjp-ms へ寄せない
+# （requests 側の apparent_encoding と同じ名前を保つ）。
+_CHARSET_ALIASES: dict[str, str] = {
+    "shift_jis": "cp932",
+    "shift-jis": "cp932",
+    "shiftjis": "cp932",
+    "sjis": "cp932",
+    "x-sjis": "cp932",
+    "ms932": "cp932",
+    "windows-31j": "cp932",
+    "cp932": "cp932",
+}
+
+
+def _canonical_charset(name: str) -> str:
+    return _CHARSET_ALIASES.get(name.strip().lower(), name)
+
+
 class RuleBasedAdapter(MunicipalityAdapter):
     """rule-based 抽出アダプターの共通基底クラス
 
@@ -183,7 +205,7 @@ class RuleBasedAdapter(MunicipalityAdapter):
         head = raw_bytes[:2048].decode("ascii", errors="ignore")
         m = re.search(r'<meta[^>]+charset=["\']?\s*([\w-]+)', head, re.IGNORECASE)
         if m:
-            return m.group(1)
+            return _canonical_charset(m.group(1))
         return None
 
     # ─────────────────── URL ヘルパー ───────────────────
