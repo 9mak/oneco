@@ -1,0 +1,30 @@
+# 豊橋市あいくる (toyohashi-aikuru.jp) — 旧 sites/toyohashi_aikuru.py (T405 で移行)
+names:
+  - "豊橋市あいくる（迷い犬）"
+  - "豊橋市あいくる（迷い猫）"
+mode: list_detail
+list_link_selector: "article a[href*='/animal/'], a.post-link[href*='/animal/']"
+image_selector: "article img, .animal-photos img"
+# 一覧取得の失敗 (ネットワークエラー等) を握りつぶして空リストを返す
+# (元実装の try/except。broken_sites 追跡には乗らない点に注意)。
+swallow_list_errors: true
+field_selectors:
+  species:
+    label: "種別"
+  sex:
+    label: "性別"
+  age:
+    label: "年齢"
+  color:
+    label: "毛色"
+  size:
+    label: "体格"
+  shelter_date:
+    label: "収容日"
+  location:
+    label: "保護場所"
+species:
+  strategy: from_url
+  # list_url は `?animal_type=dog|cat` クエリを持つ (元実装は parse_qs で判定)。
+  # ここでは list_url 文字列に対する部分一致で同じ判定を再現する。
+  value: "dog=animal_type=dog:cat=animal_type=cat"

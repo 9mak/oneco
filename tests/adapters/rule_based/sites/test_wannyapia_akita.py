@@ -10,12 +10,23 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
+from data_collector.adapters.rule_based import sites  # noqa: F401  registry 登録用
+from data_collector.adapters.rule_based.generic_transforms import apply_postprocess
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
-from data_collector.adapters.rule_based.sites.wannyapia_akita import (
-    WannyapiaAkitaAdapter,
-)
 from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
+
+# T405: spec 駆動の GenericAdapter へ移行したため registry 経由でクラスを引く
+# (spec: config/site_specs/wannyapia_akita.yaml)。
+WannyapiaAkitaAdapter = SiteAdapterRegistry.get("ワンニャピアあきた（譲渡犬）")
+assert WannyapiaAkitaAdapter is not None
+
+
+def _weight_to_size(size_text: str) -> str:
+    """`weight_to_size` postprocess 変換を直接呼ぶテストヘルパー"""
+    fields = {"size": size_text}
+    apply_postprocess(["weight_to_size"], fields, WannyapiaAkitaAdapter(_site("犬")))
+    return fields["size"]
 
 
 def _site(species: str = "犬") -> SiteConfig:
@@ -139,15 +150,15 @@ class TestWeightToSize:
     """
 
     def test_boundaries(self):
-        assert WannyapiaAkitaAdapter._weight_to_size("約2.7㎏") == "小型"
-        assert WannyapiaAkitaAdapter._weight_to_size("4.9kg") == "小型"
-        assert WannyapiaAkitaAdapter._weight_to_size("5kg") == "中型"
-        assert WannyapiaAkitaAdapter._weight_to_size("14.9kg") == "中型"
-        assert WannyapiaAkitaAdapter._weight_to_size("15kg") == "大型"
-        assert WannyapiaAkitaAdapter._weight_to_size("") == ""
-        assert WannyapiaAkitaAdapter._weight_to_size("不明") == ""
+        assert _weight_to_size("約2.7㎏") == "小型"
+        assert _weight_to_size("4.9kg") == "小型"
+        assert _weight_to_size("5kg") == "中型"
+        assert _weight_to_size("14.9kg") == "中型"
+        assert _weight_to_size("15kg") == "大型"
+        assert _weight_to_size("") == ""
+        assert _weight_to_size("不明") == ""
         # 既に体格語を含む表記は温存
-        assert WannyapiaAkitaAdapter._weight_to_size("中型（10kg）") == "中型（10kg）"
+        assert _weight_to_size("中型（10kg）") == "中型（10kg）"
 
     def test_size_survives_normalizer(self, fixture_html):
         """adapter.normalize まで通した後も size が捨てられないこと (正規化後検証)"""

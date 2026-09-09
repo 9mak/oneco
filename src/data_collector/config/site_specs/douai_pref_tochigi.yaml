@@ -1,0 +1,23 @@
+# 栃木県動物愛護指導センター（保護動物） — 旧 sites/douai_pref_tochigi.py (T405 で移行)
+names:
+  - "栃木県動物愛護指導センター（保護動物）"
+mode: list_detail
+list_link_selector: "a[href*='/news/']:not([href$='/news/'])"
+image_selector: "img"
+field_selectors:
+  species:
+    label: "種類"
+  sex:
+    label: "性別"
+  age:
+    label: "年齢"
+  color:
+    label: "毛色"
+  size:
+    label: "大きさ"
+  shelter_date:
+    label: "収容日"
+  location:
+    label: "収容場所"
+  phone:
+    label: "連絡先"

@@ -1,0 +1,16 @@
+# 豊中市（迷子犬猫） — 旧 sites/city_toyonaka.py (T405 で移行)
+#
+# 対象 URL は「ペットが迷子になった時の対応方法について」という案内ページで、
+# 保護動物の一覧そのものは公開されていない。案内ページの目印 (title/h1/h2)
+# を検出した場合のみ 0 件、目印が無く行もあれば基底のテーブル抽出にフォール
+# バックする (将来サイト構成が動物一覧に変わった場合に備える)。
+names:
+  - "豊中市（迷子犬猫）"
+mode: table_horizontal
+row_selector: "table.table_data tr"
+skip_first_row: true
+empty_state_patterns:
+  - "迷子になった時の対応方法"
+  - "捜索方法"
+  - "所有者明示"
+  - "迷子にしないために"

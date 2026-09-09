@@ -18,12 +18,15 @@ from unittest.mock import patch
 
 import pytest
 
+from data_collector.adapters.rule_based import sites  # noqa: F401  registry 登録用
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
-from data_collector.adapters.rule_based.sites.douai_pref_tochigi import (
-    DouaiPrefTochigiAdapter,
-)
 from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
+
+# T405: 専用モジュールを spec 駆動の GenericAdapter へ移行したため、
+# registry 経由でクラスを引く (spec: config/site_specs/douai_pref_tochigi.yaml)。
+DouaiPrefTochigiAdapter = SiteAdapterRegistry.get("栃木県動物愛護指導センター（保護動物）")
+assert DouaiPrefTochigiAdapter is not None
 
 # ─────────────────── SiteConfig helpers ───────────────────
 

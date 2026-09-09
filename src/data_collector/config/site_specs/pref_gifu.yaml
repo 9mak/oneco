@@ -1,0 +1,11 @@
+# 岐阜県迷い犬情報ハブページ — 旧 sites/pref_gifu.py (T405 で移行)
+#
+# pref.gifu.lg.jp/page/1638.html は 12 保健所への案内ハブで、ページ自体には
+# 動物情報が無い。PR #36 の方針 (HTML パース成功 + 行 0 件 = 真ゼロ) に揃え、
+# テンプレート判定なしで常に 0 件を返す (旧実装と同じ)。
+names:
+  - "岐阜県（迷い犬情報）"
+mode: table_vertical
+row_selector: "table tr"
+skip_first_row: true
+always_empty: true

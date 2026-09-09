@@ -1,0 +1,38 @@
+# ワンニャピアあきた (wannyapia.akita.jp) — 旧 sites/wannyapia_akita.py (T405 で移行)
+names:
+  - "ワンニャピアあきた（譲渡犬）"
+  - "ワンニャピアあきた（譲渡猫）"
+mode: list_detail
+list_link_selector: "a[href*='/pages/animals/']"
+# 動物写真は /uploads/contents/animals_... 配下のみ。サイト装飾画像はここで
+# 絞る (基底 _filter_image_urls は wp-content 前提のためセレクタ側で絞る)。
+image_selector: "img[src*='/uploads/contents/animals']"
+field_selectors:
+  species:
+    label: "種類"
+  breed:
+    label: "種類"
+  sex:
+    label: "性別"
+  age:
+    label: "年齢"
+  color:
+    label: "毛色"
+  # 体格フィールドは無く体重のみ。postprocess の weight_to_size で体格語へ変換する。
+  size:
+    label: "体重"
+  description:
+    label: "備考"
+  management_number:
+    label: "個体管理ナンバー"
+  phone:
+    label: "連絡先"
+  name:
+    selector: "div.page-header h1"
+species:
+  strategy: from_url
+postprocess:
+  - weight_to_size
+  # 秋田県動物愛護センター ワンニャピアあきた 代表電話 (フッタ固定)
+  - "phone_fallback_if_invalid:018-827-5051"
+  - "location_fallback:秋田県動物愛護センター"
