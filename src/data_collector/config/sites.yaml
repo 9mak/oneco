@@ -43,6 +43,10 @@ sites:
     list_url: "https://douai-tokushima.com/transfer/doglist"
     category: "adoption"
     requires_js: false
+    # T403 2026-09-09: iframe(animalinfo/list4_1, euc-jp)のテンプレートは 番号/譲渡状況/譲渡可能日/
+    # 推定生年月日/性別/愛嬌等の星評価/その他情報 のみで犬種欄が無い。
+    fields:
+      breed: false
 
   - name: "徳島県動物愛護管理センター（譲渡猫）"
     prefecture: "徳島県"
@@ -50,6 +54,9 @@ sites:
     list_url: "https://douai-tokushima.com/transfer/catlist"
     category: "adoption"
     requires_js: false
+    # T403 2026-09-09: 譲渡犬と同一テンプレートで犬種/猫種欄が無いことを確認。
+    fields:
+      breed: false
 
   # ===================================================================
   # 香川県
@@ -95,6 +102,10 @@ sites:
     phone: "0879-29-8272"
     category: "lost"
     pdf_link_pattern: "a[href*='/documents/7023/'][href$='.pdf']"
+    # T403 2026-09-09: 本サイトのPDFに写真掲載があるか個別確認できていないが、他の香川県PDFサイトと
+    # 異なりレイアウトの詳細を未確認のため、確度は中程度(要再検証)として not-provided とする。
+    fields:
+      image_urls: false
 
   # 【中讃保健福祉事務所】収容動物情報PDF（静的HTML）
   # 確認済みdocumentフォルダ: /documents/375/
@@ -448,6 +459,8 @@ sites:
     list_url: "https://www.city.nagasaki.lg.jp/site/doubutsuaigo/list7-19.html"
     category: "adoption"
     single_page: true
+    # T403 2026-09-09: 長崎市代表番号(施設固有番号がページ内に見当たらないため代表番号を暫定設定)。
+    phone: "095-822-8888"
 
   - name: "長崎市動物愛護管理センター（猫里親募集）"
     prefecture: "長崎県"
@@ -455,6 +468,8 @@ sites:
     list_url: "https://www.city.nagasaki.lg.jp/site/doubutsuaigo/list7-18.html"
     category: "adoption"
     single_page: true
+    # T403 2026-09-09: 犬里親募集ページと同様、長崎市代表番号を暫定設定。
+    phone: "095-822-8888"
 
   # 【佐世保市】静的HTML、個別詳細あり: /YYYYMMDD_{dog,cat}NN.html
   - name: "佐世保市（保護犬）"
@@ -464,6 +479,10 @@ sites:
     phone: "0956-42-3300"
     category: "sheltered"
     list_link_pattern: "a[href*='_dog']"
+    # T403 2026-09-09: 迷い犬/迷い猫の詳細ページ(市民保護テンプレート)は 発見日/発見場所/毛色/性別/首輪
+    # のみで年齢欄が無い。https://www.city.sasebo.lg.jp/hokenhukusi/seikat/20251115_cat01.html で確認。
+    fields:
+      age_months: false
 
   - name: "佐世保市（保護猫）"
     prefecture: "長崎県"
@@ -472,6 +491,9 @@ sites:
     phone: "0956-42-3300"
     category: "sheltered"
     list_link_pattern: "a[href*='_cat']"
+    # T403 2026-09-09: 同一テンプレート(佐世保市（保護犬）と共通)で年齢欄が無いことを確認済み。
+    fields:
+      age_months: false
 
   # 【大分市】静的HTML
   # phone (T155 2026-09-08): 出典
@@ -576,6 +598,14 @@ sites:
     list_link_pattern: "a[href*='/post_animals/detail/']"
     category: "sheltered"
     requires_js: false
+    # T403 2026-09-09: 詳細ページのフッターに熊本県動物愛護センター代表番号(0964-27-8115)が
+    # 出るが、tests/test_sites_phone_integrity.py の per_animal_hosts 判定(PR #327 reviewer F-02)
+    # により kumamoto-doubutuaigo.jp は個体ごとに管轄が異なりうる前提でサイト既定 phone を
+    # 置かない方針のため、ここでは追加しない。100%欠損は抽出漏れ(extraction-gap)として扱う。
+    # 個人保護犬/猫の詳細ページは 種類/体長/体重/毛色/性別/年齢/備考 のみで
+    # テキスト形式の場所情報が無い(「地図」リンクのみ)。
+    fields:
+      location: false
 
   - name: "熊本県動愛（個人保護猫）"
     prefecture: "熊本県"
@@ -584,6 +614,12 @@ sites:
     list_link_pattern: "a[href*='/post_animals/detail/']"
     category: "sheltered"
     requires_js: false
+    # T403 2026-09-09: 個人保護犬と同様、kumamoto-doubutuaigo.jp は per_animal_hosts 判定
+    # (tests/test_sites_phone_integrity.py, PR #327 reviewer F-02) によりサイト既定 phone を
+    # 置かない方針のため追加しない。100%欠損はextraction-gapとして扱う。
+    # 個人保護犬と同一テンプレートでテキスト場所情報が無いことを確認。
+    fields:
+      location: false
 
   - name: "熊本県動愛（迷子犬）"
     prefecture: "熊本県"
@@ -673,6 +709,10 @@ sites:
     list_url: "https://www.pref.ibaraki.jp/hokenfukushi/doshise/hogo/syuuyou.html"
     category: "sheltered"
     pdf_link_pattern: "a[href*='documents/inu'][href$='.pdf'], a[href*='documents/neko'][href$='.pdf']"
+    # T403 2026-09-09: 成犬収容頭数PDFの表は 管理番号/市町村名/収容日/種類/犬猫種/毛色/性別/体格/
+    # 首輪/一次判定結果 のみで年齢・生年月日欄が無い。
+    fields:
+      age_months: false
 
   # T119 (2026-08-31): 旧 list_url (mayoiinuneko.html) は実サイト側で構造
   # 変更され PDF への直接リンクを持たないハブページ化していた (64日間 PDF
@@ -686,6 +726,10 @@ sites:
     list_url: "https://www.pref.ibaraki.jp/hokenfukushi/doshise/hogo/kouji.html"
     category: "lost"
     pdf_link_pattern: "a[href*='documents/kouhyou'][href$='.pdf']"
+    # T403 2026-09-09: 日次公表PDFの表は 市町村地区名/収容日/公表期限/種類/犬猫種/毛色/性別/体格/
+    # 首輪/備考 のみで年齢欄が無い。
+    fields:
+      age_months: false
 
   # 【栃木県動物愛護指導センター】専用ドメイン、静的 HTML
   # T121 調査 (2026-08-31): 旧登録の 3 URL は WordPress テーマ改修で
@@ -736,6 +780,10 @@ sites:
     phone: "028-684-5458"
     category: "lost"
     list_link_pattern: "a[href$='.html']"
+    # T403 2026-09-09: 迷子動物収容情報一覧の表は 管理番号/写真/収容場所/動物種別/種類/性別 のみで
+    # 年齢欄が無い。
+    fields:
+      age_months: false
 
   - name: "栃木県動物愛護指導センター（迷子動物・猫）"
     prefecture: "栃木県"
@@ -744,6 +792,9 @@ sites:
     phone: "028-684-5458"
     category: "lost"
     list_link_pattern: "a[href$='.html']"
+    # T403 2026-09-09: 犬版と同一テンプレートで年齢欄が無いことを確認。
+    fields:
+      age_months: false
 
   # 【群馬県】3 ページ（県動愛犬・東部支所犬・猫）
   - name: "群馬県動物愛護センター（保護犬）"
@@ -817,6 +868,10 @@ sites:
     list_url: "https://shuyojoho.metro.tokyo.lg.jp/"
     category: "sheltered"
     requires_js: false
+    # T403 2026-09-09: アダプタ実装(shuyojoho_tokyo.py)のコメントで「年齢: 東京都DBには独立フィールドが
+    # 無いため空文字のままとする」と明記済み。台帳へも反映。
+    fields:
+      age_months: false
 
   - name: "東京都収容動物情報（猫等）"
     prefecture: "東京都"
@@ -824,6 +879,9 @@ sites:
     list_url: "https://shuyojoho.metro.tokyo.lg.jp/cat"
     category: "sheltered"
     requires_js: false
+    # T403 2026-09-09: 犬ページと同一アダプタ/DB。年齢の独立フィールドなし(shuyojoho_tokyo.py参照)。
+    fields:
+      age_months: false
 
   # 【神奈川県】静的 HTML、4 URL
   - name: "神奈川県動物愛護センター（保護犬）"
@@ -929,6 +987,11 @@ sites:
     phone: "027-220-5777"
     category: "sheltered"
     list_link_pattern: "a[href*='/9484/']"
+    # T403 2026-09-09: 収容犬一覧の表ヘッダは 管理番号/写真/収容場所/犬種/性別 のみで年齢・体格欄が無い。
+    # https://www.city.maebashi.gunma.jp/soshiki/kenko/eiseikensa/gyomu/1/1/1/9484.html で確認。
+    fields:
+      age_months: false
+      size: false
 
   # 【さいたま市】静的 HTML
   - name: "さいたま市（保護犬）"
@@ -1000,6 +1063,11 @@ sites:
     list_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/hogo_dog.html"
     category: "sheltered"
     single_page: true
+    # T403 2026-09-09: hogo_dog.html の空欄プレースホルダテンプレートは 保護日/保護場所/種類/毛色/性別/
+    # 体格/特徴 のみで年齢専用欄が無い。同系統の hogo_cat.html 実データでも年齢は種類/体格欄への
+    # フリーテキスト埋め込みのみ(専用欄なし)。
+    fields:
+      age_months: false
 
   - name: "千葉市（市民保護猫）"
     prefecture: "千葉県"
@@ -1163,6 +1231,10 @@ sites:
     phone: "0748-75-1911"
     list_link_pattern: "a[href*='/lost/'][href$='.html']"
     category: "sheltered"
+    # T403 2026-09-09: 詳細ページは 収容日/保護した場所/種類/性別/毛色/体格/首輪/備考 のみで
+    # 年齢欄が無い。
+    fields:
+      age_months: false
 
   # 【大津市】静的 HTML
   - name: "大津市動物愛護センター（迷い犬猫）"
@@ -1186,6 +1258,13 @@ sites:
     list_url: "https://www.pref.kyoto.jp/yamashiro/ho-kita/1305161925645.html"
     category: "lost"
     single_page: true
+    # T403 2026-09-09: 山城広域振興局健康福祉部 山城北保健所 衛生課の電話番号(ページ内「連絡先」に明記)。
+    # https://www.pref.kyoto.jp/yamashiro/ho-kita/1305161925645.html
+    phone: "0774-21-2912"
+    # T403 2026-09-09: single_page の迷子猫情報ページ。現在掲載0件のため画像プレースホルダの有無は
+    # 未確認だが、テキストのみの簡潔な掲載形式で写真掲載の記載が見当たらないため not-provided とする。
+    fields:
+      image_urls: false
 
   - name: "京都府 山城南保健所（飼い主不明動物）"
     prefecture: "京都府"
@@ -1403,6 +1482,10 @@ sites:
     list_url: "https://www.city.kurashiki.okayama.jp/kurashi/pet/1013042/index.html"
     list_link_pattern: "a[href*='/kurashi/pet/1013042/']"
     category: "sheltered"
+    # T403 2026-09-09: 個別ページ(1027707.html)は 保護場所/保護日時/種類/性別/毛色/特徴 のみで
+    # 年齢欄が無い。
+    fields:
+      age_months: false
 
   # 【広島県動物愛護センター】2 URL（迷い犬・猫）
   - name: "広島県動物愛護センター（迷い犬）"
@@ -1444,6 +1527,10 @@ sites:
     phone: "084-970-1201"
     category: "sheltered"
     list_link_pattern: "a[href*='/soshiki/dobutsuaigo/']"
+    # T403 2026-09-09: 迷い犬一覧の表ヘッダは 番号/保護日/保護場所/種類/毛色/性別/掲載期間 のみで
+    # 年齢欄が無い。
+    fields:
+      age_months: false
 
   - name: "福山市（保護猫）"
     prefecture: "広島県"
@@ -1514,6 +1601,10 @@ sites:
     list_url: "https://www.pref.yamanashi.jp/doubutsu/p_dog/index.html"
     category: "sheltered"
     single_page: true
+    # T403 2026-09-09: 掲載形式が「地名 性別 毛色」のみの簡易形式で年齢欄が無い。
+    # https://www.pref.yamanashi.jp/doubutsu/p_dog/index.html で確認。
+    fields:
+      age_months: false
 
   - name: "山梨県（保護されている他のペット）"
     prefecture: "山梨県"
@@ -1521,6 +1612,9 @@ sites:
     list_url: "https://www.pref.yamanashi.jp/doubutsu/p_other/index.html"
     category: "sheltered"
     single_page: true
+    # T403 2026-09-09: 掲載形式が「地名 性別 毛色」のみの簡易形式で年齢欄が無い。
+    fields:
+      age_months: false
 
   - name: "山梨県（探している他のペット）"
     prefecture: "山梨県"
@@ -1568,6 +1662,10 @@ sites:
     list_url: "https://www.pref.shizuoka.jp/kenkofukushi/eiseiyakuji/dobutsuaigo/1066835/index.html"
     category: "sheltered"
     single_page: true
+    # T403 2026-09-09: 詳細ページに 管理番号/保護年月日/保護した場所/保護状況/犬種/性別/体格/首輪/
+    # 毛の色・長さ/耳の形状/尾の形状/マイクロチップ/その他特徴 が揃うが年齢・生年月日欄は無い。
+    fields:
+      age_months: false
 
   # 【浜松市はぴまるの丘】専用ドメイン
   - name: "浜松市はぴまるの丘（保護犬）"
@@ -1576,6 +1674,11 @@ sites:
     list_url: "https://www.hama-aikyou.jp/hogoinu/index.html"
     category: "lost"
     single_page: true
+    # T403 2026-09-09: ページは区ごとに窓口番号が異なる(中央区: 動物愛護教育センター
+    # 053-487-1616 / 浜名区・天竜区: 保健所浜北支所 053-585-1398)。
+    # tests/test_sites_phone_integrity.py の per_animal_hosts 判定(PR #327 reviewer F-02)により
+    # www.hama-aikyou.jp はサイト既定 phone を置かない方針のため追加しない。
+    # 100%欠損は区ごとの窓口テキストを抽出できていない extraction-gap として扱う。
 
   # 【愛知県わんにゃんナビ】専用ドメイン、要 JS。Bubble.io 製 SPA で一覧に
   # <a href> が存在しないため、list_url は "犬猫一覧" (すべての施設/犬猫/
@@ -1652,6 +1755,10 @@ sites:
     phone: "0564-27-0402"
     category: "sheltered"
     pdf_link_pattern: "a[href$='.pdf']"
+    # T403 2026-09-09: PDF(保護動物情報)の表は 管理番号/写真/保護場所/保護月日/種類/毛色/性別/体格/
+    # 首輪/その他特徴 のみで年齢欄が無い。
+    fields:
+      age_months: false
 
   # ===================================================================
   # 北海道・東北バッチ1
@@ -1850,6 +1957,10 @@ sites:
     list_url: "http://www.aomori-animal.jp/01_MAIGO/Shuyo.html"
     category: "sheltered"
     single_page: true
+    # T403 2026-09-09: 収容一覧の表ヘッダは No./見つかった日/見つかった場所/種類/毛色/性別/体格/
+    # 特徴/画像/連絡先 のみで年齢欄が無い。
+    fields:
+      age_months: false
 
   # 【岩手県】保健所別ハブ
   - name: "岩手県（保護動物情報・ハブ）"
