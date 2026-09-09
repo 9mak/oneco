@@ -25,13 +25,17 @@ interface ImageModalProps {
 
 export function ImageModal({ imageUrl, alt, onClose, sourceUrl }: ImageModalProps) {
   const [imgSrc, setImgSrc] = useState(imageUrl);
+  const [prevImageUrl, setPrevImageUrl] = useState(imageUrl);
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   // imageUrl が切り替わったら src をリセット
-  useEffect(() => {
+  // (レンダー中に prop の変化を検知して state を調整する公式パターン。
+  //  useEffect + setState はカスケードレンダーを招くため react-hooks/set-state-in-effect で禁止)
+  if (imageUrl !== prevImageUrl) {
+    setPrevImageUrl(imageUrl);
     setImgSrc(imageUrl);
-  }, [imageUrl]);
+  }
 
   // 開いたら閉じるボタンへフォーカスを移し、閉じたら起点要素へ戻す (WCAG 2.4.3)
   useEffect(() => {
