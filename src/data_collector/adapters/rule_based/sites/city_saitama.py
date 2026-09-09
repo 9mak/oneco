@@ -257,18 +257,18 @@ class CitySaitamaAdapter(SinglePageTableAdapter):
             return fields
         for li in ul.find_all("li"):
             text = li.get_text(strip=True)
-            label = None
-            value = None
+            label_value: tuple[str, str] | None = None
             for sep in ("：", ":"):
                 if sep in text:
                     label, _, value = text.partition(sep)
+                    label_value = (label.strip(), value.strip())
                     break
-            if label is None:
+            if label_value is None:
                 continue
-            field = cls._LABEL_TO_FIELD.get(label.strip())
+            label, value = label_value
+            field = cls._LABEL_TO_FIELD.get(label)
             if not field:
                 continue
-            value = value.strip()
             if value and field not in fields:
                 fields[field] = value
         return fields
