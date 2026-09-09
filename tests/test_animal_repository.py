@@ -9,11 +9,17 @@ from datetime import UTC, date, datetime
 
 import pytest
 import pytest_asyncio
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from src.data_collector.domain.models import AnimalData, AnimalStatus
 from src.data_collector.domain.status_transition import StatusTransitionError
-from src.data_collector.infrastructure.database.models import Animal, AnimalStatusHistory, Base
+from src.data_collector.infrastructure.database.models import (
+    Animal,
+    AnimalArchive,
+    AnimalStatusHistory,
+    Base,
+)
 from src.data_collector.infrastructure.database.repository import AnimalRepository
 
 
@@ -174,6 +180,149 @@ async def test_save_animal_updates_existing_record(repository, async_session):
     animals = db_result.scalars().all()
 
     # 重複せず1件のみ存在
+    assert len(animals) == 1
+    assert animals[0].color == "黒"
+
+
+@pytest.mark.asyncio
+async def test_save_animal_same_url_same_management_number_updates(repository, async_session):
+    """T138: 同一 source_url + 同一 management_number は通常の更新 (同一個体)"""
+    existing_animal = Animal(
+        species="犬",
+        sex="男の子",
+        breed="雑種",
+        shelter_date=date(2026, 1, 5),
+        location="岡山市保健所",
+        source_url="https://example.com/animal/1D2026049",
+        management_number="1D2026049",
+        color="茶色",
+    )
+    async_session.add(existing_animal)
+    await async_session.commit()
+
+    animal_data = AnimalData(
+        species="犬",
+        sex="男の子",
+        breed="雑種",
+        shelter_date=date(2026, 1, 6),
+        location="岡山市保健所",
+        source_url="https://example.com/animal/1D2026049",
+        management_number="1D2026049",
+        color="黒",
+        category="adoption",
+    )
+
+    result = await repository.save_animal(animal_data)
+
+    assert result.color == "黒"
+    assert repository.url_reuse_count == 0
+
+    stmt = select(Animal).where(Animal.source_url == "https://example.com/animal/1D2026049")
+    db_result = await async_session.execute(stmt)
+    animals = db_result.scalars().all()
+    assert len(animals) == 1
+    assert animals[0].color == "黒"
+
+    archive_stmt = select(AnimalArchive)
+    archive_result = await async_session.execute(archive_stmt)
+    assert archive_result.scalars().all() == []
+
+
+@pytest.mark.asyncio
+async def test_save_animal_same_url_different_management_number_archives_and_inserts(
+    repository, async_session
+):
+    """T138: 同一 source_url + 異なる management_number は別個体 → 旧レコードをアーカイブし新規挿入"""
+    existing_animal = Animal(
+        species="犬",
+        sex="男の子",
+        breed="雑種",
+        shelter_date=date(2026, 1, 5),
+        location="岡山市保健所",
+        source_url="https://example.com/animal/reused-url",
+        management_number="1D2025093",
+        color="茶色",
+    )
+    async_session.add(existing_animal)
+    await async_session.commit()
+    existing_id = existing_animal.id
+
+    animal_data = AnimalData(
+        species="猫",
+        sex="女の子",
+        breed="三毛",
+        shelter_date=date(2026, 9, 1),
+        location="岡山市保健所",
+        source_url="https://example.com/animal/reused-url",
+        management_number="1D2026049",
+        color="白",
+        category="adoption",
+    )
+
+    result = await repository.save_animal(animal_data)
+
+    # 新規個体として登録される (旧個体のフィールドで上書きされない)
+    assert result.species == "猫"
+    assert result.management_number == "1D2026049"
+    assert repository.url_reuse_count == 1
+
+    # active テーブルには新個体 1 件のみ (旧行は消えている)
+    stmt = select(Animal).where(Animal.source_url == "https://example.com/animal/reused-url")
+    db_result = await async_session.execute(stmt)
+    animals = db_result.scalars().all()
+    assert len(animals) == 1
+    assert animals[0].management_number == "1D2026049"
+    # SQLite は AUTOINCREMENT 未指定だと削除済み id を再利用し得るため、id の
+    # 単純な不一致では検証しない。新個体が旧個体のフィールドを引き継いでいない
+    # (=独立した新規行として挿入された) ことは breed/species/management_number
+    # の内容で確認する。
+
+    # 旧個体はアーカイブへ退避されている (データを失わない)
+    archive_stmt = select(AnimalArchive).where(AnimalArchive.original_id == existing_id)
+    archive_result = await async_session.execute(archive_stmt)
+    archived = archive_result.scalar_one_or_none()
+    assert archived is not None
+    assert archived.management_number == "1D2025093"
+    assert archived.species == "犬"
+
+
+@pytest.mark.asyncio
+async def test_save_animal_same_url_no_identifiers_overwrites_with_warning(
+    repository, async_session, caplog
+):
+    """T138: 個体識別キーが両側とも算出できない場合は従来通り上書き + 警告ログ"""
+    import logging
+
+    existing_animal = Animal(
+        species="犬",
+        shelter_date=date(2026, 1, 5),
+        location="岡山市保健所",
+        source_url="https://example.com/animal/no-identity",
+        color="茶色",
+        # breed/management_number 無し → フィンガープリント算出不能
+    )
+    async_session.add(existing_animal)
+    await async_session.commit()
+
+    animal_data = AnimalData(
+        species="犬",
+        shelter_date=date(2026, 1, 6),
+        location="岡山市保健所",
+        source_url="https://example.com/animal/no-identity",
+        color="黒",
+        category="adoption",
+    )
+
+    with caplog.at_level(logging.WARNING):
+        result = await repository.save_animal(animal_data)
+
+    assert result.color == "黒"
+    assert repository.url_reuse_count == 0
+    assert any("URL再利用検知不能" in record.message for record in caplog.records)
+
+    stmt = select(Animal).where(Animal.source_url == "https://example.com/animal/no-identity")
+    db_result = await async_session.execute(stmt)
+    animals = db_result.scalars().all()
     assert len(animals) == 1
     assert animals[0].color == "黒"
 

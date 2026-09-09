@@ -5,6 +5,7 @@ Repository パターンによる動物データのCRUD操作を提供します�
 Pydantic AnimalData と SQLAlchemy Animal モデルの変換を担当します。
 """
 
+import logging
 from datetime import UTC, date, datetime
 
 from sqlalchemy import delete, func, select
@@ -15,6 +16,8 @@ from src.data_collector.domain.status_transition import (
     StatusTransitionValidator,
 )
 from src.data_collector.infrastructure.database.models import Animal, AnimalStatusHistory
+
+logger = logging.getLogger(__name__)
 
 
 def _escape_like(value: str) -> str:
@@ -73,6 +76,10 @@ class AnimalRepository:
             session: データベースセッション
         """
         self.session = session
+        # T138: URL 再利用 (同一 source_url が別個体を指すようになる) を検知して
+        # 旧レコードをアーカイブした回数。呼び出し元 (CollectorService) が
+        # run summary に「URL再利用検知 N件」として出すために参照する。
+        self.url_reuse_count: int = 0
 
     def _to_orm(self, animal_data: AnimalData) -> Animal:
         """
@@ -108,6 +115,77 @@ class AnimalRepository:
             outcome_date=animal_data.outcome_date,
             local_image_paths=animal_data.local_image_paths or [],
         )
+
+    @staticmethod
+    def _individual_identity(
+        *,
+        management_number: str | None,
+        species: str | None,
+        sex: str | None,
+        breed: str | None,
+        shelter_date: date | None,
+    ) -> tuple[str, ...] | None:
+        """個体識別キーを算出する (T138: URL 再利用検知用)。
+
+        岡山市等で detail ページの source_url が別個体に再利用される実例が
+        確認された (1D2026049 → 1D2025093)。同一 source_url でも個体識別キーが
+        変わっていれば「別個体」とみなす。
+
+        優先順位:
+        1. management_number があれば最優先で使う (最も信頼できる識別子)。
+        2. 無ければ species/sex/breed/shelter_date が全て揃っている場合に限り
+           フィンガープリントとして使う。
+        3. どちらも算出できなければ None (呼び出し側は識別不能として扱う)。
+        """
+        if management_number:
+            return ("mgmt", management_number)
+        if species and sex and breed and shelter_date:
+            return ("fingerprint", species, sex, breed, str(shelter_date))
+        return None
+
+    async def _archive_and_replace(
+        self,
+        existing_animal: Animal,
+        animal_data: AnimalData,
+        source_site: str | None,
+    ) -> Animal:
+        """既存レコードをアーカイブしてから新規レコードとして挿入する (T138)。
+
+        URL 再利用 (同一 source_url が別個体を指すようになった) を検知した際に
+        呼ぶ。CLAUDE.md の「データを失わない」原則に従い、旧レコードは
+        upsert で上書きせず `AnimalArchive` へ退避してから削除し、新規個体は
+        別行として挿入する。
+
+        Returns:
+            Animal: 新規挿入後の ORM モデル (id 採番済み)
+        """
+        # archive_repository は repository.py を import しているため、
+        # モジュールトップレベルで逆 import すると循環 import になる。
+        # メソッド内の遅延 import で回避する。
+        from .archive_repository import ArchiveRepository
+
+        archive_repo = ArchiveRepository(self.session)
+        await archive_repo.insert_archive(existing_animal)
+        await self.session.delete(existing_animal)
+        await self.session.flush()
+
+        self.url_reuse_count += 1
+        logger.warning(
+            "[URL再利用検知] source_url=%s は既存個体と異なる個体を指しています。"
+            "旧レコード (id=%s) をアーカイブし、新規個体として登録します。",
+            animal_data.source_url,
+            existing_animal.id,
+        )
+
+        orm_animal = self._to_orm(animal_data)
+        self.session.add(orm_animal)
+        if source_site is not None:
+            orm_animal.source_site = source_site
+        orm_animal.last_collected_at = datetime.now(UTC)
+
+        await self.session.commit()
+        await self.session.refresh(orm_animal)
+        return orm_animal
 
     def _to_pydantic(self, orm_animal: Animal) -> AnimalData:
         """
@@ -169,6 +247,43 @@ class AnimalRepository:
         stmt = select(Animal).where(Animal.source_url == str(animal_data.source_url))
         result = await self.session.execute(stmt)
         existing_animal = result.scalar_one_or_none()
+
+        # T138: URL 再利用検知。同一 source_url でも個体識別キーが変わって
+        # いれば「別個体」とみなし、上書きせずアーカイブしてから新規行を挿入する。
+        if existing_animal:
+            existing_identity = self._individual_identity(
+                management_number=existing_animal.management_number,
+                species=existing_animal.species,
+                sex=existing_animal.sex,
+                breed=existing_animal.breed,
+                shelter_date=existing_animal.shelter_date,
+            )
+            new_identity = self._individual_identity(
+                management_number=animal_data.management_number,
+                species=animal_data.species,
+                sex=animal_data.sex,
+                breed=animal_data.breed,
+                shelter_date=animal_data.shelter_date,
+            )
+            if existing_identity is None or new_identity is None:
+                # 個体識別キーを算出できない (management_number も
+                # フィンガープリント用フィールドも揃わない) 場合は、URL 再利用の
+                # 判定材料が無いため従来通り上書きする。ただし無警告のまま
+                # 別個体を上書きしている可能性を握り潰さないよう必ずログに残す。
+                logger.warning(
+                    "[URL再利用検知不能] source_url=%s の個体識別情報が不足しており "
+                    "別個体かどうか判定できないため、従来通り上書きします "
+                    "(既存fingerprint=%s, 新規fingerprint=%s)",
+                    animal_data.source_url,
+                    existing_identity,
+                    new_identity,
+                )
+            elif existing_identity != new_identity:
+                orm_animal = await self._archive_and_replace(
+                    existing_animal, animal_data, source_site
+                )
+                return self._to_pydantic(orm_animal)
+            # else: 同一個体 (identity 一致) なので通常の更新へ続行
 
         if existing_animal:
             # 既存レコードを更新
