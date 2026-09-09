@@ -11,7 +11,7 @@ oneco/
 │   │   ├── __main__.py          # CLI エントリ (python -m data_collector)
 │   │   ├── adapters/            # スクレイピング adapter
 │   │   │   ├── municipality_adapter.py   # 抽象基底 (ABC)
-│   │   │   └── rule_based/      # base.py + 中間基底 + sites/*.py (93ファイル)
+│   │   │   └── rule_based/      # base.py + 中間基底 + sites/*.py (96ファイル、2026-09-09実測)
 │   │   ├── domain/              # models / normalizer (PII伏字) / diff_detector
 │   │   ├── infrastructure/      # database / api (FastAPI) / notification_client
 │   │   ├── orchestration/       # collector_service / parallel_runner
@@ -39,7 +39,7 @@ oneco/
 ## Key Patterns
 
 - **adapter 追加**: `sites.yaml` エントリ + `rule_based/sites/<site>.py` 実装 + `SiteAdapterRegistry.register()` + end-to-end テスト。手順は `docs/wiki/03-adapters.md`
-- **1ファイル複数登録**: 1 adapter ファイルが複数 site_name（収容犬/収容猫等）を register するため、ファイル数(93) < sites.yaml エントリ数(211)
+- **1ファイル複数登録**: 1 adapter ファイルが複数 site_name（収容犬/収容猫等）を register するため、ファイル数(96) < sites.yaml エントリ数(213)（2026-09-09実測。数値は変動するため乖離したら実測し直すこと）
 - **Animal ⇔ AnimalArchive 同期**: `animals` に新カラムを足すときは `animals_archive` にも同時に追加（後付け移行不可）。ルート CLAUDE.md の再発防止ルール参照
 - **import 規約の混在**: `tests/adapters/` は `from data_collector...`（PYTHONPATH=src 必要）、`tests/domain/test_normalizer.py` は `from src.data_collector...`（不要）
 
