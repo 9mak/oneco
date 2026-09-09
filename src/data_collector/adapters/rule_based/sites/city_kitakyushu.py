@@ -21,6 +21,12 @@
 - 動物種別 (犬) はサイト名から推定する (北九州市は犬のみ運用)。
 - フィクスチャは UTF-8 バイト列を Latin-1 として再保存した二重
   エンコーディング状態のことがあるため、テスト側で逆変換を行う。
+- 列マッピングは `HEADER_FIELDS` (T402) でヘッダテキスト駆動にしている。
+  保護犬 (収容表) と譲渡犬 (譲渡対象) は列順が異なるが、`収容日`/`区`/
+  `種類`/`毛色`/`性別`/`体格`/`推定生年` のラベル自体は両テーブルで
+  意味が共通するため、1 つの `HEADER_FIELDS` 辞書を両テーブルで共有できる
+  (以前は `COLUMN_FIELDS`/`_ADOPTION_COLUMN_FIELDS` の 2 辞書を手動で
+  切り替えていた。列インデックスが列順変更に追従できず fragile だった)。
 """
 
 from __future__ import annotations
@@ -36,7 +42,7 @@ from ..single_page_table import SinglePageTableAdapter
 
 # 対象テーブルを `<caption>` で識別するためのキーワード
 _TARGET_CAPTION_KEYWORDS = ("収容表", "譲渡")
-# 譲渡犬テーブル (924_11834) を判別するキーワード (列順が保護犬と異なる)
+# 譲渡犬テーブル (924_11834) を判別するキーワード (画像抽出方式の切替に使う)
 _ADOPTION_CAPTION_KEYWORDS = ("譲渡",)
 
 
@@ -50,9 +56,11 @@ class CityKitakyushuAdapter(SinglePageTableAdapter):
     - 保護犬 (収容表):   収容日 / 期限 / 区 / 種類 / 毛色 / 性別 / 体格 / 備考
     - 譲渡犬 (譲渡対象): 番号 / 種類 / 性別 / 毛色 / 推定生年 / フィラリア / 備考 / 写真
 
-    また譲渡犬テーブルには「推定生年」(age 推定) と「写真」(画像 URL) 列が
-    存在するため、本 adapter は対象テーブルの種別に応じて列マッピングと
-    画像抽出ロジックを切り替える (2026-06 拡張)。
+    `HEADER_FIELDS` (T402) がヘッダテキストから両テーブルの実列位置を
+    テーブルごとに個別解決するため、列順の違いを adapter 側で個別に
+    ハードコードする必要が無い。ただし譲渡犬テーブルには「写真」(画像 URL)
+    列があり `<img>` ではなく `<a href="*.jpg">` 形式なので、画像抽出だけは
+    対象テーブルの種別 (`<caption>`) に応じて切り替える (2026-06 拡張)。
     """
 
     # ROW_SELECTOR は基底契約上必須だが、本 adapter は `_load_rows` を
@@ -60,30 +68,25 @@ class CityKitakyushuAdapter(SinglePageTableAdapter):
     # 直接 select には使わない (フォールバック用に残す)。
     ROW_SELECTOR: ClassVar[str] = "table tr"
     SKIP_FIRST_ROW: ClassVar[bool] = False  # tbody > tr のみ抽出するため不要
-    # 保護犬 (収容表) 用の列マッピング。
-    # 列 0 (収容日) は shelter_date, 列 1 (収容期限) と列 7 (備考) は使わない。
-    # 列 2 (区) を location, 列 3 (種類) は犬種詳細だが species にも使う、
-    # ただし species はサイト名から「犬」固定で上書きする。
-    COLUMN_FIELDS: ClassVar[dict[int, str]] = {
-        0: "shelter_date",
-        2: "location",
-        3: "species",
-        4: "color",
-        5: "sex",
-        6: "size",
+    # ヘッダラベル (完全一致 → 部分一致フォールバック) -> RawAnimalData
+    # フィールド名。保護犬/譲渡犬どちらのテーブルにも共通で適用され、
+    # 各テーブルに存在するラベルだけが解決される (無いラベルは無視される)。
+    # 「種類」は保護犬側では「種類（推定）」表記のため部分一致で拾う。
+    HEADER_FIELDS: ClassVar[dict[str | tuple[str, ...], str]] = {
+        "収容日": "shelter_date",
+        "区": "location",
+        "種類": "species",
+        "毛色": "color",
+        "性別": "sex",
+        "体格": "size",
+        "推定生年": "age",
     }
-    # 譲渡犬 (譲渡対象の成犬の一覧) 用の列マッピング。
-    # 列 0 (番号/愛称) と列 5 (フィラリア)・列 6 (備考) は RawAnimalData に
-    # 直接マップしない。列 7 (写真) は別途 image_urls として処理する。
-    _ADOPTION_COLUMN_FIELDS: ClassVar[dict[int, str]] = {
-        1: "species",
-        2: "sex",
-        3: "color",
-        4: "age",
-    }
-    # 譲渡犬テーブルの「写真」列インデックス (<a href="*.jpg"> リンクが並ぶ)
+    # 譲渡犬テーブルの「写真」列インデックス (<a href="*.jpg"> リンクが並ぶ)。
+    # 写真列にはヘッダラベル (「写真」) はあるが RawAnimalData への直接マップ
+    # 対象ではなく、`_extract_adoption_photo_links` が個別に参照するため
+    # 固定インデックス管理のまま残す (2026-06 実データで安定している)。
     _ADOPTION_PHOTO_COLUMN: ClassVar[int] = 7
-    LOCATION_COLUMN: ClassVar[int | None] = 2
+    LOCATION_COLUMN: ClassVar[int | None] = None
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
 
     # ページ末尾の担当課お問い合わせ電話 (北九州市保健福祉局生活衛生課)。
@@ -135,6 +138,12 @@ class CityKitakyushuAdapter(SinglePageTableAdapter):
 
         # `<th>` のみのヘッダ行が tbody 内に紛れ込んでいる場合は除外
         rows = [r for r in rows if r.find("td") is not None]
+        # `_load_rows` を丸ごとオーバーライドしているため、基底
+        # `_load_rows` 経由の HEADER_FIELDS/COLUMN_FIELDS フォールバックを
+        # 通らない。ヘッダ文言変化でどちらも解決できない場合に空フィールド
+        # のレコードを収集し続けないよう、ここで明示的に適用する (T402
+        # reviewer 指摘 M-1)。
+        rows = self._rows_or_empty_with_warning(target_table, rows)
         self._rows_cache = rows
         return self._rows_cache
 
@@ -151,9 +160,10 @@ class CityKitakyushuAdapter(SinglePageTableAdapter):
     def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """テーブル行から RawAnimalData を構築する
 
-        対象テーブルが保護犬 (収容表) か譲渡犬 (譲渡対象) かを `_load_rows` 時の
-        判定 (`_is_adoption_table_cache`) に基づいて列マッピングを切り替える。
-        species はサイト名 (犬固定) で常に上書きする。
+        列位置は `HEADER_FIELDS` (T402) が行の属するテーブルのヘッダ行から
+        毎回解決する (テーブル単位でキャッシュされる)。保護犬/譲渡犬で列順が
+        異なっても同じ辞書で両対応できる。species はサイト名 (犬固定) で
+        常に上書きする。
         """
         rows = self._load_rows()
         idx = self._parse_row_index(virtual_url)
@@ -165,8 +175,9 @@ class CityKitakyushuAdapter(SinglePageTableAdapter):
         row = rows[idx]
         cells = row.find_all(["td", "th"])
 
-        column_map = (
-            self._ADOPTION_COLUMN_FIELDS if self._is_adoption_table_cache else self.COLUMN_FIELDS
+        table = row.find_parent("table")
+        column_map: dict[int, str] = (
+            self._resolve_and_cache_header_fields(table) if isinstance(table, Tag) else {}
         )
         fields: dict[str, str] = {}
         for col_idx, field_name in column_map.items():

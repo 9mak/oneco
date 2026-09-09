@@ -456,3 +456,38 @@ class TestCityKitakyushuAdoptionTable:
 
         assert raw.age == ""
         assert raw.image_urls == []
+
+
+class TestCityKitakyushuHeaderFallback:
+    """T402 reviewer 指摘 M-1: `_load_rows` 独自実装でも 0 件+WARNING フォールバックが効くこと"""
+
+    def test_unresolvable_header_yields_zero_rows_with_warning(self, caplog):
+        """ヘッダ文言が HEADER_FIELDS の既知ラベルと一致しなくなった場合、
+        空フィールドのレコードを収集し続けず 0 件へフォールバックし、
+        サイト名入りの WARNING を出す。
+        """
+        html = """
+        <html><body>
+          <table>
+            <caption>収容表</caption>
+            <thead>
+              <tr>
+                <th>ラベルA</th><th>ラベルB</th><th>ラベルC</th>
+                <th>ラベルD</th><th>ラベルE</th><th>ラベルF</th><th>ラベルG</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>5月11日</td><td>5月15日</td><td>小倉南区</td><td>柴</td>
+                <td>茶・白</td><td>メス</td><td>小</td>
+              </tr>
+            </tbody>
+          </table>
+        </body></html>
+        """
+        adapter = CityKitakyushuAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            with caplog.at_level("WARNING"):
+                result = adapter.fetch_animal_list()
+        assert result == []
+        assert any("北九州市（保護犬）" in record.message for record in caplog.records)

@@ -51,6 +51,44 @@ MunicipalityAdapter (ABC)                  adapters/municipality_adapter.py
 6. **ローカルで動作確認**: `PYTHONPATH=src .venv/bin/python -m pytest tests/adapters/test_<site>.py`
 7. live 確認は `scripts/adapter_live_test.py` を利用可能
 
+## SinglePageTableAdapter: COLUMN_FIELDS と HEADER_FIELDS の使い分け（T402）
+
+`SinglePageTableAdapter` は 1 ページに複数動物が table/カードで並ぶサイト用の共通基底
+（`rule_based/single_page_table.py`）。列 → `RawAnimalData` フィールドの対応付けには
+2 通りの方式があり、サイトの実 HTML 構造に合わせて選ぶ。
+
+- **`COLUMN_FIELDS: dict[int, str]`**（列インデックス駆動）
+  - 例: `{0: "shelter_date", 3: "sex"}`
+  - 列順が固定でヘッダ行が無い/信用できない（`<th>` が無い、装飾用など）サイト向け
+  - 列順がサイトごとに変わる同一テンプレートの複数サイトでは、サイトの数だけ
+    別の辞書を用意する必要がある（従来の `pref_kagawa` 系など）
+- **`HEADER_FIELDS: dict[str | tuple[str, ...], str]`**（ヘッダテキスト駆動）
+  - 例: `{"収容日": "shelter_date", ("性別", "性別（推定）"): "sex"}`
+  - ヘッダ行 (`<thead>` の `<tr>`、無ければ `<th>` を含む最初の `<tr>`) の**セル文字列**
+    から実際の列インデックスをテーブルごとに動的解決する
+  - マッチングは `_extract_by_label` と同じ仕様: 完全一致優先 → 部分一致フォールバック、
+    `tuple` は OR 検索（複数表記ゆれを 1 エントリで吸収できる）
+  - `colspan`/`rowspan` を考慮した実効列オフセットを計算する
+  - 1 ページに複数 `<table>` がある場合もテーブル単位で個別解決される（`table id()` で
+    キャッシュ）
+  - ヘッダ行が見つからない場合は `COLUMN_FIELDS` へフォールバックする。`HEADER_FIELDS`
+    がヘッダを解決できず、かつ `COLUMN_FIELDS` も未設定（空辞書）の場合は、そのテーブルの
+    行を 0 件として除外し WARNING ログ（サイト名入り）を出す
+  - 監査・list_selector_resolution 等で HTTP を発生させずに解決結果を見たい場合は
+    `adapter.resolve_header_fields(table_or_soup)` を呼ぶ
+
+**選び方の目安**:
+- ヘッダ行にラベル (`<th>種類</th>` 等) があり、それがサイトごと/セクションごとに
+  同じ意味で使われている → `HEADER_FIELDS` を優先する（列順が変わっても壊れにくい）
+- ヘッダ行が無い、または `<th>` の意味が実データと対応しない（レイアウト用テーブル等）
+  → `COLUMN_FIELDS` を使う
+- 両方設定した場合、`HEADER_FIELDS` が解決できた列を優先し、`COLUMN_FIELDS` は
+  それ以外の列を補う
+
+`extract_animal_details` を独自オーバーライドしている adapter でも、
+`self._resolve_and_cache_header_fields(table)` を呼べば `HEADER_FIELDS` の解決結果
+(`dict[int, str]`) をそのまま利用できる（`city_kitakyushu.py` / `city_maebashi.py` が実例）。
+
 ## politeness
 
 同一ドメインへのリクエストは `adapters/politeness.py` の throttle をドメイン単位で共有し、間隔を空ける。robots.txt の Crawl-delay があればそれを優先。

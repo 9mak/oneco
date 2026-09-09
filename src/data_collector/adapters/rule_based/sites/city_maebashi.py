@@ -35,6 +35,10 @@
   ことがあるため、千葉県 adapter と同様に防御的補正を行う。
 - 収容犬が 0 件のときは `<tbody>` 内に行が存在しない想定。その場合は
   ParsingError を出さず空リストを返す (実運用での 0 件は正常状態)。
+- 列位置は `HEADER_FIELDS` (T402) が `<thead>` のヘッダテキスト
+  (管理番号/収容場所/犬種/性別) から都度解決する。以前は列インデックス
+  (0/2/3/4) を直書きしていたが、実テンプレートの列順が変わっても
+  ヘッダラベルさえ一致すれば追従できるようにした。
 """
 
 from __future__ import annotations
@@ -48,18 +52,6 @@ from ....domain.models import RawAnimalData
 from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
-
-# 一覧テーブル本文の各セル位置 (1 行 = 1 動物) を表す列定義。
-# 0: 管理番号 (リンクテキストが収容日 "YYYY-MM-DD" になっている)
-# 1: 写真
-# 2: 収容場所
-# 3: 犬種 (品種名: 雑種/柴犬 等)
-# 4: 性別
-_COL_MANAGEMENT = 0
-_COL_PHOTO = 1
-_COL_LOCATION = 2
-_COL_BREED = 3
-_COL_SEX = 4
 
 # 「2026-05-02」のような ISO 形式の日付。前橋市の管理番号セルには
 # 収容日 (リンクテキスト) としてこの形式で出てくる。
@@ -79,15 +71,17 @@ class CityMaebashiAdapter(SinglePageTableAdapter):
     # `<thead>` の `<tr>` は CSS 上 `tbody tr` の対象外となるため
     # SKIP_FIRST_ROW は不要 (False)。
     SKIP_FIRST_ROW: ClassVar[bool] = False
-    # 値の取り出しはオーバーライドした `extract_animal_details` が
-    # セルから直接行うため、`COLUMN_FIELDS` は契約として宣言のみ。
-    COLUMN_FIELDS: ClassVar[dict[int, str]] = {
-        _COL_MANAGEMENT: "shelter_date",  # リンクテキストが ISO 日付
-        _COL_LOCATION: "location",
-        _COL_BREED: "species",  # 「犬種」(品種名)
-        _COL_SEX: "sex",
+    # ヘッダラベル -> 内部フィールド名。「管理番号」列の実体はリンクテキスト
+    # (ISO 日付) であり収容日として扱うため "management_raw" という中間キー
+    # に載せ、`extract_animal_details` 側で `_parse_iso_date` を通す
+    # (RawAnimalData のフィールド名である必要は無く、後段で参照できれば良い)。
+    HEADER_FIELDS: ClassVar[dict[str | tuple[str, ...], str]] = {
+        "管理番号": "management_raw",
+        "収容場所": "location",
+        "犬種": "breed",  # 「犬種」(品種名)。species はサイト名推定を優先しフォールバックにのみ使う
+        "性別": "sex",
     }
-    LOCATION_COLUMN: ClassVar[int | None] = _COL_LOCATION
+    LOCATION_COLUMN: ClassVar[int | None] = None
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
 
     # ─────────────────── オーバーライド ───────────────────
@@ -124,6 +118,14 @@ class CityMaebashiAdapter(SinglePageTableAdapter):
             if not tr.find("td"):
                 continue
             rows.append(tr)
+
+        # `_load_rows` を丸ごとオーバーライドしているため、基底
+        # `_load_rows` 経由の HEADER_FIELDS/COLUMN_FIELDS フォールバックを
+        # 通らない。ヘッダ文言変化でどちらも解決できない場合に空フィールド
+        # のレコードを収集し続けないよう、ここで明示的に適用する (T402
+        # reviewer 指摘 M-1)。
+        target_table = soup.select_one("table[summary*='前橋市']")
+        rows = self._rows_or_empty_with_warning(target_table, rows)
 
         self._rows_cache = rows
         return rows
@@ -163,18 +165,22 @@ class CityMaebashiAdapter(SinglePageTableAdapter):
         tr = rows[idx]
         cells = [c for c in tr.find_all("td") if isinstance(c, Tag)]
 
-        def _cell_text(i: int) -> str:
-            if i >= len(cells):
-                return ""
-            return cells[i].get_text(separator=" ", strip=True)
+        table = tr.find_parent("table")
+        column_map: dict[int, str] = (
+            self._resolve_and_cache_header_fields(table) if isinstance(table, Tag) else {}
+        )
+        fields: dict[str, str] = {}
+        for col_idx, field_name in column_map.items():
+            if col_idx < len(cells):
+                fields[field_name] = cells[col_idx].get_text(separator=" ", strip=True)
 
         # 管理番号セルから収容日 (ISO 文字列) を抽出
-        management_text = _cell_text(_COL_MANAGEMENT)
+        management_text = fields.get("management_raw", "")
         shelter_date = self._parse_iso_date(management_text)
 
-        location = _cell_text(_COL_LOCATION)
-        breed = _cell_text(_COL_BREED)
-        sex = _cell_text(_COL_SEX)
+        location = fields.get("location", "")
+        breed = fields.get("breed", "")
+        sex = fields.get("sex", "")
 
         # species はサイト名から推定 (犬種列は品種名なのでフォールバック)
         species = self._infer_species_from_site_name(self.site_config.name)
