@@ -14,18 +14,21 @@
       <p>管理番号 R07-XXX</p>
       <p><img src="..."><br />写真の無断転載はご遠慮ください。</p>
       <ul>
-        <li><strong>収容日： </strong>令和8年5月10日</li>
-        <li><strong>公示（掲載）期限： </strong>令和8年5月15日</li>
-        <li><strong>収容場所： </strong>さいたま市浦和区...</li>
-        <li><strong>種類： </strong>柴犬</li>
-        <li><strong>毛色： </strong>茶</li>
-        <li><strong>性別： </strong>オス</li>
-        <li><strong>体格： </strong>中</li>
-        <li><strong>推定年齢： </strong>3歳</li>
-        <li><strong>首輪： </strong>あり</li>
-        <li><strong>備考：</strong></li>
+        <li>収容日：令和8年5月10日</li>
+        <li>公示（掲載）期限：令和8年5月15日</li>
+        <li>収容場所：さいたま市浦和区...</li>
+        <li>種類：柴犬</li>
+        <li>毛色：茶</li>
+        <li>性別：オス</li>
+        <li>体格：中</li>
+        <li>推定年齢：3歳</li>
+        <li>首輪：あり</li>
+        <li>備考：</li>
       </ul>
     </div>
+  (T131 2026-09-09 で確認: `<li>` は `<strong>` を使わずラベルと値が
+   同一テキストノードに並ぶ。旧ドキュメントの `<strong>` 付き構造は現行
+   HTML と一致しない)
 - 在庫 0 件のときも 1 つだけ「テンプレート (空欄) のカード」が残る運用なので、
   全フィールドが空のカードは在庫 0 件のプレースホルダとして除外する。
 - 動物種別はサイト名から推定する (HTML 中の「種類」は具体的な犬種・猫種が入る)。
@@ -225,44 +228,47 @@ class CitySaitamaAdapter(SinglePageTableAdapter):
 
     @staticmethod
     def _extract_li_value(li: Tag) -> str:
-        """`<li><strong>ラベル： </strong>値</li>` の値部を取り出す"""
-        # `<strong>` を除いた残りのテキストが値
-        # get_text 全体からラベル＋区切り文字を取り除く戦略を採用する
-        full_text = li.get_text(separator=" ", strip=True)
-        strong = li.find("strong")
-        label_text = strong.get_text(strip=True) if isinstance(strong, Tag) else ""
-        if label_text and full_text.startswith(label_text):
-            value = full_text[len(label_text) :].strip()
-        else:
-            value = full_text
-        # ラベル末尾の「：」「:」が値の先頭に残った場合を除去
+        """`<li>ラベル：値</li>` の値部を取り出す
+
+        T131 で修正: 従来は `<strong>ラベル：</strong>値` (ラベルを
+        `<strong>` タグで包む) 構造を前提にしていたが、2026-09-09 時点の
+        実サイトでは `<li>収容日：令和8年9月4日</li>` のように `<strong>`
+        が使われず、ラベルと値が同一テキストノードに並んでいる。`<strong>`
+        の有無に依存せず、テキスト全体を「：」「:」で分割する方式に変更した
+        (旧実装は `<strong>` が見つからず全フィールドが空になっていた)。
+        """
+        text = li.get_text(strip=True)
         for sep in ("：", ":"):
-            if value.startswith(sep):
-                value = value[len(sep) :].strip()
-        return value
+            if sep in text:
+                _, _, value = text.partition(sep)
+                return value.strip()
+        return text
 
     @classmethod
     def _parse_card_fields(cls, card: Tag) -> dict[str, str]:
-        """カード内 `<ul>` から `{field_name: value}` を構築"""
+        """カード内 `<ul>` から `{field_name: value}` を構築
+
+        T131: `<strong>` タグ依存をやめ、`<li>` のテキスト全体を「：」「:」で
+        ラベル/値に分割する（`_extract_li_value` と同じ理由）。
+        """
         fields: dict[str, str] = {}
         ul = card.find("ul")
         if ul is None:
             return fields
         for li in ul.find_all("li"):
-            strong = li.find("strong")
-            if not isinstance(strong, Tag):
-                continue
-            label_raw = strong.get_text(strip=True)
-            # ラベル末尾の「：」「:」を取り除く
-            label = label_raw
+            text = li.get_text(strip=True)
+            label = None
+            value = None
             for sep in ("：", ":"):
-                if label.endswith(sep):
-                    label = label[: -len(sep)].strip()
+                if sep in text:
+                    label, _, value = text.partition(sep)
                     break
-            field = cls._LABEL_TO_FIELD.get(label)
+            if label is None:
+                continue
+            field = cls._LABEL_TO_FIELD.get(label.strip())
             if not field:
                 continue
-            value = cls._extract_li_value(li)
+            value = value.strip()
             if value and field not in fields:
                 fields[field] = value
         return fields
