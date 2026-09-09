@@ -324,9 +324,7 @@ class CityKashiwaAdapter(SinglePageTableAdapter):
         if not isinstance(col2r, Tag):
             return {}
         texts = (
-            p.get_text(separator=" ", strip=True)
-            for p in col2r.find_all("p")
-            if isinstance(p, Tag)
+            p.get_text(separator=" ", strip=True) for p in col2r.find_all("p") if isinstance(p, Tag)
         )
         return parse_label_value_pairs(texts, self._LABEL_TO_FIELD)
 

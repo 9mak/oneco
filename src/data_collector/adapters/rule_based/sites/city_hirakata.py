@@ -102,9 +102,7 @@ class CityHirakataAdapter(SinglePageTableAdapter):
 
         # カード内の <p> をスキャンしてラベル：値 を抽出
         texts = (
-            p.get_text(separator=" ", strip=True)
-            for p in card.find_all("p")
-            if isinstance(p, Tag)
+            p.get_text(separator=" ", strip=True) for p in card.find_all("p") if isinstance(p, Tag)
         )
         fields = parse_label_value_pairs(texts, self._LABEL_TO_FIELD)
 
