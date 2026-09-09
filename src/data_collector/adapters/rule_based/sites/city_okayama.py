@@ -74,20 +74,22 @@ class CityOkayamaAdapter(WordPressListAdapter):
 
     # detail ページのラベル。T125 (2026-09-03) で実サイトを実機取得し、
     # shelter_date/location は実ラベル (保護日/保護場所) を優先しつつ
-    # 旧想定ラベル (収容日/収容場所) も後方互換で残す。size は実サイトの
-    # 詳細ページに対応する項目が無いため、他の自治体 CMS で見られる
-    # 一般的な見出しのまま残す (該当が無ければ空文字のまま無害)。
+    # 旧想定ラベル (収容日/収容場所) も後方互換で残す。T131 (2026-09-09)
+    # で size/age も実ラベル (体格/推定年齢) が実際に掲載されていると
+    # 判明したため候補に追加した (旧想定ラベルも後方互換で残す)。
     FIELD_SELECTORS: ClassVar[dict[str, FieldSpec]] = {
         # 種類 / 品種 (例: "雑種", "柴犬", "三毛")
         "species": FieldSpec(label="種類"),
         # 性別 (例: "オス", "メス", "不明")
         "sex": FieldSpec(label="性別"),
-        # 年齢 (例: "成犬", "子犬", "推定3歳")
-        "age": FieldSpec(label="年齢"),
+        # 年齢。実ラベルは「推定年齢」(旧想定「年齢」も後方互換で残す)。
+        # field-ledger-triage-20260909で実サイト(0000060648.html)を確認し、
+        # 「推定年齢」のみで「年齢」単独ラベルは存在しないと判明 (T131 Tier2)。
+        "age": FieldSpec(label=("推定年齢", "年齢")),
         # 毛色
         "color": FieldSpec(label="毛色"),
-        # 大きさ (体格)
-        "size": FieldSpec(label="大きさ"),
+        # 大きさ (体格)。実ラベルは「体格」(旧想定「大きさ」も後方互換で残す)。
+        "size": FieldSpec(label=("体格", "大きさ")),
         # 保護日 (実ラベル) / 収容日 (旧想定ラベル、後方互換)
         "shelter_date": FieldSpec(label=("保護日", "収容日")),
         # 保護場所 (実ラベル) / 収容場所 (旧想定ラベル、後方互換)

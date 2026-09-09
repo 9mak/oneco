@@ -79,6 +79,7 @@ DETAIL_HTML_REAL_SITE = """
       <tr><th scope="row">性別</th><td>メス</td></tr>
       <tr><th scope="row">毛色</th><td>茶</td></tr>
       <tr><th scope="row">推定年齢</th><td>成犬</td></tr>
+      <tr><th scope="row">体格</th><td>中</td></tr>
       <tr><th scope="row">装着物</th><td>なし</td></tr>
       <tr><th scope="row">掲載期限</th><td>令和8年9月16日</td></tr>
     </tbody>
@@ -351,6 +352,7 @@ class TestCityOkayamaAdapterRealSiteStructure:
             sex="メス",
             age="成犬",
             color="茶",
+            size="中",
             shelter_date="令和8年8月18日",
             location="岡山市中区国府市場",
         )
