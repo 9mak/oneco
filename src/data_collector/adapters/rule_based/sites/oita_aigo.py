@@ -24,7 +24,6 @@
 
 from __future__ import annotations
 
-import logging
 import re
 from typing import ClassVar
 
@@ -34,8 +33,6 @@ from ....domain.models import RawAnimalData
 from ...municipality_adapter import NetworkError, ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
-
-logger = logging.getLogger(__name__)
 
 
 class OitaAigoAdapter(SinglePageTableAdapter):
@@ -92,6 +89,10 @@ class OitaAigoAdapter(SinglePageTableAdapter):
     # 本部代表を全動物カード共通の phone として割り当てる。
     _CENTER_TEL: ClassVar[str] = "097-588-1122"
 
+    # 一覧ページ送り。WordPress のカテゴリ一覧は `<a rel="next">` の
+    # 「次へ」リンクを持つ (基底 SinglePageTableAdapter の共通ページ送り
+    # 機構 T137 に乗せる)。
+    NEXT_PAGE_SELECTOR: ClassVar[str] = "a[rel='next']"
     # 一覧ページ送りの追跡上限。譲渡猫は 12 件/ページ × 5 ページ (2026-08-19
     # 実査 52 頭) で、余裕を持たせつつ暴走を防ぐ。
     MAX_LIST_PAGES: ClassVar[int] = 20
@@ -103,71 +104,14 @@ class OitaAigoAdapter(SinglePageTableAdapter):
         # 詳細ページ HTML のキャッシュ。同一 URL を 1 回しか取得しない。
         self._detail_html_cache: dict[str, str] = {}
 
-    def _load_rows(self) -> list[Tag]:
-        """一覧のページ送り (`<a rel="next">`) を最後まで辿って全カードを集める
-
-        WordPress のカテゴリ一覧は 12 件/ページで、譲渡猫は 5 ページ 52 頭に
-        及ぶ (2026-08-19 実査)。基底 `SinglePageTableAdapter._load_rows` は
-        list_url の 1 ページしか読まないため、1 ページ目の 12 頭以外が
-        掲載漏れになっていた (T046 で検出・T052)。
-
-        仮想 URL (list_url#row=N) は全ページ連結後の通し index を row 検索用の
-        内部キーとして使うが、source_url には採用しない (T053)。掲載順の
-        入れ替わりで row 番号と実個体の対応がズレるため、実際の source_url は
-        `extract_animal_details` がカード固有の詳細 URL から決定する。
-
-        上限到達・循環検知いずれで打ち切った場合も `self.list_truncated` を
-        立てる。CollectorService はこのフラグを見て prune_disappeared
-        (消滅同期削除) をスキップする (T059)。打ち切り区間に未取得の
-        実在個体が残っている可能性があり、部分集合のまま消滅判定すると
-        誤って公開から削除してしまうため。
-        """
-        if self._rows_cache is not None:
-            return self._rows_cache
-
-        rows: list[Tag] = []
-        visited_pages: set[str] = set()
-        page_url = self.site_config.list_url
-        truncated = False
-        for _ in range(self.MAX_LIST_PAGES):
-            if page_url in visited_pages:
-                # next リンクが既訪問ページを指す異常系 (循環)。この先に未取得の
-                # ページが残っている可能性があるため、上限到達と同様の打ち切りと
-                # みなす (従来は無警告のまま silent break していた)。
-                truncated = True
-                logger.warning(
-                    "[%s] 一覧のページ送りで循環を検知しました (既訪問ページへの"
-                    "再遷移: %s)。未取得のページが残っている可能性があります",
-                    self.site_config.name,
-                    page_url,
-                )
-                break
-            visited_pages.add(page_url)
-            html = self._http_get(page_url)
-            soup = BeautifulSoup(html, "html.parser")
-            page_rows = [r for r in soup.select(self.ROW_SELECTOR) if isinstance(r, Tag)]
-            rows.extend(page_rows)
-
-            next_link = soup.find("a", rel="next")
-            next_href = next_link.get("href") if isinstance(next_link, Tag) else None
-            if not next_href or not isinstance(next_href, str):
-                break
-            page_url = self._absolute_url(next_href, base=page_url)
-        else:
-            # 上限で打ち切った = まだ next が残っている可能性があり、
-            # 静かな掲載漏れになるため必ずログに残す。
-            truncated = True
-            logger.warning(
-                "[%s] 一覧のページ送りが上限 %d ページに達しました。"
-                "未取得のページが残っている可能性があります: %s",
-                self.site_config.name,
-                self.MAX_LIST_PAGES,
-                page_url,
-            )
-
-        self.list_truncated = truncated
-        self._rows_cache = rows
-        return rows
+    # 一覧のページ送り (`<a rel="next">`) は基底 `SinglePageTableAdapter._load_rows`
+    # の共通機構 (T137) に委譲する。WordPress のカテゴリ一覧は 12 件/ページで、
+    # 譲渡猫は 5 ページ 52 頭に及ぶ (2026-08-19 実査)。
+    #
+    # 仮想 URL (list_url#row=N) は全ページ連結後の通し index を row 検索用の
+    # 内部キーとして使うが、source_url には採用しない (T053)。掲載順の
+    # 入れ替わりで row 番号と実個体の対応がズレるため、実際の source_url は
+    # `extract_animal_details` がカード固有の詳細 URL から決定する。
 
     def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """`<div class="information_box">` カードから RawAnimalData を構築する

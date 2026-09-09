@@ -10,6 +10,7 @@ extract_animal_details は仮想 URL から行 index を解析して
 
 from __future__ import annotations
 
+import logging
 from typing import ClassVar
 from urllib.parse import urlparse
 
@@ -18,6 +19,8 @@ from bs4 import BeautifulSoup, Tag
 from ...domain.models import AnimalData, RawAnimalData
 from ..municipality_adapter import ParsingError
 from .base import RuleBasedAdapter
+
+logger = logging.getLogger(__name__)
 
 
 class SinglePageTableAdapter(RuleBasedAdapter):
@@ -30,6 +33,10 @@ class SinglePageTableAdapter(RuleBasedAdapter):
     - `SKIP_FIRST_ROW`: True のときヘッダ行を除外（デフォルト False）
     - `LOCATION_COLUMN`: 場所列のインデックス（任意）
     - `SHELTER_DATE_DEFAULT`: 収容日が取得できない場合のデフォルト ISO 日付
+    - `NEXT_PAGE_SELECTOR`: 一覧が複数ページに分かれる場合の「次へ」リンクの
+      CSS セレクタ（省略時は 1 ページ目のみ読む従来動作。WordPressListAdapter
+      と同じ機構を single_page 系にも提供する。T137）
+    - `MAX_LIST_PAGES`: ページ送りの上限（暴走防止）
     """
 
     ROW_SELECTOR: ClassVar[str] = ""
@@ -37,6 +44,8 @@ class SinglePageTableAdapter(RuleBasedAdapter):
     SKIP_FIRST_ROW: ClassVar[bool] = False
     LOCATION_COLUMN: ClassVar[int | None] = None
     SHELTER_DATE_DEFAULT: ClassVar[str] = ""
+    NEXT_PAGE_SELECTOR: ClassVar[str] = ""
+    MAX_LIST_PAGES: ClassVar[int] = 10
 
     def __init__(self, site_config) -> None:
         super().__init__(site_config)
@@ -113,16 +122,70 @@ class SinglePageTableAdapter(RuleBasedAdapter):
     # ─────────────────── ヘルパー ───────────────────
 
     def _load_rows(self) -> list[Tag]:
-        """list_url の HTML を 1 回だけ取得して行をキャッシュ"""
+        """list_url の HTML を取得して行をキャッシュ
+
+        `NEXT_PAGE_SELECTOR` を定義した派生クラスでは「次へ」リンクを最後まで
+        辿り、全ページの行を連結する。定義していない派生クラスは list_url の
+        1 ページ目だけを読む従来動作のまま。
+
+        上限到達・循環検知いずれで打ち切った場合も `self.list_truncated` を
+        立てる。CollectorService はこのフラグを見て prune_disappeared
+        (消滅同期削除) をスキップする (T059)。
+        """
         if self._rows_cache is not None:
             return self._rows_cache
 
-        if self._html_cache is None:
-            self._html_cache = self._http_get(self.site_config.list_url)
+        rows: list[Tag] = []
+        visited_pages: set[str] = set()
+        page_url = self.site_config.list_url
+        truncated = False
 
-        soup = BeautifulSoup(self._html_cache, "html.parser")
-        rows = soup.select(self.ROW_SELECTOR)
-        rows = [r for r in rows if isinstance(r, Tag)]
+        for _ in range(self.MAX_LIST_PAGES):
+            if page_url in visited_pages:
+                truncated = True
+                logger.warning(
+                    "[%s] 一覧のページ送りで循環を検知しました (既訪問ページへの"
+                    "再遷移: %s)。未取得のページが残っている可能性があります",
+                    self.site_config.name,
+                    page_url,
+                )
+                break
+            visited_pages.add(page_url)
+
+            # 1 ページ目は `self._html_cache` が既に埋まっていれば再利用する。
+            # 一部の派生 adapter (例: CityWakayamaAdapter.fetch_animal_list) は
+            # `_load_rows` 呼び出し前に自前で `_http_get` して `_html_cache` に
+            # 格納し、本文コンテナの存在チェックに使ってから `_load_rows` を
+            # 呼ぶため、ここで再フェッチすると HTTP 呼び出しが二重になる。
+            if page_url == self.site_config.list_url and self._html_cache is not None:
+                html = self._html_cache
+            else:
+                html = self._http_get(page_url)
+                if page_url == self.site_config.list_url:
+                    self._html_cache = html
+            soup = BeautifulSoup(html, "html.parser")
+            page_rows = [r for r in soup.select(self.ROW_SELECTOR) if isinstance(r, Tag)]
+            rows.extend(page_rows)
+
+            if not self.NEXT_PAGE_SELECTOR:
+                break
+            next_link = soup.select_one(self.NEXT_PAGE_SELECTOR)
+            next_href = next_link.get("href") if isinstance(next_link, Tag) else None
+            if not next_href or not isinstance(next_href, str):
+                break
+            page_url = self._absolute_url(next_href, base=page_url)
+        else:
+            if self.NEXT_PAGE_SELECTOR:
+                truncated = True
+                logger.warning(
+                    "[%s] 一覧のページ送りが上限 %d ページに達しました。"
+                    "未取得のページが残っている可能性があります: %s",
+                    self.site_config.name,
+                    self.MAX_LIST_PAGES,
+                    page_url,
+                )
+
+        self.list_truncated = truncated
         if self.SKIP_FIRST_ROW and rows:
             rows = rows[1:]
         self._rows_cache = rows

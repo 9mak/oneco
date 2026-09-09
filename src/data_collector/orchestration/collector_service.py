@@ -604,10 +604,12 @@ class CollectorService:
                             self.logger.warning(f"[{site_name}] 消滅同期削除に失敗: {e}")
             finally:
                 await db.close()
-            return saved, errors
+            return saved, errors, repo.url_reuse_count
 
-        saved_count, error_count = asyncio.run(_do_save())
-        self._log_db_result(saved_count, error_count, len(collected_data))
+        saved_count, error_count, url_reuse_count = asyncio.run(_do_save())
+        self._log_db_result(
+            saved_count, error_count, len(collected_data), url_reuse_count=url_reuse_count
+        )
 
     def _save_via_repository(self, collected_data: list[AnimalData]) -> None:
         """既存の repository を使って保存（テスト用途）"""
@@ -646,13 +648,34 @@ class CollectorService:
                     extra={"error": str(e)},
                 )
 
-        self._log_db_result(saved_count, error_count, len(collected_data))
+        # self.repository はテストでは MagicMock の場合があり、その場合
+        # url_reuse_count 属性自体が Mock になる (int ではない) ため、
+        # int キャストできない値は 0 扱いにする。
+        raw_url_reuse_count = getattr(self.repository, "url_reuse_count", 0)
+        url_reuse_count = raw_url_reuse_count if isinstance(raw_url_reuse_count, int) else 0
+        self._log_db_result(
+            saved_count, error_count, len(collected_data), url_reuse_count=url_reuse_count
+        )
 
-    def _log_db_result(self, saved_count: int, error_count: int, total: int) -> None:
+    def _log_db_result(
+        self, saved_count: int, error_count: int, total: int, *, url_reuse_count: int = 0
+    ) -> None:
         self.logger.info(
             "Database persistence completed",
-            extra={"saved_count": saved_count, "error_count": error_count},
+            extra={
+                "saved_count": saved_count,
+                "error_count": error_count,
+                "url_reuse_count": url_reuse_count,
+            },
         )
+        if url_reuse_count > 0:
+            # T138: source_url が別個体に再利用されたことを検知した件数。
+            # 通知は既存の error 通知フローに相乗りせず、運用者が run summary
+            # (ログ) を見て気づけるよう info ログのみに留める (誤検知でも
+            # サイト収集自体は成功しているため warning 通知の対象にはしない)。
+            self.logger.info(
+                f"[{self.adapter.municipality_name}] URL再利用検知 {url_reuse_count}件"
+            )
         if error_count > 0 and error_count >= total / 2:
             self.notification_client.send_alert(
                 NotificationLevel.WARNING,

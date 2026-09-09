@@ -144,8 +144,13 @@ async def test_animals_archive_identity_columns_exist(migration_engine):
 
 
 @pytest.mark.asyncio
-async def test_animals_table_unique_constraints(migration_engine):
-    """source_urlのユニーク制約が存在するか"""
+async def test_animals_table_source_url_no_longer_unique(migration_engine):
+    """source_url の UNIQUE 制約は T138 で撤廃されている
+
+    岡山市等で detail ページ URL が別個体に再利用される実例が確認されたため、
+    DB レベルの UNIQUE 制約は撤廃した (migration f1a2b3c4d5e6)。重複防止は
+    AnimalRepository.save_animal のアプリケーションロジックが担う。
+    """
     from src.data_collector.infrastructure.database.models import Base
 
     async with migration_engine.begin() as conn:
@@ -160,8 +165,6 @@ async def test_animals_table_unique_constraints(migration_engine):
 
         await conn.run_sync(check_constraints)
 
-        # SQLiteではユニーク制約が正しく取得できないことがあるため、
-        # 実際にデータを挿入してユニーク制約をテスト
         from datetime import date
 
         from src.data_collector.infrastructure.database.models import Animal
@@ -182,7 +185,7 @@ async def test_animals_table_unique_constraints(migration_engine):
             session.add(animal1)
             await session.commit()
 
-            # 同じsource_urlで挿入を試みる
+            # 同じsource_urlで別個体を挿入 (URL再利用を想定)
             animal2 = Animal(
                 species="猫",
                 shelter_date=date(2026, 1, 6),
@@ -192,9 +195,8 @@ async def test_animals_table_unique_constraints(migration_engine):
             )
             session.add(animal2)
 
-            # ユニーク制約違反のエラーが発生することを期待
-            with pytest.raises(Exception):  # IntegrityError or similar
-                await session.commit()
+            # DB レベルでは例外にならない
+            await session.commit()
 
 
 @pytest.mark.asyncio

@@ -174,10 +174,16 @@ async def test_animal_image_urls_as_list(async_session):
 
 
 @pytest.mark.asyncio
-async def test_animal_source_url_unique_constraint(async_session):
-    """source_urlのUNIQUE制約が機能するか"""
-    from sqlalchemy.exc import IntegrityError
+async def test_animal_source_url_no_longer_unique_constraint(async_session):
+    """source_url の UNIQUE 制約は T138 (URL再利用対応) で撤廃されている
 
+    岡山市等で detail ページ URL が別個体に再利用される実例が確認されたため
+    (1D2026049 → 1D2025093)、DB レベルの UNIQUE 制約は撤廃した
+    (migration f1a2b3c4d5e6)。同一 source_url を持つ複数行の重複防止は
+    AnimalRepository.save_animal のアプリケーションロジック
+    (個体識別キーが一致する場合のみ上書き、異なる場合はアーカイブ+新規挿入)
+    が担う。
+    """
     animal1 = Animal(
         species="犬",
         shelter_date=date(2026, 1, 5),
@@ -192,12 +198,12 @@ async def test_animal_source_url_unique_constraint(async_session):
         species="猫",
         shelter_date=date(2026, 1, 6),
         location="高知県",
-        source_url="https://example.com/animal/same",  # 同じURL
+        source_url="https://example.com/animal/same",  # 同じURL (別個体を想定)
     )
     async_session.add(animal2)
 
-    with pytest.raises(IntegrityError):
-        await async_session.commit()
+    # DB レベルでは例外にならない (アプリケーション層の save_animal が担保する)
+    await async_session.commit()
 
 
 @pytest.mark.asyncio

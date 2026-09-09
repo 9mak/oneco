@@ -38,7 +38,6 @@
 
 from __future__ import annotations
 
-import logging
 import re
 from typing import ClassVar
 
@@ -49,8 +48,6 @@ from ...municipality_adapter import ParsingError
 from ..playwright import PlaywrightFetchMixin
 from ..registry import SiteAdapterRegistry
 from ..wordpress_list import FieldSpec, WordPressListAdapter
-
-logger = logging.getLogger(__name__)
 
 
 class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
@@ -174,71 +171,13 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
         filtered = [u for u in urls if self.UPLOADED_IMAGE_PATH in u]
         return filtered if filtered else urls
 
-    def fetch_animal_list(self) -> list[tuple[str, str]]:
-        """一覧ページから detail URL を抽出する (0 件は正常系として許容)
-
-        一覧は 20 件/ページで `<div class="paging"><span class="next">
-        <a rel="next">` のページ送りを持つ (2026-08-16 実査、センター譲渡猫は
-        35 件で 2 ページ構成)。従来は 1 ページ目しか読まず 2 ページ目以降が
-        掲載漏れになっていたため、next リンクを最後まで辿る。
-
-        上限到達・循環検知いずれで打ち切った場合も `self.list_truncated` を
-        立てる。CollectorService はこのフラグを見て prune_disappeared
-        (消滅同期削除) をスキップする (T059)。打ち切り区間に未取得の実在
-        個体が残っている可能性があり、部分集合のまま消滅判定すると誤って
-        公開から削除してしまうため。
-        """
-        urls: list[tuple[str, str]] = []
-        seen: set[str] = set()
-        visited_pages: set[str] = set()
-        category = self.site_config.category
-        page_url = self.site_config.list_url
-        truncated = False
-        for _ in range(self.MAX_LIST_PAGES):
-            if page_url in visited_pages:
-                # next リンクが既訪問ページを指す異常系 (循環)。この先に未取得の
-                # ページが残っている可能性があるため、上限到達と同様の打ち切りと
-                # みなす (従来は無警告のまま silent break していた)。
-                truncated = True
-                logger.warning(
-                    "[%s] 一覧のページ送りで循環を検知しました (既訪問ページへの"
-                    "再遷移: %s)。未取得のページが残っている可能性があります",
-                    self.site_config.name,
-                    page_url,
-                )
-                break
-            visited_pages.add(page_url)
-            html = self._http_get(page_url)
-            soup = BeautifulSoup(html, "html.parser")
-
-            for link in soup.select(self.LIST_LINK_SELECTOR):
-                href = link.get("href")
-                if not href or not isinstance(href, str):
-                    continue
-                absolute = self._absolute_url(href)
-                if absolute in seen:
-                    continue
-                seen.add(absolute)
-                urls.append((absolute, category))
-
-            next_link = soup.select_one(self.NEXT_PAGE_SELECTOR)
-            next_href = next_link.get("href") if next_link else None
-            if not next_href or not isinstance(next_href, str):
-                break
-            page_url = self._absolute_url(next_href)
-        else:
-            # 上限で打ち切った = まだ next が残っている可能性があり、
-            # 静かな掲載漏れになるため必ずログに残す。
-            truncated = True
-            logger.warning(
-                "[%s] 一覧のページ送りが上限 %d ページに達しました。"
-                "未取得のページが残っている可能性があります: %s",
-                self.site_config.name,
-                self.MAX_LIST_PAGES,
-                page_url,
-            )
-        self.list_truncated = truncated
-        return urls
+    # 一覧ページ送り (`<div class="paging"><span class="next"><a rel="next">`,
+    # 2026-08-16 実査。センター譲渡猫は 35 件で 2 ページ構成) は基底
+    # `WordPressListAdapter.fetch_animal_list` の共通機構に委譲する (T137)。
+    # 旧実装は基底とほぼ同一のページ送りループを個別に持っていたが、
+    # `_absolute_url(href)` を base 省略で呼んでおり、2 ページ目以降の
+    # 相対リンクを (2ページ目基準ではなく) list_url 基準で解決してしまう
+    # 挙動差異があった。基底の `_absolute_url(href, base=page_url)` に統一する。
 
     def extract_animal_details(self, detail_url: str, category: str = "adoption") -> RawAnimalData:
         """detail ページから RawAnimalData を構築する

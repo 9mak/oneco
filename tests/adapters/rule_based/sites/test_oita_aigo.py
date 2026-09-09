@@ -749,7 +749,7 @@ class TestOitaAigoPagination:
         adapter = OitaAigoAdapter(_adoption_cat_site())
         with (
             patch.object(adapter, "_http_get", return_value=_PAGE_SELF_NEXT_HTML) as mocked,
-            patch("data_collector.adapters.rule_based.sites.oita_aigo.logger") as mock_logger,
+            patch("data_collector.adapters.rule_based.single_page_table.logger") as mock_logger,
         ):
             result = adapter.fetch_animal_list()
         assert len(result) == 1

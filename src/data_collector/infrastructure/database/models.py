@@ -37,7 +37,13 @@ class Animal(Base):
     shelter_date: date = Column(Date, nullable=False, index=True)
     location: str = Column(Text, nullable=False, index=True)
     prefecture: str | None = Column(String(20), nullable=True, index=True)
-    source_url: str = Column(Text, nullable=False, unique=True)
+    # T138: 岡山市等で detail ページ URL が別個体へ再利用される実例が確認された
+    # (1D2026049 → 1D2025093)。個体ごと source_url が一意である前提が崩れたため
+    # UNIQUE を撤廃し、検索用の非ユニーク index のみ残す (migration f1a2b3c4d5e6)。
+    # URL 再利用検知時は AnimalRepository.save_animal が旧レコードをアーカイブ
+    # してから新レコードを挿入するため、通常運用では同一 URL の active 行は
+    # 依然として高々1件になる。
+    source_url: str = Column(Text, nullable=False, index=True)
 
     # 準必須フィールド（デフォルト値あり）
     sex: str = Column(String(20), nullable=False, default="不明", index=True)
@@ -258,7 +264,10 @@ class AnimalArchive(Base):
         default=list,
         server_default="[]",
     )
-    source_url: str = Column(Text, nullable=False, unique=True)
+    # T138: 同一 source_url が別個体として複数回アーカイブされ得る (URL 再利用の
+    # たびに旧レコードをアーカイブするため)。UNIQUE を撤廃し非ユニーク index のみ
+    # 残す (migration f1a2b3c4d5e6)。
+    source_url: str = Column(Text, nullable=False, index=True)
     category: str = Column(String(20), nullable=False)
     status: str = Column(String(20), nullable=False)
     status_changed_at: datetime | None = Column(DateTime(timezone=True), nullable=True)
