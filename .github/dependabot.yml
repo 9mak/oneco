@@ -14,8 +14,16 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # pyproject.toml/requirements.txt は上限なしの ">=" レンジ管理でロックファイルが無い。
+    # versioning-strategy が既定の "auto" のままだと、各パッケージの更新後バージョンを
+    # 一意に決められず「Update X requirement ... to permit the latest version」形式の
+    # 個別PRになりグルーピングが効かない（#342-#346で実際に5本の個別PRが発生し確認済み）。
+    # "increase" に固定して更新後バージョンを一意にし、semverレベル判定を可能にする。
+    versioning-strategy: increase
     groups:
       pip-minor-and-patch:
+        patterns:
+          - "*"
         update-types:
           - "minor"
           - "patch"
