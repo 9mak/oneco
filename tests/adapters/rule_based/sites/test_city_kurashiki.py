@@ -286,6 +286,84 @@ class TestCityKurashikiAdapter:
         # detail 取得失敗時は color は空のまま
         assert raw.color == ""
 
+    def test_breed_from_list_text_parentheses(self, fixture_html):
+        """一覧テキスト「猫（雑種）♀」の括弧内が breed として抽出される (T131 Tier2)"""
+        list_html = _populated_html()
+        detail_html = fixture_html("city_kurashiki_detail_1026186")
+
+        def _side_effect(url, *args, **kwargs):
+            if url == LIST_URL:
+                return list_html
+            return detail_html
+
+        adapter = CityKurashikiAdapter(_site())
+        with patch.object(adapter, "_http_get", side_effect=_side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+
+        assert raw.breed == "雑種"
+
+    def test_breed_fallback_to_detail_page_when_list_has_no_parentheses(self):
+        """一覧テキストに括弧が無い場合は detail ページの「種類：」から breed を補完する"""
+        list_html = """<html><body><ul class="listlink">
+        <li><a href="../../../kurashi/pet/1013042/1099999.html">令和08年08月10日　粒浦　猫　♀</a></li>
+        </ul><div id="reference"><p>電話番号：086-434-9829</p></div></body></html>"""
+        detail_html = "<html><body><ul><li>種類：三毛</li></ul></body></html>"
+
+        def _side_effect(url, *args, **kwargs):
+            if url == LIST_URL:
+                return list_html
+            return detail_html
+
+        adapter = CityKurashikiAdapter(_site())
+        with patch.object(adapter, "_http_get", side_effect=_side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+
+        assert raw.breed == "三毛"
+
+    def test_image_urls_extracted_when_alt_starts_with_photo_label(self):
+        """`<p class="imageleft"><img alt="写真：...">` の実写真だけ image_urls に入る
+
+        「イラスト：逃げた犬」のような alt は非写真のため除外する
+        (実 fixture city_kurashiki_detail_1026186 で確認済みのケース)。
+        """
+        list_html = _populated_html()
+        detail_html = """<html><body>
+        <p class="imageleft"><img src="../../../_res/projects/default_project/_page_/001/027/275/moro.png" alt="写真：保護猫" width="678" height="765"></p>
+        <p class="imageleft"><img src="../../../_res/projects/default_project/_page_/001/027/275/runaway.gif" alt="イラスト：逃げた犬" width="137" height="175"></p>
+        </body></html>"""
+
+        def _side_effect(url, *args, **kwargs):
+            if url == LIST_URL:
+                return list_html
+            return detail_html
+
+        adapter = CityKurashikiAdapter(_site())
+        with patch.object(adapter, "_http_get", side_effect=_side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+
+        assert len(raw.image_urls) == 1
+        assert raw.image_urls[0].endswith("moro.png")
+
+    def test_image_urls_empty_for_real_fixture_without_photo(self, fixture_html):
+        """既存 fixture (イラストのみ) では image_urls が空のまま (regression guard)"""
+        list_html = _populated_html()
+        detail_html = fixture_html("city_kurashiki_detail_1026186")
+
+        def _side_effect(url, *args, **kwargs):
+            if url == LIST_URL:
+                return list_html
+            return detail_html
+
+        adapter = CityKurashikiAdapter(_site())
+        with patch.object(adapter, "_http_get", side_effect=_side_effect):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+
+        assert raw.image_urls == []
+
     # ─────────────── レジストリ ───────────────
 
     def test_site_is_registered(self):

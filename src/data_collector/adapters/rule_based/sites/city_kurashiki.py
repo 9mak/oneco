@@ -159,16 +159,26 @@ class CityKurashikiAdapter(SinglePageTableAdapter):
         else:
             source_url = virtual_url
 
-        # detail ページに「毛色：黒」「特徴：首輪無」等の追加情報がある。
+        # detail ページに「毛色：黒」「種類：雑種」等の追加情報と、
+        # `<p class="imageleft"><img alt="写真：...">` の実写真がある。
         # 取得失敗は無視して、一覧から得た基本情報だけは確実に返す。
         color = ""
+        breed = self._parse_breed(species_breed)
+        image_urls: list[str] = []
         if isinstance(href, str) and href:
-            detail = self._fetch_detail_fields(source_url)
-            color = detail.get("毛色", "")
+            detail_html = self._fetch_detail_html(source_url)
+            if detail_html is not None:
+                detail_soup = BeautifulSoup(detail_html, "html.parser")
+                fields = self._parse_detail_fields(detail_soup)
+                color = fields.get("毛色", "")
+                if not breed:
+                    breed = fields.get("種類", "")
+                image_urls = self._extract_detail_images(detail_soup, source_url)
 
         try:
             return RawAnimalData(
                 species=species,
+                breed=breed,
                 sex=sex,
                 age="",
                 color=color,
@@ -176,25 +186,27 @@ class CityKurashikiAdapter(SinglePageTableAdapter):
                 shelter_date=shelter_date or self.SHELTER_DATE_DEFAULT,
                 location=location,
                 phone=self._normalize_phone(self._CONTACT_PHONE),
-                image_urls=[],
+                image_urls=image_urls,
                 source_url=source_url,
                 category=category,
             )
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
-    def _fetch_detail_fields(self, detail_url: str) -> dict[str, str]:
+    def _fetch_detail_html(self, detail_url: str) -> str | None:
+        """detail ページの HTML を取得する（取得失敗時は None）"""
+        try:
+            return self._http_get(detail_url)
+        except Exception:
+            return None
+
+    @staticmethod
+    def _parse_detail_fields(soup: BeautifulSoup) -> dict[str, str]:
         """detail ページから「ラベル：値」形式の項目を辞書化する
 
         倉敷市の detail ページは `<ul><li>保護場所：児島小川</li>...</ul>` のように
-        ラベル付き項目を並べる構成。HTTP 取得失敗時は空 dict を返し、
-        呼び出し元で「補完情報なし」として扱う（基本情報のみで RawAnimalData を構築）。
+        ラベル付き項目を並べる構成（種類：雑種／毛色：黒 等）。
         """
-        try:
-            html = self._http_get(detail_url)
-        except Exception:
-            return {}
-        soup = BeautifulSoup(html, "html.parser")
         fields: dict[str, str] = {}
         for li in soup.find_all("li"):
             text = li.get_text(separator=" ", strip=True)
@@ -207,6 +219,27 @@ class CityKurashikiAdapter(SinglePageTableAdapter):
             if key and val and key not in fields:
                 fields[key] = val
         return fields
+
+    def _extract_detail_images(self, soup: BeautifulSoup, base_url: str) -> list[str]:
+        """detail ページの動物写真 `<p class="imageleft"><img alt="写真：...">` を抽出する
+
+        本文には他にも「イラスト：逃げた犬」等の非写真画像や、ヘッダ/フッタの
+        ロゴ画像も `imageleft` クラスに混在しうるため、`alt` が「写真：」で
+        始まる `<img>` のみを実写真として採用する。
+        """
+        urls: list[str] = []
+        for p in soup.select("p.imageleft"):
+            img = p.find("img")
+            if not isinstance(img, Tag):
+                continue
+            alt = img.get("alt")
+            if not isinstance(alt, str) or not alt.startswith("写真"):
+                continue
+            src = img.get("src")
+            if not isinstance(src, str) or not src.strip():
+                continue
+            urls.append(self._absolute_url(src, base=base_url))
+        return urls
 
     # ─────────────────── ヘルパー ───────────────────
 
@@ -244,6 +277,16 @@ class CityKurashikiAdapter(SinglePageTableAdapter):
         if "猫" in head and "犬" not in head:
             return "猫"
         return "その他"
+
+    @staticmethod
+    def _parse_breed(text: str) -> str:
+        """「猫（雑種）」「犬（ダックス系雑種）」の括弧内を breed として返す"""
+        if not text:
+            return ""
+        m = _SPECIES_BREED_RE.match(text)
+        if not m:
+            return ""
+        return (m.group(2) or "").strip()
 
     @staticmethod
     def _split_species_sex(text: str) -> tuple[str, str]:
