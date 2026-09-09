@@ -39,6 +39,7 @@ from bs4 import Tag
 
 from ....domain.models import RawAnimalData
 from ...municipality_adapter import ParsingError
+from ..fields import infer_species
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
@@ -141,7 +142,7 @@ class CitySaitamaAdapter(SinglePageTableAdapter):
         fields = self._parse_card_fields(card)
 
         # 動物種別は HTML の「種類」(柴犬/雑種等) ではなくサイト名から推定する
-        species = self._infer_species_from_site_name(self.site_config.name)
+        species = infer_species(self.site_config.name)
 
         # 管理番号 (R07-XXX) は _is_empty_template の空判定で解析されるだけで
         # 従来は破棄されていた。個体識別フィールドとして card から抽出して伝搬する。
@@ -265,15 +266,6 @@ class CitySaitamaAdapter(SinglePageTableAdapter):
             if value and field not in fields:
                 fields[field] = value
         return fields
-
-    @staticmethod
-    def _infer_species_from_site_name(name: str) -> str:
-        """サイト名から動物種別 (犬/猫/その他) を推定する"""
-        if "犬" in name:
-            return "犬"
-        if "猫" in name:
-            return "猫"
-        return "その他"
 
 
 # ─────────────────── サイト登録 ───────────────────

@@ -47,6 +47,7 @@ from bs4 import Tag
 
 from ....domain.models import RawAnimalData
 from ...municipality_adapter import ParsingError
+from ..fields import parse_label_value_pairs
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
@@ -320,26 +321,12 @@ class CityKashiwaAdapter(SinglePageTableAdapter):
     def _parse_labeled_card(self, card: Tag) -> dict[str, str]:
         """形式 A: col2R 内の「ラベル：値」<p> 群をパースする (hogo.html)"""
         col2r = card.select_one("div.col2R")
-        fields: dict[str, str] = {}
         if not isinstance(col2r, Tag):
-            return fields
-        for p in col2r.find_all("p"):
-            if not isinstance(p, Tag):
-                continue
-            text = p.get_text(separator=" ", strip=True)
-            if not text:
-                continue
-            # 全角コロン「：」または半角「:」の最初の出現で 2 分割
-            for sep in ("：", ":"):
-                if sep in text:
-                    label, value = text.split(sep, 1)
-                    label = label.strip()
-                    value = value.strip()
-                    field = self._LABEL_TO_FIELD.get(label)
-                    if field and value and field not in fields:
-                        fields[field] = value
-                    break
-        return fields
+            return {}
+        texts = (
+            p.get_text(separator=" ", strip=True) for p in col2r.find_all("p") if isinstance(p, Tag)
+        )
+        return parse_label_value_pairs(texts, self._LABEL_TO_FIELD)
 
     def _parse_freetext_card(self, card: Tag) -> dict[str, str]:
         """形式 B: カード直後の兄弟 <p> 群 (自由文) から属性を抽出する (satoya.html)

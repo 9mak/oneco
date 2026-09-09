@@ -26,6 +26,7 @@ from bs4 import Tag
 
 from ....domain.models import RawAnimalData
 from ...municipality_adapter import ParsingError
+from ..fields import parse_label_value_pairs
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
@@ -100,22 +101,10 @@ class CityHirakataAdapter(SinglePageTableAdapter):
         card = rows[idx]
 
         # カード内の <p> をスキャンしてラベル：値 を抽出
-        fields: dict[str, str] = {}
-        for p in card.find_all("p"):
-            if not isinstance(p, Tag):
-                continue
-            text = p.get_text(separator=" ", strip=True)
-            if not text:
-                continue
-            for sep in ("：", ":"):
-                if sep in text:
-                    label, value = text.split(sep, 1)
-                    label = label.strip()
-                    value = value.strip()
-                    field = self._LABEL_TO_FIELD.get(label)
-                    if field and value and field not in fields:
-                        fields[field] = value
-                    break
+        texts = (
+            p.get_text(separator=" ", strip=True) for p in card.find_all("p") if isinstance(p, Tag)
+        )
+        fields = parse_label_value_pairs(texts, self._LABEL_TO_FIELD)
 
         # species: 直前の <h4>収容犬</h4>/<h4>収容猫</h4> を最優先
         species = self._infer_species_from_heading(card)
