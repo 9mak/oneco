@@ -253,8 +253,24 @@ class WordPressListAdapter(RuleBasedAdapter):
         return ""
 
     # ─────────────────── ヘルパー ───────────────────
-    # _extract_field / _extract_by_label / _get_value は RuleBasedAdapter
-    # (base.py) へ昇格済み (T401)。ここでは WordPressList 固有の画像抽出のみ残す。
+    # _extract_by_label / _get_value は RuleBasedAdapter (base.py) へ昇格済み
+    # (T401)。`_extract_field` (FieldSpec ディスパッチャ) は PDF 系 adapter との
+    # 同名衝突を避けるため WordPressListAdapter に残している (base.py 参照)。
+
+    def _extract_field(self, soup: BeautifulSoup, spec: FieldSpec) -> str:
+        """FieldSpec に従ってフィールド値を抽出"""
+        # selector 直接指定の場合
+        if spec.selector:
+            el = soup.select_one(spec.selector)
+            if el is None:
+                return ""
+            return self._get_value(el, spec.attr)
+
+        # label 経由 (定義リスト or テーブル)
+        if spec.label:
+            value = self._extract_by_label(soup, spec.label)
+            return value
+        return ""
 
     def _extract_images(self, soup: BeautifulSoup, base_url: str) -> list[str]:
         imgs = soup.select(self.IMAGE_SELECTOR)

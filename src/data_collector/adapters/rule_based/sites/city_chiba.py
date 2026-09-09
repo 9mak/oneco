@@ -40,6 +40,7 @@ from bs4 import BeautifulSoup, Tag
 
 from ....domain.models import RawAnimalData
 from ...municipality_adapter import ParsingError
+from ..fields import infer_species, parse_label_value_pairs
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
@@ -193,28 +194,13 @@ class CityChibaAdapter(SinglePageTableAdapter):
         image_paragraphs = [p for p in siblings if p.find("img") is not None]
         attr_paragraphs = [p for p in siblings if p.find("img") is None]
 
-        fields: dict[str, str] = {}
-        for p in attr_paragraphs:
-            # `<br>` を改行として取り出し、行ごとに「ラベル：値」をパース
-            text = p.get_text(separator="\n", strip=False)
-            for line in text.split("\n"):
-                line = line.strip()
-                if not line:
-                    continue
-                # 全角コロン「：」または半角「:」の最初の出現で 2 分割
-                for sep in ("：", ":"):
-                    if sep in line:
-                        label, value = line.split(sep, 1)
-                        label = label.strip()
-                        value = value.strip()
-                        field = self._LABEL_TO_FIELD.get(label)
-                        if field and value and field not in fields:
-                            # size はソース側で年齢相当テキスト等が混入する
-                            # ケースがあるためホワイトリストで防御する。
-                            if field == "size" and value not in self._SIZE_VALID_VALUES:
-                                break
-                            fields[field] = value
-                        break
+        # `<br>` を改行として取り出した各 `<p>` テキストから「ラベル：値」をパース
+        texts = (p.get_text(separator="\n", strip=False) for p in attr_paragraphs)
+        fields = parse_label_value_pairs(
+            texts,
+            self._LABEL_TO_FIELD,
+            valid_values={"size": self._SIZE_VALID_VALUES},
+        )
 
         # 画像 URL を集める
         image_urls: list[str] = []
@@ -226,7 +212,7 @@ class CityChibaAdapter(SinglePageTableAdapter):
         image_urls = self._filter_image_urls(image_urls, virtual_url)
 
         # 動物種別: HTML の「種類」(柴犬/雑種等) は具体名のためサイト名から推定する
-        species = self._infer_species_from_site_name(self.site_config.name)
+        species = infer_species(self.site_config.name)
 
         # phone: ページ共通フッタの「電話：043-258-7817」等を抽出する
         # (各動物ブロックには電話番号が無いため、ページ全体から共通値を拾う)
@@ -269,17 +255,6 @@ class CityChibaAdapter(SinglePageTableAdapter):
             return ""
         # 全角ハイフン類を ASCII に統一
         return re.sub(r"[－‐ー]", "-", m.group(1))
-
-    # ─────────────────── ヘルパー ───────────────────
-
-    @staticmethod
-    def _infer_species_from_site_name(name: str) -> str:
-        """サイト名から動物種別 (犬/猫/その他) を推定する"""
-        if "犬" in name:
-            return "犬"
-        if "猫" in name:
-            return "猫"
-        return "その他"
 
 
 # ─────────────────── サイト登録 ───────────────────

@@ -53,6 +53,7 @@ from bs4 import BeautifulSoup, Tag
 
 from ....domain.models import RawAnimalData
 from ...municipality_adapter import ParsingError
+from ..fields import infer_species
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
@@ -211,7 +212,7 @@ class CityOsakaAdapter(SinglePageTableAdapter):
                             fields[field] = value
 
         # 種別はサイト名から推定 (HTML の「種類」は品種名のため)
-        species = self._infer_species_from_site_name(self.site_config.name)
+        species = infer_species(self.site_config.name)
 
         try:
             return RawAnimalData(
@@ -321,15 +322,6 @@ class CityOsakaAdapter(SinglePageTableAdapter):
             return ""
         y, mo, d = m.group(1), m.group(2), m.group(3)
         return f"{int(y):04d}-{int(mo):02d}-{int(d):02d}"
-
-    @staticmethod
-    def _infer_species_from_site_name(name: str) -> str:
-        """サイト名から動物種別 (犬/猫) を推定する"""
-        if "犬" in name:
-            return "犬"
-        if "猫" in name:
-            return "猫"
-        return "その他"
 
 
 # ─────────────────── サイト登録 ───────────────────

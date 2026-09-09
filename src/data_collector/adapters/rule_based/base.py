@@ -268,21 +268,13 @@ class RuleBasedAdapter(MunicipalityAdapter):
     # ─────────────────── label 抽出 ヘルパー (dt/dd, th/td) ───────────────────
     # 元は WordPressListAdapter 専用だったが、table/single_page 系 adapter からも
     # 使えるよう基底へ昇格した (T401)。WordPressListAdapter の挙動は変えない。
-
-    def _extract_field(self, soup: BeautifulSoup, spec: FieldSpec) -> str:
-        """FieldSpec に従ってフィールド値を抽出"""
-        # selector 直接指定の場合
-        if spec.selector:
-            el = soup.select_one(spec.selector)
-            if el is None:
-                return ""
-            return self._get_value(el, spec.attr)
-
-        # label 経由 (定義リスト or テーブル)
-        if spec.label:
-            value = self._extract_by_label(soup, spec.label)
-            return value
-        return ""
+    #
+    # `_extract_field` (FieldSpec ディスパッチャ) はここへは昇格していない:
+    # `*_pdf.py` 系の複数 adapter (pref_kagawa_pdf 等) が `_extract_field` という
+    # 同名の私用ヘルパー (シグネチャは全く別: `(line: str, record: dict) -> None`)
+    # を既に持っており、基底に同名メソッドを生やすと mypy が LSP 違反として
+    # 検出する (T401 実装時に発覚)。`_extract_by_label` はそのような名前衝突が
+    # 無いことを確認した上で昇格している。
 
     def _extract_by_label(self, soup: BeautifulSoup, label: str | tuple[str, ...]) -> str:
         """定義リスト (<dt><dd>) またはテーブル (<th><td>) で label を探す。

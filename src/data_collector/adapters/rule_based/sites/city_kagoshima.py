@@ -37,6 +37,7 @@ from bs4 import BeautifulSoup, Tag
 
 from ....domain.models import RawAnimalData
 from ...municipality_adapter import ParsingError
+from ..fields import infer_species, normalize_sex, parse_label_value_pairs
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
 
@@ -117,11 +118,7 @@ class CityKagoshimaAdapter(SinglePageTableAdapter):
         "毛色": "color",
     }
 
-    # 性別表記の正規化マップ (鹿児島市は「雄/雌」表記)。
-    _SEX_MAP: ClassVar[dict[str, str]] = {
-        "雄": "オス",
-        "雌": "メス",
-    }
+    # 性別表記の正規化 (鹿児島市は「雄/雌」表記) は fields.normalize_sex に委譲。
 
     # ─────────────────── オーバーライド ───────────────────
 
@@ -181,7 +178,6 @@ class CityKagoshimaAdapter(SinglePageTableAdapter):
         h2 = rows[idx]
         block_paragraphs = self._collect_block_paragraphs(h2)
 
-        fields: dict[str, str] = {}
         image_urls: list[str] = []
         # 「その他：」自由記述からも体重表記を拾えるように全 p テキストを連結
         # 保持する (label 一致しない値や、複数行に跨る自由記述に体重が
@@ -194,20 +190,14 @@ class CityKagoshimaAdapter(SinglePageTableAdapter):
                 if src and isinstance(src, str):
                     image_urls.append(self._absolute_url(src, base=virtual_url))
             text = p.get_text(separator=" ", strip=True)
-            if not text:
-                continue
-            all_text_parts.append(text)
-            label, value = self._split_label_value(text)
-            if not label:
-                continue
-            field_name = self._LABEL_TO_FIELD.get(label)
-            if field_name and field_name not in fields:
-                fields[field_name] = value
+            if text:
+                all_text_parts.append(text)
+        fields = parse_label_value_pairs(all_text_parts, self._LABEL_TO_FIELD)
 
         # 動物種別 (犬/猫) はサイト名から推定 (HTML の「種類」は犬種名)
-        species = self._infer_species_from_site_name(self.site_config.name)
+        species = infer_species(self.site_config.name)
 
-        sex = self._normalize_sex(fields.get("sex", ""))
+        sex = normalize_sex(fields.get("sex", ""))
         age = self._postprocess_age(fields.get("age", ""))
         # 体重は専用ラベルが無くても「その他：…体重5.5kg…」のような自由記述に
         # 現れることがあるため、`_weight` ラベル値が空の場合は全文を補助素材に
@@ -258,29 +248,6 @@ class CityKagoshimaAdapter(SinglePageTableAdapter):
                     if isinstance(nested, Tag):
                         paragraphs.append(nested)
         return paragraphs
-
-    @staticmethod
-    def _split_label_value(text: str) -> tuple[str, str]:
-        """「ラベル：値」「ラベル:値」形式を (label, value) に分割
-
-        鹿児島市は全角コロン (U+FF1A) が標準だが、半角コロンにも対応する。
-        ラベル区切りが見つからない場合は ("", text) を返す。
-        """
-        for sep in ("：", ":"):
-            if sep in text:
-                label, value = text.split(sep, 1)
-                return label.strip(), value.strip()
-        return "", text.strip()
-
-    @classmethod
-    def _normalize_sex(cls, raw_sex: str) -> str:
-        """「雄/雌」→ 「オス/メス」、それ以外は元の値をそのまま返す"""
-        if not raw_sex:
-            return ""
-        for src, dst in cls._SEX_MAP.items():
-            if src in raw_sex:
-                return dst
-        return raw_sex
 
     @staticmethod
     def _postprocess_age(raw_age: str) -> str:
@@ -345,15 +312,6 @@ class CityKagoshimaAdapter(SinglePageTableAdapter):
         if kg < _WEIGHT_SIZE_LARGE_KG:
             return "中"
         return "大"
-
-    @staticmethod
-    def _infer_species_from_site_name(name: str) -> str:
-        """サイト名 ("鹿児島市（保護犬）" 等) から動物種別を推定する"""
-        if "犬" in name:
-            return "犬"
-        if "猫" in name:
-            return "猫"
-        return "その他"
 
 
 # ─────────────────── サイト登録 ───────────────────
