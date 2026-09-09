@@ -138,6 +138,12 @@ class CityKitakyushuAdapter(SinglePageTableAdapter):
 
         # `<th>` のみのヘッダ行が tbody 内に紛れ込んでいる場合は除外
         rows = [r for r in rows if r.find("td") is not None]
+        # `_load_rows` を丸ごとオーバーライドしているため、基底
+        # `_load_rows` 経由の HEADER_FIELDS/COLUMN_FIELDS フォールバックを
+        # 通らない。ヘッダ文言変化でどちらも解決できない場合に空フィールド
+        # のレコードを収集し続けないよう、ここで明示的に適用する (T402
+        # reviewer 指摘 M-1)。
+        rows = self._rows_or_empty_with_warning(target_table, rows)
         self._rows_cache = rows
         return self._rows_cache
 

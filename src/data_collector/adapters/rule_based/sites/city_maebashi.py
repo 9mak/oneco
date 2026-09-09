@@ -119,6 +119,14 @@ class CityMaebashiAdapter(SinglePageTableAdapter):
                 continue
             rows.append(tr)
 
+        # `_load_rows` を丸ごとオーバーライドしているため、基底
+        # `_load_rows` 経由の HEADER_FIELDS/COLUMN_FIELDS フォールバックを
+        # 通らない。ヘッダ文言変化でどちらも解決できない場合に空フィールド
+        # のレコードを収集し続けないよう、ここで明示的に適用する (T402
+        # reviewer 指摘 M-1)。
+        target_table = soup.select_one("table[summary*='前橋市']")
+        rows = self._rows_or_empty_with_warning(target_table, rows)
+
         self._rows_cache = rows
         return rows
 

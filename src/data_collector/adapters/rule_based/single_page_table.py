@@ -235,33 +235,61 @@ class SinglePageTableAdapter(RuleBasedAdapter):
 
     # ─────────────────── HEADER_FIELDS (T402) ───────────────────
 
-    def _filter_rows_with_resolvable_columns(self, candidate_rows: list[Tag]) -> list[Tag]:
-        """HEADER_FIELDS 使用時、列を解決できない行を除外する
+    def _rows_or_empty_with_warning(self, table: Tag | None, rows: list[Tag]) -> list[Tag]:
+        """HEADER_FIELDS/COLUMN_FIELDS どちらも解決できない対象テーブルは 0 件にする
 
-        行が属するテーブルで HEADER_FIELDS が 1 列も解決できず、かつ
-        COLUMN_FIELDS も未設定 (空辞書) の場合、そのテーブルの行は
-        フィールドが一切埋まらない無意味なレコードになるため 0 件として
-        除外し、サイト名を含む WARNING を出す (テーブルごとに 1 回だけ)。
-        行がテーブルに属さない (`<table>` の外) 場合は素通しする。
+        `table` で HEADER_FIELDS が 1 列も解決できず、かつ COLUMN_FIELDS も
+        未設定 (空辞書) の場合、`rows` はフィールドが一切埋まらない無意味な
+        レコードになるため空リストにして、サイト名を含む WARNING を出す。
+
+        `_load_rows` を丸ごとオーバーライドして単一の対象テーブルから
+        データ行を切り出す派生 adapter (`city_kitakyushu` / `city_maebashi`
+        等、T402 reviewer 指摘 M-1) は、基底 `_load_rows` 内の
+        `_filter_rows_with_resolvable_columns` を経由しないため、自前の
+        `_load_rows` の末尾でこのヘルパーを明示的に呼ぶ必要がある。
+        HEADER_FIELDS が未設定 / rows が既に空 / `table` が渡されない場合は
+        何もせず `rows` をそのまま返す。
         """
-        kept: list[Tag] = []
-        warned_table_ids: set[int] = set()
+        if not rows or not self.HEADER_FIELDS:
+            return rows
+        if not isinstance(table, Tag):
+            return rows
+
+        header_map = self._resolve_and_cache_header_fields(table)
+        if header_map or self.COLUMN_FIELDS:
+            return rows
+
+        logger.warning(
+            "[%s] HEADER_FIELDS を解決できず、COLUMN_FIELDS も未設定のため "
+            "テーブルの行を 0 件として扱います",
+            self.site_config.name,
+        )
+        return []
+
+    def _filter_rows_with_resolvable_columns(self, candidate_rows: list[Tag]) -> list[Tag]:
+        """HEADER_FIELDS 使用時、列を解決できないテーブルの行を除外する
+
+        行が属するテーブルごとにグループ化し、テーブル単位で
+        `_rows_or_empty_with_warning` を適用する (WARNING もテーブルごとに
+        1 回だけ)。行がテーブルに属さない (`<table>` の外) 場合は素通しする。
+        """
+        if not self.HEADER_FIELDS:
+            return candidate_rows
+
+        groups: dict[int, tuple[Tag | None, list[Tag]]] = {}
+        order: list[int] = []
         for row in candidate_rows:
             table = row.find_parent("table")
-            if not isinstance(table, Tag):
-                kept.append(row)
-                continue
-            header_map = self._resolve_and_cache_header_fields(table)
-            if header_map or self.COLUMN_FIELDS:
-                kept.append(row)
-                continue
-            if id(table) not in warned_table_ids:
-                warned_table_ids.add(id(table))
-                logger.warning(
-                    "[%s] HEADER_FIELDS を解決できず、COLUMN_FIELDS も未設定のため "
-                    "テーブルの行を 0 件として扱います",
-                    self.site_config.name,
-                )
+            key = id(table) if isinstance(table, Tag) else id(row)
+            if key not in groups:
+                groups[key] = (table if isinstance(table, Tag) else None, [])
+                order.append(key)
+            groups[key][1].append(row)
+
+        kept: list[Tag] = []
+        for key in order:
+            table, rows = groups[key]
+            kept.extend(self._rows_or_empty_with_warning(table, rows))
         return kept
 
     def _resolve_and_cache_header_fields(self, table: Tag) -> dict[int, str]:
@@ -315,17 +343,28 @@ class SinglePageTableAdapter(RuleBasedAdapter):
                 if found_col is not None:
                     break
 
-            # 2nd pass: 部分一致フォールバック
+            # 2nd pass: 部分一致フォールバック。複数列が候補になり得るため
+            # (例: label="種類" が「種類」「種類（推定）」両方にマッチ)、
+            # 先頭の列を採用しつつ曖昧だったことを DEBUG ログへ残す。
             if found_col is None:
                 for lbl in labels:
-                    for col, text in sorted_cols:
-                        if col in assigned_cols:
-                            continue
-                        if lbl in text:
-                            found_col = col
-                            break
-                    if found_col is not None:
-                        break
+                    candidates = [
+                        col for col, text in sorted_cols if col not in assigned_cols and lbl in text
+                    ]
+                    if not candidates:
+                        continue
+                    found_col = candidates[0]
+                    if len(candidates) > 1:
+                        logger.debug(
+                            "[%s] HEADER_FIELDS の部分一致で複数列が候補になりました "
+                            "(ラベル=%r, フィールド=%s, 採用列=%d, 候補列=%s)",
+                            self.site_config.name,
+                            lbl,
+                            field_name,
+                            found_col,
+                            candidates,
+                        )
+                    break
 
             if found_col is not None:
                 result[found_col] = field_name

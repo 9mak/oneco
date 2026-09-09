@@ -189,3 +189,40 @@ class TestCityMaebashiAdapter:
 
         assert normalized is not None
         assert hasattr(normalized, "species")
+
+
+class TestCityMaebashiHeaderFallback:
+    """T402 reviewer 指摘 M-1: `_load_rows` 独自実装でも 0 件+WARNING フォールバックが効くこと"""
+
+    def test_unresolvable_header_yields_zero_rows_with_warning(self, caplog):
+        """ヘッダ文言が HEADER_FIELDS の既知ラベル (管理番号/収容場所/犬種/性別) と
+        一致しなくなった場合、空フィールドのレコードを収集し続けず 0 件へ
+        フォールバックし、サイト名入りの WARNING を出す。
+        """
+        html = """
+        <html><body>
+          <table summary="前橋市保健所における保護（収容）犬情報一覧について">
+            <thead>
+              <tr>
+                <th>ラベルA</th><th>ラベルB</th><th>ラベルC</th>
+                <th>ラベルD</th><th>ラベルE</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><a href="/47415.html">2026-05-02</a></td>
+                <td><a href="/47415.html"><img src="dog.jpg"></a></td>
+                <td>市之関町</td>
+                <td>雑種</td>
+                <td>オス</td>
+              </tr>
+            </tbody>
+          </table>
+        </body></html>
+        """
+        adapter = CityMaebashiAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            with caplog.at_level("WARNING"):
+                result = adapter.fetch_animal_list()
+        assert result == []
+        assert any("前橋市（保護犬）" in record.message for record in caplog.records)
