@@ -354,6 +354,37 @@ class TestHttpGetEncoding:
 
         assert "保護されている犬猫の収容情報" in result
 
+    def test_prefers_meta_charset_over_wrong_apparent_encoding(self):
+        """`<meta charset>` 宣言があれば chardet (apparent_encoding) の誤判定より優先する (T131)
+
+        実例 (川崎市 www.city.kawasaki.jp): Content-Type に charset が無く、
+        ページは `<meta charset="UTF-8">` を宣言しているにも関わらず、
+        requests.Response.apparent_encoding (chardet) が "ptcp154"
+        (Cyrillic/Asian 系コードページ) と誤判定し、全文が文字化けして
+        ラベルマッチが一切ヒットしない抽出漏れが起きていた。
+        """
+        adapter = _ConcreteAdapter(_site())
+        body = (
+            '<html><head><meta charset="UTF-8"></head><body>'
+            + "管理番号 R8-142 収容場所 高津区諏訪 " * 6
+            + "</body></html>"
+        )
+        resp = self._response(body, source_encoding="utf-8", content_type="text/html")
+
+        # apparent_encoding が誤判定するケースを再現する
+        with (
+            patch.object(
+                type(resp),
+                "apparent_encoding",
+                new_callable=lambda: property(lambda self: "ptcp154"),
+            ),
+            patch("requests.get", return_value=resp),
+        ):
+            result = adapter._http_get("https://example.com/")
+
+        assert "高津区諏訪" in result
+        assert "管理番号" in result
+
     def test_respects_explicit_charset_in_header(self):
         """ヘッダに charset 明示がある場合はそれを尊重する (回帰防止)"""
         adapter = _ConcreteAdapter(_site())
