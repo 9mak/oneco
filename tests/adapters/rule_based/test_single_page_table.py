@@ -129,3 +129,211 @@ class TestSinglePageTableAdapter:
         assert raw.breed == "柴犬"
         assert raw.management_number == "2026-001"
         assert raw.description == "人懐っこい"
+
+
+class _HeaderFieldsAdapter(SinglePageTableAdapter):
+    """HEADER_FIELDS の基本動作を検証するための最小 adapter"""
+
+    ROW_SELECTOR = "table tbody tr"
+    HEADER_FIELDS: dict = {
+        "種類": "species",
+        "毛色": "color",
+        ("性別", "性別（推定）"): "sex",  # tuple = OR
+        "場所": "location",  # 完全一致は無いので部分一致 (収容場所) にフォールバック
+    }
+    SHELTER_DATE_DEFAULT = ""
+
+
+HEADER_TABLE_HTML = """
+<html><body>
+  <table>
+    <thead>
+      <tr><th>種類</th><th>毛色</th><th>性別</th><th>収容場所</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>柴犬</td><td>茶</td><td>オス</td><td>高松市</td></tr>
+      <tr><td>雑種</td><td>白</td><td>メス</td><td>丸亀市</td></tr>
+    </tbody>
+  </table>
+</body></html>
+"""
+
+
+class TestHeaderFields:
+    """HEADER_FIELDS (ヘッダ駆動列マッピング) の解決ロジックを検証する (T402)"""
+
+    def test_resolves_columns_from_thead(self):
+        adapter = _HeaderFieldsAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=HEADER_TABLE_HTML):
+            adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details("https://example.com/list/#row=0", category="lost")
+        assert raw.species == "柴犬"
+        assert raw.color == "茶"
+        assert raw.sex == "オス"
+        assert raw.location == "高松市"
+
+    def test_tuple_label_is_or_matched(self):
+        # ヘッダが「性別（推定）」表記でも tuple の 2 番目のラベルでマッチする
+        html = HEADER_TABLE_HTML.replace("<th>性別</th>", "<th>性別（推定）</th>")
+        adapter = _HeaderFieldsAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details("https://example.com/list/#row=0", category="lost")
+        assert raw.sex == "オス"
+
+    def test_exact_match_preferred_over_substring(self):
+        # 完全一致する「種類」列と、部分一致もしうる別列が並んでいても
+        # 完全一致する列が優先して採用される。
+        class _Adapter(SinglePageTableAdapter):
+            ROW_SELECTOR = "table tbody tr"
+            HEADER_FIELDS = {"種類": "species"}
+
+        html = (
+            "<html><body><table><thead>"
+            "<tr><th>動物の種類詳細</th><th>種類</th></tr>"
+            "</thead><tbody>"
+            "<tr><td>誤爆用テキスト</td><td>猫</td></tr>"
+            "</tbody></table></body></html>"
+        )
+        adapter = _Adapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details("https://example.com/list/#row=0", category="lost")
+        assert raw.species == "猫"
+
+    def test_colspan_expands_header_to_multiple_columns(self):
+        class _Adapter(SinglePageTableAdapter):
+            ROW_SELECTOR = "table tbody tr"
+            HEADER_FIELDS = {"種類": "species", "場所": "location"}
+            COLUMN_FIELDS = {1: "sex"}  # colspan で場所列は 1,2 列目相当になる
+
+        html = (
+            "<html><body><table><thead>"
+            "<tr><th>種類</th><th colspan='2'>場所</th></tr>"
+            "</thead><tbody>"
+            "<tr><td>犬</td><td>高松市</td><td>朝日町</td></tr>"
+            "</tbody></table></body></html>"
+        )
+        adapter = _Adapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details("https://example.com/list/#row=0", category="lost")
+        assert raw.species == "犬"
+        # colspan=2 の "場所" ヘッダは列 1 に解決される (最初に見つかった列)
+        assert raw.location == "高松市"
+
+    def test_rowspan_carries_header_text_to_next_header_row(self):
+        class _Adapter(SinglePageTableAdapter):
+            ROW_SELECTOR = "table tbody tr"
+            HEADER_FIELDS = {"管理番号": "management_number", "種類": "species", "性別": "sex"}
+
+        html = (
+            "<html><body><table><thead>"
+            "<tr><th rowspan='2'>管理番号</th><th colspan='2'>属性</th></tr>"
+            "<tr><th>種類</th><th>性別</th></tr>"
+            "</thead><tbody>"
+            "<tr><td>2026-001</td><td>猫</td><td>メス</td></tr>"
+            "</tbody></table></body></html>"
+        )
+        adapter = _Adapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details("https://example.com/list/#row=0", category="lost")
+        assert raw.management_number == "2026-001"
+        assert raw.species == "猫"
+        assert raw.sex == "メス"
+
+    def test_multiple_tables_resolved_independently(self):
+        class _Adapter(SinglePageTableAdapter):
+            ROW_SELECTOR = "table tbody tr"
+            HEADER_FIELDS = {"種類": "species", "性別": "sex"}
+
+        html = (
+            "<html><body>"
+            "<table><thead><tr><th>種類</th><th>性別</th></tr></thead>"
+            "<tbody><tr><td>犬</td><td>オス</td></tr></tbody></table>"
+            "<table><thead><tr><th>性別</th><th>種類</th></tr></thead>"
+            "<tbody><tr><td>メス</td><td>猫</td></tr></tbody></table>"
+            "</body></html>"
+        )
+        adapter = _Adapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            adapter.fetch_animal_list()
+            raw0 = adapter.extract_animal_details(
+                "https://example.com/list/#row=0", category="lost"
+            )
+            raw1 = adapter.extract_animal_details(
+                "https://example.com/list/#row=1", category="lost"
+            )
+        assert raw0.species == "犬"
+        assert raw0.sex == "オス"
+        # 2 つ目のテーブルは列順が逆でも、それぞれ独立してヘッダから解決される
+        assert raw1.species == "猫"
+        assert raw1.sex == "メス"
+
+    def test_header_not_found_falls_back_to_column_fields(self):
+        class _Adapter(SinglePageTableAdapter):
+            ROW_SELECTOR = "table tr"
+            SKIP_FIRST_ROW = False
+            HEADER_FIELDS = {"種類": "species"}
+            COLUMN_FIELDS = {0: "species", 1: "sex"}
+
+        # <thead> も <th> も無い (ヘッダ行が存在しない) テーブル
+        html = "<html><body><table><tr><td>犬</td><td>オス</td></tr></table></body></html>"
+        adapter = _Adapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            result = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details("https://example.com/list/#row=0", category="lost")
+        assert len(result) == 1
+        assert raw.species == "犬"
+        assert raw.sex == "オス"
+
+    def test_header_and_column_fields_both_unresolved_yields_zero_rows(self, caplog):
+        class _Adapter(SinglePageTableAdapter):
+            ROW_SELECTOR = "table tr"
+            SKIP_FIRST_ROW = False
+            HEADER_FIELDS = {"種類": "species"}
+            COLUMN_FIELDS: dict = {}
+
+        html = "<html><body><table><tr><td>犬</td><td>オス</td></tr></table></body></html>"
+        adapter = _Adapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            with caplog.at_level("WARNING"):
+                result = adapter.fetch_animal_list()
+        assert result == []
+        assert any("サンプル収容情報" in record.message for record in caplog.records)
+
+    def test_header_text_whitespace_and_fullwidth_normalized(self):
+        class _Adapter(SinglePageTableAdapter):
+            ROW_SELECTOR = "table tbody tr"
+            HEADER_FIELDS = {"種類": "species"}
+
+        html = (
+            "<html><body><table><thead>"
+            "<tr><th>　種類　</th></tr>"  # 全角スペースで囲まれている
+            "</thead><tbody><tr><td>犬</td></tr></tbody></table></body></html>"
+        )
+        adapter = _Adapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details("https://example.com/list/#row=0", category="lost")
+        assert raw.species == "犬"
+
+    def test_resolve_header_fields_introspection_without_http(self):
+        """監査スクリプトが HTTP なしで列解決を確認できることを検証する"""
+        from bs4 import BeautifulSoup
+
+        adapter = _HeaderFieldsAdapter(_site())
+        soup = BeautifulSoup(HEADER_TABLE_HTML, "html.parser")
+        table = soup.find("table")
+        resolved = adapter.resolve_header_fields(table)
+        assert resolved == {0: "species", 1: "color", 2: "sex", 3: "location"}
+
+    def test_resolve_header_fields_accepts_soup_container(self):
+        """`<table>` そのものでなく soup 全体を渡しても最初のテーブルを解決する"""
+        from bs4 import BeautifulSoup
+
+        adapter = _HeaderFieldsAdapter(_site())
+        soup = BeautifulSoup(HEADER_TABLE_HTML, "html.parser")
+        resolved = adapter.resolve_header_fields(soup)
+        assert resolved == {0: "species", 1: "color", 2: "sex", 3: "location"}
