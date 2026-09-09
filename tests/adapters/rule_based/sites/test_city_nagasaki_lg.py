@@ -16,11 +16,14 @@ from unittest.mock import patch
 import pytest
 
 from data_collector.adapters.municipality_adapter import ParsingError
+from data_collector.adapters.rule_based import sites  # noqa: F401  registry 登録用
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
-from data_collector.adapters.rule_based.sites.city_nagasaki_lg import (
-    CityNagasakiLgAdapter,
-)
 from data_collector.llm.config import SiteConfig
+
+# T405: spec 駆動の GenericAdapter へ移行したため registry 経由でクラスを引く
+# (spec: config/site_specs/city_nagasaki_lg.yaml)。
+CityNagasakiLgAdapter = SiteAdapterRegistry.get("長崎市動物愛護管理センター（犬里親募集）")
+assert CityNagasakiLgAdapter is not None
 
 
 def _site(
@@ -125,18 +128,33 @@ class TestCityNagasakiLgAdapterRegistration:
     def test_species_inference_helper(self):
         """サイト名で species が決まる (犬里親募集→犬 / 猫里親募集→猫)
 
-        個体取得は行わないが、サイトが個体を載せ始めたときに再利用するため
-        ヘルパー自体は残している。
+        個体取得は行わないが、サイトが個体を載せ始めたときに再利用できるよう、
+        `species: {strategy: from_site_name}` (spec) → `_resolve_species`
+        (GenericAdapter 共通ロジック) として一般化された (T405)。旧 adapter 固有の
+        `_infer_species_from_site_name` static method は廃止したため、
+        GenericAdapter の `_resolve_species` を直接検証する。
         """
-        assert (
-            CityNagasakiLgAdapter._infer_species_from_site_name(
-                "長崎市動物愛護管理センター（犬里親募集）"
-            )
-            == "犬"
+        from data_collector.adapters.rule_based.generic_adapter import _resolve_species
+        from data_collector.adapters.rule_based.site_spec import SiteSpec, SpeciesRule
+
+        spec = SiteSpec(
+            names=("長崎市動物愛護管理センター（犬里親募集）",),
+            mode="table_vertical",
+            row_selector="tr",
+            species=SpeciesRule(strategy="from_site_name"),
         )
-        assert (
-            CityNagasakiLgAdapter._infer_species_from_site_name(
-                "長崎市動物愛護管理センター（猫里親募集）"
+
+        dog_adapter = CityNagasakiLgAdapter(_site(name="長崎市動物愛護管理センター（犬里親募集）"))
+        fields: dict[str, str] = {}
+        _resolve_species(fields, dog_adapter, spec)
+        assert fields["species"] == "犬"
+
+        cat_adapter = CityNagasakiLgAdapter(
+            _site(
+                name="長崎市動物愛護管理センター（猫里親募集）",
+                list_url="https://www.city.nagasaki.lg.jp/site/doubutsuaigo/list7-18.html",
             )
-            == "猫"
         )
+        fields = {}
+        _resolve_species(fields, cat_adapter, spec)
+        assert fields["species"] == "猫"

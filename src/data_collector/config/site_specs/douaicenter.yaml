@@ -1,0 +1,42 @@
+# 旭川市あにまある (douaicenter.jp) — 旧 sites/douaicenter.py (T405 で移行)
+# list/detail テンプレートが 8 サイト共通なので 1 spec で束ねる。
+names:
+  - "旭川市あにまある（譲渡犬）"
+  - "旭川市あにまある（譲渡猫）"
+  - "旭川市あにまある（譲渡その他）"
+  - "旭川市あにまある（収容犬）"
+  - "旭川市あにまある（収容猫）"
+  - "旭川市あにまある（収容その他）"
+  - "旭川市あにまある（市民保護犬）"
+  - "旭川市あにまある（市民保護猫）"
+mode: list_detail
+list_link_selector: ".animal-list-img-box a[href*='/animal/'], .animal-list-img-box a[href*='/other-animal/']"
+image_selector: "img"
+field_selectors:
+  species:
+    label: "種類"
+  sex:
+    label: "性別"
+  age:
+    label: "年齢"
+  color:
+    label: "毛色"
+  size:
+    label: "体格"
+  shelter_date:
+    label:
+      - "保護日"
+      - "不明日"
+      - "収容日"
+  location:
+    label:
+      - "保護場所"
+      - "不明場所"
+      - "収容場所"
+  phone:
+    label: "連絡先"
+species:
+  strategy: from_url
+postprocess:
+  # 旭川市動物愛護センター あにまある 代表電話 (全ページのヘッダ/フッタに固定埋め込み)
+  - "phone_fallback:0166-25-5271"

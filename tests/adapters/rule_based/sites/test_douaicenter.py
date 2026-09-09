@@ -10,13 +10,15 @@ from unittest.mock import patch
 
 import pytest
 
+from data_collector.adapters.rule_based import sites  # noqa: F401  registry 登録用
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
-from data_collector.adapters.rule_based.sites.douaicenter import DouaicenterAdapter
 from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
 
-# fixture HTML には不要だがインポートで registry に副作用登録される。
-# pytest 内で site_config 依存の fixture は使わず、明示的に SiteConfig を構築する。
+# T405: spec 駆動の GenericAdapter へ移行したため registry 経由でクラスを引く
+# (spec: config/site_specs/douaicenter.yaml)。
+DouaicenterAdapter = SiteAdapterRegistry.get("旭川市あにまある（譲渡犬）")
+assert DouaicenterAdapter is not None
 
 
 # 譲渡犬サイト想定。fixture 名と一致させる。

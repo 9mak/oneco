@@ -1,0 +1,28 @@
+# 栃木県動物愛護指導センター「迷子動物収容情報」— 旧 sites/douai_pref_tochigi_stray.py (T405 で移行)
+names:
+  - "栃木県動物愛護指導センター（迷子動物・犬）"
+  - "栃木県動物愛護指導センター（迷子動物・猫）"
+mode: list_detail
+list_link_selector: "a[href$='.html']"
+image_selector: "#gazou img"
+image_filter: exclude_no_filename
+field_selectors:
+  management_number:
+    label: "管理番号"
+  shelter_date:
+    label: "収容日"
+  location:
+    label: "収容場所"
+  # 「動物種別」(犬/猫) が本当の species。「種類」(雑種/柴犬等) は breed。
+  species:
+    label: "動物種別"
+  breed:
+    label: "種類"
+  sex:
+    label: "性別"
+  age:
+    label: "年齢"
+  color:
+    label: "毛色"
+  size:
+    label: "大きさ"

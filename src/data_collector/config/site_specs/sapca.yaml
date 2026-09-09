@@ -1,0 +1,30 @@
+# 滋賀県動物保護管理センター（迷い犬猫） — 旧 sites/sapca.py (T405 で移行)
+names:
+  - "滋賀県動物保護管理センター（迷い犬猫）"
+mode: list_detail
+list_link_selector: "ul.list li:not(.sumi) a[href*='/lost/'][href$='.html']"
+link_exclude_markers:
+  - "戻りました"
+  - "決まりました"
+image_selector: "img"
+field_selectors:
+  species:
+    label: "種類"
+  sex:
+    label: "性別"
+  age:
+    label: "年齢"
+  color:
+    label: "毛色"
+  size:
+    label: "体格"
+  shelter_date:
+    label:
+      - "収容日"
+      - "保護日"
+  location:
+    label:
+      - "保護した場所"
+      - "保護場所"
+  phone:
+    label: "連絡先"
