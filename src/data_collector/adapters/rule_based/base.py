@@ -77,6 +77,28 @@ _PHONE_PLAIN_RE = re.compile(r"\b(0\d{9})\b")
 _PHONE_MOBILE_RE = re.compile(r"\b(0[789]0\d{8})\b")
 
 
+# <meta charset> の宣言名を Python codec 名に寄せる。
+# 自治体サイトの "Shift_JIS" 宣言は実体が CP932（Windows 拡張。①②③ や ～ 等を含む）で
+# あることが多く、Python の "shift_jis" codec で厳密に復号すると丸数字が U+FFFD に化ける
+# （PR #379 reviewer F-01、実例: mie-dakc.server-shared.com）。CP932 は Shift_JIS の
+# 上位互換なので常に CP932 で読む。EUC-JP も同様に上位互換の eucjp-ms へ寄せない
+# （requests 側の apparent_encoding と同じ名前を保つ）。
+_CHARSET_ALIASES: dict[str, str] = {
+    "shift_jis": "cp932",
+    "shift-jis": "cp932",
+    "shiftjis": "cp932",
+    "sjis": "cp932",
+    "x-sjis": "cp932",
+    "ms932": "cp932",
+    "windows-31j": "cp932",
+    "cp932": "cp932",
+}
+
+
+def _canonical_charset(name: str) -> str:
+    return _CHARSET_ALIASES.get(name.strip().lower(), name)
+
+
 class RuleBasedAdapter(MunicipalityAdapter):
     """rule-based 抽出アダプターの共通基底クラス
 
@@ -143,9 +165,20 @@ class RuleBasedAdapter(MunicipalityAdapter):
         # requests は charset 未指定の text/* に ISO-8859-1 を仮定する
         # (RFC 2616 §3.7.1)。<meta charset=...> でしか文字コードを宣言しない
         # 自治体サイトで日本語が文字化けするため、ヘッダ未指定時は
-        # byte 検出 (apparent_encoding) にフォールバックする。
+        # HTML 内の <meta charset=...> を優先し、無ければ byte 検出
+        # (apparent_encoding) にフォールバックする。
+        #
+        # T131 (2026-09-09) で判明: response.apparent_encoding (chardet) は
+        # Content-Type に charset が無い自治体サイトで日本語 UTF-8 ページを
+        # 誤検出することがある (実例: 川崎市 www.city.kawasaki.jp は
+        # `<meta charset="UTF-8">` を宣言しているのに apparent_encoding は
+        # "ptcp154" (Cyrillic/Asian 系コードページ) と誤判定し、全ページが
+        # 文字化けして DOM ラベルマッチが 1 件もヒットせず抽出漏れになっていた)。
+        # <meta charset> は生バイト列を ASCII 相当として読めるため、
+        # apparent_encoding より優先して信頼できる。
         if "charset=" not in response.headers.get("Content-Type", "").lower():
-            response.encoding = response.apparent_encoding
+            meta_charset = self._sniff_meta_charset(response.content)
+            response.encoding = meta_charset or response.apparent_encoding
         text = response.text
         # 構造崩壊 / 空ページ検出: HTTP 200 でも本文が極端に短いケースを警告ログに出す。
         # adapter 個別の ParsingError と snapshot 件数比較 (Task #9) のバックアップとして、
@@ -157,6 +190,23 @@ class RuleBasedAdapter(MunicipalityAdapter):
                 f"構造崩壊 or 空ページの可能性 (url={url})"
             )
         return text
+
+    @staticmethod
+    def _sniff_meta_charset(raw_bytes: bytes) -> str | None:
+        """生バイト列の先頭から `<meta charset="...">` / `<meta ... content="...charset=...">` を探す
+
+        `<meta>` タグは HTML 冒頭 (通常 1KB 以内) にあり、charset 宣言自体は
+        ASCII 文字のみで構成されるため、実際のエンコーディングが何であれ
+        Latin-1 として読んでも安全に検出できる (T131)。
+
+        Returns:
+            見つかった charset 名 (例 "UTF-8")。見つからなければ None。
+        """
+        head = raw_bytes[:2048].decode("ascii", errors="ignore")
+        m = re.search(r'<meta[^>]+charset=["\']?\s*([\w-]+)', head, re.IGNORECASE)
+        if m:
+            return _canonical_charset(m.group(1))
+        return None
 
     # ─────────────────── URL ヘルパー ───────────────────
 
