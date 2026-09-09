@@ -165,6 +165,33 @@ class TestPrefShizuokaAdapter:
 
         assert raw.phone == "055-920-2102"
 
+    def test_extract_breed_location_sex_size_from_detail_page(self, fixture_html):
+        """detail ページの dt/dd ラベル (犬種/保護した場所/性別/体格) から
+        breed/location/sex/size を抽出する (T131 Tier2)
+        """
+        list_html = fixture_html("pref_shizuoka_jp")
+        detail_html = """
+        <html><body><article id="content"><dl>
+            <dt>管理番号</dt><dd>2608TD004</dd>
+            <dt>保護年月日</dt><dd>令和8年8月1日</dd>
+            <dt>保護した場所</dt><dd>静岡市葵区昭府</dd>
+            <dt>犬種</dt><dd>雑種</dd>
+            <dt>性別</dt><dd>オス</dd>
+            <dt>体格</dt><dd>中型</dd>
+        </dl></article></body></html>
+        """
+        adapter = PrefShizuokaAdapter(_site())
+
+        with patch.object(adapter, "_http_get", side_effect=[list_html, detail_html]):
+            urls = adapter.fetch_animal_list()
+            first_url, category = urls[0]
+            raw = adapter.extract_animal_details(first_url, category=category)
+
+        assert raw.breed == "雑種"
+        assert raw.location == "静岡市葵区昭府"
+        assert raw.sex == "オス"
+        assert raw.size == "中型"
+
     def test_detail_phone_fetch_failure_falls_back_to_empty(self, fixture_html):
         """detail ページ取得が失敗しても致命エラーにせず phone="" にフォールバックする"""
         list_html = fixture_html("pref_shizuoka_jp")
