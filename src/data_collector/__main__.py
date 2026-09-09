@@ -6,7 +6,6 @@ import logging
 import os
 import re
 import signal
-import subprocess
 import sys
 import time
 from pathlib import Path
@@ -33,6 +32,8 @@ from .domain.content_anomaly import ContentAnomaly, detect_content_anomalies
 from .domain.diff_detector import DiffDetector
 from .domain.quality_metrics import compute_missing_rates, group_animals_by_site
 from .infrastructure.database.connection import DatabaseConnection, DatabaseSettings
+from .infrastructure.diagnosis import SiteDiagnosis, diagnose_sites
+from .infrastructure.diagnosis_report import build_discord_summary, write_artifacts
 from .infrastructure.notification_client import NotificationClient, NotificationLevel
 from .infrastructure.output_writer import OutputWriter
 from .infrastructure.site_baseline_tracker import (
@@ -563,22 +564,25 @@ _RUN_FAIL_RATIO_CRITICAL = 0.2
 # 追える)。通知本文だけをこの件数に絞る。
 NEVER_POPULATED_NOTIFY_CAP = 20
 
-# LLM コード修正では直せない失敗原因のパターン。
-# ネットワーク断・HTTP エラー (403/404/5xx)・タイムアウトは adapter コードを
-# いくらパッチしても直らないため、auto-fix の候補から除外する。
-# (2026-07: 山梨県のネットワーク断続エラーが日次 MAX_SITES=3 枠を 2 週間
-#  占有し、本当に構造が壊れていた柏市・群馬に修理が回らなかった反省)
+# 診断対象から除外する失敗原因のパターン。
+# ネットワーク断・HTTP エラー (403/404/5xx)・タイムアウトは診断結果の
+# HTTP status がそのまま原因を示すため、DOM/selector 診断 (追加 GET 1回) を
+# 重ねる価値が薄い。
+# (2026-07: 山梨県のネットワーク断続エラーが旧 auto-fix の日次 MAX_SITES=3 枠を
+#  2 週間占有し、本当に構造が壊れていた柏市・群馬に修理が回らなかった反省。
+#  診断枠でも同じ希釈が起きうるため踏襲する)
 _NON_CODE_FIXABLE_ERROR_PATTERN = re.compile(
     r"ネットワークエラー|HTTP エラー|timed out|ConnectTimeoutError|NewConnectionError|Connection refused"
 )
 
 
-def _is_llm_fixable_error(error_message: str | None) -> bool:
-    """broken_tracker の失敗原因が LLM コード修正で直せる種類かを返す。
+def _is_selector_diagnosable_error(error_message: str | None) -> bool:
+    """broken_tracker の失敗原因が selector/DOM 診断の対象になる種類かを返す。
 
     ParsingError (「行要素が見つかりません」等) や件数低下異常は DOM 構造
-    変化の可能性が高く auto-fix の本来の対象。ネットワーク/HTTP/timeout は
-    対象外。分類不能 (空文字/None) は安全側で True (= 従来通り候補に含める)。
+    変化の可能性が高く診断の本来の対象。ネットワーク/HTTP/timeout は対象外
+    (HTTP status 自体が原因を語るため)。分類不能 (空文字/None) は安全側で
+    True (= 従来通り候補に含める)。
     """
     if not error_message:
         return True
@@ -625,96 +629,24 @@ def _verify_zero_regressions(
     return verified
 
 
-def _trigger_auto_fix(site_names: list[str], logger: logging.Logger) -> dict[str, Any]:
-    """検知された壊れサイトについて auto-fix-adapter.yml ワークフローを起動する。
-
-    Phase 1 の検知シグナル (broken_tracker.critical_sites /
-    zero_count_regressions / field_drifts) を集約して、Phase 2 ワーカー
-    (.github/workflows/auto-fix-adapter.yml) に橋渡しする。
-
-    安全機構:
-    - kill switch: `ONECO_AUTO_FIX_ENABLED=true` でないと一切起動しない
-      (デフォルト false: 自己修復は user の明示的な opt-in が必要)
-    - dry_run: `ONECO_AUTO_FIX_DRY_RUN` (default 'true') = true なら
-      auto-fix worker はパッチ生成 + ガード確認までして PR は作らない。
-      安定確認後 false に切り替えて本番自動修復化する段階リリース
-    - 上限: `ONECO_AUTO_FIX_MAX_SITES` (default 3) で 1 run あたりの起動数を
-      キャップ (並列爆発・LLM コスト爆発防止)
-    - dedup: 同じサイトが複数経路 (broken + drift + zero_count) から来ても 1 度だけ
-    - best-effort: gh CLI の失敗は logger.warning にとどめ、収集パイプラインは継続
-
-    Returns:
-        dict with keys:
-        - invoked: dispatch 成功した workflow run 数
-        - attempted: dispatch を試行した数 (失敗含む)
-        - candidates: 集約された候補数 (dedup 後)
-        - disabled: kill switch off だったか
-
-        attempted > invoked は dispatch 失敗 = silent failure シグナル。
-        呼び出し側 (`_send_run_summary_alert`) で Discord 通知に折り込み、
-        自己修復が静かに動いていない状態を可視化する。
-    """
-    # 順序保持 dedup (kill switch off でも candidates 数のレポートに使う)
+def _dedup_site_names(site_names: list[str]) -> list[str]:
+    """順序保持 dedup。診断候補の集約に使う (旧 _trigger_auto_fix と同じ挙動)。"""
     seen: set[str] = set()
     uniq: list[str] = []
     for name in site_names:
         if name not in seen:
             seen.add(name)
             uniq.append(name)
+    return uniq
 
-    if os.environ.get("ONECO_AUTO_FIX_ENABLED", "false").lower() != "true":
-        if uniq:
-            logger.info(f"auto-fix-adapter: {len(uniq)} 件の検知サイトあり (kill switch off)")
-        return {"invoked": 0, "attempted": 0, "candidates": len(uniq), "disabled": True}
 
-    if not uniq:
-        return {"invoked": 0, "attempted": 0, "candidates": 0, "disabled": False}
+def _diagnosis_enabled() -> bool:
+    """壊れサイト構造診断の kill switch。既定 true (`ONECO_DIAGNOSIS_ENABLED`)。
 
-    max_sites = int(os.environ.get("ONECO_AUTO_FIX_MAX_SITES", "3"))
-    targets = uniq[:max_sites]
-    dry_run = os.environ.get("ONECO_AUTO_FIX_DRY_RUN", "true").lower() == "true"
-
-    if len(uniq) > max_sites:
-        logger.warning(
-            f"auto-fix-adapter: 検知 {len(uniq)} 件のうち {max_sites} 件のみ起動 "
-            f"(残り {len(uniq) - max_sites} 件は次回 run で対象)"
-        )
-
-    invoked = 0
-    attempted = 0
-    for site_name in targets:
-        cmd = [
-            "gh",
-            "workflow",
-            "run",
-            "auto-fix-adapter.yml",
-            "-f",
-            f"site_name={site_name}",
-            "-f",
-            f"dry_run={'true' if dry_run else 'false'}",
-        ]
-        attempted += 1
-        try:
-            result = subprocess.run(cmd, capture_output=True, text=True, check=False)
-            if result.returncode == 0:
-                logger.info(f"auto-fix-adapter: 起動成功 site={site_name} dry_run={dry_run}")
-                invoked += 1
-            else:
-                logger.warning(
-                    f"auto-fix-adapter: 起動失敗 site={site_name} stderr={result.stderr[:200]}"
-                )
-        except (FileNotFoundError, OSError) as e:
-            # gh CLI 未インストール / 環境不整備でクラッシュしない
-            logger.warning(f"auto-fix-adapter: subprocess 失敗 ({e})")
-        except Exception as e:
-            # best-effort: 想定外でも収集パイプラインは止めない
-            logger.warning(f"auto-fix-adapter: 想定外エラー ({e})")
-    return {
-        "invoked": invoked,
-        "attempted": attempted,
-        "candidates": len(uniq),
-        "disabled": False,
-    }
+    診断は検知サイトごとに追加 GET 1 回を発生させるため、無効化できる余地を
+    残す (フォールバック運用中や大量検知時に GET を止めたい場合)。
+    """
+    return os.environ.get("ONECO_DIAGNOSIS_ENABLED", "true").lower() == "true"
 
 
 def _send_run_summary_alert(
@@ -730,7 +662,7 @@ def _send_run_summary_alert(
     never_populated_alerts: list[NeverPopulatedAlert] | None = None,
     zero_count_regressions: list[ZeroCountRegression] | None = None,
     persistent_zero_sites: list[PersistentZeroSite] | None = None,
-    auto_fix_result: dict[str, Any] | None = None,
+    diagnosis_count: int = 0,
     content_anomalies: list[ContentAnomaly] | None = None,
     sudden_drops: list[SuddenDropRegression] | None = None,
     fq_tracker: FieldQualityTracker | None = None,
@@ -747,8 +679,7 @@ def _send_run_summary_alert(
       - critical_sites (consec>=threshold) > 0
         OR total_failed > 0
         OR field_drifts (フィールド欠損率急増) > 0
-        OR zero_count_regressions (過去≥1件→今0件継続) > 0
-        OR auto_fix_result の dispatch 失敗 (attempted > invoked) → WARNING
+        OR zero_count_regressions (過去≥1件→今0件継続) > 0 → WARNING
       - 何も無ければ通知しない
 
     webhook 未設定時は NotificationClient が自動的に no-op になる。
@@ -771,23 +702,19 @@ def _send_run_summary_alert(
     継続しているサイト。zero_count_regressions では検知できない盲点
     (2026-07-24発覚、長崎犬猫ネットの事例) を埋めるための別枠検知。
 
-    auto_fix_result: `_trigger_auto_fix` の戻り値 dict。
-    `attempted > invoked` のとき dispatch 失敗を WARNING シグナルに含め、
-    自己修復が静かに動いていない状態を可視化する。
+    diagnosis_count: `diagnose_sites` が実際に診断したサイト数 (0 なら診断
+    自体が動かなかった/対象が無かった)。診断結果本文は
+    `build_discord_summary` が別途組み立てて通知本文の先頭に付与する
+    (このサマリアラートには件数のみ折り込む)。
 
     content_anomalies: `detect_content_anomalies` の検知結果。欠損率
     ドリフトとは異なり「値はあるが内容が不正」なケース(2026-07-24 発見:
     山梨県 breed に体格比較文混入、高知県 name に運営告知文混入)を検知する。
-    auto-fix 候補には含めない (内容不正は adapter の追加ロジックが必要な
-    ケースが多く、既存の LLM 自動修復ワーカーの対象範囲外のため)。
 
     sudden_drops: `SiteBaselineTracker.detect_sudden_drops` の検知結果。
     大分65→32型のように0件にはならないが1回の収集で件数が前回比50%以上
     急減したサイト(T107)。zero_count_regressions は複数run連続0件しか
-    検知できず、この種の部分的な件数低下は盲点だった。content_anomalies と
-    同様、auto-fix 候補には含めない (件数変動の原因調査には adapter の
-    コード修正以外の要因(サイト側の在庫変化・保健所都合等)が多く含まれ、
-    LLM 自動修復ワーカーの対象範囲外のため)。
+    検知できず、この種の部分的な件数低下は盲点だった。
     """
     if total_sites == 0:
         return
@@ -809,11 +736,6 @@ def _send_run_summary_alert(
     persistent_zeros = list(persistent_zero_sites) if persistent_zero_sites else []
     anomalies = list(content_anomalies) if content_anomalies else []
     drops = list(sudden_drops) if sudden_drops else []
-    # auto-fix dispatch 失敗の signal: attempted > invoked
-    af = auto_fix_result or {}
-    af_attempted = int(af.get("attempted", 0))
-    af_invoked = int(af.get("invoked", 0))
-    af_dispatch_failed = af_attempted > af_invoked
     has_warning = (
         bool(critical_sites_list)
         or total_failed > 0
@@ -823,7 +745,6 @@ def _send_run_summary_alert(
         or bool(persistent_zeros)
         or bool(anomalies)
         or bool(drops)
-        or af_dispatch_failed
     )
 
     if not (is_critical or has_warning):
@@ -846,6 +767,8 @@ def _send_run_summary_alert(
         message += f", 内容不正疑い {len(anomalies)} 件"
     if drops:
         message += f", 件数急減 {len(drops)} 件"
+    if diagnosis_count:
+        message += f", 構造診断 {diagnosis_count} 件 (詳細は別メッセージ/artifact)"
     details: dict[str, Any] = {
         "total_sites": total_sites,
         "succeeded": total_succeeded,
@@ -914,17 +837,8 @@ def _send_run_summary_alert(
         if len(drops) > 10:
             sample += f" ... (+{len(drops) - 10} more)"
         details["sudden_drops_sample"] = sample
-    # 自己修復ループ Phase 1→2 橋渡しの結果。attempted > invoked = silent failure。
-    # candidates > 0 でも disabled なら kill switch off (info only)。
-    if af:
-        details["auto_fix_candidates"] = af.get("candidates", 0)
-        details["auto_fix_attempted"] = af_attempted
-        details["auto_fix_invoked"] = af_invoked
-        if af.get("disabled"):
-            details["auto_fix_disabled"] = True
-        if af_dispatch_failed:
-            details["auto_fix_dispatch_failures"] = af_attempted - af_invoked
-            message += f", 自己修復 dispatch 失敗 {af_attempted - af_invoked} 件"
+    if diagnosis_count:
+        details["diagnosis_count"] = diagnosis_count
     try:
         notification_client.send_alert(level, message, details)
     except Exception as e:
@@ -1312,48 +1226,62 @@ def main():
             except Exception as e:
                 logger.warning(f"内容不正検知失敗: {e}")
 
-            # 自己修復ループ Phase 1→2 橋渡し: 検知サイトを auto-fix-adapter に
-            # 渡して LLM-assisted patch worker を起動する (kill switch off の
-            # 場合は no-op)。失敗時も収集パイプラインは止めない。
-            # 順序: summary 通知より先に実行し、auto_fix の dispatch 結果を
-            # Discord に折り込めるようにする (silent failure 検知)。
-            auto_fix_result: dict[str, Any] = {
-                "invoked": 0,
-                "attempted": 0,
-                "candidates": 0,
-                "disabled": False,
-            }
+            # 半自動診断 (T406): 自己修復ループ Phase 2 (LLM 自動修復ワーカー
+            # scripts/auto_fix_adapter.py) は 48 run 動かして PR 0 件だったため
+            # dispatch を停止し、代わりに「どのセレクタ/ラベルが壊れているか」を
+            # 人が読める形で構造化して提示する。失敗時も収集パイプラインは止めない。
+            diagnoses: list[SiteDiagnosis] = []
             try:
-                candidate_sites: list[str] = []
-                try:
-                    crit = broken_tracker.critical_sites(threshold=BROKEN_SITE_SKIP_THRESHOLD)
-                    # ネットワーク/HTTP/timeout 起因はコード修正で直らないため
-                    # auto-fix 候補から除外 (MAX_SITES 枠と LLM コストの浪費防止)
-                    fixable = [
-                        s for s in crit if _is_llm_fixable_error(broken_tracker.last_error(s))
-                    ]
-                    excluded = [s for s in crit if s not in fixable]
-                    if excluded:
-                        logger.info(
-                            f"auto-fix-adapter: ネットワーク/HTTP 起因の {len(excluded)} 件を"
-                            f"候補から除外: {excluded}"
-                        )
-                    candidate_sites.extend(fixable)
-                except Exception as e:
-                    logger.warning(f"critical_sites 取得失敗: {e}")
-                sites_by_name = {s.name: s for s in config.sites}
-                verified_zero_regressions = _verify_zero_regressions(
-                    zero_regressions, sites_by_name=sites_by_name, logger=logger
-                )
-                candidate_sites.extend(r.site_name for r in verified_zero_regressions)
-                candidate_sites.extend(s.site_name for s in persistent_zero_sites)
-                candidate_sites.extend(d.site_name for d in field_drifts)
-                auto_fix_result = _trigger_auto_fix(candidate_sites, logger=logger)
+                if _diagnosis_enabled():
+                    candidate_sites: list[str] = []
+                    try:
+                        crit = broken_tracker.critical_sites(threshold=BROKEN_SITE_SKIP_THRESHOLD)
+                        # ネットワーク/HTTP/timeout 起因は HTTP status で原因が
+                        # 自明なため診断候補から除外 (追加 GET の浪費防止)。
+                        diagnosable = [
+                            s
+                            for s in crit
+                            if _is_selector_diagnosable_error(broken_tracker.last_error(s))
+                        ]
+                        excluded = [s for s in crit if s not in diagnosable]
+                        if excluded:
+                            logger.info(
+                                f"診断: ネットワーク/HTTP 起因の {len(excluded)} 件を"
+                                f"候補から除外: {excluded}"
+                            )
+                        candidate_sites.extend(diagnosable)
+                    except Exception as e:
+                        logger.warning(f"critical_sites 取得失敗: {e}")
+                    sites_by_name = {s.name: s for s in config.sites}
+                    verified_zero_regressions = _verify_zero_regressions(
+                        zero_regressions, sites_by_name=sites_by_name, logger=logger
+                    )
+                    candidate_sites.extend(r.site_name for r in verified_zero_regressions)
+                    candidate_sites.extend(s.site_name for s in persistent_zero_sites)
+                    candidate_sites.extend(d.site_name for d in field_drifts)
+                    candidate_sites = _dedup_site_names(candidate_sites)
+                    diagnoses = diagnose_sites(
+                        candidate_sites, sites_by_name, snapshot_store=snapshot_store
+                    )
+                    if diagnoses:
+                        artifacts = write_artifacts(diagnoses)
+                        if artifacts:
+                            logger.info(f"診断artifact: {artifacts[0]}, {artifacts[1]}")
+                        discord_summary = build_discord_summary(diagnoses)
+                        if discord_summary:
+                            try:
+                                notification_client.send_alert(
+                                    NotificationLevel.WARNING,
+                                    f"壊れサイト構造診断 ({len(diagnoses)} 件)",
+                                    {"diagnosis": discord_summary},
+                                )
+                            except Exception as e:
+                                logger.warning(f"診断結果通知に失敗: {e}")
             except Exception as e:
-                logger.warning(f"auto-fix 橋渡しでエラー: {e}")
+                logger.warning(f"構造診断でエラー: {e}")
 
             # Slack / Discord 通知: 連続失敗サイト / 全体失敗率 / 欠損率ドリフト /
-            # 件数ゼロ回帰 / 自己修復 dispatch 失敗 に応じて Warning/Critical
+            # 件数ゼロ回帰 に応じて Warning/Critical。
             # `total_sites` は実行された数 (= total_succeeded + total_failed)。
             # len(config.sites) を渡すと robots-disallowed / 未登録 adapter /
             # 連続失敗 skip 等で実行されなかったサイトで分母が膨らみ、
@@ -1372,7 +1300,7 @@ def main():
                 never_populated_alerts=never_populated_alerts,
                 zero_count_regressions=zero_regressions,
                 persistent_zero_sites=persistent_zero_sites,
-                auto_fix_result=auto_fix_result,
+                diagnosis_count=len(diagnoses),
                 content_anomalies=content_anomalies,
                 sudden_drops=sudden_drops,
                 fq_tracker=fq_tracker,

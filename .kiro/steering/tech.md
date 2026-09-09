@@ -33,7 +33,7 @@
 ## Key Technical Decisions
 
 1. **rule-based を default 抽出に**（2026-05-15）: LLM API コスト $0 維持。壊れたら adapter を直す
-2. **自己修復ループ**（2026-06〜）: 検知(3トラッカー) → Groq で修復 PR → auto-merge。kill switch `ONECO_AUTO_FIX_ENABLED` 段階リリース
+2. **自己修復ループ → 構造診断**（2026-06〜09）: 検知(3トラッカー) → Groq で修復 PR → auto-merge を試したが 48 run 0 PR で 2026-09 (T406) に dispatch 撤去。代わりに検知サイトを構造診断して Discord/artifact で人に提示する半自動フローへ（kill switch `ONECO_DIAGNOSIS_ENABLED`）
 3. **収集データを git にコミット**: snapshot / broken_sites / baselines の履歴が git log に残る
 4. **Supabase anon 権限全剥奪**: DB アクセスは Cloud Run API 経由のみ（RLS + REVOKE の alembic 5本）
 

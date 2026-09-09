@@ -74,11 +74,11 @@ PYTHONPATH=src .venv/bin/python -m data_collector --kochi-only # 高知のみ
 
 | 変数 | 既定 | 説明 |
 |---|---|---|
-| `GROQ_API_KEY` | — | adapter 自己修復用（抽出は rule-based なので通常収集には不要） |
+| `GROQ_API_KEY` | — | 0件回帰の LLM 分類（`zero_count_verifier`）用（抽出は rule-based なので通常収集には不要） |
 | `SITE_TIMEOUT_SEC` / `SITE_TIMEOUT_JS_SEC` | 120 / 180 | サイト毎タイムアウト |
 | `ONECO_COLLECT_MAX_WORKERS` | — | 並列度（ドメイン単位） |
 | `BROKEN_SITE_SKIP_THRESHOLD` | 3 | 連続失敗でスキップする閾値 |
-| `ONECO_AUTO_FIX_ENABLED` / `_DRY_RUN` / `_MAX_SITES` | false / true / 3 | [自己修復](04-self-healing.md) の段階リリース制御 |
+| `ONECO_DIAGNOSIS_ENABLED` | true | [構造診断](04-self-healing.md) の kill switch |
 | `RETENTION_DAYS` | 180 | archive へ移動するまでの日数 |
 | `SLACK_WEBHOOK_URL` / `DISCORD_WEBHOOK_URL` | — | アラート通知先 |
 

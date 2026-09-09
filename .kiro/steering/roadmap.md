@@ -35,9 +35,8 @@
 - [x] robots.txt 遵守の自動チェック（`_apply_robots_policy` + `scripts/monitoring/check_robots.py`）
 
 ## Phase 1.6: 手離れ運用（現在地、2026-07）
-- [x] adapter 自己修復ループ（検知 → Groq 修復 PR → auto-merge。段階リリース中）
+- [x] adapter 自己修復ループ（検知 → Groq 修復 PR → auto-merge）→ 48 run 0 PR のため撤去、検知 → 半自動構造診断（`ONECO_DIAGNOSIS_ENABLED`）へ置き換え（2026-09 T406）
 - [x] 外形監視 / Secret 失効監視 / 収集品質アラート（Discord）
-- [ ] 自己修復の本番化判断（`ONECO_AUTO_FIX_ENABLED` 有効化）
 - 並行: 集客 Phase 4 = SNS（Threads 自動投稿は dry_run 稼働中）
 
 ## Phase 2: 資金調達 + 認知拡大
