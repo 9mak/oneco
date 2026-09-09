@@ -130,7 +130,66 @@ def _build_html_with_two_cards() -> str:
     """
 
 
+def _build_html_with_one_card_no_strong() -> str:
+    """1 件の動物カードを含む HTML (T131 回帰用: `<strong>` なし版)
+
+    2026-09-09 の実サイト (p019971.html) で確認した実際の構造。旧実装は
+    `<strong>` タグの有無に依存して `_parse_card_fields` の値を組み立てて
+    おり、`<strong>` が無いこの形式では全フィールドが空になっていた
+    (T131 field-ledger-triage: age_months/breed/location/sex/size が
+    100% 欠損として検出された)。
+    """
+    return """
+    <html><body>
+      <div class="content_in" id="b2111_detail">
+        <div class="wysiwyg_area">
+          <h2>迷子の猫を保護しています</h2>
+          <div>
+            <p>管理番号 R08-55</p>
+            <p>
+              <img alt="cat" src="./p019971_d/img/045_s.jpg" /><br />
+              写真の無断転載はご遠慮ください。
+            </p>
+            <ul>
+              <li>収容日：令和8年9月4日</li>
+              <li>公示（掲載）期限：令和8年9月11日</li>
+              <li>収容場所：見沼区大和田町</li>
+              <li>種類：雑種</li>
+              <li>毛色：黒</li>
+              <li>性別：メス</li>
+              <li>推定年齢：1～2ヶ月齢</li>
+              <li>首輪：無</li>
+              <li>備考：負傷動物</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </body></html>
+    """
+
+
 class TestCitySaitamaAdapter:
+    def test_extract_animal_details_no_strong_tag_card(self):
+        """`<strong>` タグ無しの実サイト構造でもフィールドを抽出できる (T131)"""
+        html = _build_html_with_one_card_no_strong()
+        cat_site = _site(
+            name="さいたま市（保護猫・その他）",
+            list_url="https://www.city.saitama.lg.jp/008/004/003/004/p019971.html",
+        )
+        adapter = CitySaitamaAdapter(cat_site)
+
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+
+        assert raw.species == "猫"
+        assert raw.breed == "雑種"
+        assert raw.sex == "メス"
+        assert raw.age == "1～2ヶ月齢"
+        assert raw.color == "黒"
+        assert "見沼区大和田町" in raw.location
+        assert "令和8年9月4日" in raw.shelter_date
+
     def test_fetch_animal_list_returns_empty_when_template_only(self, fixture_html):
         """空欄テンプレートのみの実フィクスチャでは空リストを返す"""
         html = _load_saitama_html(fixture_html)
