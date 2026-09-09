@@ -117,31 +117,72 @@ class AnimalRepository:
         )
 
     @staticmethod
-    def _individual_identity(
+    def _fingerprint(
         *,
-        management_number: str | None,
         species: str | None,
         sex: str | None,
         breed: str | None,
         shelter_date: date | None,
     ) -> tuple[str, ...] | None:
-        """個体識別キーを算出する (T138: URL 再利用検知用)。
+        """species/sex/breed/shelter_date から個体フィンガープリントを算出する。
+
+        全フィールドが揃っている場合のみ算出できる (どれか欠ければ None)。
+        """
+        if species and sex and breed and shelter_date:
+            return (species, sex, breed, str(shelter_date))
+        return None
+
+    @classmethod
+    def _identity_verdict(
+        cls,
+        *,
+        existing_management_number: str | None,
+        existing_species: str | None,
+        existing_sex: str | None,
+        existing_breed: str | None,
+        existing_shelter_date: date | None,
+        new_management_number: str | None,
+        new_species: str | None,
+        new_sex: str | None,
+        new_breed: str | None,
+        new_shelter_date: date | None,
+    ) -> str:
+        """既存個体と新規データが同一個体かどうかを判定する (T138: URL 再利用検知用)。
 
         岡山市等で detail ページの source_url が別個体に再利用される実例が
-        確認された (1D2026049 → 1D2025093)。同一 source_url でも個体識別キーが
-        変わっていれば「別個体」とみなす。
+        確認された (1D2026049 → 1D2025093)。同一 source_url でも個体が入れ替わって
+        いれば「別個体」とみなし、上書きせずアーカイブする。
 
-        優先順位:
-        1. management_number があれば最優先で使う (最も信頼できる識別子)。
-        2. 無ければ species/sex/breed/shelter_date が全て揃っている場合に限り
-           フィンガープリントとして使う。
-        3. どちらも算出できなければ None (呼び出し側は識別不能として扱う)。
+        判定方針 (レビュー指摘 F-03 対応):
+        - management_number は「両側にある場合だけ」優先的に比較する。
+          片側だけ management_number が有る/無い状態 (抽出が収集回ごとに
+          ぶれるサイトで起こりうる) を「別個体」と誤判定しないため、
+          mgmt の有無の非対称性そのものでは判定材料にしない。
+        - management_number で比較できない場合は species/sex/breed/shelter_date
+          のフィンガープリントで比較する (両側で算出できる場合のみ)。
+        - どちらの方法でも比較材料が揃わない場合は "unknown" (識別不能) を返す。
+
+        Returns:
+            "same": 同一個体とみなせる (通常の更新へ)
+            "different": 別個体とみなせる (アーカイブ+新規挿入へ)
+            "unknown": 判定材料が無い (従来通り上書きするが警告ログを残す)
         """
-        if management_number:
-            return ("mgmt", management_number)
-        if species and sex and breed and shelter_date:
-            return ("fingerprint", species, sex, breed, str(shelter_date))
-        return None
+        if existing_management_number and new_management_number:
+            return "same" if existing_management_number == new_management_number else "different"
+
+        existing_fp = cls._fingerprint(
+            species=existing_species,
+            sex=existing_sex,
+            breed=existing_breed,
+            shelter_date=existing_shelter_date,
+        )
+        new_fp = cls._fingerprint(
+            species=new_species, sex=new_sex, breed=new_breed, shelter_date=new_shelter_date
+        )
+        if existing_fp and new_fp:
+            return "same" if existing_fp == new_fp else "different"
+
+        return "unknown"
 
     async def _archive_and_replace(
         self,
@@ -243,42 +284,41 @@ class AnimalRepository:
             DatabaseError: データベース接続エラー
             ValidationError: バリデーションエラー
         """
-        # 既存レコードを検索
-        stmt = select(Animal).where(Animal.source_url == str(animal_data.source_url))
+        # 既存レコードを検索。UNIQUE 制約撤廃 (T138) 後は理論上複数行ヒットしうる
+        # ため limit(1) で「最初の1件」に絞る (F-02 と同じ理由)。
+        stmt = select(Animal).where(Animal.source_url == str(animal_data.source_url)).limit(1)
         result = await self.session.execute(stmt)
         existing_animal = result.scalar_one_or_none()
 
-        # T138: URL 再利用検知。同一 source_url でも個体識別キーが変わって
-        # いれば「別個体」とみなし、上書きせずアーカイブしてから新規行を挿入する。
+        # T138: URL 再利用検知。同一 source_url でも個体が入れ替わっていれば
+        # 「別個体」とみなし、上書きせずアーカイブしてから新規行を挿入する。
         if existing_animal:
-            existing_identity = self._individual_identity(
-                management_number=existing_animal.management_number,
-                species=existing_animal.species,
-                sex=existing_animal.sex,
-                breed=existing_animal.breed,
-                shelter_date=existing_animal.shelter_date,
+            verdict = self._identity_verdict(
+                existing_management_number=existing_animal.management_number,
+                existing_species=existing_animal.species,
+                existing_sex=existing_animal.sex,
+                existing_breed=existing_animal.breed,
+                existing_shelter_date=existing_animal.shelter_date,
+                new_management_number=animal_data.management_number,
+                new_species=animal_data.species,
+                new_sex=animal_data.sex,
+                new_breed=animal_data.breed,
+                new_shelter_date=animal_data.shelter_date,
             )
-            new_identity = self._individual_identity(
-                management_number=animal_data.management_number,
-                species=animal_data.species,
-                sex=animal_data.sex,
-                breed=animal_data.breed,
-                shelter_date=animal_data.shelter_date,
-            )
-            if existing_identity is None or new_identity is None:
-                # 個体識別キーを算出できない (management_number も
-                # フィンガープリント用フィールドも揃わない) 場合は、URL 再利用の
-                # 判定材料が無いため従来通り上書きする。ただし無警告のまま
-                # 別個体を上書きしている可能性を握り潰さないよう必ずログに残す。
+            if verdict == "unknown":
+                # 判定材料 (両側 management_number、または両側フィンガープリント)
+                # が揃わない場合は、URL 再利用かどうか判定できないため従来通り
+                # 上書きする。ただし無警告のまま別個体を上書きしている可能性を
+                # 握り潰さないよう必ずログに残す。
                 logger.warning(
                     "[URL再利用検知不能] source_url=%s の個体識別情報が不足しており "
                     "別個体かどうか判定できないため、従来通り上書きします "
-                    "(既存fingerprint=%s, 新規fingerprint=%s)",
+                    "(既存 management_number=%s, 新規 management_number=%s)",
                     animal_data.source_url,
-                    existing_identity,
-                    new_identity,
+                    existing_animal.management_number,
+                    animal_data.management_number,
                 )
-            elif existing_identity != new_identity:
+            elif verdict == "different":
                 orm_animal = await self._archive_and_replace(
                     existing_animal, animal_data, source_site
                 )
@@ -415,8 +455,17 @@ class AnimalRepository:
 
         Returns:
             Optional[int]: 動物ID、存在しない場合は None
+
+        Note:
+            T138 で `Animal.source_url` の DB レベル UNIQUE 制約を撤廃したため、
+            理論上は同一 source_url が複数行にヒットしうる (アプリケーション層の
+            save_animal が通常運用では active 行を高々1件に保つが、それはDB
+            制約による保証ではない)。`scalar_one_or_none()` は複数行ヒットで
+            `MultipleResultsFound` を送出するため、レビュー指摘 (F-02) を受けて
+            `.first()` 相当の「最初の1件」取得に変更し、将来別の書き込み経路が
+            増えても静かに壊れないようにする。
         """
-        stmt = select(Animal.id).where(Animal.source_url == source_url)
+        stmt = select(Animal.id).where(Animal.source_url == source_url).limit(1)
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 

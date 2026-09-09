@@ -328,6 +328,113 @@ async def test_save_animal_same_url_no_identifiers_overwrites_with_warning(
 
 
 @pytest.mark.asyncio
+async def test_save_animal_same_individual_management_number_disappears_updates(
+    repository, async_session
+):
+    """T138 (レビュー指摘 F-03): 同一個体で management_number 抽出が今回だけ
+
+    欠落したケースは fingerprint (species/sex/breed/shelter_date) が一致する
+    限り「同一個体」として通常の更新にする。management_number の有無だけで
+    タプル構造が変わり別個体誤判定するとアーカイブ+重複挿入されてしまうため、
+    この非対称ケースを回帰させないための固定テスト。
+    """
+    existing_animal = Animal(
+        species="犬",
+        sex="男の子",
+        breed="雑種",
+        shelter_date=date(2026, 1, 5),
+        location="岡山市保健所",
+        source_url="https://example.com/animal/wobbling-mgmt",
+        management_number="1D2026049",
+        color="茶色",
+    )
+    async_session.add(existing_animal)
+    await async_session.commit()
+
+    # 今回の収集では management_number の抽出に失敗した (フィンガープリントは一致)
+    animal_data = AnimalData(
+        species="犬",
+        sex="男の子",
+        breed="雑種",
+        shelter_date=date(2026, 1, 5),
+        location="岡山市保健所",
+        source_url="https://example.com/animal/wobbling-mgmt",
+        management_number=None,
+        color="黒",
+        category="adoption",
+    )
+
+    result = await repository.save_animal(animal_data)
+
+    assert result.color == "黒"
+    assert repository.url_reuse_count == 0
+
+    stmt = select(Animal).where(Animal.source_url == "https://example.com/animal/wobbling-mgmt")
+    db_result = await async_session.execute(stmt)
+    animals = db_result.scalars().all()
+    assert len(animals) == 1
+    assert animals[0].color == "黒"
+
+    archive_stmt = select(AnimalArchive)
+    archive_result = await async_session.execute(archive_stmt)
+    assert archive_result.scalars().all() == []
+
+
+@pytest.mark.asyncio
+async def test_save_animal_same_individual_management_number_newly_appears_updates(
+    repository, async_session
+):
+    """T138 (レビュー指摘 F-03): 同一個体で management_number が今回初めて
+
+    取れたケースも同様に fingerprint 一致なら「同一個体」として通常の更新にする
+    (前テストと逆方向の遷移)。
+    """
+    existing_animal = Animal(
+        species="犬",
+        sex="男の子",
+        breed="雑種",
+        shelter_date=date(2026, 1, 5),
+        location="岡山市保健所",
+        source_url="https://example.com/animal/newly-appearing-mgmt",
+        management_number=None,
+        color="茶色",
+    )
+    async_session.add(existing_animal)
+    await async_session.commit()
+
+    animal_data = AnimalData(
+        species="犬",
+        sex="男の子",
+        breed="雑種",
+        shelter_date=date(2026, 1, 5),
+        location="岡山市保健所",
+        source_url="https://example.com/animal/newly-appearing-mgmt",
+        management_number="1D2026049",
+        color="黒",
+        category="adoption",
+    )
+
+    result = await repository.save_animal(animal_data)
+
+    assert result.color == "黒"
+    assert result.management_number == "1D2026049"
+    assert repository.url_reuse_count == 0
+
+    stmt = select(Animal).where(
+        Animal.source_url == "https://example.com/animal/newly-appearing-mgmt"
+    )
+    db_result = await async_session.execute(stmt)
+    animals = db_result.scalars().all()
+    assert len(animals) == 1
+    assert animals[0].color == "黒"
+    assert animals[0].management_number == "1D2026049"
+
+    archive_stmt = select(AnimalArchive)
+    archive_result = await async_session.execute(archive_stmt)
+    assert archive_result.scalars().all() == []
+
+
+@pytest.mark.asyncio
 async def test_save_animal_sets_last_collected_at_on_insert(repository):
     """save_animal()が新規挿入時にlast_collected_atを現在時刻で設定するか"""
     animal_data = AnimalData(

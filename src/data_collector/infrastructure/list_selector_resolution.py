@@ -56,7 +56,10 @@ def resolve_pagination(site_name: str) -> tuple[str, int]:
 
     NEXT_PAGE_SELECTOR が空、または adapter 未登録の場合はページ送りを辿らない
     ("" , 1) を返す。WordPressListAdapter (src/data_collector/adapters/rule_based/
-    wordpress_list.py) 派生の adapter だけが NEXT_PAGE_SELECTOR / MAX_LIST_PAGES を持つ。
+    wordpress_list.py) と SinglePageTableAdapter (src/data_collector/adapters/
+    rule_based/single_page_table.py) の両方が NEXT_PAGE_SELECTOR / MAX_LIST_PAGES
+    を持つ (T137 で single_page 系にも共通ページ送り機構を追加)。本関数は
+    getattr で汎用的に解決するため、どちらの基底の派生 adapter でも動作する。
     """
     adapter_cls = SiteAdapterRegistry.get(site_name)
     if adapter_cls is None:
