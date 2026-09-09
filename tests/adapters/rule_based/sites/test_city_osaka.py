@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
+from data_collector.adapters.rule_based.fields import infer_species
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.city_osaka import (
     CityOsakaAdapter,
@@ -222,16 +223,17 @@ class TestCityOsakaAdapter:
         assert raw.species == "猫"
 
     def test_species_inferred_from_site_name_helper(self):
-        """site name から species を正しく推定する (4 種別)"""
+        """site name から species を正しく推定する (4 種別)
+
+        species 推定は fields.infer_species (T401 で共通化) に委譲している。
+        """
         for name, expected in [
             ("大阪市（迷子犬）", "犬"),
             ("大阪市（迷子猫）", "猫"),
             ("大阪市（譲渡犬）", "犬"),
             ("大阪市（譲渡猫）", "猫"),
         ]:
-            assert CityOsakaAdapter._infer_species_from_site_name(name) == expected, (
-                f"{name} -> expected {expected}"
-            )
+            assert infer_species(name) == expected, f"{name} -> expected {expected}"
 
     def test_all_four_sites_registered(self):
         """4 つの大阪市サイト名すべてが Registry に登録されている"""
