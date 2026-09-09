@@ -10,6 +10,9 @@ interface JestAxeMatchers<R = unknown> {
 }
 
 declare module 'vitest' {
+  // 宣言マージのための空インターフェース（jest-dom の vitest.d.ts と同じ書き方）
+  /* eslint-disable @typescript-eslint/no-empty-object-type */
   interface Assertion<T = AxeResults> extends JestAxeMatchers<T> {}
   interface AsymmetricMatchersContaining extends JestAxeMatchers {}
+  /* eslint-enable @typescript-eslint/no-empty-object-type */
 }
