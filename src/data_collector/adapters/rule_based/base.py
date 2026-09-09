@@ -11,9 +11,11 @@ from __future__ import annotations
 
 import logging
 import re
+from dataclasses import dataclass
 from urllib.parse import urljoin
 
 import requests
+from bs4 import BeautifulSoup, Tag
 
 from ...domain.models import AnimalData, RawAnimalData
 from ...domain.normalizer import DataNormalizer
@@ -22,6 +24,25 @@ from ..municipality_adapter import MunicipalityAdapter, NetworkError
 from ..politeness import ONECO_USER_AGENT
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class FieldSpec:
+    """フィールド抽出仕様 (dt/dd, th/td ベースの label 抽出用)
+
+    Attributes:
+        label: 定義リスト/テーブルの見出しテキスト（例: "性別"）。
+            str を渡せば単一ラベル、tuple/list を渡せば複数候補の OR 検索になり、
+            最初に値を取れたラベルを採用する。
+        selector: 直接 CSS セレクタで取得する場合のセレクタ。
+            label と排他的（両方指定された場合は selector 優先）。
+        attr: 取得する属性名（"text" の場合は要素テキスト、それ以外は要素属性）。
+    """
+
+    label: str | tuple[str, ...] | None = None
+    selector: str | None = None
+    attr: str = "text"
+
 
 # サイト共通の HTTP ヘッダ（User-Agent は politeness の共通定数で統一）
 _DEFAULT_HEADERS = {"User-Agent": ONECO_USER_AGENT}
@@ -243,3 +264,61 @@ class RuleBasedAdapter(MunicipalityAdapter):
         if an.prefecture is None and self.site_config.prefecture:
             return an.model_copy(update={"prefecture": self.site_config.prefecture})
         return an
+
+    # ─────────────────── label 抽出 ヘルパー (dt/dd, th/td) ───────────────────
+    # 元は WordPressListAdapter 専用だったが、table/single_page 系 adapter からも
+    # 使えるよう基底へ昇格した (T401)。WordPressListAdapter の挙動は変えない。
+
+    def _extract_field(self, soup: BeautifulSoup, spec: FieldSpec) -> str:
+        """FieldSpec に従ってフィールド値を抽出"""
+        # selector 直接指定の場合
+        if spec.selector:
+            el = soup.select_one(spec.selector)
+            if el is None:
+                return ""
+            return self._get_value(el, spec.attr)
+
+        # label 経由 (定義リスト or テーブル)
+        if spec.label:
+            value = self._extract_by_label(soup, spec.label)
+            return value
+        return ""
+
+    def _extract_by_label(self, soup: BeautifulSoup, label: str | tuple[str, ...]) -> str:
+        """定義リスト (<dt><dd>) またはテーブル (<th><td>) で label を探す。
+
+        label に tuple/list を渡すと OR 検索になり、最初にヒットしたラベルの
+        値を返す（複数表記が並ぶサイト構造に対応するため）。
+        """
+        labels = (label,) if isinstance(label, str) else tuple(label)
+
+        def _lookup(match) -> str:
+            # 定義リスト (<dt><dd>)
+            for dt in soup.find_all("dt"):
+                if isinstance(dt, Tag) and match(dt.get_text(strip=True)):
+                    dd = dt.find_next_sibling("dd")
+                    if dd and (text := dd.get_text(strip=True)):
+                        return text
+            # テーブル (<th><td>)
+            for th in soup.find_all("th"):
+                if isinstance(th, Tag) and match(th.get_text(strip=True)):
+                    td = th.find_next_sibling("td")
+                    if td and (text := td.get_text(strip=True)):
+                        return text
+            return ""
+
+        # 1st pass: 完全一致を優先（label="色" が "特色" を誤って拾うのを防ぐ）
+        for lbl in labels:
+            if value := _lookup(lambda cell, lbl=lbl: cell == lbl):
+                return value
+        # 2nd pass: 部分一致フォールバック（"色"→"毛色" 等のラベル簡略指定に後方互換）
+        for lbl in labels:
+            if value := _lookup(lambda cell, lbl=lbl: lbl in cell):
+                return value
+        return ""
+
+    def _get_value(self, el: Tag, attr: str) -> str:
+        if attr == "text":
+            return el.get_text(strip=True)
+        v = el.get(attr)
+        return v if isinstance(v, str) else ""
