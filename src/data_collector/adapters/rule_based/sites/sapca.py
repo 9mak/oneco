@@ -44,8 +44,11 @@ class SapcaAdapter(WordPressListAdapter):
         "age": FieldSpec(label="年齢"),
         "color": FieldSpec(label="毛色"),
         "size": FieldSpec(label="体格"),
-        "shelter_date": FieldSpec(label="保護日"),
-        "location": FieldSpec(label="保護場所"),
+        # 2026-09-09 実ページ確認: `<th>` は「収容日」「保護した場所」(旧実装は
+        # 「保護日」「保護場所」を指定しており、完全一致・部分一致とも
+        # ヒットせず shelter_date/location が 100% 欠損していた)。
+        "shelter_date": FieldSpec(label=("収容日", "保護日")),
+        "location": FieldSpec(label=("保護した場所", "保護場所")),
         "phone": FieldSpec(label="連絡先"),
     }
 

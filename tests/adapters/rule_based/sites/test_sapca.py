@@ -141,6 +141,51 @@ class TestSapcaAdapterDetailExtraction:
         assert len(raw.image_urls) == 1
         assert all("/wp-content/uploads/" in u for u in raw.image_urls)
 
+    def test_extract_animal_details_with_real_labels(self, assert_raw_animal):
+        """T131b: 実ページ (2026-09-09確認) は「収容日」「保護した場所」を使う。
+
+        旧実装の label 指定「保護日」「保護場所」は実際の th テキストと
+        完全一致・部分一致のどちらもヒットせず shelter_date/location が
+        100% 欠損していた (sapca.jp/lost/21810.html で実測)。
+        """
+        real_html = """
+        <html><body>
+          <article>
+            <h1>迷い犬</h1>
+            <table class="dogcat">
+              <tr><th>収容日</th><td>９月９日（水）</td></tr>
+              <tr><th>保護した場所</th><td>甲賀市土山町北土山</td></tr>
+              <tr><th>種類</th><td>雑種</td></tr>
+              <tr><th>性別</th><td>メス</td></tr>
+              <tr><th>毛色</th><td>茶白</td></tr>
+              <tr><th>体格</th><td>中小</td></tr>
+              <tr><th>首輪</th><td>なし</td></tr>
+              <tr><th>備考</th><td></td></tr>
+            </table>
+          </article>
+        </body></html>
+        """
+        adapter = SapcaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=real_html):
+            raw = adapter.extract_animal_details(
+                "https://www.sapca.jp/lost/21810.html",
+                category="sheltered",
+            )
+        assert_raw_animal(
+            raw,
+            species="雑種",
+            sex="メス",
+            color="茶白",
+            size="中小",
+            shelter_date="９月９日（水）",
+            location="甲賀市土山町北土山",
+            source_url="https://www.sapca.jp/lost/21810.html",
+            category="sheltered",
+        )
+
+        animal_data = adapter.normalize(raw)
+        assert animal_data.location == "甲賀市土山町北土山"
+
 
 class TestSapcaAdapterRegistry:
     """registry 登録"""
