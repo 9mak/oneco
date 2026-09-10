@@ -17,11 +17,14 @@ from unittest.mock import patch
 import pytest
 
 from data_collector.adapters.municipality_adapter import ParsingError
+from data_collector.adapters.rule_based import sites  # noqa: F401  registry 登録用
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
-from data_collector.adapters.rule_based.sites.pref_gifu import (
-    PrefGifuAdapter,
-)
 from data_collector.llm.config import SiteConfig
+
+# T405: spec 駆動の GenericAdapter へ移行したため registry 経由でクラスを引く
+# (spec: config/site_specs/pref_gifu.yaml)。
+PrefGifuAdapter = SiteAdapterRegistry.get("岐阜県（迷い犬情報）")
+assert PrefGifuAdapter is not None
 
 
 def _site(

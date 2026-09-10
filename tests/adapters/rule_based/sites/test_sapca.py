@@ -9,10 +9,15 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
+from data_collector.adapters.rule_based import sites  # noqa: F401  registry 登録用
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
-from data_collector.adapters.rule_based.sites.sapca import SapcaAdapter
 from data_collector.domain.models import RawAnimalData
 from data_collector.llm.config import SiteConfig
+
+# T405: 専用モジュールを spec 駆動の GenericAdapter へ移行したため、
+# registry 経由でクラスを引く (spec: config/site_specs/sapca.yaml)。
+SapcaAdapter = SiteAdapterRegistry.get("滋賀県動物保護管理センター（迷い犬猫）")
+assert SapcaAdapter is not None
 
 
 def _site() -> SiteConfig:

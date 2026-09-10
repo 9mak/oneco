@@ -4,11 +4,14 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
+from data_collector.adapters.rule_based import sites  # noqa: F401  registry 登録用
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
-from data_collector.adapters.rule_based.sites.toyohashi_aikuru import (
-    ToyohashiAikuruAdapter,
-)
 from data_collector.llm.config import SiteConfig
+
+# T405: spec 駆動の GenericAdapter へ移行したため registry 経由でクラスを引く
+# (spec: config/site_specs/toyohashi_aikuru.yaml)。
+ToyohashiAikuruAdapter = SiteAdapterRegistry.get("豊橋市あいくる（迷い犬）")
+assert ToyohashiAikuruAdapter is not None
 
 
 def _site(animal_type: str = "dog", category: str = "lost") -> SiteConfig:
