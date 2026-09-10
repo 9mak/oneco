@@ -16,7 +16,7 @@ oneco は「人が手をかけなくても回り続ける」ことを目標に�
 | `シークレット失効検知` | secret-health.yml（日次） | 中（機能劣化） | [B. シークレット失効](#b-シークレット失効) |
 | `収集完了: 失敗率 …` `件数ゼロ回帰` `フィールド品質ドリフト` | 収集ジョブ（GCP Cloud Run Jobs、日次） | 低 | [C. 収集の異常](#c-収集の異常) |
 | `SNS publisher (Threads) failed` | sns-publish.yml（日次） | 低 | [D. SNS 投稿失敗](#d-sns-投稿失敗) |
-| auto-fix PR が溜まっている（GitHub 上） | auto-fix-adapter（自己修復） | 低 | [E. auto-fix PR の確認](#e-auto-fix-pr-の確認) |
+| `壊れサイト構造診断` | 構造診断（旧・自己修復） | 低 | [E. 壊れサイト構造診断の確認](#e-壊れサイト構造診断の確認旧-auto-fix-pr-の確認) |
 | `:warning: 予算90%到達` | 予算アラート → `budget-alert` Function | 中（早期警告、まだ本番は動いている） | [F. 課金遮断/予算アラート](#f-課金遮断予算アラート) |
 | （Discord 通知なし。100%到達はメールのみ。症状は A の外形監視ダウンとして出る） | 予算アラート → `stop-billing` Function | 高（本番ダウン） | [F. 課金遮断/予算アラート](#f-課金遮断予算アラート) |
 | `[GA4 週次]` | ga4-weekly.yml（週次月曜） | 情報のみ（対応不要） | 通常は読むだけ。`レポート生成に失敗しました` の場合のみ GA4 API 認証 (WIF/SA) を確認 |
@@ -110,7 +110,7 @@ gh workflow run secret-health.yml             # 手動チェックを回して�
   ```bash
   # 該当エントリの consecutive_failures を 0 にするか、行ごと削除して commit
   ```
-- **adapter の修理**: auto-fix-adapter が観察モード（後述 E）。本番モードに上げれば AI が自動修理する。それまでは手動 or 放置（7日後の再チェック待ち）。
+- **adapter の修理**: LLM 自動修復ループは 2026-09 (T406) に撤去済み（48 run 0 PR）。代わりに検知サイトごとに構造診断が Discord + `reports/diagnosis/` artifact で「どの selector/label が壊れたか」を提示する（後述 E）。人がそれを見て手動で adapter コードを修正する。
 
 ---
 
@@ -132,19 +132,18 @@ gh workflow run secret-health.yml             # 手動チェックを回して�
 
 ---
 
-## E. auto-fix PR の確認
+## E. 壊れサイト構造診断の確認（旧 auto-fix PR の確認）
 
-auto-fix-adapter（自己修復ループ）の段階リリース状態に応じて対応する。
+2026-09 (T406) に LLM 自動修復ループ（`auto-fix-adapter.yml` への dispatch）を撤去し、代わりに構造診断を Discord + artifact で出す運用に切り替えた（48 run 0 PR の実績のため。詳細は [docs/wiki/04-self-healing.md](wiki/04-self-healing.md)）。
 
-- **観察モード**（`ONECO_AUTO_FIX_ENABLED=true`, `ONECO_AUTO_FIX_DRY_RUN=true`）: PR は作られない。`auto-fix-adapter.yml` の run ログと Discord で「検知件数・修理案がガードを通ったか」を見るだけ。誤修理が無さそうなら本番モードへ:
+- Discord 通知（`壊れサイト構造診断 (N 件)`）本文に、サイトごとの HTTP status / selector マッチ件数 / 候補ラベル・リンクパターンが最大15行で出る（1 run 最大5サイト、残りは artifact 参照）
+- 全件は `reports/diagnosis/diagnosis_<timestamp>.{json,md}` にコミットされる（このリポジトリ配下）
+- 対応: 通知/artifact を見て該当 adapter (`src/data_collector/adapters/rule_based/sites/`) のセレクタ/ラベルを人が修正し、通常の PR フローでマージする
+- 緊急停止したい場合（診断自体の追加 GET を止めたい等）:
   ```bash
-  gh variable set ONECO_AUTO_FIX_DRY_RUN --body "false"   # 本番モード: 修理 PR を自動作成
+  gh variable set ONECO_DIAGNOSIS_ENABLED --body "false"
   ```
-- **本番モード**: `label: auto-fix` の PR が作られる。自動マージは 2026-09-08 に撤去したので、diff を見て手動でマージする（main はブランチ保護で CI 4本の通過が必須）。
-- PR が溜まる・怪しい修理がある場合は、diff を見て手動マージ or close。暴走時は緊急停止:
-  ```bash
-  gh variable set ONECO_AUTO_FIX_ENABLED --body "false"   # kill switch OFF
-  ```
+- `scripts/auto_fix_adapter.py` と `auto-fix-adapter.yml` は削除していない。手動 `workflow_dispatch`（site_name 指定）で個別に試すことは引き続き可能
 
 ---
 
@@ -210,6 +209,41 @@ gh secret list
 # 本番 API の生死とデータ件数
 curl -s https://oneco-api-tvlsrcvyuq-an.a.run.app/public/stats | jq .
 ```
+
+---
+
+## 撤去依頼が来た時の履歴消去
+
+保護団体・自治体等から「掲載していた個体情報を公開履歴から消してほしい」という撤去依頼が来た場合の手順。**この節は手順のドキュメント化のみで、実行は HIL（人間承認必須）。無条件で実行しない。**
+
+前提:
+- `output/animals.json` / `snapshots/latest.json` は T112（PR #312, 2026-08-31）で状態ファイルを専用 private リポジトリ `9mak/oneco-state` へ分離済み（tree separation）。以降のコミットは `oneco-state` 側にしか残らない
+- ただしこの public リポジトリ (`9mak/oneco`) の **git history には T112 以前のコミットが残っており**、`output/animals.json` の過去版が 121 バージョン、`snapshots/latest.json` の過去版が 109 バージョン残存する（2026-09 時点実測）。撤去依頼のスコープはこの public 履歴。`oneco-state`（private）は履歴を保持し続ける想定で opt-out スコープ外
+
+手順:
+1. fresh clone を作る（作業用の使い捨てクローン。既存 worktree を汚さない）
+   ```bash
+   git clone https://github.com/9mak/oneco.git oneco-history-purge
+   cd oneco-history-purge
+   ```
+2. `git filter-repo` で該当パスの履歴を除去する
+   ```bash
+   git filter-repo --invert-paths --path output/animals.json --path snapshots/latest.json
+   ```
+3. GitHub 上で main のブランチ保護を一時解除する（force push を通すため）
+4. force push する
+   ```bash
+   git push origin --force --all
+   git push origin --force --tags
+   ```
+5. ブランチ保護を復元する
+6. 当時 open だった全 PR ブランチを新しい main 基準で rebase し直す（filter-repo で履歴が書き換わるため、既存 PR は conflict/ズレが生じる）
+7. 全 worktree（`.worktrees/*` 含む）を re-clone し直す（履歴が書き換わった旧 clone をそのまま使い続けると、古い履歴を再度 push してしまう事故になる）
+8. GitHub Support に、danling objects（force push 後も GitHub 側のキャッシュ/フォーク経由で残る可能性がある blob）のパージを依頼する
+
+注意:
+- `git filter-repo` は破壊的操作。実行前に必ずリポジトリ全体のバックアップ（別ディレクトリへの `git clone --mirror` 等）を取る
+- 個別コミットの除去ではなく全履歴の書き換えになるため、fork している第三者がいる場合はその fork には反映されない旨を撤去依頼元に伝える
 
 ---
 

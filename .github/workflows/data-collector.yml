@@ -9,10 +9,6 @@ on:
 
 permissions:
   contents: write
-  # 自己修復ループ Phase 1→2 橋渡し: __main__ が検知サイトを
-  # auto-fix-adapter.yml に workflow_dispatch する。GITHUB_TOKEN で
-  # 他 workflow を起動するには actions: write が必要。
-  actions: write
 
 jobs:
   collect:
@@ -56,21 +52,11 @@ jobs:
           # 1 サイトの処理が固まっても次のサイトへ進めるため、SIGALRM ベースの per-site timeout
           SITE_TIMEOUT_SEC: '120'
           SITE_TIMEOUT_JS_SEC: '180'
-          # 自己修復ループ Phase 1→2: 検知サイトを auto-fix-adapter ワーカーに渡す。
-          # kill switch 既定 false なので、明示的に true にしないと一切起動しない
-          # (初期は dry_run=true で安全段階リリース。安定確認後に false へ)。
-          # gh CLI が GitHub API を叩くために GH_TOKEN が必要。
-          ONECO_AUTO_FIX_ENABLED: ${{ vars.ONECO_AUTO_FIX_ENABLED || 'false' }}
-          ONECO_AUTO_FIX_DRY_RUN: ${{ vars.ONECO_AUTO_FIX_DRY_RUN || 'true' }}
-          ONECO_AUTO_FIX_MAX_SITES: ${{ vars.ONECO_AUTO_FIX_MAX_SITES || '3' }}
-          # PAT-ready: ONECO_AUTO_FIX_TOKEN (PAT or GitHub App token) があれば
-          # それを優先、無ければ GITHUB_TOKEN に fallback。
-          #   - GITHUB_TOKEN: workflow_dispatch (Hop 1) は動くが、auto-fix が作る
-          #     PR (Hop 2) は downstream pull_request workflow を発火しない
-          #     (GitHub の recursion prevention 仕様)
-          #   - PAT/App token: Hop 2 も発火する (auto-merge-fix-pr.yml が動く)
-          # 詳細: project_self_healing memory, PR #216 description
-          GH_TOKEN: ${{ secrets.ONECO_AUTO_FIX_TOKEN || secrets.GITHUB_TOKEN }}
+          # 壊れサイト構造診断 (T406)。検知サイトごとに追加 GET 1 回発生するため
+          # kill switch を残す (既定 true)。旧 LLM 自動修復ワーカー
+          # (auto-fix-adapter.yml, scripts/auto_fix_adapter.py) への dispatch は
+          # 48 run 0 PR だったため 2026-09 に撤去した (docs/wiki/04-self-healing.md)。
+          ONECO_DIAGNOSIS_ENABLED: ${{ vars.ONECO_DIAGNOSIS_ENABLED || 'true' }}
         run: |
           python -m data_collector
 

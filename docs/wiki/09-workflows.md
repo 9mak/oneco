@@ -39,13 +39,14 @@
 |---|---|---|
 | `sync-collector-secrets.yml` | 手動のみ（`workflow_dispatch`） | GitHub Actions secrets（`DATABASE_URL` / `GROQ_API_KEY` / `DISCORD_WEBHOOK_URL`）を GCP Secret Manager へ複製する。値を更新したときに再実行すれば新バージョンが追加される（Cloud Run Job は `:latest` を参照） |
 
-## 自己修復（→ [詳細](04-self-healing.md)）
+## 構造診断（旧・自己修復。→ [詳細](04-self-healing.md)）
+
+data-collector.yml の run 内で `infrastructure/diagnosis.py` が検知サイトを診断し、Discord 通知 + `reports/diagnosis/` artifact を出す（2026-09 T406 で LLM 自動修復ループから置き換え）。
 
 | ワークフロー | トリガー | 内容 |
 |---|---|---|
-| `auto-fix-adapter.yml` | 手動 dispatch のみ（site_name / model / dry_run）※通常は data-collector から自動 dispatch | Groq で adapter を修復、二重ガード通過で `auto-fix` ラベル付き PR 作成 |
+| `auto-fix-adapter.yml` | 手動 dispatch のみ（site_name / model / dry_run） | Groq で adapter 修復パッチを試作する旧ワーカー。data-collector からの自動 dispatch は撤去済み（48 run 0 PR のため）。手動実行は引き続き可能 |
 
 ## 補足
 
-- data-collector → auto-fix の dispatch には `ONECO_AUTO_FIX_TOKEN`（PAT）が必要。`GITHUB_TOKEN` では GitHub の recursion prevention により後続 workflow が発火しない
 - 障害時の対応手順は [docs/RUNBOOK.md](../RUNBOOK.md)

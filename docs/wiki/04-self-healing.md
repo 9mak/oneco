@@ -1,50 +1,54 @@
-# 自己修復ループ（auto-fix-adapter）
+# 自己修復ループ（撤去済み）→ 半自動構造診断（T406）
 
-サイト側の HTML 変更で adapter が壊れたとき、検知 → LLM による修復 PR 作成 → 自動マージまでを無人で回す仕組み。**rule-based 抽出 100% を維持し、LLM（Groq）は修理工としてのみ使う**のが設計方針。
+サイト側の HTML 変更で adapter が壊れたとき、旧来は「検知 → LLM による修復 PR 作成 → 人によるマージ」の無人ループ（`auto-fix-adapter.yml` + `scripts/auto_fix_adapter.py`）を回していたが、**2026-09 (T406) に dispatch を停止し、人が10分で読める構造診断を Phase 2 の代わりに導入した**。
 
-## 3フェーズ構成
+## なぜ LLM 自動修復を停止したか
+
+- `_trigger_auto_fix()`（旧 `__main__.py`）経由の dispatch は 48 run 動かして **修復 PR 0 件**（project_self_healing memory, T150）。
+- 自動マージ (`auto-merge-fix-pr.yml`) はこれ以前の 2026-09-08 に既に撤去済み（48 回起動して PR 0 件という実績に対し、`auto-fix` ラベルだけでレビュー無し本番デプロイに到達する経路を残す価値がなかったため）。
+- つまり「検知 → LLM 修復」ループは Phase 1 (検知) までしか価値を出しておらず、Phase 2 (LLM 修復) は稼働コストだけを払い続けていた。
+
+`scripts/auto_fix_adapter.py` 自体は削除せずファイルとして残す（将来 Groq モデル精度が上がった時の再評価用）が、`data-collector.yml` からの dispatch (`ONECO_AUTO_FIX_*` 環境変数・`gh workflow run auto-fix-adapter.yml` 呼び出し) は撤去した。`.github/workflows/auto-fix-adapter.yml` も手動 workflow_dispatch 専用として残しているが、収集パイプラインからは呼ばれない。
+
+## 現行フロー: 検知 → 半自動診断 → 人が直す
 
 ```
-Phase 1: 検知               data-collector.yml (毎日の収集ラン内)
+Phase 1: 検知               data-collector.yml (毎日の収集ラン内、変更なし)
    ├ BrokenSitesTracker     連続失敗（閾値3でスキップ対象化）
    ├ SiteBaselineTracker    ゼロ件回帰（過去≥1件 → 今0件）
    └ FieldQualityTracker    フィールド欠損率ドリフト
-        │ _trigger_auto_fix() が対象サイトを集約 [__main__.py]
+        │ diagnose_sites() が対象サイトを集約 [infrastructure/diagnosis.py]
         ▼
-Phase 2: 修復               auto-fix-adapter.yml (workflow_dispatch)
-   scripts/auto_fix_adapter.py
-   ├ Groq (openai/gpt-oss-120b) にパッチ生成を依頼
-   ├ 二重ガード: ユニットテスト通過 + live test で改善を定量確認
-   ├ 通過 → fix/auto-* ブランチで `auto-fix` ラベル付き PR 作成
-   └ 失敗 → Issue 起票
+Phase 2: 構造診断            同一 run 内、追加 GET 1 回/サイトのみ
+   infrastructure/diagnosis.py
+   ├ SiteAdapterRegistry 経由で adapter class を解決し、
+   │ LIST_LINK_SELECTOR / ROW_SELECTOR / NEXT_PAGE_SELECTOR /
+   │ FIELD_SELECTORS / HEADER_FIELDS を現在のページに対して評価
+   ├ HTTP status / リダイレクト / charset を記録
+   ├ 直前 snapshot の動物 URL が現ページにまだ含まれるか確認
+   └ 全チェック失敗時は候補ラベル (`<th>`/`<dt>` 頻度上位) と
+     候補リンクパターンをその場で提示
         ▼
-Phase 3: 人によるマージ（2026-09-08 に自動マージを撤去）
-   `auto-fix` ラベル PR は他の PR と同じく main のブランチ保護
-   （Lint / Test / Type Check / Build Package 必須）を通したうえで人が判断してマージ
+Phase 3: 人が直す
+   Discord にコンパクトな要約（1サイト最大15行・1run最大5サイト、
+   残りは reports/diagnosis/ の artifact を参照）が届く。
+   人が selector/label を10分程度で特定してコード修正 → 通常の PR フロー。
 ```
 
-> **2026-09-08 変更**: `auto-merge-fix-pr.yml` は削除した。48回起動して修復 PR 0件という実績に対し、`auto-fix` ラベルだけでレビュー無しの本番デプロイに到達する経路を残す価値がなかったため。再設計は CCC の oneco T150。
-
-## Phase 1 → 2 の安全弁（`__main__.py`）
+## 診断の kill switch
 
 | 環境変数 | 既定 | 役割 |
 |---|---|---|
-| `ONECO_AUTO_FIX_ENABLED` | `false` | kill switch。false なら dispatch しない |
-| `ONECO_AUTO_FIX_DRY_RUN` | `true` | true なら検知ログのみ |
-| `ONECO_AUTO_FIX_MAX_SITES` | `3` | 1ランで dispatch する最大サイト数 |
+| `ONECO_DIAGNOSIS_ENABLED` | `true` | false なら診断・追加 GET を一切行わない |
 
-dispatch は `gh workflow run auto-fix-adapter.yml` で行い、dedup・best-effort（失敗しても収集ランは続行）。
+診断は検知サイト最大5件/run（それ以上は次回 run 持ち越し）。ネットワーク断・HTTP エラー・タイムアウト由来の検知は HTTP status 自体が原因を語るため診断対象から除外する（`_is_selector_diagnosable_error`。2026-07 に山梨県のネットワーク断続エラーが旧 auto-fix の日次枠を2週間占有し、本当に壊れていた柏市・群馬に修理が回らなかった反省を踏襲）。
 
-## Phase 2 の実装ポイント（`scripts/auto_fix_adapter.py`）
+## artifact / 通知
 
-- **SEARCH/REPLACE 方式**: LLM の応答は `<<<<<<< SEARCH ... >>>>>>> REPLACE` ブロック形式。unified diff の行番号幻覚で全失敗した経緯があり、PR #232 でこの方式に変更して解消
-- **TPM 対策**: HTML を 6000 字に圧縮して Groq 無料枠（TPM 12,000）に収める（PR #231）
-- **二重ガード**: ① `run_unit_tests()` でユニットテスト通過、② `scripts/adapter_live_test.py` の `measure()` で実サイトに対する抽出件数の改善を定量確認。両方通らないと PR を作らない
+- Discord: `NotificationClient.send_alert` で WARNING レベル通知（`build_discord_summary`）
+- 全件: `reports/diagnosis/diagnosis_<timestamp>.json` (機械可読) / `.md` (人が読む全件)
 
-## token の注意点
+## 旧実装の参考情報
 
-`GITHUB_TOKEN` で作ったイベントは GitHub の recursion prevention により後続 workflow を発火できない。そのため Phase 1 → 2 の dispatch は `ONECO_AUTO_FIX_TOKEN`（PAT / App token）を優先使用する（`data-collector.yml`）。
-
-## 運用トグル・障害対応
-
-段階リリースのトグル操作と、暴走時の止め方は [docs/RUNBOOK.md](../RUNBOOK.md) を参照。
+- `scripts/auto_fix_adapter.py`: SEARCH/REPLACE 方式のパッチ生成、Groq TPM 対策、二重ガード（ユニットテスト + live test 定量確認）の実装は残したまま。再稼働させる場合は dispatch を `__main__.py` / `data-collector.yml` に再度配線する必要がある。
+- `.github/workflows/auto-fix-adapter.yml`: 手動 `workflow_dispatch` では引き続き実行可能（1サイトを指定して人が明示的に試す用途）。

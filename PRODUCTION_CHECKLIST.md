@@ -22,8 +22,8 @@
 
 ## 2. Secrets / 環境変数
 
-- [ ] **GitHub Actions Secrets**: `DATABASE_URL` / `GROQ_API_KEY` / `INTERNAL_API_TOKEN` / `SLACK_WEBHOOK_URL` / `DISCORD_WEBHOOK_URL` / Threads 系 / `ONECO_AUTO_FIX_TOKEN`(PAT)
-- [ ] **Repo Variables**（段階リリーストグル）: `THREADS_PUBLISH_ENABLED` / `THREADS_PUBLISH_DRY_RUN` / auto-fix 系
+- [ ] **GitHub Actions Secrets**: `DATABASE_URL` / `GROQ_API_KEY` / `INTERNAL_API_TOKEN` / `SLACK_WEBHOOK_URL` / `DISCORD_WEBHOOK_URL` / Threads 系（`ONECO_AUTO_FIX_TOKEN` は旧 LLM 自動修復ループ用で 2026-09 T406 の dispatch 撤去以降は未使用。棚卸し時に失効/削除を検討）
+- [ ] **Repo Variables**（段階リリーストグル）: `THREADS_PUBLISH_ENABLED` / `THREADS_PUBLISH_DRY_RUN` / `ONECO_DIAGNOSIS_ENABLED`（構造診断 kill switch）
 - [ ] `INTERNAL_API_TOKEN` は `openssl rand -hex 32` で生成
 - [ ] ローカルの保管は Keychain（`oneco-*` プレフィックス）または `.env`（gitignore 済み）。shell rc への直書き禁止
 - [ ] ローテーション後は `deploy-backend.yml` を手動実行して Cloud Run に反映（Secrets 変更だけでは反映されない）
