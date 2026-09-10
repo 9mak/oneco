@@ -228,3 +228,16 @@ def register_spec(spec: SiteSpec) -> None:
             )
             continue
         SiteAdapterRegistry.register(name, adapter_cls)
+
+
+def register_specs(specs: list[SiteSpec]) -> None:
+    """複数 spec を順に登録する。1 spec の構築失敗は ERROR で記録してスキップし、
+    他 spec の登録 (および collector の import) を巻き込まない。"""
+    for spec in specs:
+        try:
+            register_spec(spec)
+        except Exception:
+            logger.exception(
+                "GenericAdapter: spec の登録に失敗しました (skip): names=%s", spec.names
+            )
+            continue

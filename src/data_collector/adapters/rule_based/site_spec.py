@@ -161,6 +161,8 @@ def load_all_specs(spec_dir: Path | None = None) -> list[SiteSpec]:
         try:
             specs.append(_load_spec_file(path))
         except Exception:
-            logger.exception("site spec の読み込みに失敗しました: %s", path)
-            raise
+            # 1 ファイルの破損で collector 全体の import を落とさない。
+            # 該当 spec だけ ERROR で記録してスキップし、他 spec は生かす。
+            logger.exception("site spec の読み込みに失敗しました (skip): %s", path)
+            continue
     return specs

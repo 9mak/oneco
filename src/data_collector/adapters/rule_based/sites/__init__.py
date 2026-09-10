@@ -26,8 +26,8 @@ for _finder, _name, _ispkg in pkgutil.iter_modules(__path__):
 
 # YAML spec 駆動の GenericAdapter を登録する (T405)。bespoke モジュールの
 # import が先に完了しているため、名前衝突時は bespoke が優先される。
-from ..generic_adapter import register_spec as _register_spec  # noqa: E402
+# 1 spec の読み込み・構築失敗は当該 spec のスキップに留め、他サイトの登録は続ける。
+from ..generic_adapter import register_specs as _register_specs  # noqa: E402
 from ..site_spec import load_all_specs as _load_all_specs  # noqa: E402
 
-for _spec in _load_all_specs():
-    _register_spec(_spec)
+_register_specs(_load_all_specs())

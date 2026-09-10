@@ -27,4 +27,7 @@ species:
   strategy: from_url
   # list_url は `?animal_type=dog|cat` クエリを持つ (元実装は parse_qs で判定)。
   # ここでは list_url 文字列に対する部分一致で同じ判定を再現する。
+  # 元実装は「種別」が空か「不明」の時だけ URL で補完していた。from_url は
+  # 「犬/猫キーワードを含まない時」に補完する (意図的な簡略化。種別欄に
+  # 犬猫以外の値が入る事例は実サイトで観測されていない)。
   value: "dog=animal_type=dog:cat=animal_type=cat"
