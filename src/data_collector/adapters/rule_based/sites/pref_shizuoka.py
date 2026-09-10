@@ -160,18 +160,28 @@ class PrefShizuokaAdapter(SinglePageTableAdapter):
         # 種別はリンクテキスト > サイト名 > ページ見出し の順で推定する。
         # 本ページ (1066835) は「迷い犬情報一覧」なので既定で「犬」。
         species = self._infer_species(text, self.site_config.name)
-        phone = self._extract_detail_phone(detail_url)
+        content = self._fetch_detail_content(detail_url)
+        phone = self._extract_detail_dt_field(content, ("電話番号",))
+        # T131 Tier2: detail ページの `<dl><dt>犬種</dt><dd>...</dd></dl>`
+        # からラベルベースで breed/location/sex/size を追加抽出する
+        # (2026-09-09 field-ledger-triage で「掲載されているのに未抽出」と
+        # 確認済み)。ページ構造は phone と同じ dt/dd 形式。
+        breed = self._extract_detail_dt_field(content, ("犬種", "猫種", "種類"))
+        location = self._extract_detail_dt_field(content, ("保護した場所", "保護場所"))
+        sex = self._extract_detail_dt_field(content, ("性別",))
+        size = self._extract_detail_dt_field(content, ("体格",))
 
         try:
             return RawAnimalData(
                 species=species,
-                sex="",
+                sex=sex,
                 age="",
                 color="",
-                size="",
+                size=size,
                 shelter_date=self.SHELTER_DATE_DEFAULT,
-                location="",
+                location=location,
                 phone=phone,
+                breed=breed,
                 image_urls=[],
                 source_url=detail_url,
                 category=category,
@@ -179,35 +189,42 @@ class PrefShizuokaAdapter(SinglePageTableAdapter):
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=detail_url) from e
 
-    def _extract_detail_phone(self, detail_url: str) -> str:
-        """detail ページの `<dt>電話番号</dt><dd>...</dd>` から電話番号を取る
+    def _fetch_detail_content(self, detail_url: str) -> Tag | None:
+        """detail ページの本文コンテナ (`article#content`) を取得する
 
-        取得やパースに失敗しても致命扱いにはせず (電話番号はインデックス
-        側では取れない付加情報のため)、空文字にフォールバックする。
-
-        検索は本文コンテナ (`article#content`、`_load_rows` の
-        `ROW_SELECTOR` と同じ起点) にスコープする。ページ全体スコープで
-        `<dt>` を探すと、フッター等の無関係な「電話番号」ラベル
-        (サイト全体の代表問合せ窓口等) を本文より先に拾ってしまう懸念が
-        あるため (reviewer F-02)。
+        取得・パースに失敗しても致命扱いにはせず (detail 側はインデックス
+        では取れない付加情報のため)、None を返し呼び出し元は空文字に
+        フォールバックする。ページ全体スコープで `<dt>` を探すと、
+        フッター等の無関係なラベル (サイト全体の代表問合せ窓口等) を
+        本文より先に拾ってしまう懸念があるため `article#content` に
+        スコープする (reviewer F-02)。
         """
         try:
             html = self._http_get(detail_url)
         except Exception:
-            return ""
+            return None
         soup = BeautifulSoup(html, "html.parser")
         content = soup.select_one("article#content")
+        if not isinstance(content, Tag):
+            return None
+        return content
+
+    def _extract_detail_dt_field(self, content: Tag | None, labels: tuple[str, ...]) -> str:
+        """本文コンテナ内の `<dt>label</dt><dd>...</dd>` からラベル一致で値を取る"""
         if content is None:
             return ""
         for dt in content.find_all("dt"):
             if not isinstance(dt, Tag):
                 continue
-            if dt.get_text(strip=True) != "電話番号":
+            if dt.get_text(strip=True) not in labels:
                 continue
             dd = dt.find_next_sibling("dd")
             if dd is None:
                 continue
-            return self._normalize_phone(dd.get_text(strip=True))
+            value = dd.get_text(strip=True)
+            if labels == ("電話番号",):
+                return self._normalize_phone(value)
+            return value
         return ""
 
     # ─────────────────── ヘルパー ───────────────────
