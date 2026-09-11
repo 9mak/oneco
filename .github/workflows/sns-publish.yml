@@ -1,15 +1,15 @@
 name: SNS Publish (Threads)
 
-# 日次 cron で SNS 投稿候補を 1 件評価する。
+# 日次 cron で前日 (JST) の新着まとめを Threads へ 1 回投稿する (T151/T160)。
 #
 # kill switch (THREADS_PUBLISH_ENABLED) が true でない限り何もしない。
-# 段階リリース: 最初は THREADS_PUBLISH_DRY_RUN=true で moderate + post_log
-# 記録までを試し、安定確認後に false へ切替する。
+# 段階リリース: 最初は THREADS_PUBLISH_DRY_RUN=true で集計 + 文面確認までを試し、
+# 安定確認後に false へ切替する。
 #
-# 詳細: project_growth_progress memory, design.md §5
+# 詳細: outputs/sns-redesign-20260911.md (T151 設計), project_growth_progress memory
 
 on:
-  # 毎日 JST 9:00 (UTC 0:00) — Threads のアクティブ時間帯に合わせる
+  # 毎日 JST 9:00 (UTC 0:00) — 夜間収集 (GCP) の完了後に前日分を集計できる
   schedule:
     - cron: '0 0 * * *'
 
@@ -21,12 +21,69 @@ on:
         required: false
         type: string
 
+  # T161: sns_publisher 変更の回帰確認。THREADS_PUBLISH_ENABLED=false のまま
+  # --dry-run が通ることを PR ごとに CI で固定する (実 Threads 投稿はしない)。
+  pull_request:
+    paths:
+      - 'src/syndication_service/sns_publisher/**'
+      - '.github/workflows/sns-publish.yml'
+
 permissions:
-  # post_log (data/sns_posts.yaml) を commit するため
-  contents: write
+  contents: read
 
 jobs:
+  dry-run-check:
+    name: SNS Digest Dry-run Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test_db
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Run database migrations
+        run: alembic upgrade head
+
+      - name: Run SNS digest publisher in dry-run (kill switch off)
+        env:
+          # kill switch は off のまま。THREADS_PUBLISH_ENABLED=false でも
+          # --dry-run 実行そのもの (DB接続・集計・reason=disabled 判定まで)
+          # がエラーなく完走することを確認する。
+          THREADS_PUBLISH_ENABLED: 'false'
+        run: |
+          python -m syndication_service.sns_publisher --dry-run
+
   publish:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -44,54 +101,89 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e .
 
-      - name: Run SNS publisher
+      # DigestLog (日次投稿ログ) は data-collector と同じ 9mak/oneco-state に
+      # 分離する (T112 の方式を踏襲)。GIT_STATE_DEPLOY_KEY はこのリポジトリの
+      # 状態ファイル 5 点への書き込み用に発行済みの deploy key と同じ鍵を、
+      # GitHub Actions Secrets 側にも登録する必要がある (別途 HIL で登録)。
+      - name: Set up oneco-state deploy key
+        env:
+          GIT_STATE_DEPLOY_KEY: ${{ secrets.GIT_STATE_DEPLOY_KEY }}
+        run: |
+          if [ -z "$GIT_STATE_DEPLOY_KEY" ]; then
+            echo "::warning::GIT_STATE_DEPLOY_KEY not set; SNS_DIGEST_LOG_PATH falls back to repo-local data/sns_digest_log.yaml (run-scoped, not persisted across runs)"
+            exit 0
+          fi
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+          printf '%s\n' "$GIT_STATE_DEPLOY_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          # ホスト鍵は collector_entrypoint.sh と同じ固定値 (2026-08-14 取得)
+          cat > "$HOME/.ssh/known_hosts" <<'KNOWN_HOSTS'
+          github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
+          github.com ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=
+          github.com ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCj7ndNxQowgcQnjshcLrqPEiiphnt+VTTvDP6mHBL9j1aNUkY4Ue1gvwnGLVlOhGeYrnZaMgRK6+PKCUXaDbC7qtbW8gIkhL7aGCsOr/C56SJMy/BCZfxd1nWzAOxSDPgVsmerOBYfNqltV9/hWCqBywINIR+5dIg6JTJ72pcEpEjcYgXkE2YEFXV1JHnsKgbLWNlhScqb2UmyRkQyytRLtL+38TGxkxCflmO+5Z8CSSNY7GidjMIZ7Q4zMjA2n1nGrlTDkzwDCsw+wqFPGQA179cnfGWOWRVruj16z6XyvxvjJwbz0wQZ75XK5tKSb7FNyeIEs4TT4jk+S4dhPeAUC5y+bDYirYgM4GC7uEnztnZyaVWQ7B381AK4Qdrwt51ZqExKbQpTUNn+EjqoTwvqNj4kqx5QUCI0ThS/YkOxJCXmPUWZbhjpCg56i+2aB6CmK2JGhn57K5mj0MNdBXA4/WnwH6XoPWJzK5Nyu2zB3nAZp+S5hpQs+p1vN1/wsjk=
+          KNOWN_HOSTS
+          chmod 600 "$HOME/.ssh/known_hosts"
+          git clone --depth 1 git@github.com:9mak/oneco-state.git /tmp/oneco-state
+
+      - name: Run SNS digest publisher
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          # Meta Threads (Phase 4.2 で取得・登録)
+          # Meta Threads (T062 のトークン再発行後に有効化)
           THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
           THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
           # kill switch / dry_run は repo variable で運用
           THREADS_PUBLISH_ENABLED: ${{ vars.THREADS_PUBLISH_ENABLED || 'false' }}
           THREADS_PUBLISH_DRY_RUN: ${{ github.event.inputs.dry_run_override || vars.THREADS_PUBLISH_DRY_RUN || 'true' }}
-          # oneco 本体への集客導線 (投稿文に添える動物詳細ページ URL の base)
+          # oneco 本体への集客導線 (投稿文末尾に添えるトップページ URL)
           SITE_URL: ${{ vars.SITE_URL }}
-          # YAML 永続化先
-          SNS_POST_LOG_PATH: data/sns_posts.yaml
+          # 日次投稿ログの永続化先。oneco-state を clone できていればそちら、
+          # できなければ repo-local (run 跨ぎで永続化されない、既知の許容
+          # トレードオフ。GIT_STATE_DEPLOY_KEY 未登録時のフォールバック)。
+          SNS_DIGEST_LOG_PATH: /tmp/oneco-state/data/sns_digest_log.yaml
         run: |
+          if [ ! -d /tmp/oneco-state ]; then
+            export SNS_DIGEST_LOG_PATH=data/sns_digest_log.yaml
+          fi
           python -m syndication_service.sns_publisher
 
-      - name: Commit post_log (if any)
+      - name: Commit and push digest log to oneco-state (if any)
         if: success()
         run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          if [ -e data/sns_posts.yaml ]; then
-            git add data/sns_posts.yaml
-            if git diff --staged --quiet; then
-              echo "::notice::post_log unchanged"
-              exit 0
-            fi
-            git commit -m "Update sns_posts log [automated]
-
-            🤖 Generated with Claude Code (https://claude.com/claude-code)
-
-            Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
-            # push retry: data-collector.yml と同パターン
-            for attempt in 1 2 3; do
-              if git push; then
-                echo "::notice::Push successful on attempt $attempt"
-                exit 0
-              fi
-              if [ "$attempt" -lt 3 ]; then
-                git pull --rebase origin main || exit 0
-                sleep $((attempt * 3))
-              fi
-            done
-            echo "::warning::post_log push failed; will retry next run"
+          if [ ! -d /tmp/oneco-state ]; then
+            echo "::notice::oneco-state not cloned; skipping digest log push"
             exit 0
           fi
+          cd /tmp/oneco-state
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          if git diff --staged --quiet && git diff --quiet; then
+            echo "::notice::digest log unchanged"
+            exit 0
+          fi
+          git add data/sns_digest_log.yaml
+          if git diff --staged --quiet; then
+            echo "::notice::digest log unchanged"
+            exit 0
+          fi
+          git commit -m "Update sns_digest_log [automated]
+
+          🤖 Generated with Claude Code (https://claude.com/claude-code)
+
+          Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
+          for attempt in 1 2 3; do
+            if git push; then
+              echo "::notice::Push successful on attempt $attempt"
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              git pull --rebase origin main || exit 0
+              sleep $((attempt * 3))
+            fi
+          done
+          echo "::warning::digest log push failed; will retry next run"
+          exit 0
 
       - name: Notify Discord on failure
         if: failure()
