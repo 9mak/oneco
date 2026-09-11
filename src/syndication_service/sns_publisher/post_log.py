@@ -1,96 +1,31 @@
-"""SNS 投稿履歴の YAML 永続化
+"""SNS 日次まとめ投稿ログの YAML 永続化 (T160)
 
-design.md 5.2 step 5: 投稿結果 (動物 ID, 投稿時刻, プラットフォーム, URL, 成否) を記録。
-重複投稿防止のため candidate_selector が posted_urls を参照する。
+個体単位の投稿履歴 (旧 data/sns_posts.yaml) は日次まとめ化に伴い不要になった。
+「投稿済み日付」だけを記録し、同一日付の二重投稿を防ぐ。
 
-ストレージは YAML ファイル (SiteBaselineTracker と同じ思想)。DB スキーマ変更を
-避けてリリース速度を確保する。本格運用で件数が増えたら DB テーブルに移行。
+ストレージは YAML ファイル (旧実装と同じ思想)。既定パスは
+data/sns_digest_log.yaml だが、環境変数 SNS_DIGEST_LOG_PATH で差し替え可能
+(oneco-state 側の永続パスへ向けるため)。
 """
 
 from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
-from urllib.parse import urlparse
+from typing import Any
 
 import yaml
 
-if TYPE_CHECKING:
-    from data_collector.domain.models import AnimalData
-
 logger = logging.getLogger(__name__)
 
-# 「写真なし」プレースホルダ画像の名前パターン。これを照合キーに使うと
-# 写真の無い別個体同士が同一と誤判定されるため除外する (山梨 noimage01.jpg)。
-# normalizer._JUNK_IMAGE_URL_PATTERNS の placeholder/dummy と揃える (F-07)。
-_PLACEHOLDER_IMAGE_MARKERS = (
-    "noimage",
-    "no-image",
-    "no_image",
-    "nophoto",
-    "no-photo",
-    "placeholder",
-    "dummy",
-)
+DEFAULT_DIGEST_LOG_PATH = Path("data/sns_digest_log.yaml")
 
 
-def identity_of(animal: AnimalData) -> dict[str, str]:
-    """投稿記録に残す個体アイデンティティ (T058)。
+class DigestLog:
+    """日次まとめの投稿履歴を YAML で永続化する。
 
-    source_url の形式変更 (T026 山梨の実例) で URL 照合をすり抜けても、
-    個体の特徴で「投稿済み」を判定するための材料。値はすべて文字列で
-    YAML にそのまま永続化できる形にする。species〜shelter_date は照合には
-    使わず記録のみ (将来の突き合わせ・監査用)。
-    """
-    image_path = ""
-    if animal.image_urls:
-        parsed = urlparse(str(animal.image_urls[0]))
-        image_path = f"{parsed.netloc}{parsed.path}".lower()
-    return {
-        "species": animal.species or "",
-        "sex": animal.sex or "",
-        "color": (animal.color or "").strip(),
-        "shelter_date": animal.shelter_date.isoformat() if animal.shelter_date else "",
-        "image_path": image_path,
-    }
-
-
-def identity_keys_from_fields(identity: dict[str, Any]) -> set[str]:
-    """identity 辞書から照合キー集合を作る。
-
-    照合キーは ``img:<ホスト+パスの画像フルURL>`` のみ。
-
-    - ファイル名単独は本番データで大規模衝突する (沖縄 large_image.jpg 91件・
-      福岡 "m" 26件 — PR #281 reviewer 実測) ため、必ずホスト+パスで
-      スコープする。山梨リニューアルでは source_url が変わっても画像フル URL
-      はバイト一致で維持されており (/images/126663/33833no2.jpg)、
-      T026 型の URL 形式変更を検知する目的はフル URL キーで満たせる。
-    - プレースホルダ画像 (noimage 等) は写真の無い別個体同士を誤同一視する
-      ため除外する。
-    - 種別|性別|毛色|収容日のプロフィールキーは、shelter_date 日次上書きバグ
-      (T055) の影響下で本番 22% が衝突するため照合には使わない。identity と
-      して記録は残し、日付修復 (T056) 後に再検討する。
-    """
-    keys: set[str] = set()
-    image_path = str(identity.get("image_path") or "").strip().lower()
-    if image_path:
-        basename = Path(image_path).name
-        if basename and not any(m in basename for m in _PLACEHOLDER_IMAGE_MARKERS):
-            keys.add(f"img:{image_path}")
-    return keys
-
-
-def identity_keys_of(animal: AnimalData) -> set[str]:
-    """AnimalData から直接照合キー集合を作る (candidate_selector 用)。"""
-    return identity_keys_from_fields(identity_of(animal))
-
-
-class PostLog:
-    """投稿履歴を YAML で永続化する。
-
-    URL を主キーとし、再記録は上書き (= 重複投稿防止のための観点では「投稿済み」
-    という事実だけが必要)。
+    date (YYYY-MM-DD 文字列) を主キーとし、同じ date の再記録は上書きする
+    (= 「投稿済み」という事実だけが必要)。
     """
 
     def __init__(self, *, path: Path) -> None:
@@ -104,7 +39,7 @@ class PostLog:
         try:
             raw = yaml.safe_load(self._path.read_text(encoding="utf-8"))
         except Exception as exc:  # YAML 破損は黙って空扱い (collection を止めない)
-            logger.warning("PostLog: failed to load %s (%s); treating as empty", self._path, exc)
+            logger.warning("DigestLog: failed to load %s (%s); treating as empty", self._path, exc)
             return
         if not isinstance(raw, dict):
             return
@@ -114,52 +49,39 @@ class PostLog:
         for entry in posts:
             if not isinstance(entry, dict):
                 continue
-            url = entry.get("url")
-            if isinstance(url, str) and url:
-                self._records[url] = entry
+            entry_date = entry.get("date")
+            if isinstance(entry_date, str) and entry_date:
+                self._records[entry_date] = entry
 
     def _save(self) -> None:
         self._path.parent.mkdir(parents=True, exist_ok=True)
         payload = {"posts": list(self._records.values())}
         self._path.write_text(yaml.safe_dump(payload, allow_unicode=True, sort_keys=False))
 
-    def posted_urls(self) -> set[str]:
-        return set(self._records.keys())
-
-    def posted_identity_keys(self) -> set[str]:
-        """記録済み identity から照合キー集合を返す。
-
-        source_url の形式変更 (T026 山梨の実例) で URL 照合をすり抜けても、
-        個体そのものの特徴で「投稿済み」を判定できるようにする (T058)。
-        identity を持たない旧エントリは空集合に寄与するだけで壊れない。
-        """
-        keys: set[str] = set()
-        for entry in self._records.values():
-            identity = entry.get("identity")
-            if isinstance(identity, dict):
-                keys |= identity_keys_from_fields(identity)
-        return keys
+    def is_posted(self, date_str: str) -> bool:
+        """指定日付 (YYYY-MM-DD) が投稿済みか。"""
+        return date_str in self._records
 
     def record(
         self,
         *,
-        url: str,
-        platform: str,
-        text: str,
-        dry_run: bool,
-        identity: dict[str, str] | None = None,
+        date_str: str,
+        post_id: str | None,
+        posted_at: str,
     ) -> None:
-        if not url:
-            raise ValueError("url must be non-empty")
-        if not platform:
-            raise ValueError("platform must be non-empty")
+        """投稿記録を残す。
+
+        Args:
+            date_str: 対象日付 (YYYY-MM-DD, JST)
+            post_id: Threads の投稿 ID (dry_run 時は None)
+            posted_at: 記録時刻 (ISO 8601 文字列)
+        """
+        if not date_str:
+            raise ValueError("date_str must be non-empty")
         entry: dict[str, Any] = {
-            "url": url,
-            "platform": platform,
-            "text": text,
-            "dry_run": dry_run,
+            "date": date_str,
+            "post_id": post_id,
+            "posted_at": posted_at,
         }
-        if identity:
-            entry["identity"] = identity
-        self._records[url] = entry
+        self._records[date_str] = entry
         self._save()

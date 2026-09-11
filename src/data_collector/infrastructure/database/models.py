@@ -5,7 +5,7 @@ SQLAlchemy データベースモデル定義
 PostgreSQL を対象としていますが、テストでは SQLite も使用可能です。
 """
 
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 
 from sqlalchemy import JSON, Column, Date, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
@@ -109,6 +109,18 @@ class Animal(Base):
     # いつ確認されたか」をフロントに示すために使う (2026-07-24 発覚: サイトの
     # 収集が壊れて更新が止まっても古いデータがそのまま表示され続けていた)。
     last_collected_at: datetime | None = Column(DateTime(timezone=True), nullable=True)
+
+    # T159: 初回収集日時。SNS 日次まとめ (T160) が「前日の新着」を判定する唯一の
+    # 基準列。shelter_date (自治体側の収容日) は自治体ごとに欠損・上書きバグ
+    # (T055) の影響を受けるため使わない。INSERT 経路でのみ現在時刻を設定し
+    # (AnimalRepository._to_orm)、UPDATE 経路では変更しない。既存行は移行時に
+    # backfill されるため、真の初回収集日とは限らない (移行 migration 参照)。
+    first_seen_at: datetime = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        index=True,
+        default=lambda: datetime.now(UTC),
+    )
 
     # 画像永続化フィールド
     local_image_paths: list[str] = Column(
@@ -273,6 +285,10 @@ class AnimalArchive(Base):
     status_changed_at: datetime | None = Column(DateTime(timezone=True), nullable=True)
     outcome_date: date | None = Column(Date, nullable=True)
     last_collected_at: datetime | None = Column(DateTime(timezone=True), nullable=True)
+    # T159: archive は active 側と同一スキーマを維持する既存方針 (アーカイブ
+    # コメント参照) に従い引き継ぐ。アーカイブ済み個体は日次まとめの対象外
+    # (集計は active テーブルのみ参照) だが、将来の参照・監査用に残す。
+    first_seen_at: datetime | None = Column(DateTime(timezone=True), nullable=True)
 
     # アーカイブ情報
     archived_at: datetime = Column(

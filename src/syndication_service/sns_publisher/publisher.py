@@ -1,14 +1,12 @@
-"""SNS publisher orchestrator (Threads 本命)
+"""SNS publisher orchestrator (T151 設計 / T160・日次まとめ版)
 
-design.md 5.2 pipeline 全段を 1 関数 publish_one() で束ねる。
+前日 (JST) の新着をまとめて Threads へ 1 投稿する。個体 1 件ずつの選定・
+LLM 生成・PII モデレーションは撤去した (定型文のみ・事実のみのため不要)。
 
-- kill switch THREADS_PUBLISH_ENABLED (default false): 厳守。secrets が揃う前に
-  事故投稿しないため。
-- dry_run THREADS_PUBLISH_DRY_RUN (default true): 段階リリース。
-  Threads client が無い (= 本 PR の状態) でも moderate まで通すことで、
-  「実本番では何が投稿候補になるか」を post_log で確認できる。
-- Threads API client (実投稿): 次 PR (access token 取得後)。本 PR では client=None
-  経路 (no_api_client / dry_run の return) のみ実装。
+- kill switch THREADS_PUBLISH_ENABLED (default false): 厳守。
+- dry_run THREADS_PUBLISH_DRY_RUN (default true): 集計と文面を確認するだけで
+  投稿しない・ログにも記録しない段階リリース用。
+- 同一日付の二重投稿は DigestLog (post_log.py) が防ぐ。
 """
 
 from __future__ import annotations
@@ -16,18 +14,15 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass
+from datetime import UTC, date, datetime
 from typing import Any, Protocol
-from urllib.parse import urlencode
 
-from data_collector.domain.models import AnimalData, AnimalStatus
-
-from .candidate_selector import select_candidate
-from .moderator import moderate_post
-from .post_log import PostLog, identity_of
+from .digest import DigestStats, collect_daily_digest
+from .digest_text import build_digest_text
+from .post_log import DigestLog
 
 logger = logging.getLogger(__name__)
 
-# oneco 本体の base URL。feed_generator._resolve_base_url() と同じ優先順。
 _SITE_URL_ENV_VARS = ("SITE_URL", "FRONTEND_URL", "NEXT_PUBLIC_SITE_URL")
 _DEFAULT_SITE_URL = "https://oneco.example"
 
@@ -40,186 +35,109 @@ def _resolve_site_url(env: dict[str, str]) -> str:
     return _DEFAULT_SITE_URL
 
 
-def _build_oneco_url(animal_id: int | None, env: dict[str, str], *, platform: str) -> str | None:
-    """SNS 集客導線: oneco 側の動物詳細ページ URL を組み立てる。
-
-    animal_id が引けない (未同期・削除済み等) 場合は None を返し、
-    text_generator 側は自治体公式リンクのみで投稿する (従来動作)。
-    """
-    if animal_id is None:
-        return None
-    base = _resolve_site_url(env)
-    query = urlencode({"utm_source": platform, "utm_medium": "sns_post"})
-    return f"{base}/animals/{animal_id}?{query}"
-
-
-@dataclass(frozen=True)
-class PublishResult:
-    """publish_one() の戻り値。Discord 通知や次 run の判断に使う。"""
-
-    posted: bool  # 実際に Threads/X へ POST した
-    dry_run: bool
-    platform: str
-    candidate: AnimalData | None
-    text: str | None
-    reason: (
-        str | None
-    )  # disabled / no_candidate / moderation_failed:* / dry_run / no_api_client / publish_error:*
-
-
-class _AnimalsRepo(Protocol):
-    async def list_animals(
-        self,
-        *,
-        status: AnimalStatus | None = ...,
-        include_non_public: bool = ...,
-        limit: int = ...,
-        offset: int = ...,
-        **kwargs: object,
-    ) -> tuple[list[AnimalData], int]: ...
-
-    async def get_animal_id_by_source_url(self, source_url: str) -> int | None: ...
-
-
-class _TextGen(Protocol):
-    def generate(
-        self, animal: AnimalData, *, platform: str, oneco_url: str | None = None
-    ) -> str: ...
-
-
 def _truthy(env: dict[str, str], key: str, *, default: str = "false") -> bool:
     return env.get(key, default).strip().lower() == "true"
 
 
-async def publish_one(
+class _DigestRepo(Protocol):
+    async def list_animals_first_seen_between(
+        self, *, start: datetime, end: datetime
+    ) -> list[Any]: ...
+
+
+class _ThreadsClient(Protocol):
+    def post(self, text: str, *, image_url: str | None = None, candidate: Any = None) -> str: ...
+
+
+@dataclass(frozen=True)
+class DigestPublishResult:
+    """publish_daily_digest() の戻り値。Discord 通知や cron の終了コード判断に使う。"""
+
+    posted: bool  # 実際に Threads へ POST した
+    dry_run: bool
+    stats: DigestStats | None
+    text: str | None
+    reason: (
+        str | None
+    )  # disabled / no_new_animals / already_posted / dry_run / no_api_client / publish_error:*
+
+
+async def publish_daily_digest(
     *,
-    repo: _AnimalsRepo,
-    generator: _TextGen,
-    post_log: PostLog,
-    platform: str = "threads",
+    repo: _DigestRepo,
+    digest_log: DigestLog,
+    target_date_jst: date,
     env: dict[str, str] | None = None,
-    threads_client: Any | None = None,
-) -> PublishResult:
-    """投稿候補 1 件のパイプラインを実行する。
+    threads_client: _ThreadsClient | None = None,
+) -> DigestPublishResult:
+    """target_date_jst (JST) の新着まとめを 1 回投稿する。
 
     Returns:
-        PublishResult: 結果。Discord 通知や cron の終了コード判断に使う。
+        DigestPublishResult
     """
     env_map = dict(os.environ) if env is None else dict(env)
 
     # 1. kill switch
     if not _truthy(env_map, "THREADS_PUBLISH_ENABLED"):
-        logger.info("SNS publisher disabled (THREADS_PUBLISH_ENABLED!=true)")
-        return PublishResult(
-            posted=False,
-            dry_run=False,
-            platform=platform,
-            candidate=None,
-            text=None,
-            reason="disabled",
+        logger.info("SNS digest publisher disabled (THREADS_PUBLISH_ENABLED!=true)")
+        return DigestPublishResult(
+            posted=False, dry_run=False, stats=None, text=None, reason="disabled"
         )
 
     dry_run = _truthy(env_map, "THREADS_PUBLISH_DRY_RUN", default="true")
+    date_str = target_date_jst.isoformat()
 
-    # 2. select candidate
-    candidate = await select_candidate(
-        repo,
-        already_posted_urls=post_log.posted_urls(),
-        already_posted_identity_keys=post_log.posted_identity_keys(),
-    )
-    if candidate is None:
-        logger.info("SNS publisher: no candidate")
-        return PublishResult(
-            posted=False,
-            dry_run=dry_run,
-            platform=platform,
-            candidate=None,
-            text=None,
-            reason="no_candidate",
+    # 2. 同一日付の二重投稿防止
+    if digest_log.is_posted(date_str):
+        logger.info("SNS digest publisher: %s already posted", date_str)
+        return DigestPublishResult(
+            posted=False, dry_run=dry_run, stats=None, text=None, reason="already_posted"
         )
 
-    # 3. generate text (oneco 詳細ページへの導線を可能なら添える)
-    animal_id = await repo.get_animal_id_by_source_url(str(candidate.source_url))
-    oneco_url = _build_oneco_url(animal_id, env_map, platform=platform)
-    text = generator.generate(candidate, platform=platform, oneco_url=oneco_url)
-
-    # 4. moderate (二重防御)
-    mod = moderate_post(text, candidate, platform=platform)
-    if not mod.ok:
-        logger.warning(
-            "SNS publisher: moderation rejected url=%s reasons=%s",
-            candidate.source_url,
-            mod.reasons,
-        )
-        return PublishResult(
-            posted=False,
-            dry_run=dry_run,
-            platform=platform,
-            candidate=candidate,
-            text=text,
-            reason=f"moderation_failed:{','.join(mod.reasons)}",
+    # 3. 集計
+    stats = await collect_daily_digest(repo, target_date_jst=target_date_jst)
+    if stats is None:
+        logger.info("SNS digest publisher: no new animals on %s", date_str)
+        return DigestPublishResult(
+            posted=False, dry_run=dry_run, stats=None, text=None, reason="no_new_animals"
         )
 
-    final_text = mod.text
+    # 4. 文面組み立て (定型文のみ、LLM 不使用)
+    site_url = _resolve_site_url(env_map)
+    text = build_digest_text(stats, site_url=site_url)
 
-    # 5. dry_run: 記録のみで投稿しない
+    # 5. dry_run: 集計と文面を確認するだけ。ログにも記録しない
+    #    (実運用の投稿判断に影響を与えないため)。
     if dry_run:
-        post_log.record(
-            url=str(candidate.source_url),
-            platform=platform,
-            text=final_text,
-            dry_run=True,
-            identity=identity_of(candidate),
-        )
-        return PublishResult(
-            posted=False,
-            dry_run=True,
-            platform=platform,
-            candidate=candidate,
-            text=final_text,
-            reason="dry_run",
+        return DigestPublishResult(
+            posted=False, dry_run=True, stats=stats, text=text, reason="dry_run"
         )
 
     # 6. wet: Threads API client が無ければ no_api_client で安全停止
-    #    (次 PR で client を注入する。本 PR では到達しない設計)
     if threads_client is None:
-        logger.warning("SNS publisher: dry_run=false but threads_client is None; not posting")
-        return PublishResult(
-            posted=False,
-            dry_run=False,
-            platform=platform,
-            candidate=candidate,
-            text=final_text,
-            reason="no_api_client",
+        logger.warning(
+            "SNS digest publisher: dry_run=false but threads_client is None; not posting"
+        )
+        return DigestPublishResult(
+            posted=False, dry_run=False, stats=stats, text=text, reason="no_api_client"
         )
 
-    # 7. 実投稿 (次 PR で client.post を実装)
+    # 7. 実投稿 (画像なし固定)
     try:
-        threads_client.post(final_text, candidate=candidate)
+        post_id = threads_client.post(text, image_url=None)
     except Exception as exc:
-        # 上流 API の全例外を捕捉して post_log を汚さない
-        logger.error("SNS publisher: post failed url=%s err=%s", candidate.source_url, exc)
-        return PublishResult(
+        logger.error("SNS digest publisher: post failed date=%s err=%s", date_str, exc)
+        return DigestPublishResult(
             posted=False,
             dry_run=False,
-            platform=platform,
-            candidate=candidate,
-            text=final_text,
+            stats=stats,
+            text=text,
             reason=f"publish_error:{type(exc).__name__}",
         )
 
-    post_log.record(
-        url=str(candidate.source_url),
-        platform=platform,
-        text=final_text,
-        dry_run=False,
-        identity=identity_of(candidate),
+    digest_log.record(
+        date_str=date_str,
+        post_id=post_id,
+        posted_at=datetime.now(UTC).isoformat(),
     )
-    return PublishResult(
-        posted=True,
-        dry_run=False,
-        platform=platform,
-        candidate=candidate,
-        text=final_text,
-        reason=None,
-    )
+    return DigestPublishResult(posted=True, dry_run=False, stats=stats, text=text, reason=None)

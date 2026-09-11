@@ -114,6 +114,11 @@ class AnimalRepository:
             status_changed_at=animal_data.status_changed_at,
             outcome_date=animal_data.outcome_date,
             local_image_paths=animal_data.local_image_paths or [],
+            # T159: _to_orm は新規行の生成にのみ使われる (通常 INSERT 経路と
+            # URL 再利用検知による archive+再挿入経路の両方)。呼び出し元の
+            # animal_data.first_seen_at は無視し、常に現在時刻を初回収集日時
+            # として設定する。
+            first_seen_at=datetime.now(UTC),
         )
 
     @staticmethod
@@ -262,6 +267,7 @@ class AnimalRepository:
             outcome_date=orm_animal.outcome_date,
             local_image_paths=orm_animal.local_image_paths or None,
             last_collected_at=orm_animal.last_collected_at,
+            first_seen_at=orm_animal.first_seen_at,
         )
 
     async def save_animal(
@@ -468,6 +474,35 @@ class AnimalRepository:
         stmt = select(Animal.id).where(Animal.source_url == source_url).limit(1)
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def list_animals_first_seen_between(
+        self,
+        *,
+        start: datetime,
+        end: datetime,
+    ) -> list[AnimalData]:
+        """first_seen_at が [start, end) の範囲にある公開中の動物を返す (T160)。
+
+        SNS 日次まとめが「前日の新着」を集計するための専用クエリ。
+        list_animals() の shelter_date フィルタと違い first_seen_at (T159) で
+        範囲検索する点が異なるため別メソッドとして独立させる。
+
+        Args:
+            start: 範囲開始 (timezone-aware, 含む)
+            end: 範囲終了 (timezone-aware, 含まない)
+
+        Returns:
+            list[AnimalData]: 対象動物一覧 (件数上限なし。日次まとめの母集団は
+                通常数十〜数百件程度で全国日次収集の規模に収まるため)
+        """
+        stmt = select(Animal).where(
+            Animal.first_seen_at >= start,
+            Animal.first_seen_at < end,
+            Animal.status == AnimalStatus.SHELTERED.value,
+        )
+        result = await self.session.execute(stmt)
+        animals = result.scalars().all()
+        return [self._to_pydantic(a) for a in animals]
 
     async def list_animals(
         self,

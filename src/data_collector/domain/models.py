@@ -100,6 +100,13 @@ class AnimalData(BaseModel):
     last_collected_at: datetime | None = Field(
         default=None, description="oneco側の収集(クロール)が最後に成功した日時"
     )
+    first_seen_at: datetime | None = Field(
+        default=None,
+        description=(
+            "初回収集日時 (T159)。DB の INSERT 経路でのみ現在時刻が設定される"
+            "サーバ管理フィールド。呼び出し元が値を渡しても無視される"
+        ),
+    )
     # shelter_date が実サイト由来でなく収集日フォールバック/未来日クランプによる
     # 推定値であることを示すフラグ。DB には永続化しない (repository が上書き判定に
     # 使う transient な印)。これが無いと毎日の再収集で shelter_date が「当日」へ
