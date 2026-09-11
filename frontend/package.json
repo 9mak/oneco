@@ -44,7 +44,7 @@
     "axe-core": "^4.11.1",
     "eslint": "^9",
     "eslint-config-next": "^16.2.11",
-    "jest-axe": "^10.0.0",
+    "jest-axe": "^11.0.0",
     "jsdom": "^27.4.0",
     "playwright": "^1.57.0",
     "tailwindcss": "^4",
