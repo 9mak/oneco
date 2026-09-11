@@ -144,6 +144,12 @@ jobs:
           SNS_DIGEST_LOG_PATH: /tmp/oneco-state/data/sns_digest_log.yaml
         run: |
           if [ ! -d /tmp/oneco-state ]; then
+            # fail-closed: 二重投稿防止ログを永続化できない状態で実投稿はしない。
+            # dry-run または kill switch off のときだけ repo-local へフォールバックする。
+            if [ "$THREADS_PUBLISH_ENABLED" = "true" ] && [ "$THREADS_PUBLISH_DRY_RUN" != "true" ]; then
+              echo "::error::GIT_STATE_DEPLOY_KEY not set; refusing to publish without persisted digest log"
+              exit 1
+            fi
             export SNS_DIGEST_LOG_PATH=data/sns_digest_log.yaml
           fi
           python -m syndication_service.sns_publisher
@@ -182,8 +188,10 @@ jobs:
               sleep $((attempt * 3))
             fi
           done
-          echo "::warning::digest log push failed; will retry next run"
-          exit 0
+          # push 失敗を握りつぶすと翌日の run が同じ日付を再投稿しうるため失敗させ、
+          # Discord 通知で人が oneco-state の状態を確認する
+          echo "::error::digest log push failed; next run may double-post without this log"
+          exit 1
 
       - name: Notify Discord on failure
         if: failure()
