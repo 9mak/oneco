@@ -24,7 +24,7 @@ dependencies = [
     "google-genai>=1.0.0",  # auto_fix_adapter.py の Gemini 経路 (agy 検証で高精度確認、2026-07-25)
     "pyyaml>=6.0.3",
     "playwright>=1.62.0",
-    "pdfplumber>=0.10.0",
+    "pdfplumber>=0.11.10",
     "python-dotenv>=1.0.0",
     # 配信API(syndication)のランタイム依存。requirements.txt には存在したが
     # Dockerfile が `pip install -e .`(pyproject 単一源泉)へ移行した際に未同期で、
