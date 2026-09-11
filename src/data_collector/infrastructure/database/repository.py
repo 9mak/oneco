@@ -114,6 +114,11 @@ class AnimalRepository:
             status_changed_at=animal_data.status_changed_at,
             outcome_date=animal_data.outcome_date,
             local_image_paths=animal_data.local_image_paths or [],
+            # T159: _to_orm は新規行の生成にのみ使われる (通常 INSERT 経路と
+            # URL 再利用検知による archive+再挿入経路の両方)。呼び出し元の
+            # animal_data.first_seen_at は無視し、常に現在時刻を初回収集日時
+            # として設定する。
+            first_seen_at=datetime.now(UTC),
         )
 
     @staticmethod
@@ -262,6 +267,7 @@ class AnimalRepository:
             outcome_date=orm_animal.outcome_date,
             local_image_paths=orm_animal.local_image_paths or None,
             last_collected_at=orm_animal.last_collected_at,
+            first_seen_at=orm_animal.first_seen_at,
         )
 
     async def save_animal(

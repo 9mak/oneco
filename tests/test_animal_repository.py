@@ -485,6 +485,92 @@ async def test_save_animal_updates_last_collected_at_on_update(repository, async
 
 
 @pytest.mark.asyncio
+async def test_save_animal_sets_first_seen_at_on_insert(repository):
+    """T159: save_animal()が新規挿入時にfirst_seen_atを現在時刻で設定するか"""
+    animal_data = AnimalData(
+        species="犬",
+        shelter_date=date(2026, 1, 5),
+        location="高知県",
+        source_url="https://example.com/animal/first-seen-new",
+        category="adoption",
+    )
+
+    before = datetime.now(UTC).replace(tzinfo=None)
+    result = await repository.save_animal(animal_data)
+    after = datetime.now(UTC).replace(tzinfo=None)
+
+    assert result.first_seen_at is not None
+    seen = result.first_seen_at.replace(tzinfo=None)
+    assert before <= seen <= after
+
+
+@pytest.mark.asyncio
+async def test_save_animal_does_not_change_first_seen_at_on_update(repository, async_session):
+    """T159: 既存レコード更新時にfirst_seen_atが変更されないか"""
+    original_first_seen = datetime(2026, 1, 1, tzinfo=UTC)
+    existing_animal = Animal(
+        species="犬",
+        shelter_date=date(2026, 1, 5),
+        location="高知県",
+        source_url="https://example.com/animal/first-seen-update",
+        first_seen_at=original_first_seen,
+    )
+    async_session.add(existing_animal)
+    await async_session.commit()
+
+    animal_data = AnimalData(
+        species="犬",
+        shelter_date=date(2026, 1, 5),
+        location="高知県",
+        source_url="https://example.com/animal/first-seen-update",
+        category="adoption",
+    )
+    result = await repository.save_animal(animal_data)
+
+    assert result.first_seen_at is not None
+    assert result.first_seen_at.replace(tzinfo=None) == original_first_seen.replace(tzinfo=None)
+
+
+@pytest.mark.asyncio
+async def test_save_animal_url_reuse_sets_first_seen_at_on_new_row(repository, async_session):
+    """T159: URL再利用検知(T138)で新規挿入される行にもfirst_seen_atが入るか"""
+    old_first_seen = datetime(2020, 1, 1, tzinfo=UTC)
+    existing_animal = Animal(
+        species="犬",
+        sex="男の子",
+        breed="雑種",
+        shelter_date=date(2026, 1, 5),
+        location="岡山市保健所",
+        source_url="https://example.com/animal/first-seen-reused-url",
+        management_number="1D2025093",
+        first_seen_at=old_first_seen,
+    )
+    async_session.add(existing_animal)
+    await async_session.commit()
+
+    animal_data = AnimalData(
+        species="猫",
+        sex="女の子",
+        breed="三毛",
+        shelter_date=date(2026, 9, 1),
+        location="岡山市保健所",
+        source_url="https://example.com/animal/first-seen-reused-url",
+        management_number="1D2026049",
+        category="adoption",
+    )
+
+    before = datetime.now(UTC).replace(tzinfo=None)
+    result = await repository.save_animal(animal_data)
+    after = datetime.now(UTC).replace(tzinfo=None)
+
+    assert repository.url_reuse_count == 1
+    assert result.first_seen_at is not None
+    seen = result.first_seen_at.replace(tzinfo=None)
+    assert before <= seen <= after
+    assert seen != old_first_seen.replace(tzinfo=None)
+
+
+@pytest.mark.asyncio
 async def test_get_animal_by_id_returns_animal(repository, async_session):
     """get_animal_by_id()が指定IDの動物を返すか"""
     # テストデータを挿入

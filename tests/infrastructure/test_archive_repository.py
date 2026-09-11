@@ -419,6 +419,7 @@ class TestInsertArchive:
             status_changed_at=datetime(2025, 5, 20, tzinfo=UTC),
             outcome_date=date(2025, 5, 20),
             last_collected_at=datetime(2025, 5, 19, tzinfo=UTC),
+            first_seen_at=datetime(2025, 4, 30, tzinfo=UTC),
             # 個体識別フィールド (animal-identity-fields)
             breed="ミックス",
             name="シロ",
@@ -456,6 +457,7 @@ class TestInsertArchive:
         assert archived.name == "シロ"
         assert archived.management_number == "2025-501"
         assert archived.description == "人懐っこい子です"
+        assert archived.first_seen_at.replace(tzinfo=None) == datetime(2025, 4, 30)
 
 
 class TestReadOnlyConstraint:
