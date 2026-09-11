@@ -2022,3 +2022,50 @@ async def test_save_animal_inserts_estimated_fallback_date_for_new_record(reposi
     )
     result = await repository.save_animal(animal_data)
     assert result.shelter_date == date(2026, 8, 19)
+
+
+@pytest.mark.asyncio
+async def test_list_animals_first_seen_between_filters_range_and_status(repository, async_session):
+    """T160: first_seen_at の範囲内・公開中(status=sheltered)の個体のみ返す"""
+    in_range_sheltered = Animal(
+        species="犬",
+        shelter_date=date(2026, 1, 5),
+        location="高知県",
+        source_url="https://example.com/animal/digest-in-range",
+        status="sheltered",
+        first_seen_at=datetime(2026, 3, 2, 5, 0, tzinfo=UTC),
+    )
+    in_range_adopted = Animal(
+        species="猫",
+        shelter_date=date(2026, 1, 5),
+        location="高知県",
+        source_url="https://example.com/animal/digest-in-range-adopted",
+        status="adopted",
+        first_seen_at=datetime(2026, 3, 2, 6, 0, tzinfo=UTC),
+    )
+    before_range = Animal(
+        species="犬",
+        shelter_date=date(2026, 1, 5),
+        location="高知県",
+        source_url="https://example.com/animal/digest-before",
+        status="sheltered",
+        first_seen_at=datetime(2026, 3, 1, 23, 0, tzinfo=UTC),
+    )
+    after_range = Animal(
+        species="犬",
+        shelter_date=date(2026, 1, 5),
+        location="高知県",
+        source_url="https://example.com/animal/digest-after",
+        status="sheltered",
+        first_seen_at=datetime(2026, 3, 3, 0, 0, tzinfo=UTC),
+    )
+    async_session.add_all([in_range_sheltered, in_range_adopted, before_range, after_range])
+    await async_session.commit()
+
+    result = await repository.list_animals_first_seen_between(
+        start=datetime(2026, 3, 2, 0, 0, tzinfo=UTC),
+        end=datetime(2026, 3, 3, 0, 0, tzinfo=UTC),
+    )
+
+    urls = {str(a.source_url) for a in result}
+    assert urls == {"https://example.com/animal/digest-in-range"}

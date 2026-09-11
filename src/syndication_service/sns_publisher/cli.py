@@ -1,17 +1,16 @@
-"""SNS publisher CLI エントリ (GitHub Actions cron 用)
+"""SNS digest publisher CLI エントリ (GitHub Actions cron 用)
 
-`python -m syndication_service.sns_publisher` で 1 件投稿を試みる。
+`python -m syndication_service.sns_publisher` で前日 (JST) の新着まとめを
+1 回投稿する。`--dry-run` を渡すと集計と文面を stdout に出すだけで投稿・
+ログ記録のいずれも行わない (THREADS_PUBLISH_DRY_RUN env より優先する)。
 
 責務:
   - env から secrets / 設定を読み取る
-  - generator / threads_client / repo / post_log を組み立てる
-  - publish_one() を 1 回呼ぶ
+  - threads_client / repo / digest_log を組み立てる
+  - publish_daily_digest() を 1 回呼ぶ (対象日は実行日の前日・JST)
   - 結果を Discord 通知 (DISCORD_WEBHOOK_URL があれば)
-  - exit code: posted/dry_run/disabled/no_candidate=0、moderation_failed/publish_error/no_api_client=1
-
-ユニットテストは pure pieces (build_generator / build_threads_client /
-format_summary / result_to_exit_code) のみカバー。実 DB / 実 API は
-manual smoke test に委ねる。
+  - exit code: posted/dry_run/disabled/no_new_animals/already_posted=0、
+    no_api_client/publish_error=1
 """
 
 from __future__ import annotations
@@ -20,32 +19,20 @@ import asyncio
 import logging
 import os
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
-from .publisher import PublishResult, publish_one
-from .text_generator import TextGenerator
+from .post_log import DEFAULT_DIGEST_LOG_PATH, DigestLog
+from .publisher import DigestPublishResult, publish_daily_digest
 from .threads_client import ThreadsClient
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_POST_LOG_PATH = Path("data/sns_posts.yaml")
+_JST = ZoneInfo("Asia/Tokyo")
 
 # exit code = 1 にすべき reason (CI で notify されるもの)
-_FAILURE_REASONS: frozenset[str] = frozenset({"no_api_client", "no_database"})
-
-
-def build_generator(env: dict[str, str]) -> TextGenerator:
-    """env から TextGenerator を組み立てる。GROQ_API_KEY 未設定なら fallback only。"""
-    api_key = env.get("GROQ_API_KEY")
-    if not api_key:
-        return TextGenerator(client=None)
-    try:
-        from openai import OpenAI
-    except ImportError:
-        logger.warning("openai package not available; using fallback-only generator")
-        return TextGenerator(client=None)
-    client = OpenAI(api_key=api_key, base_url="https://api.groq.com/openai/v1")
-    return TextGenerator(client=client)
+_FAILURE_REASONS: frozenset[str] = frozenset({"no_database", "no_api_client"})
 
 
 def build_threads_client(env: dict[str, str]) -> ThreadsClient | None:
@@ -57,81 +44,86 @@ def build_threads_client(env: dict[str, str]) -> ThreadsClient | None:
     return ThreadsClient(user_id=user_id, access_token=token)
 
 
-def result_to_exit_code(result: PublishResult) -> int:
+def result_to_exit_code(result: DigestPublishResult) -> int:
     """failure reason は 1、それ以外は 0。"""
     if result.reason is None:
         return 0
     head = result.reason.split(":", 1)[0]
     if head in _FAILURE_REASONS:
         return 1
-    if head in {"moderation_failed", "publish_error"}:
+    if head == "publish_error":
         return 1
     return 0
 
 
-def format_summary(result: PublishResult) -> str:
+def format_summary(result: DigestPublishResult) -> str:
     """Discord に投稿する整形済みメッセージ。"""
     head = (result.reason or "").split(":", 1)[0]
-    url = str(result.candidate.source_url) if result.candidate else "(なし)"
 
     if result.posted:
-        return f":white_check_mark: Threads に投稿しました\nURL: {url}\n```\n{result.text}\n```"
+        return (
+            f":white_check_mark: Threads に日次まとめを投稿しました "
+            f"({result.stats.target_date if result.stats else '?'})\n```\n{result.text}\n```"
+        )
     if head == "dry_run":
-        return f":mag: Threads dry-run (post_log に記録のみ)\nURL: {url}\n```\n{result.text}\n```"
+        return (
+            f":mag: Threads dry-run (投稿しません)\n```\n{result.text}\n```"
+            if result.text
+            else ":mag: Threads dry-run: 集計結果なし"
+        )
     if head == "disabled":
-        return ":zzz: SNS publisher disabled (THREADS_PUBLISH_ENABLED!=true)"
-    if head == "no_candidate":
-        return ":information_source: 投稿候補なし (全件投稿済 or image_urls 不足)"
-    if head == "moderation_failed":
-        reasons = (result.reason or "").split(":", 1)[1] if ":" in (result.reason or "") else ""
-        return f":warning: モデレーション失敗 ({reasons})\nURL: {url}"
+        return ":zzz: SNS digest publisher disabled (THREADS_PUBLISH_ENABLED!=true)"
+    if head == "no_new_animals":
+        return ":information_source: 前日の新着なし (投稿スキップ)"
+    if head == "already_posted":
+        return ":information_source: 対象日は投稿済み (二重投稿防止)"
     if head == "no_api_client":
-        return ":warning: dry_run=false だが Threads client 未構築 (no_api_client)。THREADS_ACCESS_TOKEN / THREADS_USER_ID 設定を確認"
+        return (
+            ":warning: dry_run=false だが Threads client 未構築 (no_api_client)。"
+            "THREADS_ACCESS_TOKEN / THREADS_USER_ID 設定を確認"
+        )
     if head == "publish_error":
         err = (result.reason or "").split(":", 1)[1] if ":" in (result.reason or "") else ""
-        return f":x: 投稿失敗 (publish_error: {err})\nURL: {url}"
+        return f":x: 投稿失敗 (publish_error: {err})"
     return f"unknown reason: {result.reason}"
 
 
-async def _run_async(env: dict[str, str]) -> PublishResult:
-    """DB 接続を貼って publish_one を 1 回呼ぶ。"""
+async def _run_async(env: dict[str, str], *, cli_dry_run: bool | None) -> DigestPublishResult:
+    """DB 接続を貼って publish_daily_digest を 1 回呼ぶ。対象日は実行日の前日 (JST)。"""
     from data_collector.infrastructure.database.connection import (
         DatabaseConnection,
         DatabaseSettings,
     )
     from data_collector.infrastructure.database.repository import AnimalRepository
 
-    from .post_log import PostLog
-
     database_url = env.get("DATABASE_URL")
     if not database_url:
-        logger.error("DATABASE_URL not set; cannot select candidate")
-        return PublishResult(
-            posted=False,
-            dry_run=False,
-            platform="threads",
-            candidate=None,
-            text=None,
-            reason="no_database",
+        logger.error("DATABASE_URL not set; cannot collect digest")
+        return DigestPublishResult(
+            posted=False, dry_run=False, stats=None, text=None, reason="no_database"
         )
 
     db_settings = DatabaseSettings(database_url=database_url)
     db_connection = DatabaseConnection(settings=db_settings)
 
-    post_log_path = Path(env.get("SNS_POST_LOG_PATH", str(_DEFAULT_POST_LOG_PATH)))
-    post_log = PostLog(path=post_log_path)
+    digest_log_path = Path(env.get("SNS_DIGEST_LOG_PATH", str(DEFAULT_DIGEST_LOG_PATH)))
+    digest_log = DigestLog(path=digest_log_path)
 
-    generator = build_generator(env)
     threads_client = build_threads_client(env)
+
+    run_env = dict(env)
+    if cli_dry_run is not None:
+        run_env["THREADS_PUBLISH_DRY_RUN"] = "true" if cli_dry_run else "false"
+
+    target_date_jst = (datetime.now(UTC).astimezone(_JST) - timedelta(days=1)).date()
 
     async with db_connection.get_session() as session:
         repo = AnimalRepository(session)
-        return await publish_one(
+        return await publish_daily_digest(
             repo=repo,
-            generator=generator,
-            post_log=post_log,
-            platform="threads",
-            env=env,
+            digest_log=digest_log,
+            target_date_jst=target_date_jst,
+            env=run_env,
             threads_client=threads_client,
         )
 
@@ -150,13 +142,15 @@ def _send_discord(env: dict[str, str], message: str) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    del argv  # 引数は env 経由のみ
+    args = sys.argv[1:] if argv is None else argv
+    cli_dry_run = True if "--dry-run" in args else None
+
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
     env = dict(os.environ)
-    result = asyncio.run(_run_async(env))
+    result = asyncio.run(_run_async(env, cli_dry_run=cli_dry_run))
     summary = format_summary(result)
     logger.info(summary)
     _send_discord(env, summary)

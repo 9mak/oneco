@@ -1,5 +1,5 @@
-"""SNS publisher (Phase 4)
+"""SNS publisher (Phase 4 -> T151 日次まとめ版)
 
-design.md 5.2 のパイプライン。動物候補 → 投稿文生成 → モデレーション → プラットフォーム投稿。
-Threads が本命、X は for-good 通過後に有効化。
+前日 (JST) の新着をまとめ、定型文のみで Threads へ 1 日 1 投稿する
+(T151 設計: 目的=サイト認知、LLM 生成は撤去)。
 """
