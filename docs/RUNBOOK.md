@@ -214,36 +214,138 @@ curl -s https://oneco-api-tvlsrcvyuq-an.a.run.app/public/stats | jq .
 
 ## 撤去依頼が来た時の履歴消去
 
-保護団体・自治体等から「掲載していた個体情報を公開履歴から消してほしい」という撤去依頼が来た場合の手順。**この節は手順のドキュメント化のみで、実行は HIL（人間承認必須）。無条件で実行しない。**
+保護団体・自治体等から「掲載していた個体情報を公開履歴から消してほしい」という撤去依頼が来た場合の手順。**実行は HIL（人間承認必須）。無条件で実行しない。**
 
-前提:
-- `output/animals.json` / `snapshots/latest.json` は T112（PR #312, 2026-08-31）で状態ファイルを専用 private リポジトリ `9mak/oneco-state` へ分離済み（tree separation）。以降のコミットは `oneco-state` 側にしか残らない
-- ただしこの public リポジトリ (`9mak/oneco`) の **git history には T112 以前のコミットが残っており**、`output/animals.json` の過去版が 121 バージョン、`snapshots/latest.json` の過去版が 109 バージョン残存する（2026-09 時点実測）。撤去依頼のスコープはこの public 履歴。`oneco-state`（private）は履歴を保持し続ける想定で opt-out スコープ外
+### 2026-09-11 実施済み（T404）
 
-手順:
-1. fresh clone を作る（作業用の使い捨てクローン。既存 worktree を汚さない）
+撤去依頼を待たず、W004 Plan 6「データを git から外す」の一環として先行実施した。現在の main とその履歴からは個体情報が消え、以後の収集分は `9mak/oneco-state`（private）側にのみ残る。
+
+**ただし public としての公開範囲は実質縮まっていない。** PR 参照 `refs/pull/<n>/head` が書き換え前のコミットを指し続けており、全 387 PR のうち 307 PR が除去対象ファイルを含む。詳細は下の「force push では消えない」節。
+
+除去したパス（旧 main `e9b2962` → 新 main `b62a003`）:
+
+| パス | 除去前の履歴 | 除去後 |
+| --- | --- | --- |
+| `output/animals.json` | 121 版 | 0 |
+| `snapshots/latest.json` | 109 版 | 0 |
+| `data/broken_sites.yaml` | 収集状態 | 0 |
+| `data/field_quality_drift.yaml` | 収集状態 | 0 |
+| `data/site_baselines.yaml` | 収集状態 | 0 |
+| `data/sns_posts.yaml` | 58 コミット | **除去せず維持**（現在も使用中。置き場所は T151 の結論後に判断） |
+
+バックアップは `~/Desktop/oneco-backup-20260911.git`（`git clone --mirror`）。戻す場合は `git push --mirror`。
+
+### 手順
+
+前提: `git-filter-repo` が必要。brew で入れたくない場合は `uvx git-filter-repo ...` で一時実行できる。
+
+1. バックアップを取る（必須。これが唯一の復旧手段）
+   ```bash
+   git clone --mirror https://github.com/9mak/oneco.git oneco-backup-$(date +%Y%m%d).git
+   ```
+2. fresh clone を作る（作業用の使い捨てクローン。既存 worktree を汚さない）
    ```bash
    git clone https://github.com/9mak/oneco.git oneco-history-purge
    cd oneco-history-purge
    ```
-2. `git filter-repo` で該当パスの履歴を除去する
+3. `git filter-repo` で該当パスの履歴を除去する
    ```bash
    git filter-repo --invert-paths --path output/animals.json --path snapshots/latest.json
    ```
-3. GitHub 上で main のブランチ保護を一時解除する（force push を通すため）
-4. force push する
+4. 結果を確認する（対象パスの履歴が 0、残すべきファイルが tree に居ること）
    ```bash
+   git log --oneline --all -- output/animals.json | wc -l   # 0
+   git ls-files data
+   ```
+5. main の保護を**二層とも**外す（下の「保護の外し方」を参照）
+6. force push する。`filter-repo` は origin を外すので付け直す
+   ```bash
+   git remote add origin https://github.com/9mak/oneco.git
    git push origin --force --all
    git push origin --force --tags
+   git push origin --force main
    ```
-5. ブランチ保護を復元する
-6. 当時 open だった全 PR ブランチを新しい main 基準で rebase し直す（filter-repo で履歴が書き換わるため、既存 PR は conflict/ズレが生じる）
-7. 全 worktree（`.worktrees/*` 含む）を re-clone し直す（履歴が書き換わった旧 clone をそのまま使い続けると、古い履歴を再度 push してしまう事故になる）
-8. GitHub Support に、danling objects（force push 後も GitHub 側のキャッシュ/フォーク経由で残る可能性がある blob）のパージを依頼する
+7. 保護を復元する（push 成功後すぐ）
+8. 全 PR の CI を再実行させる。dependabot PR は `@dependabot rebase` コメントで足りる
+9. 旧履歴を持つローカル clone / worktree をすべて破棄して再同期する
+10. **ここまでやっても public では消えていない。** PR 参照が旧コミットを固定するため、下の「force push では消えない」節を読んで次の手を決める
 
-注意:
-- `git filter-repo` は破壊的操作。実行前に必ずリポジトリ全体のバックアップ（別ディレクトリへの `git clone --mirror` 等）を取る
-- 個別コミットの除去ではなく全履歴の書き換えになるため、fork している第三者がいる場合はその fork には反映されない旨を撤去依頼元に伝える
+### 保護の外し方（実測。ここで一度つまずいた）
+
+main は**二層**で守られている。片方だけ外しても GH013 / GH006 で弾かれる。
+
+- ruleset `main-force-push-protection`（`deletion` + `non_fast_forward`、bypass actor ゼロ）
+  ```bash
+  gh api repos/9mak/oneco/rulesets > /tmp/rulesets-backup.json        # 先に退避
+  gh api -X PUT repos/9mak/oneco/rulesets/<id> -f enforcement=disabled
+  # 復元: -f enforcement=active
+  ```
+- classic branch protection の `allow_force_pushes`
+  ```bash
+  gh api repos/9mak/oneco/branches/main/protection > /tmp/protection-backup.json   # 先に退避
+  # PUT は全項目置換。allow_force_pushes だけ true にした JSON を --input で渡す
+  # 復元: 同じ JSON の allow_force_pushes を false に戻して再 PUT
+  ```
+
+**`enforce_admins: false` では force push は通らない。** 管理者バイパスと force push 許可は別の設定。
+
+force push が通ると `remote: Bypassed rule violations for refs/heads/main` が出る。必須ステータスチェックを飛ばした記録なので、push 後に main の CI が緑であることを別途確認する。
+
+### force push では消えない（最重要・当初の理解は誤りだった）
+
+**public リポジトリでは `filter-repo` + force push で公開範囲は実質縮まらない。** 2026-09-11 に実測して判明した。
+
+当初は「到達不能になったオブジェクトが GitHub 側に残っているだけで、GC を依頼すれば消える」と理解していたが違った。旧コミットは到達不能ではない。GitHub の PR 参照 `refs/pull/<n>/head` が旧コミットを指し続けており、**到達可能な参照なので GC では永久に消えない**。
+
+```bash
+gh api repos/9mak/oneco/git/ref/pull/300/head --jq '.object.sha'
+# → 951b7fff3eeae92b68f6d80799142e952c67022e（書き換え前のコミット）
+```
+
+しかもこの SHA は事前知識なしに列挙できる。公開 API でマージ済み PR のコミット一覧を引けば旧 SHA が返る。
+
+```bash
+gh api repos/9mak/oneco/pulls/300/commits --jq '.[].sha'
+gh api -H "Accept: application/vnd.github.raw" \
+  "repos/9mak/oneco/contents/output/animals.json?ref=951b7fff3eeae92b68f6d80799142e952c67022e" | wc -c
+# → 994871
+```
+
+`Accept: application/vnd.github.raw` は必須。1MB 超のファイルは Contents API が `content` を返さないため、ヘッダーなしではサイズしか見えず「まだ取れる」ことを確認できない。
+
+2026-09-11 時点で、全 387 PR のうち **307 PR** の head commit が除去対象ファイルを含んでいる。
+
+### GitHub Support は原則として応じない
+
+[Removing sensitive data from a repository](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository) に明記されている。
+
+> GitHub Support won't remove non-sensitive data, and will only assist in the removal of sensitive data in cases where we determine that the risk can't be mitigated by rotating affected credentials.
+
+認証情報が絡まない限り応じない方針。依頼する場合は公式手順が要求する次を揃える。
+
+| 項目 | 取得元 |
+| --- | --- |
+| 影響 PR 数 | 全 PR の `head.sha` を走査し除去対象パスを含むものを数える |
+| First Changed Commit(s) | `.git/filter-repo/first-changed-commits` |
+| LFS オブジェクト | `.git/filter-repo/` の lfs 関連ファイル（なければ none） |
+
+### 撤去依頼が来たときに現実に取れる手
+
+force push は前処理にすぎない。本当に消すには次のいずれかが要る。
+
+1. **GitHub Support が PR ref ごと削除する** — 機微データと認定された場合のみ。期待しない
+2. **リポジトリを private にする** — 即時・可逆。PR ref ごと公開範囲から外れる。公開ポートフォリオとしての価値を失う
+3. **リポジトリを削除して作り直す** — 確実だが PR・Issue の記録とリンクをすべて失う
+
+撤去依頼元への回答は、この 3 つのどれを取るかを決めてから行う。**force push した時点で「消しました」と回答してはいけない。**
+
+### 注意
+
+- `git filter-repo` は破壊的操作。バックアップなしに実行しない
+- 全履歴の書き換えになるため、fork している第三者がいる場合はその fork には反映されない旨を撤去依頼元に伝える（2026-09-11 時点で `9mak/oneco` の fork は 0）
+- 旧 clone を残したまま push すると古い履歴が復活する。手順 9 を飛ばさない
+- ローカルの `git stash` も旧コミットを生かす。`git stash list` を確認してから `reflog expire` する（2026-09-11 に確認せず expire して stash の reflog を消す事故があった）
+- ブランチが squash merge されている場合、worktree の HEAD は新 main の祖先にならない。破棄の可否は `merge-base --is-ancestor` ではなく対応 PR が MERGED / CLOSED かで判断する
 
 ---
 
