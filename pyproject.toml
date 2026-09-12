@@ -51,7 +51,7 @@ dev = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
     "pytest-asyncio>=0.21.0,<2.0",  # メジャー更新の挙動変更で CI が割れたため上限固定
-    "httpx>=0.24.0",
+    "httpx>=0.28.1",
 ]
 # scripts/ga4_weekly_report.py (T071③) 専用。ランタイム本体では使わないため
 # 通常 dependencies には入れず extras に分離する (weekly-count-audit.yml 等の
