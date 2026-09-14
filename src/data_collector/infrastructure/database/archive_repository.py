@@ -10,7 +10,7 @@ from datetime import UTC, date, datetime
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.data_collector.domain.models import AnimalData, AnimalStatus
+from src.data_collector.domain.models import GRADUATED_STATUSES, AnimalData, AnimalStatus
 from src.data_collector.infrastructure.database.models import Animal, AnimalArchive
 from src.data_collector.infrastructure.database.repository import _escape_like
 
@@ -119,7 +119,10 @@ class ArchiveRepository:
         offset: int = 0,
     ) -> tuple[list[AnimalData], int]:
         """
-        アーカイブデータをリスト取得
+        卒業 (譲渡・返還) したアーカイブデータをリスト取得
+
+        公開フィード `/feeds/archive/rss|atom` が使うため、status が
+        GRADUATED_STATUSES の行だけを返す (T412)。
 
         Args:
             species: 動物種別フィルタ
@@ -136,7 +139,7 @@ class ArchiveRepository:
         stmt = select(AnimalArchive)
 
         # フィルタ適用
-        filters = []
+        filters = [AnimalArchive.status.in_([s.value for s in GRADUATED_STATUSES])]
         if species:
             filters.append(AnimalArchive.species == species)
         if location:

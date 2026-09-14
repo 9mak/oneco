@@ -132,6 +132,37 @@ class TestListArchived:
         assert all(isinstance(a, AnimalData) for a in result)
 
     @pytest.mark.asyncio
+    async def test_list_archived_excludes_rows_that_did_not_graduate(
+        self, archive_repository, async_session
+    ):
+        """T412: 卒業 (譲渡・返還) していない行はアーカイブフィードに出さない
+
+        list_archived() は `/feeds/archive/rss|atom` が使う。アーカイブには URL 再利用
+        検知 (T138) で退避した収容中 (sheltered) の行も入るため、絞らないと
+        「譲渡済み動物の購読 (成果追跡)」のフィードにまだ収容中の子が並ぶ。
+        """
+        for i, status in enumerate(("adopted", "returned", "sheltered", "deceased")):
+            async_session.add(
+                AnimalArchive(
+                    original_id=300 + i,
+                    species="犬",
+                    sex="男の子",
+                    shelter_date=date(2026, 9, 1),
+                    location="長崎県",
+                    source_url=f"https://example.com/animal/status-{status}",
+                    category="adoption",
+                    status=status,
+                    archived_at=datetime(2026, 9, 10, tzinfo=UTC),
+                )
+            )
+        await async_session.commit()
+
+        result, total = await archive_repository.list_archived()
+
+        assert total == 2
+        assert {a.status for a in result} == {AnimalStatus.ADOPTED, AnimalStatus.RETURNED}
+
+    @pytest.mark.asyncio
     async def test_list_archived_filters_by_species(self, archive_repository, async_session):
         """list_archived() が species でフィルタリングできるか"""
         # 異なる種別のアーカイブデータを挿入

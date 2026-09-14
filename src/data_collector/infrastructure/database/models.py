@@ -258,7 +258,8 @@ class AnimalArchive(Base):
     location: str = Column(Text, nullable=False)
     phone: str | None = Column(String(20), nullable=True)
     # 個体識別フィールド (animal-identity-fields)。全て任意。
-    # アーカイブは公開しないが将来の参照・運営用に元レコードから引き継ぐ。
+    # 将来の参照・運営用に元レコードから引き継ぐ。アーカイブは卒業した行
+    # (GRADUATED_STATUSES) に限って `/archive/animals` と `/feeds/archive/*` で公開される。
     # 列長は active 側 (Animal) と DataNormalizer の長さ定数と厳密一致させること。
     breed: str | None = Column(String(50), nullable=True)
     name: str | None = Column(String(100), nullable=True)
