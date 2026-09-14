@@ -220,7 +220,25 @@ curl -s https://oneco-api-tvlsrcvyuq-an.a.run.app/public/stats | jq .
 
 撤去依頼を待たず、W004 Plan 6「データを git から外す」の一環として先行実施した。現在の main とその履歴からは個体情報が消え、以後の収集分は `9mak/oneco-state`（private）側にのみ残る。
 
-**ただし public としての公開範囲は実質縮まっていない。** PR 参照 `refs/pull/<n>/head` が書き換え前のコミットを指し続けており、全 387 PR のうち 307 PR が除去対象ファイルを含む。詳細は下の「force push では消えない」節。
+force push した時点では public としての公開範囲は縮まっていなかった。PR 参照 `refs/pull/<n>/head` が書き換え前のコミットを指し続け、全 387 PR のうち 307 PR が除去対象ファイルを含んでいた。詳細は下の「force push では消えない」節。
+
+### 2026-09-12 リポジトリ再作成で完了（T404 クローズ）
+
+force push では消えないと判明したため、おまえさん決定でリポジトリを削除して同名で作り直した。
+
+| 手順 | 実施 |
+| --- | --- |
+| PR #388 を main へマージ | RUNBOOK の実施記録を残すため |
+| クリーンなミラーを用意 | `refs/pull/*` 397 本を削除し reflog expire + gc。除去対象パスの履歴 0・到達不能オブジェクト 0 を検証 |
+| リポジトリ削除 | Web UI から。GitHub Mobile で sudo 認証 |
+| 同名で再作成し push --mirror | ブランチ 62 本 |
+| 設定復元 | 変数 10 件・ruleset・branch protection・環境 2 つ・homepage |
+
+検証結果: 旧コミット SHA を直接指定しても `No commit found` が返る。force push 後は 1,091,074 バイトの全件ダンプが取得できていたので、これで実際に消えた。
+
+失ったもの: PR 387 件（merged 329 / closed 48 / open 10）、Issue、Actions 実行履歴、シークレット 8 件。PR のメタデータと本文は削除前に退避した。
+
+**`git clone --mirror` は `refs/pull/*` も取得する。** そのまま `push --mirror` すると GitHub が PR 参照への書き込みを拒否する前にオブジェクトがアップロードされ、新リポジトリで SHA 直指定により再取得できてしまう。push 前に `refs/pull/*` を削除して gc すること。
 
 除去したパス（旧 main `e9b2962` → 新 main `b62a003`）:
 
