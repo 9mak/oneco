@@ -127,13 +127,13 @@ class TestBuildEngineKwargs:
         env.py は alembic の実行コンテキスト無しに import できないので、配線を
         ソースで確認する。
         """
+        import re
         from pathlib import Path
 
         env_py = (Path(__file__).resolve().parents[1] / "alembic" / "env.py").read_text(
             encoding="utf-8"
         )
-        assert "asyncpg_connect_args(" in env_py
-        assert "connect_args=" in env_py
+        assert re.search(r"connect_args\s*=\s*asyncpg_connect_args\(", env_py)
 
 
 @pytest.mark.asyncio
