@@ -818,3 +818,275 @@ class TestKumamotoDoubutuAigoRealLabels:
         with patch.object(adapter, "_http_get", return_value=detail_html):
             raw = adapter.extract_animal_details(url, category="adoption")
         assert raw.location == "天草本渡町"
+
+
+# ─────────── T410: 下部の他個体カード (recommend-area) から値を借りない ───────────
+#
+# 2026-09-14 に実ページ (/animals/detail/3736 センター譲渡犬・/animals/detail/3450
+# 団体譲渡猫) を 2 回ずつ取得して確認した構造を再現する。
+# - 本体 `<dl class="animal-detail">` の管理番号の見出しは「ナンバー」。
+# - 「個体管理ナンバー」「収容日」「電話番号」を持つのは、ページ下部の
+#   「このページを見ている人はこちらのページも見ています」の *別個体* カードで、
+#   並ぶ個体は取得のたびに入れ替わる (1 回目 MN00354、2 回目 DC00670)。
+# - センター譲渡の本体には「保護した日」「収容日」が無く、団体譲渡の本体には
+#   「ナンバー」「電話番号」が無い。
+
+_RECOMMEND_CARD = """
+<li><a href="/animals/detail/{detail_id}">
+  <figure class="pht"><img alt="" src="/files/cache/other_{detail_id}.png"></figure>
+  <div class="txt"><dl>
+    <dt>収容日</dt><dd>{shelter_date}</dd>
+    <dt>種類</dt><dd>雑種(ミックス)</dd>
+    <dt>性別</dt><dd>オス</dd>
+    <dt>個体管理ナンバー</dt><dd>{number}</dd>
+    <dt>保健所</dt><dd>{office}</dd>
+    <dt>電話番号</dt><dd>{phone}</dd>
+  </dl></div>
+</a></li>
+"""
+
+
+def _recommend_area(*cards: dict[str, str]) -> str:
+    items = "".join(_RECOMMEND_CARD.format(**card) for card in cards)
+    return f"""
+  <div class="recommend-area">
+    <h3 class="page-ttl">このページを見ている人はこちらのページも見ています</h3>
+    <ul class="list list-4col">{items}</ul>
+  </div>"""
+
+
+_RECOMMEND_FETCH_1 = _recommend_area(
+    {
+        "detail_id": "4736",
+        "shelter_date": "2026年5月29日",
+        "number": "MN00354",
+        "office": "水俣保健所",
+        "phone": "0966-63-4104",
+    },
+    {
+        "detail_id": "4588",
+        "shelter_date": "2025年9月3日",
+        "number": "DC00658",
+        "office": "熊本県動物愛護センター",
+        "phone": "0964-27-8115",
+    },
+)
+
+_RECOMMEND_FETCH_2 = _recommend_area(
+    {
+        "detail_id": "4473",
+        "shelter_date": "2026年1月7日",
+        "number": "DC00670",
+        "office": "熊本県動物愛護センター",
+        "phone": "0964-27-8115",
+    },
+    {
+        "detail_id": "4561",
+        "shelter_date": "2025年8月25日",
+        "number": "DC00624",
+        "office": "天草保健所",
+        "phone": "0969-23-0299",
+    },
+)
+
+_CENTER_DOG_MAIN = """
+  <dl class="animal-detail">
+    <dt>ナンバー</dt><dd>DC00344</dd>
+    <dt>写真</dt><dd></dd>
+    <dt>種類</dt><dd>雑種(ミックス)</dd>
+    <dt>体重</dt><dd>15kg</dd>
+    <dt>毛色</dt><dd>茶色系</dd>
+    <dt>性別</dt><dd>メス</dd>
+    <dt>年齢</dt><dd>6歳～10歳</dd>
+    <dt>首輪の有無</dt><dd>無</dd>
+    <dt>捕獲場所</dt><dd>有明保健所管内</dd>
+    <dt>備考</dt><dd>呼称：ゆず</dd>
+    <dt>連絡先</dt><dd>熊本県動物愛護センター</dd>
+    <dt>受付時間</dt><dd>平日　8:30-17:15</dd>
+    <dt>所在地</dt><dd>宇城市松橋町東松崎701-4</dd>
+    <dt>電話番号</dt><dd>0964-27-8115</dd>
+  </dl>"""
+
+_GROUP_CAT_MAIN = """
+  <dl class="animal-detail">
+    <dt>写真</dt><dd></dd>
+    <dt>種類</dt><dd>雑種（ミックス）</dd>
+    <dt>毛色</dt><dd>キジ</dd>
+    <dt>性別</dt><dd>メス</dd>
+    <dt>年齢</dt><dd>2歳～5歳</dd>
+    <dt>首輪の有無</dt><dd>無</dd>
+    <dt>捕獲場所</dt><dd>菊池保健所管内</dd>
+    <dt>保護した日</dt><dd>2022年7月11日</dd>
+    <dt>備考</dt><dd>少し怖がりな女の子です。</dd>
+    <dt>掲載者</dt><dd>九州動物学院　昭德学園</dd>
+  </dl>"""
+
+_CENTER_URL = "https://www.kumamoto-doubutuaigo.jp/animals/detail/3736"
+_GROUP_URL = "https://www.kumamoto-doubutuaigo.jp/animals/detail/3450"
+
+
+def _detail_page(main: str, recommend: str) -> str:
+    return f'<html><body><div id="main">{main}{recommend}</div></body></html>'
+
+
+def _site_group_cat() -> SiteConfig:
+    return _site(
+        "熊本県動愛（団体譲渡猫）",
+        "https://www.kumamoto-doubutuaigo.jp/animals/group/type_id:2/animal_id:2",
+        category="adoption",
+    )
+
+
+def _extract(site: SiteConfig, url: str, html: str) -> RawAnimalData:
+    adapter = KumamotoDoubutuAigoAdapter(site)
+    with patch.object(adapter, "_http_get", return_value=html):
+        return adapter.extract_animal_details(url, category="adoption")
+
+
+class TestKumamotoDoubutuAigoIgnoresRecommendArea:
+    """本体に無い項目を下部の他個体カードから借りない (T410)
+
+    本番では同じ source_url の management_number が収集のたびに入れ替わり
+    (DC00670→DC00658 等)、URL 再利用検知 (T138) が毎日「別個体」と判定して
+    熊本県動愛だけで 1 日 75〜83 件をアーカイブ+再挿入していた。
+    """
+
+    def test_management_number_is_the_animals_own_number(self):
+        """本体の「ナンバー」を管理番号にし、他個体の「個体管理ナンバー」を拾わない"""
+        adapter = KumamotoDoubutuAigoAdapter(_site_center_dog())
+        html = _detail_page(_CENTER_DOG_MAIN, _RECOMMEND_FETCH_1)
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(_CENTER_URL, category="adoption")
+            animal = adapter.normalize(raw)
+
+        assert raw.management_number == "DC00344"
+        assert animal.management_number == "DC00344"
+
+    def test_shelter_date_is_not_borrowed_when_page_has_none(self):
+        """本体に日付が無いセンター譲渡ページで、他個体の「収容日」を使わない
+
+        空のまま normalizer の収集日フォールバック (推定値) に任せる。
+        """
+        adapter = KumamotoDoubutuAigoAdapter(_site_center_dog())
+        html = _detail_page(_CENTER_DOG_MAIN, _RECOMMEND_FETCH_1)
+        with patch.object(adapter, "_http_get", return_value=html):
+            raw = adapter.extract_animal_details(_CENTER_URL, category="adoption")
+            animal = adapter.normalize(raw)
+
+        assert raw.shelter_date == ""
+        assert animal.shelter_date_estimated is True
+
+    def test_group_page_does_not_borrow_number_or_phone(self):
+        """団体譲渡ページは本体に管理番号も電話番号も無い。他個体の値を入れない"""
+        raw = _extract(
+            _site_group_cat(), _GROUP_URL, _detail_page(_GROUP_CAT_MAIN, _RECOMMEND_FETCH_1)
+        )
+
+        assert raw.management_number == ""
+        assert raw.phone == ""
+        assert raw.shelter_date == "2022年7月11日"
+        assert raw.location == "菊池保健所管内"
+        assert raw.breed == "雑種（ミックス）"
+
+    @pytest.mark.parametrize(
+        ("site", "url", "main"),
+        [
+            (_site_center_dog(), _CENTER_URL, _CENTER_DOG_MAIN),
+            (_site_group_cat(), _GROUP_URL, _GROUP_CAT_MAIN),
+        ],
+    )
+    def test_same_page_gives_same_fields_whatever_recommend_cards_show(self, site, url, main):
+        """下部カードの顔ぶれが変わっても、同じ個体から同じ値を取り出す"""
+        raw1 = _extract(site, url, _detail_page(main, _RECOMMEND_FETCH_1))
+        raw2 = _extract(site, url, _detail_page(main, _RECOMMEND_FETCH_2))
+
+        fields = (
+            "management_number",
+            "shelter_date",
+            "phone",
+            "location",
+            "species",
+            "sex",
+            "breed",
+        )
+        assert {f: getattr(raw1, f) for f in fields} == {f: getattr(raw2, f) for f in fields}
+
+    def test_lost_page_keeps_its_own_number_date_and_phone(self):
+        """迷子ページ (本体にナンバー・保護した日・電話番号がある) は本体の値を使う
+
+        2026-09-14 実ページ /animals/detail/4865 の見出し構成を再現 (値は例示)。
+        """
+        main = """
+  <dl class="animal-detail">
+    <dt>ナンバー</dt><dd>MN00401</dd>
+    <dt>写真</dt><dd></dd>
+    <dt>種類</dt><dd>柴</dd>
+    <dt>毛色</dt><dd>茶色系</dd>
+    <dt>性別</dt><dd>オス</dd>
+    <dt>年齢</dt><dd>不明</dd>
+    <dt>首輪の有無</dt><dd>有</dd>
+    <dt>捕獲場所</dt><dd>八代市鏡町</dd>
+    <dt>保護した日</dt><dd>2026年9月11日</dd>
+    <dt>備考</dt><dd></dd>
+    <dt>連絡先</dt><dd>八代保健所</dd>
+    <dt>受付時間</dt><dd>平日　8:30-17:15</dd>
+    <dt>電話番号</dt><dd>0965-33-3198</dd>
+  </dl>"""
+        site = _site(
+            "熊本県動愛（迷子犬）",
+            "https://www.kumamoto-doubutuaigo.jp/animals/index/type_id:1/animal_id:1",
+            category="lost",
+        )
+        raw = _extract(
+            site,
+            "https://www.kumamoto-doubutuaigo.jp/animals/detail/4865",
+            _detail_page(main, _RECOMMEND_FETCH_2),
+        )
+
+        assert raw.management_number == "MN00401"
+        assert raw.shelter_date == "2026年9月11日"
+        assert raw.phone == "0965-33-3198"
+        assert raw.location == "八代市鏡町"
+
+    def test_post_page_without_number_date_or_phone_borrows_nothing(self):
+        """個人保護ページ (本体は種類/体長/体重/毛色/性別/年齢/備考/地図のみ) は空のまま
+
+        2026-09-14 実ページ /post_animals/detail/642 の見出し構成を再現。
+        """
+        main = """
+  <dl class="animal-detail">
+    <dt>写真</dt><dd></dd>
+    <dt>種類</dt><dd>雑種(ミックス)</dd>
+    <dt>体長</dt><dd>約６０cm</dd>
+    <dt>体重</dt><dd>5kg</dd>
+    <dt>毛色</dt><dd>黒系</dd>
+    <dt>性別</dt><dd>オス</dd>
+    <dt>年齢</dt><dd>4か月～1歳</dd>
+    <dt>備考</dt><dd>農場内で生まれた子犬の貰い手を探しています。</dd>
+    <dt>地図</dt><dd></dd>
+  </dl>"""
+        raw = _extract(
+            _site_post_dog(),
+            "https://www.kumamoto-doubutuaigo.jp/post_animals/detail/642",
+            _detail_page(main, _RECOMMEND_FETCH_1),
+        )
+
+        assert raw.management_number == ""
+        assert raw.shelter_date == ""
+        assert raw.phone == ""
+        assert raw.breed == "雑種(ミックス)"
+        assert raw.sex == "オス"
+
+    def test_fallback_without_detail_dl_still_ignores_recommend_area(self):
+        """本体の `dl.animal-detail` が無い構造でも、下部の他個体カードからは拾わない"""
+        page = (
+            "<html><body><div id='main'><dl>"
+            "<dt>種類</dt><dd>雑種</dd><dt>性別</dt><dd>メス</dd>"
+            "</dl>" + _RECOMMEND_FETCH_1 + "</div></body></html>"
+        )
+        raw = _extract(_site_center_dog(), _CENTER_URL, page)
+
+        assert raw.management_number == ""
+        assert raw.shelter_date == ""
+        assert raw.phone == ""
+        assert raw.sex == "メス"
