@@ -63,7 +63,9 @@ export default async function ArchivePage() {
       ) : items.length === 0 ? (
         <EmptyState
           message="まだ卒業した子の記録はありません"
-          suggestion="譲渡・返還が成立した動物は、一定期間経過後にこちらへ記録されます。"
+          // 譲渡・返還を記録する仕組み (ArchiveService) は本番で動いていないため、
+          // 「一定期間後に記録される」とは約束しない (T414)。
+          suggestion="いま家族を待っている子は「動物一覧」からさがせます。"
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
