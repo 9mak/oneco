@@ -11,7 +11,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Path, Query
 
-from src.data_collector.domain.models import AnimalStatus
+from src.data_collector.domain.models import GRADUATED_STATUSES, AnimalStatus
 from src.data_collector.domain.status_transition import StatusTransitionError
 from src.data_collector.infrastructure.api.dependencies import SessionDep
 from src.data_collector.infrastructure.api.schemas import (
@@ -355,11 +355,8 @@ async def health_check(session: SessionDep) -> dict:
 
 # === Archive Endpoints ===
 
-# 公開アーカイブ (`/archive`「卒業した子たち」) に出す status。アーカイブには
-# URL 再利用検知 (T138) で退避した行も入り、その status は退避時点の値
-# (多くは sheltered) のままなので、絞らないと収容中の子を「卒業済み・問い合わせ
-# 不可」として公開してしまう (T412)。
-GRADUATED_ARCHIVE_STATUSES = (AnimalStatus.ADOPTED.value, AnimalStatus.RETURNED.value)
+# 公開アーカイブ (`/archive`「卒業した子たち」) に出す status (T412)。
+GRADUATED_ARCHIVE_STATUSES = [s.value for s in GRADUATED_STATUSES]
 
 
 @archive_router.get("/animals", response_model=PaginatedResponse[ArchivedAnimalPublic])

@@ -30,6 +30,13 @@ class AnimalStatus(StrEnum):
     DECEASED = "deceased"
 
 
+# 譲渡・返還で「卒業」した status。公開アーカイブ (API `/archive/animals`・
+# `/archive` ページ・`/feeds/archive/*`) はこの status の行だけを出す (T412)。
+# アーカイブには URL 再利用検知 (T138) で退避した行も退避時点の status
+# (多くは sheltered) のまま入るため、絞らないと収容中の子を卒業済みとして公開する。
+GRADUATED_STATUSES: tuple[AnimalStatus, ...] = (AnimalStatus.ADOPTED, AnimalStatus.RETURNED)
+
+
 class RawAnimalData(BaseModel):
     """
     自治体サイトから抽出した正規化前の生データ
