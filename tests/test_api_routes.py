@@ -736,6 +736,35 @@ async def test_get_archived_animal_that_did_not_graduate_returns_404(test_app, a
 
 
 @pytest.mark.asyncio
+async def test_get_archived_animal_still_sheltered_returns_404(test_app, async_session):
+    """T412: URL 再利用検知で退避された収容中の行も個別取得で公開しない (Codex 指摘)"""
+    from datetime import datetime
+
+    from src.data_collector.infrastructure.database.models import AnimalArchive
+
+    sheltered = AnimalArchive(
+        original_id=201,
+        species="猫",
+        sex="男の子",
+        shelter_date=date(2026, 9, 9),
+        location="和歌山市",
+        image_urls=[],
+        source_url="https://example.com/animal/url-reuse-sheltered",
+        category="adoption",
+        status="sheltered",
+        archived_at=datetime(2026, 9, 12, 0, 3, 0),
+    )
+    async_session.add(sheltered)
+    await async_session.commit()
+    await async_session.refresh(sheltered)
+
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
+        response = await client.get(f"/archive/animals/{sheltered.id}")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
 async def test_list_archived_animals_includes_archive_fields(test_app, archived_animals):
     """GET /archive/animals がアーカイブ固有フィールドを含むか"""
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
