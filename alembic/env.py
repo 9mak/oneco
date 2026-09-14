@@ -7,6 +7,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
+from src.data_collector.infrastructure.database.connection import asyncpg_connect_args
 
 # Import the models to make them available for autogenerate
 from src.data_collector.infrastructure.database.models import Base
@@ -73,10 +74,13 @@ def do_run_migrations(connection: Connection) -> None:
 
 async def run_async_migrations() -> None:
     """Run migrations in async mode."""
+    section = config.get_section(config.config_ini_section, {})
     connectable = async_engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+        section,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        # アプリと同じく asyncpg の prepared statement cache を無効化する (T415)。
+        connect_args=asyncpg_connect_args(section.get("sqlalchemy.url", "")),
     )
 
     async with connectable.connect() as connection:

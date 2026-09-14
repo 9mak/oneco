@@ -40,6 +40,27 @@ class DatabaseSettings(BaseSettings):
     )
 
 
+def asyncpg_connect_args(database_url: str) -> dict:
+    """asyncpg に渡す connect_args を返す (SQLite では空)。
+
+    アプリのエンジン (`_build_engine_kwargs`) と migration のエンジン
+    (`alembic/env.py`) で共有する。
+
+    Supabase の pgbouncer transaction-mode プーラー対応。
+    transaction pooling は論理セッション内の各クエリが別の物理接続に
+    routing されうるため、asyncpg 既定の prepared statement cache が
+    前の接続で作った statement を参照し続け "prepared statement ...
+    does not exist" になる。また別プロセスが同じ物理接続に残した
+    "__asyncpg_stmt_1__" と名前が衝突して "... already exists" にもなる
+    (T415: migration 側だけ未設定で API デプロイが止まった)。
+    statement_cache_size=0 で無効化して防ぐ。session-mode プーラーや直結
+    Postgres でもキャッシュを使わないだけで動作自体は変わらないため、常時付与して問題ない。
+    """
+    if database_url.startswith("sqlite"):
+        return {}
+    return {"statement_cache_size": 0}
+
+
 def _build_engine_kwargs(settings: "DatabaseSettings") -> dict:
     """`create_async_engine` に渡す kwargs を構築する。
 
@@ -51,14 +72,7 @@ def _build_engine_kwargs(settings: "DatabaseSettings") -> dict:
     if not settings.database_url.startswith("sqlite"):
         engine_kwargs["pool_size"] = settings.pool_size
         engine_kwargs["max_overflow"] = settings.max_overflow
-        # Supabase の pgbouncer transaction-mode プーラー対応。
-        # transaction pooling は論理セッション内の各クエリが別の物理接続に
-        # routing されうるため、asyncpg 既定の prepared statement cache が
-        # 前の接続で作った statement を参照し続け "prepared statement ...
-        # does not exist" になる。statement_cache_size=0 で無効化して防ぐ。
-        # (session-mode プーラーや直結 Postgres でもキャッシュを使わないだけで
-        # 動作自体は変わらないため、常時付与して問題ない。)
-        engine_kwargs["connect_args"] = {"statement_cache_size": 0}
+        engine_kwargs["connect_args"] = asyncpg_connect_args(settings.database_url)
 
     return engine_kwargs
 

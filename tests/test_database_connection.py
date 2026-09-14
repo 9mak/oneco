@@ -12,6 +12,7 @@ from src.data_collector.infrastructure.database.connection import (
     DatabaseConnection,
     DatabaseSettings,
     _build_engine_kwargs,
+    asyncpg_connect_args,
 )
 
 
@@ -109,6 +110,30 @@ class TestBuildEngineKwargs:
         assert "connect_args" not in kwargs
         assert "pool_size" not in kwargs
         assert "max_overflow" not in kwargs
+
+    def test_asyncpg_connect_args_disable_statement_cache_only_for_postgres(self):
+        """T415: migration (alembic/env.py) とアプリで共有する connect_args"""
+        assert asyncpg_connect_args("postgresql+asyncpg://u:p@host:6543/db") == {
+            "statement_cache_size": 0
+        }
+        assert asyncpg_connect_args("sqlite+aiosqlite:///:memory:") == {}
+
+    def test_alembic_env_uses_the_shared_connect_args(self):
+        """T415: alembic/env.py の migration 用エンジンにも同じ connect_args を渡す
+
+        env.py だけ statement cache が有効なままだったため、Supabase の
+        transaction-mode プーラーで他プロセスが残した "__asyncpg_stmt_1__" と名前が
+        衝突し、2026-09-14 の API デプロイの migration が 2 回連続で失敗した。
+        env.py は alembic の実行コンテキスト無しに import できないので、配線を
+        ソースで確認する。
+        """
+        from pathlib import Path
+
+        env_py = (Path(__file__).resolve().parents[1] / "alembic" / "env.py").read_text(
+            encoding="utf-8"
+        )
+        assert "asyncpg_connect_args(" in env_py
+        assert "connect_args=" in env_py
 
 
 @pytest.mark.asyncio
