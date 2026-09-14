@@ -566,6 +566,55 @@ async def test_save_animal_estimated_shelter_date_still_detects_different_sex(
 
 
 @pytest.mark.asyncio
+async def test_save_animal_corrected_management_number_archives_once_then_stays(
+    repository, async_session
+):
+    """T410 デプロイ直後の想定: 誤った管理番号→正しい番号で 1 回だけ入れ直し、以後は安定する
+
+    熊本県動愛の既存行には他個体カード由来の番号 (MN00354 等) が入っている。修正後の
+    初回収集では本体の番号 (DC00344) と食い違うため URL 再利用とみなされ 1 回だけ
+    アーカイブ+再挿入になるが、2 回目以降は同じ番号どうしなので通常の更新になる。
+    """
+    url = "https://www.kumamoto-doubutuaigo.jp/animals/detail/3736"
+    async_session.add(
+        Animal(
+            species="犬",
+            sex="女の子",
+            breed="雑種(ミックス)",
+            shelter_date=date(2026, 5, 29),
+            location="有明保健所管内",
+            source_url=url,
+            management_number="MN00354",
+        )
+    )
+    await async_session.commit()
+
+    corrected = AnimalData(
+        species="犬",
+        sex="女の子",
+        breed="雑種(ミックス)",
+        shelter_date=date(2026, 9, 14),
+        shelter_date_estimated=True,
+        location="有明保健所管内",
+        source_url=url,
+        management_number="DC00344",
+        category="adoption",
+    )
+    await repository.save_animal(corrected)
+    assert repository.url_reuse_count == 1
+
+    await repository.save_animal(corrected.model_copy(update={"shelter_date": date(2026, 9, 15)}))
+    assert repository.url_reuse_count == 1
+    rows = (
+        (await async_session.execute(select(Animal).where(Animal.source_url == url)))
+        .scalars()
+        .all()
+    )
+    assert len(rows) == 1
+    assert rows[0].management_number == "DC00344"
+
+
+@pytest.mark.asyncio
 async def test_save_animal_sets_last_collected_at_on_insert(repository):
     """save_animal()が新規挿入時にlast_collected_atを現在時刻で設定するか"""
     animal_data = AnimalData(

@@ -1010,3 +1010,83 @@ class TestKumamotoDoubutuAigoIgnoresRecommendArea:
             "breed",
         )
         assert {f: getattr(raw1, f) for f in fields} == {f: getattr(raw2, f) for f in fields}
+
+    def test_lost_page_keeps_its_own_number_date_and_phone(self):
+        """迷子ページ (本体にナンバー・保護した日・電話番号がある) は本体の値を使う
+
+        2026-09-14 実ページ /animals/detail/4865 の見出し構成を再現 (値は例示)。
+        """
+        main = """
+  <dl class="animal-detail">
+    <dt>ナンバー</dt><dd>MN00401</dd>
+    <dt>写真</dt><dd></dd>
+    <dt>種類</dt><dd>柴</dd>
+    <dt>毛色</dt><dd>茶色系</dd>
+    <dt>性別</dt><dd>オス</dd>
+    <dt>年齢</dt><dd>不明</dd>
+    <dt>首輪の有無</dt><dd>有</dd>
+    <dt>捕獲場所</dt><dd>八代市鏡町</dd>
+    <dt>保護した日</dt><dd>2026年9月11日</dd>
+    <dt>備考</dt><dd></dd>
+    <dt>連絡先</dt><dd>八代保健所</dd>
+    <dt>受付時間</dt><dd>平日　8:30-17:15</dd>
+    <dt>電話番号</dt><dd>0965-33-3198</dd>
+  </dl>"""
+        site = _site(
+            "熊本県動愛（迷子犬）",
+            "https://www.kumamoto-doubutuaigo.jp/animals/index/type_id:1/animal_id:1",
+            category="lost",
+        )
+        raw = _extract(
+            site,
+            "https://www.kumamoto-doubutuaigo.jp/animals/detail/4865",
+            _detail_page(main, _RECOMMEND_FETCH_2),
+        )
+
+        assert raw.management_number == "MN00401"
+        assert raw.shelter_date == "2026年9月11日"
+        assert raw.phone == "0965-33-3198"
+        assert raw.location == "八代市鏡町"
+
+    def test_post_page_without_number_date_or_phone_borrows_nothing(self):
+        """個人保護ページ (本体は種類/体長/体重/毛色/性別/年齢/備考/地図のみ) は空のまま
+
+        2026-09-14 実ページ /post_animals/detail/642 の見出し構成を再現。
+        """
+        main = """
+  <dl class="animal-detail">
+    <dt>写真</dt><dd></dd>
+    <dt>種類</dt><dd>雑種(ミックス)</dd>
+    <dt>体長</dt><dd>約６０cm</dd>
+    <dt>体重</dt><dd>5kg</dd>
+    <dt>毛色</dt><dd>黒系</dd>
+    <dt>性別</dt><dd>オス</dd>
+    <dt>年齢</dt><dd>4か月～1歳</dd>
+    <dt>備考</dt><dd>農場内で生まれた子犬の貰い手を探しています。</dd>
+    <dt>地図</dt><dd></dd>
+  </dl>"""
+        raw = _extract(
+            _site_post_dog(),
+            "https://www.kumamoto-doubutuaigo.jp/post_animals/detail/642",
+            _detail_page(main, _RECOMMEND_FETCH_1),
+        )
+
+        assert raw.management_number == ""
+        assert raw.shelter_date == ""
+        assert raw.phone == ""
+        assert raw.breed == "雑種(ミックス)"
+        assert raw.sex == "オス"
+
+    def test_fallback_without_detail_dl_still_ignores_recommend_area(self):
+        """本体の `dl.animal-detail` が無い構造でも、下部の他個体カードからは拾わない"""
+        page = (
+            "<html><body><div id='main'><dl>"
+            "<dt>種類</dt><dd>雑種</dd><dt>性別</dt><dd>メス</dd>"
+            "</dl>" + _RECOMMEND_FETCH_1 + "</div></body></html>"
+        )
+        raw = _extract(_site_center_dog(), _CENTER_URL, page)
+
+        assert raw.management_number == ""
+        assert raw.shelter_date == ""
+        assert raw.phone == ""
+        assert raw.sex == "メス"
