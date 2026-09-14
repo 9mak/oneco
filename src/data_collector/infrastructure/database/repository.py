@@ -128,12 +128,19 @@ class AnimalRepository:
         sex: str | None,
         breed: str | None,
         shelter_date: date | None,
+        use_shelter_date: bool = True,
     ) -> tuple[str, ...] | None:
         """species/sex/breed/shelter_date から個体フィンガープリントを算出する。
 
         全フィールドが揃っている場合のみ算出できる (どれか欠ければ None)。
+        use_shelter_date=False のときは shelter_date を使わず species/sex/breed
+        だけで算出する (推定 shelter_date を比較に入れないため。T409)。
         """
-        if species and sex and breed and shelter_date:
+        if not (species and sex and breed):
+            return None
+        if not use_shelter_date:
+            return (species, sex, breed)
+        if shelter_date:
             return (species, sex, breed, str(shelter_date))
         return None
 
@@ -151,6 +158,7 @@ class AnimalRepository:
         new_sex: str | None,
         new_breed: str | None,
         new_shelter_date: date | None,
+        new_shelter_date_estimated: bool = False,
     ) -> str:
         """既存個体と新規データが同一個体かどうかを判定する (T138: URL 再利用検知用)。
 
@@ -165,6 +173,11 @@ class AnimalRepository:
           mgmt の有無の非対称性そのものでは判定材料にしない。
         - management_number で比較できない場合は species/sex/breed/shelter_date
           のフィンガープリントで比較する (両側で算出できる場合のみ)。
+        - 新規データの shelter_date が推定値 (収集日フォールバック/未来日クランプ)
+          のときは shelter_date を比較に使わず species/sex/breed だけで比べる (T409)。
+          推定値は個体の情報を持たず、収容日を掲載しないサイトでは毎日の再収集で
+          1 日ずつ進むため、比較に入れると同じ個体が毎日「別個体」になり
+          アーカイブ+再挿入で id と first_seen_at がリセットされ続ける。
         - どちらの方法でも比較材料が揃わない場合は "unknown" (識別不能) を返す。
 
         Returns:
@@ -175,14 +188,20 @@ class AnimalRepository:
         if existing_management_number and new_management_number:
             return "same" if existing_management_number == new_management_number else "different"
 
+        use_shelter_date = not new_shelter_date_estimated
         existing_fp = cls._fingerprint(
             species=existing_species,
             sex=existing_sex,
             breed=existing_breed,
             shelter_date=existing_shelter_date,
+            use_shelter_date=use_shelter_date,
         )
         new_fp = cls._fingerprint(
-            species=new_species, sex=new_sex, breed=new_breed, shelter_date=new_shelter_date
+            species=new_species,
+            sex=new_sex,
+            breed=new_breed,
+            shelter_date=new_shelter_date,
+            use_shelter_date=use_shelter_date,
         )
         if existing_fp and new_fp:
             return "same" if existing_fp == new_fp else "different"
@@ -310,6 +329,7 @@ class AnimalRepository:
                 new_sex=animal_data.sex,
                 new_breed=animal_data.breed,
                 new_shelter_date=animal_data.shelter_date,
+                new_shelter_date_estimated=animal_data.shelter_date_estimated,
             )
             if verdict == "unknown":
                 # 判定材料 (両側 management_number、または両側フィンガープリント)

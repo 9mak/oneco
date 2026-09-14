@@ -435,6 +435,137 @@ async def test_save_animal_same_individual_management_number_newly_appears_updat
 
 
 @pytest.mark.asyncio
+async def test_save_animal_estimated_shelter_date_rolling_daily_is_same_individual(
+    repository, async_session
+):
+    """T409: 推定 shelter_date が毎日進むだけの同じ個体を「別個体」にしない
+
+    収容日を掲載しないサイトは normalizer が収集日を shelter_date に入れる
+    (shelter_date_estimated=True)。この値をフィンガープリントに含めていたため、
+    管理番号の無い同じ個体が毎日「別個体」と判定され、アーカイブ+再挿入で
+    first_seen_at と id がリセットされ続けた (本番で 9/10 以降 1 日約 190 件)。
+    """
+    url = "https://example.com/animal/no-date-site"
+    day1 = AnimalData(
+        species="猫",
+        sex="女の子",
+        breed="雑種",
+        shelter_date=date(2026, 9, 9),
+        shelter_date_estimated=True,
+        location="長崎県",
+        source_url=url,
+        category="adoption",
+    )
+    await repository.save_animal(day1)
+    first = (
+        await async_session.execute(select(Animal).where(Animal.source_url == url))
+    ).scalar_one()
+    first_seen_at_day1 = first.first_seen_at
+
+    day2 = day1.model_copy(update={"shelter_date": date(2026, 9, 10), "color": "黒"})
+    result = await repository.save_animal(day2)
+
+    assert repository.url_reuse_count == 0
+    assert result.color == "黒"
+    # 推定値で既存の shelter_date を上書きしない (T055 と同じ扱い)
+    assert result.shelter_date == date(2026, 9, 9)
+    rows = (
+        (await async_session.execute(select(Animal).where(Animal.source_url == url)))
+        .scalars()
+        .all()
+    )
+    assert len(rows) == 1
+    assert rows[0].first_seen_at == first_seen_at_day1
+    archived = (await async_session.execute(select(AnimalArchive))).scalars().all()
+    assert archived == []
+
+
+@pytest.mark.asyncio
+async def test_save_animal_real_shelter_date_change_is_still_different_individual(
+    repository, async_session
+):
+    """T409 の回帰防止: 実サイト由来の shelter_date が変われば従来どおり別個体とみなす
+
+    管理番号の無いサイトで URL が別個体に使い回されたときの検知 (T138) は、
+    推定値でない限り shelter_date を比較材料として使い続ける。
+    """
+    url = "https://example.com/animal/real-date-reused"
+    existing = Animal(
+        species="猫",
+        sex="女の子",
+        breed="雑種",
+        shelter_date=date(2026, 9, 1),
+        location="和歌山市",
+        source_url=url,
+    )
+    async_session.add(existing)
+    await async_session.commit()
+    existing_id = existing.id
+
+    animal_data = AnimalData(
+        species="猫",
+        sex="女の子",
+        breed="雑種",
+        shelter_date=date(2026, 9, 12),
+        shelter_date_estimated=False,
+        location="和歌山市",
+        source_url=url,
+        category="adoption",
+    )
+    await repository.save_animal(animal_data)
+
+    assert repository.url_reuse_count == 1
+    archived = (
+        await async_session.execute(
+            select(AnimalArchive).where(AnimalArchive.original_id == existing_id)
+        )
+    ).scalar_one_or_none()
+    assert archived is not None
+    assert archived.shelter_date == date(2026, 9, 1)
+
+
+@pytest.mark.asyncio
+async def test_save_animal_estimated_shelter_date_still_detects_different_sex(
+    repository, async_session
+):
+    """T409: 推定 shelter_date を比較から外しても species/sex/breed の違いは検知する"""
+    url = "https://example.com/animal/estimated-but-reused"
+    existing = Animal(
+        species="犬",
+        sex="男の子",
+        breed="雑種",
+        shelter_date=date(2026, 9, 9),
+        location="和歌山市",
+        source_url=url,
+    )
+    async_session.add(existing)
+    await async_session.commit()
+    existing_id = existing.id
+
+    animal_data = AnimalData(
+        species="犬",
+        sex="女の子",
+        breed="雑種",
+        shelter_date=date(2026, 9, 10),
+        shelter_date_estimated=True,
+        location="和歌山市",
+        source_url=url,
+        category="adoption",
+    )
+    result = await repository.save_animal(animal_data)
+
+    assert repository.url_reuse_count == 1
+    assert result.sex == "女の子"
+    archived = (
+        await async_session.execute(
+            select(AnimalArchive).where(AnimalArchive.original_id == existing_id)
+        )
+    ).scalar_one_or_none()
+    assert archived is not None
+    assert archived.sex == "男の子"
+
+
+@pytest.mark.asyncio
 async def test_save_animal_sets_last_collected_at_on_insert(repository):
     """save_animal()が新規挿入時にlast_collected_atを現在時刻で設定するか"""
     animal_data = AnimalData(
