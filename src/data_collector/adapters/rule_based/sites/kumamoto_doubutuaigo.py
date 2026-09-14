@@ -85,9 +85,8 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
     #     species に使えないという理由で丸ごと捨てており、本番の熊本県動愛
     #     92 件が全件 breed=null になっていた (T147)。species には使わず
     #     breed としてだけ拾う。詳細ページ下部の「このページを見ている人は
-    #     こちらのページも見ています」にも別個体の「種類」が並ぶが、
-    #     `_extract_by_label` が最初に一致した <dt> を返すため本体が先に
-    #     取れる (実ページで確認済み)。
+    #     こちらのページも見ています」にも別個体の「種類」が並ぶが、ラベルは
+    #     本体の `<dl class="animal-detail">` の中だけで探す (`_detail_scope`, T410)。
     #   - location: 迷子犬は「捕獲場所」、譲渡犬は「捕獲場所」を持たず
     #     保健所の「所在地」のみで住所情報を提供する。tuple OR で
     #     捕獲場所 → 所在地 の順に探し、両方無いケースのみ部分一致
@@ -109,10 +108,16 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
         "shelter_date": FieldSpec(label=("保護した日", "収容日")),
         "location": FieldSpec(label=("捕獲場所", "保護場所", "所在地", "場所")),
         "phone": FieldSpec(label=("電話番号", "連絡先")),
-        # 個体識別: 個体管理ナンバー (例 DC00744)。全カードの dl に存在するが
-        # 未登録で全件ドロップしていた (2026-06-16)。
-        "management_number": FieldSpec(label="個体管理ナンバー"),
+        # 個体識別: 管理番号 (例 DC00344)。本体の見出しは「ナンバー」で、
+        # 「個体管理ナンバー」は下部の別個体カードにしか無い (2026-09-14 実ページで
+        # 確認)。旧実装は「個体管理ナンバー」だけを探して別個体の番号を拾っており、
+        # 取得のたびに番号が入れ替わって URL 再利用検知が毎日誤発火していた (T410)。
+        # 団体譲渡・個人保護のページは本体に番号が無く、空になるのが正しい。
+        "management_number": FieldSpec(label=("ナンバー", "個体管理ナンバー")),
     }
+
+    # 個体本人の項目が並ぶ定義リスト。ラベル抽出はこの中だけで行う (T410)。
+    DETAIL_ROOT_SELECTOR: ClassVar[str] = "dl.animal-detail"
 
     # 体重 → size 推定の境界 (kg)。oita_aigo._weight_to_size と同基準。
     _SIZE_BOUNDARY_SMALL_KG: ClassVar[float] = 5.0
@@ -190,10 +195,11 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
         """
         html = self._http_get(detail_url)
         soup = BeautifulSoup(html, "html.parser")
+        detail_soup = self._detail_scope(soup)
 
         fields: dict[str, str] = {}
         for name, spec in self.FIELD_SELECTORS.items():
-            value = self._extract_field(soup, spec)
+            value = self._extract_field(detail_soup, spec)
             fields[name] = value
 
         if not any(fields.values()):
@@ -263,6 +269,26 @@ class KumamotoDoubutuAigoAdapter(PlaywrightFetchMixin, WordPressListAdapter):
         return "大"
 
     # ─────────────────── 抽出ヘルパー拡張 ───────────────────
+
+    def _detail_scope(self, soup: BeautifulSoup) -> BeautifulSoup:
+        """個体本人の項目だけを探索対象にした soup を返す (T410)
+
+        ページ下部の `recommend-area`「このページを見ている人はこちらのページも
+        見ています」には *別個体* のカードが `<dl>` で並び、「収容日」
+        「個体管理ナンバー」「電話番号」を持つ。並ぶ個体は取得のたびに入れ替わる。
+        ページ全体からラベルを探すと、本体に無い項目 (センター譲渡の収容日、
+        団体譲渡の管理番号と電話番号) をこのカードから借りてしまう。本番では
+        management_number が収集ごとに変わり、URL 再利用検知 (T138) が毎日
+        「別個体」と判定して 1 日 75〜83 件をアーカイブ+再挿入していた。
+        """
+        root = soup.select_one(self.DETAIL_ROOT_SELECTOR)
+        if root is not None:
+            return BeautifulSoup(str(root), "html.parser")
+        # 本体の目印が無い構造でも、他個体カードだけは必ず除外する
+        scoped = BeautifulSoup(str(soup), "html.parser")
+        for area in scoped.find_all(class_=self.RECOMMEND_AREA_CLASS):
+            area.decompose()
+        return scoped
 
     def _extract_by_label(self, soup: BeautifulSoup, label: str | tuple[str, ...]) -> str:
         """基底の `<dt>/<dd>`, `<th>/<td>` に加えて `<td>/<td>` パターンも探す。
