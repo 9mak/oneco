@@ -355,6 +355,12 @@ async def health_check(session: SessionDep) -> dict:
 
 # === Archive Endpoints ===
 
+# 公開アーカイブ (`/archive`「卒業した子たち」) に出す status。アーカイブには
+# URL 再利用検知 (T138) で退避した行も入り、その status は退避時点の値
+# (多くは sheltered) のままなので、絞らないと収容中の子を「卒業済み・問い合わせ
+# 不可」として公開してしまう (T412)。
+GRADUATED_ARCHIVE_STATUSES = (AnimalStatus.ADOPTED.value, AnimalStatus.RETURNED.value)
+
 
 @archive_router.get("/animals", response_model=PaginatedResponse[ArchivedAnimalPublic])
 async def list_archived_animals(
@@ -368,7 +374,8 @@ async def list_archived_animals(
     """
     アーカイブ動物データリストを取得
 
-    アーカイブされた動物データをフィルタリング、ページネーションして取得します。
+    譲渡・返還で卒業した (status が adopted / returned の) アーカイブ動物データを
+    フィルタリング、ページネーションして取得します。
     読み取り専用のエンドポイントです。
     """
     logger.info(
@@ -386,7 +393,7 @@ async def list_archived_animals(
 
     from src.data_collector.infrastructure.database.models import AnimalArchive
 
-    filters = []
+    filters = [AnimalArchive.status.in_(GRADUATED_ARCHIVE_STATUSES)]
     if species:
         filters.append(AnimalArchive.species == species)
     if archived_from:
@@ -396,11 +403,8 @@ async def list_archived_animals(
         archived_to_dt = datetime.combine(archived_to, datetime.max.time())
         filters.append(AnimalArchive.archived_at <= archived_to_dt)
 
-    count_stmt = select(func.count(AnimalArchive.id))
-    items_stmt = select(AnimalArchive)
-    if filters:
-        count_stmt = count_stmt.where(*filters)
-        items_stmt = items_stmt.where(*filters)
+    count_stmt = select(func.count(AnimalArchive.id)).where(*filters)
+    items_stmt = select(AnimalArchive).where(*filters)
 
     total_count = (await session.execute(count_stmt)).scalar() or 0
 
@@ -436,7 +440,8 @@ async def get_archived_animal(
     """
     アーカイブ動物データを個別取得
 
-    指定されたIDのアーカイブ動物データを返します。
+    指定されたIDのアーカイブ動物データを返します。卒業していない (adopted /
+    returned 以外の) 行は一覧と同じく公開しないため 404 を返します。
     """
     logger.info(f"GET /archive/animals/{archive_id}")
 
@@ -444,7 +449,10 @@ async def get_archived_animal(
 
     from src.data_collector.infrastructure.database.models import AnimalArchive
 
-    stmt = select(AnimalArchive).where(AnimalArchive.id == archive_id)
+    stmt = select(AnimalArchive).where(
+        AnimalArchive.id == archive_id,
+        AnimalArchive.status.in_(GRADUATED_ARCHIVE_STATUSES),
+    )
     result = await session.execute(stmt)
     orm_archive = result.scalar_one_or_none()
 

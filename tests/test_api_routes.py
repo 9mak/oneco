@@ -638,7 +638,10 @@ async def archived_animals(async_session):
 
 @pytest.mark.asyncio
 async def test_list_archived_animals_returns_all(test_app, archived_animals):
-    """GET /archive/animals が全てのアーカイブ動物を返すか"""
+    """GET /archive/animals が卒業 (譲渡・返還) したアーカイブ動物を全て返すか
+
+    T412: 死亡 (deceased) のアーカイブ行は「卒業した子たち」に出さない。
+    """
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
         response = await client.get("/archive/animals")
 
@@ -647,36 +650,89 @@ async def test_list_archived_animals_returns_all(test_app, archived_animals):
 
     assert "items" in data
     assert "meta" in data
-    assert len(data["items"]) == 3
-    assert data["meta"]["total_count"] == 3
+    assert len(data["items"]) == 2
+    assert data["meta"]["total_count"] == 2
+    assert {item["status"] for item in data["items"]} == {"adopted", "returned"}
 
 
 @pytest.mark.asyncio
 async def test_list_archived_animals_filters_by_species(test_app, archived_animals):
-    """GET /archive/animals?species=犬 が犬のみを返すか"""
+    """GET /archive/animals?species=犬 が犬のみを返すか (卒業した犬 1 件。死亡の犬は出さない)"""
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
         response = await client.get("/archive/animals?species=犬")
 
     assert response.status_code == 200
     data = response.json()
 
-    assert len(data["items"]) == 2
+    assert len(data["items"]) == 1
     assert all(item["species"] == "犬" for item in data["items"])
 
 
 @pytest.mark.asyncio
 async def test_list_archived_animals_pagination(test_app, archived_animals):
-    """GET /archive/animals?limit=2&offset=1 がページネーションを適用するか"""
+    """GET /archive/animals?limit=1&offset=1 がページネーションを適用するか"""
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
-        response = await client.get("/archive/animals?limit=2&offset=1")
+        response = await client.get("/archive/animals?limit=1&offset=1")
 
     assert response.status_code == 200
     data = response.json()
 
-    assert len(data["items"]) == 2
-    assert data["meta"]["total_count"] == 3
-    assert data["meta"]["limit"] == 2
+    assert len(data["items"]) == 1
+    assert data["meta"]["total_count"] == 2
+    assert data["meta"]["limit"] == 1
     assert data["meta"]["offset"] == 1
+
+
+@pytest.mark.asyncio
+async def test_list_archived_animals_excludes_rows_that_did_not_graduate(
+    test_app, archived_animals, async_session
+):
+    """T412: URL 再利用検知 (T138) で退避された収容中の行を「卒業」として返さない
+
+    退避行の status は active 行の値をそのままコピーするため `sheltered` のまま
+    入る。`/archive`「卒業した子たち」はこの API をそのまま表示するので、
+    まだ収容中の子が「飼い主の元へ・お問い合わせ不可」と表示され、「これまでに
+    N 件の出会い」も水増しされていた (本番 2026-09-14 時点で 932 件すべてが
+    sheltered)。
+    """
+    from datetime import datetime
+
+    from src.data_collector.infrastructure.database.models import AnimalArchive
+
+    async_session.add(
+        AnimalArchive(
+            original_id=200,
+            species="猫",
+            sex="女の子",
+            shelter_date=date(2026, 9, 9),
+            location="長崎県",
+            image_urls=[],
+            source_url="https://example.com/animal/url-reuse",
+            category="adoption",
+            status="sheltered",
+            archived_at=datetime(2026, 9, 10, 0, 2, 0),
+        )
+    )
+    await async_session.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
+        response = await client.get("/archive/animals")
+
+    data = response.json()
+    assert data["meta"]["total_count"] == 2
+    assert all(item["status"] in ("adopted", "returned") for item in data["items"])
+    assert all(item["original_id"] != 200 for item in data["items"])
+
+
+@pytest.mark.asyncio
+async def test_get_archived_animal_that_did_not_graduate_returns_404(test_app, archived_animals):
+    """T412: 卒業していない (死亡) アーカイブ行は個別取得でも公開しない"""
+    deceased_id = archived_animals[2].id
+
+    async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
+        response = await client.get(f"/archive/animals/{deceased_id}")
+
+    assert response.status_code == 404
 
 
 @pytest.mark.asyncio
