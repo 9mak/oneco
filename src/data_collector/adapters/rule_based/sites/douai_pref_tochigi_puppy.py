@@ -137,8 +137,10 @@ def _parse_table_columns(table: Tag) -> list[dict[str, Any]]:
 class DouaiPrefTochigiPuppyAdapter(RuleBasedAdapter):
     """栃木県動物愛護指導センター 子犬/子猫譲渡ページ用アダプター
 
-    詳細ページを持たない 1 ページ完結型のため、`<list_url>#animal=N` の
+    詳細ページを持たない 1 ページ完結型のため、`<list_url>#row=N` の
     仮想 URL で個体を識別する (`SinglePageTableAdapter` と同様の方式)。
+    掲載位置の番号なので、収集後に管理番号・画像ファイル名の `#animal=<キー>` へ
+    付け替わる (T413。`#animal=` は安定キーの URL にだけ使う)。
     """
 
     def __init__(self, site_config) -> None:
@@ -153,7 +155,7 @@ class DouaiPrefTochigiPuppyAdapter(RuleBasedAdapter):
         if not columns:
             return []
         category = self.site_config.category
-        return [(f"{self.site_config.list_url}#animal={i}", category) for i in range(len(columns))]
+        return [(f"{self.site_config.list_url}#row={i}", category) for i in range(len(columns))]
 
     def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         columns = self._load_available_columns()
@@ -222,10 +224,10 @@ class DouaiPrefTochigiPuppyAdapter(RuleBasedAdapter):
 
     @staticmethod
     def _parse_index(virtual_url: str) -> int:
-        """`<list_url>#animal=N` から N を取り出す"""
+        """`<list_url>#row=N` から N を取り出す"""
         fragment = urlparse(virtual_url).fragment
-        if not fragment.startswith("animal="):
-            raise ParsingError(f"無効な仮想 URL: {virtual_url} (#animal=N 形式が必要)")
+        if not fragment.startswith("row="):
+            raise ParsingError(f"無効な仮想 URL: {virtual_url} (#row=N 形式が必要)")
         return int(fragment.split("=", 1)[1])
 
     def _infer_species(self) -> str:

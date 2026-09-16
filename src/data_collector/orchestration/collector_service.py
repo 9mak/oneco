@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from ..adapters.municipality_adapter import MunicipalityAdapter, NetworkError, ParsingError
 from ..domain.diff_detector import DiffDetector
 from ..domain.models import AnimalData
+from ..domain.virtual_url import is_positional_virtual_url, stabilize_virtual_urls
 from ..infrastructure.notification_client import NotificationClient, NotificationLevel
 from ..infrastructure.notification_manager_client import NotificationManagerClient
 from ..infrastructure.output_writer import OutputWriter
@@ -366,7 +367,7 @@ class CollectorService:
                     soft_stopped_at is None and detail_failures == 0 and not list_truncated
                 )
 
-                return collected_data
+                return self._stabilize_virtual_urls(collected_data)
 
             except ParsingError:
                 # ParsingError の場合はリトライせず即座にスロー
@@ -394,6 +395,28 @@ class CollectorService:
             raise last_error
         else:
             raise NetworkError("Failed to collect data after retries")
+
+    def _stabilize_virtual_urls(self, collected_data: list[AnimalData]) -> list[AnimalData]:
+        """掲載位置の仮想 URL (#row=N 等) を管理番号・画像ファイル名のキーへ付け替える (T413)
+
+        掲載順のずれや日付入り PDF の差し替えで同じ子の URL が変わると、別個体として
+        退避+再挿入されるか、prune+再挿入で id と first_seen_at がリセットされる。
+        差分検知・DB 保存・prune・出力のすべてが付け替え後の URL を使うよう、収集結果を
+        返す直前にそろえる。
+        """
+        stabilized = stabilize_virtual_urls(collected_data)
+        rekeyed = sum(
+            1
+            for before, after in zip(collected_data, stabilized, strict=True)
+            if after is not before
+        )
+        positional = sum(1 for a in stabilized if is_positional_virtual_url(str(a.source_url)))
+        if rekeyed or positional:
+            self.logger.info(
+                f"[{self.adapter.municipality_name}] 仮想URLを安定キーへ付け替え {rekeyed}件"
+                f"（掲載位置のまま {positional}件）"
+            )
+        return stabilized
 
     def _is_running(self) -> bool:
         """
@@ -555,6 +578,18 @@ class CollectorService:
                     repo = AnimalRepository(session)
                     url_recorder = URLHashRecorder(session)
                     site_name = self.adapter.municipality_name
+                    # T413: 仮想 URL の付け替え (#row=N → #animal=<キー>) で URL が
+                    # 変わった子の既存行を、保存の前に新しい URL へ引き継ぐ。引き継がないと
+                    # 新しい行の挿入と prune による旧行の削除で id と first_seen_at を失う。
+                    try:
+                        adopted = await repo.adopt_orphaned_rows(site_name, collected_data)
+                        if adopted:
+                            self.logger.info(
+                                f"[{site_name}] URL付け替えで既存の行 {adopted}件を引き継ぎ"
+                            )
+                    except Exception as e:
+                        await session.rollback()
+                        self.logger.warning(f"[{site_name}] 既存の行の引き継ぎに失敗: {e}")
                     for animal in collected_data:
                         try:
                             await repo.save_animal(animal, source_site=site_name)
