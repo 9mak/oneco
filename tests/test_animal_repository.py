@@ -2249,3 +2249,205 @@ async def test_list_animals_first_seen_between_filters_range_and_status(reposito
 
     urls = {str(a.source_url) for a in result}
     assert urls == {"https://example.com/animal/digest-in-range"}
+
+
+# ─────────────── T413: 仮想 URL の付け替えで既存行を引き継ぐ ───────────────
+
+_T413_PAGE = "https://www.city.example.lg.jp/pet/search_cat.html"
+_T413_SITE = "町田市（迷子猫）"
+_T413_IMG = "https://www.city.example.lg.jp/img"
+
+
+def _t413_row(
+    fragment: str,
+    *,
+    mgmt: str | None = None,
+    images: tuple[str, ...] = (),
+    species: str = "猫",
+    page: str = _T413_PAGE,
+    site: str = _T413_SITE,
+) -> Animal:
+    return Animal(
+        species=species,
+        sex="女の子",
+        breed="雑種",
+        shelter_date=date(2026, 9, 1),
+        location="東京都町田市",
+        source_url=f"{page}#{fragment}",
+        category="lost",
+        source_site=site,
+        management_number=mgmt,
+        image_urls=list(images),
+        first_seen_at=datetime(2026, 9, 1, 0, 0, tzinfo=UTC),
+    )
+
+
+def _t413_data(
+    fragment: str,
+    *,
+    mgmt: str | None = None,
+    images: tuple[str, ...] = (),
+    species: str = "猫",
+    page: str = _T413_PAGE,
+) -> AnimalData:
+    return AnimalData(
+        species=species,
+        sex="女の子",
+        breed="雑種",
+        shelter_date=date(2026, 9, 1),
+        location="東京都町田市",
+        source_url=f"{page}#{fragment}",
+        category="lost",
+        management_number=mgmt,
+        image_urls=list(images),
+    )
+
+
+async def _t413_urls(async_session) -> set[str]:
+    rows = (await async_session.execute(select(Animal))).scalars().all()
+    return {r.source_url for r in rows}
+
+
+@pytest.mark.asyncio
+async def test_adopt_orphaned_rows_moves_positional_row_to_stable_url(repository, async_session):
+    """T413: 掲載位置の URL で保存されていた行を、同じ画像の子の安定キー URL へ付け替える
+
+    付け替えずに保存すると、新しい URL の行が挿入され、旧行は prune で消えるため
+    id と first_seen_at がリセットされる。
+    """
+    legacy = _t413_row("h3=3", images=(f"{_T413_IMG}/210129mayoineko2.jpg",))
+    async_session.add(legacy)
+    await async_session.commit()
+    await async_session.refresh(legacy)  # DB に保存された値 (SQLite では tz なし) で比べる
+    legacy_id = legacy.id
+    legacy_first_seen_at = legacy.first_seen_at
+
+    new = _t413_data("animal=210129mayoineko2.jpg", images=(f"{_T413_IMG}/210129mayoineko2.jpg",))
+    adopted = await repository.adopt_orphaned_rows(_T413_SITE, [new])
+    await repository.save_animal(new, source_site=_T413_SITE)
+
+    assert adopted == 1
+    rows = (await async_session.execute(select(Animal))).scalars().all()
+    assert len(rows) == 1
+    assert rows[0].id == legacy_id
+    assert rows[0].source_url == f"{_T413_PAGE}#animal=210129mayoineko2.jpg"
+    assert rows[0].first_seen_at == legacy_first_seen_at
+    assert repository.url_reuse_count == 0
+    assert (await async_session.execute(select(AnimalArchive))).scalars().all() == []
+
+
+@pytest.mark.asyncio
+async def test_adopt_orphaned_rows_matches_management_number_variants(repository, async_session):
+    """T413: 全角/半角やハイフンの揺れがある管理番号 (さぬきの PDF) も同じ子として引き継ぐ"""
+    legacy = _t413_row("pdf=0915cat.pdf&row=0", mgmt="８中‐C0120")
+    async_session.add(legacy)
+    await async_session.commit()
+    legacy_id = legacy.id
+
+    new = _t413_data("animal=8%E4%B8%AD-C0120", mgmt="8中-C0120")
+    adopted = await repository.adopt_orphaned_rows(_T413_SITE, [new])
+    await repository.save_animal(new, source_site=_T413_SITE)
+
+    assert adopted == 1
+    rows = (await async_session.execute(select(Animal))).scalars().all()
+    assert [(r.id, r.management_number) for r in rows] == [(legacy_id, "8中-C0120")]
+    assert repository.url_reuse_count == 0
+    assert (await async_session.execute(select(AnimalArchive))).scalars().all() == []
+
+
+@pytest.mark.asyncio
+async def test_adopt_orphaned_rows_does_not_take_row_still_collected(repository, async_session):
+    """T413: 今回の収集にも同じ URL で出てくる行は、その URL の子のために残す"""
+    async_session.add(_t413_row("h3=0", images=(f"{_T413_IMG}/a.jpg",)))
+    await async_session.commit()
+
+    collected = [
+        _t413_data("animal=a.jpg", images=(f"{_T413_IMG}/a.jpg",)),
+        _t413_data("h3=0"),
+    ]
+    adopted = await repository.adopt_orphaned_rows(_T413_SITE, collected)
+
+    assert adopted == 0
+    assert await _t413_urls(async_session) == {f"{_T413_PAGE}#h3=0"}
+
+
+@pytest.mark.asyncio
+async def test_adopt_orphaned_rows_skips_ambiguous_matches(repository, async_session):
+    """T413: 候補が 1 対 1 に決まらないときは引き継がない"""
+    async_session.add_all(
+        [
+            _t413_row("row=0", images=("https://www.example.jp/a/photo.jpg",)),
+            _t413_row("row=1", images=("https://www.example.jp/b/photo.jpg",)),
+            _t413_row("row=2", mgmt="C-1"),
+        ]
+    )
+    await async_session.commit()
+
+    collected = [
+        # 旧行 2 件が同じ画像ファイル名
+        _t413_data("animal=photo.jpg", images=("https://www.example.jp/c/photo.jpg",)),
+        # 新しい子 2 件が同じ管理番号 (URL は別)
+        _t413_data("animal=C-1", mgmt="C-1"),
+        _t413_data("pdf=0916.pdf&row=9", mgmt="C-1"),
+    ]
+    adopted = await repository.adopt_orphaned_rows(_T413_SITE, collected)
+
+    assert adopted == 0
+    assert await _t413_urls(async_session) == {
+        f"{_T413_PAGE}#row=0",
+        f"{_T413_PAGE}#row=1",
+        f"{_T413_PAGE}#row=2",
+    }
+
+
+@pytest.mark.asyncio
+async def test_adopt_orphaned_rows_stays_within_site_and_page(repository, async_session):
+    """T413: 別サイト・別ページの行は、キーが同じでも引き継がない"""
+    other_page = "https://www.city.example.lg.jp/pet/search_dog.html"
+    async_session.add_all(
+        [
+            _t413_row("row=0", mgmt="A-1", site="別のサイト"),
+            _t413_row("row=0", mgmt="A-1", page=other_page),
+        ]
+    )
+    await async_session.commit()
+
+    adopted = await repository.adopt_orphaned_rows(
+        _T413_SITE, [_t413_data("animal=A-1", mgmt="A-1")]
+    )
+
+    assert adopted == 0
+    assert await _t413_urls(async_session) == {f"{_T413_PAGE}#row=0", f"{other_page}#row=0"}
+
+
+@pytest.mark.asyncio
+async def test_adopt_orphaned_rows_skips_different_individual(repository, async_session):
+    """T413: 画像ファイル名が同じでも、種別などが食い違う子は同じ子とみなさない"""
+    async_session.add(_t413_row("row=0", images=(f"{_T413_IMG}/1.jpg",), species="犬"))
+    await async_session.commit()
+
+    adopted = await repository.adopt_orphaned_rows(
+        _T413_SITE, [_t413_data("animal=1.jpg", images=(f"{_T413_IMG}/1.jpg",), species="猫")]
+    )
+
+    assert adopted == 0
+    assert await _t413_urls(async_session) == {f"{_T413_PAGE}#row=0"}
+
+
+@pytest.mark.asyncio
+async def test_save_animal_management_number_width_variant_is_same_individual(
+    repository, async_session
+):
+    """T413: 管理番号の全角/半角・ハイフンの揺れだけで「別個体」にしない
+
+    さぬき動物愛護センターの PDF は同じ番号が「８中‐C0120」「8中-C0120」と揺れる。
+    """
+    url = f"{_T413_PAGE}#animal=8%E4%B8%AD-C0120"
+    await repository.save_animal(_t413_data("animal=8%E4%B8%AD-C0120", mgmt="８中‐C0120"))
+
+    await repository.save_animal(_t413_data("animal=8%E4%B8%AD-C0120", mgmt="8中-C0120"))
+
+    assert repository.url_reuse_count == 0
+    rows = (await async_session.execute(select(Animal).where(Animal.source_url == url))).scalars()
+    assert len(rows.all()) == 1
+    assert (await async_session.execute(select(AnimalArchive))).scalars().all() == []
