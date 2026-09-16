@@ -68,6 +68,8 @@ for _, _name, _ in pkgutil.iter_modules(_sites_pkg.__path__):
         pass
 
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry  # noqa: E402
+from data_collector.domain.models import AnimalData  # noqa: E402
+from data_collector.domain.virtual_url import stabilize_virtual_urls  # noqa: E402
 from data_collector.infrastructure.field_accuracy_notify import maybe_notify  # noqa: E402
 from data_collector.infrastructure.list_selector_resolution import (  # noqa: E402
     resolve_list_selector,
@@ -210,6 +212,7 @@ def collect_site(raw_cfg: dict[str, Any]) -> dict[str, Any]:
         return out
 
     detail_errors: list[dict[str, str]] = []
+    normalized: list[AnimalData] = []
     for detail_url, category in urls:
         try:
             raw = adapter.extract_animal_details(detail_url, category)
@@ -217,26 +220,31 @@ def collect_site(raw_cfg: dict[str, Any]) -> dict[str, Any]:
             # 通す。DataNormalizer を直接呼ぶと高知県等のサイト固有オーバーライド
             # (location フォールバック・テンプレート画像除外) がバイパスされ、
             # 監査側の偽陽性になる (review-20260814 F-01)
-            an = adapter.normalize(raw)
-            out["animals"].append(
-                {
-                    "source_url": str(an.source_url),
-                    "status": str(an.status.value) if an.status else None,
-                    "phone": an.phone,
-                    "location": an.location,
-                    # normalize は source_url から都道府県を推定し、取れないサイトは
-                    # pipeline 側で site_config.prefecture にフォールバックする
-                    # (commit e3d7166)。比較器も同じフォールバックを適用する。
-                    "prefecture": an.prefecture or raw_cfg.get("prefecture") or None,
-                    "category": an.category,
-                    "species": an.species,
-                    "image_urls": [str(u) for u in an.image_urls],
-                }
-            )
+            normalized.append(adapter.normalize(raw))
         except Exception as e:
             detail_errors.append(
                 {"url": str(detail_url), "error": f"{type(e).__name__}: {str(e)[:200]}"}
             )
+
+    # 本番の収集経路 (collector_service._stabilize_virtual_urls) と同じく、掲載位置の
+    # 仮想 URL (#row=N 等) を管理番号・画像ファイル名のキーへ付け替えてから API と
+    # 突き合わせる。付け替えないと位置 URL のサイトが全頭 adapter_only / api_only に割れる (T413)
+    for an in stabilize_virtual_urls(normalized):
+        out["animals"].append(
+            {
+                "source_url": str(an.source_url),
+                "status": str(an.status.value) if an.status else None,
+                "phone": an.phone,
+                "location": an.location,
+                # normalize は source_url から都道府県を推定し、取れないサイトは
+                # pipeline 側で site_config.prefecture にフォールバックする
+                # (commit e3d7166)。比較器も同じフォールバックを適用する。
+                "prefecture": an.prefecture or raw_cfg.get("prefecture") or None,
+                "category": an.category,
+                "species": an.species,
+                "image_urls": [str(u) for u in an.image_urls],
+            }
+        )
 
     out["status"] = "ok" if not detail_errors else "partial"
     out["detail_errors"] = detail_errors

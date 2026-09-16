@@ -87,3 +87,53 @@ class TestCountAuditBlindHosts:
         """
         blind = fpa.count_audit_blind_hosts(fpa.load_sites_yaml())
         assert len(blind) <= 80
+
+
+class TestCollectSiteStableVirtualUrls:
+    def test_positional_virtual_urls_are_rekeyed_like_production(self, monkeypatch):
+        """T413: 本番の収集経路と同じく、掲載位置の仮想 URL を安定キーへ付け替えてから返す
+
+        付け替えないと、公開 API (付け替え後の URL) と source_url で突き合わせたときに
+        位置 URL のサイトが全頭「掲載漏れ疑い (adapter_only)」と「API のみ」に割れる。
+        """
+        from datetime import date
+
+        from data_collector.domain.models import AnimalData
+
+        page = "https://www.city.example.lg.jp/pet/search_cat.html"
+        images = {
+            f"{page}#h3=0": "https://www.city.example.lg.jp/img/260916mayoineko.jpg",
+            f"{page}#h3=1": "https://www.city.example.lg.jp/img/210129mayoineko2.jpg",
+        }
+
+        class _PositionalAdapter:
+            def __init__(self, site_config):
+                pass
+
+            def fetch_animal_list(self):
+                return [(url, "lost") for url in images]
+
+            def extract_animal_details(self, url, category):
+                return url
+
+            def normalize(self, url):
+                return AnimalData(
+                    species="猫",
+                    shelter_date=date(2026, 9, 16),
+                    location="東京都町田市",
+                    source_url=url,
+                    category="lost",
+                    image_urls=[images[url]],
+                )
+
+        monkeypatch.setattr(fpa.SiteAdapterRegistry, "get", lambda name: _PositionalAdapter)
+
+        out = fpa.collect_site(
+            {"name": "テストサイト（迷子猫）", "prefecture": "東京都", "list_url": page}
+        )
+
+        assert out["status"] == "ok"
+        assert [a["source_url"] for a in out["animals"]] == [
+            f"{page}#animal=260916mayoineko.jpg",
+            f"{page}#animal=210129mayoineko2.jpg",
+        ]

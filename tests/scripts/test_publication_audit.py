@@ -244,6 +244,19 @@ class TestRowHintRendering:
         html = pa.render_html(animals, seed=1, base_date="2026-08-04", site_base="https://x.test")
         assert "PDF内の" in html
 
+    def test_shows_hint_for_stable_key_virtual_url(self):
+        """T413: 管理番号・画像のキーで付け替えた一覧内の仮想URLも、開いても飛ばないので手がかりを出す。"""
+        animals = [
+            _animal(
+                source_url="https://muni.test/list.html#animal=8%E4%B8%AD-C0120",
+                management_number="8中-C0120",
+            )
+        ]
+        html = pa.render_html(animals, seed=1, base_date="2026-08-04", site_base="https://x.test")
+        assert "自動では移動しない" in html
+        assert "#animal=8中-C0120" in html
+        assert "番目" not in html
+
     def test_no_row_hint_for_per_animal_url(self):
         animals = [_animal(source_url="https://muni.test/animals/1")]
         html = pa.render_html(animals, seed=1, base_date="2026-08-04", site_base="https://x.test")

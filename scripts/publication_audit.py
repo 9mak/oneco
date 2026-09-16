@@ -30,10 +30,12 @@ import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import unquote
 
 # 欠損の定義は本体と1つに保つ (別実装にすると "不明" 等のプレースホルダで食い違う)
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.data_collector.domain.quality_metrics import is_missing_value
+from src.data_collector.domain.virtual_url import is_positional_virtual_url
 
 DEFAULT_API_BASE = "https://oneco-api-tvlsrcvyuq-an.a.run.app"
 DEFAULT_SITE_BASE = "https://frontend-psi-ten-73.vercel.app"
@@ -122,6 +124,21 @@ def parse_row_index(source_url: str | None) -> int | None:
         return int(source_url.rsplit("#row=", 1)[1])
     except ValueError:
         return None
+
+
+def parse_virtual_fragment(source_url: str | None) -> str | None:
+    """一覧ページ内の1頭を指す仮想 URL の fragment (% エンコードを戻したもの)。
+
+    位置の仮想 URL (`#row=N` / `#h3=N` / `#pdf=…&row=N`) と、管理番号・画像ファイル名の
+    キーへ付け替えた `#animal=<キー>` (T413) が対象。どちらも実ページにその id は無い。
+    個体ごとの URL なら None。
+    """
+    if not source_url or "#" not in source_url:
+        return None
+    fragment = source_url.split("#", 1)[1]
+    if is_positional_virtual_url(source_url) or fragment.startswith("animal="):
+        return unquote(fragment)
+    return None
 
 
 # 一覧ページ内の該当個体を人が探し当てるための手がかり (致命8フィールド外)
@@ -225,9 +242,9 @@ def _card(index: int, animal: dict[str, Any], base_date: str, site_base: str) ->
     else:
         warn = ""
 
-    # 一覧ページ内の1行を指す仮想 URL は、リンクを開いても該当個体まで飛ばない
-    row_index = parse_row_index(animal.get("source_url"))
-    if row_index is None:
+    # 一覧ページ内の1頭を指す仮想 URL は、リンクを開いても該当個体まで飛ばない
+    fragment = parse_virtual_fragment(animal.get("source_url"))
+    if fragment is None:
         rowhint = ""
     else:
         hints = extract_match_hints(animal)
@@ -237,9 +254,11 @@ def _card(index: int, animal: dict[str, Any], base_date: str, site_base: str) ->
         )
         is_pdf = ".pdf" in str(animal.get("source_url") or "").lower()
         media = "PDF" if is_pdf else "一覧ページ"
+        row_index = parse_row_index(animal.get("source_url"))
+        position = "1頭" if row_index is None else f"<b>{row_index + 1}番目</b>"
         rowhint = (
-            f'<div class="rowhint">この個体は{media}内の <b>{row_index + 1}番目</b>'
-            f"（#row={row_index}）。リンクを開いても自動では移動しないので、"
+            f'<div class="rowhint">この個体は{media}内の {position}'
+            f"（#{e(fragment)}）。リンクを開いても自動では移動しないので、"
             f"次の手がかりで該当行を探して突き合わせる。"
             f'<div class="hints">{hint_html}</div></div>'
         )
