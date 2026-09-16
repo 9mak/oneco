@@ -8,8 +8,10 @@ export const revalidate = 1800;
 
 export const metadata: Metadata = {
   title: '卒業した子たち',
+  // 「oneco を通じて出会いが生まれた」は、oneco が譲渡のきっかけになったという
+  // 未検証の因果を前提にするため書かない (T414)。
   description:
-    '新しい家族のもとへ譲渡された、あるいは元の飼い主のもとへ戻った動物たちの記録。oneco を通じて出会いが生まれた子たちを紹介します。',
+    '新しい家族のもとへ譲渡された、あるいは元の飼い主のもとへ戻った動物たちの記録です。',
   alternates: { canonical: '/archive' },
   openGraph: {
     type: 'website',
@@ -50,7 +52,7 @@ export default async function ArchivePage() {
         </p>
         {totalCount > 0 && (
           <p className="mt-4 text-sm text-[var(--color-accent-700)] font-medium">
-            これまでに {totalCount.toLocaleString('ja-JP')} 件の出会いが生まれました
+            これまでに {totalCount.toLocaleString('ja-JP')} 件の卒業を記録しています
           </p>
         )}
       </section>
@@ -63,7 +65,12 @@ export default async function ArchivePage() {
       ) : items.length === 0 ? (
         <EmptyState
           message="まだ卒業した子の記録はありません"
-          suggestion="譲渡・返還が成立した動物は、一定期間経過後にこちらへ記録されます。"
+          // 譲渡・返還を記録する仕組み (ArchiveService) は本番で動いていないため、
+          // 「一定期間後に記録される」とは約束しない (T414)。ヘッダーの「動物一覧」は
+          // 幅 640px 未満で表示されないので、行き先はこの場のリンクで示す。
+          suggestion="いま家族を待っている子は、動物一覧からさがせます。"
+          actionHref="/"
+          actionLabel="動物一覧を見る"
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
