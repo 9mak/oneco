@@ -5,12 +5,20 @@ interface EmptyStateProps {
   /** message の下に表示する補助説明 (状況の理由 or 次のアクション提案) */
   suggestion?: string;
   showClearButton?: boolean;
+  /** 次のアクションへのリンク先。actionLabel と両方あるときだけボタンとして出す */
+  actionHref?: string;
+  actionLabel?: string;
 }
+
+const BUTTON_CLASS =
+  'px-6 py-3 bg-[var(--color-primary-700)] text-white rounded-lg font-medium hover:bg-[var(--color-primary-800)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 min-h-[44px] min-w-[44px]';
 
 export function EmptyState({
   message = '現在表示できる動物がいません',
   suggestion,
   showClearButton = false,
+  actionHref,
+  actionLabel,
 }: EmptyStateProps) {
   return (
     <div
@@ -47,12 +55,14 @@ export function EmptyState({
       </div>
 
       {showClearButton && (
-        <Link
-          href="/"
-          className="px-6 py-3 bg-[var(--color-primary-700)] text-white rounded-lg font-medium hover:bg-[var(--color-primary-800)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2 min-h-[44px] min-w-[44px]"
-          aria-label="フィルタをクリア"
-        >
+        <Link href="/" className={BUTTON_CLASS} aria-label="フィルタをクリア">
           フィルタをクリア
+        </Link>
+      )}
+
+      {actionHref && actionLabel && (
+        <Link href={actionHref} className={BUTTON_CLASS}>
+          {actionLabel}
         </Link>
       )}
     </div>

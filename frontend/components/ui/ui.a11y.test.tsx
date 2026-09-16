@@ -47,6 +47,14 @@ describe('EmptyState Accessibility', () => {
     expect(results).toHaveNoViolations();
   });
 
+  it('should have no accessibility violations with an action link', async () => {
+    const { container } = render(
+      <EmptyState actionHref="/" actionLabel="動物一覧を見る" />
+    );
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
   it('should have role="alert" for important messages', () => {
     render(<EmptyState />);
     const alert = screen.getByRole('alert');
