@@ -276,6 +276,39 @@ class TestCityYokohamaAdapter:
         # 体格列が無いので size は空 (size を sex/color から誤取得しない)
         assert raw.size == "", f"猫テーブルに体格列なし: got {raw.size!r}"
 
+    def test_inquiry_number_in_photo_cell_is_management_number(self):
+        """写真の列に入る「お問合せ番号26-091603」を管理番号として取る (T419)
+
+        2026-09-17 の実サイト (収容猫) は写真の代わりにこの番号だけが入っており、
+        画像も管理番号も無いため個体キー (T413) を作れず、掲載位置の URL のままだった。
+        """
+        cat_html = """
+        <html><body><div class="wysiwyg_wp"><table>
+          <tr><th>掲載日</th><th>収容日・収容場所</th><th>写真</th><th>種類</th>
+              <th>性別</th><th>毛色</th><th>年齢</th><th>その他</th></tr>
+          <tr><td class="center">令和8年9月16日</td>
+              <td class="center"><p>令和8年9月15日<br/>港南区<br/>港南台六丁目</p></td>
+              <td class="center">お問合せ番号26-091603</td><td class="center">雑種</td>
+              <td class="center">オス</td><td class="center">キジトラ</td>
+              <td class="center">子猫</td><td class="center"><p>首輪等なし</p></td></tr>
+        </table></div></body></html>
+        """
+        adapter = CityYokohamaAdapter(
+            _site(
+                name="横浜市（収容猫）",
+                list_url=(
+                    "https://www.city.yokohama.lg.jp/kurashi/sumai-kurashi/"
+                    "pet-dobutsu/aigo/maigo/20121004094818.html"
+                ),
+            )
+        )
+        with patch.object(adapter, "_http_get", return_value=cat_html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+
+        assert raw.management_number == "26-091603"
+        assert adapter.normalize(raw).management_number == "26-091603"
+
     def test_raises_parsing_error_when_no_table(self):
         """テーブルが見当たらない HTML では例外を出す"""
         adapter = CityYokohamaAdapter(_site())

@@ -179,6 +179,37 @@ class TestCityKagoshimaAdapter:
         # 猫サイトは「毛色」ラベルが記載されているので color が取得される
         assert raw.color == "黒"
 
+    def test_heading_number_is_management_number(self):
+        """見出し「No.251358」を管理番号として取る (T419)
+
+        写真の無い子は画像も管理番号も無く、個体キー (T413) を作れずに掲載位置の
+        URL のまま残っていた (2026-09-17 の保護猫 1 頭)。
+        """
+        cat_html = """
+        <html><body><div id="tmp_contents">
+          <h2>No.251358</h2>
+          <p>保護日：令和8年1月23日</p>
+          <p>保護場所：坂元町</p>
+          <p>性別：雌</p>
+          <p>毛色：シャムトラ系</p>
+        </div></body></html>
+        """
+        adapter = CityKagoshimaAdapter(
+            _site(
+                name="鹿児島市（保護猫）",
+                list_url=(
+                    "https://www.city.kagoshima.lg.jp/kenkofukushi/hokenjo/"
+                    "seiei-jueki/kurashi/dobutsu/kainushi/joho/neko.html"
+                ),
+            )
+        )
+        with patch.object(adapter, "_http_get", return_value=cat_html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+
+        assert raw.management_number == "No.251358"
+        assert adapter.normalize(raw).management_number == "No.251358"
+
     def test_color_extracted_from_keiro_label(self):
         """`<p>毛色：灰茶</p>` の「毛色」ラベルから color を抽出する
 

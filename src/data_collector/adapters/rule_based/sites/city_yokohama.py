@@ -163,9 +163,21 @@ class CityYokohamaAdapter(SinglePageTableAdapter):
                 image_urls=self._extract_row_images(row, virtual_url),
                 source_url=virtual_url,
                 category=category,
+                management_number=self._inquiry_number(row),
             )
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
+
+    @staticmethod
+    def _inquiry_number(row: Tag) -> str:
+        """行の「お問合せ番号26-091603」から番号を返す。無ければ空文字 (T419)
+
+        写真の列に写真の代わりに入る。個体キー (T413) にも使う。
+        """
+        match = re.search(
+            r"お?問い?合せ番号\s*([0-9A-Za-z][0-9A-Za-z\-]*)", row.get_text(strip=True)
+        )
+        return match.group(1) if match else ""
 
     def _load_header_row(self) -> Tag | None:
         """キャッシュ HTML からヘッダ <th> を含む最初の行を返す
