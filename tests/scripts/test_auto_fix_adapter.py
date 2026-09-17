@@ -594,3 +594,26 @@ class TestGhWarning:
         out = capsys.readouterr().out.rstrip("\n")
         assert "\n" not in out
         assert "2行目" in out
+
+
+class TestLoadSiteConfig:
+    def test_every_registered_site_matches_production_loader(self):
+        """T416: 修復前後の計測に使う SiteConfig は本番の収集と同じ値でなければならない
+
+        項目を手で写していたため phone・default_species・fields などが落ち、本番と違う
+        出力 (電話の欠落・愛媛県 収容中の species) で修復の要否を計ることになっていた。
+        """
+        from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
+        from data_collector.llm.config import SiteConfigLoader
+
+        sites = SiteConfigLoader.load(ROOT / "src/data_collector/config/sites.yaml").sites
+        registered = [site for site in sites if SiteAdapterRegistry.get(site.name) is not None]
+        assert registered
+
+        mismatched = [
+            site.name
+            for site in registered
+            if afa.load_site(site.name)[0].model_dump() != site.model_dump()
+        ]
+
+        assert mismatched == []

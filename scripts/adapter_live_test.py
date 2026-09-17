@@ -38,7 +38,7 @@ for _, _name, _ in pkgutil.iter_modules(_sites_pkg.__path__):
 
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry  # noqa: E402
 from data_collector.domain.normalizer import DataNormalizer  # noqa: E402
-from data_collector.llm.config import SiteConfig  # noqa: E402
+from data_collector.llm.config import SiteConfig, SiteConfigLoader  # noqa: E402
 
 
 def load_sites_yaml() -> dict[str, dict[str, Any]]:
@@ -47,20 +47,8 @@ def load_sites_yaml() -> dict[str, dict[str, Any]]:
 
 
 def build_site_config(raw: dict[str, Any]) -> SiteConfig:
-    return SiteConfig(
-        name=raw["name"],
-        prefecture=raw.get("prefecture", ""),
-        prefecture_code=raw.get("prefecture_code", "00"),
-        list_url=raw["list_url"],
-        category=raw.get("category", "adoption"),
-        requires_js=raw.get("requires_js", False),
-        single_page=raw.get("single_page", False),
-        list_link_pattern=raw.get("list_link_pattern"),
-        pdf_link_pattern=raw.get("pdf_link_pattern"),
-        pdf_multi_animal=raw.get("pdf_multi_animal", False),
-        timeout_sec=raw.get("timeout_sec"),
-        fallback_to_llm=raw.get("fallback_to_llm", False),
-    )
+    # 本番の収集と同じ規則で組み立てる。項目を手で写すと phone・default_species などが落ちる (T416)
+    return SiteConfigLoader.build_site(raw)
 
 
 def test_site(name: str, raw_cfg: dict[str, Any], include_js: bool = False) -> dict[str, Any]:

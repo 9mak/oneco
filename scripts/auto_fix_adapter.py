@@ -50,7 +50,7 @@ for _, _name, _ in pkgutil.iter_modules(_sites_pkg.__path__):
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry  # noqa: E402
 from data_collector.domain.normalizer import DataNormalizer  # noqa: E402
 from data_collector.domain.quality_metrics import compute_missing_rates  # noqa: E402
-from data_collector.llm.config import SiteConfig  # noqa: E402
+from data_collector.llm.config import SiteConfig, SiteConfigLoader  # noqa: E402
 
 DEFAULT_MODEL = "openai/gpt-oss-120b"  # Groq (既存 GroqProvider と揃える)
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
@@ -149,20 +149,8 @@ def load_site(site_name: str) -> tuple[SiteConfig, type, Path]:
     raw = next((s for s in cfg["sites"] if s["name"] == site_name), None)
     if not raw:
         raise SystemExit(f"site not found in sites.yaml: {site_name}")
-    sc = SiteConfig(
-        name=raw["name"],
-        prefecture=raw.get("prefecture", ""),
-        prefecture_code=raw.get("prefecture_code", "00"),
-        list_url=raw["list_url"],
-        category=raw.get("category", "sheltered"),
-        requires_js=raw.get("requires_js", False),
-        single_page=raw.get("single_page", False),
-        list_link_pattern=raw.get("list_link_pattern"),
-        pdf_link_pattern=raw.get("pdf_link_pattern"),
-        pdf_multi_animal=raw.get("pdf_multi_animal", False),
-        timeout_sec=raw.get("timeout_sec"),
-        fallback_to_llm=raw.get("fallback_to_llm", False),
-    )
+    # 本番の収集と同じ規則で組み立てる。項目を手で写すと phone・default_species などが落ちる (T416)
+    sc = SiteConfigLoader.build_site(raw)
     cls = SiteAdapterRegistry.get(site_name)
     if cls is None:
         raise SystemExit(f"adapter not registered: {site_name}")

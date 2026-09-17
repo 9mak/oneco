@@ -89,6 +89,33 @@ class TestCountAuditBlindHosts:
         assert len(blind) <= 80
 
 
+class TestBuildSiteConfig:
+    def test_every_site_matches_production_loader(self):
+        """T416: 監査が adapter に渡す SiteConfig は本番の収集と同じ値でなければならない
+
+        以前は sites.yaml の一部の項目だけを手で写していたため、phone (68 サイト)・
+        default_species (愛媛県・収容中)・fields などが落ち、愛媛県 (収容中) の species が
+        本番「犬」に対し監査側「その他」になった。本番と違う値で突き合わせると、
+        致命フィールドの誤検知や見逃しになる。
+        """
+        from data_collector.llm.config import SiteConfigLoader
+
+        production = {
+            site.name: site.model_dump()
+            for site in SiteConfigLoader.load(
+                fpa.ROOT / "src/data_collector/config/sites.yaml"
+            ).sites
+        }
+
+        mismatched = [
+            raw["name"]
+            for raw in fpa.load_sites_yaml()
+            if fpa.build_site_config(raw).model_dump() != production[raw["name"]]
+        ]
+
+        assert mismatched == []
+
+
 class TestCollectSiteStableVirtualUrls:
     def test_positional_virtual_urls_are_rekeyed_like_production(self, monkeypatch):
         """T413: 本番の収集経路と同じく、掲載位置の仮想 URL を安定キーへ付け替えてから返す
@@ -128,8 +155,14 @@ class TestCollectSiteStableVirtualUrls:
 
         monkeypatch.setattr(fpa.SiteAdapterRegistry, "get", lambda name: _PositionalAdapter)
 
+        # 本番の sites.yaml と同じく必須項目 (prefecture_code) をそろえる (T416 で監査も本番と同じ検証を通る)
         out = fpa.collect_site(
-            {"name": "テストサイト（迷子猫）", "prefecture": "東京都", "list_url": page}
+            {
+                "name": "テストサイト（迷子猫）",
+                "prefecture": "東京都",
+                "prefecture_code": "13",
+                "list_url": page,
+            }
         )
 
         assert out["status"] == "ok"
