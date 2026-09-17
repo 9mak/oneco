@@ -1851,12 +1851,15 @@ sites:
     category: "sheltered"
 
   # 【道北 アニウェル北海道】里親募集
+  # 2026-09 のリニューアルで旧一覧 /cats/ が 404 になり /afa/ (一覧→個別ページ) へ移った (T417)。
+  # 抽出は config/site_specs/aniwel.yaml
   - name: "アニウェル北海道（猫の里親募集）"
     prefecture: "北海道"
     prefecture_code: "01"
-    list_url: "https://aniwel.jp/cats/"
+    list_url: "https://aniwel.jp/afa/"
     category: "adoption"
-    single_page: true
+    # 2026-09-17 確認: 全ページ下部「動物保護施設 アニウェル・ケア … TEL：0157-57-3612(10:00～16:00)」
+    phone: "0157-57-3612"
 
   # 【道南 函館どうなん】 nyantomo.jp
   - name: "函館どうなん動物愛護センター（里親募集）"

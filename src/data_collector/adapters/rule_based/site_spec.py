@@ -57,6 +57,7 @@ class SiteSpec:
     # 画像 URL フィルタ戦略。"" = 基底の _filter_image_urls (wp-content/uploads
     # 前提) をそのまま使う。"exclude_no_filename" = 末尾が "/" で終わる
     # (ファイル名が無い) URL を除外する (douai_pref_tochigi_stray のダミー画像対策)。
+    # "strip_query" = クエリ文字列を外す (aniwel の取得ごとに変わるキャッシュ回避クエリ対策)。
     image_filter: str = ""
     # True の場合、一覧取得中の例外を握りつぶして空リストを返す
     # (toyohashi_aikuru の元実装と同じ挙動。他サイトでは既定 False =

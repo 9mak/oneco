@@ -1,0 +1,36 @@
+# アニウェル北海道 (aniwel.jp) — 旧 sites/aniwel.py (T417 で spec へ置き換え)
+# 2026-09 のサイトリニューアル (WordPress → baserCMS) で旧一覧 /cats/ が 404 になった。
+# 新サイトは 一覧 /afa/ (4 件ずつページ送り) → 個別ページ /afa/view/<名前> の構成。
+# 個別ページは <table class="ta2-parts"> の th/td で、caption が名前。
+#
+# species: 団体は犬猫を扱うが、2026-09-17 時点の募集 10 頭は全て猫で、個別ページの
+# 様式も猫専用 (抗体検査(エイズ)/(白血病) = FIV/FeLV の欄) のため、サイト名
+# 「猫の里親募集」から猫とする。犬が載ったら spec を見直すこと。
+names:
+  - "アニウェル北海道（猫の里親募集）"
+mode: list_detail
+list_link_selector: ".list1-auto-border-parts .list-parts h3 a[href*='/afa/view/']"
+next_page_selector: ".bs-pagination__next a"
+# アイキャッチ写真 (td 内) と「その他」欄のスライド写真 (.splide__slide)。
+# スライド写真は /design/images/afa_photo/ 配下で、normalize の共通ジャンク画像判定 (/design/) に
+# 落とされるため、公開されるのはアイキャッチ 1 枚 (旧サイトと同じくサムネイル)
+image_selector: "table.ta2-parts img"
+# アイキャッチ写真の URL には取得ごとに変わる数字のクエリ (?1454986635 等) が付くため外す
+image_filter: strip_query
+field_selectors:
+  name:
+    selector: "table.ta2-parts caption"
+  sex:
+    label: "性別"
+  # 年齢欄は JS が生年月日 (data-started-date) から年齢を描画するため属性から取る。
+  # 生年月日が 2 つ入っている子 (シンクロ) がいるので先頭を採る
+  age:
+    selector: "table.ta2-parts .skill-exp[data-started-date]"
+    attr: "data-started-date"
+  description:
+    label: "紹介文"
+species:
+  strategy: from_site_name
+postprocess:
+  # 保護施設「アニウェル・ケア」(北見市相内町) の運営団体。旧 adapter と同じ表記
+  - "location_fallback:アニウェル北海道（北見市）"
