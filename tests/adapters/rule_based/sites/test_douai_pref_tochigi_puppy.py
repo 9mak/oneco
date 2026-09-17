@@ -78,6 +78,41 @@ class TestDouaiPrefTochigiPuppyListExtraction:
             result = adapter.fetch_animal_list()
         assert result == []
 
+    def test_blank_frame_before_next_adoption_event_is_not_puppies(self):
+        """次の譲渡会の準備中に置かれる空の枠 (番号・性別・写真が全列空) は個体にしない (T419)
+
+        2026-09-17 の実サイトでは「10月子犬譲渡会の準備をしております。」の下に
+        この空の 5 列が置かれ、8/31 から 5 頭として公開されていた。
+        """
+        adapter = DouaiPrefTochigiPuppyAdapter(_puppy_site())
+        html = (
+            "<html><body>"
+            "<p>10月子犬譲渡会の準備をしております。公開できるまでお待ちください。。</p>"
+            "<figure class='wp-block-table'><table class='has-fixed-layout'><tbody>"
+            "<tr><td colspan='5'>○枠</td></tr>"
+            "<tr>" + "<td>番号：</td>" * 5 + "</tr>"
+            "<tr>" + "<td>性別：</td>" * 5 + "</tr>"
+            "<tr>" + "<td></td>" * 5 + "</tr>"
+            "</tbody></table></figure>"
+            "<figure class='wp-block-table'><table class='has-fixed-layout'><tbody>"
+            "<tr><td colspan='2'>２枠</td></tr>"
+            "<tr><td>番号：31</td><td>番号：33</td></tr>"
+            "<tr><td>性別：オス</td><td>性別：メス</td></tr>"
+            "<tr><td><img src='/wp/wp-content/uploads/2026/08/2026-07-0033.jpg'></td>"
+            "<td><img src='/wp/wp-content/uploads/2026/08/2026-07-0036.jpg'></td></tr>"
+            "<tr><td colspan='2'>５月生まれ　ワクチン2回接種済</td></tr>"
+            "</tbody></table></figure>"
+            "</body></html>"
+        )
+        with patch.object(adapter, "_http_get", return_value=html):
+            result = adapter.fetch_animal_list()
+            numbers = [
+                adapter.extract_animal_details(url, category).management_number
+                for url, category in result
+            ]
+
+        assert numbers == ["31", "33"]
+
 
 class TestDouaiPrefTochigiPuppyDetailExtraction:
     def test_extract_pending_number_puppy_has_blank_management_number(
