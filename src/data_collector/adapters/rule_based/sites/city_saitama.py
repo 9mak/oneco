@@ -176,10 +176,22 @@ class CitySaitamaAdapter(SinglePageTableAdapter):
     def _extract_management_number(div: Tag) -> str:
         """カードの `<p>管理番号 R07-XXX</p>` から管理番号値 (R07-XXX) を抽出する。"""
         for p in div.find_all("p"):
-            text = p.get_text(strip=True)
-            if "管理番号" in text:
-                return text.partition("管理番号")[2].strip()
+            value = CitySaitamaAdapter._management_number_in(p)
+            if value is not None:
+                return value
         return ""
+
+    @staticmethod
+    def _management_number_in(p: Tag) -> str | None:
+        """`<p>` の「管理番号」の行から番号部分を返す。「管理番号」を含まなければ None
+
+        実サイトでは同じ `<p>` に `<br>` 区切りで写真と「写真の無断転載はご遠慮ください。」
+        が続くことがあり、改行を無視してつなぐと番号に注意書きが混ざる (T418)。
+        """
+        for line in p.get_text("\n", strip=True).split("\n"):
+            if "管理番号" in line:
+                return line.partition("管理番号")[2].strip()
+        return None
 
     @staticmethod
     def _is_animal_card(div: Tag) -> bool:
@@ -201,11 +213,9 @@ class CitySaitamaAdapter(SinglePageTableAdapter):
         # 管理番号値の空判定
         kanri_value = ""
         for p in div.find_all("p"):
-            text = p.get_text(strip=True)
-            if "管理番号" in text:
-                # "管理番号 R07-XXX" → "R07-XXX" の後ろ部分を抽出
-                _, _, rest = text.partition("管理番号")
-                rest = rest.strip()
+            # "管理番号 R07-XXX" → "R07-XXX" の後ろ部分を抽出
+            rest = cls._management_number_in(p)
+            if rest is not None:
                 # ハイフンの後に続く番号があるか
                 if "-" in rest:
                     _, _, after_hyphen = rest.rpartition("-")

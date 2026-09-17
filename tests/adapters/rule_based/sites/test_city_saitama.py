@@ -168,6 +168,94 @@ def _build_html_with_one_card_no_strong() -> str:
     """
 
 
+def _build_html_with_notice_in_management_number_p() -> str:
+    """管理番号の <p> に写真と注意書きが <br> 区切りで同居するカード (T418)
+
+    2026-09-17 の実サイト (p019971.html) の構造。改行を無視してテキストをつなぐと
+    管理番号が「R08-56写真の無断転載はご遠慮ください。」になっていた。カード末尾には
+    番号が空の「管理番号 R08-」も残っている。
+    """
+    return """
+    <html><body>
+      <div class="content_in" id="b2111_detail">
+        <div class="wysiwyg_area">
+          <h2>迷子の猫を保護しています</h2>
+          <div>
+            <p>管理番号 R08-56<br/>
+            <a href="./p019971_d/img/045.jpg" target="_blank"><img alt="負傷" height="213" src="./p019971_d/img/045_s.jpg" width="300"/></a><br/>
+            写真の無断転載はご遠慮ください。</p>
+            <ul>
+              <li>収容日：令和8年9月16日</li>
+              <li>公示（掲載）期限：令和8年9月24日</li>
+              <li>収容場所：南区南浦和</li>
+              <li>種類：雑種</li>
+              <li>毛色：茶トラ</li>
+              <li>性別：避妊メス</li>
+              <li>推定年齢：6～10歳</li>
+              <li>首輪：無</li>
+              <li>備考：左耳カットあり</li>
+            </ul>
+            <p>管理番号 R08-</p>
+          </div>
+        </div>
+      </div>
+    </body></html>
+    """
+
+
+def _build_html_with_empty_template_carrying_notice() -> str:
+    """番号も属性も空のテンプレートカードで、管理番号の <p> に注意書きだけが残っている形"""
+    return """
+    <html><body>
+      <div class="content_in" id="b2111_detail">
+        <div class="wysiwyg_area">
+          <h2>迷子の猫を保護しています</h2>
+          <div>
+            <p>管理番号 R08-<br/>
+            写真の無断転載はご遠慮ください。</p>
+            <ul>
+              <li>収容日：</li>
+              <li>収容場所：</li>
+              <li>種類：</li>
+              <li>毛色：</li>
+              <li>性別：</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </body></html>
+    """
+
+
+class TestCitySaitamaManagementNumber:
+    def test_notice_after_line_break_is_not_part_of_management_number(self):
+        adapter = CitySaitamaAdapter(
+            _site(
+                name="さいたま市（保護猫・その他）",
+                list_url="https://www.city.saitama.lg.jp/008/004/003/004/p019971.html",
+            )
+        )
+
+        with patch.object(
+            adapter, "_http_get", return_value=_build_html_with_notice_in_management_number_p()
+        ):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+
+        assert len(urls) == 1
+        assert raw.management_number == "R08-56"
+        assert adapter.normalize(raw).management_number == "R08-56"
+
+    def test_template_card_with_notice_only_is_still_empty(self):
+        """注意書きが番号の続きとして読まれると、空のテンプレートが架空の 1 頭になる"""
+        adapter = CitySaitamaAdapter(_site())
+
+        with patch.object(
+            adapter, "_http_get", return_value=_build_html_with_empty_template_carrying_notice()
+        ):
+            assert adapter.fetch_animal_list() == []
+
+
 class TestCitySaitamaAdapter:
     def test_extract_animal_details_no_strong_tag_card(self):
         """`<strong>` タグ無しの実サイト構造でもフィールドを抽出できる (T131)"""

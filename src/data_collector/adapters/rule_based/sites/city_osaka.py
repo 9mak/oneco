@@ -165,8 +165,9 @@ class CityOsakaAdapter(SinglePageTableAdapter):
             )
         h3 = rows[idx]
 
-        # 管理番号は h3 「識別番号／A2605120001」から抽出
-        management_number = self._extract_management_number(h3.get_text(strip=True))
+        # 管理番号は h3 「識別番号／A2605120001」から抽出 (仮名が続く場合は名前へ分ける)
+        heading = h3.get_text(strip=True)
+        management_number = self._extract_management_number(heading)
 
         # h3 直後の <div class="mol_imageblock"> を (複数あれば) すべて取得
         #
@@ -230,6 +231,7 @@ class CityOsakaAdapter(SinglePageTableAdapter):
                 # 「種類」(雑種・柴等) は _LABEL_TO_FIELD で breed として fields に格納済み
                 breed=fields.get("breed", ""),
                 management_number=management_number,
+                name=self._extract_nickname(heading),
                 sex=fields.get("sex", ""),
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),
@@ -257,8 +259,15 @@ class CityOsakaAdapter(SinglePageTableAdapter):
         for sep in ("／", "/", "：", ":"):
             if sep in h3_text:
                 _, _, value = h3_text.partition(sep)
-                return value.strip()
+                # 譲渡猫は「8-4-83（仮名：ヒスイちゃん）」のように仮名が続く。括弧書きは番号ではない (T418)
+                return re.split(r"[（(]", value, maxsplit=1)[0].strip()
         return ""
+
+    @staticmethod
+    def _extract_nickname(h3_text: str) -> str:
+        """見出しの「（仮名：ヒスイちゃん）」から仮名を返す。無ければ空文字 (T418)"""
+        match = re.search(r"[（(]\s*仮名\s*[：:]\s*([^）)]+?)\s*[）)]", h3_text)
+        return match.group(1) if match else ""
 
     @staticmethod
     def _is_empty_placeholder_after(h3: Tag) -> bool:
