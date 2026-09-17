@@ -354,6 +354,33 @@ class TestCollectorService:
         assert len(result) == 3
         assert collector_service._collection_complete is True
 
+    def test_collect_with_retry_rekeys_positional_virtual_urls(
+        self, collector_service, mock_adapter
+    ):
+        """T413: 掲載位置の仮想 URL は、収集結果の時点で管理番号の URL に付け替わる"""
+        list_url = "https://www.pref.example.lg.jp/jyouto.html"
+        numbers = {
+            f"{list_url}#pdf=0916cat.pdf&row=0": "8中-C0047",
+            f"{list_url}#pdf=0916cat.pdf&row=1": "８中‐C0046",
+        }
+        mock_adapter.fetch_animal_list.return_value = [(url, "adoption") for url in numbers]
+        mock_adapter.extract_animal_details.side_effect = lambda url, category: url
+        mock_adapter.normalize.side_effect = lambda url: AnimalData(
+            species="猫",
+            shelter_date=date(2026, 9, 16),
+            location="香川県",
+            source_url=url,
+            category="adoption",
+            management_number=numbers[url],
+        )
+
+        result = collector_service._collect_with_retry()
+
+        assert [str(a.source_url) for a in result] == [
+            f"{list_url}#animal=8%E4%B8%AD-C0047",
+            f"{list_url}#animal=8%E4%B8%AD-C0046",
+        ]
+
     def test_collect_with_retry_retries_on_network_error(
         self, collector_service, mock_adapter, sample_animal_data
     ):
@@ -1949,3 +1976,237 @@ class TestCollectorServicePruneSafetyValveIntegration:
             assert self._count_animals(db_connection) == 1  # 削除されない
         finally:
             asyncio.run(db_connection.close())
+
+
+class TestCollectorServiceStableVirtualUrlIntegration:
+    """T413: 掲載位置の仮想 URL (#h3=N / #pdf=…&row=N) を使うサイトで、掲載順のずれや
+    日付入り PDF の差し替えがあっても、同じ子の行 (id・first_seen_at) が保たれることを
+    db_connection 経由の run_collection() 全体で確認する統合テスト。"""
+
+    SITE = "テストサイト（迷子猫）"
+    PAGE = "https://www.city.example.lg.jp/pet/search_cat.html"
+    IMG = "https://www.city.example.lg.jp/img"
+
+    @pytest.fixture
+    def db_connection(self, tmp_path):
+        import asyncio
+
+        from src.data_collector.infrastructure.database.connection import (
+            DatabaseConnection,
+            DatabaseSettings,
+        )
+        from src.data_collector.infrastructure.database.models import Base
+
+        db_settings = DatabaseSettings(database_url=f"sqlite+aiosqlite:///{tmp_path / 'test.db'}")
+        db_connection = DatabaseConnection(db_settings)
+
+        async def _create_tables():
+            async with db_connection.engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+
+        asyncio.run(_create_tables())
+        yield db_connection
+        asyncio.run(db_connection.close())
+
+    def _animal(self, url: str, *, mgmt: str | None = None, image: str | None = None):
+        return AnimalData(
+            species="猫",
+            sex="女の子",
+            breed="雑種",
+            shelter_date=date(2026, 9, 1),
+            location="東京都",
+            source_url=url,
+            category="lost",
+            management_number=mgmt,
+            image_urls=[f"{self.IMG}/{image}"] if image else [],
+        )
+
+    def _run(
+        self, tmp_path, db_connection, animals: list[AnimalData], *, list_truncated: bool = False
+    ) -> None:
+        """adapter が animals をこの順に一覧へ出したときの 1 回分の収集を実行する"""
+        by_url = {str(a.source_url): a for a in animals}
+        adapter = Mock()
+        adapter.prefecture_code = "13"
+        adapter.municipality_name = self.SITE
+        adapter.list_truncated = list_truncated
+        adapter.fetch_animal_list.return_value = [(url, "lost") for url in by_url]
+        adapter.extract_animal_details.side_effect = lambda url, category: url
+        adapter.normalize.side_effect = lambda url: by_url[url]
+        diff_detector = Mock()
+        diff_detector.detect_diff.return_value = DiffResult(
+            new=[], updated=[], deleted_candidates=[]
+        )
+        snapshot_store = Mock()
+        snapshot_store.load_animal_map.return_value = {}
+
+        service = CollectorService(
+            adapter=adapter,
+            diff_detector=diff_detector,
+            output_writer=Mock(),
+            notification_client=Mock(),
+            snapshot_store=snapshot_store,
+            db_connection=db_connection,
+        )
+        service.LOCK_FILE = tmp_path / ".collector.lock"
+        assert service.run_collection().success
+
+    def _rows(self, db_connection) -> dict[str, tuple[int, object]]:
+        """source_url -> (id, first_seen_at)"""
+        import asyncio
+
+        from sqlalchemy import select
+
+        from src.data_collector.infrastructure.database.models import Animal
+
+        async def _fetch():
+            async with db_connection.get_session() as session:
+                rows = (await session.execute(select(Animal))).scalars().all()
+                return {r.source_url: (r.id, r.first_seen_at) for r in rows}
+
+        return asyncio.run(_fetch())
+
+    def _archived_count(self, db_connection) -> int:
+        import asyncio
+
+        from sqlalchemy import select
+
+        from src.data_collector.infrastructure.database.models import AnimalArchive
+
+        async def _count():
+            async with db_connection.get_session() as session:
+                return len((await session.execute(select(AnimalArchive))).scalars().all())
+
+        return asyncio.run(_count())
+
+    def test_list_order_shift_keeps_rows_of_same_individuals(self, tmp_path, db_connection):
+        """先頭に 1 頭増えて全員の掲載位置がずれても、同じ子の行はそのまま残る (町田市 9/16)"""
+        a_url = f"{self.PAGE}#animal=210129mayoineko2.jpg"
+        b_url = f"{self.PAGE}#animal=201005mayoineko.jpg"
+        self._run(
+            tmp_path,
+            db_connection,
+            [
+                self._animal(f"{self.PAGE}#h3=0", image="210129mayoineko2.jpg"),
+                self._animal(f"{self.PAGE}#h3=1", image="201005mayoineko.jpg"),
+            ],
+        )
+        day1 = self._rows(db_connection)
+        assert set(day1) == {a_url, b_url}
+
+        self._run(
+            tmp_path,
+            db_connection,
+            [
+                self._animal(f"{self.PAGE}#h3=0", image="260916mayoineko.jpg"),
+                self._animal(f"{self.PAGE}#h3=1", image="210129mayoineko2.jpg"),
+                self._animal(f"{self.PAGE}#h3=2", image="201005mayoineko.jpg"),
+            ],
+        )
+        day2 = self._rows(db_connection)
+
+        assert len(day2) == 3
+        assert day2[a_url] == day1[a_url]
+        assert day2[b_url] == day1[b_url]
+        assert self._archived_count(db_connection) == 0
+
+    def test_rows_saved_with_positional_urls_are_taken_over(self, tmp_path, db_connection):
+        """付け替え前に #pdf=<日付>.pdf&row=N で保存された行も、同じ管理番号の子が引き継ぐ
+
+        さぬき動物愛護センターは PDF 名が日付入りで、差し替えのたびに全員が新しい行に
+        入れ直されていた。デプロイ後の初回収集でも id と first_seen_at を失わない。
+        """
+        import asyncio
+        from datetime import UTC, datetime
+
+        from src.data_collector.infrastructure.database.models import Animal
+
+        async def _seed():
+            async with db_connection.get_session() as session:
+                for row, mgmt in enumerate(["８中‐C0120", "8中-C0046"]):
+                    session.add(
+                        Animal(
+                            species="猫",
+                            sex="女の子",
+                            breed="雑種",
+                            shelter_date=date(2026, 9, 1),
+                            location="東京都",
+                            source_url=f"{self.PAGE}#pdf=0915cat.pdf&row={row}",
+                            category="lost",
+                            source_site=self.SITE,
+                            management_number=mgmt,
+                            first_seen_at=datetime(2026, 9, 1, tzinfo=UTC),
+                        )
+                    )
+
+        asyncio.run(_seed())
+        before = self._rows(db_connection)
+
+        self._run(
+            tmp_path,
+            db_connection,
+            [
+                self._animal(f"{self.PAGE}#pdf=0916cat.pdf&row=0", mgmt="8中-C0047"),
+                self._animal(f"{self.PAGE}#pdf=0916cat.pdf&row=1", mgmt="8中-C0120"),
+                self._animal(f"{self.PAGE}#pdf=0916cat.pdf&row=2", mgmt="8中‐C0046"),
+            ],
+        )
+        after = self._rows(db_connection)
+
+        assert set(after) == {
+            f"{self.PAGE}#animal=8%E4%B8%AD-C0047",
+            f"{self.PAGE}#animal=8%E4%B8%AD-C0120",
+            f"{self.PAGE}#animal=8%E4%B8%AD-C0046",
+        }
+        assert (
+            after[f"{self.PAGE}#animal=8%E4%B8%AD-C0120"]
+            == before[f"{self.PAGE}#pdf=0915cat.pdf&row=0"]
+        )
+        assert (
+            after[f"{self.PAGE}#animal=8%E4%B8%AD-C0046"]
+            == before[f"{self.PAGE}#pdf=0915cat.pdf&row=1"]
+        )
+        assert self._archived_count(db_connection) == 0
+
+    def test_partial_collection_does_not_take_over_rows(self, tmp_path, db_connection):
+        """部分取得 (一覧の打ち切り・detail 失敗・soft-stop) の run では既存行を引き継がない
+
+        prune と同じく全件そろった run だけで行う。部分取得では、今回取れなかった子の行を
+        同じ画像ファイル名を使い回した別の子に移してしまいうる (PR レビュー Codex Major)。
+        """
+        import asyncio
+        from datetime import UTC, datetime
+
+        from src.data_collector.infrastructure.database.models import Animal
+
+        async def _seed():
+            async with db_connection.get_session() as session:
+                session.add(
+                    Animal(
+                        species="猫",
+                        sex="女の子",
+                        breed="雑種",
+                        shelter_date=date(2026, 9, 1),
+                        location="東京都",
+                        source_url=f"{self.PAGE}#h3=0",
+                        category="lost",
+                        source_site=self.SITE,
+                        image_urls=[f"{self.IMG}/1.jpg"],
+                        first_seen_at=datetime(2026, 9, 1, tzinfo=UTC),
+                    )
+                )
+
+        asyncio.run(_seed())
+        before = self._rows(db_connection)
+
+        self._run(
+            tmp_path,
+            db_connection,
+            [self._animal(f"{self.PAGE}#h3=0", image="1.jpg")],
+            list_truncated=True,
+        )
+        after = self._rows(db_connection)
+
+        # 旧行は URL もそのまま残り (部分取得なので prune もしない)、新しい URL は別の行になる
+        assert after[f"{self.PAGE}#h3=0"] == before[f"{self.PAGE}#h3=0"]
+        assert after[f"{self.PAGE}#animal=1.jpg"][0] != before[f"{self.PAGE}#h3=0"][0]

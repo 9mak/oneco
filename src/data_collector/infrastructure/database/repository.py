@@ -6,6 +6,8 @@ Pydantic AnimalData と SQLAlchemy Animal モデルの変換を担当します�
 """
 
 import logging
+from collections import Counter, defaultdict
+from collections.abc import Sequence
 from datetime import UTC, date, datetime
 
 from sqlalchemy import delete, func, select
@@ -14,6 +16,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.data_collector.domain.models import AnimalData, AnimalStatus
 from src.data_collector.domain.status_transition import (
     StatusTransitionValidator,
+)
+from src.data_collector.domain.virtual_url import (
+    individual_keys_match,
+    is_virtual_url,
+    management_key,
+    page_url,
 )
 from src.data_collector.infrastructure.database.models import Animal, AnimalStatusHistory
 
@@ -171,6 +179,8 @@ class AnimalRepository:
           片側だけ management_number が有る/無い状態 (抽出が収集回ごとに
           ぶれるサイトで起こりうる) を「別個体」と誤判定しないため、
           mgmt の有無の非対称性そのものでは判定材料にしない。
+          全角/半角・ハイフン類・空白の揺れはそろえてから比べる (T413。
+          さぬき動物愛護センターの PDF で「８中‐C0120」「8中-C0120」が混在する)。
         - management_number で比較できない場合は species/sex/breed/shelter_date
           のフィンガープリントで比較する (両側で算出できる場合のみ)。
         - 新規データの shelter_date が推定値 (収集日フォールバック/未来日クランプ)
@@ -185,8 +195,10 @@ class AnimalRepository:
             "different": 別個体とみなせる (アーカイブ+新規挿入へ)
             "unknown": 判定材料が無い (従来通り上書きするが警告ログを残す)
         """
-        if existing_management_number and new_management_number:
-            return "same" if existing_management_number == new_management_number else "different"
+        existing_mgmt = management_key(existing_management_number)
+        new_mgmt = management_key(new_management_number)
+        if existing_mgmt and new_mgmt:
+            return "same" if existing_mgmt == new_mgmt else "different"
 
         use_shelter_date = not new_shelter_date_estimated
         existing_fp = cls._fingerprint(
@@ -207,6 +219,128 @@ class AnimalRepository:
             return "same" if existing_fp == new_fp else "different"
 
         return "unknown"
+
+    @classmethod
+    def _verdict_against(cls, existing_animal: Animal, animal_data: AnimalData) -> str:
+        """既存行と新規データを `_identity_verdict` で比べる"""
+        return cls._identity_verdict(
+            existing_management_number=existing_animal.management_number,
+            existing_species=existing_animal.species,
+            existing_sex=existing_animal.sex,
+            existing_breed=existing_animal.breed,
+            existing_shelter_date=existing_animal.shelter_date,
+            new_management_number=animal_data.management_number,
+            new_species=animal_data.species,
+            new_sex=animal_data.sex,
+            new_breed=animal_data.breed,
+            new_shelter_date=animal_data.shelter_date,
+            new_shelter_date_estimated=animal_data.shelter_date_estimated,
+        )
+
+    @staticmethod
+    def _attributes_contradict(existing_animal: Animal, animal_data: AnimalData) -> bool:
+        """両側にある種別・性別 (「不明」は欠けとみなす) が食い違うか"""
+        if (
+            existing_animal.species
+            and animal_data.species
+            and existing_animal.species != animal_data.species
+        ):
+            return True
+        sexes = [s for s in (existing_animal.sex, animal_data.sex) if s and s != "不明"]
+        return len(sexes) == 2 and sexes[0] != sexes[1]
+
+    async def adopt_orphaned_rows(self, source_site: str, animals: Sequence[AnimalData]) -> int:
+        """URL の付け替えで行き場を失う既存行を、同じ子の新しい URL へ引き継ぐ (T413)。
+
+        仮想 URL を掲載位置 (`#row=N` 等) から個体のキー (`#animal=<管理番号/画像>`)
+        へ付け替えると、既存行とは URL が一致しなくなる。そのまま保存すると新しい行が
+        挿入され、旧行は prune で消えるため id と first_seen_at がリセットされる。
+        保存の前に、今回の収集に出てこなかった同じページの行を管理番号か画像ファイル名で
+        引き当て、source_url だけを新しい URL へ書き換える。
+
+        引き継ぐのは次をすべて満たす組だけ:
+        - 同じ source_site・同じページ (fragment を除いた URL) で、新しい URL の行がまだ無い
+        - 既存行の URL が今回の収集に出てこない (その URL の子のための行は奪わない)
+        - 既存行が収容中 (sheltered)。譲渡・返還などの状態は手動で変えた記録なので、
+          新しく掲載された子のデータで上書きされる経路を作らない
+        - 管理番号 (両方にあるとき) か先頭画像のファイル名が一致し、組が 1 対 1 に決まる
+        - `_identity_verdict` が「別個体」と判定しない
+        - 両側にある種別・性別 (「不明」を除く) が食い違わない。品種が片側でも無いと
+          `_identity_verdict` は種別の食い違いも見ずに "unknown" を返すため、
+          画像ファイル名を別の子に使い回したときにその子の行へ付け替えないよう別に見る
+
+        呼び出し元 (CollectorService) は、prune と同じく全件そろった run だけで呼ぶ。
+        部分取得では「今回出てこなかった行」に取れなかっただけの子が混ざり、同じ画像
+        ファイル名を使い回した別の子にその行を移してしまいうるため。部分取得の初回は
+        新しい URL の行が挿入され旧行と一時的に二重になり、次の完全な収集で旧行が
+        prune される (その子だけ id と first_seen_at が 1 回変わる)。
+
+        画像ファイル名が一致し、食い違いは無いが品種などが欠けて識別判定が "unknown" の
+        組は引き継ぐ (実サイト dry-run で引き継ぎ 285 件のうち 69 件)。同じページで一意な
+        ファイル名の一致は、今の位置 URL の一致 (掲載位置が同じ) より強い同一性の根拠で、
+        位置 URL でも "unknown" は上書きしている。
+
+        Args:
+            source_site: 対象サイトの識別名 (SiteConfig.name)
+            animals: 今回の収集結果 (付け替え後の URL)
+
+        Returns:
+            引き継いだ件数
+        """
+        collected_urls = {str(animal.source_url) for animal in animals}
+        rows = (
+            (await self.session.execute(select(Animal).where(Animal.source_site == source_site)))
+            .scalars()
+            .all()
+        )
+        existing_urls = {row.source_url for row in rows}
+        orphans_by_page: dict[str, list[Animal]] = defaultdict(list)
+        for row in rows:
+            if (
+                "#" in row.source_url
+                and row.source_url not in collected_urls
+                and row.status == AnimalStatus.SHELTERED.value
+            ):
+                orphans_by_page[page_url(row.source_url)].append(row)
+        if not orphans_by_page:
+            return 0
+
+        pairs: list[tuple[AnimalData, Animal]] = []
+        for animal in animals:
+            url = str(animal.source_url)
+            if "#" not in url or url in existing_urls:
+                continue
+            for row in orphans_by_page.get(page_url(url), []):
+                if individual_keys_match(
+                    row.management_number,
+                    row.image_urls or [],
+                    animal.management_number,
+                    animal.image_urls,
+                ):
+                    pairs.append((animal, row))
+
+        pairs_per_animal = Counter(id(animal) for animal, _ in pairs)
+        pairs_per_row = Counter(id(row) for _, row in pairs)
+        adopted = 0
+        for animal, row in pairs:
+            if pairs_per_animal[id(animal)] != 1 or pairs_per_row[id(row)] != 1:
+                continue
+            if self._verdict_against(row, animal) == "different" or self._attributes_contradict(
+                row, animal
+            ):
+                continue
+            logger.info(
+                "[URL付け替えの引き継ぎ] id=%s の source_url を %s から %s へ変更します",
+                row.id,
+                row.source_url,
+                animal.source_url,
+            )
+            row.source_url = str(animal.source_url)
+            adopted += 1
+
+        if adopted:
+            await self.session.commit()
+        return adopted
 
     async def _archive_and_replace(
         self,
@@ -318,19 +452,16 @@ class AnimalRepository:
         # T138: URL 再利用検知。同一 source_url でも個体が入れ替わっていれば
         # 「別個体」とみなし、上書きせずアーカイブしてから新規行を挿入する。
         if existing_animal:
-            verdict = self._identity_verdict(
-                existing_management_number=existing_animal.management_number,
-                existing_species=existing_animal.species,
-                existing_sex=existing_animal.sex,
-                existing_breed=existing_animal.breed,
-                existing_shelter_date=existing_animal.shelter_date,
-                new_management_number=animal_data.management_number,
-                new_species=animal_data.species,
-                new_sex=animal_data.sex,
-                new_breed=animal_data.breed,
-                new_shelter_date=animal_data.shelter_date,
-                new_shelter_date_estimated=animal_data.shelter_date_estimated,
-            )
+            verdict = self._verdict_against(existing_animal, animal_data)
+            if (
+                verdict == "unknown"
+                and is_virtual_url(str(animal_data.source_url))
+                and self._attributes_contradict(existing_animal, animal_data)
+            ):
+                # T413: 仮想 URL (掲載位置や画像ファイル名のキー) は別の子に使い回されうる。
+                # 品種が無くフィンガープリントを組めなくても、両側にある種別・性別が
+                # 食い違えば別個体とする。個別ページの URL の判定は変えない (T420 で測ってから)。
+                verdict = "different"
             if verdict == "unknown":
                 # 判定材料 (両側 management_number、または両側フィンガープリント)
                 # が揃わない場合は、URL 再利用かどうか判定できないため従来通り

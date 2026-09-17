@@ -61,7 +61,7 @@ class TestDouaiPrefTochigiPuppyListExtraction:
             result = adapter.fetch_animal_list()
         urls = [u for u, _cat in result]
         assert len(urls) == len(set(urls))
-        assert all(u.startswith(adapter.site_config.list_url + "#animal=") for u in urls)
+        assert all(u.startswith(adapter.site_config.list_url + "#row=") for u in urls)
 
     def test_fetch_animal_list_excludes_already_matched_kittens(self, fixture_html):
         """「飼い主さん決まりました」の個体は募集対象外のため除外される (3頭中1頭のみ)"""
@@ -89,7 +89,7 @@ class TestDouaiPrefTochigiPuppyDetailExtraction:
         with patch.object(adapter, "_http_get", return_value=html):
             adapter.fetch_animal_list()
             raw = adapter.extract_animal_details(
-                f"{adapter.site_config.list_url}#animal=0", category="adoption"
+                f"{adapter.site_config.list_url}#row=0", category="adoption"
             )
         assert isinstance(raw, RawAnimalData)
         assert_raw_animal(
@@ -107,7 +107,7 @@ class TestDouaiPrefTochigiPuppyDetailExtraction:
         with patch.object(adapter, "_http_get", return_value=html):
             adapter.fetch_animal_list()
             records = [
-                adapter.extract_animal_details(f"{adapter.site_config.list_url}#animal={i}")
+                adapter.extract_animal_details(f"{adapter.site_config.list_url}#row={i}")
                 for i in range(5, 14)
             ]
         management_numbers = {r.management_number for r in records}
@@ -129,7 +129,7 @@ class TestDouaiPrefTochigiPuppyDetailExtraction:
         with patch.object(adapter, "_http_get", return_value=html):
             adapter.fetch_animal_list()
             raw = adapter.extract_animal_details(
-                f"{adapter.site_config.list_url}#animal=0", category="adoption"
+                f"{adapter.site_config.list_url}#row=0", category="adoption"
             )
         assert raw.species == "猫"
         assert raw.management_number == "３"
@@ -144,7 +144,7 @@ class TestDouaiPrefTochigiPuppyDetailExtraction:
         with patch.object(adapter, "_http_get", return_value=html):
             adapter.fetch_animal_list()
             with pytest.raises(ParsingError):
-                adapter.extract_animal_details(f"{adapter.site_config.list_url}#animal=999")
+                adapter.extract_animal_details(f"{adapter.site_config.list_url}#row=999")
 
 
 class TestDouaiPrefTochigiPuppyNormalize:
@@ -153,7 +153,7 @@ class TestDouaiPrefTochigiPuppyNormalize:
         html = fixture_html("douai_pref_tochigi_puppy__puppy_page")
         with patch.object(adapter, "_http_get", return_value=html):
             adapter.fetch_animal_list()
-            raw = adapter.extract_animal_details(f"{adapter.site_config.list_url}#animal=5")
+            raw = adapter.extract_animal_details(f"{adapter.site_config.list_url}#row=5")
             normalized = adapter.normalize(raw)
         assert normalized is not None
         assert normalized.species == "犬"
