@@ -189,6 +189,15 @@ class TestIsPositionalVirtualUrl:
         assert is_positional_virtual_url(f"{LIST}#h3=12")
         assert is_positional_virtual_url(f"{LIST}#pdf=0916cat.pdf&row=3")
 
+    def test_tokushima_fallback_key_is_positional(self):
+        """徳島 (T135) は番号も写真も無い子に掲載順の `row{N}` をキーとして使う (PR レビュー)"""
+        assert is_positional_virtual_url(
+            "https://douai-tokushima.com/animalinfo/list1_1/#animal=row0"
+        )
+        assert not is_positional_virtual_url(
+            "https://douai-tokushima.com/animalinfo/list1_1/#animal=photo2-17788280710"
+        )
+
     def test_other_urls(self):
         assert not is_positional_virtual_url(LIST)
         assert not is_positional_virtual_url(f"{LIST}#animal=2620073")
@@ -214,11 +223,15 @@ class TestManagementKey:
         assert management_key("R8  No.62") == "R8 No.62"
         assert management_key("A 12") != management_key("A1 2")
 
-    def test_prolonged_sound_mark_used_as_hyphen_is_unified(self):
-        """「7西ーD0092」「９ー２」のようにハイフン代わりの長音符をそろえる (さぬき・栃木で実在)"""
-        assert management_key("7西ーD0092") == "7西-D0092"
-        assert management_key("９ー２") == "9-2"
-        assert management_key("ｺｰｷﾞｰ1") == "コーギー1"  # カナの長音はそのまま
+    def test_prolonged_sound_mark_is_not_treated_as_hyphen(self):
+        """長音符「ー」は文字なのでハイフンとみなさない (「Aー12」と「A-12」を同じ番号にしない)
+
+        さぬき「7西ーD0092」・栃木「９ー２」でハイフン代わりに使われているが、同じ子の番号が
+        日によって「ー」と「-」で揺れた記録は無い (PR レビュー)。
+        """
+        assert management_key("7西ーD0092") == "7西ーD0092"
+        assert management_key("９ー２") == "9ー2"
+        assert management_key("Aー12") != management_key("A-12")
 
 
 class TestImageKey:

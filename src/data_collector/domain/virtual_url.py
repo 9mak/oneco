@@ -29,12 +29,11 @@ from pydantic import HttpUrl, TypeAdapter
 
 from .models import AnimalData
 
-# 掲載位置で個体を区別している仮想 URL の fragment
-_POSITIONAL_FRAGMENT = re.compile(r"(?:row|h3)=\d+|pdf=[^&#]+&row=\d+")
-# NFKC では "-" にならないハイフン類 (U+2010〜U+2015, U+2212)
-_HYPHENS = str.maketrans(dict.fromkeys("‐‑‒–—―−", "-"))
-# ハイフン代わりの長音符 (「7西ーD0092」「９ー２」)。かな・カナの直後は本来の長音なので残す
-_PROLONGED_AS_HYPHEN = re.compile(r"(?<![぀-ヿ])ー")
+# 掲載位置で個体を区別している仮想 URL の fragment。`animal=row{N}` は徳島 (T135) が
+# 番号も写真も無い子に使う掲載順のキー
+_POSITIONAL_FRAGMENT = re.compile(r"(?:row|h3)=\d+|pdf=[^&#]+&row=\d+|animal=row\d+")
+# NFKC では "-" にならないハイフン類 (U+2010〜U+2015, U+2212)。長音符「ー」は文字なので含めない
+_HYPHENS = str.maketrans(dict.fromkeys("\u2010\u2011\u2012\u2013\u2014\u2015\u2212", "-"))
 # 個体を表さない「画像なし」系の共通画像
 _PLACEHOLDER_IMAGE = re.compile(
     r"no[-_]?(?:image|photo|img)|now[-_]?printing|coming[-_]?soon|dummy", re.IGNORECASE
@@ -48,7 +47,7 @@ def page_url(url: str) -> str:
 
 
 def is_positional_virtual_url(url: str) -> bool:
-    """掲載位置で個体を区別している仮想 URL (`#row=N` / `#h3=N` / `#pdf=…&row=N`) か"""
+    """掲載位置で個体を区別している仮想 URL (`#row=N` / `#h3=N` / `#pdf=…&row=N` / `#animal=row{N}`) か"""
     _, sep, fragment = url.partition("#")
     return bool(sep) and _POSITIONAL_FRAGMENT.fullmatch(fragment) is not None
 
@@ -58,11 +57,11 @@ def management_key(management_number: str | None) -> str | None:
 
     空白は前後を落とし、連続を 1 つにまとめるだけで消さない。空白の位置が違う番号
     (「A 12」と「A1 2」) を同じ番号にしないため。本番の管理番号に空白の揺れは無い。
+    長音符「ー」もハイフンとみなさない (「Aー12」と「A-12」を同じ番号にしない)。
     """
     if not management_number:
         return None
     normalized = unicodedata.normalize("NFKC", management_number).translate(_HYPHENS)
-    normalized = _PROLONGED_AS_HYPHEN.sub("-", normalized)
     return re.sub(r"\s+", " ", normalized).strip() or None
 
 

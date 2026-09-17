@@ -236,6 +236,18 @@ class AnimalRepository:
             new_shelter_date_estimated=animal_data.shelter_date_estimated,
         )
 
+    @staticmethod
+    def _attributes_contradict(existing_animal: Animal, animal_data: AnimalData) -> bool:
+        """両側にある種別・性別 (「不明」は欠けとみなす) が食い違うか"""
+        if (
+            existing_animal.species
+            and animal_data.species
+            and existing_animal.species != animal_data.species
+        ):
+            return True
+        sexes = [s for s in (existing_animal.sex, animal_data.sex) if s and s != "不明"]
+        return len(sexes) == 2 and sexes[0] != sexes[1]
+
     async def adopt_orphaned_rows(self, source_site: str, animals: Sequence[AnimalData]) -> int:
         """URL の付け替えで行き場を失う既存行を、同じ子の新しい URL へ引き継ぐ (T413)。
 
@@ -252,6 +264,9 @@ class AnimalRepository:
           新しく掲載された子のデータで上書きされる経路を作らない
         - 管理番号 (両方にあるとき) か先頭画像のファイル名が一致し、組が 1 対 1 に決まる
         - `_identity_verdict` が「別個体」と判定しない
+        - 両側にある種別・性別 (「不明」を除く) が食い違わない。品種が片側でも無いと
+          `_identity_verdict` は種別の食い違いも見ずに "unknown" を返すため、
+          画像ファイル名を別の子に使い回したときにその子の行へ付け替えないよう別に見る
 
         呼び出し元 (CollectorService) は、prune と同じく全件そろった run だけで呼ぶ。
         部分取得では「今回出てこなかった行」に取れなかっただけの子が混ざり、同じ画像
@@ -259,9 +274,10 @@ class AnimalRepository:
         新しい URL の行が挿入され旧行と一時的に二重になり、次の完全な収集で旧行が
         prune される (その子だけ id と first_seen_at が 1 回変わる)。
 
-        画像ファイル名が一致した組で識別判定が "unknown" (species/sex/breed の欠け)
-        でも引き継ぐ。同じページで一意なファイル名の一致は、今の位置 URL の一致
-        (掲載位置が同じ) より強い同一性の根拠で、位置 URL でも "unknown" は上書きしている。
+        画像ファイル名が一致し、食い違いは無いが品種などが欠けて識別判定が "unknown" の
+        組は引き継ぐ (実サイト dry-run で引き継ぎ 285 件のうち 69 件)。同じページで一意な
+        ファイル名の一致は、今の位置 URL の一致 (掲載位置が同じ) より強い同一性の根拠で、
+        位置 URL でも "unknown" は上書きしている。
 
         Args:
             source_site: 対象サイトの識別名 (SiteConfig.name)
@@ -308,7 +324,9 @@ class AnimalRepository:
         for animal, row in pairs:
             if pairs_per_animal[id(animal)] != 1 or pairs_per_row[id(row)] != 1:
                 continue
-            if self._verdict_against(row, animal) == "different":
+            if self._verdict_against(row, animal) == "different" or self._attributes_contradict(
+                row, animal
+            ):
                 continue
             logger.info(
                 "[URL付け替えの引き継ぎ] id=%s の source_url を %s から %s へ変更します",

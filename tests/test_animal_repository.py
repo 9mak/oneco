@@ -2435,6 +2435,58 @@ async def test_adopt_orphaned_rows_skips_different_individual(repository, async_
 
 
 @pytest.mark.asyncio
+async def test_adopt_orphaned_rows_skips_contradicting_species_or_sex_without_breed(
+    repository, async_session
+):
+    """T413: 品種が無く識別判定が「判定不能」になる組でも、種別・性別が食い違えば引き継がない
+
+    同じ画像ファイル名を別の子に使い回したときに、その子の行へ付け替えないため
+    (PR 再レビュー 指摘 1)。性別の「不明」は食い違いとみなさない。
+    """
+    dog = _t413_row("row=0", images=(f"{_T413_IMG}/1.jpg",), species="犬")
+    male = _t413_row("row=1", images=(f"{_T413_IMG}/2.jpg",))
+    male.sex = "男の子"
+    for row in (dog, male):
+        row.breed = None
+    async_session.add_all([dog, male])
+    await async_session.commit()
+
+    collected = [
+        _t413_data("animal=1.jpg", images=(f"{_T413_IMG}/1.jpg",), species="猫"),
+        _t413_data("animal=2.jpg", images=(f"{_T413_IMG}/2.jpg",)),  # 女の子
+    ]
+    collected = [animal.model_copy(update={"breed": None}) for animal in collected]
+    adopted = await repository.adopt_orphaned_rows(_T413_SITE, collected)
+
+    assert adopted == 0
+    assert await _t413_urls(async_session) == {f"{_T413_PAGE}#row=0", f"{_T413_PAGE}#row=1"}
+
+
+@pytest.mark.asyncio
+async def test_adopt_orphaned_rows_takes_over_when_attributes_are_only_missing(
+    repository, async_session
+):
+    """T413: 品種が両側に無く性別が片側「不明」でも、食い違いが無ければ画像ファイル名で引き継ぐ
+
+    実サイト dry-run の引き継ぎ 285 件のうち 69 件がこの形 (品種が両側とも空)。
+    """
+    row = _t413_row("h3=0", images=(f"{_T413_IMG}/68539.jpg",))
+    row.breed = None
+    row.sex = "不明"
+    async_session.add(row)
+    await async_session.commit()
+    row_id = row.id
+
+    new = _t413_data("animal=68539.jpg", images=(f"{_T413_IMG}/68539.jpg",))
+    new = new.model_copy(update={"breed": None})
+    adopted = await repository.adopt_orphaned_rows(_T413_SITE, [new])
+
+    assert adopted == 1
+    rows = (await async_session.execute(select(Animal))).scalars().all()
+    assert [(r.id, r.source_url) for r in rows] == [(row_id, f"{_T413_PAGE}#animal=68539.jpg")]
+
+
+@pytest.mark.asyncio
 async def test_adopt_orphaned_rows_skips_graduated_rows(repository, async_session):
     """T413: 譲渡・返還などで収容中でなくなった行は、キーが一致しても新しく掲載された子に付け替えない
 
