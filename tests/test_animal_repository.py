@@ -2512,7 +2512,8 @@ async def test_save_animal_management_number_width_variant_is_same_individual(
 ):
     """T413: 管理番号の全角/半角・ハイフンの揺れだけで「別個体」にしない
 
-    さぬき動物愛護センターの PDF は同じ番号が「８中‐C0120」「8中-C0120」と揺れる。
+    さぬき動物愛護センターの PDF は行ごとに「８中‐C0120」「8中-C0120」のように書き方が
+    混在するため、同じ番号の書き方が変わっても同じ子として扱う。
     """
     url = f"{_T413_PAGE}#animal=8%E4%B8%AD-C0120"
     await repository.save_animal(_t413_data("animal=8%E4%B8%AD-C0120", mgmt="８中‐C0120"))
@@ -2523,3 +2524,55 @@ async def test_save_animal_management_number_width_variant_is_same_individual(
     rows = (await async_session.execute(select(Animal).where(Animal.source_url == url))).scalars()
     assert len(rows.all()) == 1
     assert (await async_session.execute(select(AnimalArchive))).scalars().all() == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("fragment", ["animal=68539.jpg", "row=3"])
+async def test_save_animal_virtual_url_with_contradicting_species_is_different_individual(
+    repository, async_session, fragment
+):
+    """T413: 仮想 URL に種別の食い違う子が入ったら、品種が無く判定不能でも別の子として退避する
+
+    画像ファイル名を別の子に使い回すと付け替え後の URL が前の子の行と完全に一致し、
+    位置 URL ではずれた位置に別の子が入る。品種が無いと識別判定はフィンガープリントを
+    組めず、種別が猫→犬と食い違っても上書きしていた (PR 再レビュー Route B)。
+    """
+    url = f"{_T413_PAGE}#{fragment}"
+    cat = _t413_data(fragment, images=(f"{_T413_IMG}/68539.jpg",), species="猫")
+    dog = _t413_data(fragment, images=(f"{_T413_IMG}/68539.jpg",), species="犬")
+    await repository.save_animal(cat.model_copy(update={"breed": None}))
+
+    await repository.save_animal(dog.model_copy(update={"breed": None}))
+
+    assert repository.url_reuse_count == 1
+    rows = (await async_session.execute(select(Animal).where(Animal.source_url == url))).scalars()
+    assert [r.species for r in rows.all()] == ["犬"]
+    archived = (await async_session.execute(select(AnimalArchive))).scalars().all()
+    assert [a.species for a in archived] == ["猫"]
+
+
+@pytest.mark.asyncio
+async def test_save_animal_detail_page_url_keeps_existing_unknown_verdict(
+    repository, async_session
+):
+    """T413: 個別ページの URL (仮想 URL でない) の判定は変えない
+
+    種別の食い違いを判定全体に入れるかは、全サイトの退避判定が変わるため本番での頻度を
+    測ってから決める (T420)。
+    """
+    url = "https://www.city.example.lg.jp/pet/detail/123"
+    base = AnimalData(
+        species="猫",
+        sex="女の子",
+        shelter_date=date(2026, 9, 1),
+        location="東京都町田市",
+        source_url=url,
+        category="lost",
+    )
+    await repository.save_animal(base)
+
+    await repository.save_animal(base.model_copy(update={"species": "犬"}))
+
+    assert repository.url_reuse_count == 0
+    rows = (await async_session.execute(select(Animal).where(Animal.source_url == url))).scalars()
+    assert [r.species for r in rows.all()] == ["犬"]

@@ -35,7 +35,7 @@ from urllib.parse import unquote
 # 欠損の定義は本体と1つに保つ (別実装にすると "不明" 等のプレースホルダで食い違う)
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.data_collector.domain.quality_metrics import is_missing_value
-from src.data_collector.domain.virtual_url import is_positional_virtual_url
+from src.data_collector.domain.virtual_url import is_virtual_url
 
 DEFAULT_API_BASE = "https://oneco-api-tvlsrcvyuq-an.a.run.app"
 DEFAULT_SITE_BASE = "https://frontend-psi-ten-73.vercel.app"
@@ -133,12 +133,9 @@ def parse_virtual_fragment(source_url: str | None) -> str | None:
     キーへ付け替えた `#animal=<キー>` (T413) が対象。どちらも実ページにその id は無い。
     個体ごとの URL なら None。
     """
-    if not source_url or "#" not in source_url:
+    if not source_url or not is_virtual_url(source_url):
         return None
-    fragment = source_url.split("#", 1)[1]
-    if is_positional_virtual_url(source_url) or fragment.startswith("animal="):
-        return unquote(fragment)
-    return None
+    return unquote(source_url.split("#", 1)[1])
 
 
 # 一覧ページ内の該当個体を人が探し当てるための手がかり (致命8フィールド外)

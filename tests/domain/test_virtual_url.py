@@ -16,6 +16,7 @@ from src.data_collector.domain.models import AnimalData
 from src.data_collector.domain.virtual_url import (
     image_key,
     is_positional_virtual_url,
+    is_virtual_url,
     management_key,
     stabilize_virtual_urls,
 )
@@ -204,6 +205,18 @@ class TestIsPositionalVirtualUrl:
         assert not is_positional_virtual_url(f"{LIST}#animal=photo2-1")
         assert not is_positional_virtual_url(f"{LIST}#row=abc")
         assert not is_positional_virtual_url(f"{LIST}#page=2")
+
+
+class TestIsVirtualUrl:
+    def test_positional_and_stable_key_urls(self):
+        """掲載位置の URL と `#animal=<キー>` の URL は、どちらも 1 ページ内の 1 頭を指す仮想 URL"""
+        assert is_virtual_url(f"{LIST}#row=0")
+        assert is_virtual_url(f"{LIST}#animal=68539.jpg")
+        assert is_virtual_url(f"{LIST}#animal=2620073")
+
+    def test_detail_page_urls(self):
+        assert not is_virtual_url("https://www.city.example.lg.jp/pet/detail/123")
+        assert not is_virtual_url(f"{LIST}#page=2")
 
 
 class TestManagementKey:

@@ -19,6 +19,7 @@ from src.data_collector.domain.status_transition import (
 )
 from src.data_collector.domain.virtual_url import (
     individual_keys_match,
+    is_virtual_url,
     management_key,
     page_url,
 )
@@ -452,6 +453,15 @@ class AnimalRepository:
         # 「別個体」とみなし、上書きせずアーカイブしてから新規行を挿入する。
         if existing_animal:
             verdict = self._verdict_against(existing_animal, animal_data)
+            if (
+                verdict == "unknown"
+                and is_virtual_url(str(animal_data.source_url))
+                and self._attributes_contradict(existing_animal, animal_data)
+            ):
+                # T413: 仮想 URL (掲載位置や画像ファイル名のキー) は別の子に使い回されうる。
+                # 品種が無くフィンガープリントを組めなくても、両側にある種別・性別が
+                # 食い違えば別個体とする。個別ページの URL の判定は変えない (T420 で測ってから)。
+                verdict = "different"
             if verdict == "unknown":
                 # 判定材料 (両側 management_number、または両側フィンガープリント)
                 # が揃わない場合は、URL 再利用かどうか判定できないため従来通り

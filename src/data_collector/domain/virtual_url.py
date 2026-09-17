@@ -52,6 +52,14 @@ def is_positional_virtual_url(url: str) -> bool:
     return bool(sep) and _POSITIONAL_FRAGMENT.fullmatch(fragment) is not None
 
 
+def is_virtual_url(url: str) -> bool:
+    """1 ページ内の 1 頭を指す仮想 URL (掲載位置の URL か `#animal=<キー>`) か"""
+    _, sep, fragment = url.partition("#")
+    return bool(sep) and (
+        fragment.startswith("animal=") or _POSITIONAL_FRAGMENT.fullmatch(fragment) is not None
+    )
+
+
 def management_key(management_number: str | None) -> str | None:
     """管理番号をキーの形へ正規化する (全角/半角・ハイフン類の揺れをそろえる)
 
