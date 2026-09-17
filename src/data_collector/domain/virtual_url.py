@@ -54,12 +54,16 @@ def is_positional_virtual_url(url: str) -> bool:
 
 
 def management_key(management_number: str | None) -> str | None:
-    """管理番号をキーの形へ正規化する (全角/半角・ハイフン類・空白の揺れをそろえる)"""
+    """管理番号をキーの形へ正規化する (全角/半角・ハイフン類の揺れをそろえる)
+
+    空白は前後を落とし、連続を 1 つにまとめるだけで消さない。空白の位置が違う番号
+    (「A 12」と「A1 2」) を同じ番号にしないため。本番の管理番号に空白の揺れは無い。
+    """
     if not management_number:
         return None
     normalized = unicodedata.normalize("NFKC", management_number).translate(_HYPHENS)
     normalized = _PROLONGED_AS_HYPHEN.sub("-", normalized)
-    return re.sub(r"\s+", "", normalized) or None
+    return re.sub(r"\s+", " ", normalized).strip() or None
 
 
 def image_key(image_urls: Sequence[HttpUrl | str]) -> str | None:

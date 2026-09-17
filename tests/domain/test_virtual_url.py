@@ -207,7 +207,12 @@ class TestManagementKey:
         assert management_key("８中‐C0120") == "8中-C0120"
         assert management_key("8－4－83") == "8-4-83"
         assert management_key("Ｃ２６０３１") == "C26031"
-        assert management_key(" R8 No.62 ") == "R8No.62"
+        assert management_key(" R8　No.62 ") == "R8 No.62"
+
+    def test_inner_spaces_are_collapsed_not_removed(self):
+        """空白の位置が違う番号は別の番号のまま (実データに空白の揺れは無く、消すと別番号が衝突する)"""
+        assert management_key("R8  No.62") == "R8 No.62"
+        assert management_key("A 12") != management_key("A1 2")
 
     def test_prolonged_sound_mark_used_as_hyphen_is_unified(self):
         """「7西ーD0092」「９ー２」のようにハイフン代わりの長音符をそろえる (さぬき・栃木で実在)"""

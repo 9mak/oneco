@@ -581,15 +581,23 @@ class CollectorService:
                     # T413: 仮想 URL の付け替え (#row=N → #animal=<キー>) で URL が
                     # 変わった子の既存行を、保存の前に新しい URL へ引き継ぐ。引き継がないと
                     # 新しい行の挿入と prune による旧行の削除で id と first_seen_at を失う。
-                    try:
-                        adopted = await repo.adopt_orphaned_rows(site_name, collected_data)
-                        if adopted:
-                            self.logger.info(
-                                f"[{site_name}] URL付け替えで既存の行 {adopted}件を引き継ぎ"
-                            )
-                    except Exception as e:
-                        await session.rollback()
-                        self.logger.warning(f"[{site_name}] 既存の行の引き継ぎに失敗: {e}")
+                    # prune と同じく全件そろった run だけで行う。部分取得では「今回出て
+                    # こなかった行」に取れなかっただけの子が混ざり、同じ画像ファイル名を
+                    # 使い回した別の子にその行を移してしまいうるため。
+                    if not self._collection_complete:
+                        self.logger.info(
+                            f"[{site_name}] 部分取得のためURL付け替えの引き継ぎをスキップ"
+                        )
+                    else:
+                        try:
+                            adopted = await repo.adopt_orphaned_rows(site_name, collected_data)
+                            if adopted:
+                                self.logger.info(
+                                    f"[{site_name}] URL付け替えで既存の行 {adopted}件を引き継ぎ"
+                                )
+                        except Exception as e:
+                            await session.rollback()
+                            self.logger.warning(f"[{site_name}] 既存の行の引き継ぎに失敗: {e}")
                     for animal in collected_data:
                         try:
                             await repo.save_animal(animal, source_site=site_name)

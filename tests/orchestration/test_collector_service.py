@@ -2021,13 +2021,15 @@ class TestCollectorServiceStableVirtualUrlIntegration:
             image_urls=[f"{self.IMG}/{image}"] if image else [],
         )
 
-    def _run(self, tmp_path, db_connection, animals: list[AnimalData]) -> None:
+    def _run(
+        self, tmp_path, db_connection, animals: list[AnimalData], *, list_truncated: bool = False
+    ) -> None:
         """adapter が animals をこの順に一覧へ出したときの 1 回分の収集を実行する"""
         by_url = {str(a.source_url): a for a in animals}
         adapter = Mock()
         adapter.prefecture_code = "13"
         adapter.municipality_name = self.SITE
-        adapter.list_truncated = False
+        adapter.list_truncated = list_truncated
         adapter.fetch_animal_list.return_value = [(url, "lost") for url in by_url]
         adapter.extract_animal_details.side_effect = lambda url, category: url
         adapter.normalize.side_effect = lambda url: by_url[url]
@@ -2165,3 +2167,46 @@ class TestCollectorServiceStableVirtualUrlIntegration:
             == before[f"{self.PAGE}#pdf=0915cat.pdf&row=1"]
         )
         assert self._archived_count(db_connection) == 0
+
+    def test_partial_collection_does_not_take_over_rows(self, tmp_path, db_connection):
+        """部分取得 (一覧の打ち切り・detail 失敗・soft-stop) の run では既存行を引き継がない
+
+        prune と同じく全件そろった run だけで行う。部分取得では、今回取れなかった子の行を
+        同じ画像ファイル名を使い回した別の子に移してしまいうる (PR レビュー Codex Major)。
+        """
+        import asyncio
+        from datetime import UTC, datetime
+
+        from src.data_collector.infrastructure.database.models import Animal
+
+        async def _seed():
+            async with db_connection.get_session() as session:
+                session.add(
+                    Animal(
+                        species="猫",
+                        sex="女の子",
+                        breed="雑種",
+                        shelter_date=date(2026, 9, 1),
+                        location="東京都",
+                        source_url=f"{self.PAGE}#h3=0",
+                        category="lost",
+                        source_site=self.SITE,
+                        image_urls=[f"{self.IMG}/1.jpg"],
+                        first_seen_at=datetime(2026, 9, 1, tzinfo=UTC),
+                    )
+                )
+
+        asyncio.run(_seed())
+        before = self._rows(db_connection)
+
+        self._run(
+            tmp_path,
+            db_connection,
+            [self._animal(f"{self.PAGE}#h3=0", image="1.jpg")],
+            list_truncated=True,
+        )
+        after = self._rows(db_connection)
+
+        # 旧行は URL もそのまま残り (部分取得なので prune もしない)、新しい URL は別の行になる
+        assert after[f"{self.PAGE}#h3=0"] == before[f"{self.PAGE}#h3=0"]
+        assert after[f"{self.PAGE}#animal=1.jpg"][0] != before[f"{self.PAGE}#h3=0"][0]
