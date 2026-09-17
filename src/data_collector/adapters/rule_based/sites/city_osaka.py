@@ -46,6 +46,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import ClassVar
 
@@ -62,6 +63,8 @@ _DATE_RE = re.compile(r"(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日")
 
 # 在庫 0 件プレースホルダ画像の alt 文言 (テンプレート由来)
 _EMPTY_PLACEHOLDER_ALT = "現在、収容情報はありません"
+
+logger = logging.getLogger(__name__)
 
 
 class CityOsakaAdapter(SinglePageTableAdapter):
@@ -168,6 +171,13 @@ class CityOsakaAdapter(SinglePageTableAdapter):
         # 管理番号は h3 「識別番号／A2605120001」から抽出 (仮名が続く場合は名前へ分ける)
         heading = h3.get_text(strip=True)
         management_number = self._extract_management_number(heading)
+        if re.search(r"[（(]", heading) and not self._extract_nickname(heading):
+            # 仮名以外の括弧書きは番号からも名前からも落ちるため、実例が出たら気づけるようにする
+            logger.warning(
+                "[%s] 識別番号の見出しに仮名以外の括弧書きがあり、番号から外しました: %s",
+                self.site_config.name,
+                heading,
+            )
 
         # h3 直後の <div class="mol_imageblock"> を (複数あれば) すべて取得
         #
