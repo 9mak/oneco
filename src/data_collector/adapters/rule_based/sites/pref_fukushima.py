@@ -172,11 +172,24 @@ class PrefFukushimaAdapter(SinglePageTableAdapter):
 
         nonempty_count = 0
         for label in _REQUIRED_NONEMPTY_LABELS:
-            value = label_to_value.get(label, "")
+            value = cls._value_without_template_residue(label, label_to_value.get(label, ""))
             if value and not _PLACEHOLDER_VALUE_RE.match(value):
                 nonempty_count += 1
 
         return nonempty_count < _MIN_NONEMPTY_FIELDS
+
+    @staticmethod
+    def _value_without_template_residue(label: str, value: str) -> str:
+        """雛形に最初から入っている断片を除いた値を返す (T419)
+
+        「種類/体格」「毛の色/長さ」は前半 (種類・毛の色) だけを見る。雛形には毛の長さの
+        既定値「／短」が残ることがある。保護場所は雛形の「地内」を除く。
+        """
+        if "/" in label:
+            value = re.split(r"[／/]", value, maxsplit=1)[0]
+        if label == "保護場所":
+            value = re.sub(r"地内$", "", value.strip())
+        return value.strip()
 
     def extract_animal_details(self, virtual_url: str, category: str = "lost") -> RawAnimalData:
         """1 個の `<table>` から RawAnimalData を構築する

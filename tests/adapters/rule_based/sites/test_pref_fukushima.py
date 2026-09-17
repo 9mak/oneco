@@ -325,6 +325,31 @@ class TestPrefFukushimaAdapter:
             urls = adapter.fetch_animal_list()
         assert urls == [], "実値が 1 個のみの table は空とみなす"
 
+    def test_placeholder_with_default_hair_length_is_skipped(self):
+        """雛形に残る毛の長さの既定値「／短」と「地内」だけの table も空とみなす (T419)
+
+        2026-09-17 の実サイト (`maigo-cat-miharu.html`) の 2 つ目の table は
+        保護場所「 地内」・毛の色／毛の長さ「／短」だけが残っており、主要ラベル 2 個に
+        値があると数えて、性別も場所も不明の猫として公開していた。
+        """
+        html = (
+            "<html><body><div id='main_body'>"
+            "<table><tbody>"
+            "<tr><td><strong>保護日 (管理番号)</strong></td><td>令和８年月日 （s08－1）</td></tr>"
+            "<tr><td><strong>保護場所</strong></td><td> 地内</td></tr>"
+            "<tr><td><strong>種類／体格</strong></td><td>／</td></tr>"
+            "<tr><td><strong>毛の色／毛の長さ</strong></td><td>／短</td></tr>"
+            "<tr><td><strong>性別</strong></td><td> </td></tr>"
+            "<tr><td><strong>推定年月齢</strong></td><td> </td></tr>"
+            "<tr><td><strong>首輪</strong></td><td> </td></tr>"
+            "<tr><td><strong>その他の特徴等</strong></td><td> </td></tr>"
+            "</tbody></table>"
+            "</div></body></html>"
+        )
+        adapter = PrefFukushimaAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            assert adapter.fetch_animal_list() == []
+
     def test_color_extracted_from_kemonoiro_kenocho_label_variant(self):
         """ラベル "毛の色／毛の長さ" (中通り猫) からも color が取れる
 
