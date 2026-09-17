@@ -18,7 +18,7 @@ MunicipalityAdapter (ABC)                  adapters/municipality_adapter.py
              └─ config/site_specs/*.yaml
 ```
 
-- 1ファイルが複数 site_name（例: 収容犬/収容猫）を登録するため、adapter ファイル数 < `sites.yaml` エントリ数(213)
+- 1ファイルが複数 site_name（例: 収容犬/収容猫）を登録するため、adapter ファイル数 < `sites.yaml` エントリ数(212)
 - CSS セレクタ + ラベル辞書 + 軽い後処理だけで完結する「declarative only」なサイトは
   Python モジュールを書かず `config/site_specs/<slug>.yaml` だけで済ませられる
   (`GenericAdapter`、詳細は下記「spec ファイルでサイトを追加する」節)
@@ -110,7 +110,7 @@ uv run python scripts/new_site_spec.py <slug> <list_url> \
 
 ## sites.yaml（`src/data_collector/config/sites.yaml`）
 
-- 213 エントリ / 47都道府県。category 内訳: sheltered 96 / lost 67 / adoption 50
+- 212 エントリ / 47都道府県。category 内訳: sheltered 95 / lost 67 / adoption 50
 - `default_provider: groq / openai/gpt-oss-120b`（フォールバック用に保持）
 
 ## サイト追加手順

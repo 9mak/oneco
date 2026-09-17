@@ -7,7 +7,7 @@ rule-based adapter の動作を検証する。
 だったが、町田市は CMS が h3+ul li 形式に切り替わったため、ここでは合成 HTML
 ベースで仕様を検証する。実 URL の構造は 2026-05-18 時点で:
 
-- syuyou.html       : 0 件正常 (article > h2「現在の収容状況」のみ、h3 無し)
+- syuyou.html       : 0 件正常 (article > h2「現在の収容状況」のみ、h3 無し)。2026-09 に廃止 (T417)
 - hogo.html         : 複数頭 (article > h2「現在のペットの保護情報」+ h3+ul li)
 - search_*.html     : 複数頭 (article > h2「現在の迷子のX情報」+ h3+ul li)
 
@@ -72,7 +72,7 @@ class TestCityMachidaAdapterEmptyState:
         いない状態を再現する。
         """
         html = _build_html("現在の収容状況")
-        adapter = CityMachidaAdapter(_site(name="町田市（収容動物のお知らせ）"))
+        adapter = CityMachidaAdapter(_site(name="町田市（保護情報）"))
         with patch.object(adapter, "_http_get", return_value=html):
             result = adapter.fetch_animal_list()
         assert result == []
@@ -599,10 +599,9 @@ class TestCityMachidaAdapterColorExtraction:
 
 
 class TestCityMachidaAdapterRegistry:
-    def test_all_six_sites_registered(self):
-        """6 サイト全名称が同じ adapter にマップされている"""
+    def test_all_five_sites_registered(self):
+        """5 サイト全名称が同じ adapter にマップされている (収容動物のお知らせは T417 で廃止)"""
         expected = [
-            "町田市（収容動物のお知らせ）",
             "町田市（保護情報）",
             "町田市（捜索：飼い主が探している）",
             "町田市（迷子犬・捜索）",

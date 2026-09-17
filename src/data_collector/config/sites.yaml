@@ -1116,13 +1116,10 @@ sites:
     single_page: true
 
   # 【町田市】静的 HTML
-  - name: "町田市（収容動物のお知らせ）"
-    prefecture: "東京都"
-    prefecture_code: "13"
-    list_url: "https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/syuyou.html"
-    category: "sheltered"
-    single_page: true
-
+  # 旧「町田市（収容動物のお知らせ）」(pet/mayoi/syuyou.html) は 2026-09-14 から 404 で、
+  # 迷子ペットの案内ページ (pet/mayoi/index.html) からもリンクが消えたため外した (T417)。
+  # 空の月も「0 件」のページとして公開され続けていた (8/31 時点で連続 44 回 0 件) ので、
+  # 一時的な非公開ではなくページの廃止と判断している。
   - name: "町田市（保護情報）"
     prefecture: "東京都"
     prefecture_code: "13"
