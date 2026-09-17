@@ -168,7 +168,9 @@ def parse_label_value_pairs(
         if not chunk:
             continue
         for raw_line in chunk.split("\n"):
-            line = raw_line.strip()
+            # CMS が行頭・行末に入れるゼロ幅スペースは strip() で落ちず、ラベルが
+            # 「​収容日」になって取りこぼす (千葉市, T419)
+            line = raw_line.replace("​", "").replace("﻿", "").strip()
             if not line:
                 continue
             for sep in ("：", ":"):

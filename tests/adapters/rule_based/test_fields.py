@@ -131,6 +131,16 @@ class TestParseLabelValuePairs:
         result = parse_label_value_pairs(["性別：オス", "体格：小"], self.LABEL_TO_FIELD)
         assert result == {"sex": "オス", "size": "小"}
 
+    def test_zero_width_spaces_do_not_hide_label(self) -> None:
+        """CMS が行頭・行末に入れるゼロ幅スペースでラベルを取りこぼさない (T419)
+
+        2026-09-17 の千葉市（迷子猫）は「\\u200b収容日：令和8年9月14日 \\u200b」の形で、
+        収容日が取れず収集日で埋める推定日付になっていた。
+        """
+        chunk = "​収容日：令和8年9月14日 ​　​\n収容場所：若葉区高品町"
+        result = parse_label_value_pairs([chunk], self.LABEL_TO_FIELD)
+        assert result == {"shelter_date": "令和8年9月14日", "location": "若葉区高品町"}
+
     def test_valid_values_whitelist_rejects_invalid(self) -> None:
         valid = {"size": frozenset({"小", "中", "大"})}
         chunk = "体格：生後1か月前後"
