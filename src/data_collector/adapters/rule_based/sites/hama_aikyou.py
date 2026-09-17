@@ -93,7 +93,12 @@ class HamaAikyouAdapter(SinglePageTableAdapter):
         "収容場所": "location",
         "発見場所": "location",
         "場所": "location",
+        # 1 頭ごとの PDF 名にも使われる番号 (26-0047 等)。個体キー (T413) にも使う (T419)
+        "問合せ番号": "management_number",
+        "お問合せ番号": "management_number",
     }
+    # フィールドには使わないが見出し行の判定に使う列見出し
+    _OTHER_HEADER_LABELS: ClassVar[frozenset[str]] = frozenset({"首輪", "その他", "特徴", "備考"})
 
     # ─────────────────── オーバーライド ───────────────────
 
@@ -216,12 +221,15 @@ class HamaAikyouAdapter(SinglePageTableAdapter):
                 age=fields.get("age", ""),
                 color=fields.get("color", ""),
                 size=fields.get("size", ""),
-                shelter_date=fields.get("shelter_date", self.SHELTER_DATE_DEFAULT),
+                shelter_date=fields.get("shelter_date")
+                or self._heading_shelter_date(row)
+                or self.SHELTER_DATE_DEFAULT,
                 location=location,
                 phone=phone,
                 image_urls=self._extract_row_images(row, virtual_url),
                 source_url=virtual_url,
                 category=category,
+                management_number=fields.get("management_number", ""),
             )
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
@@ -311,13 +319,34 @@ class HamaAikyouAdapter(SinglePageTableAdapter):
                     return rg
         return ""
 
-    @staticmethod
-    def _is_header_row(tr: Tag) -> bool:
-        """`<th>` のみで構成される行をヘッダ行とみなす"""
+    @classmethod
+    def _is_header_row(cls, tr: Tag) -> bool:
+        """ヘッダ行か (`<th>` だけの行、または全セルが列見出しの語の行)
+
+        実サイトは見出し行を背景色付きの `<td>` で書くため、`<th>` だけでは見分けられず、
+        見出し行を個体として数えていた (T419)。
+        """
         cells = [c for c in tr.find_all(["th", "td"]) if isinstance(c, Tag)]
         if not cells:
             return False
-        return all(c.name == "th" for c in cells)
+        if all(c.name == "th" for c in cells):
+            return True
+        labels = set(cls._LABEL_TO_FIELD) | cls._OTHER_HEADER_LABELS
+        return all(c.get_text(strip=True) in labels for c in cells)
+
+    @staticmethod
+    def _heading_shelter_date(row: Tag) -> str:
+        """行の直前の「保護日：令和8年9月9日（保護期限：…）」見出しから保護日を返す (T419)
+
+        実サイトは 1 頭ごとに h3 の保護日と表を並べる。別の区 (h2) の見出しは使わない。
+        """
+        heading = row.find_previous("h3")
+        if not isinstance(heading, Tag) or heading.find_previous("h2") is not row.find_previous(
+            "h2"
+        ):
+            return ""
+        match = re.search(r"保護日\s*[：:]\s*([^（(]+)", heading.get_text(strip=True))
+        return match.group(1).strip() if match else ""
 
     @staticmethod
     def _infer_species(row_text: str, species_value: str, site_name: str) -> str:
