@@ -141,7 +141,29 @@ class CityChibaAdapter(SinglePageTableAdapter):
 
     @classmethod
     def _h4_has_animal_data(cls, h4: Tag) -> bool:
-        """`<h4>` 後続の `<p>` に動物属性ラベル接頭辞が含まれるかを判定する"""
+        """`<h4>` 後続の `<p>` に、値の入った動物属性があるかを判定する
+
+        在庫が無い月も「収容日：」「保護日：令和年月日」のような値の空いたラベルだけの
+        雛形が残るため、ラベルの有無ではなく値の有無で見る (T419)。日付は数字が無ければ空扱い。
+        """
+        paragraphs = cls._block_paragraphs(h4)
+        if any(p.find("img") is not None for p in paragraphs):
+            return True
+        texts = [p.get_text(separator="\n") for p in paragraphs]
+        if not any(marker in text for text in texts for marker in cls._ANIMAL_BLOCK_MARKERS):
+            return False
+        fields = parse_label_value_pairs(texts, cls._LABEL_TO_FIELD)
+        shelter_date = fields.pop("shelter_date", "")
+        return bool(fields) or re.search(r"\d", shelter_date) is not None
+
+    @staticmethod
+    def _block_paragraphs(h4: Tag) -> list[Tag]:
+        """`<h4>` の後ろに続く同階層の `<p>` を、ブロックの終わりまで集める
+
+        次の `<h4>`/`<h2>`/`<hr>`/`<ul>`、または共通の案内リンク
+        (`<p><span class="txt_big">...`) でブロックが終わる。
+        """
+        paragraphs: list[Tag] = []
         for sib in h4.find_next_siblings():
             if not isinstance(sib, Tag):
                 continue
@@ -152,10 +174,8 @@ class CityChibaAdapter(SinglePageTableAdapter):
                 continue
             if sib.find("span", class_="txt_big") is not None:
                 break
-            text = sib.get_text()
-            if any(marker in text for marker in cls._ANIMAL_BLOCK_MARKERS):
-                return True
-        return False
+            paragraphs.append(sib)
+        return paragraphs
 
     def extract_animal_details(self, virtual_url: str, category: str = "adoption") -> RawAnimalData:
         """`<h4>` を起点とした動物ブロックから RawAnimalData を構築する
@@ -177,18 +197,7 @@ class CityChibaAdapter(SinglePageTableAdapter):
         # に到達するまで集める。Chiba のテンプレートでは各動物ブロックの末尾は
         # 次の動物の `<h4>`、または共通の `<p><span class="txt_big">...` リンクや
         # `<h2>このページのご利用について</h2>` 等で区切られる。
-        siblings: list[Tag] = []
-        for sib in h4.find_next_siblings():
-            if not isinstance(sib, Tag):
-                continue
-            name = sib.name
-            if name in ("h1", "h2", "h3", "h4", "hr", "ul"):
-                break
-            if name == "p":
-                # 案内リンク (<p><span class="txt_big"><a>...</a></span></p>) は除外
-                if sib.find("span", class_="txt_big") is not None:
-                    break
-                siblings.append(sib)
+        siblings = self._block_paragraphs(h4)
 
         # 画像 `<p>` と属性 `<p>` を分離する
         image_paragraphs = [p for p in siblings if p.find("img") is not None]
@@ -234,6 +243,8 @@ class CityChibaAdapter(SinglePageTableAdapter):
                 image_urls=image_urls,
                 source_url=virtual_url,
                 category=category,
+                # 動物ブロックの h4 は管理番号 (A-6028・26091401 等)。個体キー (T413) にも使う (T419)
+                management_number=h4.get_text(strip=True).replace("​", ""),
             )
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
