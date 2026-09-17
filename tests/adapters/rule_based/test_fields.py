@@ -137,7 +137,7 @@ class TestParseLabelValuePairs:
         2026-09-17 の千葉市（迷子猫）は「\\u200b収容日：令和8年9月14日 \\u200b」の形で、
         収容日が取れず収集日で埋める推定日付になっていた。
         """
-        chunk = "​収容日：令和8年9月14日 ​　​\n収容場所：若葉区高品町"
+        chunk = "\u200b収容日：令和8年9月14日 \u200b　\u200b\n収容場所：若葉区高品町"
         result = parse_label_value_pairs([chunk], self.LABEL_TO_FIELD)
         assert result == {"shelter_date": "令和8年9月14日", "location": "若葉区高品町"}
 

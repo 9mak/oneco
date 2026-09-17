@@ -244,7 +244,7 @@ class CityChibaAdapter(SinglePageTableAdapter):
                 source_url=virtual_url,
                 category=category,
                 # 動物ブロックの h4 は管理番号 (A-6028・26091401 等)。個体キー (T413) にも使う (T419)
-                management_number=h4.get_text(strip=True).replace("​", ""),
+                management_number=h4.get_text(strip=True).replace("\u200b", ""),
             )
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e

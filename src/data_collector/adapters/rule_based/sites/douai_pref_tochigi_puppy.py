@@ -222,8 +222,7 @@ class DouaiPrefTochigiPuppyAdapter(RuleBasedAdapter):
         available = [
             c
             for c in columns
-            if not c.get("unavailable")
-            and (c["management_number"] or c["sex"] or c["image_urls"])
+            if not c.get("unavailable") and (c["management_number"] or c["sex"] or c["image_urls"])
         ]
         self._columns_cache = available
         return available
