@@ -248,8 +248,20 @@ class AnimalRepository:
         引き継ぐのは次をすべて満たす組だけ:
         - 同じ source_site・同じページ (fragment を除いた URL) で、新しい URL の行がまだ無い
         - 既存行の URL が今回の収集に出てこない (その URL の子のための行は奪わない)
+        - 既存行が収容中 (sheltered)。譲渡・返還などの状態は手動で変えた記録なので、
+          新しく掲載された子のデータで上書きされる経路を作らない
         - 管理番号 (両方にあるとき) か先頭画像のファイル名が一致し、組が 1 対 1 に決まる
         - `_identity_verdict` が「別個体」と判定しない
+
+        収集が部分取得 (soft-stop・detail 失敗・一覧の打ち切り) でも実行する。引き当ての
+        根拠は同じページ・同じ管理番号か画像ファイル名という個体の一致で、行が今回
+        出てこなかった理由 (URL が変わった/今回は取れなかった) には依存しない。
+        部分取得で引き継がないと、新しい URL の行が挿入される一方で prune はスキップ
+        されるため旧行と二重に掲載され、次の完全な収集で旧行が消えて id が変わる。
+
+        画像ファイル名が一致した組で識別判定が "unknown" (species/sex/breed の欠け)
+        でも引き継ぐ。同じページで一意なファイル名の一致は、今の位置 URL の一致
+        (掲載位置が同じ) より強い同一性の根拠で、位置 URL でも "unknown" は上書きしている。
 
         Args:
             source_site: 対象サイトの識別名 (SiteConfig.name)
@@ -267,7 +279,11 @@ class AnimalRepository:
         existing_urls = {row.source_url for row in rows}
         orphans_by_page: dict[str, list[Animal]] = defaultdict(list)
         for row in rows:
-            if "#" in row.source_url and row.source_url not in collected_urls:
+            if (
+                "#" in row.source_url
+                and row.source_url not in collected_urls
+                and row.status == AnimalStatus.SHELTERED.value
+            ):
                 orphans_by_page[page_url(row.source_url)].append(row)
         if not orphans_by_page:
             return 0

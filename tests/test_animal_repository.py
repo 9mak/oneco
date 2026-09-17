@@ -2435,6 +2435,26 @@ async def test_adopt_orphaned_rows_skips_different_individual(repository, async_
 
 
 @pytest.mark.asyncio
+async def test_adopt_orphaned_rows_skips_graduated_rows(repository, async_session):
+    """T413: 譲渡・返還などで収容中でなくなった行は、キーが一致しても新しく掲載された子に付け替えない
+
+    状態は手動で変えた記録なので、別の子のデータで上書きされる経路を作らない
+    (PR レビュー F-01)。
+    """
+    graduated = _t413_row("row=0", mgmt="A-1")
+    graduated.status = AnimalStatus.ADOPTED.value
+    async_session.add(graduated)
+    await async_session.commit()
+
+    adopted = await repository.adopt_orphaned_rows(
+        _T413_SITE, [_t413_data("animal=A-1", mgmt="A-1")]
+    )
+
+    assert adopted == 0
+    assert await _t413_urls(async_session) == {f"{_T413_PAGE}#row=0"}
+
+
+@pytest.mark.asyncio
 async def test_save_animal_management_number_width_variant_is_same_individual(
     repository, async_session
 ):
