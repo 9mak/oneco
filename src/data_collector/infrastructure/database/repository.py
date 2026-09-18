@@ -256,23 +256,38 @@ class AnimalRepository:
         備考の死亡記載で公開から外す場合など、収集が status を動かすことがある。
         管理 API の `update_status` と同じく「いつ・何が変えたか」を追えるようにする。
 
-        禁じられた遷移 (deceased → sheltered 等) は例外にせず据え置く。収集は
-        毎日全サイトを回すため、ここで例外を投げると 1 頭でそのサイトの収集が
-        落ちて他の子まで更新できなくなる。
+        禁じられた遷移は例外にせず据え置く。収集は毎日全サイトを回すため、ここで
+        例外を投げると 1 頭でそのサイトの収集が落ちて他の子まで更新できなくなる。
+
+        既に deceased の行は収集からは動かさない。遷移としては deceased → sheltered を
+        許しているが (T424 の復旧経路)、それは人が管理 API で取り消すための道で、
+        収集が毎日自動で戻す道ではない。
         """
         old_value = existing_animal.status
         if old_value == new_status.value:
             return
 
-        old_status = AnimalStatus(old_value)
+        if old_value == AnimalStatus.DECEASED.value:
+            # 死亡の取り消しは人の操作 (管理 API) でだけ行う。遷移としては
+            # deceased → sheltered を許しているが (T424 の復旧経路)、収集が毎日
+            # 自動で戻せてしまうと、死亡記載が消えた日に公開へ戻ってしまう。
+            logger.warning(
+                "[収集からのステータス変更を見送り] source_url=%s は既に deceased のため"
+                "%s への変更を行いません。戻す場合は管理 API を使ってください",
+                existing_animal.source_url,
+                new_status.value,
+            )
+            return
+
         try:
+            old_status = AnimalStatus(old_value)
             StatusTransitionValidator().validate_transition(old_status, new_status)
-        except StatusTransitionError:
+        except (StatusTransitionError, ValueError):
             logger.warning(
                 "[収集からのステータス変更を見送り] source_url=%s は %s → %s が"
-                "許可されていない遷移のため status を据え置きます",
+                "許可されていない遷移か、DB の status が enum 外のため据え置きます",
                 existing_animal.source_url,
-                old_status.value,
+                old_value,
                 new_status.value,
             )
             return
@@ -554,10 +569,12 @@ class AnimalRepository:
             existing_animal.management_number = animal_data.management_number
             existing_animal.description = animal_data.description
             # 拡張フィールドは明示的に設定された場合のみ更新
-            if animal_data.status is not None:
-                self._apply_collected_status(existing_animal, animal_data.status)
+            # status_changed_at を先に反映する。後にすると _apply_collected_status が
+            # 履歴へ書いた changed_at と本体の値が食い違う。
             if animal_data.status_changed_at is not None:
                 existing_animal.status_changed_at = animal_data.status_changed_at
+            if animal_data.status is not None:
+                self._apply_collected_status(existing_animal, animal_data.status)
             if animal_data.outcome_date is not None:
                 existing_animal.outcome_date = animal_data.outcome_date
             if animal_data.local_image_paths is not None:

@@ -28,15 +28,19 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import ClassVar
 
 from bs4 import BeautifulSoup, Tag
 
-from ....domain.models import RawAnimalData
+from ....domain.deceased_notice import deceased_notice
+from ....domain.models import AnimalData, AnimalStatus, RawAnimalData
 from ...municipality_adapter import ParsingError
 from ..registry import SiteAdapterRegistry
 from ..single_page_table import SinglePageTableAdapter
+
+logger = logging.getLogger(__name__)
 
 # 「★現在、情報はありません。」「現在、保護・収容中の犬はおりません。」
 # 等の 0 件告知パターン。表記揺れ (です/ません/おりません/いません/ありません)
@@ -240,6 +244,32 @@ class CityKoshigayaAdapter(SinglePageTableAdapter):
             )
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
+
+    def normalize(self, raw_data: RawAnimalData) -> AnimalData:
+        """備考に死亡の記載がある個体へ `status=deceased` を立てる (T424)
+
+        公開クエリ (repository) は deceased を外すため、その日の収集で公開から消える。
+        死亡の記載が無いときは status を触らない (None のまま)。毎日の収集で
+        管理 API が付けた adopted/returned を戻さないようにするため。
+
+        判定を越谷だけに掛けているのは、死亡を備考に書くと実測できたのがこのサイト
+        だけで、かつ譲渡ページの紹介文 (「母猫が死亡したため人工哺育で育ちました」等)
+        に掛けると生きている子を消しかねないため。越谷の備考は
+        「長尾 短毛 首輪なし 令和8年9月13日 死亡確認」のような短い構造化された欄で、
+        物語文ではない。詳細は `domain/deceased_notice.py` の説明を参照。
+        """
+        animal = self._default_normalize(raw_data)
+        matched = deceased_notice(animal.description)
+        if matched is None:
+            return animal
+        logger.warning(
+            "[%s] 備考に死亡の記載があるため公開から外します (一致した語: %s / 備考: %s): %s",
+            self.site_config.name,
+            matched,
+            animal.description,
+            raw_data.source_url,
+        )
+        return animal.model_copy(update={"status": AnimalStatus.DECEASED})
 
     # ─────────────────── ヘルパー ───────────────────
 

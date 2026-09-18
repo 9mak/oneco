@@ -259,8 +259,10 @@ def diff_animal(adapter_animal: dict[str, Any], api_animal: dict[str, Any]) -> l
         a = normalize_value(field, adapter_animal.get(field))
         b = normalize_value(field, api_animal.get(field))
         if field == "status" and a is None:
-            # adapter 段は status を持たず、DB 投入時に既定 'sheltered' が付く
+            # adapter 段はふつう status を持たず、DB 投入時に既定 'sheltered' が付く
             # (database/models.py の default)。None vs 'sheltered' は設計どおり。
+            # 例外は越谷市で、備考の死亡記載に deceased を立てる (T424)。この場合の
+            # adapter 側は None ではなく 'deceased' になるためここには来ない。
             a = "sheltered"
         if a != b:
             diffs.append({"field": field, "site": a, "api": b})
@@ -293,11 +295,17 @@ def run_audit(args: argparse.Namespace) -> dict[str, Any]:
         r = collect_site(raw_cfg)
         r["mismatches"] = []
         r["adapter_only"] = []
+        r["deceased_not_published"] = []
         r["count_audit_blind"] = attribute_host(raw_cfg["list_url"]) in blind_hosts
         for an in r.get("animals", []):
             api_an = api_by_url.get(an["source_url"])
             if api_an is None:
-                r["adapter_only"].append(an["source_url"])
+                if normalize_value("status", an.get("status")) == "deceased":
+                    # 備考に死亡と書かれた個体は公開クエリから外れる (T424)。
+                    # 公開に出ないのが正しい状態なので掲載漏れに数えない。
+                    r["deceased_not_published"].append(an["source_url"])
+                else:
+                    r["adapter_only"].append(an["source_url"])
                 continue
             matched_urls.add(an["source_url"])
             diffs = diff_animal(an, api_an)
@@ -351,6 +359,7 @@ def write_markdown(result: dict[str, Any], path: Path) -> None:
     sr = result["site_results"]
     total_mismatch = sum(len(r["mismatches"]) for r in sr)
     total_adapter_only = sum(len(r["adapter_only"]) for r in sr)
+    total_deceased = sum(len(r.get("deceased_not_published", [])) for r in sr)
     total_animals = sum(len(r.get("animals", [])) for r in sr)
     by_status: dict[str, int] = {}
     for r in sr:
@@ -363,6 +372,7 @@ def write_markdown(result: dict[str, Any], path: Path) -> None:
     lines.append(f"- サイト状態: {json.dumps(by_status, ensure_ascii=False)}")
     lines.append(f"- 致命フィールド不一致: **{total_mismatch} 件**")
     lines.append(f"- 掲載漏れ疑い (adapter_only): **{total_adapter_only} 件**")
+    lines.append(f"- 死亡記載で公開から外れている (正しい状態): {total_deceased} 件")
     lines.append(f"- もういない疑い (api_only): **{len(result['api_only'])} 件**")
     lines.append(f"- JS サイトのため未監査: {len(result['js_unaudited'])} 件")
     lines.append("")

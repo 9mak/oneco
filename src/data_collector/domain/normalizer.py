@@ -13,8 +13,7 @@ from html import unescape as _html_unescape
 from bs4 import BeautifulSoup
 
 from ..utils.prefecture import infer_prefecture_from_url
-from .deceased_notice import deceased_notice
-from .models import AnimalData, AnimalStatus, RawAnimalData
+from .models import AnimalData, RawAnimalData
 
 logger = logging.getLogger(__name__)
 
@@ -174,25 +173,8 @@ class DataNormalizer:
         if raw_data.category == "lost":
             location = DataNormalizer._coarsen_location(location)
 
-        # 備考に「死亡確認」等がある個体は公開から外す (T424)。status を立てるだけで、
-        # 公開クエリ側 (repository) が deceased を除外する。死亡記載が無いときは None
-        # のままにして、管理 API で付けた adopted/returned を毎日の収集で戻さない。
-        description = DataNormalizer._normalize_description(raw_data.description)
-        status: AnimalStatus | None = None
-        if matched := deceased_notice(description):
-            status = AnimalStatus.DECEASED
-            logger.warning(
-                "備考に死亡の記載があるため公開から外します",
-                extra={
-                    "source_url": str(raw_data.source_url),
-                    "matched": matched,
-                    "description": description,
-                },
-            )
-
         # 正規化処理
         return AnimalData(
-            status=status,
             species=DataNormalizer._normalize_species(raw_data.species),
             sex=DataNormalizer._normalize_sex(raw_data.sex),
             age_months=DataNormalizer._normalize_age(raw_data.age),
@@ -213,7 +195,7 @@ class DataNormalizer:
             # 個体識別: 品種 (Slice 1)。トリム+長さ丸めのみ (PII 非適用の構造化値)。
             breed=DataNormalizer._cap_text(raw_data.breed, DataNormalizer._BREED_MAX_LEN),
             # 個体識別: 性格・特徴 (Slice 2)。自由文のため電話/メールを伏字化 + 長さ丸め。
-            description=description,
+            description=DataNormalizer._normalize_description(raw_data.description),
             # 個体識別: 仮名・管理番号 (Slice 3)。トリム+長さ丸めのみ (PII 非適用)。
             # management_number に PII 伏字をかけると番号(例 2026-001)を誤伏字するため適用しない。
             name=DataNormalizer._cap_text(raw_data.name, DataNormalizer._NAME_MAX_LEN),

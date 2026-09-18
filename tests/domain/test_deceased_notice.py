@@ -1,10 +1,14 @@
 """deceased_notice のテスト (T424)
 
-自治体ページの「備考」自由文が「その個体が死亡した」と書いているかを判定する。
-公開を止める判断に使うため、
+備考の自由文が「その個体が死亡した」と書いているかを判定する。公開を止める判断に
+使うため、
 - 拾えないと死亡した子を収容中として公開し続ける
 - 誤検知すると生きている子を公開から消す (迷子の飼い主が探せなくなる)
 の両方が実害になる。実サイトで観測した表記と、紛らわしい表記の両方を検証する。
+
+誤検知の反例は 2026-09-18 の PR #21 レビューで指摘されたもの。譲渡ページの紹介文で
+「死んだのは別の個体や飼い主」という書き方が実際に使われるため、この判定は越谷市の
+備考欄のような短い構造化された欄にだけ掛ける (`domain/deceased_notice.py` の説明を参照)。
 """
 
 from __future__ import annotations
@@ -14,7 +18,7 @@ import pytest
 from data_collector.domain.deceased_notice import deceased_notice
 
 
-class TestDeceasedNotice:
+class TestAnimalDeathIsDetected:
     @pytest.mark.parametrize(
         "text",
         [
@@ -22,38 +26,77 @@ class TestDeceasedNotice:
             "長尾 短毛 首輪なし 令和8年9月13日 死亡確認",
             "死亡確認",
             "令和8年9月13日死亡を確認",
+            "死亡が確認されました",
             "収容後に死亡しました",
             "9月15日に死亡した",
             "死体で収容",
             "へい死",
             "斃死が確認された",
             "保護後に亡くなりました",
+            # 体言止め。自治体が書き方を変えても拾えること
+            "令和8年9月13日 死亡",
+            "9/13死亡",
+            "収容中死亡",
+            "衰弱死",
+            "死亡個体",
+            "永眠しました",
+            "他界しました",
         ],
     )
-    def test_animal_death_is_detected(self, text: str) -> None:
+    def test_detected(self, text: str) -> None:
         assert deceased_notice(text) is not None
+
+    def test_returns_matched_phrase_for_logging(self) -> None:
+        """どの語で判定したかをログに出せるよう、一致した語を返す"""
+        assert deceased_notice("長尾 短毛 令和8年9月13日 死亡確認") == "死亡確認"
+
+
+class TestNotTheAnimalItself:
+    """死んだのが対象の個体ではないもの。すべて生きている子なので公開を続ける"""
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            # 飼い主・家族の死。動物は生きており譲渡対象
+            "飼い主が死亡したため引き取り",
+            "飼主死亡により保護",
+            "所有者の死亡に伴い譲渡先を探しています",
+            "ご家族が亡くなり飼えなくなった子です",
+            "飼い主が高齢者施設に入所し、その後亡くなりました",
+            "飼い主さんが入院され、そのまま亡くなりました",
+            "おばあさまが亡くなり、家族が飼えないため",
+            # 別の動物の死。この子は生きている
+            "母猫が死亡したため人工哺育で育ちました",
+            "きょうだいは死亡しましたが、この子は順調に育っています",
+            "衰弱が激しく、兄弟の1頭は死亡しました",
+            "交通事故で親が死亡した現場で保護",
+            "路上で死体となっていた母猫のそばで保護されました",
+        ],
+    )
+    def test_not_detected(self, text: str) -> None:
+        assert deceased_notice(text) is None
+
+
+class TestBoilerplate:
+    """自治体ページの定型文。2026-09-18 に全 213 サイトを実測したところ、死亡の語を
+    含む 33 ページのうち 32 ページがこの種の文だった"""
 
     @pytest.mark.parametrize(
         "text",
         [
             "",
             "人なつこい 首輪なし",
-            # 飼い主・家族の死。動物は生きており譲渡対象
-            "飼い主が死亡したため引き取り",
-            "飼主死亡により保護",
-            "所有者の死亡に伴い譲渡先を探しています",
-            "ご家族が亡くなり飼えなくなった子です",
             # 制度・方針の文言
             "本市は殺処分ゼロを目指しています",
             "安楽死は行っていません",
-            # 手続き・案内の定型文 (2026-09-18 に全 213 サイトを実測したところ、
-            # 死亡の語を含む 33 ページのうち 32 ページがこの種のナビゲーション文だった)
+            # 手続き・案内
             "犬が死亡した場合は届出が必要です",
             "死亡届の提出をお願いします",
             "ペットが死亡したとき",
             "万が一交通事故等で死亡した場合は委託業者により回収されている可能性があります",
             "犬の登録・変更・死亡届・狂犬病予防注射",
             "犬猫など動物死体の引き取り",
+            "動物の死体処分",
         ],
     )
     def test_not_detected(self, text: str) -> None:
@@ -62,6 +105,23 @@ class TestDeceasedNotice:
     def test_none_is_safe(self) -> None:
         assert deceased_notice(None) is None
 
-    def test_returns_matched_phrase_for_logging(self) -> None:
-        """どの語で判定したかをログに出せるよう、一致した語を返す"""
-        assert deceased_notice("長尾 短毛 令和8年9月13日 死亡確認") == "死亡確認"
+
+class TestKnownLimits:
+    """拾えない書き方。越谷が書き方を変えたら気づけるよう、現状を固定しておく
+
+    後ろ 12 文字の手続き語で除外しているため、死亡の直後に案内文が続くと拾えない。
+    拾えない側に倒れるのは意図どおり (誤検知より安全) だが、無自覚に落とさないため
+    テストで明示する。
+    """
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "9月13日に死亡したとき",
+            "9月13日に死亡しました。引き取りはできません",
+            "衰弱がひどく死亡しました。ご連絡ください",
+            "死亡しましたので処理済みです",
+        ],
+    )
+    def test_currently_not_detected(self, text: str) -> None:
+        assert deceased_notice(text) is None

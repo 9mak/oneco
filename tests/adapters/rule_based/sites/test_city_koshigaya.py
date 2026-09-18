@@ -394,8 +394,7 @@ class TestCityKoshigayaRemarks:
         raw = self._extract("&nbsp;")
         assert not raw.description
 
-    def test_death_note_in_remarks_marks_deceased(self):
-        """備考に死亡確認がある子は normalize で deceased になり公開から外れる"""
+    def _normalize(self, remarks: str):
         adapter = CityKoshigayaAdapter(
             _site(
                 name="越谷市（保護猫）",
@@ -405,10 +404,49 @@ class TestCityKoshigayaRemarks:
                 ),
             )
         )
-        html = self._html("長尾 短毛 首輪なし 令和8年9月13日 死亡確認")
-        with patch.object(adapter, "_http_get", return_value=html):
+        with patch.object(adapter, "_http_get", return_value=self._html(remarks)):
             urls = adapter.fetch_animal_list()
             raw = adapter.extract_animal_details(urls[0][0], category=urls[0][1])
-            animal = adapter.normalize(raw)
+            return adapter.normalize(raw)
+
+    def test_death_note_in_remarks_marks_deceased(self):
+        """備考に死亡確認がある子は normalize で deceased になり公開から外れる"""
+        animal = self._normalize("長尾 短毛 首輪なし 令和8年9月13日 死亡確認")
 
         assert animal.status == AnimalStatus.DECEASED
+        # 備考そのものは残す。死亡の理由を後から確かめられるようにするため
+        assert animal.description == "長尾 短毛 首輪なし 令和8年9月13日 死亡確認"
+
+    def test_normal_remarks_leave_status_untouched(self):
+        """死亡の記載が無ければ status は None のまま
+
+        毎日の収集で管理 API が付けた adopted/returned を戻さないため、
+        status は「死亡を見つけたときだけ」返す。
+        """
+        animal = self._normalize("長尾 短毛 首輪なし")
+
+        assert animal.status is None
+        assert animal.description == "長尾 短毛 首輪なし"
+
+    def test_owner_death_is_not_the_animal(self):
+        """飼い主の死は動物の死ではない。生きている子を公開から消さない"""
+        animal = self._normalize("飼い主が死亡したため引き取り")
+
+        assert animal.status is None
+
+    def test_normalize_keeps_every_other_field(self):
+        """normalize を上書きしたことで他のフィールドが落ちていないこと
+
+        このリポジトリでは normalize のオーバーライドでフィールドが落ちる事故が
+        繰り返し起きているため、死亡ケースでも一通り確かめる。
+        """
+        animal = self._normalize("長尾 短毛 首輪なし 令和8年9月13日 死亡確認")
+
+        assert animal.species == "猫"
+        assert animal.sex == "男の子"
+        assert animal.color == "白茶"
+        assert animal.size == "中型"  # normalize が「中」を「中型」へそろえる
+        assert animal.phone == "048-969-8511"
+        assert animal.prefecture == "埼玉県"
+        assert str(animal.shelter_date) == "2026-09-11"
+        assert "越谷市" in animal.location

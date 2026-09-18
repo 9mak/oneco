@@ -534,9 +534,11 @@ class TestE2EStatusManagementFlow:
                 f"/animals/{animal_id}/status", json={"status": "deceased"}, headers=_h
             )
 
-            # 4. deceased から sheltered への不正な遷移を試行
+            # 4. deceased から adopted への不正な遷移を試行
+            # (deceased → sheltered は T424 で「死亡の取り消し」として許可したため、
+            #  ここでは残る禁止遷移で確かめる)
             invalid_response = await client.patch(
-                f"/animals/{animal_id}/status", json={"status": "sheltered"}, headers=_h
+                f"/animals/{animal_id}/status", json={"status": "adopted"}, headers=_h
             )
 
         # 5. 検証 - 422 エラーが返される

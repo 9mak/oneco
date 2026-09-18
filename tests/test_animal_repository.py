@@ -1372,7 +1372,11 @@ async def test_update_status_records_history(repository, async_session):
 
 @pytest.mark.asyncio
 async def test_update_status_raises_on_invalid_transition(repository, async_session):
-    """update_status() が不正な遷移で StatusTransitionError を発生させるか"""
+    """update_status() が不正な遷移で StatusTransitionError を発生させるか
+
+    deceased → sheltered は T424 で「死亡の取り消し」として許可したため、
+    ここでは残る禁止遷移 (deceased → adopted) で確かめる。
+    """
     animal = Animal(
         species="犬",
         shelter_date=date(2026, 1, 5),
@@ -1388,7 +1392,7 @@ async def test_update_status_raises_on_invalid_transition(repository, async_sess
     with pytest.raises(StatusTransitionError):
         await repository.update_status(
             animal_id=animal.id,
-            new_status=AnimalStatus.SHELTERED,
+            new_status=AnimalStatus.ADOPTED,
         )
 
 
@@ -2681,8 +2685,8 @@ async def test_save_animal_same_status_writes_no_history(repository, async_sessi
 async def test_save_animal_keeps_status_on_invalid_transition(repository, async_session):
     """deceased の子が再び収集されても sheltered へは戻さない
 
-    deceased → sheltered は StatusTransitionValidator が禁じる遷移。収集は毎日
-    走るため、ここで例外を投げると 1 頭でサイト全体の収集が落ちる。status だけ
+    遷移としては deceased → sheltered を許しているが (T424 の復旧経路)、それは人が
+    管理 API で取り消すための道で、収集が毎日自動で戻す道ではない。status だけ
     据え置いて他のフィールドは更新する。
     """
     existing_animal = Animal(
@@ -2716,3 +2720,94 @@ async def test_save_animal_keeps_status_on_invalid_transition(repository, async_
     ).scalar_one()
     assert saved.status == "deceased"
     assert saved.color == "黒"
+
+
+@pytest.mark.asyncio
+async def test_deceased_animal_is_not_listed_publicly(repository, async_session):
+    """deceased にした個体が公開一覧・個体取得から消える (T424 の end-to-end)
+
+    収集側が status を立てるだけで公開から外れることが、この PR の前提になっている。
+    """
+    animal = Animal(
+        species="猫",
+        shelter_date=date(2026, 9, 11),
+        location="越谷市越ケ谷3丁目地内",
+        source_url="https://example.com/animal/e2e-deceased",
+        status="sheltered",
+    )
+    async_session.add(animal)
+    await async_session.commit()
+    await async_session.refresh(animal)
+    animal_id = animal.id
+
+    listed, _ = await repository.list_animals(limit=100)
+    assert any(a.source_url.path.endswith("e2e-deceased") for a in listed)
+    assert await repository.get_animal_by_id_orm(animal_id) is not None
+
+    await repository.save_animal(
+        AnimalData(
+            species="猫",
+            shelter_date=date(2026, 9, 11),
+            location="越谷市越ケ谷3丁目地内",
+            source_url="https://example.com/animal/e2e-deceased",
+            category="lost",
+            status=AnimalStatus.DECEASED,
+        )
+    )
+
+    listed_after, _ = await repository.list_animals(limit=100)
+    assert all(not a.source_url.path.endswith("e2e-deceased") for a in listed_after)
+    assert await repository.get_animal_by_id_orm(animal_id) is None
+
+
+@pytest.mark.asyncio
+async def test_deceased_can_be_corrected_back_to_sheltered(repository, async_session):
+    """誤って deceased にした子を管理 API 経由で戻せる (T424 Blocker B-02)"""
+    animal = Animal(
+        species="猫",
+        shelter_date=date(2026, 9, 11),
+        location="越谷市",
+        source_url="https://example.com/animal/undo-deceased",
+        status="deceased",
+    )
+    async_session.add(animal)
+    await async_session.commit()
+    await async_session.refresh(animal)
+
+    result = await repository.update_status(
+        animal_id=animal.id,
+        new_status=AnimalStatus.SHELTERED,
+        changed_by="admin",
+    )
+
+    assert result.status == AnimalStatus.SHELTERED
+    assert await repository.get_animal_by_id_orm(animal.id) is not None
+
+
+@pytest.mark.asyncio
+async def test_save_animal_inserts_deceased_row_without_history(repository, async_session):
+    """初回収集で既に死亡記載がある個体は deceased で挿入される
+
+    新規行なので「変わった」履歴は残らない。更新経路と非対称だが、
+    公開から外れるという結果は同じ。
+    """
+    await repository.save_animal(
+        AnimalData(
+            species="猫",
+            shelter_date=date(2026, 9, 11),
+            location="越谷市",
+            source_url="https://example.com/animal/new-deceased",
+            category="lost",
+            status=AnimalStatus.DECEASED,
+        )
+    )
+
+    from sqlalchemy import select
+
+    saved = (
+        await async_session.execute(
+            select(Animal).where(Animal.source_url == "https://example.com/animal/new-deceased")
+        )
+    ).scalar_one()
+    assert saved.status == "deceased"
+    assert await repository.get_animal_by_id_orm(saved.id) is None
