@@ -26,14 +26,15 @@ if TYPE_CHECKING:
     from ..infrastructure.database.connection import DatabaseConnection
     from ..infrastructure.database.repository import AnimalRepository
 
-# 「連続何回0件が続いたら、残存レコードの完全削除 (prune) を許可するか」の既定閾値
-# (T106)。実測分布 (2026-08-30時点、data/site_baselines.yaml):
-# 211サイト中102サイトが0件継続中で、consecutive_zero_runs は 1-2回=3件・
-# 3-5回=6件・6-10回=5件・11-30回=15件・31回以上=73件と分布する。1-2回は
-# zero_count_verifier 導入の動機そのものである在庫の自然増減(baseline 1-2件の
-# 薄いサイトで誤検知が多い)、11回以降は長期化とみなせるため、その中間かつ
-# 安全側の値として 8 を採用する。
-DEFAULT_PRUNE_ZERO_THRESHOLD = 8
+# 「連続何回0件が続いたら、残存レコードの完全削除 (prune) を許可するか」の既定閾値。
+# T106 では 8 回 (=8日) 待っていたが、T422 で 1 (その run だけで判断) に変更した
+# (2026-09-18 決定)。掲載元が「現在いません」に変わっているのに oneco 側に残る
+# 掲載が 20 頭あり、最長 34 日放置されていた。待ち日数を増やしても判断材料は
+# 増えない: 0 件を検出した時点で zero_count_verifier が list ページを取り直し、
+# サイト側の明示的な0件メッセージか LLM 判定で「本当に掲載が無い」ことを
+# その場で確かめており、adapter 破損との区別はこの確認が担っているため。
+# 日数での様子見は、掲載元と同じ状態を見せるという目的に対して遅れを生むだけ。
+DEFAULT_PRUNE_ZERO_THRESHOLD = 1
 
 # T106 PR #308 reviewer指摘 (F-02) への対応: zero_count_verifier の NONE 判定は
 # 元々「通知フィルタ用の曖昧な判定」として設計されており、ソフト404・ページ移転
@@ -43,6 +44,16 @@ DEFAULT_PRUNE_ZERO_THRESHOLD = 8
 # 確認できる期間 (dry-run) を設ける。既定は無効 (実削除しない) とし、
 # ONECO_PRUNE_FULL_DELETE_ENABLED=true を明示指定したときだけ実削除を有効化する。
 DEFAULT_FULL_DELETE_ENABLED = False
+
+# T422: 一覧ページが「無くなった」と確定できる HTTP ステータス。掲載元に無い以上
+# oneco にも出さない、という扱いにしてよいのはこの 2 つだけで、タイムアウト・5xx・
+# 接続失敗は「相手が重い/落ちているだけで掲載はある」ため残す。
+GONE_STATUS_CODES = frozenset({404, 410})
+
+
+def _is_gone(error: NetworkError) -> bool:
+    """一覧ページが消えた (404/410) ことによる失敗か"""
+    return error.status_code in GONE_STATUS_CODES
 
 
 class CollectionResult(BaseModel):
@@ -245,6 +256,19 @@ class CollectorService:
                 success=False, errors=errors, execution_time_seconds=execution_time
             )
 
+        except NetworkError as e:
+            # T422: 一覧ページが 404/410 で消えているなら、掲載元にもう無いのと
+            # 同じなので残っている掲載も外す。タイムアウト・5xx・接続失敗は
+            # 相手が一時的に応答しないだけなので、従来どおり何もしない。
+            self.logger.error(f"Collection failed: {e!s}", exc_info=True)
+            if _is_gone(e):
+                self._prune_gone_site(e)
+            errors.append(str(e))
+            execution_time = time.time() - start_time
+            return CollectionResult(
+                success=False, errors=errors, execution_time_seconds=execution_time
+            )
+
         except Exception as e:
             self.logger.error(f"Collection failed: {e!s}", exc_info=True)
             errors.append(str(e))
@@ -375,6 +399,16 @@ class CollectorService:
                 raise
 
             except NetworkError as e:
+                # T422: ページが無くなった (404/410) 場合は何度取り直しても結果は
+                # 変わらないので、リトライせず即座にスローする。掲載元のサーバに
+                # 無駄な再取得をかけないためと、呼び出し元 (run_collection) が
+                # 「掲載元から消えた」と「一時的に取れなかった」を区別するため。
+                if _is_gone(e):
+                    self.logger.warning(
+                        f"一覧ページが存在しない (HTTP {e.status_code}) ためリトライしない",
+                        extra={"error": str(e)},
+                    )
+                    raise
                 retry_count += 1
                 last_error = e
                 if retry_count < max_retries:
@@ -629,12 +663,23 @@ class CollectorService:
                     else:
                         try:
                             seen_urls = {str(a.source_url) for a in collected_data}
-                            # T106: 0 件収集が長期継続し、かつ zero_count_verifier で
-                            # サイト側の空を確定できた場合のみ、既定の安全弁 (0 件時
-                            # no-op) を明示的に外して残骸の完全削除を許可する。
-                            allow_full_prune = not seen_urls and self._should_force_empty_prune(
-                                site_name
-                            )
+                            # T106: 0 件収集で、かつ zero_count_verifier でサイト側の
+                            # 空を確定できた場合のみ、既定の安全弁 (0 件時 no-op) を
+                            # 明示的に外して残骸の完全削除を許可する。
+                            # T422: 0 件確認は list ページの再取得 (+ LLM 判定) を伴う。
+                            # 閾値を 1 にすると毎日 100 サイト近くで走るため、消すべき
+                            # 残骸が実際にあるサイトだけに絞る。残存 0 件なら削除しても
+                            # 結果は同じで、確認する意味が無い。
+                            allow_full_prune = False
+                            if not seen_urls:
+                                residual = await repo.count_prunable_by_site(site_name)
+                                if residual == 0:
+                                    self.logger.debug(
+                                        f"[{site_name}] 0件収集だが残存レコードが無いため"
+                                        "0件確認をスキップ"
+                                    )
+                                else:
+                                    allow_full_prune = self._should_force_empty_prune(site_name)
                             removed = await repo.prune_disappeared(
                                 site_name, seen_urls, allow_full_prune=allow_full_prune
                             )
@@ -653,6 +698,123 @@ class CollectorService:
         self._log_db_result(
             saved_count, error_count, len(collected_data), url_reuse_count=url_reuse_count
         )
+
+    def _prune_gone_site(self, error: NetworkError) -> None:
+        """一覧ページが 404/410 で消えたサイトの残存レコードを外す (T422)
+
+        掲載元のページが無くなった以上、そこに載っていた子を oneco だけが
+        出し続ける状態は掲載元と食い違う。0 件収集の場合と同じく
+        `full_delete_enabled` (ONECO_PRUNE_FULL_DELETE_ENABLED) が有効なときだけ
+        実削除し、無効なら候補として記録・通知するに留める。
+
+        移転 (旧 URL が 404 になり新 URL へ移動) の場合もここで消えるが、
+        adapter を新 URL へ直せば次の収集で戻る。掲載元で確認できない間は
+        出さない方を既定とする。
+
+        0 件収集が zero_count_verifier の再取得で裏を取ってから消すのと同じく、
+        404/410 も一度きりのレスポンスでは消さない。WAF の bot 対策や CDN の
+        一時的な 404 で実在する掲載が丸ごと消えるのを避けるため、list URL を
+        取り直して同じく消えていることを確かめる (_confirm_gone)。
+        """
+        site_name = self.adapter.municipality_name
+        if not self._confirm_gone():
+            return
+        if not self.full_delete_enabled:
+            self.logger.warning(
+                f"[DRY-RUN][{site_name}] 一覧ページが HTTP {error.status_code} で消えているが "
+                "ONECO_PRUNE_FULL_DELETE_ENABLED が無効のため掲載は残す (候補として記録のみ)"
+            )
+            self.notification_client.send_alert(
+                NotificationLevel.WARNING,
+                "[dry-run] 一覧ページが消えたサイトの掲載を検知",
+                {
+                    "site": site_name,
+                    "status_code": error.status_code,
+                    "note": "ONECO_PRUNE_FULL_DELETE_ENABLED=true で実削除を有効化できます",
+                },
+            )
+            return
+
+        try:
+            removed = self._delete_all_rows_of_site(site_name)
+        except Exception as e:
+            self.logger.warning(f"[{site_name}] 一覧消失に伴う削除に失敗: {e}")
+            return
+
+        if removed:
+            self.logger.warning(
+                f"[{site_name}] 一覧ページが HTTP {error.status_code} のため "
+                f"残っていた掲載 {removed} 件を削除"
+            )
+            self.notification_client.send_alert(
+                NotificationLevel.WARNING,
+                "一覧ページが消えたサイトの掲載を削除",
+                {"site": site_name, "status_code": error.status_code, "removed": removed},
+            )
+
+    def _confirm_gone(self) -> bool:
+        """list URL を取り直して、本当に 404/410 のままかを確かめる (T422)
+
+        確かめられない場合 (list_url が特定できない・取得手段が無い・再取得で
+        別の例外) は False を返して削除しない。安全側に倒す。
+        """
+        site_name = self.adapter.municipality_name
+        list_url = getattr(getattr(self.adapter, "site_config", None), "list_url", None)
+        if not list_url:
+            self.logger.warning(
+                f"[{site_name}] 一覧が消えているが list_url が特定できず再確認できないため削除しない"
+            )
+            return False
+
+        fetcher = getattr(self.adapter, "_http_get", None)
+        if fetcher is None:
+            self.logger.warning(f"[{site_name}] 一覧が消えているが再取得の手段が無いため削除しない")
+            return False
+
+        try:
+            fetcher(list_url)
+        except NetworkError as e:
+            if _is_gone(e):
+                return True
+            self.logger.info(
+                f"[{site_name}] 再取得は HTTP {e.status_code} で 404/410 ではないため削除しない"
+            )
+            return False
+        except Exception as e:
+            self.logger.warning(f"[{site_name}] 一覧消失の再確認に失敗したため削除しない: {e}")
+            return False
+
+        self.logger.info(f"[{site_name}] 再取得では一覧が取得できたため削除しない (一時的な404)")
+        return False
+
+    def _delete_all_rows_of_site(self, site_name: str) -> int:
+        """指定サイトの残存レコードを全削除して件数を返す
+
+        守る status (譲渡済み・返還済み・死亡) は prune_disappeared 側で除外される。
+        """
+        from ..infrastructure.database.connection import DatabaseConnection
+        from ..infrastructure.database.repository import AnimalRepository
+
+        if self.db_connection is not None:
+            settings = self.db_connection.settings
+
+            async def _do_prune() -> int:
+                db = DatabaseConnection(settings=settings)
+                try:
+                    async with db.get_session() as session:
+                        repo = AnimalRepository(session)
+                        return await repo.prune_disappeared(site_name, set(), allow_full_prune=True)
+                finally:
+                    await db.close()
+
+            return asyncio.run(_do_prune())
+
+        if self.repository is not None:
+            return asyncio.run(
+                self.repository.prune_disappeared(site_name, set(), allow_full_prune=True)
+            )
+
+        return 0
 
     def _save_via_repository(self, collected_data: list[AnimalData]) -> None:
         """既存の repository を使って保存（テスト用途）"""
