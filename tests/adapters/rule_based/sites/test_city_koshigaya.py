@@ -22,7 +22,7 @@ from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.city_koshigaya import (
     CityKoshigayaAdapter,
 )
-from data_collector.domain.models import RawAnimalData
+from data_collector.domain.models import AnimalStatus, RawAnimalData
 from data_collector.llm.config import SiteConfig
 
 
@@ -346,3 +346,107 @@ class TestCityKoshigayaAdapter:
         assert raw.sex == "オス"
         assert "茶白" in raw.color
         assert raw.size == "中"
+
+
+class TestCityKoshigayaRemarks:
+    """備考列 (6 列目) を description に載せ、死亡記載を公開から外す (T424)
+
+    2026-09-18 の保護猫ページで、備考が
+    「長尾 短毛 首輪なし 令和8年9月13日 死亡確認」の子を収容中として公開していた。
+    備考は adapter が読んでおらず DB にも入っていなかったため、死亡を検知できなかった。
+    """
+
+    @staticmethod
+    def _html(remarks: str) -> str:
+        return f"""
+        <html><body><div id="tmp_honbun">
+          <table><tbody>
+            <tr><th>収容場所</th><th>収容日</th><th>収容期限</th></tr>
+            <tr><td>越谷市越ケ谷3丁目地内</td><td>2026年9月11日</td><td>2026年9月24日</td></tr>
+          </tbody></table>
+          <table><tbody>
+            <tr><th>種類</th><th>性別</th><th>年齢</th><th>毛色</th><th>体格</th><th>備考</th></tr>
+            <tr><td>雑種</td><td>おす</td><td>中齢</td><td>白茶</td><td>中</td><td>{remarks}</td></tr>
+          </tbody></table>
+        </div></body></html>
+        """
+
+    def _extract(self, remarks: str) -> RawAnimalData:
+        adapter = CityKoshigayaAdapter(
+            _site(
+                name="越谷市（保護猫）",
+                list_url=(
+                    "https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/"
+                    "hokenjo/pet/hogo/koshigaya_contents_cat.html"
+                ),
+            )
+        )
+        with patch.object(adapter, "_http_get", return_value=self._html(remarks)):
+            urls = adapter.fetch_animal_list()
+            return adapter.extract_animal_details(urls[0][0], category=urls[0][1])
+
+    def test_remarks_become_description(self):
+        """備考の「長尾 短毛 首輪なし」は個体を見分ける情報なので公開する"""
+        raw = self._extract("長尾 短毛 首輪なし")
+        assert raw.description == "長尾 短毛 首輪なし"
+
+    def test_empty_remarks_leave_description_empty(self):
+        raw = self._extract("&nbsp;")
+        assert not raw.description
+
+    def _normalize(self, remarks: str):
+        adapter = CityKoshigayaAdapter(
+            _site(
+                name="越谷市（保護猫）",
+                list_url=(
+                    "https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/"
+                    "hokenjo/pet/hogo/koshigaya_contents_cat.html"
+                ),
+            )
+        )
+        with patch.object(adapter, "_http_get", return_value=self._html(remarks)):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(urls[0][0], category=urls[0][1])
+            return adapter.normalize(raw)
+
+    def test_death_note_in_remarks_marks_deceased(self):
+        """備考に死亡確認がある子は normalize で deceased になり公開から外れる"""
+        animal = self._normalize("長尾 短毛 首輪なし 令和8年9月13日 死亡確認")
+
+        assert animal.status == AnimalStatus.DECEASED
+        # 備考そのものは残す。死亡の理由を後から確かめられるようにするため
+        assert animal.description == "長尾 短毛 首輪なし 令和8年9月13日 死亡確認"
+
+    def test_normal_remarks_leave_status_untouched(self):
+        """死亡の記載が無ければ status は None のまま
+
+        毎日の収集で管理 API が付けた adopted/returned を戻さないため、
+        status は「死亡を見つけたときだけ」返す。
+        """
+        animal = self._normalize("長尾 短毛 首輪なし")
+
+        assert animal.status is None
+        assert animal.description == "長尾 短毛 首輪なし"
+
+    def test_owner_death_is_not_the_animal(self):
+        """飼い主の死は動物の死ではない。生きている子を公開から消さない"""
+        animal = self._normalize("飼い主が死亡したため引き取り")
+
+        assert animal.status is None
+
+    def test_normalize_keeps_every_other_field(self):
+        """normalize を上書きしたことで他のフィールドが落ちていないこと
+
+        このリポジトリでは normalize のオーバーライドでフィールドが落ちる事故が
+        繰り返し起きているため、死亡ケースでも一通り確かめる。
+        """
+        animal = self._normalize("長尾 短毛 首輪なし 令和8年9月13日 死亡確認")
+
+        assert animal.species == "猫"
+        assert animal.sex == "男の子"
+        assert animal.color == "白茶"
+        assert animal.size == "中型"  # normalize が「中」を「中型」へそろえる
+        assert animal.phone == "048-969-8511"
+        assert animal.prefecture == "埼玉県"
+        assert str(animal.shelter_date) == "2026-09-11"
+        assert "越谷市" in animal.location

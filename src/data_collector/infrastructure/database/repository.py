@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.data_collector.domain.models import AnimalData, AnimalStatus
 from src.data_collector.domain.status_transition import (
+    StatusTransitionError,
     StatusTransitionValidator,
 )
 from src.data_collector.domain.virtual_url import (
@@ -248,6 +249,101 @@ class AnimalRepository:
             return True
         sexes = [s for s in (existing_animal.sex, animal_data.sex) if s and s != "不明"]
         return len(sexes) == 2 and sexes[0] != sexes[1]
+
+    async def _apply_collected_status(
+        self, existing_animal: Animal, new_status: AnimalStatus
+    ) -> None:
+        """収集経路からの status 変更を、変更日時と履歴つきで反映する (T424)
+
+        備考の死亡記載で公開から外す場合など、収集が status を動かすことがある。
+        管理 API の `update_status` と同じく「いつ・何が変えたか」を追えるようにする。
+
+        禁じられた遷移は例外にせず据え置く。収集は毎日全サイトを回すため、ここで
+        例外を投げると 1 頭でそのサイトの収集が落ちて他の子まで更新できなくなる。
+
+        既に deceased の行は収集からは動かさない。遷移としては deceased → sheltered を
+        許しているが (T424 の復旧経路)、それは人が管理 API で取り消すための道で、
+        収集が毎日自動で戻す道ではない。
+        """
+        old_value = existing_animal.status
+        if old_value == new_status.value:
+            return
+
+        if new_status == AnimalStatus.DECEASED and await self._death_was_undone_by_human(
+            existing_animal.id
+        ):
+            # 人が「死亡ではない」と判断して戻した行を、翌日の収集がまた
+            # deceased にしてはいけない。自治体側の備考が直らない限り毎日戻るため、
+            # 誤検知の取り消しが 24 時間しか保たなくなる (2026-09-18 再レビュー N-02)。
+            logger.warning(
+                "[収集からのステータス変更を見送り] source_url=%s は人が死亡を取り消した"
+                "履歴があるため deceased にしません",
+                existing_animal.source_url,
+            )
+            return
+
+        if old_value == AnimalStatus.DECEASED.value:
+            # 死亡の取り消しは人の操作 (管理 API) でだけ行う。遷移としては
+            # deceased → sheltered を許しているが (T424 の復旧経路)、収集が毎日
+            # 自動で戻せてしまうと、死亡記載が消えた日に公開へ戻ってしまう。
+            logger.warning(
+                "[収集からのステータス変更を見送り] source_url=%s は既に deceased のため"
+                "%s への変更を行いません。戻す場合は管理 API を使ってください",
+                existing_animal.source_url,
+                new_status.value,
+            )
+            return
+
+        try:
+            old_status = AnimalStatus(old_value)
+            StatusTransitionValidator().validate_transition(old_status, new_status)
+        except (StatusTransitionError, ValueError):
+            logger.warning(
+                "[収集からのステータス変更を見送り] source_url=%s は %s → %s が"
+                "許可されていない遷移か、DB の status が enum 外のため据え置きます",
+                existing_animal.source_url,
+                old_value,
+                new_status.value,
+            )
+            return
+
+        changed_at = datetime.now(UTC)
+        existing_animal.status = new_status.value
+        existing_animal.status_changed_at = changed_at
+        self.session.add(
+            AnimalStatusHistory(
+                animal_id=existing_animal.id,
+                old_status=old_status.value,
+                new_status=new_status.value,
+                changed_at=changed_at,
+                changed_by="collector",
+            )
+        )
+        logger.info(
+            "[収集からのステータス変更] source_url=%s %s → %s",
+            existing_animal.source_url,
+            old_status.value,
+            new_status.value,
+        )
+
+    async def _death_was_undone_by_human(self, animal_id: int) -> bool:
+        """人 (収集以外) が deceased → sheltered に戻した履歴があるか
+
+        判定は個体単位で恒久。一度取り消した子は、その後に本当に死亡しても収集では
+        deceased にできない (管理 API からは変えられる)。掲載がページから消えれば
+        prune で行ごと削除され履歴も一緒に消えるため、再掲載時には元に戻る。
+        """
+        stmt = (
+            select(AnimalStatusHistory)
+            .where(
+                AnimalStatusHistory.animal_id == animal_id,
+                AnimalStatusHistory.old_status == AnimalStatus.DECEASED.value,
+                AnimalStatusHistory.new_status == AnimalStatus.SHELTERED.value,
+                AnimalStatusHistory.changed_by.is_distinct_from("collector"),
+            )
+            .limit(1)
+        )
+        return (await self.session.execute(stmt)).scalar_one_or_none() is not None
 
     async def adopt_orphaned_rows(self, source_site: str, animals: Sequence[AnimalData]) -> int:
         """URL の付け替えで行き場を失う既存行を、同じ子の新しい URL へ引き継ぐ (T413)。
@@ -507,10 +603,12 @@ class AnimalRepository:
             existing_animal.management_number = animal_data.management_number
             existing_animal.description = animal_data.description
             # 拡張フィールドは明示的に設定された場合のみ更新
-            if animal_data.status is not None:
-                existing_animal.status = animal_data.status.value
+            # status_changed_at を先に反映する。後にすると _apply_collected_status が
+            # 履歴へ書いた changed_at と本体の値が食い違う。
             if animal_data.status_changed_at is not None:
                 existing_animal.status_changed_at = animal_data.status_changed_at
+            if animal_data.status is not None:
+                await self._apply_collected_status(existing_animal, animal_data.status)
             if animal_data.outcome_date is not None:
                 existing_animal.outcome_date = animal_data.outcome_date
             if animal_data.local_image_paths is not None:

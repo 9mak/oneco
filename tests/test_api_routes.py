@@ -389,7 +389,11 @@ async def test_update_status_with_outcome_date(test_app, animal_for_status_updat
 
 @pytest.mark.asyncio
 async def test_update_status_invalid_transition(test_app, async_session):
-    """PATCH /animals/{id}/status が不正な遷移で 422 を返すか"""
+    """PATCH /animals/{id}/status が不正な遷移で 422 を返すか
+
+    deceased → sheltered は T424 で「死亡の取り消し」として許可したため、
+    ここでは残る禁止遷移 (deceased → adopted) で確かめる。
+    """
     # deceased 状態の動物を作成
     animal = Animal(
         species="犬",
@@ -406,7 +410,7 @@ async def test_update_status_invalid_transition(test_app, async_session):
     async with AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test") as client:
         response = await client.patch(
             f"/animals/{animal.id}/status",
-            json={"status": "sheltered"},
+            json={"status": "adopted"},
             headers={"X-Internal-Token": "test-internal-token"},
         )
 

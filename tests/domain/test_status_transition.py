@@ -68,14 +68,6 @@ class TestStatusTransitionValidator:
         """returned → deceased は有効な遷移"""
         validator.validate_transition(AnimalStatus.RETURNED, AnimalStatus.DECEASED)
 
-    def test_invalid_transition_deceased_to_sheltered(self, validator):
-        """deceased → sheltered は無効な遷移"""
-        with pytest.raises(StatusTransitionError) as exc_info:
-            validator.validate_transition(AnimalStatus.DECEASED, AnimalStatus.SHELTERED)
-
-        assert exc_info.value.old_status == AnimalStatus.DECEASED
-        assert exc_info.value.new_status == AnimalStatus.SHELTERED
-
     def test_invalid_transition_deceased_to_adopted(self, validator):
         """deceased → adopted は無効な遷移"""
         with pytest.raises(StatusTransitionError):
@@ -115,6 +107,30 @@ class TestStatusTransitionValidator:
             (AnimalStatus.ADOPTED, AnimalStatus.DECEASED),
             (AnimalStatus.RETURNED, AnimalStatus.ADOPTED),
             (AnimalStatus.RETURNED, AnimalStatus.DECEASED),
+            # 死亡の取り消し (T424)。収集が死亡記載で deceased を立てるようになったため、
+            # 誤検知・誤記を人が戻せる経路として追加した
+            (AnimalStatus.DECEASED, AnimalStatus.SHELTERED),
         }
 
         assert StatusTransitionValidator.VALID_TRANSITIONS == expected_transitions
+
+
+class TestDeceasedCanBeCorrected:
+    """死亡の取り消し (T424)
+
+    収集が備考の「死亡確認」を読んで deceased を立てるようになったため、
+    誤検知や自治体側の誤記を人が戻せる経路が要る。これが無いと deceased は終端で、
+    誤って公開から消えた子を DB を直接書き換える以外に戻せない。
+    """
+
+    def test_deceased_to_sheltered_is_allowed(self):
+        StatusTransitionValidator().validate_transition(
+            AnimalStatus.DECEASED, AnimalStatus.SHELTERED
+        )
+
+    def test_deceased_to_adopted_is_still_rejected(self):
+        """収容中に戻してから譲渡へ進める。死亡から直接の譲渡は認めない"""
+        with pytest.raises(StatusTransitionError):
+            StatusTransitionValidator().validate_transition(
+                AnimalStatus.DECEASED, AnimalStatus.ADOPTED
+            )

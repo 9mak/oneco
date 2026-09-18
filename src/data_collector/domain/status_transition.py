@@ -43,6 +43,12 @@ class StatusTransitionValidator:
         (AnimalStatus.ADOPTED, AnimalStatus.DECEASED),
         (AnimalStatus.RETURNED, AnimalStatus.ADOPTED),  # 再譲渡
         (AnimalStatus.RETURNED, AnimalStatus.DECEASED),
+        # 死亡の取り消し (T424)。収集が備考の「死亡確認」を読んで deceased を
+        # 立てるようになったため、誤検知や自治体側の誤記を人が戻せる経路が要る。
+        # これが無いと deceased は終端で、誤って公開から消えた子を DB を直接
+        # 書き換える以外に戻せない。収集経路がこの遷移を使うことは無い
+        # (adapter は死亡を検知したときだけ status を返し、sheltered は返さない)。
+        (AnimalStatus.DECEASED, AnimalStatus.SHELTERED),
     }
 
     def validate_transition(self, old_status: AnimalStatus, new_status: AnimalStatus) -> None:
