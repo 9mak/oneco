@@ -672,7 +672,7 @@ class CollectorService:
                             # 結果は同じで、確認する意味が無い。
                             allow_full_prune = False
                             if not seen_urls:
-                                residual = await repo.count_by_site(site_name)
+                                residual = await repo.count_prunable_by_site(site_name)
                                 if residual == 0:
                                     self.logger.debug(
                                         f"[{site_name}] 0件収集だが残存レコードが無いため"
@@ -708,10 +708,17 @@ class CollectorService:
         実削除し、無効なら候補として記録・通知するに留める。
 
         移転 (旧 URL が 404 になり新 URL へ移動) の場合もここで消えるが、
-        adapter を新 URL へ直せば翌日の収集で戻る。掲載元で確認できない間は
+        adapter を新 URL へ直せば次の収集で戻る。掲載元で確認できない間は
         出さない方を既定とする。
+
+        0 件収集が zero_count_verifier の再取得で裏を取ってから消すのと同じく、
+        404/410 も一度きりのレスポンスでは消さない。WAF の bot 対策や CDN の
+        一時的な 404 で実在する掲載が丸ごと消えるのを避けるため、list URL を
+        取り直して同じく消えていることを確かめる (_confirm_gone)。
         """
         site_name = self.adapter.municipality_name
+        if not self._confirm_gone():
+            return
         if not self.full_delete_enabled:
             self.logger.warning(
                 f"[DRY-RUN][{site_name}] 一覧ページが HTTP {error.status_code} で消えているが "
@@ -745,8 +752,46 @@ class CollectorService:
                 {"site": site_name, "status_code": error.status_code, "removed": removed},
             )
 
+    def _confirm_gone(self) -> bool:
+        """list URL を取り直して、本当に 404/410 のままかを確かめる (T422)
+
+        確かめられない場合 (list_url が特定できない・取得手段が無い・再取得で
+        別の例外) は False を返して削除しない。安全側に倒す。
+        """
+        site_name = self.adapter.municipality_name
+        list_url = getattr(getattr(self.adapter, "site_config", None), "list_url", None)
+        if not list_url:
+            self.logger.warning(
+                f"[{site_name}] 一覧が消えているが list_url が特定できず再確認できないため削除しない"
+            )
+            return False
+
+        fetcher = getattr(self.adapter, "_http_get", None)
+        if fetcher is None:
+            self.logger.warning(f"[{site_name}] 一覧が消えているが再取得の手段が無いため削除しない")
+            return False
+
+        try:
+            fetcher(list_url)
+        except NetworkError as e:
+            if _is_gone(e):
+                return True
+            self.logger.info(
+                f"[{site_name}] 再取得は HTTP {e.status_code} で 404/410 ではないため削除しない"
+            )
+            return False
+        except Exception as e:
+            self.logger.warning(f"[{site_name}] 一覧消失の再確認に失敗したため削除しない: {e}")
+            return False
+
+        self.logger.info(f"[{site_name}] 再取得では一覧が取得できたため削除しない (一時的な404)")
+        return False
+
     def _delete_all_rows_of_site(self, site_name: str) -> int:
-        """指定サイトの残存レコードを全削除して件数を返す"""
+        """指定サイトの残存レコードを全削除して件数を返す
+
+        守る status (譲渡済み・返還済み・死亡) は prune_disappeared 側で除外される。
+        """
         from ..infrastructure.database.connection import DatabaseConnection
         from ..infrastructure.database.repository import AnimalRepository
 

@@ -229,7 +229,11 @@ class PdfTableAdapter(RuleBasedAdapter):
                     chunks.append(chunk)
                 return b"".join(chunks)
         except requests.RequestException as e:
-            raise NetworkError(f"PDF ダウンロード失敗: {e}", url=url) from e
+            # base.py の _http_get と同じく status_code を渡す。渡さないと
+            # 404 で消えた PDF 一覧が「一時的な失敗」と区別できない (T422)。
+            response = getattr(e, "response", None)
+            status = getattr(response, "status_code", None) if response is not None else None
+            raise NetworkError(f"PDF ダウンロード失敗: {e}", url=url, status_code=status) from e
 
     def _extract_pdf_text(self, pdf_bytes: bytes) -> str:
         if pdfplumber is None:  # pragma: no cover

@@ -633,13 +633,29 @@ class AnimalRepository:
 
         return self._to_pydantic(orm_animal)
 
-    async def count_by_site(self, source_site: str) -> int:
-        """指定サイト由来で DB に残っている行数を返す (T422)
+    # T422: サイト単位の全削除から守る status。人が管理 API で付けた譲渡済み・
+    # 返還済みと、死亡の記録は「掲載元の一覧に無い」ことを根拠に消してよい情報
+    # ではない。deceased は公開から外れているだけで、誤検知だったときに
+    # deceased → sheltered で戻す経路 (T424) が残っている必要がある。
+    _CURATED_STATUSES = (
+        AnimalStatus.ADOPTED.value,
+        AnimalStatus.RETURNED.value,
+        AnimalStatus.DECEASED.value,
+    )
+
+    async def count_prunable_by_site(self, source_site: str) -> int:
+        """指定サイト由来で、サイト単位の全削除の対象になる行数を返す (T422)
 
         0 件収集時に「消すべき残骸があるか」を判定してから 0 件確認
-        (list ページの再取得・LLM 判定) を行うために使う。
+        (list ページの再取得・LLM 判定) を行うために使う。守る status
+        (adopted/returned/deceased) は数えない。
         """
-        stmt = select(func.count()).select_from(Animal).where(Animal.source_site == source_site)
+        stmt = (
+            select(func.count())
+            .select_from(Animal)
+            .where(Animal.source_site == source_site)
+            .where(Animal.status.notin_(self._CURATED_STATUSES))
+        )
         result = await self.session.execute(stmt)
         return int(result.scalar_one())
 
@@ -676,10 +692,18 @@ class AnimalRepository:
           弱めていない。
         - source_site でスコープするため、他サイトや未タグ(NULL)の行は消さない。
         - 万一まだ在籍する子を誤って消しても、次回収集で再登録されるため復旧可能。
+        - allow_full_prune での全削除では、人が付けた譲渡済み・返還済みと死亡の
+          記録 (_CURATED_STATUSES) を残す (T422)。これらは「掲載元の一覧に
+          出てこない」ことを根拠に消してよい情報ではなく、消すと deceased →
+          sheltered の取り消し経路 (T424) も失われる。個別に消えた子を消す
+          通常の prune は従来どおり status を問わない (掲載元にその子の掲載が
+          無くなったという個体単位の根拠があるため)。
         """
         if not seen_source_urls and not allow_full_prune:
             return 0
         stmt = delete(Animal).where(Animal.source_site == source_site)
+        if not seen_source_urls:
+            stmt = stmt.where(Animal.status.notin_(self._CURATED_STATUSES))
         if seen_source_urls:
             # notin_() の空集合渡し (allow_full_prune=True かつ 0 件収集時) は
             # SQLAlchemy バージョン依存の挙動になりうるため、意図を明示するために
