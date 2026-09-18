@@ -2210,3 +2210,369 @@ class TestCollectorServiceStableVirtualUrlIntegration:
         # 旧行は URL もそのまま残り (部分取得なので prune もしない)、新しい URL は別の行になる
         assert after[f"{self.PAGE}#h3=0"] == before[f"{self.PAGE}#h3=0"]
         assert after[f"{self.PAGE}#animal=1.jpg"][0] != before[f"{self.PAGE}#h3=0"][0]
+
+
+class TestCollectorServiceSameDayZeroMirror:
+    """T422: 掲載元と同じ状態をその日のうちに反映する。
+
+    - 0 件はその run での確認 (再取得 + 明示文言/LLM 判定) が取れれば即座に残骸を消す
+      (連続 N 日待たない。既定の閾値は 1)
+    - 一覧ページが 404/410 で消えていたら、掲載元に無いのと同じなので残骸を消す
+    - タイムアウト・5xx 等の一時的な失敗では消さない (相手が重いだけで掲載はある)
+    - 残存行が無いサイトでは 0 件確認そのものを呼ばない (毎日 100 サイト分の
+      再取得と LLM 判定を避ける)
+    """
+
+    @pytest.fixture
+    def mock_adapter_zero_count(self):
+        adapter = Mock()
+        adapter.prefecture_code = "39"
+        adapter.municipality_name = "テストサイト"
+        adapter.list_truncated = False
+        adapter.site_config = Mock(list_url="https://example.com/list")
+        adapter.fetch_animal_list.return_value = []
+        return adapter
+
+    @pytest.fixture
+    def mock_diff_detector(self):
+        detector = Mock()
+        detector.detect_diff.return_value = DiffResult(new=[], updated=[], deleted_candidates=[])
+        return detector
+
+    @pytest.fixture
+    def mock_output_writer(self):
+        writer = Mock()
+        writer.write_output.return_value = Path("output/animals.json")
+        return writer
+
+    @pytest.fixture
+    def mock_notification_client(self):
+        return Mock()
+
+    @pytest.fixture
+    def mock_snapshot_store(self):
+        store = Mock()
+        store.load_snapshot.return_value = []
+        store.load_animal_map.return_value = {}
+        return store
+
+    def _db_with_rows(self, tmp_path, site_name: str, count: int = 1):
+        import asyncio
+
+        from src.data_collector.infrastructure.database.connection import (
+            DatabaseConnection,
+            DatabaseSettings,
+        )
+        from src.data_collector.infrastructure.database.models import Animal, Base
+
+        db_path = tmp_path / "test.db"
+        db_settings = DatabaseSettings(database_url=f"sqlite+aiosqlite:///{db_path}")
+        db_connection = DatabaseConnection(db_settings)
+
+        async def _setup():
+            async with db_connection.engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            async with db_connection.get_session() as session:
+                for i in range(count):
+                    session.add(
+                        Animal(
+                            species="犬",
+                            shelter_date=date(2026, 1, 5),
+                            location="テスト県",
+                            source_url=f"https://example.com/gone{i}",
+                            category="adoption",
+                            source_site=site_name,
+                        )
+                    )
+                await session.commit()
+
+        asyncio.run(_setup())
+        return db_connection
+
+    def _count_animals(self, db_connection) -> int:
+        import asyncio
+
+        from sqlalchemy import select
+
+        from src.data_collector.infrastructure.database.models import Animal
+
+        async def _count():
+            async with db_connection.get_session() as session:
+                res = await session.execute(select(Animal))
+                return len(list(res.scalars().all()))
+
+        return asyncio.run(_count())
+
+    def _tracker(self, tmp_path, site_name: str, prior_zero_runs: int = 0):
+        from src.data_collector.infrastructure.site_baseline_tracker import SiteBaselineTracker
+
+        tracker = SiteBaselineTracker(tmp_path / "baselines.yaml")
+        for _ in range(prior_zero_runs):
+            tracker.record(site_name, 0)
+        return tracker
+
+    def _adapter_raising(self, status_code: int | None):
+        adapter = Mock()
+        adapter.prefecture_code = "39"
+        adapter.municipality_name = "テストサイト"
+        adapter.list_truncated = False
+        adapter.site_config = Mock(list_url="https://example.com/list")
+        adapter.fetch_animal_list.side_effect = NetworkError(
+            "一覧ページの取得に失敗", url="https://example.com/list", status_code=status_code
+        )
+        return adapter
+
+    def test_default_threshold_is_same_day(self):
+        """既定の閾値は 1 (その日の確認だけで判断し、連続日数は待たない)"""
+        from src.data_collector.orchestration.collector_service import (
+            DEFAULT_PRUNE_ZERO_THRESHOLD,
+        )
+
+        assert DEFAULT_PRUNE_ZERO_THRESHOLD == 1
+
+    def test_first_zero_run_with_none_verdict_deletes_residual_records(
+        self,
+        tmp_path,
+        mock_adapter_zero_count,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+        monkeypatch,
+    ):
+        """初めて 0 件になった run でも、その場の確認が確定 NONE なら残骸を消す"""
+        import asyncio
+
+        from src.data_collector.infrastructure.zero_count_verifier import ZeroCountVerification
+        from src.data_collector.orchestration import collector_service as cs_module
+
+        monkeypatch.setattr(
+            cs_module,
+            "verify_zero_count",
+            lambda adapter, list_url: ZeroCountVerification(
+                should_flag=False, reason="サイト側に明示的な0件メッセージあり", verdict="none"
+            ),
+        )
+
+        site_name = "テストサイト"
+        db_connection = self._db_with_rows(tmp_path, site_name)
+        try:
+            service = CollectorService(
+                adapter=mock_adapter_zero_count,
+                diff_detector=mock_diff_detector,
+                output_writer=mock_output_writer,
+                notification_client=mock_notification_client,
+                snapshot_store=mock_snapshot_store,
+                db_connection=db_connection,
+                site_baseline_tracker=self._tracker(tmp_path, site_name, prior_zero_runs=0),
+                full_delete_enabled=True,
+            )
+            service.LOCK_FILE = tmp_path / ".collector.lock"
+
+            result = service.run_collection()
+
+            assert result.success
+            assert self._count_animals(db_connection) == 0
+        finally:
+            asyncio.run(db_connection.close())
+
+    def test_no_residual_rows_skips_zero_verification(
+        self,
+        tmp_path,
+        mock_adapter_zero_count,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+        monkeypatch,
+    ):
+        """公開に残っている行が無いサイトでは、0 件確認の再取得も LLM も呼ばない"""
+        import asyncio
+
+        from src.data_collector.orchestration import collector_service as cs_module
+
+        calls = []
+
+        def _record_call(*_args, **_kwargs):
+            # prune の例外は呼び出し元で握り潰されるため、raise ではなく記録で検証する
+            calls.append(1)
+            raise AssertionError("残存行が無いのに verify_zero_count が呼ばれた")
+
+        monkeypatch.setattr(cs_module, "verify_zero_count", _record_call)
+
+        site_name = "テストサイト"
+        db_connection = self._db_with_rows(tmp_path, site_name, count=0)
+        try:
+            service = CollectorService(
+                adapter=mock_adapter_zero_count,
+                diff_detector=mock_diff_detector,
+                output_writer=mock_output_writer,
+                notification_client=mock_notification_client,
+                snapshot_store=mock_snapshot_store,
+                db_connection=db_connection,
+                site_baseline_tracker=self._tracker(tmp_path, site_name, prior_zero_runs=30),
+                full_delete_enabled=True,
+            )
+            service.LOCK_FILE = tmp_path / ".collector.lock"
+
+            result = service.run_collection()
+
+            assert result.success
+            assert calls == []
+        finally:
+            asyncio.run(db_connection.close())
+
+    def test_list_gone_deletes_residual_records_when_gate_enabled(
+        self,
+        tmp_path,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+    ):
+        """一覧が 404 → 掲載元に無いので残骸を消す"""
+        import asyncio
+
+        site_name = "テストサイト"
+        db_connection = self._db_with_rows(tmp_path, site_name, count=2)
+        try:
+            service = CollectorService(
+                adapter=self._adapter_raising(404),
+                diff_detector=mock_diff_detector,
+                output_writer=mock_output_writer,
+                notification_client=mock_notification_client,
+                snapshot_store=mock_snapshot_store,
+                db_connection=db_connection,
+                full_delete_enabled=True,
+            )
+            service.LOCK_FILE = tmp_path / ".collector.lock"
+
+            result = service.run_collection()
+
+            assert result.success is False
+            assert self._count_animals(db_connection) == 0
+        finally:
+            asyncio.run(db_connection.close())
+
+    def test_list_gone_is_not_retried(
+        self,
+        tmp_path,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+    ):
+        """404 は何度取り直しても 404 なので、リトライで相手に負荷をかけない"""
+        import asyncio
+
+        adapter = self._adapter_raising(404)
+        db_connection = self._db_with_rows(tmp_path, "テストサイト", count=1)
+        try:
+            service = CollectorService(
+                adapter=adapter,
+                diff_detector=mock_diff_detector,
+                output_writer=mock_output_writer,
+                notification_client=mock_notification_client,
+                snapshot_store=mock_snapshot_store,
+                db_connection=db_connection,
+                full_delete_enabled=True,
+            )
+            service.LOCK_FILE = tmp_path / ".collector.lock"
+
+            service.run_collection()
+
+            assert adapter.fetch_animal_list.call_count == 1
+        finally:
+            asyncio.run(db_connection.close())
+
+    def test_list_gone_does_not_delete_when_gate_disabled(
+        self,
+        tmp_path,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+    ):
+        """スイッチが入っていない間は 404 でも消さず、候補として記録するだけ"""
+        import asyncio
+
+        site_name = "テストサイト"
+        db_connection = self._db_with_rows(tmp_path, site_name, count=2)
+        try:
+            service = CollectorService(
+                adapter=self._adapter_raising(404),
+                diff_detector=mock_diff_detector,
+                output_writer=mock_output_writer,
+                notification_client=mock_notification_client,
+                snapshot_store=mock_snapshot_store,
+                db_connection=db_connection,
+            )
+            service.LOCK_FILE = tmp_path / ".collector.lock"
+
+            service.run_collection()
+
+            assert self._count_animals(db_connection) == 2
+        finally:
+            asyncio.run(db_connection.close())
+
+    def test_transient_failure_keeps_residual_records(
+        self,
+        tmp_path,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+    ):
+        """503 やタイムアウトは相手が重いだけなので消さない"""
+        import asyncio
+
+        site_name = "テストサイト"
+        db_connection = self._db_with_rows(tmp_path, site_name, count=2)
+        try:
+            service = CollectorService(
+                adapter=self._adapter_raising(503),
+                diff_detector=mock_diff_detector,
+                output_writer=mock_output_writer,
+                notification_client=mock_notification_client,
+                snapshot_store=mock_snapshot_store,
+                db_connection=db_connection,
+                full_delete_enabled=True,
+            )
+            service.LOCK_FILE = tmp_path / ".collector.lock"
+
+            service.run_collection()
+
+            assert self._count_animals(db_connection) == 2
+        finally:
+            asyncio.run(db_connection.close())
+
+    def test_unknown_status_failure_keeps_residual_records(
+        self,
+        tmp_path,
+        mock_diff_detector,
+        mock_output_writer,
+        mock_notification_client,
+        mock_snapshot_store,
+    ):
+        """接続できず status_code が取れない失敗も消さない"""
+        import asyncio
+
+        site_name = "テストサイト"
+        db_connection = self._db_with_rows(tmp_path, site_name, count=1)
+        try:
+            service = CollectorService(
+                adapter=self._adapter_raising(None),
+                diff_detector=mock_diff_detector,
+                output_writer=mock_output_writer,
+                notification_client=mock_notification_client,
+                snapshot_store=mock_snapshot_store,
+                db_connection=db_connection,
+                full_delete_enabled=True,
+            )
+            service.LOCK_FILE = tmp_path / ".collector.lock"
+
+            service.run_collection()
+
+            assert self._count_animals(db_connection) == 1
+        finally:
+            asyncio.run(db_connection.close())

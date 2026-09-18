@@ -633,6 +633,16 @@ class AnimalRepository:
 
         return self._to_pydantic(orm_animal)
 
+    async def count_by_site(self, source_site: str) -> int:
+        """指定サイト由来で DB に残っている行数を返す (T422)
+
+        0 件収集時に「消すべき残骸があるか」を判定してから 0 件確認
+        (list ページの再取得・LLM 判定) を行うために使う。
+        """
+        stmt = select(func.count()).select_from(Animal).where(Animal.source_site == source_site)
+        result = await self.session.execute(stmt)
+        return int(result.scalar_one())
+
     async def prune_disappeared(
         self,
         source_site: str,
