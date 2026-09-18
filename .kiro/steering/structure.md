@@ -17,7 +17,7 @@ oneco/
 │   │   ├── orchestration/       # collector_service / parallel_runner
 │   │   ├── llm/                 # Groq フォールバック (通常収集では未使用)
 │   │   ├── services/            # archive_service / scheduler
-│   │   └── config/sites.yaml    # 全213サイト定義
+│   │   └── config/sites.yaml    # 全212サイト定義
 │   ├── syndication_service/     # RSS/Atom (/feeds) + sns_publisher (Threads)
 │   └── notification_manager/    # LINE 通知 (実装済み・本番未配線)
 ├── frontend/                    # Next.js 16 App Router (Vercel)
@@ -39,7 +39,7 @@ oneco/
 ## Key Patterns
 
 - **adapter 追加**: `sites.yaml` エントリ + `rule_based/sites/<site>.py` 実装 + `SiteAdapterRegistry.register()` + end-to-end テスト。手順は `docs/wiki/03-adapters.md`
-- **1ファイル複数登録**: 1 adapter ファイルが複数 site_name（収容犬/収容猫等）を register するため、ファイル数(96) < sites.yaml エントリ数(213)（2026-09-09実測。数値は変動するため乖離したら実測し直すこと）
+- **1ファイル複数登録**: 1 adapter ファイルが複数 site_name（収容犬/収容猫等）を register するため、ファイル数(86) < sites.yaml エントリ数(212)（2026-09-17実測。数値は変動するため乖離したら実測し直すこと）
 - **Animal ⇔ AnimalArchive 同期**: `animals` に新カラムを足すときは `animals_archive` にも同時に追加（後付け移行不可）。ルート CLAUDE.md の再発防止ルール参照
 - **import 規約の混在**: `tests/adapters/` は `from data_collector...`（PYTHONPATH=src 必要）、`tests/domain/test_normalizer.py` は `from src.data_collector...`（不要）
 

@@ -1116,13 +1116,10 @@ sites:
     single_page: true
 
   # 【町田市】静的 HTML
-  - name: "町田市（収容動物のお知らせ）"
-    prefecture: "東京都"
-    prefecture_code: "13"
-    list_url: "https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/syuyou.html"
-    category: "sheltered"
-    single_page: true
-
+  # 旧「町田市（収容動物のお知らせ）」(pet/mayoi/syuyou.html) は 2026-09-14 から 404 で、
+  # 迷子ペットの案内ページ (pet/mayoi/index.html) からもリンクが消えたため外した (T417)。
+  # 空の月も「0 件」のページとして公開され続けていた (8/31 時点で連続 44 回 0 件) ので、
+  # 一時的な非公開ではなくページの廃止と判断している。
   - name: "町田市（保護情報）"
     prefecture: "東京都"
     prefecture_code: "13"
@@ -1851,12 +1848,15 @@ sites:
     category: "sheltered"
 
   # 【道北 アニウェル北海道】里親募集
+  # 2026-09 のリニューアルで旧一覧 /cats/ が 404 になり /afa/ (一覧→個別ページ) へ移った (T417)。
+  # 抽出は config/site_specs/aniwel.yaml
   - name: "アニウェル北海道（猫の里親募集）"
     prefecture: "北海道"
     prefecture_code: "01"
-    list_url: "https://aniwel.jp/cats/"
+    list_url: "https://aniwel.jp/afa/"
     category: "adoption"
-    single_page: true
+    # 2026-09-17 確認: 全ページ下部「動物保護施設 アニウェル・ケア … TEL：0157-57-3612(10:00～16:00)」
+    phone: "0157-57-3612"
 
   # 【道南 函館どうなん】 nyantomo.jp
   - name: "函館どうなん動物愛護センター（里親募集）"

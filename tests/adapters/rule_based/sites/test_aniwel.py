@@ -1,26 +1,29 @@
-"""AniwelAdapter のテスト
+"""アニウェル北海道（猫の里親募集） aniwel.jp のテスト
 
-非営利型一般社団法人アニウェル北海道（aniwel.jp） 用 rule-based adapter の
-動作を検証する。
+2026-09 のサイトリニューアル (WordPress → baserCMS) で旧一覧 `/cats/` が 404 になり、
+9/2 以降の収集が止まったまま古い 10 頭が公開され続けていた (T417)。新サイトは
+一覧 `/afa/` (ページ送りあり) → 個別ページ `/afa/view/<名前>` の構成なので、
+spec 駆動の GenericAdapter (config/site_specs/aniwel.yaml) で読む。
 
-- `div.flexitem2.base` カードが並ぶ single_page 形式 (WordPress / Lightning)
-- カードに `<div class="name|sex|age">` が含まれる
-- 0 件状態 (募集中の猫が居ない) では ParsingError ではなく空リスト
+フィクスチャは 2026-09-17 に実サイトから取得した HTML。
 """
 
 from __future__ import annotations
 
+import re
+from datetime import date
 from unittest.mock import patch
 
-import pytest
-
+from data_collector.adapters.rule_based import sites  # noqa: F401  registry 登録用
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
-from data_collector.adapters.rule_based.sites.aniwel import AniwelAdapter
-from data_collector.domain.models import RawAnimalData
-from data_collector.llm.config import SiteConfig
+from data_collector.domain.normalizer import DataNormalizer
+from data_collector.llm.config import SiteConfig, SiteConfigLoader
 
-_LIST_URL = "https://aniwel.jp/cats/"
 _SITE_NAME = "アニウェル北海道（猫の里親募集）"
+_LIST_URL = "https://aniwel.jp/afa/"
+
+# import 時点 (コレクション時) で取っておく。test_registry.py などが実行時に registry を clear するため
+AniwelAdapter = SiteAdapterRegistry.get(_SITE_NAME)
 
 
 def _site() -> SiteConfig:
@@ -30,238 +33,124 @@ def _site() -> SiteConfig:
         prefecture_code="01",
         list_url=_LIST_URL,
         category="adoption",
-        single_page=True,
+        phone="0157-57-3612",
     )
 
 
-def _load_aniwel_html(fixture_html) -> str:
-    """フィクスチャを読み込む
-
-    リポジトリに保存されている `aniwel_jp.html` は UTF-8 として正しく
-    保存されているため二重エンコーディング補正は不要。念のため
-    本来含まれるはずの「アニウェル」が読めない場合に補正をかける。
-    """
-    raw = fixture_html("aniwel_jp")
-    if "アニウェル" in raw:
-        return raw
-    try:
-        return raw.encode("latin-1").decode("utf-8")
-    except (UnicodeEncodeError, UnicodeDecodeError):
-        return raw
+def _pages(fixture_html) -> dict[str, str]:
+    return {
+        _LIST_URL: fixture_html("aniwel_afa__page1"),
+        "https://aniwel.jp/afa/index?page=2": fixture_html("aniwel_afa__page2"),
+        "https://aniwel.jp/afa/index?page=3": fixture_html("aniwel_afa__page3"),
+    }
 
 
-def _archive_body_html(cards_html: str = "") -> str:
-    """`/cats/` archive ページに相当する最小 HTML を生成する"""
-    return f"""
-    <html><body class="archive post-type-archive post-type-archive-cats post-type-cats">
-      <div id="main">
-        <div class="postList">
-          <div class="flexbox satooya">
-            {cards_html}
-          </div>
-        </div>
-      </div>
-    </body></html>
-    """
-
-
-def _card(name: str, sex: str, age: str, image_url: str = "") -> str:
-    img_html = f'<img src="{image_url}" alt="x" />' if image_url else ""
-    return f"""
-    <div class="flexitem2 width160 base">
-      <div class="full">
-        {img_html}
-        <div class="name">{name}</div>
-        <div class="sex">{sex}</div>
-        <div class="age">{age}</div>
-        <section class="Satooya">
-          <a href="https://aniwel.jp/cats/{name}/" class="btn_09">詳細</a>
-        </section>
-      </div>
-    </div>
-    """
-
-
-class TestAniwelAdapter:
-    def test_fetch_animal_list_returns_rows(self, fixture_html):
-        """実フィクスチャから動物カード (仮想 URL) が抽出できる"""
-        html = _load_aniwel_html(fixture_html)
+class TestAniwelList:
+    def test_follows_pagination_and_returns_detail_pages(self, fixture_html):
         adapter = AniwelAdapter(_site())
+        pages = _pages(fixture_html)
 
-        with patch.object(adapter, "_http_get", return_value=html):
+        with patch.object(adapter, "_http_get", side_effect=pages.__getitem__):
             result = adapter.fetch_animal_list()
 
-        # フィクスチャは 10 件のカードを含む
-        assert len(result) == 10
-        for i, (url, cat) in enumerate(result):
-            assert url == f"{_LIST_URL}#row={i}"
-            assert cat == "adoption"
+        slugs = ["momo", "shiro", "satsuki", "tom", "luck", "nazuna", "tama", "shinkuro"]
+        slugs += ["magari", "sasuke"]
+        assert result == [(f"https://aniwel.jp/afa/view/{s}", "adoption") for s in slugs]
+        assert adapter.list_truncated is False
 
-    def test_extract_animal_details_first_row(self, fixture_html):
-        """1 件目のカード (うらら) から RawAnimalData を構築できる
-
-        フィクスチャ収録の 1 件目:
-        - name: うらら (RawAnimalData には保持されない)
-        - sex: メス
-        - age: 約4歳
-        - 画像: /wp-content/uploads/2026/05/LINE_ALBUM_うらら_260503_18-150x150.jpg
-        - species: 猫 (サイト固定)
-        """
-        html = _load_aniwel_html(fixture_html)
+    def test_page_without_cards_is_empty_not_error(self, fixture_html):
+        """募集中の子がいない月も正常な 0 件として扱う (prune の安全弁は 0 件では働かない)"""
         adapter = AniwelAdapter(_site())
+        empty = fixture_html("aniwel_afa__page3").replace("list-parts inview", "gone")
 
-        with patch.object(adapter, "_http_get", return_value=html) as mock_get:
-            urls = adapter.fetch_animal_list()
-            first_url, category = urls[0]
-            raw = adapter.extract_animal_details(first_url, category=category)
+        with patch.object(adapter, "_http_get", return_value=empty):
+            assert adapter.fetch_animal_list() == []
 
-        # 同一ページから複数取得しても HTTP は 1 回だけ (キャッシュ確認)
-        assert mock_get.call_count == 1
-        assert isinstance(raw, RawAnimalData)
+
+class TestAniwelDetail:
+    def test_extracts_fields_and_normalizes(self, fixture_html):
+        adapter = AniwelAdapter(_site())
+        url = "https://aniwel.jp/afa/view/momo"
+
+        with patch.object(adapter, "_http_get", return_value=fixture_html("aniwel_afa__view_momo")):
+            raw = adapter.extract_animal_details(url, "adoption")
+
         assert raw.species == "猫"
+        assert raw.name == "もも"
         assert raw.sex == "メス"
-        assert "約4歳" in raw.age
-        assert raw.color == ""
-        assert raw.size == ""
-        # 動物カードに施設情報が無いため運営団体の所在地を共通で割り当てる
+        assert raw.age == "2021-9-3"
         assert raw.location == "アニウェル北海道（北見市）"
-        # phone は運営団体の代表電話を共通で割り当てる (2026-05 観測)
-        assert raw.phone == "0157-57-3612"
-        assert raw.shelter_date == ""
-        assert raw.source_url == first_url
-        assert raw.category == "adoption"
-        # 画像 URL は絶対 URL に変換され、wp-content/uploads 配下であること
-        assert raw.image_urls
-        assert all(u.startswith("https://aniwel.jp/") for u in raw.image_urls)
-        assert any("/wp-content/uploads/" in u for u in raw.image_urls)
+        assert raw.description.startswith("しろちゃんのお母さんです。")
+        assert raw.source_url == url
+        assert raw.image_urls == [
+            "https://aniwel.jp/files/bc_custom_content/3/custom_entries/2026/09/00000013_photo_thumb.jpg",
+            "https://aniwel.jp/design/images/afa_photo/momo01.jpg",
+            "https://aniwel.jp/design/images/afa_photo/momo02.jpg",
+            "https://aniwel.jp/design/images/afa_photo/momo03.jpg",
+            "https://aniwel.jp/design/images/afa_photo/momo04.jpg",
+            "https://aniwel.jp/design/images/afa_photo/momo5.jpg",
+        ]
 
-    def test_multiple_rows_indexed_correctly(self, fixture_html):
-        """複数カードが index 順で正しく抽出される (フィクスチャの 2 件目: しま)"""
-        html = _load_aniwel_html(fixture_html)
+        with patch.object(DataNormalizer, "_today", staticmethod(lambda: date(2026, 9, 17))):
+            animal = adapter.normalize(raw)
+
+        assert animal.species == "猫"
+        # スライド写真は /design/ 配下のため全サイト共通のジャンク画像判定で落ち、アイキャッチだけが残る
+        assert [str(u) for u in animal.image_urls] == [raw.image_urls[0]]
+        assert animal.sex == "女の子"
+        assert animal.age_months == 60
+        assert animal.name == "もも"
+        assert animal.phone == "0157-57-3612"
+        assert animal.location == "アニウェル北海道（北見市）"
+        assert str(animal.source_url) == url
+
+    def test_image_urls_do_not_change_with_cache_busting_query(self, fixture_html):
+        """アイキャッチ画像には取得ごとに変わる数字のクエリが付く。付いたままだと毎日画像が変わったことになる"""
+        adapter = AniwelAdapter(_site())
+        html = fixture_html("aniwel_afa__view_momo")
+        other_query = re.sub(r"photo_thumb\.jpg\?\d+", "photo_thumb.jpg?7", html)
+        assert other_query != html
+
+        urls = []
+        for page in (html, other_query):
+            with patch.object(adapter, "_http_get", return_value=page):
+                urls.append(
+                    adapter.extract_animal_details("https://aniwel.jp/afa/view/momo").image_urls
+                )
+
+        assert urls[0] == urls[1]
+
+    def test_age_takes_first_birth_date_when_two_are_entered(self, fixture_html):
+        """シンクロは年齢欄に生年月日が 2 つ入っている (span 要素)。先頭を採る"""
         adapter = AniwelAdapter(_site())
 
-        with patch.object(adapter, "_http_get", return_value=html):
-            urls = adapter.fetch_animal_list()
-            raw0 = adapter.extract_animal_details(urls[0][0], category="adoption")
-            raw1 = adapter.extract_animal_details(urls[1][0], category="adoption")
+        with patch.object(
+            adapter, "_http_get", return_value=fixture_html("aniwel_afa__view_shinkuro")
+        ):
+            raw = adapter.extract_animal_details("https://aniwel.jp/afa/view/shinkuro")
 
-        # 1 件目: うらら / メス / 約4歳
-        assert raw0.sex == "メス"
-        assert "約4歳" in raw0.age
-        # 2 件目: しま / メス / 約10歳3ヵ月
-        assert raw1.sex == "メス"
-        assert "10歳" in raw1.age
-
-    def test_extract_caches_html_across_calls(self, fixture_html):
-        """同一 adapter インスタンスでは _http_get は 1 回だけ呼ばれる"""
-        html = _load_aniwel_html(fixture_html)
-        adapter = AniwelAdapter(_site())
-
-        with patch.object(adapter, "_http_get", return_value=html) as mock_get:
-            urls = adapter.fetch_animal_list()
-            for u, c in urls:
-                adapter.extract_animal_details(u, category=c)
-
-        assert mock_get.call_count == 1
-
-    def test_species_is_always_cat(self, fixture_html):
-        """サイトは猫専用 archive のため species は常に 猫"""
-        html = _load_aniwel_html(fixture_html)
-        adapter = AniwelAdapter(_site())
-
-        with patch.object(adapter, "_http_get", return_value=html):
-            urls = adapter.fetch_animal_list()
-            for url, cat in urls:
-                raw = adapter.extract_animal_details(url, category=cat)
-                assert raw.species == "猫"
-
-    def test_synthetic_card_basic(self):
-        """合成 HTML (1 カード) でも正しく抽出できる"""
-        cards = _card(
-            name="テスト",
-            sex="オス",
-            age="約2歳",
-            image_url=("https://aniwel.jp/wp-content/uploads/2025/01/test-150x150.jpg"),
-        )
-        html = _archive_body_html(cards_html=cards)
-        adapter = AniwelAdapter(_site())
-
-        with patch.object(adapter, "_http_get", return_value=html):
-            urls = adapter.fetch_animal_list()
-            assert len(urls) == 1
-            raw = adapter.extract_animal_details(urls[0][0], category="adoption")
-
-        assert raw.species == "猫"
+        assert raw.age == "2016-12-1"
         assert raw.sex == "オス"
-        assert "約2歳" in raw.age
-        assert raw.image_urls == ["https://aniwel.jp/wp-content/uploads/2025/01/test-150x150.jpg"]
+        assert raw.name == "シンクロ"
 
-        # normalize() 経由でも主要フィールドが期待通りに変換されること
-        # (T042/T114: raw のみの確認では normalize 段の退行を検知できない)。
-        # 実際に adapter.normalize() を実行して確認した値: sex "オス"→"男の子"、
-        # age "約2歳"→24ヶ月。shelter_date は元データに無いため収集日
-        # フォールバック (shelter_date_estimated=True) になる。
-        animal_data = adapter.normalize(raw)
-        assert animal_data.sex == "男の子"
-        assert animal_data.age_months == 24
-        assert animal_data.phone == "0157-57-3612"
-        assert animal_data.location == "アニウェル北海道（北見市）"
-        assert animal_data.shelter_date_estimated is True
 
-    def test_empty_archive_returns_empty_list(self):
-        """カードが 0 件の archive ページでは空リストを返す (例外を投げない)"""
-        html = _archive_body_html(cards_html="")
-        adapter = AniwelAdapter(_site())
+class TestAniwelSiteConfig:
+    def test_sites_yaml_points_at_renewed_list_with_contact_phone(self):
+        """一覧はリニューアル後の /afa/。電話はサイト下部の「TEL：0157-57-3612(10:00～16:00)」"""
+        from pathlib import Path
 
-        with patch.object(adapter, "_http_get", return_value=html):
-            result = adapter.fetch_animal_list()
+        sites_yaml = Path(__file__).resolve().parents[4] / "src/data_collector/config/sites.yaml"
+        site = next(s for s in SiteConfigLoader.load(sites_yaml).sites if s.name == _SITE_NAME)
 
-        assert result == []
+        assert site.list_url == _LIST_URL
+        assert site.phone == "0157-57-3612"
+        assert site.single_page is False
 
-    def test_unknown_template_raises_parsing_error(self):
-        """archive を示す signal も無く行も無い場合は ParsingError を投げる"""
-        html = "<html><body><main>無関係なページ</main></body></html>"
-        adapter = AniwelAdapter(_site())
+    def test_registered_from_spec_not_bespoke_module(self):
+        import importlib.util
 
-        with patch.object(adapter, "_http_get", return_value=html):
-            with pytest.raises(Exception):
-                adapter.fetch_animal_list()
-
-    def test_relative_image_resolved_to_absolute(self):
-        """カード内の相対 URL 画像が絶対 URL に変換される"""
-        cards = _card(
-            name="rel",
-            sex="メス",
-            age="約1歳",
-            image_url="/wp-content/uploads/2025/05/rel-150x150.jpg",
-        )
-        html = _archive_body_html(cards_html=cards)
-        adapter = AniwelAdapter(_site())
-
-        with patch.object(adapter, "_http_get", return_value=html):
-            urls = adapter.fetch_animal_list()
-            raw = adapter.extract_animal_details(urls[0][0], category="adoption")
-
-        assert raw.image_urls
-        for u in raw.image_urls:
-            assert u.startswith("https://aniwel.jp/")
-            assert "/wp-content/uploads/" in u
-
-    def test_card_without_image_returns_empty_image_urls(self):
-        """画像が無いカードでも例外を投げず image_urls が空になる"""
-        cards = _card(name="noimg", sex="オス", age="約3歳", image_url="")
-        html = _archive_body_html(cards_html=cards)
-        adapter = AniwelAdapter(_site())
-
-        with patch.object(adapter, "_http_get", return_value=html):
-            urls = adapter.fetch_animal_list()
-            raw = adapter.extract_animal_details(urls[0][0], category="adoption")
-
-        assert raw.image_urls == []
-        assert raw.sex == "オス"
-
-    def test_site_registered(self):
-        """サイト名が Registry に登録されている"""
-        if SiteAdapterRegistry.get(_SITE_NAME) is None:
-            SiteAdapterRegistry.register(_SITE_NAME, AniwelAdapter)
-        assert SiteAdapterRegistry.get(_SITE_NAME) is AniwelAdapter
+        assert AniwelAdapter is not None
+        # GenericAdapter が type() で生成するクラスは Generic<サイト名>Adapter という名前になる
+        assert AniwelAdapter.__name__.startswith("Generic")
+        # 同名の個別 adapter が残っていると registry では個別側が勝ち、spec が使われない
+        assert importlib.util.find_spec("data_collector.adapters.rule_based.sites.aniwel") is None

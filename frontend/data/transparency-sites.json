@@ -1,5 +1,5 @@
 {
-  "total_sources": 213,
+  "total_sources": 212,
   "total_prefectures": 47,
   "total_hosts": 93,
   "by_prefecture": {
@@ -115,7 +115,7 @@
       {
         "name": "アニウェル北海道（猫の里親募集）",
         "host": "aniwel.jp",
-        "url": "https://aniwel.jp/cats/"
+        "url": "https://aniwel.jp/afa/"
       },
       {
         "name": "函館どうなん動物愛護センター（里親募集）",
@@ -580,7 +580,7 @@
       {
         "name": "愛知県わんにゃんナビ",
         "host": "wannyan-navi.pref.aichi.jp",
-        "url": "https://wannyan-navi.pref.aichi.jp/"
+        "url": "https://wannyan-navi.pref.aichi.jp/?page=list_dc"
       },
       {
         "name": "豊橋市あいくる（迷い犬）",
@@ -620,11 +620,6 @@
         "name": "町田市（保護情報）",
         "host": "www.city.machida.tokyo.jp",
         "url": "https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/hogo.html"
-      },
-      {
-        "name": "町田市（収容動物のお知らせ）",
-        "host": "www.city.machida.tokyo.jp",
-        "url": "https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/syuyou.html"
       },
       {
         "name": "町田市（迷子その他・捜索）",

@@ -1,7 +1,6 @@
 """町田市保健所 rule-based adapter (h3+ul li 形式)
 
-対象 5 サイト（同一 CMS テンプレート）:
-- syuyou.html                       (収容動物のお知らせ)
+対象 4 サイト（同一 CMS テンプレート）:
 - hogo.html                         (保護情報)
 - pet_fumei/search_dog.html         (迷子犬・捜索)
 - pet_fumei/search_cat.html         (迷子猫・捜索)
@@ -142,7 +141,8 @@ class CityMachidaAdapter(RuleBasedAdapter):
     `article > h2 (セクションアンカー) > h3 (動物見出し) > ul li (フィールド)`
     という DOM 構造を前提に動物リストを抽出する。
 
-    本 adapter は 5 サイト共通で使われる（syuyou / hogo / search_{dog,cat,sonota}）。
+    本 adapter は 4 サイト共通で使われる（hogo / search_{dog,cat,sonota}）。
+    旧 syuyou.html（収容動物のお知らせ）は 2026-09 に廃止され sites.yaml から外した (T417)。
     """
 
     SECTION_ANCHORS: ClassVar[tuple[str, ...]] = _SECTION_ANCHORS
@@ -498,10 +498,9 @@ class CityMachidaAdapter(RuleBasedAdapter):
 
 
 # ─────────────────── サイト登録 ───────────────────
-# 町田市の 5 サイト（収容/保護/捜索犬/捜索猫/捜索その他）が同一 adapter を共有する。
+# 町田市の 4 サイト（保護/捜索犬/捜索猫/捜索その他）が同一 adapter を共有する。
 # sites.yaml に登録される全名称を列挙する。
 _MACHIDA_SITE_NAMES: tuple[str, ...] = (
-    "町田市（収容動物のお知らせ）",
     "町田市（保護情報）",
     "町田市（捜索：飼い主が探している）",
     "町田市（迷子犬・捜索）",

@@ -105,6 +105,15 @@ def _make_list_detail_class(spec: SiteSpec, class_name: str) -> type[WordPressLi
             return [u for u in urls if u and not u.endswith("/")]
 
         namespace["_filter_image_urls"] = _filter_image_urls
+    elif spec.image_filter == "strip_query":
+
+        def _filter_image_urls_without_query(
+            self: WordPressListAdapter, urls: list[str], base_url: str
+        ) -> list[str]:
+            """取得ごとに変わるキャッシュ回避クエリを外す (外した結果の重複は先勝ち)"""
+            return list(dict.fromkeys(u.split("?", 1)[0].split("#", 1)[0] for u in urls if u))
+
+        namespace["_filter_image_urls"] = _filter_image_urls_without_query
 
     if spec.always_empty or spec.empty_state_patterns:
 
