@@ -327,7 +327,12 @@ class AnimalRepository:
         )
 
     async def _death_was_undone_by_human(self, animal_id: int) -> bool:
-        """人 (収集以外) が deceased → sheltered に戻した履歴があるか"""
+        """人 (収集以外) が deceased → sheltered に戻した履歴があるか
+
+        判定は個体単位で恒久。一度取り消した子は、その後に本当に死亡しても収集では
+        deceased にできない (管理 API からは変えられる)。掲載がページから消えれば
+        prune で行ごと削除され履歴も一緒に消えるため、再掲載時には元に戻る。
+        """
         stmt = (
             select(AnimalStatusHistory)
             .where(
