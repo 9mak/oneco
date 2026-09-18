@@ -2811,3 +2811,57 @@ async def test_save_animal_inserts_deceased_row_without_history(repository, asyn
     ).scalar_one()
     assert saved.status == "deceased"
     assert await repository.get_animal_by_id_orm(saved.id) is None
+
+
+@pytest.mark.asyncio
+async def test_collection_does_not_redo_a_death_a_human_undid(repository, async_session):
+    """人が取り消した死亡を、翌日の収集がまた立て直さない (T424 再レビュー N-02)
+
+    誤検知で deceased になった子を人が sheltered へ戻しても、自治体側の備考は
+    変わらないため収集は翌日も deceased を返す。そこで無条件に反映すると、
+    人の取り消しが 24 時間しか保たない。
+    """
+    animal = Animal(
+        species="猫",
+        shelter_date=date(2026, 9, 11),
+        location="越谷市",
+        source_url="https://example.com/animal/undone-death",
+        status="sheltered",
+    )
+    async_session.add(animal)
+    await async_session.commit()
+    await async_session.refresh(animal)
+
+    collected = AnimalData(
+        species="猫",
+        shelter_date=date(2026, 9, 11),
+        location="越谷市",
+        source_url="https://example.com/animal/undone-death",
+        category="lost",
+        status=AnimalStatus.DECEASED,
+    )
+
+    # 1 日目: 収集が死亡を検知して公開から外す
+    await repository.save_animal(collected)
+    assert await repository.get_animal_by_id_orm(animal.id) is None
+
+    # 人が「死亡ではない」と判断して戻す
+    await repository.update_status(
+        animal_id=animal.id,
+        new_status=AnimalStatus.SHELTERED,
+        changed_by="admin",
+    )
+    assert await repository.get_animal_by_id_orm(animal.id) is not None
+
+    # 2 日目: 備考は変わっていないので収集はまた deceased を返すが、戻さない
+    await repository.save_animal(collected)
+
+    from sqlalchemy import select
+
+    saved = (
+        await async_session.execute(
+            select(Animal).where(Animal.source_url == "https://example.com/animal/undone-death")
+        )
+    ).scalar_one()
+    assert saved.status == "sheltered"
+    assert await repository.get_animal_by_id_orm(animal.id) is not None

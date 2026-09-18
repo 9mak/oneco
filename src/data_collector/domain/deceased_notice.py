@@ -47,29 +47,46 @@ _DEATH_RE = re.compile(
     r"|亡くなっ(?:た|ています)"
 )
 
-# 死んだのが対象の個体ではない場合に出てくる語。一致語と同じ文 (「。」「改行」区切り) に
-# 前後どちらでも出たら、死亡記載と見なさない。「路上で死体となっていた母猫のそばで
-# 保護されました」のように主語が後ろに来る書き方があるため後ろも見る。
-_OTHER_SUBJECT_RE = re.compile(
-    r"飼い?主|飼主|所有者|世帯主|家族|同居人"
-    r"|おばあ|おじい|祖母|祖父|高齢者施設"
-    r"|母猫|母犬|父猫|父犬|親が|親の|きょうだい|兄弟|姉妹|同胎|他の[０-９0-9]*[頭匹]"
+# 死んだのが対象の個体ではない場合に出てくる人・動物。
+_OTHER_SUBJECTS = (
+    r"飼い?主|飼主|所有者|世帯主|持ち主|ご?主人|家族|同居人|老人"
+    r"|おばあ|おじい|祖母|祖父"
+    r"|母猫|母犬|父猫|父犬|親|きょうだい|兄弟|姉妹|同胎|先住[猫犬]"
+    r"|他の[０-９0-9]+[頭匹]"
+)
+# 主語に続く助詞。これを必須にして「係り受け」を要求する。
+# 「飼い主が死亡したため」は除外するが、「飼い主判明せず 令和8年9月13日 死亡確認」
+# (収容動物の備考として普通に書かれる) は除外しない。越谷の備考は句点が無く
+# スペース区切りの 1 文なので、文の中に語があるだけで無効にすると本物を落とす。
+_SUBJECT_PARTICLE = r"(?:さん|さま|様)?(?:が|は|も|の)"
+_DEATH_WORDS = r"死亡|死体|亡くな|永眠|他界|斃死|へい死"
+
+# 「飼い主が高齢者施設に入所し、その後亡くなりました」= 主語 → 助詞 → 死。
+# 助詞を挟まず直に続く複合語 (「飼主死亡により保護」) も同じ意味なので拾う。
+_OTHER_SUBJECT_BEFORE = re.compile(
+    rf"(?:{_OTHER_SUBJECTS})(?:{_SUBJECT_PARTICLE}[^。\n]{{0,16}}?)?(?:{_DEATH_WORDS})"
+)
+# 「路上で死体となっていた母猫のそばで保護されました」= 死 → 主語
+_OTHER_SUBJECT_AFTER = re.compile(
+    rf"(?:{_DEATH_WORDS})[^。\n]{{0,10}}?(?:{_OTHER_SUBJECTS}){_SUBJECT_PARTICLE}"
 )
 
 # 死亡そのものでなく、手続きの案内や仮定の話である場合。一致語の後ろ 12 文字以内を見る。
 # 「ペットが死亡したとき」「犬の登録・変更・死亡届」のような案内文は自治体ページの
 # ナビゲーションに必ず載っている (2026-09-18 に全 213 サイトを実測したところ、死亡の語を
 # 含む 33 ページのうち 32 ページがこの種の定型文だった)。
+# 打ち消し (「死亡していません」「誤って死亡と掲載していました」) もここで外す。
+# 拾わない側に倒れるので、生きている子を消す方向には働かない。
 _PROCEDURE_RE = re.compile(
     r"届|申請|手続|登録の抹消|連絡してください|連絡ください|とき|場合|際に|際は|処理|引き取|引取"
+    r"|していません|ではありません|ではなく|ではない|の可能性|かもしれ"
+    r"|と掲載|と記載|は誤り|は間違"
 )
 
 # 「動物死体の引き取り」のような、個体ではなく死体処理サービスを指す語。
 # 一致語が死体系のとき、その直前 4 文字に出たら個体の死亡記載と見なさない。
 _CARCASS_WORDS = ("死体", "へい死", "斃死")
 _GENERIC_CARCASS_RE = re.compile(r"動物|犬猫|ペット")
-
-_SENTENCE_SEP = re.compile(r"[。\n]")
 
 
 def deceased_notice(text: str | None) -> str | None:
@@ -87,8 +104,9 @@ def deceased_notice(text: str | None) -> str | None:
     if not text:
         return None
 
+    covered = _spans_of_other_subject_deaths(text)
     for m in _DEATH_RE.finditer(text):
-        if _OTHER_SUBJECT_RE.search(_sentence_around(text, m.start())):
+        if any(start <= m.start() < end for start, end in covered):
             # 死んだのが飼い主・母猫・きょうだい等。対象の個体は生きている
             continue
         if _PROCEDURE_RE.search(text[m.end() : m.end() + 12]):
@@ -101,14 +119,15 @@ def deceased_notice(text: str | None) -> str | None:
     return None
 
 
-def _sentence_around(text: str, index: int) -> str:
-    """index を含む文 (「。」か改行で区切った範囲) を返す"""
-    start = 0
-    end = len(text)
-    for m in _SENTENCE_SEP.finditer(text):
-        if m.end() <= index:
-            start = m.end()
-        else:
-            end = m.start()
-            break
-    return text[start:end]
+def _spans_of_other_subject_deaths(text: str) -> list[tuple[int, int]]:
+    """「対象の個体ではない誰かが死んだ」と読める範囲を返す。
+
+    主語と死の語が助詞でつながっている箇所だけを拾う。文の中に「飼い主」という
+    語があるだけで全体を無効にすると、「飼い主判明せず 令和8年9月13日 死亡確認」
+    のような越谷の実際の書き方で本物の死亡記載を落とす。
+    """
+    return [
+        m.span()
+        for pattern in (_OTHER_SUBJECT_BEFORE, _OTHER_SUBJECT_AFTER)
+        for m in pattern.finditer(text)
+    ]

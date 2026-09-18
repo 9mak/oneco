@@ -137,3 +137,33 @@ class TestCollectSiteStableVirtualUrls:
             f"{page}#animal=260916mayoineko.jpg",
             f"{page}#animal=210129mayoineko2.jpg",
         ]
+
+
+class TestDeceasedIsNotAMissingPublication:
+    """死亡記載で公開から外れた個体を「掲載漏れ疑い」に数えない (T424)
+
+    越谷市の adapter は備考の死亡記載に status=deceased を立てる。公開 API は
+    deceased を外すため、そのまま突き合わせると adapter_only (掲載漏れ疑い) に
+    落ちて、本物の掲載漏れと区別が付かなくなる。
+    """
+
+    @staticmethod
+    def _classify(animal: dict, api_urls: set[str]) -> str:
+        """run_audit の分類部分と同じ条件で 1 頭を仕分ける"""
+        if animal["source_url"] in api_urls:
+            return "matched"
+        if fpa.normalize_value("status", animal.get("status")) == "deceased":
+            return "deceased_not_published"
+        return "adapter_only"
+
+    def test_deceased_animal_is_separated(self):
+        animal = {"source_url": "https://example.com/a#row=0", "status": "deceased"}
+        assert self._classify(animal, set()) == "deceased_not_published"
+
+    def test_sheltered_animal_missing_from_api_is_still_flagged(self):
+        animal = {"source_url": "https://example.com/a#row=0", "status": None}
+        assert self._classify(animal, set()) == "adapter_only"
+
+    def test_published_animal_is_matched(self):
+        animal = {"source_url": "https://example.com/a#row=0", "status": "deceased"}
+        assert self._classify(animal, {"https://example.com/a#row=0"}) == "matched"
