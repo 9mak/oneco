@@ -25,7 +25,9 @@ from __future__ import annotations
 from unittest.mock import patch
 
 import pytest
+from bs4 import BeautifulSoup
 
+from data_collector.adapters.municipality_adapter import ParsingError
 from data_collector.adapters.rule_based.playwright import PlaywrightFetchMixin
 from data_collector.adapters.rule_based.registry import SiteAdapterRegistry
 from data_collector.adapters.rule_based.sites.wannyan_navi_aichi import (
@@ -86,6 +88,18 @@ DETAIL_HTML_DOG = """
 
 # 「基本情報」見出しが見つからない = 想定外の構造崩壊。
 DETAIL_HTML_NO_BASIC_INFO = "<html><body><p>読み込み中…</p></body></html>"
+
+# 見出しなど固定の文言だけ描画され、個体のデータ (管理番号・場所・写真・講習会リンクの
+# 犬/猫) がまだ入っていない状態 (T421)。本番の収集では「特徴」の次の固定文言
+# 「譲渡をご希望の方」が説明として拾われ、空の子として保存・公開されていた。
+DETAIL_HTML_UNRENDERED = """
+<html><body>
+<div class="bubble-element Text"><div>基本情報</div></div>
+<div class="bubble-element Text"><div>特徴</div></div>
+<div class="bubble-element Text"><div>譲渡をご希望の方</div></div>
+<div class="bubble-element Text"><div>お問い合わせ</div></div>
+</body></html>
+"""
 
 
 def _site_aichi() -> SiteConfig:
@@ -389,6 +403,41 @@ class TestWannyanNaviAichiAdapterDetailExtraction:
         # 3 img (うち2枚は同一ファイル id の解像度違い) → 2 枚に集約
         assert len(raw.image_urls) == 2
         assert all("logo" not in u.lower() for u in raw.image_urls)
+
+    def test_unrendered_detail_is_refetched_then_raises(self):
+        """データが描画される前のページは 1 回取り直し、それでも空なら保存させない (T421)
+
+        空のまま保存すると、前日までの正しい値 (種別・性別・写真) が識別判定「判定不能」の
+        上書きで消える。2026-09-17 の公開 34 頭中 23 頭がこの状態だった。
+        """
+        adapter = WannyanNaviAichiAdapter(_site_aichi())
+        url = (
+            "https://wannyan-navi.pref.aichi.jp/?page=list_dc_m&no=1788765947111x861113444801445900"
+        )
+        with patch.object(adapter, "_http_get", return_value=DETAIL_HTML_UNRENDERED) as mock_get:
+            with pytest.raises(ParsingError):
+                adapter.extract_animal_details(url, category="adoption")
+
+        assert mock_get.call_count == 2
+
+    def test_unrendered_detail_recovers_on_refetch(self):
+        adapter = WannyanNaviAichiAdapter(_site_aichi())
+        url = "https://wannyan-navi.pref.aichi.jp/?page=list_dc_m&no=abc123"
+        with patch.object(
+            adapter, "_http_get", side_effect=[DETAIL_HTML_UNRENDERED, DETAIL_HTML_CAT]
+        ) as mock_get:
+            raw = adapter.extract_animal_details(url, category="adoption")
+
+        assert mock_get.call_count == 2
+        assert raw.management_number == "尾263014"
+        assert raw.species == "猫"
+
+    def test_fixed_label_after_feature_heading_is_not_description(self):
+        """「特徴」の次が固定文言「譲渡をご希望の方」なら説明は空 (説明欄が未描画か未記入)"""
+        adapter = WannyanNaviAichiAdapter(_site_aichi())
+        soup = BeautifulSoup(DETAIL_HTML_UNRENDERED, "html.parser")
+
+        assert adapter._extract_description(soup) == ""
 
     def test_extract_animal_details_raises_on_missing_basic_info(self):
         """「基本情報」見出しすら見つからない = 構造崩壊として ParsingError"""

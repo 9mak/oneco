@@ -86,6 +86,9 @@ _INVALID_AGE_PATTERN = re.compile(r"NaN\s*(?:歳|ヶ月|ヵ月|か月)")
 _MANAGEMENT_NO_PREFIX = re.compile(r"^No\s*[.．]?\s*")
 _POSTED_DATE_PATTERN = re.compile(r"掲載日[：:]\s*(\d{4}/\d{1,2}/\d{1,2})")
 _GUIDE_LINK_PATTERN = re.compile(r"(犬|猫)の飼い方講習会へ")
+# 「特徴」見出しの後ろに並ぶ固定の文言。説明欄が空 (未記入か未描画) のとき
+# 「特徴」の次の葉要素がこれになり、説明として拾ってしまう (T421)。
+_FIXED_TEXTS_AFTER_FEATURE = frozenset({"譲渡をご希望の方", "お問い合わせ"})
 _BUBBLE_FILE_ID_PATTERN = re.compile(r"/(f\d+x\d+)/")
 
 # detail URL の `page` クエリパラメータ値 (一覧カードクリック時の実測値)。
@@ -344,8 +347,7 @@ class WannyanNaviAichiAdapter(PlaywrightFetchMixin, WordPressListAdapter):
 
     def extract_animal_details(self, detail_url: str, category: str = "adoption") -> RawAnimalData:
         """detail ページ (deep link 単独ロード) から RawAnimalData を構築する"""
-        html = self._http_get(detail_url)
-        soup = BeautifulSoup(html, "html.parser")
+        soup = self._fetch_rendered_detail(detail_url)
 
         basic = self._extract_basic_info(soup)
         description = self._extract_description(soup)
@@ -392,6 +394,31 @@ class WannyanNaviAichiAdapter(PlaywrightFetchMixin, WordPressListAdapter):
             )
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=detail_url) from e
+
+    def _fetch_rendered_detail(self, detail_url: str) -> BeautifulSoup:
+        """個体のデータ (基本情報か写真) が描画された detail ページを返す
+
+        本番の収集では、見出しなどの固定文言だけが描画され、個体のデータがまだ入っていない
+        ページを取ることがある (T421: 2026-09-17 の公開 34 頭中 23 頭)。これを保存すると
+        前日までの正しい値が識別判定「判定不能」の上書きで消えるため、1 回だけ取り直し、
+        それでも空なら ParsingError にして保存させない (前日の値が残る)。
+        """
+        for attempt in (1, 2):
+            soup = BeautifulSoup(self._http_get(detail_url), "html.parser")
+            if any(self._extract_basic_info(soup).values()) or self._extract_images(
+                soup, detail_url
+            ):
+                return soup
+            logger.warning(
+                "[%s] 個体のデータが描画される前のページでした (%d 回目): %s",
+                self.site_config.name,
+                attempt,
+                detail_url,
+            )
+        raise ParsingError(
+            "個体のデータ (基本情報・写真) が描画されないため保存しません",
+            url=detail_url,
+        )
 
     # ─────────────────── 構造的抽出ヘルパー ───────────────────
 
@@ -476,7 +503,10 @@ class WannyanNaviAichiAdapter(PlaywrightFetchMixin, WordPressListAdapter):
         except ValueError:
             return ""
         if idx + 1 < len(texts):
-            return texts[idx + 1]
+            text = texts[idx + 1]
+            if text in _FIXED_TEXTS_AFTER_FEATURE or _GUIDE_LINK_PATTERN.fullmatch(text):
+                return ""
+            return text
         return ""
 
     @staticmethod
