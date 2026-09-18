@@ -2576,3 +2576,143 @@ async def test_save_animal_detail_page_url_keeps_existing_unknown_verdict(
     assert repository.url_reuse_count == 0
     rows = (await async_session.execute(select(Animal).where(Animal.source_url == url))).scalars()
     assert [r.species for r in rows.all()] == ["犬"]
+
+
+# === T424: 収集が status を変えたときの記録 ===
+
+
+@pytest.mark.asyncio
+async def test_save_animal_records_status_change_from_collection(repository, async_session):
+    """収集が deceased を立てたら変更日時と履歴を残す
+
+    備考の死亡記載で公開から外す (T424) のは収集経路からの status 変更になる。
+    管理 API 経由の update_status と同じく、いつ・何が変えたかを追えるようにする。
+    """
+    existing_animal = Animal(
+        species="猫",
+        shelter_date=date(2026, 9, 11),
+        location="越谷市越ケ谷3丁目地内",
+        source_url="https://example.com/animal/deceased",
+        status="sheltered",
+    )
+    async_session.add(existing_animal)
+    await async_session.commit()
+
+    animal_data = AnimalData(
+        species="猫",
+        shelter_date=date(2026, 9, 11),
+        location="越谷市越ケ谷3丁目地内",
+        source_url="https://example.com/animal/deceased",
+        category="lost",
+        status=AnimalStatus.DECEASED,
+    )
+    await repository.save_animal(animal_data)
+
+    from sqlalchemy import select
+
+    from src.data_collector.infrastructure.database.models import AnimalStatusHistory
+
+    stmt = select(Animal).where(Animal.source_url == "https://example.com/animal/deceased")
+    saved = (await async_session.execute(stmt)).scalar_one()
+    assert saved.status == "deceased"
+    assert saved.status_changed_at is not None
+
+    history = (
+        (
+            await async_session.execute(
+                select(AnimalStatusHistory).where(AnimalStatusHistory.animal_id == saved.id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert len(history) == 1
+    assert history[0].old_status == "sheltered"
+    assert history[0].new_status == "deceased"
+    assert history[0].changed_by == "collector"
+
+
+@pytest.mark.asyncio
+async def test_save_animal_same_status_writes_no_history(repository, async_session):
+    """同じ status を毎日渡されても履歴を増やさない"""
+    existing_animal = Animal(
+        species="猫",
+        shelter_date=date(2026, 9, 11),
+        location="越谷市",
+        source_url="https://example.com/animal/deceased-again",
+        status="deceased",
+    )
+    async_session.add(existing_animal)
+    await async_session.commit()
+
+    animal_data = AnimalData(
+        species="猫",
+        shelter_date=date(2026, 9, 11),
+        location="越谷市",
+        source_url="https://example.com/animal/deceased-again",
+        category="lost",
+        status=AnimalStatus.DECEASED,
+    )
+    await repository.save_animal(animal_data)
+
+    from sqlalchemy import select
+
+    from src.data_collector.infrastructure.database.models import AnimalStatusHistory
+
+    saved = (
+        await async_session.execute(
+            select(Animal).where(Animal.source_url == "https://example.com/animal/deceased-again")
+        )
+    ).scalar_one()
+    history = (
+        (
+            await async_session.execute(
+                select(AnimalStatusHistory).where(AnimalStatusHistory.animal_id == saved.id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert saved.status == "deceased"
+    assert history == []
+
+
+@pytest.mark.asyncio
+async def test_save_animal_keeps_status_on_invalid_transition(repository, async_session):
+    """deceased の子が再び収集されても sheltered へは戻さない
+
+    deceased → sheltered は StatusTransitionValidator が禁じる遷移。収集は毎日
+    走るため、ここで例外を投げると 1 頭でサイト全体の収集が落ちる。status だけ
+    据え置いて他のフィールドは更新する。
+    """
+    existing_animal = Animal(
+        species="猫",
+        shelter_date=date(2026, 9, 11),
+        location="越谷市",
+        source_url="https://example.com/animal/revived",
+        status="deceased",
+        color="白茶",
+    )
+    async_session.add(existing_animal)
+    await async_session.commit()
+
+    animal_data = AnimalData(
+        species="猫",
+        shelter_date=date(2026, 9, 11),
+        location="越谷市",
+        source_url="https://example.com/animal/revived",
+        category="lost",
+        status=AnimalStatus.SHELTERED,
+        color="黒",
+    )
+    await repository.save_animal(animal_data)
+
+    from sqlalchemy import select
+
+    saved = (
+        await async_session.execute(
+            select(Animal).where(Animal.source_url == "https://example.com/animal/revived")
+        )
+    ).scalar_one()
+    assert saved.status == "deceased"
+    assert saved.color == "黒"

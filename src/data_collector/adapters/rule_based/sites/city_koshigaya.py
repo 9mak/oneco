@@ -72,7 +72,7 @@ class CityKoshigayaAdapter(SinglePageTableAdapter):
         2: "age",  # 年齢
         3: "color",  # 毛色
         4: "size",  # 体格
-        5: "features",  # 備考
+        5: "description",  # 備考
     }
     # 動物テーブル自体には「場所」列はない (別テーブル)
     LOCATION_COLUMN: ClassVar[int | None] = None
@@ -199,6 +199,11 @@ class CityKoshigayaAdapter(SinglePageTableAdapter):
         age = _cell_text(2)
         color = _cell_text(3)
         size = _cell_text(4)
+        # 備考 (6 列目): 「長尾 短毛 首輪なし」等の個体を見分ける情報が入る。
+        # 死亡が確認された子はここに「令和8年9月13日 死亡確認」と書き足され、
+        # 掲載期間の終わりまで行が残る (2026-09-18 保護猫ページで実測)。
+        # description に載せることで正規化が死亡記載を見つけ、公開から外せる (T424)。
+        remarks = _cell_text(5)
 
         # 場所テーブルの並列参照 (3 列: 収容場所 / 収容日 / 収容期限)
         location = ""
@@ -231,6 +236,7 @@ class CityKoshigayaAdapter(SinglePageTableAdapter):
                 image_urls=self._extract_row_images(tr, virtual_url),
                 source_url=virtual_url,
                 category=category,
+                description=remarks,
             )
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e

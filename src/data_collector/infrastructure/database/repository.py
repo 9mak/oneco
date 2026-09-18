@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.data_collector.domain.models import AnimalData, AnimalStatus
 from src.data_collector.domain.status_transition import (
+    StatusTransitionError,
     StatusTransitionValidator,
 )
 from src.data_collector.domain.virtual_url import (
@@ -248,6 +249,52 @@ class AnimalRepository:
             return True
         sexes = [s for s in (existing_animal.sex, animal_data.sex) if s and s != "不明"]
         return len(sexes) == 2 and sexes[0] != sexes[1]
+
+    def _apply_collected_status(self, existing_animal: Animal, new_status: AnimalStatus) -> None:
+        """収集経路からの status 変更を、変更日時と履歴つきで反映する (T424)
+
+        備考の死亡記載で公開から外す場合など、収集が status を動かすことがある。
+        管理 API の `update_status` と同じく「いつ・何が変えたか」を追えるようにする。
+
+        禁じられた遷移 (deceased → sheltered 等) は例外にせず据え置く。収集は
+        毎日全サイトを回すため、ここで例外を投げると 1 頭でそのサイトの収集が
+        落ちて他の子まで更新できなくなる。
+        """
+        old_value = existing_animal.status
+        if old_value == new_status.value:
+            return
+
+        old_status = AnimalStatus(old_value)
+        try:
+            StatusTransitionValidator().validate_transition(old_status, new_status)
+        except StatusTransitionError:
+            logger.warning(
+                "[収集からのステータス変更を見送り] source_url=%s は %s → %s が"
+                "許可されていない遷移のため status を据え置きます",
+                existing_animal.source_url,
+                old_status.value,
+                new_status.value,
+            )
+            return
+
+        changed_at = datetime.now(UTC)
+        existing_animal.status = new_status.value
+        existing_animal.status_changed_at = changed_at
+        self.session.add(
+            AnimalStatusHistory(
+                animal_id=existing_animal.id,
+                old_status=old_status.value,
+                new_status=new_status.value,
+                changed_at=changed_at,
+                changed_by="collector",
+            )
+        )
+        logger.info(
+            "[収集からのステータス変更] source_url=%s %s → %s",
+            existing_animal.source_url,
+            old_status.value,
+            new_status.value,
+        )
 
     async def adopt_orphaned_rows(self, source_site: str, animals: Sequence[AnimalData]) -> int:
         """URL の付け替えで行き場を失う既存行を、同じ子の新しい URL へ引き継ぐ (T413)。
@@ -508,7 +555,7 @@ class AnimalRepository:
             existing_animal.description = animal_data.description
             # 拡張フィールドは明示的に設定された場合のみ更新
             if animal_data.status is not None:
-                existing_animal.status = animal_data.status.value
+                self._apply_collected_status(existing_animal, animal_data.status)
             if animal_data.status_changed_at is not None:
                 existing_animal.status_changed_at = animal_data.status_changed_at
             if animal_data.outcome_date is not None:

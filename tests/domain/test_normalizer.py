@@ -9,7 +9,7 @@ from datetime import date
 
 import pytest
 
-from src.data_collector.domain.models import RawAnimalData
+from src.data_collector.domain.models import AnimalStatus, RawAnimalData
 from src.data_collector.domain.normalizer import DataNormalizer
 
 
@@ -1438,3 +1438,46 @@ class TestShelterDateEstimatedFlag:
         result = DataNormalizer.normalize(self._raw("2026-08-01"))
         assert result.shelter_date == date(2026, 8, 1)
         assert result.shelter_date_estimated is False
+
+
+class TestDeceasedStatusFromDescription:
+    """備考に死亡と書かれた個体へ status=deceased を立てる (T424)
+
+    公開の絞り込みは repository 側 (deceased を公開クエリから外す) が担うため、
+    正規化で status を立てれば、その日の収集で公開から外れる。
+    """
+
+    @staticmethod
+    def _raw(description: str) -> RawAnimalData:
+        return RawAnimalData(
+            species="猫",
+            sex="おす",
+            age="中齢",
+            color="白茶",
+            size="中",
+            shelter_date="2026-09-11",
+            location="越谷市越ケ谷3丁目地内",
+            phone="048-969-8511",
+            image_urls=[],
+            source_url="https://example.com/animals/1",
+            category="lost",
+            description=description,
+        )
+
+    def test_death_note_sets_deceased(self):
+        result = DataNormalizer.normalize(self._raw("長尾 短毛 首輪なし 令和8年9月13日 死亡確認"))
+        assert result.status == AnimalStatus.DECEASED
+
+    def test_plain_description_leaves_status_unset(self):
+        """死亡記載が無ければ status は None のまま (既存の status を上書きしない)"""
+        result = DataNormalizer.normalize(self._raw("長尾 短毛 首輪なし"))
+        assert result.status is None
+
+    def test_owner_death_is_not_the_animal(self):
+        """飼い主の死は動物の死ではない。譲渡対象なので公開を続ける"""
+        result = DataNormalizer.normalize(self._raw("飼い主が死亡したため引き取り"))
+        assert result.status is None
+
+    def test_no_description_leaves_status_unset(self):
+        result = DataNormalizer.normalize(self._raw(""))
+        assert result.status is None
