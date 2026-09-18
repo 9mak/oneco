@@ -154,6 +154,45 @@ class TestCityOsakaAdapter:
         # 画像専用ブロック 2 個分を両方拾う
         assert len(raw.image_urls) == 2
 
+    def test_nickname_in_heading_is_split_from_management_number(self):
+        """見出し「識別番号 / 8-4-83（仮名：ヒスイちゃん）」の仮名は管理番号に混ぜず名前に入れる (T418)
+
+        管理番号は公開ページに出るうえ、T413 の個体キー (#animal=<管理番号>) にも使う。
+        2026-09-17 の実サイト (譲渡猫 0000206027.html) は区切りが半角スペース付きの「 / 」。
+        """
+        html = _populated_html_split_imageblocks().replace(
+            "識別番号／8-4-65（仮名：アポロちゃん）", "識別番号 / 8-4-83（仮名：ヒスイちゃん）"
+        )
+        site = SiteConfig(
+            name="大阪市（譲渡猫）",
+            prefecture="大阪府",
+            prefecture_code="27",
+            list_url="https://www.city.osaka.lg.jp/kenko/page/0000206027.html",
+            category="adoption",
+            single_page=True,
+        )
+        adapter = CityOsakaAdapter(site)
+
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(*urls[0])
+
+        assert raw.management_number == "8-4-83"
+        assert raw.name == "ヒスイちゃん"
+        animal = adapter.normalize(raw)
+        assert animal.management_number == "8-4-83"
+        assert animal.name == "ヒスイちゃん"
+
+    def test_heading_without_nickname_keeps_name_empty(self):
+        adapter = CityOsakaAdapter(_site())
+
+        with patch.object(adapter, "_http_get", return_value=_populated_html()):
+            urls = adapter.fetch_animal_list()
+            raw = adapter.extract_animal_details(*urls[0])
+
+        assert raw.management_number == "A2605120001"
+        assert raw.name == ""
+
     def test_fetch_animal_list_empty_when_no_stock(self, fixture_html):
         """在庫 0 件のフィクスチャ (110901) では空リストを返す
 
