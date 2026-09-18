@@ -136,6 +136,28 @@ class TestCityMaebashiAdapter:
 
         assert result == []
 
+    def test_blank_template_rows_are_not_animals(self):
+        """在庫が無い間も残る空欄の行 (全セル空白・画像なし) は個体にしない (T419)
+
+        2026-09-17 の実サイトは `<td> </td>` だけの行が 2 行並び、性別も場所も
+        「不明」の犬として公開されていた。
+        """
+        blank_row = "<tr>" + "<td style='text-align: center;'> </td>" * 5 + "</tr>"
+        html = (
+            "<html><body>"
+            "<table summary='前橋市保健所における保護（収容）犬情報一覧について'>"
+            "<thead><tr><th>管理番号</th><th>写真</th><th>収容場所</th>"
+            "<th>犬種</th><th>性別</th></tr></thead>"
+            f"<tbody>{blank_row}{blank_row}</tbody>"
+            "</table>"
+            "</body></html>"
+        )
+        adapter = CityMaebashiAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            result = adapter.fetch_animal_list()
+
+        assert result == []
+
     def test_no_target_table_returns_empty_list(self):
         """対象テーブル自体が無いページでも空リストを返す
 

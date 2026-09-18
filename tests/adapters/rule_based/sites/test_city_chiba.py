@@ -126,6 +126,56 @@ class TestCityChibaAdapter:
         assert urls[0].endswith("#row=1")
         assert urls[1].endswith("#row=2")
 
+    def test_label_template_without_values_is_not_an_animal(self):
+        """在庫が無い月も残る値の空いた雛形ブロックは個体にしない (T419)
+
+        2026-09-17 の実サイトは「現在、対象となる動物はいません。」の h4 や空の h4 の下に
+        「収容日：」「保護日：令和年月日」のような値の無いラベルだけを残しており、
+        8/20 から性別も場所も「不明」の犬・その他として公開されていた。
+        """
+        notice_template = (
+            "<html><body><div id='contents_editable'>"
+            "<h1>その他の迷子動物の情報（収容動物（その他））</h1>"
+            "<p><span class='txt_big'>現在、その他の迷子動物の情報はありません。</span></p>"
+            "<p> </p>"
+            "<h4><strong>現在、対象となる動物はいません。</strong></h4>"
+            "<p>収容日：<br/> 告示（掲載）期限：<br/> 収容場所：<br/> 種類：<br/> 色：<br/>"
+            " 性別：<br/> 体格：<br/> 特徴：</p>"
+            "<p> </p>"
+            "<p><strong><span class='txt_big'><a href='#'>譲渡の情報</a></span></strong></p>"
+            "<h2>このページのご利用について</h2>"
+            "</div></body></html>"
+        )
+        blank_heading_template = (
+            "<html><body><div id='contents_editable'>"
+            "<h1>市民等が保護している犬の情報</h1>"
+            "<h2>現在情報はありません</h2>"
+            "<h4> </h4>"
+            "<p>保護日：令和年月日</p><p>保護場所：</p><p>種類：</p><p>毛色：</p>"
+            "<p>性別：</p><p>体格：</p><p>特徴：</p>"
+            "<h2>このページのご利用について</h2>"
+            "</div></body></html>"
+        )
+        for html in (notice_template, blank_heading_template):
+            adapter = CityChibaAdapter(_site())
+            with patch.object(adapter, "_http_get", return_value=html):
+                assert adapter.fetch_animal_list() == []
+
+    def test_heading_is_management_number(self):
+        """動物ブロックの h4 (A-6002・26091401 等) は管理番号。個体キー (T413) にも使う (T419)"""
+        html = _HTML_REAL_LABELS.replace("<h4>A-5073</h4>", "<h4>26091401</h4>")
+        adapter = CityChibaAdapter(_site_cat())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            numbers = [
+                adapter.extract_animal_details(url, category=category).management_number
+                for url, category in urls
+            ]
+            raw = adapter.extract_animal_details(urls[0][0], category="sheltered")
+
+        assert numbers == ["A-6002", "26091401"]
+        assert adapter.normalize(raw).management_number == "A-6002"
+
     def test_extract_supports_hogo_labels(self):
         """実 HTML の「保護日：」「保護場所：」ラベルが shelter_date / location に流れる
 

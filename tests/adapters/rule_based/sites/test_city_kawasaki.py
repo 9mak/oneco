@@ -231,6 +231,49 @@ class TestCityKawasakiAdapter:
         assert a.management_number == "R8-28"
         assert adapter.normalize(a).management_number == "R8-28"
 
+    def test_separator_headings_are_not_animals(self):
+        """記号だけの区切り見出し (h3「=====」) は個体の起点にしない (T419)
+
+        2026-09-17 の実サイト (収容その他動物) は、1 羽の写真と縦型属性テーブルを
+        `=====` だけの h3 2 本で挟んでいた。h3 を起点にすると中身の無い 2 頭になり、
+        性別も場所も「不明」の「その他」として公開されていた。
+        """
+        separator = "=" * 51
+        html = (
+            "<html><body><div class='main_naka_kiji'><div class='mol_contents'>"
+            "<div id='index-1-1'><h2 class='block_index_1'>その他の動物の収容（保護）情報</h2></div>"
+            "<div class='mol_textblock block_index_2'><p>負傷等により撮影を控える場合があります。</p></div>"
+            f"<div id='index-2-3'><h3 class='block_index_3'>{separator}</h3></div>"
+            "<div class='mol_imageblock clearfix'><div class='mol_imageblock_img'>"
+            "<img alt='文鳥の写真1' src='../cmsfiles/contents/0000074/74729/Image15.jpg'/>"
+            "</div></div>"
+            "<div class='mol_tableblock block_index_7'><table class='px650'><caption>R8-152</caption><tbody>"
+            "<tr><th scope='row'>管理番号</th><td><p>R8-152</p></td>"
+            "<th scope='row'>収容場所</th><td>幸区神明町</td></tr>"
+            "<tr><th scope='row'>収容日</th><td><p>2026年9月11日</p></td>"
+            "<th scope='row'>公開期限</th><td><p>2026年9月20日</p></td></tr>"
+            "<tr><th scope='row'>動物名</th><td>文鳥</td><th scope='row'>色</th><td><p>灰</p></td></tr>"
+            "<tr><th scope='row'>性別</th><td><p>不明</p></td>"
+            "<th scope='row'>備考</th><td class='t_left'></td></tr>"
+            "</tbody></table></div>"
+            f"<div id='index-2-8'><h3 class='block_index_8'>{separator}</h3></div>"
+            "</div></div></body></html>"
+        )
+        adapter = CityKawasakiAdapter(
+            _site(
+                name="川崎市（収容その他動物）",
+                list_url="https://www.city.kawasaki.jp/350/page/0000074729.html",
+            )
+        )
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
+
+        assert len(urls) == 1
+        assert raws[0].management_number == "R8-152"
+        assert "幸区神明町" in raws[0].location
+        assert raws[0].shelter_date == "2026-09-11"
+
     def test_species_inference_from_site_name(self):
         """サイト名で species が決まる (収容犬→犬 / 収容猫→猫 / その他→その他)"""
         assert CityKawasakiAdapter._infer_species_from_site_name("川崎市（収容犬）") == "犬"

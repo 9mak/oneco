@@ -212,6 +212,50 @@ class TestHamaAikyouAdapter:
         assert "中央区" in animal_data.location
         assert "○○町" in animal_data.location
 
+    def test_td_header_rows_and_heading_date_of_live_layout(self):
+        """実サイトの 1 頭 1 表 (色付き td の見出し行 + データ行) と h3 の保護日を読む (T419)
+
+        2026-09-17 の実サイトは見出し行が `<th>` ではなく背景色付きの `<td>` のため、
+        見出し行も個体として数え (4 頭 = 見出し 2 + 実在 2)、列の対応も作れず
+        実在の 2 頭の犬種・性別・問合せ番号が空のまま公開されていた。
+        """
+
+        def dog(heading: str, number: str, place: str, breed: str, sex: str) -> str:
+            head = "".join(
+                f"<td style='background-color:#EFF2FB'><span class='center-justification'>{label}</span></td>"
+                for label in ("問合せ番号", "保護場所", "犬種", "毛色", "性別", "首輪", "その他")
+            )
+            data = "".join(
+                f"<td><span class='center-justification'>{value}</span></td>"
+                for value in (number, place, breed, "白", sex, "無", "無")
+            )
+            return (
+                f"<div class='h3-area'><div class='h3-area-in'><h3>{heading}</h3></div></div>"
+                f"<div class='table-area'><table><tr>{head}</tr><tr>{data}</tr></table></div>"
+                "<div class='file-download-area'><ul class='download'>"
+                f"<li class='pdf'><a href='https://www.hama-aikyou.jp/media/x.pdf'>{number} （PDF）</a></li>"
+                "</ul></div>"
+            )
+
+        heading = "保護日：令和8年9月9日（保護期限：令和8年9月16日）"
+        html = _build_html(
+            chuo_section=dog(heading, "26-0047", "篠原町", "スタンダードプードル", "オス")
+            + dog(heading, "26-0048", "富塚町", "雑種", "メス")
+        )
+        adapter = HamaAikyouAdapter(_site())
+        with patch.object(adapter, "_http_get", return_value=html):
+            urls = adapter.fetch_animal_list()
+            raws = [adapter.extract_animal_details(u, category=c) for u, c in urls]
+
+        assert [r.management_number for r in raws] == ["26-0047", "26-0048"]
+        assert [r.breed for r in raws] == ["スタンダードプードル", "雑種"]
+        assert [r.sex for r in raws] == ["オス", "メス"]
+        assert raws[0].location == "中央区 篠原町"
+        assert raws[0].shelter_date == "令和8年9月9日"
+        animal = adapter.normalize(raws[0])
+        assert animal.management_number == "26-0047"
+        assert animal.shelter_date.isoformat() == "2026-09-09"
+
     def test_species_inference_for_cat(self):
         """行テキストに「猫」が含まれるとき species は「猫」になる
 

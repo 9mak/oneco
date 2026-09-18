@@ -221,11 +221,19 @@ class CityKagoshimaAdapter(SinglePageTableAdapter):
                 image_urls=self._filter_image_urls(image_urls, virtual_url),
                 source_url=virtual_url,
                 category=category,
+                # 見出し「No.251358」は管理番号。写真の無い子も個体キー (T413) で区別できる (T419)
+                management_number=self._heading_number(h2),
             )
         except Exception as e:
             raise ParsingError(f"RawAnimalData バリデーション失敗: {e}", url=virtual_url) from e
 
     # ─────────────────── ヘルパー ───────────────────
+
+    @staticmethod
+    def _heading_number(h2: Tag) -> str:
+        """見出しの「No.251358」を空白を詰めて返す。無ければ空文字"""
+        match = _ANIMAL_H2_RE.search(h2.get_text(separator=" ", strip=True))
+        return re.sub(r"\s+", "", match.group(0)) if match else ""
 
     @staticmethod
     def _collect_block_paragraphs(h2: Tag) -> list[Tag]:

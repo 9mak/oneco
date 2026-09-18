@@ -458,6 +458,11 @@ class CityKawasakiAdapter(SinglePageTableAdapter):
         """ナビゲーション系の見出し (動物データではない) かを判定"""
         if not text:
             return True
+        # 「=====」のような記号だけの区切り見出しは個体の見出しではない (T419)。
+        # 収容その他動物のページは 1 頭の写真と属性表をこの h3 で挟んでおり、
+        # 起点にすると中身の無い頭数が増える
+        if not any(ch.isalnum() for ch in text):
+            return True
         nav_keywords = (
             "お問い合わせ",
             "同じ分類から探す",

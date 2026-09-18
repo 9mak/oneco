@@ -217,8 +217,13 @@ class DouaiPrefTochigiPuppyAdapter(RuleBasedAdapter):
         for table in soup.select("table.has-fixed-layout"):
             columns.extend(_parse_table_columns(table))
 
-        # 「決まりました」等ですでに譲渡先が決定した個体は募集対象外のため除外
-        available = [c for c in columns if not c.get("unavailable")]
+        # 「決まりました」等ですでに譲渡先が決定した個体は募集対象外のため除外。
+        # 次の譲渡会の準備中に置かれる空の枠 (番号・性別・写真がすべて空の列) も個体ではない (T419)
+        available = [
+            c
+            for c in columns
+            if not c.get("unavailable") and (c["management_number"] or c["sex"] or c["image_urls"])
+        ]
         self._columns_cache = available
         return available
 

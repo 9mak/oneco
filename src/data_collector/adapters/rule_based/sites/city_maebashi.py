@@ -117,6 +117,9 @@ class CityMaebashiAdapter(SinglePageTableAdapter):
             # td が無い (= ヘッダ的な行) はスキップ
             if not tr.find("td"):
                 continue
+            # 在庫が無い間も残る空欄の行 (全セル空白・画像なし) は個体ではない (T419)
+            if not tr.get_text(strip=True) and tr.find("img") is None:
+                continue
             rows.append(tr)
 
         # `_load_rows` を丸ごとオーバーライドしているため、基底
