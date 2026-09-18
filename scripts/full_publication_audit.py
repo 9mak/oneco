@@ -75,7 +75,7 @@ from data_collector.infrastructure.list_selector_resolution import (  # noqa: E4
     resolve_list_selector,
 )
 from data_collector.infrastructure.notification_client import NotificationClient  # noqa: E402
-from data_collector.llm.config import SiteConfig  # noqa: E402
+from data_collector.llm.config import SiteConfig, SiteConfigLoader  # noqa: E402
 
 DEFAULT_API_BASE = "https://oneco-api-tvlsrcvyuq-an.a.run.app"
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) oneco-full-audit/1.0"
@@ -138,20 +138,9 @@ def count_audit_blind_hosts(sites: list[dict[str, Any]]) -> set[str]:
 
 
 def build_site_config(raw: dict[str, Any]) -> SiteConfig:
-    return SiteConfig(
-        name=raw["name"],
-        prefecture=raw.get("prefecture", ""),
-        prefecture_code=raw.get("prefecture_code", "00"),
-        list_url=raw["list_url"],
-        category=raw.get("category", "adoption"),
-        requires_js=raw.get("requires_js", False),
-        single_page=raw.get("single_page", False),
-        list_link_pattern=raw.get("list_link_pattern"),
-        pdf_link_pattern=raw.get("pdf_link_pattern"),
-        pdf_multi_animal=raw.get("pdf_multi_animal", False),
-        timeout_sec=raw.get("timeout_sec"),
-        fallback_to_llm=raw.get("fallback_to_llm", False),
-    )
+    # 本番の収集と同じ規則で組み立てる。項目を手で写すと phone・default_species などが
+    # 落ち、本番と違う値で突き合わせて誤検知や見逃しになる (T416)
+    return SiteConfigLoader.build_site(raw)
 
 
 def get_json(url: str) -> dict[str, Any]:

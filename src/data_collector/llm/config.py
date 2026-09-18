@@ -6,6 +6,7 @@ sites.yaml からサイト定義を読み込み、Pydantic モデルでバリデ
 """
 
 from pathlib import Path
+from typing import Any
 
 import yaml
 from pydantic import BaseModel, field_validator
@@ -260,14 +261,29 @@ class SiteConfigLoader:
             raise ValueError(f"設定ファイルの形式が不正です: {config_path}")
 
         config = SitesConfig(**raw)
-
-        # ライセンス自動推定（L5 棚卸し）: sites.yaml で明示されていないサイトに
-        # ドメイン推定値を埋める。明示済み（unknown 以外）はそのまま尊重。
         for site in config.sites:
-            if site.license == "unknown":
-                site.license = SiteConfigLoader.infer_license(site.list_url)
+            SiteConfigLoader._fill_inferred_license(site)
 
         return config
+
+    @staticmethod
+    def build_site(raw: dict[str, Any]) -> SiteConfig:
+        """sites.yaml のサイト 1 件を、`load` と同じ規則で SiteConfig にする
+
+        監査や live test のように adapter を単体で動かすスクリプトはこれを使う。
+        項目を手で写すと、sites.yaml に後から足した項目 (phone・default_species 等) が
+        落ちて本番と違う値で動く (T416)。
+        """
+        site = SiteConfig.model_validate(raw)
+        SiteConfigLoader._fill_inferred_license(site)
+        return site
+
+    @staticmethod
+    def _fill_inferred_license(site: SiteConfig) -> None:
+        # ライセンス自動推定（L5 棚卸し）: sites.yaml で明示されていないサイトに
+        # ドメイン推定値を埋める。明示済み（unknown 以外）はそのまま尊重。
+        if site.license == "unknown":
+            site.license = SiteConfigLoader.infer_license(site.list_url)
 
     @staticmethod
     def resolve_provider(site: SiteConfig, config: SitesConfig) -> tuple[str, str]:

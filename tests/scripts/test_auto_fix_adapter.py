@@ -20,6 +20,12 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 import auto_fix_adapter as afa  # noqa: E402
 
+# import 時点 (コレクション時) で afa が充填した registry をスナップショットしておく。
+# test_registry.py などが実行時に `_registry.clear()` するため、実行時の get() に依存すると None が返り得る
+_ADAPTER_CLASSES = {
+    name: afa.SiteAdapterRegistry.get(name) for name in afa.SiteAdapterRegistry.all_registered()
+}
+
 
 class TestExtractSearchReplaceBlocks:
     def test_single_block(self):
@@ -594,3 +600,26 @@ class TestGhWarning:
         out = capsys.readouterr().out.rstrip("\n")
         assert "\n" not in out
         assert "2行目" in out
+
+
+class TestLoadSiteConfig:
+    def test_every_registered_site_matches_production_loader(self, monkeypatch):
+        """T416: 修復前後の計測に使う SiteConfig は本番の収集と同じ値でなければならない
+
+        項目を手で写していたため phone・default_species・fields などが落ち、本番と違う
+        出力 (電話の欠落・愛媛県 収容中の species) で修復の要否を計ることになっていた。
+        """
+        from data_collector.llm.config import SiteConfigLoader
+
+        monkeypatch.setattr(afa.SiteAdapterRegistry, "get", _ADAPTER_CLASSES.get)
+        sites = SiteConfigLoader.load(ROOT / "src/data_collector/config/sites.yaml").sites
+        registered = [site for site in sites if site.name in _ADAPTER_CLASSES]
+        assert registered
+
+        mismatched = [
+            site.name
+            for site in registered
+            if afa.load_site(site.name)[0].model_dump() != site.model_dump()
+        ]
+
+        assert mismatched == []
