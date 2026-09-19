@@ -68,7 +68,13 @@ fi
 echo "=== [4.7/5] Secret Manager へ認証情報を登録 (T425) ==="
 # Cloud Run の環境変数は run.services.get 権限があれば誰でも平文で読めるため、
 # DATABASE_URL と INTERNAL_API_TOKEN は Secret Manager 参照で渡す。
-# 実行 SA には roles/secretmanager.secretAccessor (または上位ロール) が要る。
+# 実行 SA (Cloud Run のコンテナが使う ID)。--service-account を指定していないので
+# 既定の Compute SA になる。T430 で専用 SA へ移すときは RUNTIME_SERVICE_ACCOUNT を
+# 渡して切り替え、既定 SA への付与は取り消す。
+PROJECT_NUMBER="$(gcloud projects describe "${PROJECT_ID}" --format='value(projectNumber)')"
+RUNTIME_SERVICE_ACCOUNT="${RUNTIME_SERVICE_ACCOUNT:-${PROJECT_NUMBER}-compute@developer.gserviceaccount.com}"
+echo "実行 SA: ${RUNTIME_SERVICE_ACCOUNT}"
+
 for secret_name in DATABASE_URL INTERNAL_API_TOKEN; do
   if ! gcloud secrets describe "${secret_name}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
     echo "Secret ${secret_name} を作成します"
@@ -81,6 +87,14 @@ for secret_name in DATABASE_URL INTERNAL_API_TOKEN; do
   printf '%s' "${!secret_name}" | gcloud secrets versions add "${secret_name}" \
     --data-file=- \
     --project="${PROJECT_ID}"
+  # roles/editor は secretmanager 権限を 18 個持つが、値を読む
+  # secretmanager.versions.access は含まれない (2026-09-19 に
+  # `gcloud iam roles describe roles/editor` で実測)。プロジェクト全体ではなく
+  # secret 単位で付ける (冪等なので再実行して差し支えない)。
+  gcloud secrets add-iam-policy-binding "${secret_name}" \
+    --member="serviceAccount:${RUNTIME_SERVICE_ACCOUNT}" \
+    --role="roles/secretmanager.secretAccessor" \
+    --project="${PROJECT_ID}" >/dev/null
 done
 
 echo "=== [4.8/5] DB マイグレーション (alembic upgrade head) ==="

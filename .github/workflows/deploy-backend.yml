@@ -27,8 +27,11 @@
 #   4. Secret Manager（Cloud Run 実行時に参照。T425）:
 #        DATABASE_URL、INTERNAL_API_TOKEN
 #
-# 初回は手動デプロイでも公開可能。本ワークフローは段階導入のため
-# workflow_dispatch（手動トリガー）のみ。安定後に push トリガーを有効化する。
+# トリガーは workflow_dispatch（手動）と main への push の両方。push は
+# 2026-06-15 に WIF 配線と end-to-end 検証を終えて有効化済みで、下の paths に
+# このワークフロー自身も含まれるため、**このファイルを変更して main に入れると
+# 自動デプロイが走る**。「段階導入のため workflow_dispatch のみ」という古い記述が
+# 残っていたのを実態に合わせて直した (2026-09-19)。
 
 name: Deploy Backend (Cloud Run)
 
@@ -151,11 +154,23 @@ jobs:
           #     run.services.get 権限があれば誰でも読めるため、Secret Manager 参照
           #     (--set-secrets) に移した。収集 Job (oneco-collector) は以前から
           #     secretRef を使っており、API サービスだけ取り残されていた。
-          #     前提: Secret Manager に DATABASE_URL と INTERNAL_API_TOKEN が
-          #     存在すること。これらが無い状態でこのデプロイを回すとコンテナが
-          #     起動しない。実行 SA (既定 Compute SA) は roles/editor、デプロイ SA
-          #     (oneco-deployer) は roles/secretmanager.admin を持つため追加の
-          #     IAM 付与は不要 (2026-09-19 実測)。
+          #     前提 1: Secret Manager に DATABASE_URL と INTERNAL_API_TOKEN が
+          #     存在すること。
+          #     前提 2: 実行 SA (既定 Compute SA 462233676125-compute@) が両方の
+          #     secret に roles/secretmanager.secretAccessor を持つこと。
+          #     roles/editor は secretmanager 権限を 18 個持つが、値を読む
+          #     secretmanager.versions.access は含まれない (2026-09-19 に
+          #     `gcloud iam roles describe roles/editor` で実測)。この付与が
+          #     無いと新リビジョンが secret を解決できず起動に失敗する。
+          #     デプロイ SA (oneco-deployer) は roles/secretmanager.admin を持つ
+          #     ため、デプロイ側の権限追加は不要。
+          #     T430 で API を専用 SA へ移すときは、この付与を新しい SA へ
+          #     付け替え、既定 Compute SA への付与は取り消すこと。
+          # 注: デプロイが失敗した場合、Cloud Run は Ready にならない新リビジョンへ
+          #     トラフィックを流さないため旧リビジョンが処理を続ける。失敗理由は
+          #     `gcloud run services describe oneco-api --region asia-northeast1 \
+          #       --project oneco-app --format='value(status.conditions)'` で見る。
+          #     直すまで次の自動デプロイも同じ理由で失敗し続ける。
           # 注: GitHub Secrets の DATABASE_URL は上の migration ステップ
           #     (runner 上の alembic) で引き続き使う。INTERNAL_API_TOKEN の方は
           #     このワークフローからは参照しなくなるが、Vercel 側と同一値を保つ
