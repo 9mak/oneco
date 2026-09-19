@@ -1111,6 +1111,126 @@ async def test_prune_disappeared_allow_full_prune_with_seen_urls_behaves_normall
 
 
 @pytest.mark.asyncio
+async def test_prune_disappeared_keeps_curated_statuses(repository, async_session):
+    """通常の消滅同期削除でも、人が付けた譲渡済み・返還済みと死亡は物理削除しない (T427)
+
+    掲載元の一覧からその子が消えたことは「掲載が終わった」根拠にはなるが、
+    「里親が決まった記録」「死亡の記録」を消してよい根拠ではない。むしろ譲渡が
+    決まった子は掲載元から真っ先に消えるため、この経路が卒業した子の記録を
+    毎晩壊していた (本番実測: T423 で deceased にした 8 行のうち 3 行が翌日の
+    収集で消え、animal_status_history も ON DELETE CASCADE で道連れになった)。
+    """
+    site = "高知サイト"
+    async_session.add_all(
+        [
+            Animal(
+                species="犬",
+                shelter_date=date(2026, 1, 5),
+                location="高知県",
+                source_url="https://ex.com/still-listed",
+                category="adoption",
+                source_site=site,
+                status="sheltered",
+            ),
+            Animal(
+                species="犬",
+                shelter_date=date(2026, 1, 5),
+                location="高知県",
+                source_url="https://ex.com/gone-sheltered",
+                category="adoption",
+                source_site=site,
+                status="sheltered",
+            ),
+            Animal(
+                species="猫",
+                shelter_date=date(2026, 1, 5),
+                location="高知県",
+                source_url="https://ex.com/gone-adopted",
+                category="adoption",
+                source_site=site,
+                status="adopted",
+            ),
+            Animal(
+                species="犬",
+                shelter_date=date(2026, 1, 5),
+                location="高知県",
+                source_url="https://ex.com/gone-returned",
+                category="lost",
+                source_site=site,
+                status="returned",
+            ),
+            Animal(
+                species="猫",
+                shelter_date=date(2026, 1, 5),
+                location="高知県",
+                source_url="https://ex.com/gone-deceased",
+                category="adoption",
+                source_site=site,
+                status="deceased",
+            ),
+        ]
+    )
+    await async_session.commit()
+
+    removed = await repository.prune_disappeared(site, {"https://ex.com/still-listed"})
+
+    assert removed == 1
+    urls = {r.source_url for r in (await async_session.execute(select(Animal))).scalars().all()}
+    assert urls == {
+        "https://ex.com/still-listed",
+        "https://ex.com/gone-adopted",
+        "https://ex.com/gone-returned",
+        "https://ex.com/gone-deceased",
+    }
+
+
+@pytest.mark.asyncio
+async def test_prune_disappeared_keeps_status_history_of_curated_animal(repository, async_session):
+    """守った行に紐づくステータス履歴も残る (T427)
+
+    animal_status_history.animal_id は ON DELETE CASCADE なので、動物の行を
+    物理削除すると「誰がいつ譲渡済みにしたか」の監査記録まで同時に消える。
+    本番ではこの経路で履歴 3 行が失われた。
+
+    SQLite は既定で外部キーを強制しないため、本番 (PostgreSQL) と同じ
+    CASCADE を再現するようこのテストだけ PRAGMA を有効にする。
+    """
+    from sqlalchemy import text
+
+    await async_session.execute(text("PRAGMA foreign_keys=ON"))
+
+    site = "高知サイト"
+    adopted = Animal(
+        species="猫",
+        shelter_date=date(2026, 1, 5),
+        location="高知県",
+        source_url="https://ex.com/gone-adopted",
+        category="adoption",
+        source_site=site,
+        status="adopted",
+    )
+    async_session.add(adopted)
+    await async_session.commit()
+    await async_session.refresh(adopted)
+
+    async_session.add(
+        AnimalStatusHistory(
+            animal_id=adopted.id,
+            old_status="sheltered",
+            new_status="adopted",
+            changed_at=datetime(2026, 9, 18, 7, 49, tzinfo=UTC),
+            changed_by="admin",
+        )
+    )
+    await async_session.commit()
+
+    await repository.prune_disappeared(site, {"https://ex.com/other"})
+
+    history = (await async_session.execute(select(AnimalStatusHistory))).scalars().all()
+    assert [(h.animal_id, h.new_status) for h in history] == [(adopted.id, "adopted")]
+
+
+@pytest.mark.asyncio
 async def test_list_animals_pagination(repository, async_session):
     """list_animals()がページネーションを正しく適用するか"""
     # テストデータを10件挿入
