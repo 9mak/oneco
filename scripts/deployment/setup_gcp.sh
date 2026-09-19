@@ -65,6 +65,38 @@ if [ "${CORS_ORIGINS}" = "*" ]; then
   exit 1
 fi
 
+echo "=== [4.7/5] Secret Manager へ認証情報を登録 (T425) ==="
+# Cloud Run の環境変数は run.services.get 権限があれば誰でも平文で読めるため、
+# DATABASE_URL と INTERNAL_API_TOKEN は Secret Manager 参照で渡す。
+# 実行 SA (Cloud Run のコンテナが使う ID)。--service-account を指定していないので
+# 既定の Compute SA になる。T430 で専用 SA へ移すときは RUNTIME_SERVICE_ACCOUNT を
+# 渡して切り替え、既定 SA への付与は取り消す。
+PROJECT_NUMBER="$(gcloud projects describe "${PROJECT_ID}" --format='value(projectNumber)')"
+RUNTIME_SERVICE_ACCOUNT="${RUNTIME_SERVICE_ACCOUNT:-${PROJECT_NUMBER}-compute@developer.gserviceaccount.com}"
+echo "実行 SA: ${RUNTIME_SERVICE_ACCOUNT}"
+
+for secret_name in DATABASE_URL INTERNAL_API_TOKEN; do
+  if ! gcloud secrets describe "${secret_name}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
+    echo "Secret ${secret_name} を作成します"
+    gcloud secrets create "${secret_name}" \
+      --replication-policy=automatic \
+      --project="${PROJECT_ID}"
+  fi
+  # 実行のたびに新しいバージョンが増える。古いバージョンは必要に応じて
+  # gcloud secrets versions destroy で片付ける。
+  printf '%s' "${!secret_name}" | gcloud secrets versions add "${secret_name}" \
+    --data-file=- \
+    --project="${PROJECT_ID}"
+  # roles/editor は secretmanager 権限を 18 個持つが、値を読む
+  # secretmanager.versions.access は含まれない (2026-09-19 に
+  # `gcloud iam roles describe roles/editor` で実測)。プロジェクト全体ではなく
+  # secret 単位で付ける (冪等なので再実行して差し支えない)。
+  gcloud secrets add-iam-policy-binding "${secret_name}" \
+    --member="serviceAccount:${RUNTIME_SERVICE_ACCOUNT}" \
+    --role="roles/secretmanager.secretAccessor" \
+    --project="${PROJECT_ID}" >/dev/null
+done
+
 echo "=== [4.8/5] DB マイグレーション (alembic upgrade head) ==="
 # トラフィック切り替え前に必ず migration を完了させる。
 # Codex リリースレビュー C-3: 'Alembic 手動実行でスキーマドリフト時に /admin/* が即死' への対応。
@@ -87,11 +119,14 @@ gcloud run deploy "${SERVICE_NAME}" \
   --cpu=1 \
   --min-instances=0 \
   --max-instances=3 \
-  --set-env-vars="DATABASE_URL=${DATABASE_URL}" \
-  --set-env-vars="INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}" \
-  --set-env-vars="CORS_ORIGINS=${CORS_ORIGINS}" \
-  --set-env-vars="LOG_LEVEL=INFO" \
+  --set-secrets="DATABASE_URL=DATABASE_URL:latest,INTERNAL_API_TOKEN=INTERNAL_API_TOKEN:latest" \
+  --set-env-vars="^;^CORS_ORIGINS=${CORS_ORIGINS};LOG_LEVEL=INFO" \
   --project="${PROJECT_ID}"
+# 注: 認証情報は --set-env-vars ではなく --set-secrets で渡す (T425)。Cloud Run の
+#     env は run.services.get 権限があれば誰でも読めるため。
+# 注: 先頭 "^;^" は区切り文字を ; に変更する gcloud 構文。CORS_ORIGINS がカンマ
+#     区切りの複数 URL を持つため、既定のカンマ区切りだと dict パースが壊れる。
+#     --set-env-vars を複数回渡すと後勝ちで上書きされるので 1 回にまとめる。
 
 echo ""
 echo "=== デプロイ完了 ==="
