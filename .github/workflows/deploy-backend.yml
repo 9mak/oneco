@@ -19,7 +19,13 @@
 #        GCP_WIF_PROVIDER     … projects/<num>/locations/global/workloadIdentityPools/<pool>/providers/<provider>
 #        GCP_SERVICE_ACCOUNT  … deploy-bot@<project>.iam.gserviceaccount.com
 #        DATABASE_URL         … Supabase 接続 URL（既存。収集用と共用可）
+#                               ※ Cloud Run へは Secret Manager 経由で渡す。
+#                                 この Secret は runner 上の alembic 用
 #        INTERNAL_API_TOKEN   … 内部 API 認証トークン（Vercel 側と同一値）
+#                               ※ Cloud Run へは Secret Manager 経由で渡す。
+#                                 この Secret は Vercel と値を揃えるための原本
+#   4. Secret Manager（Cloud Run 実行時に参照。T425）:
+#        DATABASE_URL、INTERNAL_API_TOKEN
 #
 # 初回は手動デプロイでも公開可能。本ワークフローは段階導入のため
 # workflow_dispatch（手動トリガー）のみ。安定後に push トリガーを有効化する。
@@ -131,15 +137,29 @@ jobs:
             --region "${GCP_REGION}" \
             --platform managed \
             --allow-unauthenticated \
-            --set-env-vars "^;^DATABASE_URL=${{ secrets.DATABASE_URL }};CORS_ORIGINS=${{ vars.CORS_ORIGINS }};INTERNAL_API_TOKEN=${{ secrets.INTERNAL_API_TOKEN }};SITE_URL=${{ vars.SITE_URL }};LOG_LEVEL=INFO"
-          # 注: --set-env-vars は既存 env を全置換するため、本番で稼働中の
-          #     全変数を列挙する必要がある。SITE_URL はフィード BASE_URL に
-          #     使われており、欠落すると本番設定が消える (2026-06-15 監査で発覚)。
+            --set-env-vars "^;^CORS_ORIGINS=${{ vars.CORS_ORIGINS }};SITE_URL=${{ vars.SITE_URL }};LOG_LEVEL=INFO" \
+            --set-secrets "DATABASE_URL=DATABASE_URL:latest,INTERNAL_API_TOKEN=INTERNAL_API_TOKEN:latest"
+          # 注: --set-env-vars / --set-secrets はそれぞれ既存の env / secret を
+          #     全置換するため、本番で稼働中の全変数を列挙する必要がある。
+          #     SITE_URL はフィード BASE_URL に使われており、欠落すると本番設定が
+          #     消える (2026-06-15 監査で発覚)。
           # 注: 先頭 "^;^" は区切り文字を ; に変更する gcloud 構文。CORS_ORIGINS が
           #     カンマ区切りの複数 URL を持つため、既定のカンマ区切りだと dict
           #     パースが壊れる (2026-06-15 確認)。値に ; を含まないため安全。
-          # 注: シークレットを --set-env-vars で渡しているが、本番堅牢化として
-          # Secret Manager + `--set-secrets` への移行を推奨。
+          # 注: T425 (2026-09-19)。DATABASE_URL と INTERNAL_API_TOKEN は
+          #     --set-env-vars で平文の環境変数として渡していた。Cloud Run の env は
+          #     run.services.get 権限があれば誰でも読めるため、Secret Manager 参照
+          #     (--set-secrets) に移した。収集 Job (oneco-collector) は以前から
+          #     secretRef を使っており、API サービスだけ取り残されていた。
+          #     前提: Secret Manager に DATABASE_URL と INTERNAL_API_TOKEN が
+          #     存在すること。これらが無い状態でこのデプロイを回すとコンテナが
+          #     起動しない。実行 SA (既定 Compute SA) は roles/editor、デプロイ SA
+          #     (oneco-deployer) は roles/secretmanager.admin を持つため追加の
+          #     IAM 付与は不要 (2026-09-19 実測)。
+          # 注: GitHub Secrets の DATABASE_URL は上の migration ステップ
+          #     (runner 上の alembic) で引き続き使う。INTERNAL_API_TOKEN の方は
+          #     このワークフローからは参照しなくなるが、Vercel 側と同一値を保つ
+          #     ための原本として残す。
 
       - name: Health check
         run: |
