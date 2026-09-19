@@ -633,10 +633,13 @@ class AnimalRepository:
 
         return self._to_pydantic(orm_animal)
 
-    # T422: サイト単位の全削除から守る status。人が管理 API で付けた譲渡済み・
-    # 返還済みと、死亡の記録は「掲載元の一覧に無い」ことを根拠に消してよい情報
-    # ではない。deceased は公開から外れているだけで、誤検知だったときに
-    # deceased → sheltered で戻す経路 (T424) が残っている必要がある。
+    # T422・T427: 消滅同期削除 (prune_disappeared) から守る status。人が管理 API で
+    # 付けた譲渡済み・返還済みと、死亡の記録は「掲載元の一覧に無い」ことを根拠に
+    # 消してよい情報ではない。deceased は公開から外れているだけで、誤検知だった
+    # ときに deceased → sheltered で戻す経路 (T424) が残っている必要がある。
+    # T422 ではサイト単位の全削除だけを守り、個体単位の経路は据え置いていたが、
+    # 譲渡が決まった子は掲載元から真っ先に消えるため、守るべき記録の大半は
+    # 個体単位の経路で失われていた (T427)。
     _CURATED_STATUSES = (
         AnimalStatus.ADOPTED.value,
         AnimalStatus.RETURNED.value,
@@ -692,18 +695,28 @@ class AnimalRepository:
           弱めていない。
         - source_site でスコープするため、他サイトや未タグ(NULL)の行は消さない。
         - 万一まだ在籍する子を誤って消しても、次回収集で再登録されるため復旧可能。
-        - allow_full_prune での全削除では、人が付けた譲渡済み・返還済みと死亡の
-          記録 (_CURATED_STATUSES) を残す (T422)。これらは「掲載元の一覧に
-          出てこない」ことを根拠に消してよい情報ではなく、消すと deceased →
-          sheltered の取り消し経路 (T424) も失われる。個別に消えた子を消す
-          通常の prune は従来どおり status を問わない (掲載元にその子の掲載が
-          無くなったという個体単位の根拠があるため)。
+        - 人が付けた譲渡済み・返還済みと死亡の記録 (_CURATED_STATUSES) は、
+          サイト単位の全削除でも個別の消滅同期削除でも残す (T422・T427)。
+          「掲載元の一覧に出てこない」ことは掲載が終わった根拠にはなるが、
+          里親が決まった記録や死亡の記録を消してよい根拠ではない。むしろ譲渡が
+          決まった子は掲載元から真っ先に消えるため、個体単位の経路こそが卒業した
+          子の記録を毎晩壊していた。animal_status_history は animal_id が
+          ON DELETE CASCADE のため、行を消すと「誰がいつ譲渡済みにしたか」の
+          監査記録まで道連れになる (本番実測 2026-09-19: T423 で deceased に
+          した 8 行のうち 3 行と、その履歴 3 行が翌日の収集で消えていた)。
+          deceased → sheltered の取り消し経路 (T424) も行が残っていて初めて
+          機能する。守った行は公開側では従来どおり扱われ (deceased は非公開、
+          adopted/returned は「里親決定」バッジ付きで一覧に出る)、保持期間
+          経過後に ArchiveService が animals_archive へ退避する。
         """
         if not seen_source_urls and not allow_full_prune:
             return 0
         stmt = delete(Animal).where(Animal.source_site == source_site)
-        if not seen_source_urls:
-            stmt = stmt.where(Animal.status.notin_(self._CURATED_STATUSES))
+        # T427: 守る status の除外は両経路に効かせる (T422 では seen が空の
+        # サイト単位全削除だけに付けており、個体単位の経路が素通りしていた)。
+        # status は NOT NULL (server_default='sheltered') なので notin_ で
+        # NULL 行を取りこぼす心配はない。
+        stmt = stmt.where(Animal.status.notin_(self._CURATED_STATUSES))
         if seen_source_urls:
             # notin_() の空集合渡し (allow_full_prune=True かつ 0 件収集時) は
             # SQLAlchemy バージョン依存の挙動になりうるため、意図を明示するために
