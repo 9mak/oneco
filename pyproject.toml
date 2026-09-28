@@ -32,7 +32,7 @@ dependencies = [
     "feedgen>=1.0.0",          # RSS/Atom フィード生成 (feed_generator)
     "redis[asyncio]>=5.0.0",   # レート制限/キャッシュ (rate_limiter, cache_manager)
     "slowapi>=0.1.9",          # 公開API レート制限 (app.py)
-    "numpy>=1.24.0",           # 公開メトリクス集計 (metrics_collector)
+    "numpy>=2.4.6",           # 公開メトリクス集計 (metrics_collector)
 ]
 
 [tool.setuptools]
