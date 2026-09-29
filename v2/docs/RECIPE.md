@@ -112,6 +112,31 @@ fields:
 
 `mode: text` のときは `rows_regex: "^(\\d{2}-\\d{4}).*$"` で 1 頭分の塊を切り、`fields` は `regex` で取る。
 
+1 ページが左右 2 段組みの PDF（茨城県）は、丸ごと読むと左右の行が 1 行に混ざる。`columns` で各ページを等分して列ごとに読む:
+
+```yaml
+pdf:
+  mode: text
+  columns: 2               # 左列を全部読んでから右列。表も列ごとに取る
+```
+
+## 転置表（1 列 = 1 頭）
+
+栃木県の子犬ページのように「1 行 = 1 項目、1 列 = 1 頭」の表は `rows` の代わりに `transpose` に表のセレクタを書く。
+セルが N 個（N ≥ 2）の行は個体別、セルが 1 個の行（枠名や「5 月生まれ ワクチン接種済」）は全頭共通として各列に付く。
+全部の行が 1 セルの表は表全体で 1 頭になる。`fields` は `regex` で取る（行の並び順は表ごとに違ってよい）。
+
+```yaml
+transpose: "table.has-fixed-layout"
+row_filter:
+  text_lacks: ["飼い主さん決まりました"]
+fields:
+  management_no: {regex: "番号[:：]\\s*(\\d\\S*)"}
+  sex: {regex: "性別[:：]\\s*(\\S+)"}
+```
+
+`species: {from: heading}` は転置表では使えない（列は元の HTML の位置を持たない）。台帳の species か `from: text` を使う。
+
 ## デバッグ
 
 ```bash

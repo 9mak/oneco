@@ -1,0 +1,19 @@
+# 栃木県動物愛護指導センター（子犬譲渡） https://www.douai.pref.tochigi.lg.jp/work/puppy/
+# WordPress の固定レイアウト表 (table.has-fixed-layout) が「1 列 = 1 頭」の転置表。
+# 行は「枠名（1 セル）／番号（N セル）／性別（N セル）／写真（N セル）／性質・体特徴（N セル、任意）／共通注記（1 セル、任意）」。
+# transpose で列ごとに 1 頭にまとめる。「飼い主さん決まりました」が付いた番号は譲渡済みなので捨てる。
+# 番号は「希望表配布時に付番します」等の未確定文言のことがあるが、写真があるので動物として通る。
+transpose: "table.has-fixed-layout"
+image: "img@src"
+row_filter:
+  text_lacks: ["飼い主さん決まりました"]
+fields:
+  management_no: {regex: "番号[:：]\\s*(\\d[^\\s]*)"}
+  sex: {regex: "性別[:：]\\s*(\\S+)"}
+  note: {regex: "((?:体特徴|性質)[:：].*?)(?=\\s*$)"}
+  age: {regex: "(\\S*月生まれ)"}
+empty_text:
+  - "子犬はいません"
+  - "子犬はおりません"
+  - "対象の子犬がいません"
+  - "現在、譲渡できる子犬はいません"

@@ -1,0 +1,23 @@
+# 田辺保健所（収容犬・猫情報）https://www.pref.wakayama.lg.jp/prefg/130600/hukushi/eisei/syuuyoudoubutu.html
+# ハブ pref_wakayama から分割（2026-09-29）。ハブの「田辺保健所」リンクがそのままこの一覧ページ。
+# table 1 つ = 全頭、1 行 = 1 頭。見出し: 収容日/収容場所/動物種/品種（2 列）/性別/成仔/体格/毛色/
+# 毛の長さ/首輪/備考/犬・猫の写真。Wayback 2023-2024 で実データ複数頭を確認
+# （例: 収容日=令和6（2024）年4月9日、動物種=犬、品種=雑種）。見出し行自体は自動で落ちる。
+rows: "table tr"
+image: "img@src"
+fields:
+  shelter_date: {label: "収容日"}
+  location: {label: "収容場所"}
+  breed: {label: "品種"}
+  species: {label: "動物種"}
+  sex: {label: "性別"}
+  age: {label: "成仔"}
+  size: {label: "体格"}
+  color: {label: "毛色"}
+  note: {label: "備考"}
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+empty_text:
+  - "現在、収容情報はありません。"
+  - "現在、収容している動物の情報はありません。"

@@ -868,6 +868,7 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+  note: 1 つの枠に 2 匹（写真 1 枚を共有）が載ることがあり、その枠は 1 件として数える（エンジンは 1 行 = 1 頭。2026-09-29 反証で確認）
 - slug: pref_wakayama
   name: 和歌山県（保護犬猫情報）
   municipality: 和歌山県
@@ -886,7 +887,7 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
-  note: 県内 9 保健所へのリンク集。個体は各保健所ページ（未登録）
+  note: 県内 9 保健所へのリンク集。2026-09-29 に保健所ごとに台帳へ分割した（pref_wakayama_*。和歌山市は既存の city_wakayama）
 - slug: city_koshigaya-1
   name: 越谷市（保護犬）
   municipality: 越谷市
@@ -1591,7 +1592,7 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
-  note: 9 保健所へのリンク集。個体は 2〜3 段先で保健所ごとに構造が違う（後日 保健所ごとに台帳へ分ける）
+  note: 9 保健所へのリンク集。2026-09-29 に保健所ごとに台帳へ分割した（pref_iwate_*）。盛岡市保健所は個体一覧ページが無いので対象外
 - slug: pref_shimane
   name: 島根県 松江保健所（収容動物）
   municipality: 島根県 松江保健所
@@ -1970,7 +1971,7 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
-  note: Bubble 製 SPA。描画されるのは 12 頭で残り 26 頭はページ送りクリックが要る（後日エンジン対応）
+  note: Bubble 製 SPA。render しても一覧は 12 頭分で残りはページ送りクリックが要る。2026-09-29 調査では初回ロードの POST /elasticsearch/search の応答に全 38 頭の _id が入り、?page=list_dc_m&no=<_id> で個体ページが描画できる。エンジンに「render 中の応答 JSON から値を抜いて URL に差し込んで辿る step」と「見出し区間内の位置ベース項目割当」が要る（T509）
 - slug: pref_niigata
   name: 新潟県動物愛護センター（保護動物）
   municipality: 新潟県動物愛護センター
@@ -2124,7 +2125,7 @@ sources:
   url: https://www.douai.pref.tochigi.lg.jp/work/puppy/
   kind: adoption
   species: dog
-  mode: link_only
+  mode: recipe
   recipe: recipes/douai_pref_tochigi_puppy-1.yaml
   enabled: true
   legacy:
@@ -2133,7 +2134,7 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
-  note: 1 列 = 1 頭の転置表。今のレシピ形式では読めない（後日エンジン対応）
+  note: 1 列 = 1 頭の転置表。2026-09-29 にエンジンへ transpose を足してレシピ化
 - slug: douai_pref_tochigi_puppy-2
   name: 栃木県動物愛護指導センター（子猫譲渡）
   municipality: 栃木県動物愛護指導センター
@@ -3827,3 +3828,292 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+- slug: pref_iwate_kennan
+  name: 岩手県（県央保健所 保護犬猫）
+  municipality: 県央保健所
+  prefecture: 岩手県
+  phone: "019-629-6588"
+  address: 岩手県盛岡市三ツ割5丁目17-59（県央保健所犬猫保護センター）
+  url: https://www.pref.iwate.jp/morioka/hoken/1012494.html
+  kind: sheltered
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_iwate_kennan.yaml
+  enabled: true
+  note: ハブ pref_iwate から分割（2026-09-29）
+  legacy:
+    adapter_file: src/data_collector/adapters/rule_based/sites/pref_iwate.py
+    requires_js: false
+    pdf: false
+- slug: pref_iwate_chubu
+  name: 岩手県（中部保健所 保護犬猫）
+  municipality: 中部保健所
+  prefecture: 岩手県
+  phone: "0198-41-3276"
+  address: 岩手県花巻市花城町1-41（花巻保健福祉環境センター・中部保健所）
+  url: https://www.pref.iwate.jp/kennan/hana_hoken/1013542/index.html
+  kind: sheltered
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_iwate_chubu.yaml
+  enabled: true
+  note: ハブ pref_iwate から分割（2026-09-29）
+  legacy:
+    adapter_file: src/data_collector/adapters/rule_based/sites/pref_iwate.py
+    requires_js: false
+    pdf: false
+- slug: pref_iwate_oshu
+  name: 岩手県（奥州保健所 保護猫）
+  municipality: 奥州保健所
+  prefecture: 岩手県
+  phone: "0197-48-2423"
+  address: 岩手県奥州市水沢大手町5-5
+  url: https://www.pref.iwate.jp/kennan/hoken/1065388/doubutsu/1013511.html
+  kind: sheltered
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_iwate_oshu.yaml
+  enabled: true
+  note: "ハブ pref_iwate から分割（2026-09-29）。ページは保護猫のみ（犬セクション無し）。既知の反証未了: 管理番号「R8-6-5」形式（1桁-1桁-1桁）はエンジンの _MGMT_RE に非マッチで4頭中3頭が自動的に捨てられる（レシピ内コメント参照）"
+  legacy:
+    adapter_file: src/data_collector/adapters/rule_based/sites/pref_iwate.py
+    requires_js: false
+    pdf: false
+- slug: pref_iwate_ichinoseki
+  name: 岩手県（一関保健所 保護犬猫）
+  municipality: 一関保健所
+  prefecture: 岩手県
+  phone: "0191-34-4691"
+  address: 岩手県一関市竹山町7-5
+  url: https://www.pref.iwate.jp/kennan/ichi_hoken/doubutsu/index.html
+  kind: sheltered
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_iwate_ichinoseki.yaml
+  enabled: true
+  note: "ハブ pref_iwate から分割（2026-09-29）。既知の反証未了: 譲渡ページの個体は管理番号・保護日が無く写真も兄弟要素で届かないため捕捉不可（レシピ内コメント参照）"
+  legacy:
+    adapter_file: src/data_collector/adapters/rule_based/sites/pref_iwate.py
+    requires_js: false
+    pdf: false
+- slug: pref_iwate_ofunato
+  name: 岩手県（大船渡保健所 保護猫）
+  municipality: 大船渡保健所
+  prefecture: 岩手県
+  phone: "0192-27-9923"
+  address: 岩手県大船渡市猪川町字前田6-1
+  url: https://www.pref.iwate.jp/engan/ofuna_hoken/1014212/1014213.html
+  kind: sheltered
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_iwate_ofunato.yaml
+  enabled: true
+  note: ハブ pref_iwate から分割（2026-09-29）。2026-09-29時点は猫のみ
+  legacy:
+    adapter_file: src/data_collector/adapters/rule_based/sites/pref_iwate.py
+    requires_js: false
+    pdf: false
+- slug: pref_iwate_kamaishi
+  name: 岩手県（釜石保健所 保護犬猫）
+  municipality: 釜石保健所
+  prefecture: 岩手県
+  phone: "0193-27-5523"
+  address: null
+  url: https://www.pref.iwate.jp/engan/hoken/1014120/1014123.html
+  kind: sheltered
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_iwate_kamaishi.yaml
+  enabled: true
+  note: ハブ pref_iwate から分割（2026-09-29）
+  legacy:
+    adapter_file: src/data_collector/adapters/rule_based/sites/pref_iwate.py
+    requires_js: false
+    pdf: false
+- slug: pref_iwate_miyako
+  name: 岩手県（宮古保健所 保護猫）
+  municipality: 宮古保健所
+  prefecture: 岩手県
+  phone: "0193-64-2218"
+  address: 岩手県宮古市五月町1-20
+  url: https://www.pref.iwate.jp/engan/miya_hoken/hogodoubutsu/1014161.html
+  kind: sheltered
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_iwate_miyako.yaml
+  enabled: true
+  note: ハブ pref_iwate から分割（2026-09-29）。2026-09-29時点は猫のみ
+  legacy:
+    adapter_file: src/data_collector/adapters/rule_based/sites/pref_iwate.py
+    requires_js: false
+    pdf: false
+- slug: pref_iwate_kuji
+  name: 岩手県（久慈保健所 保護猫）
+  municipality: 久慈保健所
+  prefecture: 岩手県
+  phone: "0194-66-9681"
+  address: null
+  url: https://www.pref.iwate.jp/kenpoku/hoken/1014738.html
+  kind: sheltered
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_iwate_kuji.yaml
+  enabled: true
+  note: ハブ pref_iwate から分割（2026-09-29）。2026-09-29時点は猫のみ
+  legacy:
+    adapter_file: src/data_collector/adapters/rule_based/sites/pref_iwate.py
+    requires_js: false
+    pdf: false
+- slug: pref_iwate_ninohe
+  name: 岩手県（二戸保健所 保護犬猫）
+  municipality: 二戸保健所
+  prefecture: 岩手県
+  phone: "0195-23-9219"
+  address: 岩手県二戸市石切所字荷渡6-3
+  url: https://www.pref.iwate.jp/kenpoku/nino_hoken/1085646/index.html
+  kind: sheltered
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_iwate_ninohe.yaml
+  enabled: true
+  note: "ハブ pref_iwate から分割（2026-09-29）。既知の反証未了: 2026-09-29時点0頭のためレシピの行セレクタ・ラベルは他保健所の構造から類推した未検証の暫定形（レシピ内コメント参照）"
+  legacy:
+    adapter_file: src/data_collector/adapters/rule_based/sites/pref_iwate.py
+    requires_js: false
+    pdf: false
+- slug: pref_wakayama_hashimoto
+  name: 和歌山県（橋本保健所 保護犬猫）
+  municipality: 橋本保健所
+  prefecture: 和歌山県
+  phone: "0736-42-3210"
+  address: 和歌山県橋本市高野口町名古曽927
+  url: https://www.pref.wakayama.lg.jp/prefg/130300/hukushi/eisei/d00156889.html
+  kind: sheltered
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_wakayama_hashimoto.yaml
+  enabled: true
+  note: ハブ pref_wakayama から分割（2026-09-29）
+  legacy:
+    adapter_file: src/data_collector/adapters/rule_based/sites/pref_wakayama.py
+    requires_js: false
+    pdf: false
+- slug: pref_wakayama_iwade
+  name: 和歌山県（岩出保健所 保護犬猫）
+  municipality: 岩出保健所
+  prefecture: 和歌山県
+  phone: "0736-61-0022"
+  address: 和歌山県岩出市高塚209
+  url: https://www.pref.wakayama.lg.jp/prefg/130200/hukushi/eisei/d00156916.html
+  kind: sheltered
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_wakayama_iwade.yaml
+  enabled: true
+  note: ハブ pref_wakayama から分割（2026-09-29）
+  legacy:
+    adapter_file: src/data_collector/adapters/rule_based/sites/pref_wakayama.py
+    requires_js: false
+    pdf: false
+- slug: pref_wakayama_kainan
+  name: 和歌山県（海南保健所 保護犬猫）
+  municipality: 海南保健所
+  prefecture: 和歌山県
+  phone: "073-482-0600"
+  address: 和歌山県海南市大野中939
+  url: https://www.pref.wakayama.lg.jp/prefg/130100/kenkou/d00207280.html
+  kind: sheltered
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_wakayama_kainan.yaml
+  enabled: true
+  note: ハブ pref_wakayama から分割（2026-09-29）
+  legacy:
+    adapter_file: src/data_collector/adapters/rule_based/sites/pref_wakayama.py
+    requires_js: false
+    pdf: false
+- slug: pref_wakayama_yuasa
+  name: 和歌山県（湯浅保健所 保護犬猫）
+  municipality: 湯浅保健所
+  prefecture: 和歌山県
+  phone: "0737-63-4111"
+  address: 〒643-0004 和歌山県有田郡湯浅町湯浅2355-1
+  url: https://www.pref.wakayama.lg.jp/prefg/130400/kenkou/d00208267.html
+  kind: sheltered
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_wakayama_yuasa.yaml
+  enabled: true
+  note: ハブ pref_wakayama から分割（2026-09-29）。電話は有田振興局代表番号（保健所専用番号の明記なし）
+  legacy:
+    adapter_file: src/data_collector/adapters/rule_based/sites/pref_wakayama.py
+    requires_js: false
+    pdf: false
+- slug: pref_wakayama_gobo
+  name: 和歌山県（御坊保健所 保護犬猫）
+  municipality: 御坊保健所
+  prefecture: 和歌山県
+  phone: "0738-22-3481"
+  address: 〒644-0011 和歌山県御坊市湯川町財部859-2
+  url: https://www.pref.wakayama.lg.jp/prefg/130500/kenkou/kenkou/eisei/sheltered.html
+  kind: sheltered
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_wakayama_gobo.yaml
+  enabled: true
+  note: ハブ pref_wakayama から分割（2026-09-29）
+  legacy:
+    adapter_file: src/data_collector/adapters/rule_based/sites/pref_wakayama.py
+    requires_js: false
+    pdf: false
+- slug: pref_wakayama_tanabe
+  name: 和歌山県（田辺保健所 保護犬猫）
+  municipality: 田辺保健所
+  prefecture: 和歌山県
+  phone: "0739-26-7934"
+  address: 和歌山県田辺市朝日ヶ丘23-1
+  url: https://www.pref.wakayama.lg.jp/prefg/130600/hukushi/eisei/syuuyoudoubutu.html
+  kind: sheltered
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_wakayama_tanabe.yaml
+  enabled: true
+  note: ハブ pref_wakayama から分割（2026-09-29）
+  legacy:
+    adapter_file: src/data_collector/adapters/rule_based/sites/pref_wakayama.py
+    requires_js: false
+    pdf: false
+- slug: pref_wakayama_shingu
+  name: 和歌山県（新宮保健所 保護犬猫）
+  municipality: 新宮保健所
+  prefecture: 和歌山県
+  phone: "0735-21-9610"
+  address: 〒647-8551 和歌山県新宮市緑ヶ丘2-4-8
+  url: https://www.pref.wakayama.lg.jp/prefg/130700/kenkou/hukushi/eisei/d00000000.html
+  kind: sheltered
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_wakayama_shingu.yaml
+  enabled: true
+  note: ハブ pref_wakayama から分割（2026-09-29）
+  legacy:
+    adapter_file: src/data_collector/adapters/rule_based/sites/pref_wakayama.py
+    requires_js: false
+    pdf: false
+- slug: pref_wakayama_shingu_kushimoto
+  name: 和歌山県（新宮保健所串本支所 保護犬猫）
+  municipality: 新宮保健所串本支所
+  prefecture: 和歌山県
+  phone: "0735-72-0525"
+  address: 〒649-4122 和歌山県東牟婁郡串本町西向193
+  url: https://www.pref.wakayama.lg.jp/prefg/130700/kenkou/hukushi/eisei/d00156928.html
+  kind: sheltered
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_wakayama_shingu_kushimoto.yaml
+  enabled: true
+  note: ハブ pref_wakayama から分割（2026-09-29）
+  legacy:
+    adapter_file: src/data_collector/adapters/rule_based/sites/pref_wakayama.py
+    requires_js: false
+    pdf: false

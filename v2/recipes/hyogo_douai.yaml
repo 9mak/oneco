@@ -20,3 +20,6 @@ species:
   from: heading
   selector: "h1.entry-title"
   map: {"犬": dog, "猫": cat}
+# 「収容している犬・猫の情報を提供します」は各支所ページ（hogo*.html）の案内文に必ず出る文言。
+# リンクがあるセル（龍野・淡路の犬）でも表が貼られておらず、現状は全支所0頭。
+empty_text: ["収容している犬・猫の情報を提供します"]

@@ -1,8 +1,12 @@
 # 福島県動物愛護センター本所（中通り）迷子猫情報
-# pref_fukushima-1（迷子犬）と同一テンプレート。県北/県中/県南ごとに <table>、1 table = 1 頭。
-# 現状（2026-09-29確認）は県北地区に1頭（「チャオ」写真あり）、県中・県南は空テンプレート。
+# pref_fukushima-1（迷子犬）と同一テンプレート。県北/県中/県南ごとに <div class="detail_free"><p>【地区】現在、N匹の情報があります。</p><table>…</table></div>。
+# 0頭の地区もテンプレートの空欄table（管理番号だけ「c-07-1」等の体裁で入っている）を常に出力するため、
+# rows を table でなく div（見出し文込み）にして「現在、0匹の情報があります」の行を row_filter で除外する
+# （2026-09-29 T508: pref_fukushima-2 反証で検出。県北=1頭「チャオ」写真あり、県中・県南は0匹プレースホルダ）。
 
-rows: "div#main_body table"
+rows: "div#main_body div.detail_free"
+row_filter:
+  text_lacks: ["0 匹の情報があります"]
 image: "img@src"
 fields:
   management_no: {label: "保護日", regex: "[（(]([^（）()]+)[）)]\\s*$"}

@@ -30,9 +30,9 @@ _JUNK_IMAGE = re.compile(
 )
 # 日付らしさ: 2026年9月11日 / R8.9.11 / 2026/9/11 / 9月11日（年無し。神奈川・北九州の表に多い）
 _DATE_RE = re.compile(r"(令和|平成|R|H)?\s*\d{1,4}\s*[年./\-]\s*\d{1,2}\s*[月./\-]\s*\d{1,2}\s*日?|\d{1,2}\s*月\s*\d{1,2}\s*日")
-# 管理番号らしさ: 26-0123 / D250299 / 8中-D0155 / No.20049 / 第12号 / 2 桁以上の数字
+# 管理番号らしさ: 26-0123 / D250299 / 8中-D0155 / No.20049 / 第12号 / R8-6-5（岩手県奥州、元号＋1 桁区切り）/ 2 桁以上の数字
 # （management_no は「受付番号」等の列を名指しで取った値なので、数字が 2 桁あれば番号とみなす）
-_MGMT_RE = re.compile(r"[A-Za-z]?\d{1,4}[-‐\-–]\d{2,6}|[A-Za-z]{1,2}\d{3,}|No\.?\s*\d{2,}|第\s*\d+\s*号|\d{2,}")
+_MGMT_RE = re.compile(r"[A-Za-z]?\d{1,4}[-‐\-–]\d{2,6}|[A-Za-z]\d{1,2}[-‐\-–]\d{1,3}[-‐\-–]\d{1,3}|[A-Za-z]{1,2}\d{3,}|No\.?\s*\d{2,}|第\s*\d+\s*号|\d{2,}")
 
 
 class RecipeError(Exception):
@@ -55,6 +55,7 @@ class Recipe:
     rows_regex: str | None = None
     notes: str | None = None
     url: str | None = None          # 台帳の URL の代わりに開く入口（省略時は台帳の URL）
+    transpose: str | None = None    # 転置表（1 列 = 1 頭）の table セレクタ。指定時は rows の代わりに列を行にする
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> Recipe:
@@ -93,16 +94,23 @@ def _make_doc(url: str, html: str) -> Doc:
     return Doc(url=url, html=html, soup=BeautifulSoup(html, "lxml"))
 
 
-def _make_pdf_doc(url: str, content: bytes) -> Doc:
+def _make_pdf_doc(url: str, content: bytes, columns: int = 1) -> Doc:
+    """PDF を文字と表にする。columns > 1 なら各ページを左右に等分して列ごとに読む
+    （茨城県のように 1 ページ 2 段組みで、丸ごと読むと左右の行が 1 行に混ざる PDF のため）。"""
     import pdfplumber
 
     tables: list[list[list[str]]] = []
     texts: list[str] = []
     with pdfplumber.open(io.BytesIO(content)) as pdf:
         for page in pdf.pages:
-            texts.append(page.extract_text() or "")
-            for t in page.extract_tables() or []:
-                tables.append([[(c or "").replace("\n", " ").strip() for c in row] for row in t])
+            parts = [page]
+            if columns > 1:
+                w = page.width / columns
+                parts = [page.crop((i * w, 0, (i + 1) * w, page.height)) for i in range(columns)]
+            for part in parts:
+                texts.append(part.extract_text() or "")
+                for t in part.extract_tables() or []:
+                    tables.append([[(c or "").replace("\n", " ").strip() for c in row] for row in t])
     return Doc(url=url, pdf_tables=tables, pdf_text="\n".join(texts))
 
 
@@ -159,8 +167,11 @@ class Executor:
             return d
         page = self.fetcher.get(url, encoding=self.recipe.encoding)
         if page.html is None:
-            return _make_pdf_doc(page.final_url, page.content)
+            return _make_pdf_doc(page.final_url, page.content, columns=self._pdf_columns())
         return _make_doc(page.final_url, page.html)
+
+    def _pdf_columns(self) -> int:
+        return int((self.recipe.pdf or {}).get("columns", 1))
 
     def resolve(self, entry_url: str) -> list[Doc]:
         """入口 URL から steps を辿り、rows を適用する文書の列を返す。
@@ -255,7 +266,7 @@ class Executor:
                         continue
                     seen.add(url)
                     page = self.fetcher.get(url)
-                    out.append(_make_pdf_doc(page.final_url, page.content))
+                    out.append(_make_pdf_doc(page.final_url, page.content, columns=self._pdf_columns()))
                 self.trace.append(f"pdf_links → {len(seen)} 件")
         else:
             raise RecipeError(f"未知の step: {step}")
@@ -267,8 +278,40 @@ def extract_rows(recipe: Recipe, doc: Doc) -> list[Row]:
     if doc.is_pdf:
         return _pdf_rows(recipe, doc)
     assert doc.soup is not None
-    rows = [Row(doc=doc, el=el) for el in doc.soup.select(recipe.rows)]
+    if recipe.transpose:
+        rows = _transposed_rows(recipe, doc)
+    else:
+        rows = [Row(doc=doc, el=el) for el in doc.soup.select(recipe.rows)]
     return _filter_rows(recipe, rows)
+
+
+def _transposed_rows(recipe: Recipe, doc: Doc) -> list[Row]:
+    """1 列 = 1 頭の転置表（栃木県子犬・子猫）。
+
+    表の中で「セルが N 個（N ≥ 2）の行」を個体別の行、「セルが 1 個の行」を全頭共通の注記
+    （枠名や「5 月生まれ ワクチン接種済」）とみなし、列ごとに自分のセル＋共通セルを 1 つの要素に
+    まとめて行にする。行の並び順は表ごとに違ってよい（fields は regex で取る）。
+    全部の行が 1 セルの表（1 表 = 1 頭。栃木の子猫ページ）は表全体を 1 行にする。
+    """
+    import copy
+
+    assert doc.soup is not None
+    rows: list[Row] = []
+    for table in doc.soup.select(recipe.transpose or ""):
+        trs = [tr.find_all(["td", "th"], recursive=False) for tr in table.select("tr")]
+        n = max((len(c) for c in trs), default=0)
+        if n < 1:
+            continue
+        for i in range(n):
+            holder = BeautifulSoup('<div class="transposed"></div>', "lxml").div
+            assert holder is not None
+            for cells in trs:
+                if len(cells) == n:
+                    holder.append(copy.copy(cells[i]))
+                elif len(cells) == 1:
+                    holder.append(copy.copy(cells[0]))
+            rows.append(Row(doc=doc, el=holder))
+    return rows
 
 
 def _filter_rows(recipe: Recipe, rows: list[Row]) -> list[Row]:
