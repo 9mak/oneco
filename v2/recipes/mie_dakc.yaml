@@ -1,0 +1,16 @@
+rows: "table[id^='HPB_TABLE_XLS_1_']"
+row_filter:
+  text_has_any: ["保護年月日"]
+image: "img@src"
+fields:
+  management_no: {selector: "tr:nth-of-type(1) td:nth-of-type(1)", regex: "(.+)"}
+  shelter_date: {selector: "tr:nth-of-type(3) td:nth-of-type(1)", regex: "(.+)"}
+  location: {selector: "tr:nth-of-type(3) td:nth-of-type(2)", regex: "(.+)"}
+  breed: {selector: "tr:nth-of-type(5) td:nth-of-type(1)", regex: "(.+)"}
+  color: {selector: "tr:nth-of-type(5) td:nth-of-type(2)", regex: "(.+)"}
+  sex: {selector: "tr:nth-of-type(7) td:nth-of-type(1)", regex: "(.+)"}
+  note: {selector: "tr:nth-of-type(9) td:nth-of-type(1)", regex: "(.+)"}
+  phone: {selector: "tr:nth-of-type(10) td:nth-of-type(2)", regex: "(0\\d{2,3}-\\d{3,4}-\\d{3,4}|0\\d{9,10})"}
+empty_text:
+  - "現在、迷い犬情報はありません"
+  - "迷子犬情報はありません"

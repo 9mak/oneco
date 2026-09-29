@@ -65,7 +65,7 @@ fields:
 species:
   from: heading                 # heading | field | text
   selector: "h3"                # heading: 行より前にある直近の見出し
-  # from: field なら fields.species の値、from: text なら行のテキスト全体
+  # from: field なら fields.species の値、from: text なら行のテキスト全体、from: url なら文書の URL（dog.pdf / cat.pdf で分かれるとき）
   map: {"犬": dog, "猫": cat, "ねこ": cat, "イヌ": dog}   # 部分一致。どれにも当たらなければ other
 ```
 

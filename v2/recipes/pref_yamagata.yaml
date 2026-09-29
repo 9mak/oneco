@@ -1,0 +1,25 @@
+# 山形県: ハブページ(keijiban.html)自体には動物情報が無く、村山/最上/置賜/庄内
+# 4保健所の「県で保護・収容している動物の情報」個別ページへのリンクが並ぶだけ。
+# follow_all で4ページ全部を辿り、各ページ #tmp_main 内の table(迷い犬/負傷犬/負傷猫等、
+# 見出し行+実データ0〜1行)を rows として合算する。空欄行・「現在〜いません」の行は
+# 写真も収容日も管理番号も無いため動物とみなす条件を満たさず自動的に捨てられる。
+
+steps:
+  - follow_all: "h2:-soup-contains(\"県で保護・収容している動物の情報\") ~ ul a@href"
+
+rows: "#tmp_main table tr"
+image: "img@src"
+fields:
+  shelter_date: {label: "収容"}
+  location: {label: "保護"}
+  breed: {label: "種類"}
+  note: {label: "特徴"}
+  sex: {regex: "(オス|メス)"}
+  age: {regex: "(\\d+歳[^、。]*)"}
+
+empty_text:
+  - "現在、保護している迷い犬はいません"
+  - "現在、保護している負傷犬はいません"
+  - "現在、保護している負傷猫はいません"
+  - "迷い犬：0頭"
+  - "負傷動物：0頭"

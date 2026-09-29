@@ -8,8 +8,8 @@ sources:
   name: 四日市市（保護動物情報）
   municipality: 四日市市
   prefecture: 三重県
-  phone: null
-  address: null
+  phone: 059-352-0613
+  address: 三重県四日市市諏訪町2番2号（総合会館4F）
   url: https://www.city.yokkaichi.lg.jp/www/contents/1001000000924/index.html
   kind: sheltered
   species: mixed
@@ -278,8 +278,8 @@ sources:
   name: あかし動物センター（迷子犬）
   municipality: あかし動物センター
   prefecture: 兵庫県
-  phone: null
-  address: null
+  phone: 078-918-5797
+  address: 〒674-0051 明石市大久保町大窪2747-1
   url: https://www.city.akashi.lg.jp/kankyou/dobutsu/info/maigo/dog.html
   kind: stray
   species: dog
@@ -296,8 +296,8 @@ sources:
   name: あかし動物センター（迷子猫）
   municipality: あかし動物センター
   prefecture: 兵庫県
-  phone: null
-  address: null
+  phone: 078-918-5797
+  address: 〒674-0051 明石市大久保町大窪2747-1
   url: https://www.city.akashi.lg.jp/kankyou/dobutsu/info/maigo/cat.html
   kind: stray
   species: cat
@@ -314,8 +314,8 @@ sources:
   name: 尼崎市動物愛護センター（収容動物）
   municipality: 尼崎市動物愛護センター
   prefecture: 兵庫県
-  phone: null
-  address: null
+  phone: 06-6434-2233
+  address: 〒661-0047 兵庫県尼崎市西昆陽4丁目1番1号
   url: https://www.city.amagasaki.hyogo.jp/kurashi/iryou/pet/051syuuyoudoubutu.html
   kind: sheltered
   species: mixed
@@ -332,7 +332,7 @@ sources:
   name: 神戸市動物管理センター（収容動物）
   municipality: 神戸市動物管理センター
   prefecture: 兵庫県
-  phone: null
+  phone: 078-771-7497
   address: null
   url: https://www.city.kobe.lg.jp/a84140/kenko/health/hygiene/animal/zmenu/index.html
   kind: sheltered
@@ -368,8 +368,8 @@ sources:
   name: 札幌市（迷子犬）
   municipality: 札幌市
   prefecture: 北海道
-  phone: null
-  address: null
+  phone: 011-736-6134
+  address: 〒060-0022 札幌市中央区北22条西15丁目3-6
   url: https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/maigoinu.html
   kind: stray
   species: dog
@@ -386,8 +386,8 @@ sources:
   name: 札幌市（迷子猫）
   municipality: 札幌市
   prefecture: 北海道
-  phone: null
-  address: null
+  phone: 011-736-6134
+  address: 〒060-0022 札幌市中央区北22条西15丁目3-6
   url: https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/maigoneko2.html
   kind: stray
   species: cat
@@ -405,10 +405,10 @@ sources:
   municipality: 函館どうなん動物愛護センター
   prefecture: 北海道
   phone: null
-  address: null
+  address: 函館市吉川町6-22
   url: https://nyantomo.jp/donanhakodate/
   kind: adoption
-  species: mixed
+  species: cat
   mode: recipe
   recipe: recipes/nyantomo.yaml
   enabled: true
@@ -584,8 +584,8 @@ sources:
   name: 千葉市（迷子犬）
   municipality: 千葉市
   prefecture: 千葉県
-  phone: null
-  address: null
+  phone: 043-258-7817
+  address: 千葉市稲毛区宮野木町445番地1
   url: https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/lost_dog.html
   kind: stray
   species: dog
@@ -602,8 +602,8 @@ sources:
   name: 千葉市（迷子猫）
   municipality: 千葉市
   prefecture: 千葉県
-  phone: null
-  address: null
+  phone: 043-258-7817
+  address: 千葉市稲毛区宮野木町445番地1
   url: https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/lost_cat.html
   kind: stray
   species: cat
@@ -620,8 +620,8 @@ sources:
   name: 千葉市（迷子その他動物）
   municipality: 千葉市
   prefecture: 千葉県
-  phone: null
-  address: null
+  phone: 043-258-7817
+  address: 千葉市稲毛区宮野木町445番地1
   url: https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/lost_another_animal.html
   kind: stray
   species: mixed
@@ -638,8 +638,8 @@ sources:
   name: 千葉市（市民保護犬）
   municipality: 千葉市
   prefecture: 千葉県
-  phone: null
-  address: null
+  phone: 043-258-7817
+  address: 千葉市稲毛区宮野木町445番地1
   url: https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/hogo_dog.html
   kind: sheltered
   species: dog
@@ -656,8 +656,8 @@ sources:
   name: 千葉市（市民保護猫）
   municipality: 千葉市
   prefecture: 千葉県
-  phone: null
-  address: null
+  phone: 043-258-7817
+  address: 千葉市稲毛区宮野木町445番地1
   url: https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/hogo_cat.html
   kind: sheltered
   species: cat
@@ -674,8 +674,8 @@ sources:
   name: 千葉市（市民保護その他）
   municipality: 千葉市
   prefecture: 千葉県
-  phone: null
-  address: null
+  phone: 043-258-7817
+  address: 千葉市稲毛区宮野木町445番地1
   url: https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/lost_others.html
   kind: sheltered
   species: mixed
@@ -693,7 +693,7 @@ sources:
   municipality: 船橋市
   prefecture: 千葉県
   phone: 047-435-3916
-  address: null
+  address: 〒273-0016 千葉県船橋市潮見町32-2
   url: https://www.city.funabashi.lg.jp/kurashi/doubutsu/003/p013242.html
   kind: sheltered
   species: mixed
@@ -711,7 +711,7 @@ sources:
   municipality: 船橋市
   prefecture: 千葉県
   phone: 047-435-3916
-  address: null
+  address: 〒273-0016 千葉県船橋市潮見町32-2
   url: https://www.city.funabashi.lg.jp/kurashi/doubutsu/003/joutoindex.html
   kind: adoption
   species: mixed
@@ -728,8 +728,8 @@ sources:
   name: 柏市（保護動物）
   municipality: 柏市
   prefecture: 千葉県
-  phone: null
-  address: null
+  phone: 04-7190-2828
+  address: 千葉県柏市風早二丁目4番地3（〒277-0924、健康医療部動物愛護ふれあいセンター）
   url: https://www.city.kashiwa.lg.jp/dobutsuaigo/shiseijoho/shisei/health_hospital/mainmenu/dobutsu/hogo/hogo.html
   kind: sheltered
   species: mixed
@@ -746,8 +746,8 @@ sources:
   name: 柏市（譲渡対象動物）
   municipality: 柏市
   prefecture: 千葉県
-  phone: null
-  address: null
+  phone: 04-7190-2828
+  address: 千葉県柏市風早二丁目4番地3（〒277-0924、健康医療部動物愛護ふれあいセンター）
   url: https://www.city.kashiwa.lg.jp/dobutsuaigo/shiseijoho/shisei/health_hospital/mainmenu/dobutsu/hogo/satoya.html
   kind: adoption
   species: mixed
@@ -854,8 +854,8 @@ sources:
   name: 和歌山市動物愛護管理センター（譲渡候補）
   municipality: 和歌山市動物愛護管理センター
   prefecture: 和歌山県
-  phone: null
-  address: null
+  phone: 073-488-2032
+  address: 〒640-8422 和歌山市松江東3丁目2番63号（和歌山市動物愛護管理センター）
   url: https://www.city.wakayama.wakayama.jp/kurashi/kenko_iryo/1009125/1035775/1002096.html
   kind: adoption
   species: mixed
@@ -877,7 +877,7 @@ sources:
   url: https://www.pref.wakayama.lg.jp/prefg/031601/d00156970.html
   kind: sheltered
   species: mixed
-  mode: recipe
+  mode: link_only
   recipe: recipes/pref_wakayama.yaml
   enabled: true
   legacy:
@@ -886,6 +886,7 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+  note: 県内 9 保健所へのリンク集。個体は各保健所ページ（未登録）
 - slug: city_koshigaya-1
   name: 越谷市（保護犬）
   municipality: 越谷市
@@ -998,8 +999,8 @@ sources:
   name: おおいた動物愛護センター（迷子情報メイン）
   municipality: おおいた動物愛護センター
   prefecture: 大分県
-  phone: null
-  address: null
+  phone: 097-588-1122
+  address: 〒870-1201 大分市大字廻栖野3231番地47
   url: https://oita-aigo.com/lostchild/
   kind: sheltered
   species: mixed
@@ -1016,8 +1017,8 @@ sources:
   name: おおいた動物愛護センター（譲渡犬）
   municipality: おおいた動物愛護センター
   prefecture: 大分県
-  phone: null
-  address: null
+  phone: 097-588-1122
+  address: 〒870-1201 大分市大字廻栖野3231番地47
   url: https://oita-aigo.com/information_doglist/anytimedog/
   kind: adoption
   species: dog
@@ -1034,8 +1035,8 @@ sources:
   name: おおいた動物愛護センター（譲渡猫）
   municipality: おおいた動物愛護センター
   prefecture: 大分県
-  phone: null
-  address: null
+  phone: 097-588-1122
+  address: 〒870-1201 大分市大字廻栖野3231番地47
   url: https://oita-aigo.com/information_catlist/anytimecat/
   kind: adoption
   species: cat
@@ -1089,7 +1090,7 @@ sources:
   municipality: 大阪市
   prefecture: 大阪府
   phone: 06-6685-3700
-  address: null
+  address: 〒559-0021 大阪市住之江区柴谷2丁目5番74号（おおさかワンニャンセンター）
   url: https://www.city.osaka.lg.jp/kenko/page/0000110901.html
   kind: stray
   species: dog
@@ -1107,7 +1108,7 @@ sources:
   municipality: 大阪市
   prefecture: 大阪府
   phone: 06-6685-3700
-  address: null
+  address: 〒559-0021 大阪市住之江区柴谷2丁目5番74号（おおさかワンニャンセンター）
   url: https://www.city.osaka.lg.jp/kenko/page/0000117147.html
   kind: stray
   species: cat
@@ -1125,7 +1126,7 @@ sources:
   municipality: 大阪市
   prefecture: 大阪府
   phone: 06-6685-3700
-  address: null
+  address: 〒559-0021 大阪市住之江区柴谷2丁目5番74号（おおさかワンニャンセンター）
   url: https://www.city.osaka.lg.jp/kenko/page/0000206024.html
   kind: adoption
   species: dog
@@ -1143,7 +1144,7 @@ sources:
   municipality: 大阪市
   prefecture: 大阪府
   phone: 06-6685-3700
-  address: null
+  address: 〒559-0021 大阪市住之江区柴谷2丁目5番74号（おおさかワンニャンセンター）
   url: https://www.city.osaka.lg.jp/kenko/page/0000206027.html
   kind: adoption
   species: cat
@@ -1160,8 +1161,8 @@ sources:
   name: 高槻市（迷子犬猫）
   municipality: 高槻市
   prefecture: 大阪府
-  phone: null
-  address: null
+  phone: 072-661-9331
+  address: 大阪府高槻市城東町5-7
   url: https://www.city.takatsuki.osaka.jp/soshiki/39/2752.html
   kind: stray
   species: mixed
@@ -1178,8 +1179,8 @@ sources:
   name: 大阪府動物愛護管理センター（迷い犬猫）
   municipality: 大阪府動物愛護管理センター
   prefecture: 大阪府
-  phone: null
-  address: null
+  phone: 072-958-8212
+  address: 〒583-0862 羽曳野市尺度53-4
   url: https://www.pref.osaka.lg.jp/o120200/doaicenter/doaicenter/maigoken.html
   kind: stray
   species: mixed
@@ -1196,8 +1197,8 @@ sources:
   name: 豊中市（迷子犬猫）
   municipality: 豊中市
   prefecture: 大阪府
-  phone: null
-  address: null
+  phone: 06-6152-7321
+  address: 〒561-0881 豊中市中桜塚4丁目11番1号 豊中市保健所
   url: https://www.city.toyonaka.osaka.jp/kurashi/pettp-inuneko/maigo.html
   kind: stray
   species: mixed
@@ -1214,8 +1215,8 @@ sources:
   name: 奈良市（保護動物情報）
   municipality: 奈良市
   prefecture: 奈良県
-  phone: null
-  address: null
+  phone: 0742-93-8395
+  address: 〒630-8122 奈良市三条本町13番1号 はぐくみセンター（奈良市保健所・教育総合センター）保健衛生課
   url: https://www.city.nara.lg.jp/life/4/34/134/
   kind: sheltered
   species: mixed
@@ -1232,8 +1233,8 @@ sources:
   name: 仙台市アニパル（譲渡犬）
   municipality: 仙台市アニパル
   prefecture: 宮城県
-  phone: null
-  address: null
+  phone: 022-258-1626
+  address: 仙台市宮城野区扇町6-3-3
   url: https://www.city.sendai.jp/dobutsu/kurashi/shizen/petto/hogodobutsu/joho/inu.html
   kind: adoption
   species: dog
@@ -1250,8 +1251,8 @@ sources:
   name: 仙台市アニパル（譲渡猫）
   municipality: 仙台市アニパル
   prefecture: 宮城県
-  phone: null
-  address: null
+  phone: 022-258-1626
+  address: 仙台市宮城野区扇町6-3-3
   url: https://www.city.sendai.jp/dobutsu/kurashi/shizen/petto/hogodobutsu/joho/neko.html
   kind: adoption
   species: cat
@@ -1268,8 +1269,8 @@ sources:
   name: 仙台市アニパル（譲渡子猫）
   municipality: 仙台市アニパル
   prefecture: 宮城県
-  phone: null
-  address: null
+  phone: 022-258-1626
+  address: 仙台市宮城野区扇町6-3-3
   url: https://www.city.sendai.jp/dobutsu/kurashi/shizen/petto/hogodobutsu/joho/koneko.html
   kind: adoption
   species: cat
@@ -1286,7 +1287,7 @@ sources:
   name: 宮崎市（直近保護犬）
   municipality: 宮崎市
   prefecture: 宮崎県
-  phone: null
+  phone: 0985-85-6011
   address: null
   url: https://www.city.miyazaki.miyazaki.jp/life/pet/protection/411118.html
   kind: sheltered
@@ -1304,12 +1305,12 @@ sources:
   name: 宮崎市（センター保護犬・飼い主募集）
   municipality: 宮崎市
   prefecture: 宮崎県
-  phone: null
+  phone: 0985-85-6011
   address: null
   url: https://www.city.miyazaki.miyazaki.jp/life/pet/protection/109676.html
   kind: adoption
   species: dog
-  mode: recipe
+  mode: link_only
   recipe: recipes/city_miyazaki-2.yaml
   enabled: true
   legacy:
@@ -1318,16 +1319,17 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+  note: 本文は Instagram/Facebook へのリンクのみ
 - slug: city_miyazaki-3
   name: 宮崎市（センター保護猫・飼い主募集）
   municipality: 宮崎市
   prefecture: 宮崎県
-  phone: null
+  phone: 0985-85-6011
   address: null
   url: https://www.city.miyazaki.miyazaki.jp/life/pet/protection/339718.html
   kind: adoption
   species: cat
-  mode: recipe
+  mode: link_only
   recipe: recipes/city_miyazaki-3.yaml
   enabled: true
   legacy:
@@ -1336,6 +1338,7 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+  note: 本文は Instagram へのリンクのみ
 - slug: pref_toyama
   name: 富山県（迷い犬猫情報）
   municipality: 富山県
@@ -1376,8 +1379,8 @@ sources:
   name: 山形県（飼い主探し掲示板・ハブ）
   municipality: 山形県
   prefecture: 山形県
-  phone: null
-  address: null
+  phone: 023-630-2621
+  address: 山形市松波二丁目8番1号
   url: https://www.pref.yamagata.jp/020071/kenfuku/doubutsuaigo/aigo/kainushisagashi/keijiban.html
   kind: sheltered
   species: mixed
@@ -1520,8 +1523,8 @@ sources:
   name: 倉敷市（保護動物）
   municipality: 倉敷市
   prefecture: 岡山県
-  phone: null
-  address: null
+  phone: 086-434-9829
+  address: 〒710-0834 倉敷市笹沖170番地
   url: https://www.city.kurashiki.okayama.jp/kurashi/pet/1013042/index.html
   kind: sheltered
   species: mixed
@@ -1538,8 +1541,8 @@ sources:
   name: 岡山市（保護動物情報）
   municipality: 岡山市
   prefecture: 岡山県
-  phone: null
-  address: null
+  phone: 086-803-1259
+  address: 〒700-8546 岡山市北区鹿田町一丁目1番1号（保健福祉局保健所衛生課 動物衛生係）
   url: https://www.city.okayama.jp/kurashi/category/1-15-1-0-0-0-0-0-0-0.html
   kind: sheltered
   species: mixed
@@ -1579,7 +1582,7 @@ sources:
   url: https://www.pref.iwate.jp/kurashikankyou/anzenanshin/pet/1004615.html
   kind: sheltered
   species: mixed
-  mode: recipe
+  mode: link_only
   recipe: recipes/pref_iwate.yaml
   enabled: true
   legacy:
@@ -1588,6 +1591,7 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+  note: 9 保健所へのリンク集。個体は 2〜3 段先で保健所ごとに構造が違う（後日 保健所ごとに台帳へ分ける）
 - slug: pref_shimane
   name: 島根県 松江保健所（収容動物）
   municipality: 島根県 松江保健所
@@ -1611,7 +1615,7 @@ sources:
   municipality: 福山市
   prefecture: 広島県
   phone: 084-970-1201
-  address: null
+  address: 〒720-1143 福山市駅家町下山守546番地14
   url: https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/237722.html
   kind: sheltered
   species: dog
@@ -1629,7 +1633,7 @@ sources:
   municipality: 福山市
   prefecture: 広島県
   phone: 084-970-1201
-  address: null
+  address: 〒720-1143 福山市駅家町下山守546番地14
   url: https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/60970.html
   kind: sheltered
   species: cat
@@ -1646,8 +1650,8 @@ sources:
   name: 広島市（迷子犬）
   municipality: 広島市
   prefecture: 広島県
-  phone: null
-  address: null
+  phone: 082-243-6058
+  address: 〒730-0043 広島県広島市中区富士見町11番27号（広島市動物愛護センター）
   url: https://www.city.hiroshima.lg.jp/living/pet-doubutsu/1021301/1026245/1037461.html
   kind: stray
   species: dog
@@ -1664,8 +1668,8 @@ sources:
   name: 広島市（迷子猫）
   municipality: 広島市
   prefecture: 広島県
-  phone: null
-  address: null
+  phone: 082-243-6058
+  address: 〒730-0043 広島県広島市中区富士見町11番27号（広島市動物愛護センター）
   url: https://www.city.hiroshima.lg.jp/living/pet-doubutsu/1021301/1026245/1039097.html
   kind: stray
   species: cat
@@ -1683,7 +1687,7 @@ sources:
   municipality: 広島県動物愛護センター
   prefecture: 広島県
   phone: 0848-60-8511
-  address: null
+  address: 〒729-0415 広島県三原市本郷町上北方字用倉山11352番（動物愛護センター代表連絡先。ページ本文に明記、台帳は現在null）
   url: https://www.pref.hiroshima.lg.jp/site/apc/jouto-stray-dog-list.html
   kind: stray
   species: dog
@@ -1701,7 +1705,7 @@ sources:
   municipality: 広島県動物愛護センター
   prefecture: 広島県
   phone: 0848-60-8511
-  address: null
+  address: 〒729-0415 広島県三原市本郷町上北方字用倉山11352番（動物愛護センター代表連絡先。dogページと同一施設・同一表記。台帳は現在null）
   url: https://www.pref.hiroshima.lg.jp/site/apc/jouto-stray-cat-list.html
   kind: stray
   species: cat
@@ -1849,7 +1853,7 @@ sources:
   url: https://www.city.nagoya.jp/kurashi/pet/1015473/1015483/1015484.html
   kind: adoption
   species: dog
-  mode: recipe
+  mode: link_only
   recipe: recipes/city_nagoya-2.yaml
   enabled: true
   legacy:
@@ -1898,8 +1902,8 @@ sources:
   name: 豊田市動物愛護センター（迷子動物）
   municipality: 豊田市動物愛護センター
   prefecture: 愛知県
-  phone: null
-  address: null
+  phone: 0565-42-2533
+  address: 〒471-0002 愛知県豊田市矢並町法沢715-4 鞍ケ池公園内(旧くつろぎ館(休憩所))
   url: https://www.city.toyota.aichi.jp/kurashi/sumai/pet/1003696.html
   kind: stray
   species: mixed
@@ -1916,8 +1920,8 @@ sources:
   name: 豊橋市あいくる（迷い犬）
   municipality: 豊橋市あいくる
   prefecture: 愛知県
-  phone: null
-  address: null
+  phone: 0532-39-9127
+  address: 〒441-8149 愛知県豊橋市中野町字中原145番地
   url: https://toyohashi-aikuru.jp/animal_category/lost-found?animal_type=dog
   kind: stray
   species: dog
@@ -1934,8 +1938,8 @@ sources:
   name: 豊橋市あいくる（迷い猫）
   municipality: 豊橋市あいくる
   prefecture: 愛知県
-  phone: null
-  address: null
+  phone: 0532-39-9127
+  address: 〒441-8149 愛知県豊橋市中野町字中原145番地
   url: https://toyohashi-aikuru.jp/animal_category/lost-found?animal_type=cat
   kind: stray
   species: cat
@@ -1957,7 +1961,7 @@ sources:
   url: https://wannyan-navi.pref.aichi.jp/?page=list_dc
   kind: adoption
   species: mixed
-  mode: recipe
+  mode: link_only
   recipe: recipes/wannyan_navi_aichi.yaml
   enabled: true
   legacy:
@@ -1966,6 +1970,7 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+  note: Bubble 製 SPA。描画されるのは 12 頭で残り 26 頭はページ送りクリックが要る（後日エンジン対応）
 - slug: pref_niigata
   name: 新潟県動物愛護センター（保護動物）
   municipality: 新潟県動物愛護センター
@@ -2097,7 +2102,7 @@ sources:
   municipality: 宇都宮市
   prefecture: 栃木県
   phone: 028-626-1108
-  address: null
+  address: 〒321-0974 宇都宮市竹林町972
   url: https://www.city.utsunomiya.lg.jp/kurashi/pet/pet/1005584.html
   kind: stray
   species: mixed
@@ -2119,7 +2124,7 @@ sources:
   url: https://www.douai.pref.tochigi.lg.jp/work/puppy/
   kind: adoption
   species: dog
-  mode: recipe
+  mode: link_only
   recipe: recipes/douai_pref_tochigi_puppy-1.yaml
   enabled: true
   legacy:
@@ -2128,6 +2133,7 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+  note: 1 列 = 1 頭の転置表。今のレシピ形式では読めない（後日エンジン対応）
 - slug: douai_pref_tochigi_puppy-2
   name: 栃木県動物愛護指導センター（子猫譲渡）
   municipality: 栃木県動物愛護指導センター
@@ -2204,8 +2210,8 @@ sources:
   name: 沖縄県動物愛護管理センター（収容犬）
   municipality: 沖縄県動物愛護管理センター
   prefecture: 沖縄県
-  phone: null
-  address: null
+  phone: 098-945-3043
+  address: 〒901-1202 沖縄県南城市大里字大里2000番地
   url: https://www.aniwel-pref.okinawa/animals/accommodate/dogs
   kind: sheltered
   species: dog
@@ -2222,8 +2228,8 @@ sources:
   name: 沖縄県動物愛護管理センター（収容猫）
   municipality: 沖縄県動物愛護管理センター
   prefecture: 沖縄県
-  phone: null
-  address: null
+  phone: 098-945-3043
+  address: 〒901-1202 沖縄県南城市大里字大里2000番地
   url: https://www.aniwel-pref.okinawa/animals/accommodate/cats
   kind: sheltered
   species: cat
@@ -2240,8 +2246,8 @@ sources:
   name: 沖縄県動物愛護管理センター（行方不明犬）
   municipality: 沖縄県動物愛護管理センター
   prefecture: 沖縄県
-  phone: null
-  address: null
+  phone: 098-945-3043
+  address: 〒901-1202 沖縄県南城市大里字大里2000番地
   url: https://www.aniwel-pref.okinawa/animals/missing/dogs
   kind: stray
   species: dog
@@ -2258,8 +2264,8 @@ sources:
   name: 沖縄県動物愛護管理センター（行方不明猫）
   municipality: 沖縄県動物愛護管理センター
   prefecture: 沖縄県
-  phone: null
-  address: null
+  phone: 098-945-3043
+  address: 〒901-1202 沖縄県南城市大里字大里2000番地
   url: https://www.aniwel-pref.okinawa/animals/missing/cats
   kind: stray
   species: cat
@@ -2276,8 +2282,8 @@ sources:
   name: 沖縄県動物愛護管理センター（迷い込み保護犬）
   municipality: 沖縄県動物愛護管理センター
   prefecture: 沖縄県
-  phone: null
-  address: null
+  phone: 098-945-3043
+  address: 〒901-1202 沖縄県南城市大里字大里2000番地
   url: https://www.aniwel-pref.okinawa/animals/protection/dogs
   kind: sheltered
   species: dog
@@ -2294,8 +2300,8 @@ sources:
   name: 沖縄県動物愛護管理センター（迷い込み保護猫）
   municipality: 沖縄県動物愛護管理センター
   prefecture: 沖縄県
-  phone: null
-  address: null
+  phone: 098-945-3043
+  address: 〒901-1202 沖縄県南城市大里字大里2000番地
   url: https://www.aniwel-pref.okinawa/animals/protection/cats
   kind: sheltered
   species: cat
@@ -2312,8 +2318,8 @@ sources:
   name: 那覇市（保護犬猫情報）
   municipality: 那覇市
   prefecture: 沖縄県
-  phone: null
-  address: null
+  phone: 098-951-1530
+  address: 〒901-1105 沖縄県島尻郡南風原町字新川641（エコマール那覇プラザ棟4階） 環境部 環境衛生課 総務企画グループ
   url: https://www.city.naha.okinawa.jp/kurasitetuduki/animal/1002271/1002278.html
   kind: sheltered
   species: mixed
@@ -2330,8 +2336,8 @@ sources:
   name: 大津市動物愛護センター（迷い犬猫）
   municipality: 大津市動物愛護センター
   prefecture: 滋賀県
-  phone: null
-  address: null
+  phone: 077-574-4601
+  address: 〒520-0246 滋賀県大津市仰木の里一丁目24-2
   url: https://www.city.otsu.lg.jp/soshiki/021/1442/g/pet/mayoi/1387775941679.html
   kind: stray
   species: mixed
@@ -2367,7 +2373,7 @@ sources:
   municipality: 熊本市
   prefecture: 熊本県
   phone: 096-380-2153
-  address: null
+  address: 〒861-8045 熊本市東区小山2丁目11-1
   url: https://www.city.kumamoto.jp/doubutuaigo/list03612.html
   kind: stray
   species: dog
@@ -2385,7 +2391,7 @@ sources:
   municipality: 熊本市
   prefecture: 熊本県
   phone: 096-380-2153
-  address: null
+  address: 〒861-8045 熊本市東区小山2丁目11-1
   url: https://www.city.kumamoto.jp/doubutuaigo/list03615.html
   kind: stray
   species: cat
@@ -2618,7 +2624,7 @@ sources:
   name: 横浜市（収容犬）
   municipality: 横浜市
   prefecture: 神奈川県
-  phone: null
+  phone: 045-471-2111
   address: null
   url: https://www.city.yokohama.lg.jp/kurashi/sumai-kurashi/pet-dobutsu/aigo/maigo/shuyoinfo.html
   kind: sheltered
@@ -2636,7 +2642,7 @@ sources:
   name: 横浜市（収容猫）
   municipality: 横浜市
   prefecture: 神奈川県
-  phone: null
+  phone: 045-471-2111
   address: null
   url: https://www.city.yokohama.lg.jp/kurashi/sumai-kurashi/pet-dobutsu/aigo/maigo/20121004094818.html
   kind: sheltered
@@ -2654,7 +2660,7 @@ sources:
   name: 横浜市（収容その他動物）
   municipality: 横浜市
   prefecture: 神奈川県
-  phone: null
+  phone: 045-471-2111
   address: null
   url: https://www.city.yokohama.lg.jp/kurashi/sumai-kurashi/pet-dobutsu/aigo/maigo/20121004110429.html
   kind: sheltered
@@ -2672,8 +2678,8 @@ sources:
   name: 神奈川県動物愛護センター（保護犬）
   municipality: 神奈川県動物愛護センター
   prefecture: 神奈川県
-  phone: null
-  address: null
+  phone: 0463-58-3411
+  address: 〒259-1205 神奈川県平塚市土屋401
   url: https://www.pref.kanagawa.jp/osirase/1594/awc/lost/dog.html
   kind: sheltered
   species: dog
@@ -2690,8 +2696,8 @@ sources:
   name: 神奈川県動物愛護センター（保護猫）
   municipality: 神奈川県動物愛護センター
   prefecture: 神奈川県
-  phone: null
-  address: null
+  phone: 0463-58-3411
+  address: 〒259-1205 神奈川県平塚市土屋401
   url: https://www.pref.kanagawa.jp/osirase/1594/awc/lost/cat.html
   kind: sheltered
   species: cat
@@ -2708,12 +2714,12 @@ sources:
   name: 神奈川県動物愛護センター（その他動物）
   municipality: 神奈川県動物愛護センター
   prefecture: 神奈川県
-  phone: null
-  address: null
+  phone: 0463-58-3411
+  address: 〒259-1205 神奈川県平塚市土屋401
   url: https://www.pref.kanagawa.jp/osirase/1594/awc/lost/other.html
   kind: sheltered
   species: mixed
-  mode: recipe
+  mode: link_only
   recipe: recipes/pref_kanagawa-3.yaml
   enabled: true
   legacy:
@@ -2722,12 +2728,13 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+  note: 犬猫以外（鳥・ハムスター等）のページ。犬猫のみ扱うためリンクだけ出す
 - slug: pref_kanagawa-4
   name: 神奈川県動物愛護センター（センター外保護動物）
   municipality: 神奈川県動物愛護センター
   prefecture: 神奈川県
-  phone: null
-  address: null
+  phone: 0463-58-3411
+  address: 〒259-1205 神奈川県平塚市土屋401
   url: https://www.pref.kanagawa.jp/osirase/1594/awc/lost/outside.html
   kind: sheltered
   species: mixed
@@ -2744,8 +2751,8 @@ sources:
   name: 横須賀市（保護犬）
   municipality: 横須賀市
   prefecture: 神奈川県
-  phone: null
-  address: null
+  phone: 046-869-0040
+  address: 〒237-0062 神奈川県横須賀市浦郷町5-2931
   url: https://www.yokosuka-doubutu.com/protected-animals-dog/
   kind: sheltered
   species: dog
@@ -2762,8 +2769,8 @@ sources:
   name: 横須賀市（保護猫）
   municipality: 横須賀市
   prefecture: 神奈川県
-  phone: null
-  address: null
+  phone: 046-869-0040
+  address: 〒237-0062 神奈川県横須賀市浦郷町5-2931
   url: https://www.yokosuka-doubutu.com/protected-animals-cat/
   kind: sheltered
   species: cat
@@ -2780,8 +2787,8 @@ sources:
   name: 横須賀市（保護その他）
   municipality: 横須賀市
   prefecture: 神奈川県
-  phone: null
-  address: null
+  phone: 046-869-0040
+  address: 〒237-0062 神奈川県横須賀市浦郷町5-2931
   url: https://www.yokosuka-doubutu.com/protected-animals-other/
   kind: sheltered
   species: mixed
@@ -2798,8 +2805,8 @@ sources:
   name: 横須賀市（譲渡犬）
   municipality: 横須賀市
   prefecture: 神奈川県
-  phone: null
-  address: null
+  phone: 046-869-0040
+  address: 〒237-0062 神奈川県横須賀市浦郷町5-2931
   url: https://www.yokosuka-doubutu.com/adopted-animals-dog/
   kind: adoption
   species: dog
@@ -2816,8 +2823,8 @@ sources:
   name: 横須賀市（譲渡猫）
   municipality: 横須賀市
   prefecture: 神奈川県
-  phone: null
-  address: null
+  phone: 046-869-0040
+  address: 〒237-0062 神奈川県横須賀市浦郷町5-2931
   url: https://www.yokosuka-doubutu.com/adopted-animals-cat/
   kind: adoption
   species: cat
@@ -2834,8 +2841,8 @@ sources:
   name: 横須賀市（譲渡その他）
   municipality: 横須賀市
   prefecture: 神奈川県
-  phone: null
-  address: null
+  phone: 046-869-0040
+  address: 〒237-0062 神奈川県横須賀市浦郷町5-2931
   url: https://www.yokosuka-doubutu.com/adopted-animals-other/
   kind: adoption
   species: mixed
@@ -2852,12 +2859,12 @@ sources:
   name: 福井県（動物保護センター）
   municipality: 福井県
   prefecture: 福井県
-  phone: null
-  address: null
+  phone: 0776-38-2212
+  address: 〒918-8165 福井市徳尾町18-1-1
   url: https://www.pref.fukui.lg.jp/doc/doukansi/doubutukanrisidou/doukansi-c-4.html
   kind: adoption
   species: mixed
-  mode: recipe
+  mode: link_only
   recipe: recipes/pref_fukui.yaml
   enabled: true
   legacy:
@@ -3090,7 +3097,7 @@ sources:
   address: null
   url: https://zuttoissho.com/omukae/animal/dog/
   kind: adoption
-  species: mixed
+  species: dog
   mode: recipe
   recipe: recipes/zuttoissho_fukuoka-1.yaml
   enabled: true
@@ -3108,7 +3115,7 @@ sources:
   address: null
   url: https://zuttoissho.com/omukae/animal/cat/
   kind: adoption
-  species: mixed
+  species: cat
   mode: recipe
   recipe: recipes/zuttoissho_fukuoka-2.yaml
   enabled: true
@@ -3158,8 +3165,8 @@ sources:
   name: 福島県（会津 迷子犬）
   municipality: 福島県
   prefecture: 福島県
-  phone: null
-  address: null
+  phone: 0242-29-5517
+  address: 〒965-0807 会津若松市城東町5番12号（会津保健福祉事務所内）
   url: https://www.pref.fukushima.lg.jp/sec/21621a/maigo-dog-aizu.html
   kind: stray
   species: dog
@@ -3176,8 +3183,8 @@ sources:
   name: 福島県（相双 迷子犬）
   municipality: 福島県
   prefecture: 福島県
-  phone: null
-  address: null
+  phone: 0244-26-1351
+  address: 〒975-0031 南相馬市原町区錦町1丁目30番地（相双保健福祉事務所内）
   url: https://www.pref.fukushima.lg.jp/sec/21622a/maigo-dog-soso.html
   kind: stray
   species: dog
@@ -3194,8 +3201,8 @@ sources:
   name: 福島県（相双 迷子猫）
   municipality: 福島県
   prefecture: 福島県
-  phone: null
-  address: null
+  phone: 0244-26-1351
+  address: 〒975-0031 南相馬市原町区錦町1丁目30番地（相双保健福祉事務所内）
   url: https://www.pref.fukushima.lg.jp/sec/21622a/maigo-cat-soso.html
   kind: stray
   species: cat
@@ -3212,8 +3219,8 @@ sources:
   name: ワンニャピアあきた（譲渡犬）
   municipality: ワンニャピアあきた
   prefecture: 秋田県
-  phone: null
-  address: null
+  phone: 018-827-5051
+  address: 〒010-1211 秋田県秋田市雄和椿川字奥椿岱1番地
   url: https://wannyapia.akita.jp/pages/protective-dogs
   kind: adoption
   species: dog
@@ -3230,8 +3237,8 @@ sources:
   name: ワンニャピアあきた（譲渡猫）
   municipality: ワンニャピアあきた
   prefecture: 秋田県
-  phone: null
-  address: null
+  phone: 018-827-5051
+  address: 〒010-1211 秋田県秋田市雄和椿川字奥椿岱1番地
   url: https://wannyapia.akita.jp/pages/protective-cats
   kind: adoption
   species: mixed
@@ -3536,8 +3543,8 @@ sources:
   name: 長野県動物愛護センター（譲渡犬）
   municipality: 長野県動物愛護センター
   prefecture: 長野県
-  phone: null
-  address: null
+  phone: 0267-24-5071
+  address: 長野県小諸市大字菱平字前新田2725
   url: https://www.pref.nagano.lg.jp/dobutsuaigo/joto/inu-neko/inu.html
   kind: adoption
   species: dog
@@ -3554,8 +3561,8 @@ sources:
   name: 長野県動物愛護センター（譲渡猫）
   municipality: 長野県動物愛護センター
   prefecture: 長野県
-  phone: null
-  address: null
+  phone: 0267-24-5071
+  address: 長野県小諸市大字菱平字前新田2725
   url: https://www.pref.nagano.lg.jp/dobutsuaigo/joto/inu-neko/neko.html
   kind: adoption
   species: cat

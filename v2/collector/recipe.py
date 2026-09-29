@@ -25,9 +25,11 @@ _JUNK_IMAGE = re.compile(
     r"line_|instagram|youtube|\.svg$|loading|print|mail\.|tel\.|map\.|pdf\.|zoom|search)",
     re.I,
 )
-_DATE_RE = re.compile(r"(令和|平成|R|H)?\s*\d{1,4}\s*[年./\-]\s*\d{1,2}\s*[月./\-]\s*\d{1,2}\s*日?")
-# 管理番号らしさ: 26-0123 / D250299 / 8中-D0155 / No.20049 / 第12号 / 4 桁以上の数字
-_MGMT_RE = re.compile(r"[A-Za-z]?\d{1,4}[-‐\-–]\d{2,6}|[A-Za-z]{1,2}\d{3,}|No\.?\s*\d{2,}|第\s*\d+\s*号|\b\d{4,}\b")
+# 日付らしさ: 2026年9月11日 / R8.9.11 / 2026/9/11 / 9月11日（年無し。神奈川・北九州の表に多い）
+_DATE_RE = re.compile(r"(令和|平成|R|H)?\s*\d{1,4}\s*[年./\-]\s*\d{1,2}\s*[月./\-]\s*\d{1,2}\s*日?|\d{1,2}\s*月\s*\d{1,2}\s*日")
+# 管理番号らしさ: 26-0123 / D250299 / 8中-D0155 / No.20049 / 第12号 / 2 桁以上の数字
+# （management_no は「受付番号」等の列を名指しで取った値なので、数字が 2 桁あれば番号とみなす）
+_MGMT_RE = re.compile(r"[A-Za-z]?\d{1,4}[-‐\-–]\d{2,6}|[A-Za-z]{1,2}\d{3,}|No\.?\s*\d{2,}|第\s*\d+\s*号|\d{2,}")
 
 
 class RecipeError(Exception):

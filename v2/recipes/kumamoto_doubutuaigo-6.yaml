@@ -1,0 +1,13 @@
+rows: "dl"
+image: "img@src"
+fields:
+  management_no: {label: "個体管理ナンバー"}
+  shelter_date: {label: "収容日", regex: "(\\d{4}年\\d{1,2}月\\d{1,2}日)"}
+  sex: {label: "性別"}
+  breed: {label: "種類"}
+  location: {label: "保健所"}
+species:
+  from: field
+  field: breed
+  map: {"猫": cat}
+empty_text: ["該当する情報がありません"]
