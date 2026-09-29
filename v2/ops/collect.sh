@@ -70,17 +70,21 @@ step notify "$PY" -m collector notify
 step build "$PY" "$V2_DIR/site/build.py" --data "$V2_DIR/data/latest.json" --out "$V2_DIR/site/dist"
 
 # 4. Cloudflare Pages へ deploy
-if [ -n "${CLOUDFLARE_API_TOKEN:-}" ] && [ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ] && [ -n "${ONECO_PAGES_PROJECT:-}" ]; then
+#    認証は CLOUDFLARE_API_TOKEN（VPS 向け）か、`wrangler login` で保存した OAuth（手元の Mac 向け）のどちらか。
+#    どちらも無ければ wrangler が失敗して deploy が「失敗」に数えられ、通知に載る
+if [ -n "${ONECO_PAGES_PROJECT:-}" ]; then
   if [ -d "$V2_DIR/site/dist" ]; then
+    # Pages の新規プロジェクトは Workers（static assets）に統合されたので `wrangler deploy` を使う（設定は ops/wrangler.jsonc）。
+    # ONECO_PAGES_PROJECT は Worker 名（wrangler.jsonc の name を上書き）
     # shellcheck disable=SC2086  # WRANGLER は "npx --yes wrangler" のように単語分割させたい
-    step deploy $WRANGLER pages deploy "$V2_DIR/site/dist" --project-name "$ONECO_PAGES_PROJECT" --branch main --commit-dirty=true
+    step deploy $WRANGLER deploy --config "$V2_DIR/ops/wrangler.jsonc" --name "$ONECO_PAGES_PROJECT"
   else
     echo "== deploy: site/dist が無いので飛ばす"
     rc=1
     failed_steps="$failed_steps deploy"
   fi
 else
-  echo "== deploy: CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID / ONECO_PAGES_PROJECT が揃っていないので飛ばす"
+  echo "== deploy: ONECO_PAGES_PROJECT が無いので飛ばす"
 fi
 
 # 5. 死活監視への ping（全部成功したときだけ本体 URL。失敗時は /fail を叩いて「失敗した」と知らせる）

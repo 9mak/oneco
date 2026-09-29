@@ -4,13 +4,15 @@
 
 ## 1. 初期設定（1 回だけ）
 
-### 1-1. Cloudflare Pages
+### 1-1. Cloudflare（Workers の静的アセット配信）
 
-1. Cloudflare ダッシュボード → Workers & Pages → Create → Pages → **Upload assets**（Git 連携ではなく直接アップロード）。プロジェクト名を決める（例 `oneco`）。この名前が `ONECO_PAGES_PROJECT`
-   - CLI でもよい: `npx wrangler pages project create oneco --production-branch main`
-2. **Account ID**: ダッシュボードのアカウント概要ページ右側に出る 32 桁。`CLOUDFLARE_ACCOUNT_ID`
-3. **API トークン**: My Profile → API Tokens → Create Token → Custom token → Permissions に `Account / Cloudflare Pages / Edit` だけ。`CLOUDFLARE_API_TOKEN`。作った直後の 1 回しか表示されない
-4. 独自ドメインを付けるなら Pages プロジェクト → Custom domains から
+2026-09-30 時点、Cloudflare Pages の新規プロジェクトは Workers（static assets）に統合されている（`wrangler pages project create` を叩くと Workers へ deploy される）。配信設定は `ops/wrangler.jsonc`（名前 `oneco`、`site/dist` を丸ごと配信、404 は `404.html`）。
+
+1. 認証: 手元の Mac なら `npx wrangler login`（ブラウザで許可。OAuth が `~/Library/Preferences/.wrangler/config/default.toml` に保存され、以後 `CLOUDFLARE_API_TOKEN` は不要）。別マシンなら My Profile → API Tokens → Create Token → Custom token → `Account / Workers Scripts / Edit` で作り `CLOUDFLARE_API_TOKEN` に入れる（作った直後の 1 回しか表示されない）
+2. **Account ID**: `npx wrangler whoami` の表に出る 32 桁。`CLOUDFLARE_ACCOUNT_ID`
+3. 初回 deploy: `npx wrangler deploy --config v2/ops/wrangler.jsonc`。URL は `https://oneco.<サブドメイン>.workers.dev`（`oneco.pages.dev` は他人が使っていて取れない）
+4. 独自ドメインを付けるなら ダッシュボード → Workers & Pages → oneco → Settings → Domains & Routes → Add → Custom domain（ゾーンが Cloudflare にあれば DNS は自動）
+5. `ONECO_PAGES_PROJECT` は Worker 名（`oneco`）。collect.sh はこの名前で `wrangler deploy` する
 
 ### 1-2. 収集サーバー
 
