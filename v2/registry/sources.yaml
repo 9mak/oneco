@@ -3273,8 +3273,8 @@ sources:
   name: 群馬県動物愛護センター（保護犬）
   municipality: 群馬県動物愛護センター
   prefecture: 群馬県
-  phone: null
-  address: null
+  phone: 0270-75-1718
+  address: 群馬県佐波郡玉村町樋越305-7
   url: https://www.pref.gunma.jp/page/167499.html
   kind: sheltered
   species: dog
@@ -3291,8 +3291,8 @@ sources:
   name: 群馬県動物愛護センター東部支所（保護犬）
   municipality: 群馬県動物愛護センター東部支所
   prefecture: 群馬県
-  phone: null
-  address: null
+  phone: 0276-55-0731
+  address: 群馬県太田市西本町41-34（太田保健福祉事務所内1階）
   url: https://www.pref.gunma.jp/page/179441.html
   kind: sheltered
   species: dog
@@ -3309,8 +3309,8 @@ sources:
   name: 群馬県動物愛護センター（保護猫）
   municipality: 群馬県動物愛護センター
   prefecture: 群馬県
-  phone: null
-  address: null
+  phone: 0270-75-1718
+  address: 群馬県佐波郡玉村町樋越305-7
   url: https://www.pref.gunma.jp/page/167523.html
   kind: sheltered
   species: cat
@@ -3364,7 +3364,7 @@ sources:
   municipality: 茨城県
   prefecture: 茨城県
   phone: 0296-72-1200
-  address: null
+  address: 〒309-1606 茨城県笠間市日沢47
   url: https://www.pref.ibaraki.jp/hokenfukushi/doshise/hogo/syuuyou.html
   kind: sheltered
   species: mixed
@@ -3382,7 +3382,7 @@ sources:
   municipality: 茨城県
   prefecture: 茨城県
   phone: 0296-72-1200
-  address: null
+  address: 〒309-1606 茨城県笠間市日沢47
   url: https://www.pref.ibaraki.jp/hokenfukushi/doshise/hogo/kouji.html
   kind: stray
   species: mixed
