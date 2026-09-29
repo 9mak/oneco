@@ -1,0 +1,17 @@
+# 青森県動物愛護センター(収容情報): 1 ページに表が 1 つ、行 = 1 頭。
+# 先頭行は見出し(th: No./見つかった日/見つかった場所/種類/毛色/性別/体格/特徴/画像/連絡先)。
+# 種別は先頭セルの「犬」「ねこ」表記から判定。連絡先は行ごとに駐在先が異なるため個別項目化しない。
+rows: "table[border] tr:has(td)"
+image: "img@src"
+fields:
+  shelter_date: {label: "見つかった日"}
+  location: {label: "見つかった場所"}
+  breed: {label: "種類"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  size: {label: "体格"}
+  note: {label: "特徴"}
+species:
+  from: text
+  map: {"犬": dog, "ねこ": cat, "猫": cat, "ネコ": cat}
+empty_text: ["現在、捕獲・収容されている", "収容されている動物はいません", "該当する動物はいません"]

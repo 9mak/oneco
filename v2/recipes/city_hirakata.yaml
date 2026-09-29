@@ -1,0 +1,22 @@
+# 枚方市（収容動物）: 1 ページに「収容犬」「収容猫」の見出し(h4)が並び、
+# その下に画像付きカード(div.mol_imageblock)が種別ごとに掲載される single_page 形式。
+# 各カードは <p>ラベル：値</p> の並び（種類・毛色・性別・収容日等）。detail ページは無い。
+# 調査時点(2026-09-29)は犬・猫とも0頭で、告知文「掲載情報が無い場合でも…」のみ表示。
+
+rows: "div.mol_imageblock"
+
+species:
+  from: heading
+  selector: "h2, h3, h4"
+  map: {"犬": dog, "猫": cat}
+
+fields:
+  breed: {regex: "(?:種類|種別|犬種|猫種)[:：]\\s*(\\S+)"}
+  color: {regex: "(?:毛色|色)[:：]\\s*(\\S+)"}
+  sex: {regex: "性別[:：]\\s*(\\S+)"}
+  age: {regex: "(?:推定年齢|年齢)[:：]\\s*(\\S+)"}
+  shelter_date: {regex: "(?:収容日|収容|保護日|発見日)[:：]\\s*(\\S+)"}
+  location: {regex: "(?:収容場所|場所)[:：]\\s*(\\S+)"}
+  size: {regex: "(?:体格|大きさ|体重)[:：]\\s*(\\S+)"}
+
+empty_text: ["掲載情報が無い場合でも"]

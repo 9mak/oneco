@@ -1,0 +1,22 @@
+# 岐阜県（迷い犬情報）— 入口はハブページで12保健所/センターへのリンク表のみ、動物情報は無い。
+# 各リンク先が実データ（1頭=縦型table 1つ、管理番号・収容日等はth/td or td<strong>ラベルの隣）。
+# 可茂保健所(5229)・揖斐センター(5767)は県サイト側で404（2026-09-29時点、soshiki/22706/からのリンクも同じ404）のため対象外。
+# 岐阜市保健所は外部ドメイン(city.gifu.lg.jp)・別サイト構造(dl形式)のためこのレシピの対象外（現状0頭）。
+steps:
+  - follow_all: "table a[href^='/page/']:not([href='/page/5229.html']):not([href='/page/5767.html'])@href"
+rows: "table"
+image: "img@src"
+fields:
+  management_no: {label: "管理番号", regex: "(No\\.?\\s*\\d+|^\\d+$)"}
+  shelter_date: {label: "収容日"}
+  location: {label: "保護した場所"}
+  breed: {label: "類"}
+  color: {label: "毛"}
+  sex: {label: "性"}
+  age: {label: "年齢"}
+  size: {label: "大きさ"}
+  note: {label: "考"}
+empty_text:
+  - "現在の登録：0頭"
+  - "現在の登録0頭"
+  - "登録なし"

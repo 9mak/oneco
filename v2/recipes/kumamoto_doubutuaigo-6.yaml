@@ -1,13 +1,12 @@
-rows: "dl"
+# 熊本県動愛 個人保護猫（一般の方からの投稿情報）。
+# 一覧 ul.list-4col li = 1 頭。項目は種類・性別・毛色のみ（収容日・個体管理ナンバー・保健所は無い）。
+steps:
+  - paginate: ".paging .next a@href"
+rows: "ul.list-4col li"
 image: "img@src"
 fields:
-  management_no: {label: "個体管理ナンバー"}
-  shelter_date: {label: "収容日", regex: "(\\d{4}年\\d{1,2}月\\d{1,2}日)"}
-  sex: {label: "性別"}
   breed: {label: "種類"}
-  location: {label: "保健所"}
-species:
-  from: field
-  field: breed
-  map: {"猫": cat}
-empty_text: ["該当する情報がありません"]
+  sex: {label: "性別"}
+  color: {label: "毛色"}
+  detail: {selector: "a", attr: "href"}
+empty_text: ["0件中 0～0件目を表示"]

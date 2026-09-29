@@ -8,6 +8,7 @@
 ```yaml
 rows: "table.list tr"          # 動物 1 頭 = この CSS セレクタにマッチする要素 1 つ
 image: "img@src"               # 行の中の写真（省略時は img@src）
+# image: {selector: "td img@src", exclude: ["noimage"], strip_query: true}   # 除外パターン、?以降の除去（ID の安定化）
 fields:
   name: "td:nth-of-type(2)"
   sex:  "td:nth-of-type(3)"

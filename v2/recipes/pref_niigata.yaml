@@ -1,0 +1,25 @@
+# 新潟県動物愛護センター（保護動物） — 1 ページに犬/猫が div.detail_free ブロックで並ぶ single_page 形式（個別ページなし）。
+# 動物ブロックは先頭が <h3>犬</h3> または <h3>猫</h3> の div.detail_free のみ（「返還の際に必要な物」等の他ブロックは h3 テキストで除外）。
+# ブロック内は <p>画像</p><p><strong>管理番号</strong></p><p>M月D日 場所で保護/収容</p><p>属性（、区切り: 品種,性別,毛色,...,体重Kg,...）</p> の順。年は書かれないので shelter_date は "M月D日" のまま採る。
+rows: >-
+  div.detail_free:has(> h3:-soup-contains-own("犬")),
+  div.detail_free:has(> h3:-soup-contains-own("猫"))
+image: "img@src"
+fields:
+  species: {selector: "h3"}
+  management_no: {selector: "strong"}
+  shelter_date:
+    regex: "(\\d{1,2}\\s*月\\s*\\d{1,2}\\s*日)(?:(?!、).){0,20}?(?:で保護|を保護|で収容|を収容)"
+  location:
+    regex: "\\d{1,2}\\s*月\\s*\\d{1,2}\\s*日\\s*(.+?)(?:で保護|を保護|で収容|を収容)"
+  breed:
+    regex: "([^\\s、]+)、(?:オス|メス|雄|雌)"
+  sex:
+    regex: "(オス[^、]*|メス[^、]*|雄[^、]*|雌[^、]*)、"
+  color:
+    regex: "(?:オス|メス|雄|雌)[^、]*、([^、]+)、"
+  size:
+    regex: "体重\\s*(\\d+(?:\\.\\d+)?\\s*[Kk][Gg])"
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}

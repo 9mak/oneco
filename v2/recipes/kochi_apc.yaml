@@ -1,0 +1,25 @@
+# 高知県中央・中村小動物管理センター（譲渡情報 /jouto/）
+# 一覧 /jouto/ の「詳細はこちら」リンク（/center-data/…）を個体ページ方式（follow_all）で1頭=1ページとして辿る。
+# 詳細ページは <table><tr><th>ラベル</th><td>値</td></tr> 構造。犬猫の別は詳細ページ本文にはなく、
+# ページ上部の地区リンク（maigojouto_cat=center_jouto_inu / _neko）の href で決まる。
+url: https://kochi-apc.com/jouto/
+steps:
+  - follow_all: "a[href*='/center-data/']@href"
+rows: "body"
+image: "ul.animal-slider img@src"
+fields:
+  management_no: {label: "管理番号"}
+  name: {label: "仮名"}
+  breed: {label: "品種"}
+  sex: {label: "性別"}
+  age: {label: "年齢"}
+  color: {label: "毛色"}
+  size: {label: "体格"}
+  shelter_date: {label: "保護した日時"}
+  location: {label: "保護した場所"}
+  note: {label: "備考"}
+  species: {selector: "a[href*='maigojouto_cat=']", attr: "href", default: ""}
+species:
+  from: field
+  map: {"center_jouto_inu": dog, "center_jouto_neko": cat}
+empty_text: ["現在、譲渡対象の犬・猫はいません", "現在、掲載されている情報はありません", "該当するデータはありません"]

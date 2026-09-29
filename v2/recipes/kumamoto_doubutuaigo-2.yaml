@@ -1,13 +1,16 @@
-rows: "dl"
+# 熊本県動愛 センター譲渡猫（保健所・センター収容猫の譲渡情報）。
+# 一覧 ul.list-4col li = 1 頭。個別 detail ページもあるが、一覧の dl に
+# 収容日・種類・性別・個体管理ナンバー・保健所・電話番号が全て揃うため follow 不要。33 件で 2 ページ（paginate 必須）。
+steps:
+  - paginate: ".paging .next a@href"
+rows: "ul.list-4col li"
 image: "img@src"
 fields:
-  management_no: {label: "個体管理ナンバー"}
   shelter_date: {label: "収容日", regex: "(\\d{4}年\\d{1,2}月\\d{1,2}日)"}
-  sex: {label: "性別"}
   breed: {label: "種類"}
+  sex: {label: "性別"}
+  management_no: {label: "個体管理ナンバー"}
   location: {label: "保健所"}
-species:
-  from: field
-  field: breed
-  map: {"猫": cat}
-empty_text: ["該当する情報がありません"]
+  note: {label: "電話番号"}
+  detail: {selector: "a", attr: "href"}
+empty_text: ["0件中 0～0件目を表示"]

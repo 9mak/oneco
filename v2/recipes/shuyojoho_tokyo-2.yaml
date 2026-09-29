@@ -1,0 +1,16 @@
+# 東京都収容動物情報（猫等） https://shuyojoho.metro.tokyo.lg.jp/cat
+# トップの topMainBox 一覧から /animals/detail/{id} を個体ページ方式（follow_all）で辿る。犬ページと同一構造・同一 adapter。
+# /cat は「猫・その他」タブで、にわとり等の他動物が混ざることがあるが、台帳側で species=cat 固定のためレシピでは分岐しない。
+steps:
+  - follow_all: "#topMain a[href*='/animals/detail/']@href"
+rows: "body"
+image: "#mainPhoto img@src"
+fields:
+  management_no: {selector: "#tabTitle h2", regex: "管理番号\\s*(\\S+)"}
+  shelter_date: {label: "収容日"}
+  location: {label: "収容場所"}
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  size: {label: "大きさ"}
+  color: {label: "毛色"}
+empty_text: ["現在、猫・その他の収容情報はありません", "現在、収容動物情報はありません"]

@@ -9,13 +9,16 @@ from __future__ import annotations
 import io
 import re
 import unicodedata
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin
 
 import yaml
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup, Tag, XMLParsedAsHTMLWarning
+
+warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)   # RSS を HTML として読むレシピがある
 
 from .fetch import Fetcher
 
@@ -416,6 +419,8 @@ def image_url(recipe: Recipe, row: Row) -> tuple[str | None, str | None]:
             continue
         if _JUNK_IMAGE.search(src) or any(p.search(src) for p in exclude):
             continue
+        if spec.get("strip_query"):
+            src = src.split("?", 1)[0]     # 取得ごとに変わるクエリ（キャッシュ避け）を外して ID を安定させる
         return _abs(recipe.base_url or row.doc.url, src), src
     return None, None
 

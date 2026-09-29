@@ -1,0 +1,16 @@
+# 越谷市（保護犬）: div#tmp_honbun 内に「収容場所/収容日/収容期限」の場所テーブルと
+# 「種類/性別/年齢/毛色/体格/備考」の動物テーブルが動物ごとに交互に (table, table) ペアで
+# 並ぶ single_page 形式（0 頭のときは1ペアだけ、複数頭いると動物の数だけペアが繰り返される。
+# 更に CMS のマークアップが壊れていて、データ行が <tbody> ではなく <thead> の2行目に
+# 入っていることがある）。このエンジンはテーブル間の突合ができず、動物テーブル側には
+# 写真も管理番号も収容日も無いため、rows には収容日・収容場所が取れる場所テーブル側
+# （ヘッダに「収容場所」を含む table）の tr を全部使う。ヘッダ行自体は収容日が無く
+# 自動的に捨てられる。breed/sex/age/color/size/備考 は取得できない（仕様上の割り切り）。
+# 0 頭時は本文に「現在、情報はありません。」と出る。
+
+rows: "div#tmp_honbun table:has(th:-soup-contains('収容場所')) tr"
+fields:
+  location: {selector: "td:nth-of-type(1)"}
+  shelter_date: {selector: "td:nth-of-type(2)"}
+empty_text:
+  - "現在、情報はありません。"

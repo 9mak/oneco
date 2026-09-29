@@ -1,13 +1,13 @@
-rows: "dl"
+# 熊本県動愛 団体譲渡猫（登録譲渡ボランティア団体からの譲渡猫情報）。
+# 一覧 ul.list-4col li = 1 頭。項目: 保護日・種類・性別・掲載者（団体名）。個体管理ナンバー無し。
+steps:
+  - paginate: ".paging .next a@href"
+rows: "ul.list-4col li"
 image: "img@src"
 fields:
-  management_no: {label: "個体管理ナンバー"}
-  shelter_date: {label: "収容日", regex: "(\\d{4}年\\d{1,2}月\\d{1,2}日)"}
-  sex: {label: "性別"}
+  shelter_date: {label: "保護日", regex: "(\\d{4}年\\d{1,2}月\\d{1,2}日)"}
   breed: {label: "種類"}
-  location: {label: "保健所"}
-species:
-  from: field
-  field: breed
-  map: {"猫": cat}
-empty_text: ["該当する情報がありません"]
+  sex: {label: "性別"}
+  note: {label: "掲載者"}
+  detail: {selector: "a", attr: "href"}
+empty_text: ["0件中 0～0件目を表示"]
