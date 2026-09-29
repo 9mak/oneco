@@ -1,0 +1,19 @@
+# 仙台市アニパル 譲渡猫情報（成猫・2026-08 リニューアル後の一覧表レイアウト）。
+# table.datatable が2つあり、1つ目「管理番号/猫の種類/性別/体格/毛色/その他」が本体、
+# 2つ目「管理番号/写真1/写真2」に写真だけが別テーブルで分離されている（子猫ページと違い
+# 写真が本体行と同じ<tr>に無い）。レシピは1行=1セレクタ単位でしか動かせず、2つのテーブルを
+# 管理番号で突き合わせて結合する手段が無いため、写真は取得できない（既知の制約）。
+# 動物とみなす条件を満たすため、management_no は「C25093」のような英字+数字から数字部分
+# （5桁）だけを取り出して使う（末尾の数字5桁は動物ごとに一意）。
+rows: "table.datatable:nth-of-type(1) tr"
+fields:
+  management_no: {selector: "td:nth-of-type(1)", regex: "(\\d{4,})"}
+  breed: {selector: "td:nth-of-type(2)"}
+  sex: {selector: "td:nth-of-type(3)"}
+  size: {selector: "td:nth-of-type(4)"}
+  color: {selector: "td:nth-of-type(5)"}
+  note: {selector: "td:nth-of-type(6)"}
+empty_text:
+  - "現在、譲渡対象の猫はいません"
+  - "現在譲渡対象の猫はいません"
+  - "現在、猫はいません"

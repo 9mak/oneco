@@ -1,0 +1,19 @@
+# 船橋市（収容犬猫）: div.boxEntryFreeform 内の単一 table。
+# ヘッダ行 + データ行（1行=1頭）。列: 番号/収容年月日/公示満了日/収容場所/動物種/種類/毛色/性別/体格/備考/写真。
+# 写真が無い個体も多く management_no（番号列, 例 N260928-01）で動物判定させる。0頭時はヘッダ行のみ残り自動で0頭になる。
+rows: "div.boxEntryFreeform table tr"
+image: "img@src"
+fields:
+  management_no: {selector: "td:nth-of-type(1)"}
+  shelter_date: {selector: "td:nth-of-type(2)"}
+  location: {selector: "td:nth-of-type(4)"}
+  species: {selector: "td:nth-of-type(5)"}
+  breed: {selector: "td:nth-of-type(6)"}
+  color: {selector: "td:nth-of-type(7)"}
+  sex: {selector: "td:nth-of-type(8)"}
+  size: {selector: "td:nth-of-type(9)"}
+  note: {selector: "td:nth-of-type(10)"}
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+empty_text: ["現在いません", "収容している犬・猫はいません", "該当する犬・猫はいません"]

@@ -1,0 +1,20 @@
+# 福島県動物愛護センター会津支所 迷子犬情報
+# 本所（pref_fukushima-1/2）とは別テンプレート。div#main_body 内に <table> が1つだけあり、
+# 各行がラベル1セル（1列目）。0頭のときは1行目のラベルセルに rowspan="10" の空セルが
+# くっついているだけで、他の行には値セルが無い（本当に空の固定テンプレート）。
+# 現状（2026-09-29確認）は明記どおり0頭。
+
+rows: "div#main_body table"
+image: "img@src"
+fields:
+  management_no: {label: "管理番号"}
+  shelter_date: {label: "保護日"}
+  location: {label: "保護場所"}
+  breed: {label: "種類"}
+  size: {label: "大きさ"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  age: {label: "推定年"}
+  note: {label: "その他"}
+empty_text:
+  - "〇現在、収容している迷子犬は0頭です"

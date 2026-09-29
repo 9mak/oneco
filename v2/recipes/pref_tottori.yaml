@@ -1,0 +1,30 @@
+# 鳥取県（迷子動物情報）: 1 ページに「中部総合事務所収容動物」「西部総合事務所収容動物」の
+# 2 ブロックが並ぶ。各ブロックは <div class="h2frame"><h2 class="Title">…見出し(電話番号込み)…</h2></div>
+# の直後に <div class="Contents"><table>…</table></div> が続く構造（見出し div と表 div は兄弟）。
+# 表は縦 1 行=1 頭、列は [収容日時,収容場所,種類,品種,毛色,性別,推定年齢,体格その他,詳細情報,備考]。
+# 写真は無いページなので shelter_date（収容日時）が動物判定の頼り。見出し行(収容日時=ヘッダー)と
+# 既に「返還しました」等で決着済みの行は row_filter で除外する。中部/西部で電話番号が異なるため
+# 台帳の phone/address は空のままにし、両事務所の連絡先は notes 側で扱う。
+# 注意: 収容日時は年が無い「M月D日」形式のため動物判定の looks_like_date（年入り前提）を通らない
+# （pref_kanagawa-1 と同型の既知の限界）。写真も management_no も無いページなので、未決着の動物が
+# 実在していても現状のエンジンでは 0 頭に見える可能性がある。動作確認は show の実行時点の実データで。
+rows: "div.h2frame:-soup-contains('収容動物') + div.Contents table tr"
+row_filter:
+  text_lacks: ["収容日時", "返還しました", "返還済み", "戻りました", "引取りました"]
+fields:
+  shelter_date: "td:nth-of-type(1)"
+  location: "td:nth-of-type(2)"
+  species: {selector: "td:nth-of-type(3)"}
+  breed: "td:nth-of-type(4)"
+  color: "td:nth-of-type(5)"
+  sex: "td:nth-of-type(6)"
+  age: "td:nth-of-type(7)"
+  size: "td:nth-of-type(8)"
+  note: "td:nth-of-type(10)"
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+# この語は表の中身に関わらず常にページ上にある（0 頭でも表構造は残るため専用の
+# 「現在いません」文言が無いサイト）。0 頭時に「読めなかった」誤検知にしない目的専用。
+empty_text:
+  - "迷い犬、迷い猫等を探している飼い主のため情報提供を目的とするもの"

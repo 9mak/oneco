@@ -1,0 +1,20 @@
+# 大阪市（譲渡犬）https://www.city.osaka.lg.jp/kenko/page/0000206024.html
+# 構造は city_osaka-4（譲渡猫）と同一テンプレート。詳細は city_osaka-4.yaml のコメント参照。
+# 識別番号・仮名は h3（rows の外の兄弟要素）にしかないため management_no/name は取得不可。
+# 2026-09-29 時点は 0 頭（画像がプレースホルダ joutonasi.JPG、alt=「現在、譲渡対象動物はいません」）。
+rows: "div.mol_imageblock:has(p)"
+row_filter:
+  text_has_any: ["種類／", "性別／"]   # ページ冒頭の説明文ブロックを除外
+image:
+  selector: "img@src"
+  exclude: ["joutonasi", "shuyounasi"]
+fields:
+  breed: {regex: "種類／(\\S+)"}
+  color: {regex: "毛色／(\\S+)"}
+  sex: {regex: "性別／(\\S+)"}
+  age: {regex: "年齢／(\\S+)"}
+  size: {regex: "体格／(\\S+)"}
+  note: {regex: "性格／(.+?)(?=\\s*・その他|$)"}
+empty_text:
+  - "現在、譲渡対象動物はいません"
+  - "現在、譲渡対象動物はいません。"

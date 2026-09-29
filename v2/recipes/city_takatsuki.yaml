@@ -1,0 +1,23 @@
+# 高槻市保健所「行方不明になった犬・猫の受付・照会」。1ページ single_page 形式。
+# div.detail_free 配下に複数 table（お問い合わせ先/動物情報/返還手数料/手数料額）が並び、
+# 動物が収容中のときだけ「ここから...ご覧いただけます」以降に動物テーブルが現れる。
+# 0件時は「現在、掲載する情報はありません。」のみ。犬猫混在ページなので種類欄から判定する。
+
+rows: "div.detail_free table"
+row_filter:
+  text_lacks: ["お問い合わせ先", "返還手数料", "内訳", "金額", "手数料額"]
+
+fields:
+  species: {label: "種類"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  size: {label: "体格"}
+  age: {label: "年齢"}
+  shelter_date: {label: "収容日"}
+  location: {label: "収容場所"}
+
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+
+empty_text: ["現在、掲載する情報はありません"]

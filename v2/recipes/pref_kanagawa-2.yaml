@@ -1,0 +1,18 @@
+# 神奈川県動物愛護センター「疾病等により動物病院で保護されている猫の情報」（台帳名は保護猫だが実ページは病院収容の猫）。
+# 一覧本文には表が無く、PDF を1本落とす。表は No/収容日(受付日)/掲載期限/種類/毛色/体格/性別/収容場所/時間/首輪等の列。
+steps:
+  - pdf_links: "a[href$='.pdf']@href"
+pdf:
+  mode: table
+  header_row: 0
+fields:
+  management_no: {header: "Ｎｏ"}
+  shelter_date: {header: "収容日"}
+  breed: {header: "種類"}
+  color: {header: "毛色"}
+  size: {header: "体格"}
+  sex: {header: "性別"}
+  location: {header: "収容場所"}
+  note: {header: "時間"}
+empty_text:
+  - "現在、収容期間中の猫はいません"

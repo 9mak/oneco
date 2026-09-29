@@ -1,0 +1,14 @@
+# 福山市動物愛護センター（迷い犬情報）
+# 1 ページ = table 1 つ（thead: 番号/保護日/保護場所/種類/毛色/性別/掲載期間、写真なし）。tbody の tr 1 つ = 1 頭。
+# 0 頭のときは全セル &nbsp; のプレースホルダ行だけが残る（min_text_length で除外、shelter_date も取れないので自動でも落ちる）。
+rows: "table tr:has(td)"
+row_filter:
+  min_text_length: 4
+fields:
+  management_no: "td:nth-of-type(1)"
+  shelter_date: {selector: "td:nth-of-type(2)", regex: "(\\d+年\\d+月\\d+日)"}
+  location: "td:nth-of-type(3)"
+  breed: "td:nth-of-type(4)"
+  color: "td:nth-of-type(5)"
+  sex: "td:nth-of-type(6)"
+empty_text: ["現在、迷い犬の情報はありません", "現在、迷い犬情報はありません", "現在迷い犬の情報はありません"]

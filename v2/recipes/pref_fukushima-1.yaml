@@ -1,0 +1,19 @@
+# 福島県動物愛護センター本所（中通り）迷子犬情報
+# div#main_body 内に「県北/県中/県南」地区ごとの <table> が並び、1 table = 1 頭。
+# 1列目ラベル・2列目値の2列テーブルで、最終行に写真（複数可）。
+# 現状（2026-09-29確認）は3地区とも実データ無しの空テンプレートで 0 頭。
+
+rows: "div#main_body table"
+image: "img@src"
+fields:
+  management_no: {label: "保護日", regex: "[（(]([^（）()]+)[）)]\\s*$"}
+  shelter_date: {label: "保護日", regex: "(令和\\d+年\\d+月\\d+日)"}
+  location: {label: "保護場所"}
+  breed: {label: "種類", regex: "^([^／/]+)"}
+  size: {label: "種類", regex: "[／/]\\s*(.+)$"}
+  color: {label: "毛の色", regex: "^([^／/]+)"}
+  sex: {label: "性別"}
+  age: {label: "推定年"}
+  note: {label: "その他の特徴", default: null}
+empty_text:
+  - "現在収容されている迷子犬は 0 頭です"

@@ -1,0 +1,16 @@
+# 熊本市（迷子犬一覧） https://www.city.kumamoto.jp/doubutuaigo/list03612.html
+# 一覧ページの div.kijiArea > ul.kijilist > li.loadbox の記事リンクを個別ページ（kijiNNNNNNNN）へ辿る。1 頭 = 1 記事。
+# 個別ページは table.templateForOneImages に写真、table.__wys_table（保護場所/種類/毛色/性別/推定年齢/首輪/体格）に属性。
+# 保護日時はテーブルに無く本文「保護日時：yyyy年m月d日…」から regex で取る。現在 0 件（一覧自体が消えている状態、案内文も無し）。
+steps:
+  - follow_all: "div.kijiArea ul.kijilist li.loadbox div.title a@href"
+rows: "body"
+image: "table.templateForOneImages img@src"
+fields:
+  breed: {label: "種類"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  age: {label: "推定年齢"}
+  size: {label: "体格"}
+  location: {label: "保護場所"}
+  shelter_date: {regex: "保護日時[:：]\\s*(\\S+)"}

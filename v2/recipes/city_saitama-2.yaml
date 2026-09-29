@@ -1,0 +1,27 @@
+# さいたま市（保護猫・その他） — city_saitama-1 と同一テンプレート（single_page）。
+# 通常の1頭 = div.wysiwyg_area > div（管理番号<p> + 写真<p> + <ul>属性リスト）。
+# 在庫0件でも全項目が空の「管理番号 R08-」テンプレートカードがdivでラップされて常に1枚残る
+# （写真alt="作成用（要保存）"が目印）。2026-09時点はこのテンプレートのみで実データ0頭。
+# city_saitama-1 同様、divでラップされず直下p(写真)だけが並ぶ崩れた構造にも備えて
+# 写真行も拾う（その場合 収容日等は取れない）。
+# 空テンプレートの写真alt表記は「作成用（要保存）」「作業」等ページごとに揺れて当てにならないため、
+# 「収容日：」の直後に値が無く即スペース（＝空欄）で判定して落とす（row_filter）。
+rows: "div.wysiwyg_area > div:has(ul), div.wysiwyg_area > p:has(img)"
+row_filter:
+  text_lacks: ["収容日： "]
+image:
+  selector: "img:not([alt*='作成用'])@src"
+fields:
+  management_no: {selector: "img:not([alt*='作成用'])", attr: "alt", regex: "[A-Za-z]?\\d+-\\d+"}
+  shelter_date: {label: "収容日"}
+  location: {label: "収容場所"}
+  breed: {label: "種類"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  size: {label: "体格"}
+  age: {label: "推定年齢"}
+  note: {label: "備考"}
+empty_text:
+  - "管理番号 R08-"
+  - "管理番号 R07-"
+  - "管理番号 R09-"

@@ -1,0 +1,12 @@
+# 長野県動物愛護センター（ハローアニマル）譲渡犬: single_page。
+# 「飼い主募集中の犬の情報」h2 の後、犬 1 頭 = <div class="section"> 1 つ（h3=名前＋種類/性別/生年月/備考の<p>）。
+# 犬ページは1頭=1 div.sectionなので div ごと拾える（猫ページは複数頭が1つのdivに同居するため別方式）。
+rows: "div.section:has(h3)"
+image: "img@src"
+fields:
+  name: {selector: "h3"}
+  breed: {label: "種類", regex: "^([^（(]+)"}
+  color: {label: "種類", regex: "[（(]([^）)]+)[）)]"}
+  sex: {label: "性別"}
+  age: {label: "生年月"}
+  note: {label: "備考"}

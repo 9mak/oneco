@@ -3626,11 +3626,11 @@ sources:
   name: 高松市 わんにゃん高松（収容中犬）
   municipality: 高松市 わんにゃん高松
   prefecture: 香川県
-  phone: null
-  address: null
+  phone: 087-839-2865
+  address: 〒760-0074 高松市桜町一丁目10番27号 高松市保健所1階
   url: https://www.city.takamatsu.kagawa.jp/udanimo/ani_infolist1.html?infotype=1&animaltype=1
   kind: stray
-  species: mixed
+  species: dog
   mode: recipe
   recipe: recipes/city_takamatsu_kagawa-1.yaml
   enabled: true
@@ -3644,11 +3644,11 @@ sources:
   name: 高松市 わんにゃん高松（収容中猫）
   municipality: 高松市 わんにゃん高松
   prefecture: 香川県
-  phone: null
-  address: null
+  phone: 087-839-2865
+  address: 〒760-0074 高松市桜町一丁目10番27号 高松市保健所1階
   url: https://www.city.takamatsu.kagawa.jp/udanimo/ani_infolist1.html?infotype=1&animaltype=2
   kind: stray
-  species: mixed
+  species: cat
   mode: recipe
   recipe: recipes/city_takamatsu_kagawa-2.yaml
   enabled: true

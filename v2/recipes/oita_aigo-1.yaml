@@ -1,0 +1,15 @@
+# おおいた動物愛護センター（迷子情報メイン, 犬猫混在）
+# div.information_box が動物1頭のカード。カード内は <dl><dt>label</dt><dd>value</dd></dl> の並び。
+# 犬猫を区別する文言・class・体重域どれも list/detail のどちらにも無い（旧 adapter も未判定のまま空文字にしていた）。
+# → 判定不能のため allow_other で維持し、種別は "other"（不明）のまま登録する。
+rows: "div.information_box"
+image: "div.information_image img@src"
+fields:
+  location: {label: "保護地域"}
+  age: {label: "推定年齢"}
+  sex: {label: "性別"}
+  shelter_date: {selector: "dd.lostchild_ttl"}
+  detail: {selector: "a:not([rel='tag'])", attr: "href"}
+species:
+  from: text
+  allow_other: true

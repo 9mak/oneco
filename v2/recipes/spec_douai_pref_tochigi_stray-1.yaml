@@ -1,0 +1,16 @@
+# 栃木県動物愛護指導センター「迷子動物収容情報一覧（犬）」。
+# 一覧ページの表に各頭の行(管理番号リンク・写真・収容場所・動物種別・種類・性別)があり、管理番号リンク(a[href$='.html'])の先が個体詳細ページ(収容日・年齢・毛色・大きさ等を含む表)。個体ページ1つ=動物1頭。
+steps:
+  - follow_all: "a[href$='.html']@href"
+rows: "body"
+image: "#gazou img"
+fields:
+  management_no: {label: "管理番号"}
+  shelter_date: {label: "収容日"}
+  location: {label: "収容場所"}
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  age: {label: "年齢"}
+  color: {label: "毛色"}
+  size: {label: "大きさ"}
+empty_text: ["現在、収容している犬はいません", "該当するデータはありません", "収容している情報はありません"]

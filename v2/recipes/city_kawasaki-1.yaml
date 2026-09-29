@@ -1,0 +1,17 @@
+# 川崎市（収容犬） https://www.city.kawasaki.jp/350/page/0000077270.html
+# 1 頭 = div.main_naka_kiji 内の table 1 つ（キャプションが管理番号。class は px550/px650/無しと揺れる）。
+# th/td が「ラベル｜値｜ラベル｜値」で並ぶ縦型テーブル。写真は table の外の兄弟 div に
+# （table の前後どちらにも）複数枚並ぶため row 単位では拾えない（management_no で通過条件は満たす）。
+rows: "div.main_naka_kiji table"
+fields:
+  management_no: {label: "管理番号"}
+  location: {label: "収容場所"}
+  shelter_date: {label: "収容日"}
+  breed: {label: "種類"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  note: {label: "備考"}
+empty_text:
+  - "収容（保護）されている犬はいません"
+  - "収容している犬はいません"
+  - "犬の収容情報はありません"

@@ -1,0 +1,22 @@
+# 大阪市（譲渡猫）https://www.city.osaka.lg.jp/kenko/page/0000206027.html
+# 1 ページに全頭。動物ごとに div.sub_h3_box(識別番号のみ) → 写真だけの mol_imageblock が 0〜数個
+# → 最後に「写真+属性<p>」の mol_imageblock、の順で並ぶ（兄弟要素、共通の親 div は無い）。
+# 識別番号・仮名は h3（兄弟要素）にしかなく、rows の中からは参照できないため management_no/name は取得不可。
+# rows は <p> を含む mol_imageblock（= 1 頭分の属性ブロック。写真もこの中に1枚ある）を直接選ぶ。
+# 0 頭時は同じ構造のまま値だけ空になり、画像だけプレースホルダ（joutonasi.JPG, alt=「現在、譲渡対象動物はいません」）になる。
+rows: "div.mol_imageblock:has(p)"
+row_filter:
+  text_has_any: ["種類／", "性別／"]   # ページ冒頭の説明文ブロック（mol_imageblock_imgfloatleft）を除外
+image:
+  selector: "img@src"
+  exclude: ["joutonasi", "shuyounasi"]
+fields:
+  breed: {regex: "種類／(\\S+)"}
+  color: {regex: "毛色／(\\S+)"}
+  sex: {regex: "性別／(\\S+)"}
+  age: {regex: "年齢／(\\S+)"}
+  size: {regex: "体格／(\\S+)"}
+  note: {regex: "性格／(.+?)(?=\\s*・その他|$)"}
+empty_text:
+  - "現在、譲渡対象動物はいません"
+  - "現在、譲渡対象動物はいません。"

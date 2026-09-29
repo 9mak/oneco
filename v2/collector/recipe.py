@@ -26,7 +26,8 @@ _JUNK_IMAGE = re.compile(
     re.I,
 )
 _DATE_RE = re.compile(r"(令和|平成|R|H)?\s*\d{1,4}\s*[年./\-]\s*\d{1,2}\s*[月./\-]\s*\d{1,2}\s*日?")
-_MGMT_RE = re.compile(r"[A-Za-z]?\d{1,4}[-‐\-–]\d{2,6}|No\.?\s*\d{2,}|第\s*\d+\s*号|\b\d{4,}\b")
+# 管理番号らしさ: 26-0123 / D250299 / 8中-D0155 / No.20049 / 第12号 / 4 桁以上の数字
+_MGMT_RE = re.compile(r"[A-Za-z]?\d{1,4}[-‐\-–]\d{2,6}|[A-Za-z]{1,2}\d{3,}|No\.?\s*\d{2,}|第\s*\d+\s*号|\b\d{4,}\b")
 
 
 class RecipeError(Exception):
@@ -296,12 +297,17 @@ def _pdf_rows(recipe: Recipe, doc: Doc) -> list[Row]:
     header_row = int((recipe.pdf or {}).get("header_row", 0))
     header_has = (recipe.pdf or {}).get("header_has")   # 見出し行にこの語があれば表とみなす
     for table in doc.pdf_tables or []:
-        if len(table) <= header_row:
+        hr = header_row
+        if header_has:
+            # 見出し行の位置はページによってずれる（1 ページ目だけ「掲載日」行が先頭に付く等）ので、先頭 5 行から探す
+            found = next((i for i, r in enumerate(table[:5]) if any(header_has in (h or "") for h in r)), None)
+            if found is None:
+                continue
+            hr = found
+        if len(table) <= hr:
             continue
-        header = table[header_row]
-        if header_has and not any(header_has in (h or "") for h in header):
-            continue
-        for raw in table[header_row + 1:]:
+        header = table[hr]
+        for raw in table[hr + 1:]:
             cells: dict[str, str] = {}
             for i, v in enumerate(raw):
                 cells[str(i)] = v

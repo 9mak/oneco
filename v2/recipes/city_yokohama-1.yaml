@@ -1,0 +1,16 @@
+# 横浜市（収容犬）— shuyoinfo.html。1 ページ完結、単一 table。
+# 1 頭 = table tr（先頭 tr がヘッダ: 収容日・収容場所/写真/種類/性別/毛色/体格/その他）。
+# 「写真」列は写真が無い個体だと代わりに「お問合せ番号26-XXXXXX」が入る（legacy adapter と同じ挙動）。
+rows: "div.wysiwyg_wp table tr"
+image: "img@src"
+fields:
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  color: {label: "毛色"}
+  size: {label: "体格"}
+  note: {label: "その他"}
+  management_no: {label: "写真", regex: "お?問い?合せ番号\\s*([0-9A-Za-z][0-9A-Za-z\\-]*)"}
+  shelter_date: {label: "収容日・収容場所", regex: "((?:令和|平成)\\s*\\d+\\s*年\\s*\\d+\\s*月\\s*\\d+\\s*日)"}
+  location: {label: "収容日・収容場所", regex: "(?:令和|平成)\\s*\\d+\\s*年\\s*\\d+\\s*月\\s*\\d+\\s*日\\s*(.+)"}
+empty_text:
+  - "現在、犬の収容情報はありません"

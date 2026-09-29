@@ -1,0 +1,21 @@
+# 札幌市（迷子犬） — 1 ページに犬ごとの <h2>管理番号</h2><table>写真+ラベル値ul</table> が並ぶ。
+# 表内 li は「収容年月日：令和8年9月28日」のように区切りがコロンのみ（空白なし）でラベル抽出が効く。
+# 表の後ろに無関係な啓発ポスター画像だけの table（迷子犬ページのみ）が挟まるので rows は "h2 + table" に限定して除外する。
+rows: "h2 + table"
+row_filter:
+  text_has_any: ["収容年月日", "保護場所"]
+image: "img@src"
+fields:
+  management_no: {selector: "img", attr: "src", regex: "([A-Za-z]{1,3}\\d{6}-\\d+)"}
+  shelter_date: {label: "収容年月日"}
+  location: {label: "保護場所"}
+  breed: {label: "種類"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  size: {label: "体格"}
+  note: {label: "首輪等"}
+empty_text:
+  - "現在、迷子犬はいません"
+  - "現在収容している犬はいません"
+  - "現在、収容している犬はいません"
+  - "該当する犬はいません"

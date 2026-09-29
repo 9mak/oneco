@@ -1,0 +1,22 @@
+# 神戸市動物管理センター（収容犬猫情報）
+# 単一ページに「収容犬一覧」h2 + table、「収容猫一覧」h2 + table が並ぶ。
+# 列構成: 収容日 / 写真 / 種類 / 性別 / 毛色 / 体格 / 収容場所。
+# 0 件時はテーブルが無く「現在、収容した犬/猫はいません。」の告知文のみ。
+# (2026-09-29 時点で実サイトも犬 0・猫 0 の空状態を確認)
+
+rows: "#tmp_contents table tr"
+
+fields:
+  shelter_date: "td:nth-of-type(1)"
+  breed: "td:nth-of-type(3)"
+  sex: "td:nth-of-type(4)"
+  color: "td:nth-of-type(5)"
+  size: "td:nth-of-type(6)"
+  location: "td:nth-of-type(7)"
+
+species:
+  from: heading
+  selector: "h2"
+  map: {"犬": dog, "猫": cat}
+
+empty_text: ["現在、収容した犬はいません", "現在、収容した猫はいません"]

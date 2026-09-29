@@ -1,0 +1,18 @@
+# 豊中市: 台帳 URL は案内ページ(maigo.html)だが実際の一覧は別ページ shuyou.html なので url で上書き。
+# 1 頭 = <div class="img-area">（写真＋近くの説明文に管理番号・収容日・性別等）。動物がいない時は
+# 同じ div に no_info.gif だけが入り alt="現在、掲載する情報はありません"（本文テキストには出ないため
+# empty_text では検出できない＝エンジンの制約。row_filter で管理番号/収容日等の語が無い div を除外して0件にする）。
+url: https://www.city.toyonaka.osaka.jp/kurashi/pettp-inuneko/shuyou.html
+rows: ".img-area"
+row_filter:
+  text_has_any: ["管理番号", "収容日", "収容場所"]
+image: "img@src"
+fields:
+  management_no: {label: "管理番号"}
+  sex: {label: "性別"}
+  shelter_date: {label: "収容日", regex: "(\\d+年\\d+月\\d+日)"}
+  breed: {label: "犬種"}
+  color: {label: "毛色"}
+species:
+  from: text
+  map: {"犬": dog, "猫": cat}

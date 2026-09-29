@@ -1,0 +1,20 @@
+# あかし動物センター（迷子猫）
+# 一覧ページ https://.../info/maigo/cat.html は akashippo CMS が保護動物 0 頭の間は
+# ページ自体を非公開（404）にする方式らしく、現状は cat.html 自体が存在しない
+# （dobutsu/ トップからは「猫の迷子情報ページ」としてこの URL にリンクされているが 404）。
+# 動物が出た際は #tmp_contents table tr（1行目 th ヘッダ、以降 1行=1頭）になる想定（旧 adapter 準拠、犬猫共通テンプレート）。
+rows: "#tmp_contents table tr"
+row_filter:
+  text_lacks: ["収容日"]
+image: "img@src"
+fields:
+  shelter_date: {selector: "td:nth-of-type(1)"}
+  breed: {selector: "td:nth-of-type(3)"}
+  sex: {selector: "td:nth-of-type(4)"}
+  color: {selector: "td:nth-of-type(5)"}
+  size: {selector: "td:nth-of-type(6)"}
+  location: {selector: "td:nth-of-type(7)"}
+empty_text:
+  - "現在、当センターで保護している迷子動物はいません"
+  - "現在、迷子の猫はいません"
+  - "現在、保護している猫はいません"

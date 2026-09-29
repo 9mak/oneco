@@ -1,0 +1,19 @@
+# 名古屋市 迷子動物情報（犬猫等をお探しの方へ）
+# article#content 内の table.w100 に単一テーブル。ヘッダ: 収容日/動物/種類/毛色/模様/性別/推定年齢/首輪・特徴/場所。
+# 犬猫は「動物」列（種類列は犬種名等の具体値なので使わない）。0件時は全セル "-" のプレースホルダ行のみで自動的に除外される。
+rows: "article#content table tr"
+image: "img@src"
+fields:
+  species: {label: "動物"}
+  breed: {label: "種類"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  age: {label: "推定年齢"}
+  note: {label: "首輪・特徴"}
+  shelter_date: {label: "収容日"}
+  location: {label: "場所"}
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+empty_text:
+  - "収容中の迷子保護動物はいません"

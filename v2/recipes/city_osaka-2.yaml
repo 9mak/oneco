@@ -1,0 +1,22 @@
+# 大阪市（迷子猫・収容猫情報）https://www.city.osaka.lg.jp/kenko/page/0000117147.html
+# 構造は city_osaka-4（譲渡猫）と同一テンプレート（属性ラベルのみ異なる）。詳細は city_osaka-4.yaml 参照。
+# 識別番号は h3（rows の外の兄弟要素）にしかないため management_no は取得不可。
+# 2026-09-29 時点は 0 頭（画像がプレースホルダ shuyounasi.JPG、alt=「現在、収容情報はありません。」）。
+rows: "div.mol_imageblock:has(p)"
+row_filter:
+  text_has_any: ["種類／", "性別／"]   # ページ冒頭の説明文ブロックを除外
+image:
+  selector: "img@src"
+  exclude: ["shuyounasi", "joutonasi"]
+fields:
+  shelter_date: {regex: "収容日／(\\S+)"}
+  location: {regex: "収容場所／(\\S+)"}
+  breed: {regex: "種類／(\\S+)"}
+  color: {regex: "毛色／(\\S+)"}
+  sex: {regex: "性別／(\\S+)"}
+  age: {regex: "推定年齢／(\\S+)"}
+  size: {regex: "体格／(\\S+)"}
+  note: {regex: "その他／(.*?)$"}
+empty_text:
+  - "現在、収容情報はありません"
+  - "現在、収容情報はありません。"

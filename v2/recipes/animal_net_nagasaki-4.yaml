@@ -1,18 +1,23 @@
 # ながさき犬猫ネット 保護している動物一覧 /hogo
-# WordPress。1 頭 = div.list-area > ul > li（a > img + dl（dt 品種/性別/年齢/場所/公開日 → dd）+ p "No.20045"）。写真は /wp/wp-content/uploads/ 配下。
-# 一覧にも個体ページにも犬猫の別が無い。犬猫は URL の ?animal-type=dog / ?animal-type=cat で分かれ、その時だけ検索欄のラジオ（checked）のラベル「犬」「猫」で判定できる。
-# 絞り込み無しの一覧は 25 頭で打ち切られ次ページも無いので、台帳の url は必ず ?animal-type=dog|cat 付きにする（犬と猫で 1 エントリずつ）。
-rows: "div.list-area li:has(a[href*='/animal/no-'])"
-image: "img@src"
+# WordPress。一覧 div.list-area 配下の /animal/no-xxx リンクを個体ページ方式（follow_all）で1頭=1ページとして辿る。
+# 詳細ページは <li><p>ラベル</p><p>値</p></li> 構造で dt/dd を使わないため label 抽出が効かず、正規表現で本文から拾う。
+# 収容日に相当するのは「保護した日時」（"6/15～" 等、日付として不完全な表記もある）。場所は「保護した場所」。
+# 犬猫の別は明記が無い。「模様・柄」が三毛/サビ/キジ/トラ（猫固有の柄）なら猫、それ以外は犬とみなす（既定値）。
+steps:
+  - follow_all: "div.list-area a[href*='/animal/no-']@href"
+rows: "body"
+image: "ul.detail-img img@src"
 fields:
-  management_no: "p"                       # "No.20045"
-  breed: {label: "品種"}
-  sex: {label: "性別"}
-  age: {label: "年齢"}
-  location: {label: "場所"}                # 保護した地区（市町）
-  detail: {selector: "a", attr: "href"}    # 個体ページ（保護日・保護場所・問い合わせ先の保健所と TEL はそこにある）
+  management_no: {regex: "No\\.(\\d+)"}
+  breed: {regex: "品種\\s*(\\S+)"}
+  sex: {regex: "性別\\s*(\\S+)"}
+  age: {regex: "年齢\\s*(\\S+)"}
+  color: {regex: "毛色\\s*(\\S+)"}
+  size: {regex: "体格\\s*(\\S+)"}
+  shelter_date: {regex: "保護した日時\\s*(.+?)(?=保護した場所|問い合わせ先)"}
+  location: {regex: "保護した場所\\s*(.+?)(?=問い合わせ先)"}
+  species: {regex: "模様・柄\\s*(\\S+)", default: "-"}
 species:
-  from: heading
-  selector: "input[name='animal-type'][checked] + label"   # 絞り込み無し（すべて）だと other になり全頭捨てる
-  map: {"犬": dog, "猫": cat}
+  from: field
+  map: {"三毛": cat, "サビ": cat, "キジ": cat, "トラ": cat, "": dog}
 empty_text: ["投稿がありません"]

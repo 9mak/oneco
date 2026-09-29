@@ -1,0 +1,23 @@
+# 那覇市 犬猫収容・保護情報。一覧ページに「犬の収容保護情報一覧」PDFと「猫の収容保護情報一覧」PDFのリンクが2本（環境衛生課）。
+# 犬PDF表ヘッダ: 収容日/収容期限/収容場所/犬種/性別/毛色/推定年齢/体格/首輪・リード/その他。猫PDF表ヘッダ: 収容年月日/収容期限/収容場所/種類/毛色/性別/体格/首輪/その他。
+# 写真は無く、management_noも無いので収容日のみで動物判定。種別はPDF内に「犬」「猫」の文字が値として出ないため、
+# 犬PDFだけが持つ「犬種」列の有無で判定する（列があれば犬、無ければ猫。猫を先に明示マッチさせ残りを犬に落とす）。
+steps:
+  - pdf_links: "a[href$='.pdf']"
+pdf:
+  mode: table
+  header_row: 1   # table[0]はPDF先頭のタイトル文（1セル長文）なので見出し行は1番目
+fields:
+  shelter_date: {header: "収容"}
+  location: {header: "収容場所"}
+  breed: {header: "種類"}
+  sex: {header: "性別"}
+  color: {header: "毛色"}
+  size: {header: "体格"}
+  age: {header: "推定年齢"}
+  note: {header: "その他"}
+  species: {header: "犬種", default: "猫"}
+species:
+  from: field
+  map: {"猫": cat, "": dog}
+empty_text: ["犬の収容はありません", "猫の収容情報はありません", "現在、収容動物情報はありません"]

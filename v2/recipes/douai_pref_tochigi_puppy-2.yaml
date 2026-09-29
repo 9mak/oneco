@@ -1,0 +1,14 @@
+# 栃木県動物愛護指導センター（子猫譲渡） https://www.douai.pref.tochigi.lg.jp/work/kitten/
+# WordPress Gutenberg の固定レイアウト表 (table.has-fixed-layout) が「ケージ名/番号/写真/性別/(任意)説明」を
+# 縦に並べた構造で、現状は 1 表 = 1 匹（ケージに複数匹入ると崩れる想定だが現行ページは1匹ずつ）。
+# 番号は「希望表配布時に付番します」等の未確定文言が入ることがあるため数字始まりのみ採用。
+rows: "table.has-fixed-layout"
+image: "img@src"
+fields:
+  management_no: {regex: "番号[:：]\\s*(\\d[^\\s]*)"}
+  sex: {regex: "性別[:：]\\s*(\\S+)"}
+  note: {regex: "性別[:：]\\s*\\S+\\s*(.*)$"}
+empty_text:
+  - "子猫はいません"
+  - "子猫はおりません"
+  - "対象の子猫がいません"

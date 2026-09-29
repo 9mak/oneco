@@ -1,0 +1,17 @@
+# 福島県動物愛護センター相双支所 迷子犬情報
+# 会津支所（pref_fukushima-3）と似た1列ラベル・1列値のテーブルだが、値セルは行ごとに
+# 独立している（会津のような rowspan 結合ではない）。写真は管理番号行に rowspan で同居。
+# 現状（2026-09-29確認）は1頭（管理番号 20260915-01）掲載中。
+
+rows: "div#main_body table"
+image: "img@src"
+fields:
+  management_no: {label: "管理番号"}
+  shelter_date: {label: "保護日"}
+  location: {label: "保護場所"}
+  breed: {label: "種類"}
+  size: {label: "体格"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  age: {label: "推定年"}
+  note: {label: "その他"}

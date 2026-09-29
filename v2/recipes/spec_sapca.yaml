@@ -1,0 +1,22 @@
+# 滋賀県動物保護管理センター（迷い犬猫） https://www.sapca.jp/lost
+# 一覧 ul.list の各 li a[href*='/lost/'] を個体ページ方式（follow_all）で1頭=1ページとして辿る。
+# 詳細ページは 見出し/値 が交互に並ぶだけ（dt/dd 無し）なので label 抽出で拾う。
+# 既に飼い主の元へ「戻りました」「決まりました」ページも一覧に残るため row_filter で除外する。
+steps:
+  - follow_all: "ul.list li a[href*='/lost/']@href"
+rows: "body"
+row_filter:
+  text_lacks: ["戻りました", "決まりました"]
+image: "img[src*='/wp-content/uploads/']@src"
+fields:
+  shelter_date: {label: "収容日"}
+  location: {label: "保護した場所"}
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  color: {label: "毛色"}
+  size: {label: "体格"}
+  note: {label: "備考", default: null}
+  species: {label: "種類", default: "-"}
+species:
+  from: field
+  map: {"猫": cat, "ねこ": cat, "犬": dog, "いぬ": dog}

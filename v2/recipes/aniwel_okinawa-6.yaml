@@ -1,0 +1,22 @@
+# 沖縄県動物愛護管理センター（迷い込み保護猫）
+# 一覧は一般の方の書き込み掲示板。div.lists > a（1 頭 = 1 リンク、/animals/protection_view/ID）。.paging a[rel=next] で次ページ。
+# 個体ページは div.animals_single に th/td 表（受付番号・保護日・保護場所・品種・毛色・性別・体格・年齢・首輪・その他特徴・備考）と写真（1〜3枚）。
+# 「飼い主が見つかりました」等の解決済み表記があれば捨てる想定（実観測では未確認、保険で残す）。
+steps:
+  - paginate: ".paging a[rel='next']@href"
+  - follow_all: "div.lists > a[href*='/animals/protection_view/']@href"
+rows: "div.animals_single"
+row_filter:
+  text_lacks: ["見つかりました", "終了しました"]
+image: "td.photo ul.slick-main img@src"
+fields:
+  management_no: {label: "受付番号"}
+  shelter_date: {label: "保護日"}
+  location: {label: "場所"}
+  breed: {label: "品種"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  size: {label: "体格"}
+  age: {label: "年齢"}
+  note: {label: "備考"}
+empty_text: ["迷い込み保護の猫はいません", "該当する猫はいません"]

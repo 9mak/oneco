@@ -3,9 +3,13 @@
 # jQuery が table#hoken_tbl / table#ippan_tbl の tr に組み立てるので render が必要。
 # 1 頭 = tr（td1 保護日・td2 No.・td3 写真・td4 保護場所・td5 品種・td6 毛色・td7 性別・td8 詳細）。
 # 空の表は「現在のところ情報はありません。」の div に置き換わる。写真が無い子は noimage.jpg。
+# 返還済み（statusflg=3）の子も同じ PHP が td1 に「見つかりました!」を付けたまま描画し続ける
+# （td8 の詳細リンクだけ消える）ので、その行は捨てる。同サイトの「探しています・猫」で実例確認済み。
 steps:
   - render: true
 rows: "table.centar-table tr:not(.ttr)"
+row_filter:
+  text_lacks: ["見つかりました!", "見つかりました！"]
 image: {selector: "td.td3 img@src", exclude: ["noimage"]}
 fields:
   shelter_date: {selector: "td.td1", regex: "(\\d{4}/\\d{1,2}/\\d{1,2})"}

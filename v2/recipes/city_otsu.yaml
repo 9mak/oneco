@@ -1,0 +1,26 @@
+# 大津市動物愛護センター（迷い犬猫） - 単一ページに table.wysiwyg tbody tr が1頭=1行。
+# 0頭時は「現在収容している犬猫の情報はありません。」+ 空プレースホルダ行（月　日／時　分）のみのtbodyが出る。
+# 犬猫混在ページのため species は列0（種類＝具体品種名）から map で判定、当たらなければ other。
+
+rows: "table tbody tr"
+row_filter:
+  text_lacks: ["月　日", "時　分"]
+  min_text_length: 4
+
+image: "img@src"
+
+fields:
+  species: "td:nth-of-type(1)"
+  breed: "td:nth-of-type(1)"
+  color: "td:nth-of-type(2)"
+  size: "td:nth-of-type(3)"
+  sex: "td:nth-of-type(4)"
+  location: "td:nth-of-type(5)"
+  shelter_date: "td:nth-of-type(6)"
+  note: "td:nth-of-type(7)"
+
+species:
+  from: field
+  map: {"犬": dog, "猫": cat, "ネコ": cat, "イヌ": dog}
+
+empty_text: ["現在収容している犬猫の情報はありません"]

@@ -1,0 +1,22 @@
+# 栃木県動物愛護指導センター「引取動物収容情報」。台帳URL(動物の収容 トップ)→「迷子動物収容情報」ページ→本文中の「引取動物収容情報」リンクの先が一覧(douai.sakura.ne.jp)。
+# 一覧はspec_douai_pref_tochigi_stray-1/2と同じ生成方式(表→個体ページへのリンク、個体ページに #gazou 写真と項目表)想定だが、現状は表自体が無く見出しのみ(引取動物が0頭)。
+steps:
+  - follow_text: "迷子動物収容情報"
+  - follow_text: "引取動物収容情報"
+  - follow_all: "a[href$='.html']@href"
+rows: "body"
+image: "#gazou img"
+fields:
+  management_no: {label: "管理番号"}
+  shelter_date: {label: "収容日"}
+  location: {label: "収容場所"}
+  species: {label: "動物種別"}
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  age: {label: "年齢"}
+  color: {label: "毛色"}
+  size: {label: "大きさ"}
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+empty_text: ["引取動物収容情報"]
