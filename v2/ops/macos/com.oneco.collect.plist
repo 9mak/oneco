@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  oneco v2 日次収集（Mac の launchd 版）。毎日 0:05 JST に ops/collect.sh を動かす（run → notify → build → deploy）。
+  置き場所: ~/Library/LaunchAgents/com.oneco.collect.plist（ops/macos/install.sh がコピーする）
+  環境変数: ~/.config/oneco/collect.env（ops/macos/collect.env.example を写して埋める）
+  Mac が寝ていて 0:05 を逃した日は、起きたときに launchd が 1 回だけ動かす。
+  手動実行: launchctl kickstart gui/$(id -u)/com.oneco.collect
+  ログ:     v2/logs/collect-<日付>.log（collect.sh が書く）と v2/logs/launchd.log（launchd の標準出力）
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.oneco.collect</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-c</string>
+    <string>set -a; [ -f "$HOME/.config/oneco/collect.env" ] &amp;&amp; . "$HOME/.config/oneco/collect.env"; set +a; exec "$ONECO_V2_DIR/ops/collect.sh"</string>
+  </array>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>ONECO_V2_DIR</key>
+    <string>__V2_DIR__</string>
+    <key>ONECO_PY</key>
+    <string>__PY__</string>
+    <key>ONECO_LOG_DIR</key>
+    <string>__V2_DIR__/logs</string>
+    <key>TZ</key>
+    <string>Asia/Tokyo</string>
+    <!-- npx（wrangler）と node が要る。Homebrew の場所を先頭に -->
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+
+  <key>WorkingDirectory</key>
+  <string>__V2_DIR__</string>
+
+  <!-- 毎日 0:05 JST（0:00 ちょうどの自治体サイトへの集中を避けて 5 分ずらす） -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>0</integer>
+    <key>Minute</key>
+    <integer>5</integer>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>Nice</key>
+  <integer>10</integer>
+
+  <key>StandardOutPath</key>
+  <string>__V2_DIR__/logs/launchd.log</string>
+  <key>StandardErrorPath</key>
+  <string>__V2_DIR__/logs/launchd.log</string>
+</dict>
+</plist>

@@ -1,6 +1,6 @@
 # oneco v2 運用手順
 
-毎日 JST 0:00 に収集サーバー（VPS）が全自治体のページを読み、静的サイトを作り直して Cloudflare Pages に置く。人がやるのは「通知が来た日に見る」「月 1 回 discover を回す」「撤去依頼が来たら台帳を 1 行直す」の 3 つ。
+毎日 JST 0:05 に収集サーバー（手元の Mac の launchd。控えは VPS）が全自治体のページを読み、静的サイトを作り直して Cloudflare Pages に置く。人がやるのは「通知が来た日に見る」「月 1 回 discover を回す」「撤去依頼が来たら台帳を 1 行直す」の 3 つ。
 
 ## 1. 初期設定（1 回だけ）
 
@@ -12,7 +12,26 @@
 3. **API トークン**: My Profile → API Tokens → Create Token → Custom token → Permissions に `Account / Cloudflare Pages / Edit` だけ。`CLOUDFLARE_API_TOKEN`。作った直後の 1 回しか表示されない
 4. 独自ドメインを付けるなら Pages プロジェクト → Custom domains から
 
-### 1-2. VPS
+### 1-2. 収集サーバー
+
+収集を動かす場所は 3 択。2026-09-30 におまえさんが「基本起動している Mac の launchd」を選んだ（1-2a）。VPS（1-2b）は Mac で困ったときの控え。GitHub Actions（`ops/github-daily.yml`）は一部自治体が Azure の IP 帯を拒否するため使わない。GCP（Cloud Run Jobs）は 1 日 10 分なら無料枠に収まるが、旧本番で予算超過→billing 停止になった経緯があり、クラウド IP の拒否も未検証。
+
+### 1-2a. Mac の launchd（本命）
+
+前提: このリポジトリが手元にあり `.venv` に `v2/requirements.txt` が入っていること、Playwright の Chromium が入っていること（`.venv/bin/playwright install chromium`）、Node.js（`brew install node`。wrangler を `npx` で呼ぶ）。
+
+```bash
+bash v2/ops/macos/install.sh          # ~/.config/oneco/collect.env を置き、~/Library/LaunchAgents に登録
+vi ~/.config/oneco/collect.env        # 1-1 で取った CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID / ONECO_PAGES_PROJECT を埋める（chmod 600）
+launchctl kickstart -k gui/$(id -u)/com.oneco.collect && tail -f v2/logs/launchd.log   # 1 回手で動かして確認
+```
+
+- 毎日 0:05 JST に `ops/collect.sh`（run → notify → build → deploy）が動く。Mac が寝ていて逃した日は起きたときに 1 回動く
+- ログは `v2/logs/collect-<日付>.log`。`launchctl print gui/$(id -u)/com.oneco.collect` で状態と last exit code
+- 解除は `bash v2/ops/macos/install.sh --remove`
+- Claude Code のサンドボックスからは `launchctl` が拒否されるので、登録・手動実行はターミナルから
+
+### 1-2b. VPS（控え）
 
 メモリ 2GB 以上（Playwright の Chromium が 1GB 近く使う）、Ubuntu 22.04/24.04 想定。
 
@@ -159,11 +178,13 @@ cd /opt/oneco/v2   # ローカルでもよい
 
 | 項目 | 月額 |
 | --- | --- |
-| VPS 2GB（さくらのVPS / ConoHa / Vultr など） | 1,000〜1,500 円 |
+| 収集サーバー（本命は手元の Mac の launchd） | 0 円 |
+| 控え: VPS 2GB（さくらのVPS / ConoHa / Vultr など） | 1,000〜1,500 円 |
+| 控え: GCP Cloud Run Jobs（1 日 10 分・2GB。無料枠 vCPU 18 万秒/月の内側） | 0〜100 円（billing の再有効化が要る） |
 | Cloudflare Pages（Free プラン。静的配信・独自ドメイン込み） | 0 円（Direct Upload は 1 日 500 デプロイまで、1 日 1 回なので余裕） |
 | healthchecks.io（Free、20 checks まで） | 0 円 |
 | Discord webhook | 0 円 |
 | Anthropic API（AI 修復） | 1 回あたり入力 3〜6 万トークン・出力 1 千トークン前後。claude-sonnet-5（入力 $2 / 出力 $10 per 1M）で 1 回 15〜30 円程度。壊れるのは月に数ページなので通常 100〜500 円。サイト改修が重なる年度替わり（4 月）に 1 日 10 件走っても 1 日 300 円が上限目安 |
-| 合計 | 1,100〜2,000 円 |
+| 合計（Mac で動かす場合） | 100〜500 円（AI 修復の分だけ） |
 
 Anthropic のコンソールで Usage limits に月 $10 程度の上限を入れておくと、暴走しても止まる。
