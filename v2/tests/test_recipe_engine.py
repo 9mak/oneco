@@ -113,3 +113,22 @@ def test_registry_loads_and_recipes_parse():
     for s in sources:
         if s.recipe_path.exists():
             Recipe.load(s.recipe_path)
+
+
+def test_empty_text_matches_entry_page_when_no_pdf():
+    """PDF リンクが 0 本の日でも、入口ページの「現在いません」で empty と判定できる。"""
+    recipe = Recipe(steps=[{"pdf_links": "a[href$='.pdf']"}], pdf={"mode": "text"}, rows_regex=r"^No.*$",
+                    empty_text=["現在、収容動物情報はありません"])
+    ex = Executor(FakeFetcher({"https://x.test/": "<p>現在、収容動物情報はありません。</p>"}), recipe)
+    docs = ex.resolve("https://x.test/")
+    assert docs == []
+    res = build(_source(), recipe, docs, ex.visited)
+    assert not res.animals and res.empty_confirmed
+
+
+def test_recipe_url_overrides_registry_url():
+    recipe = Recipe(url="https://x.test/real", rows="li", empty_text=["なし"])
+    ex = Executor(FakeFetcher({"https://x.test/real": "<ul><li><img src=a.jpg></li></ul>"}), recipe)
+    docs = ex.resolve("https://x.test/registry-url")
+    assert docs[0].url == "https://x.test/real"
+    assert len(build(_source(), recipe, docs, ex.visited).animals) == 1

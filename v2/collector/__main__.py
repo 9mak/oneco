@@ -51,7 +51,7 @@ def cmd_show(args: argparse.Namespace) -> int:
                 p = Path(os.environ.get("TMPDIR", "/tmp")) / f"{s.slug}-{i}.html"
                 p.write_text(d.html or d.pdf_text or "", encoding="utf-8")
                 print(f"   保存: {p}")
-        res = build(s, recipe, docs)
+        res = build(s, recipe, docs, getattr(ex, "visited", None))
         print(f"   文書 {res.docs}・行 {res.rows}・動物 {len(res.animals)}・捨てた {len(res.dropped)}"
               + ("・empty_text あり" if res.empty_confirmed else ""))
         for a in res.animals[: args.limit]:
@@ -112,6 +112,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     from .run import run
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
+    logging.getLogger("httpx").setLevel(logging.WARNING)
     date = args.date or datetime.now(JST).strftime("%Y-%m-%d")
     sources = select(load_sources(), args.only)
     out = run(sources, date, fetcher=Fetcher(respect_robots=not args.no_robots),
@@ -141,6 +142,7 @@ def cmd_repair(args: argparse.Namespace) -> int:
     from .run import collect_one
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
+    logging.getLogger("httpx").setLevel(logging.WARNING)
     if not os.environ.get("ANTHROPIC_API_KEY"):
         print("ANTHROPIC_API_KEY 未設定")
         return 2

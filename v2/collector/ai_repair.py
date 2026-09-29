@@ -133,7 +133,7 @@ def ask_claude(system: str, user: str, model: str) -> str:
 def _try_recipe(source: Source, recipe: Recipe, fetcher: Fetcher) -> Result:
     ex = Executor(fetcher, recipe)
     docs = ex.resolve(source.url)
-    return build(source, recipe, docs)
+    return build(source, recipe, docs, getattr(ex, "visited", None))
 
 
 def repair(

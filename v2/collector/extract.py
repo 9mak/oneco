@@ -80,7 +80,8 @@ def make_id(source: Source, image_raw: str | None, f: dict[str, str | None]) -> 
     return hashlib.sha1(key.encode("utf-8")).hexdigest()[:12]
 
 
-def build(source: Source, recipe: Recipe, docs: list[Doc]) -> Result:
+def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | None = None) -> Result:
+    """docs: rows を適用する文書。visited: 入口から辿った全文書（empty_text の照合にも使う）。"""
     res = Result(docs=len(docs))
     seen_ids: set[str] = set()
     for doc in docs:
@@ -124,6 +125,7 @@ def build(source: Source, recipe: Recipe, docs: list[Doc]) -> Result:
                 animal[k] = f.get(k)
             res.animals.append(animal)
     if not res.animals and recipe.empty_text:
-        alltext = " ".join(d.text() for d in docs)
+        pool = list(docs) + [d for d in (visited or []) if d not in docs]
+        alltext = " ".join(d.text() for d in pool)
         res.empty_confirmed = any(t in alltext for t in recipe.empty_text)
     return res

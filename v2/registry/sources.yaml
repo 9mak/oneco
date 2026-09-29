@@ -265,7 +265,7 @@ sources:
   url: https://www.pref.saga.lg.jp/kiji00314888/index.html
   kind: adoption
   species: mixed
-  mode: recipe
+  mode: link_only
   recipe: recipes/pref_saga-6.yaml
   enabled: true
   legacy:
@@ -1718,8 +1718,8 @@ sources:
   name: 徳島県動物愛護管理センター（収容中）
   municipality: 徳島県動物愛護管理センター
   prefecture: 徳島県
-  phone: null
-  address: null
+  phone: 088-636-6122
+  address: 〒771-3201 徳島県名西郡神山町阿野字長谷333
   url: https://douai-tokushima.com/stray/
   kind: stray
   species: mixed
@@ -1736,8 +1736,8 @@ sources:
   name: 徳島県動物愛護管理センター（譲渡犬）
   municipality: 徳島県動物愛護管理センター
   prefecture: 徳島県
-  phone: null
-  address: null
+  phone: 088-636-6122
+  address: 〒771-3201 徳島県名西郡神山町阿野字長谷333
   url: https://douai-tokushima.com/transfer/doglist
   kind: adoption
   species: dog
@@ -1754,8 +1754,8 @@ sources:
   name: 徳島県動物愛護管理センター（譲渡猫）
   municipality: 徳島県動物愛護管理センター
   prefecture: 徳島県
-  phone: null
-  address: null
+  phone: 088-636-6122
+  address: 〒771-3201 徳島県名西郡神山町阿野字長谷333
   url: https://douai-tokushima.com/transfer/catlist
   kind: adoption
   species: cat
@@ -1772,8 +1772,8 @@ sources:
   name: 松山市 はぴまるの丘（収容中）
   municipality: 松山市 はぴまるの丘
   prefecture: 愛媛県
-  phone: null
-  address: null
+  phone: 089-923-9435
+  address: 〒791-8024 愛媛県松山市朝日ヶ丘1丁目 松山総合公園内
   url: https://www.city.matsuyama.ehime.jp/kurashi/kurashi/aigo/index.html
   kind: stray
   species: mixed
@@ -1791,7 +1791,7 @@ sources:
   municipality: 愛媛県動物愛護センター
   prefecture: 愛媛県
   phone: 089-977-9200
-  address: null
+  address: 〒791-0133 愛媛県松山市東川町乙44-7
   url: https://www.pref.ehime.jp/page/16976.html
   kind: stray
   species: mixed
@@ -1809,7 +1809,7 @@ sources:
   municipality: 愛媛県動物愛護センター
   prefecture: 愛媛県
   phone: 089-977-9200
-  address: null
+  address: 〒791-0133 愛媛県松山市東川町乙44-7
   url: https://www.pref.ehime.jp/page/17125.html
   kind: adoption
   species: mixed
@@ -2870,8 +2870,8 @@ sources:
   name: 北九州市（保護犬）
   municipality: 北九州市
   prefecture: 福岡県
-  phone: null
-  address: null
+  phone: 093-581-1800
+  address: 〒803-0801 北九州市小倉北区西港町24番地7
   url: https://www.city.kitakyushu.lg.jp/contents/924_11831.html
   kind: sheltered
   species: dog
@@ -2888,8 +2888,8 @@ sources:
   name: 北九州市（譲渡犬）
   municipality: 北九州市
   prefecture: 福岡県
-  phone: null
-  address: null
+  phone: 093-581-1800
+  address: 〒803-0801 北九州市小倉北区西港町24番地7
   url: https://www.city.kitakyushu.lg.jp/contents/924_11834.html
   kind: adoption
   species: dog
@@ -2942,8 +2942,8 @@ sources:
   name: 福岡県動物愛護協会（保健所収容犬）
   municipality: 福岡県動物愛護協会
   prefecture: 福岡県
-  phone: null
-  address: null
+  phone: 092-944-1281
+  address: 〒811-3135 福岡県古賀市小竹131-2
   url: https://www.zaidan-fukuoka-douai.or.jp/animals/protections/dog
   kind: stray
   species: dog
@@ -2960,8 +2960,8 @@ sources:
   name: 福岡県動物愛護協会（保健所収容猫）
   municipality: 福岡県動物愛護協会
   prefecture: 福岡県
-  phone: null
-  address: null
+  phone: 092-944-1281
+  address: 〒811-3135 福岡県古賀市小竹131-2
   url: https://www.zaidan-fukuoka-douai.or.jp/animals/protections/cat
   kind: stray
   species: cat
@@ -2978,8 +2978,8 @@ sources:
   name: 福岡県動物愛護協会（一般保護犬）
   municipality: 福岡県動物愛護協会
   prefecture: 福岡県
-  phone: null
-  address: null
+  phone: 092-944-1281
+  address: 〒811-3135 福岡県古賀市小竹131-2
   url: https://www.zaidan-fukuoka-douai.or.jp/personal-animals/hogo/dog
   kind: sheltered
   species: dog
@@ -2996,8 +2996,8 @@ sources:
   name: 福岡県動物愛護協会（一般保護猫）
   municipality: 福岡県動物愛護協会
   prefecture: 福岡県
-  phone: null
-  address: null
+  phone: 092-944-1281
+  address: 〒811-3135 福岡県古賀市小竹131-2
   url: https://www.zaidan-fukuoka-douai.or.jp/personal-animals/hogo/cat
   kind: sheltered
   species: cat
@@ -3014,8 +3014,8 @@ sources:
   name: 福岡県動物愛護協会（センター譲渡犬）
   municipality: 福岡県動物愛護協会
   prefecture: 福岡県
-  phone: null
-  address: null
+  phone: 092-944-1281
+  address: 〒811-3135 福岡県古賀市小竹131-2
   url: https://www.zaidan-fukuoka-douai.or.jp/animals/centers/dog
   kind: adoption
   species: dog
@@ -3032,8 +3032,8 @@ sources:
   name: 福岡県動物愛護協会（センター譲渡猫）
   municipality: 福岡県動物愛護協会
   prefecture: 福岡県
-  phone: null
-  address: null
+  phone: 092-944-1281
+  address: 〒811-3135 福岡県古賀市小竹131-2
   url: https://www.zaidan-fukuoka-douai.or.jp/animals/centers/cat
   kind: adoption
   species: cat
@@ -3050,8 +3050,8 @@ sources:
   name: 福岡県動物愛護協会（団体譲渡犬）
   municipality: 福岡県動物愛護協会
   prefecture: 福岡県
-  phone: null
-  address: null
+  phone: 092-944-1281
+  address: 〒811-3135 福岡県古賀市小竹131-2
   url: https://www.zaidan-fukuoka-douai.or.jp/animals/groups/dog
   kind: adoption
   species: dog
@@ -3068,8 +3068,8 @@ sources:
   name: 福岡県動物愛護協会（団体譲渡猫）
   municipality: 福岡県動物愛護協会
   prefecture: 福岡県
-  phone: null
-  address: null
+  phone: 092-944-1281
+  address: 〒811-3135 福岡県古賀市小竹131-2
   url: https://www.zaidan-fukuoka-douai.or.jp/animals/groups/cat
   kind: adoption
   species: cat
@@ -3501,11 +3501,11 @@ sources:
   municipality: 長崎市動物愛護管理センター
   prefecture: 長崎県
   phone: 095-822-8888
-  address: null
+  address: 〒852-8104 長崎県長崎市茂里町2番34号
   url: https://www.city.nagasaki.lg.jp/site/doubutsuaigo/list7-19.html
   kind: adoption
   species: dog
-  mode: recipe
+  mode: link_only
   recipe: recipes/spec_city_nagasaki_lg-1.yaml
   enabled: true
   legacy:
@@ -3519,11 +3519,11 @@ sources:
   municipality: 長崎市動物愛護管理センター
   prefecture: 長崎県
   phone: 095-822-8888
-  address: null
+  address: 〒852-8104 長崎県長崎市茂里町2番34号
   url: https://www.city.nagasaki.lg.jp/site/doubutsuaigo/list7-18.html
   kind: adoption
   species: cat
-  mode: recipe
+  mode: link_only
   recipe: recipes/spec_city_nagasaki_lg-2.yaml
   enabled: true
   legacy:

@@ -16,7 +16,7 @@ fields:
   breed: {selector: "p.spec", regex: "^\\S+\\s+(\\S+)"}
   color: {selector: "p.spec", regex: "^\\S+\\s+\\S+\\s+(\\S+)"}
   sex: {selector: "p.spec", regex: "(\\S+)$"}
-  detail: "a@href"
+  detail: {selector: "a", attr: "href"}
   species: {default: "猫"}
 species:
   from: field

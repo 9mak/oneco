@@ -119,3 +119,15 @@ $PY -m collector show <slug> --html       # 最終 HTML を保存して場所を
 $PY -m collector fetch <url> --text       # ページ本文をテキストで
 $PY -m collector fetch <url> --selectors  # 表・リスト・画像の候補セレクタを列挙
 ```
+
+## 入口 URL の上書き
+
+台帳の URL でなく別の URL を入口にしたいとき（iframe の中身を直接指す、絞り込みパラメータ付きにする等）:
+
+```yaml
+url: https://example.jp/list?animal-type=dog
+```
+
+## 0 頭判定の補足
+
+`empty_text` は最終文書だけでなく、入口から辿った全ページ（PDF が 0 本の日の入口ページ等）に対して照合される。

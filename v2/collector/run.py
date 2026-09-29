@@ -31,7 +31,7 @@ def collect_one(source: Source, fetcher: Fetcher) -> tuple[str, Result | None, s
         recipe = Recipe.load(source.recipe_path)
         ex = Executor(fetcher, recipe)
         docs = ex.resolve(source.url)
-        res = build(source, recipe, docs)
+        res = build(source, recipe, docs, getattr(ex, "visited", None))
     except (FetchError, RecipeError) as e:
         return "failed", None, str(e), []
     except Exception as e:  # noqa: BLE001 — 1 ページの失敗で全体を止めない

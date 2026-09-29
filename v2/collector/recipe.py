@@ -48,6 +48,7 @@ class Recipe:
     pdf: dict[str, Any] = field(default_factory=dict)
     rows_regex: str | None = None
     notes: str | None = None
+    url: str | None = None          # 台帳の URL の代わりに開く入口（省略時は台帳の URL）
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> Recipe:
@@ -156,13 +157,22 @@ class Executor:
         return _make_doc(page.final_url, page.html)
 
     def resolve(self, entry_url: str) -> list[Doc]:
+        """入口 URL から steps を辿り、rows を適用する文書の列を返す。
+
+        recipe.url があれば台帳の URL より優先する（iframe の中身を直接指す等）。
+        途中で通った文書は self.visited に残し、empty_text の照合に使う（PDF が 0 本の日など、
+        最終文書が無くても入口ページの「現在いません」を拾えるように）。
+        """
+        entry_url = self.recipe.url or entry_url
         render_first = any(s.get("render") for s in self.recipe.steps)
         docs = [self._get(entry_url, render=render_first)]
+        self.visited: list[Doc] = list(docs)
         self.trace.append(f"entry {entry_url}")
         for step in self.recipe.steps:
             if step.get("render"):
                 continue
             docs = self._apply(step, docs)
+            self.visited.extend(d for d in docs if d not in self.visited)
         return docs
 
     def _apply(self, step: dict[str, Any], docs: list[Doc]) -> list[Doc]:
