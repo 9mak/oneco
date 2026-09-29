@@ -1,0 +1,12 @@
+# 福岡県動物愛護センター（一般の方が保護している猫）
+# 一覧ページに全頭。1 頭 = div.animals-list li（写真 figure.list-pht img、dl > dt/dd に保護した日・保護した場所、a は詳細ページ）。
+# 番号は img の alt「保護猫No.0445の写真」にしか無い。
+# 空のときは文言が出ず ul が空になるだけ（犬側で 2026-09-28 に確認）なので、一覧見出し「＜詳細情報は写真をクリックしてください＞」を空の印にする。
+rows: "div.animals-list li"
+image: "figure.list-pht img@src"
+fields:
+  management_no: {selector: "figure.list-pht img", attr: "alt", regex: "(No\\.\\s*[A-Za-z0-9]+)"}
+  shelter_date: {label: "保護した日"}
+  note: {regex: "保護した\\s*場所\\s*(.+)$"}   # 値に「場所」を含む投稿があるので label 方式は使わない
+  detail: {selector: "a", attr: "href"}
+empty_text: ["現在、掲載されている情報はありません", "＜詳細情報は写真をクリックしてください＞"]

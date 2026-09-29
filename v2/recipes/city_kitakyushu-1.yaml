@@ -1,0 +1,13 @@
+# 北九州市動物愛護センター「収容されている犬の一覧」（迷子収容・返還用）
+# 1 ページに表が 2 つ（返還手数料等 → 収容表）。対象は caption「収容表」を持つ table、1 頭 = td を持つ tr。
+# 列: 収容日 / 収容期限 / 区 / 種類（推定） / 毛色 / 性別 / 体格 / 備考。写真列は無く、収容日は「9月11日」のように年が無い。
+# 「区」は値側（八幡東区）にも含まれ label 探索が誤るので位置指定。0 頭のときは tbody が空になるだけで文言は無い。
+rows: "table:has(caption:-soup-contains('収容表')) tr:has(td)"   # 見出し行は th だけなので除外される
+fields:
+  shelter_date: {label: "収容日"}
+  location: "td:nth-of-type(3)"
+  breed: {label: "種類"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  size: {label: "体格"}
+  note: {label: "備考"}

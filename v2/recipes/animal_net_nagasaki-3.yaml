@@ -1,0 +1,18 @@
+# ながさき犬猫ネット 行方不明の動物一覧（迷子） /maigo
+# WordPress。1 頭 = div.list-area > ul > li（a > img + dl（dt 品種/性別/年齢/場所/公開日 → dd）+ p "No.20039"）。写真は /wp/wp-content/uploads/ 配下。
+# 一覧にも個体ページにも犬猫の別が無い。犬猫は URL の ?animal-type=dog / ?animal-type=cat で分かれ、その時だけ検索欄のラジオ（checked）のラベル「犬」「猫」で判定できる。
+# 絞り込み無しの一覧は 25 頭で打ち切られ次ページも無いので、台帳の url は必ず ?animal-type=dog|cat 付きにする（犬と猫で 1 エントリずつ）。
+rows: "div.list-area li:has(a[href*='/animal/no-'])"
+image: "img@src"
+fields:
+  management_no: "p"                       # "No.20039"
+  breed: {label: "品種"}
+  sex: {label: "性別"}
+  age: {label: "年齢"}
+  location: {label: "場所"}                # いなくなった地区（市町）
+  detail: {selector: "a", attr: "href"}    # 個体ページ（いなくなった日時・場所・問い合わせ先の保健所と TEL はそこにある）
+species:
+  from: heading
+  selector: "input[name='animal-type'][checked] + label"   # 絞り込み無し（すべて）だと other になり全頭捨てる
+  map: {"犬": dog, "猫": cat}
+empty_text: ["投稿がありません"]

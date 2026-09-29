@@ -1,0 +1,21 @@
+# 愛媛県動物愛護センター（収容中 = 迷い犬猫情報）
+# 1 頭 = table.sp_table_wrap の tbody 行 1 つ（列: No. / 拾得捕獲場所 / 種類(品種) / 毛色 / 性別 / 体格 / 備考(写真+メモ)）。
+# 見出し <strong> は「9月2日」のように日付だけのことがあり、犬猫は写真の alt（「迷い犬、5月8日 犬、八幡浜市」）で決める。
+# alt に犬猫が無ければ other のまま出す（2026-09 時点は 0 頭で「現在、迷い犬猫情報はありません」＋ハイフンだけの雛形行）。
+rows: "table.sp_table_wrap tr"
+row_filter:
+  text_lacks: ["拾得捕獲場所"]        # thead 行
+image: "img@src"
+fields:
+  location: {label: "拾得捕獲場所"}
+  breed: {label: "種類"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  size: {label: "体格"}
+  note: {label: "備考"}
+  species: {selector: "img", attr: "alt"}
+species:
+  from: field
+  map: {"猫": cat, "ネコ": cat, "ねこ": cat, "犬": dog, "イヌ": dog, "いぬ": dog}
+  allow_other: true
+empty_text: ["現在、迷い犬猫情報はありません"]

@@ -1,0 +1,24 @@
+# 沖縄県動物愛護管理センター（収容犬）
+# 一覧は div.lists > a（1 頭 = 1 リンク、/animals/accommodate_view/ID）。サイドバー「最新の犬・猫情報」にも _view リンクがあるので div.lists 直下に限定。.paging a[rel=next] で次ページ。
+# 個体ページは div.animals_single に th/td 表（記号・収容日・場所・毛色・性別・体格・推定年齢・備考）と td.photo ul.slick-main img（slick-nav は同じ画像のサムネ）。写真が無い子は ul が空。
+# 品種欄は無く、タイトル p「9/28　雑種(沖縄市)　C-1」の 2 語目から取る（「9/4　O-11」のように無い子は空）。
+# 「返還しました」「☆」（ボランティア団体へ譲渡済）の子と「9月16日の犬の収容はありませんでした。」の告知（収容日だけ入っている）は捨てる。
+steps:
+  - paginate: ".paging a[rel='next']@href"
+  - follow_all: "div.lists > a[href*='/animals/accommodate_view/']@href"
+rows: "div.animals_single"
+row_filter:
+  text_lacks: ["返還しました", "☆", "ありませんでした"]
+image: "td.photo ul.slick-main img@src"
+fields:
+  management_no: {label: "記号"}
+  shelter_date: {label: "収容日"}
+  breed: {selector: "div.title p", regex: "^\\S+\\s+[○〇]?([^\\s(（A-Za-z0-9\\-○〇]+)"}
+  sex: {label: "性別"}
+  age: {label: "推定年齢"}
+  color: {label: "毛色"}
+  size: {label: "体格"}
+  location: {label: "場所"}
+  note: {label: "備考"}
+# 一覧の全員が返還済み・告知だけのときは本当に 0 頭（これらの語は個体ページのタイトルにしか出ない）
+empty_text: ["返還しました", "収容はありませんでした"]

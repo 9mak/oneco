@@ -1,0 +1,71 @@
+{
+ "date": "2026-09-28-saga",
+ "generated_seconds": 0,
+ "animals": [
+  {
+   "id": "70483e89711d",
+   "source": "pref_saga-1",
+   "municipality": "佐賀県",
+   "prefecture": "佐賀県",
+   "phone": "0952-30-1350",
+   "address": null,
+   "kind": "sheltered",
+   "species": "dog",
+   "image_url": "https://www.pref.saga.lg.jp/kiji00349237/3_49237_401523_up_o8470vis.jpg",
+   "source_url": "https://www.pref.saga.lg.jp/kiji00349237/index.html",
+   "name": null,
+   "sex": "オス",
+   "age": "推定約5歳",
+   "breed": "雑種",
+   "color": "黒茶(長毛)",
+   "size": "中",
+   "management_no": null,
+   "shelter_date": null,
+   "note": null,
+   "location": "多久市東多久町"
+  },
+  {
+   "id": "5ac34a444a64",
+   "source": "pref_saga-1",
+   "municipality": "佐賀県",
+   "prefecture": "佐賀県",
+   "phone": "0952-30-1350",
+   "address": null,
+   "kind": "sheltered",
+   "species": "dog",
+   "image_url": "https://www.pref.saga.lg.jp/kiji00349237/3_49237_401624_up_1223c6ie.jpeg",
+   "source_url": "https://www.pref.saga.lg.jp/kiji00349237/index.html",
+   "name": null,
+   "sex": "オス",
+   "age": "約8歳",
+   "breed": "雑種(ポメラニアン風)",
+   "color": "黒色",
+   "size": "小型",
+   "management_no": null,
+   "shelter_date": null,
+   "note": null,
+   "location": "神埼郡吉野ヶ里町吉田"
+  }
+ ],
+ "sources": [
+  {
+   "slug": "pref_saga-1",
+   "name": "佐賀県（佐賀市・多久・小城・神埼）保護犬猫",
+   "municipality": "佐賀県",
+   "prefecture": "佐賀県",
+   "url": "https://www.pref.saga.lg.jp/kiji00349237/index.html",
+   "kind": "sheltered",
+   "species": "mixed",
+   "phone": "0952-30-1350",
+   "address": null,
+   "mode": "recipe",
+   "recipe": "recipes/pref_saga-1.yaml",
+   "enabled": true,
+   "status": "ok",
+   "count": 2,
+   "error": null,
+   "dropped": 0,
+   "seconds": 0.2
+  }
+ ]
+}

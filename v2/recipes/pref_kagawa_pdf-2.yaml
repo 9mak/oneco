@@ -1,0 +1,24 @@
+# 中讃保健福祉事務所（収容動物・迷子収容）
+# 一覧 HTML には収容動物 PDF リンクが 1 本（/documents/375/<日付>.pdf。ファイル名は日次で変わる、375 はページ ID）。
+# 同ページに SNS 運用ポリシー PDF（/documents/565/）もあるので documents/375 で絞る。
+# PDF は 1 頭 = 写真＋表のカード。pdfplumber の表は崩れるので文字列で「個体管理番号 NNNNNNN」行ごとに切る
+# （東讃・西讃は「管理番号」表記。両方拾う）。犬猫は「動物の種類 犬」の値で決める。写真は PDF 内なので取れない。
+steps:
+  - pdf_links: "a[href*='/documents/375/'][href$='.pdf']"
+pdf:
+  mode: text
+rows_regex: "^(?:個体)?管理番号\\s*\\d+.*$"
+fields:
+  management_no: {regex: "(?:個体)?管理番号\\s*(\\d+)"}
+  shelter_date: {regex: "収容日時\\s*(令和\\s*\\d+\\s*年\\s*\\d+\\s*月\\s*\\d+\\s*日)"}
+  species: {regex: "動物の種類[ \\t]+(\\S+)"}
+  breed: {regex: "動物の種類[ \\t]+\\S+[ \\t]+種類[ \\t]+(?!\\d)(\\S+)"}
+  age: {regex: "種類[ \\t]+\\S+[ \\t]+(\\d\\S*(?:齢|歳|才)\\S*)"}
+  color: {regex: "毛色[ \\t]+(?!性別)(\\S+)"}
+  sex: {regex: "性別[ \\t]+(?!体格)(\\S+)"}
+  size: {regex: "体格[ \\t]+(\\S+)"}
+  location: {regex: "引取り場所[ \\t]+([^\\n]+)"}
+  note: {regex: "備考[ \\t]*([^\\n]*)"}
+species:
+  from: field
+empty_text: ["現在、収容動物情報はありません", "収容動物情報はありません"]

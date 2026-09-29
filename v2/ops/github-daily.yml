@@ -1,0 +1,76 @@
+# oneco v2 日次収集（GitHub Actions 版・予備）
+#
+# 注意: 一部自治体は GitHub Actions の IP 帯（Azure/Microsoft のレンジ）からのアクセスを拒否するため、
+#       本命は VPS（ops/collect.sh + ops/oneco-collect.timer）。これは VPS が使えないときの予備。
+#       予備として使うときは、このファイルをリポジトリ直下の .github/workflows/v2-daily.yml にコピーする
+#       （v2/ 配下に置いたままでは GitHub は読まない）。
+#
+# VPS 版との違い:
+#   - Playwright（JS 描画が要るページ）は入れていない。render のレシピは失敗として通知に載る
+#   - data/ は毎回空から始まる。収集が失敗したら build が失敗し deploy されないので、前回の Pages がそのまま残る
+#   - AI 修復（ONECO_AI_REPAIR）は使わない。修復で書き換わったレシピを保存する場所が無いため
+#
+# 必要な Secrets: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, DISCORD_WEBHOOK_URL（任意）
+# 必要な Variables: ONECO_PAGES_PROJECT（Cloudflare Pages のプロジェクト名）
+
+name: v2 daily collect (backup)
+
+on:
+  schedule:
+    - cron: "0 15 * * *"   # 15:00 UTC = JST 0:00
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v2-daily
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: v2
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install httpx beautifulsoup4 lxml pyyaml pdfplumber
+
+      # 失敗しても続ける。失敗した日は notify が Discord に知らせ、build/deploy は走らない（data が無い）
+      - name: Collect
+        id: run
+        continue-on-error: true
+        run: python -m collector run
+
+      - name: Notify
+        if: always()
+        continue-on-error: true
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python -m collector notify
+
+      # `python -m site.build` は標準ライブラリの site モジュールに阻まれて動かないので、ファイルを直接実行する
+      - name: Build site
+        if: steps.run.outcome == 'success'
+        run: python site/build.py --data data/latest.json --out site/dist
+
+      - name: Deploy to Cloudflare Pages
+        if: steps.run.outcome == 'success'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: v2
+          command: pages deploy site/dist --project-name=${{ vars.ONECO_PAGES_PROJECT }} --branch=main --commit-dirty=true
+
+      - name: Fail the job if collect failed
+        if: steps.run.outcome != 'success'
+        run: exit 1

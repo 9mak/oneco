@@ -1,0 +1,16 @@
+# 松山市 はぴまるの丘（松山市動物愛護センター）収容中動物
+# トップ 1 ページに犬・猫のスライダーが並ぶ。犬 = ul#slick02 > li、猫 = ul#slick03 > li（JS 描画不要、生 HTML に li がある）。
+# 1 頭 = li。img の alt が収容番号（例 R8No.126 / R6.3月No.10）、span.movie_slider_text が状態。
+# 犬か猫かは直前の h2.aigo_sec_title02（「犬」/「猫」）。性別・年齢・収容日はページに無い。
+rows: "ul#slick02 > li, ul#slick03 > li"
+row_filter:
+  # 「新しい飼い主が決まりました！（本予約）」は問い合わせても会えない子なので載せない（旧 adapter の監査 W001/T025 と同じ扱い）。
+  # 「マッチング中（仮予約）」はキャンセルの可能性があるので残す。
+  text_lacks: ["決まりました", "本予約"]
+image: "span.movie_slider_img img@src"
+fields:
+  management_no: {selector: "img", attr: "alt"}
+  note: "span.movie_slider_text"
+species:
+  from: heading
+  selector: "h2.aigo_sec_title02"

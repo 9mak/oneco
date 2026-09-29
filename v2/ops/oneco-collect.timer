@@ -1,0 +1,20 @@
+# oneco v2 日次収集のタイマー。毎日 JST 0:00 に oneco-collect.service を起動する。
+#
+# 置き場所: /etc/systemd/system/oneco-collect.timer
+# 有効化:   sudo systemctl daemon-reload && sudo systemctl enable --now oneco-collect.timer
+# 次回確認: systemctl list-timers oneco-collect.timer
+
+[Unit]
+Description=Run oneco v2 collect daily at 00:00 JST
+
+[Timer]
+# systemd 235 以降はタイムゾーンを直接書ける。古い systemd なら "*-*-* 15:00:00" (UTC) にする
+OnCalendar=*-*-* 00:00:00 Asia/Tokyo
+# サーバーが止まっていて 0:00 を逃したら、起動後に実行する
+Persistent=true
+# 自治体サイトへの同時刻アクセスを少しずらす（最大 5 分）
+RandomizedDelaySec=300
+Unit=oneco-collect.service
+
+[Install]
+WantedBy=timers.target

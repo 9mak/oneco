@@ -1,0 +1,30 @@
+# oneco v2 日次収集（VPS）。oneco-collect.timer から起動される oneshot。
+#
+# 置き場所: /etc/systemd/system/oneco-collect.service
+# 前提:     リポジトリを /opt/oneco に clone、venv は /opt/oneco/.venv、実行ユーザー oneco
+#           環境変数は /etc/oneco/collect.env（root:oneco 0640。中身は docs/OPERATIONS.md）
+# 有効化:   sudo systemctl daemon-reload && sudo systemctl enable --now oneco-collect.timer
+# 手動実行: sudo systemctl start oneco-collect.service && journalctl -u oneco-collect -f
+
+[Unit]
+Description=oneco v2 daily collect (run -> notify -> build -> deploy)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=oneco
+Group=oneco
+WorkingDirectory=/opt/oneco/v2
+EnvironmentFile=/etc/oneco/collect.env
+Environment=ONECO_V2_DIR=/opt/oneco/v2
+Environment=ONECO_PY=/opt/oneco/.venv/bin/python
+Environment=ONECO_LOG_DIR=/var/log/oneco
+Environment=TZ=Asia/Tokyo
+ExecStart=/opt/oneco/v2/ops/collect.sh
+# 200 ページ × 1 秒間隔 + Playwright 描画 + deploy。3 時間で打ち切る
+TimeoutStartSec=3h
+Nice=10
+# ログは collect.sh 側でも /var/log/oneco/collect-<日付>.log に残す
+StandardOutput=journal
+StandardError=journal
