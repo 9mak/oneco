@@ -5,7 +5,8 @@ from __future__ import annotations
 import re
 import time
 import urllib.robotparser
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 from urllib.parse import urlsplit
 
 import httpx
@@ -27,6 +28,7 @@ class Page:
     content: bytes
     html: str | None  # テキストとして解釈できたもの（PDF 等は None）
     content_type: str
+    captured: list[Any] = field(default_factory=list)   # render(capture=…) で捕まえた JSON 応答
 
 
 def decode(content: bytes, header_charset: str | None, forced: str | None = None) -> str:
@@ -101,9 +103,13 @@ class Fetcher:
         self.cache[key] = page
         return page
 
-    def render(self, url: str, wait_ms: int = 3000) -> Page:
-        """JavaScript 描画が必要なページを Playwright で取る。"""
-        key = (url, "render")
+    def render(self, url: str, wait_ms: int = 3000, capture: str | None = None) -> Page:
+        """JavaScript 描画が必要なページを Playwright で取る。
+
+        capture に URL の一部（例 "elasticsearch/search"）を渡すと、描画中にその URL へ返ってきた
+        JSON 応答を Page.captured に集める（Bubble 製 SPA のように一覧が API 応答にしか無いサイト用）。
+        """
+        key = (url, "render", capture)
         if key in self.cache:
             return self.cache[key]
         if not self._allowed(url):
@@ -111,28 +117,41 @@ class Fetcher:
         from playwright.sync_api import sync_playwright
 
         self._throttle(url)
+        captured: list[Any] = []
         with sync_playwright() as p:
             browser = p.chromium.launch()
             try:
                 page = browser.new_page(user_agent=USER_AGENT)
+                if capture:
+                    def _on_response(r):  # noqa: ANN001
+                        if capture in r.url:
+                            try:
+                                captured.append(r.json())
+                            except Exception:  # noqa: BLE001 — JSON でない応答は無視
+                                pass
+
+                    page.on("response", _on_response)
                 page.goto(url, wait_until="networkidle", timeout=60000)
                 page.wait_for_timeout(wait_ms)
                 html = page.content()
                 final = page.url
             finally:
                 browser.close()
-        res = Page(url, final, 200, html.encode("utf-8"), html, "text/html; rendered")
+        res = Page(url, final, 200, html.encode("utf-8"), html, "text/html; rendered", captured)
         self.cache[key] = res
         return res
 
 
 class FakeFetcher(Fetcher):
-    """テスト用。URL → HTML/bytes の辞書だけを返す。"""
+    """テスト用。URL → HTML/bytes の辞書だけを返す。captures は URL → render 中に捕まえたことにする JSON の列。"""
 
-    def __init__(self, pages: dict[str, str | bytes], redirects: dict[str, str] | None = None) -> None:
+    def __init__(self, pages: dict[str, str | bytes], redirects: dict[str, str] | None = None,
+                 captures: dict[str, list[Any]] | None = None) -> None:
         super().__init__(delay=0, respect_robots=False)
         self.pages = pages
         self.redirects = redirects or {}
+        self.captures = captures or {}
+        self.render_calls: list[tuple[str, str | None]] = []
 
     def get(self, url: str, encoding: str | None = None) -> Page:
         if url not in self.pages:
@@ -144,5 +163,8 @@ class FakeFetcher(Fetcher):
             return Page(url, final, 200, body, None if is_pdf else decode(body, None, encoding), "application/pdf" if is_pdf else "text/html")
         return Page(url, final, 200, body.encode("utf-8"), body, "text/html")
 
-    def render(self, url: str, wait_ms: int = 0) -> Page:
-        return self.get(url)
+    def render(self, url: str, wait_ms: int = 0, capture: str | None = None) -> Page:
+        self.render_calls.append((url, capture))
+        page = self.get(url)
+        page.captured = list(self.captures.get(url, [])) if capture else []
+        return page

@@ -31,6 +31,19 @@ steps:
 
 `follow` 系の値は `セレクタ@属性`。`@属性` を省くと `@href`。
 
+一覧が API 応答にしか無く `<a href>` が無い SPA（愛知わんにゃんナビ = Bubble）は `render_json`。入口を描画しながら `match` を含む URL の JSON 応答を捕まえ、`path` の値を `follow` の `{value}` に差し込んで個体ページを（既定では描画して）辿る:
+
+```yaml
+steps:
+  - render_json:
+      match: "elasticsearch/search"      # 応答 URL の一部
+      path: "hits.hits[]._id"            # 値の場所（[] は配列の各要素）
+      follow: "https://example.jp/?page=detail&no={value}"
+      max: 200                           # 辿る上限（既定 100）
+      render: true                       # 個体ページも描画する（既定 true）
+rows: "body"                             # 個体ページ 1 枚 = 1 頭
+```
+
 ## 行の絞り込み
 
 ```yaml

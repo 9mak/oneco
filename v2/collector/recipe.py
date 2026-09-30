@@ -81,6 +81,7 @@ class Doc:
     pdf_tables: list[list[list[str]]] | None = None   # 表 → 行 → セル
     pdf_text: str | None = None
     rendered: bool = False
+    captured: list[Any] = field(default_factory=list)   # 描画中に捕まえた JSON 応答（render_json 用）
 
     @property
     def is_pdf(self) -> bool:
@@ -161,11 +162,12 @@ class Executor:
         self.recipe = recipe
         self.trace: list[str] = []
 
-    def _get(self, url: str, render: bool = False) -> Doc:
+    def _get(self, url: str, render: bool = False, capture: str | None = None) -> Doc:
         if render:
-            page = self.fetcher.render(url)
+            page = self.fetcher.render(url, capture=capture)
             d = _make_doc(page.final_url, page.html or "")
             d.rendered = True
+            d.captured = list(page.captured)
             return d
         page = self.fetcher.get(url, encoding=self.recipe.encoding)
         if page.html is None:
@@ -183,8 +185,9 @@ class Executor:
         最終文書が無くても入口ページの「現在いません」を拾えるように）。
         """
         entry_url = self.recipe.url or entry_url
-        render_first = any(s.get("render") for s in self.recipe.steps)
-        docs = [self._get(entry_url, render=render_first)]
+        rj = next((s["render_json"] for s in self.recipe.steps if "render_json" in s), None)
+        render_first = any(s.get("render") for s in self.recipe.steps) or rj is not None
+        docs = [self._get(entry_url, render=render_first, capture=rj.get("match") if rj else None)]
         self.visited: list[Doc] = list(docs)
         self.trace.append(f"entry {entry_url}")
         for step in self.recipe.steps:
@@ -270,9 +273,46 @@ class Executor:
                     page = self.fetcher.get(url)
                     out.append(_make_pdf_doc(page.final_url, page.content, columns=self._pdf_columns()))
                 self.trace.append(f"pdf_links → {len(seen)} 件")
+        elif "render_json" in step:
+            # 描画中に捕まえた JSON 応答（match の URL）から path の値を抜き、follow の {value} に差し込んで辿る。
+            # 一覧が API 応答にしか無く <a href> が無い SPA（愛知わんにゃんナビ = Bubble）用
+            spec = step["render_json"]
+            limit = int(spec.get("max", 100))
+            for d in docs:
+                values = _json_values(d.captured, spec["path"])
+                if not values:
+                    raise RecipeError(f"render_json: '{spec['match']}' の応答に '{spec['path']}' が無い ({d.url})")
+                seen: list[str] = []
+                for v in values:
+                    s = str(v)
+                    if s in seen or len(seen) >= limit:
+                        continue
+                    seen.append(s)
+                    out.append(self._get(spec["follow"].replace("{value}", s), render=spec.get("render", True)))
+                self.trace.append(f"render_json → {len(seen)} 件")
         else:
             raise RecipeError(f"未知の step: {step}")
         return out
+
+
+def _json_values(obj: Any, path: str) -> list[Any]:
+    """"hits.hits[]._id" のような簡単なパスで JSON から値を集める。obj が列なら各要素に適用して平らにする。"""
+    toks = path.split(".")
+
+    def walk(o: Any, ts: list[str]) -> list[Any]:
+        if not ts:
+            return [o]
+        t = ts[0]
+        if t.endswith("[]"):
+            sub = o.get(t[:-2]) if isinstance(o, dict) else None
+            return [x for item in (sub if isinstance(sub, list) else []) for x in walk(item, ts[1:])]
+        if isinstance(o, dict) and t in o:
+            return walk(o[t], ts[1:])
+        return []
+
+    if isinstance(obj, list):
+        return [x for item in obj for x in walk(item, toks)]
+    return walk(obj, toks)
 
 
 # --- rows -------------------------------------------------------------------
