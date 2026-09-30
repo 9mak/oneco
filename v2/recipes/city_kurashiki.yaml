@@ -1,0 +1,27 @@
+# 倉敷市（保護動物情報） https://www.city.kurashiki.okayama.jp/kurashi/pet/1013042/index.html
+# 一覧 ul.listlink.clearfix > li の <a> が個別ページ（迷い犬猫の情報）に 1 頭ずつリンクしている（follow_all、各ページ rows: body）。
+# 一覧のテキストだけでは収容日が同日の複数頭で id が衝突し取りこぼすため、
+# 個別ページの span.idnumber「ページ番号NNNNNN」（サイト固有の一意なページ番号）を management_no として使う。
+# 個別ページには h1 に一覧と同じ「令和08年09月28日　松島　猫（雑種）♀」、
+# <ul><li>保護場所：.../保護日時：.../種類：.../性別：.../毛色：.../特徴：...</li></ul> がある。
+# 写真は p.imageleft > img の alt が「写真：」で始まるものだけ（無い個体もある。runaway.gif 等の挿絵 alt は除外）。
+steps:
+  - follow_all: "ul.listlink.clearfix a@href"
+rows: "body"
+image: "img[alt^='写真']@src"
+fields:
+  management_no: {selector: "span.idnumber", regex: "(\\d+)"}
+  shelter_date: {selector: "h1", regex: "(令和\\s*\\d+\\s*年\\s*\\d+\\s*月\\s*\\d+\\s*日)"}
+  species: {selector: "h1", regex: "(犬|猫)"}
+  location: {label: "保護場所"}
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  color: {label: "毛色"}
+  note: {label: "特徴"}
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+empty_text:
+  - "現在、保護している犬猫はいません"
+  - "現在収容している犬猫はいません"
+  - "現在いません"

@@ -1,0 +1,15 @@
+# 北九州市動物愛護センター「譲渡対象犬の紹介」
+# 表が複数（飼育数の上限表 → 譲渡対象の成犬の一覧。子犬がいれば同型の表が増える想定）。対象は caption に「譲渡」を含む table、1 頭 = td を持つ tr。
+# 列: 番号（愛称） / 種類 / 性別 / 毛色 / 推定生年 / フィラリア検査 / 備考 / 写真。写真は img でなく <a href="/files/….jpg">写真1</a> のリンク列。
+# 番号セルは「NEW! A26032 (ボニー)」のように NEW! 印と括弧付き愛称が混じる。
+rows: "table:has(caption:-soup-contains('譲渡')) tr:has(td)"   # 見出し行は th だけなので除外される
+image: "a[href$='.jpg' i], a[href$='.jpeg' i], a[href$='.png' i]@href"
+fields:
+  management_no: {label: "番号", regex: "([A-Za-zＡ-Ｚ]\\d{4,6})"}
+  name: {label: "番号", regex: "[（(]\\s*([^（()）]+?)\\s*[）)]"}
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  color: {label: "毛色"}
+  age: {label: "推定生年"}
+  note: {label: "備考"}
+empty_text: ["現在、譲渡対象の成犬はいません", "現在、譲渡対象の犬はいません"]

@@ -1,0 +1,9 @@
+# 千葉市（市民保護その他）。city_chiba-4 と同一テンプレート（ラベルごとに別々のp）だが対象は犬猫以外なので
+# allow_other で通す。row を h4 にし管理番号のみ取得（他項目・写真は city_chiba-4 と同じ理由で取得不可）。
+# 2026-09-29時点1頭（A-5069、セキセイインコ）。
+rows: "div#contents_editable h4"
+fields:
+  management_no: {selector: "."}
+species:
+  from: text
+  allow_other: true

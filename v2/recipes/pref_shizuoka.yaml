@@ -1,0 +1,21 @@
+# 静岡県（保護犬猫情報）。入口ページの article#content ul.listlink 内の <li><a> は
+# 「迷い犬情報 2609FD001」のような迷い犬情報一覧で、1リンク=1個体の detail ページを follow_all で辿る（1頭=1ページ）。
+# 政令市（静岡市・浜松市）分は ul.objectlink の外部リンクのみで動物データが無いため除外（follow_all のセレクタで絞る）。
+# detail ページは dl/dt/dd のラベル値。連絡先（保健所）は個体ごとに異なり代表電話が無いため note に入れる。
+steps:
+  - follow_all: "article#content ul.listlink a@href"
+rows: "body"
+image: "img[alt^='写真']@src"
+fields:
+  management_no: {label: "管理番号"}
+  shelter_date: {label: "保護年月日"}
+  location: {label: "保護した場所"}
+  sex: {label: "性別"}
+  size: {label: "体格"}
+  color: {label: "毛の色、長さ"}
+  breed: {regex: "(?:犬種|猫種)\\s*(\\S+)"}
+  note: {regex: "連絡先\\s*(.+?電話番号\\s*[\\d\\-]+)"}
+species:
+  from: text
+  map: {"猫": cat, "犬": dog}
+empty_text: ["現在、迷い犬情報はありません", "迷い犬情報はありません", "該当する情報はありません"]

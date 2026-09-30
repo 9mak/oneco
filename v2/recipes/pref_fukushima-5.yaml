@@ -1,0 +1,19 @@
+# 福島県動物愛護センター相双支所 迷子猫情報
+# pref_fukushima-4（迷子犬）と同じラベル・値テーブルだが、現状（2026-09-29確認）は
+# 全セルが空欄の固定テンプレートのみで、それに続く装飾用の空 <table> が4つ並ぶ。
+# ページ内に「0頭です」のような明示文は無いため、ラベルが連続して値を挟まない
+# （＝データが無い）ときの文字列を empty_text の目印に使う。
+
+rows: "div#main_body table"
+image: "img@src"
+fields:
+  management_no: {label: "管理番号"}
+  shelter_date: {label: "保護日"}
+  location: {label: "保護場所"}
+  breed: {label: "種類"}
+  size: {label: "体格"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  age: {label: "推定年"}
+empty_text:
+  - "管理番号 保護日 保護場所 種類 体格 毛色 毛の長さ 性別 推定年齢 首輪等"

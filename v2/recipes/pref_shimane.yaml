@@ -1,0 +1,15 @@
+# 島根県 松江保健所（収容動物）
+# 2 つのテーブル（犬猫別）に management_no / 写真 / 収容日 が並ぶ。
+# 見出しテーブル行と空のテンプレート行は th で空文字なので自動で落ちる。
+# 縦スコープ: caption で犬猫を判定（heading から closest caption を見る）。
+rows: "table tbody tr"
+image: "img@src"
+fields:
+  management_no: {index: 0}
+  shelter_date: {index: 2}
+species:
+  from: heading
+  selector: "caption"
+  map: {"収容犬": dog, "収容猫": cat}
+empty_text:
+  - "現在保護収容している動物がおりません"

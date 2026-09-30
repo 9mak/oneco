@@ -1,0 +1,18 @@
+# 宮崎市（直近保護犬）: 1ページ=直近保護された犬1頭の詳細記事。
+# <article class="body"> 内に <h3>ラベル</h3><p>値</p> の繰り返しで情報が入る（表構造ではない）。
+# 行=article自体を1行とみなし、get_text結合後のテキストに正規表現で各ラベル直後の値を取る。
+
+rows: "article.body"
+image: "img@src"
+fields:
+  breed: {regex: "犬の種類\\s*(\\S+)"}
+  color: {regex: "毛色\\s*(\\S+)"}
+  sex: {regex: "性別\\s*(\\S+)"}
+  age: {regex: "推定年齢\\s*(\\S+)"}
+  size: {regex: "体格\\s*(\\S+)"}
+  shelter_date: {regex: "保護日時\\s*(\\S+)"}
+  location: {regex: "保護場所\\s*(.+?)(?=\\s*(?:保護日時|毛色|犬の種類|性別|推定年齢|首輪等|体格|備考|$))"}
+  management_no: {regex: "保護番号\\s*(\\S+)"}
+  note: {regex: "備考\\s*(.+?)(?=\\s*(?:地図|関連記事|$))"}
+
+empty_text: ["現在、保護している犬はいません", "該当する犬はいません"]

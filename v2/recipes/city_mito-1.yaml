@@ -1,0 +1,23 @@
+# 水戸市（迷子ペット情報）: list358-1253.html（センターで保護している動物の情報）のサイドバーから
+# 「犬猫等の公表情報」(2768.html) と「一般の方が保護している動物の情報」(2769.html) の2ページを follow_all で辿る。
+# 同ページ内の 2043.html（愛護センター収容中の動物たち＝city_mito-2）と 2767.html（逸走情報＝飼い主が探す側、
+# 収容とは逆方向）は対象外。1頭 = div#main_body 配下の table 1つ（ラベル/値の縦・横混在レイアウト）。
+# 2768側は「収容日時/収容場所/犬種」、2769側は「保護日or目撃日/保護場所or目撃場所/種類」とラベルが違うため regex で両対応。
+url: https://www.city.mito.lg.jp/site/doubutsuaigo/list358-1253.html
+steps:
+  - follow_all: "a[href$='2768.html'], a[href$='2769.html']@href"
+rows: "div#main_body table"
+image: "img@src"
+fields:
+  management_no: {label: "管理番号"}
+  shelter_date: {regex: "(?:収容日時|保護日|目撃日)\\s*((?:令和|平成)\\s*\\d+\\s*年\\s*\\d+\\s*月\\s*\\d+\\s*日)"}
+  location: {regex: "(?:収容場所|保護場所|目撃場所)\\s*(\\S+)"}
+  breed: {regex: "(?:犬種|猫種|種類)\\s*(\\S+)"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  size: {label: "体格"}
+  age: {label: "年齢"}
+  note: {regex: "(?:その他|特徴)\\s*(\\S+)"}
+species:
+  from: text
+  map: {"猫": cat, "犬": dog}

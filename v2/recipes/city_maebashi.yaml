@@ -1,0 +1,15 @@
+rows: "table[summary*='前橋市'] tbody tr"
+image: "img@src"
+fields:
+  shelter_date:
+    label: "管理番号"
+    regex: '(\d{4}-\d{1,2}-\d{1,2})'
+  location:
+    index: 2
+  breed:
+    index: 3
+  sex:
+    index: 4
+empty_text:
+  - "現在いません"
+  - "現在収容している犬はいません"

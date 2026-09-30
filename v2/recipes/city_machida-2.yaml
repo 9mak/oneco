@@ -1,0 +1,15 @@
+# 町田市（迷子犬・捜索）: single_page。「現在の迷子の犬情報」の後、犬1頭=
+# <div class="h3bg"><h3>犬（おす/めす）</h3></div> + 直後の
+# <div class="img-area-r">（写真 + <ul><li>ラベル：値</li>...</ul>）。
+# 台帳の species=dog なので種別判定は不要（h3bg/img-area-r は city_machida-1 と同じ CMS テンプレート）。
+rows: "div.img-area-r"
+image: "img@src"
+fields:
+  name: {label: "名前"}
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  color: {label: "毛色"}
+  note: {label: "特徴"}
+  shelter_date: {label: "失踪日時"}
+  location: {label: "失踪場所"}
+empty_text: ["現在、迷子の犬の情報はありません", "現在迷子の犬の情報はありません", "現在の迷子の犬情報はありません"]

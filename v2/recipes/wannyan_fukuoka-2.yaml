@@ -1,0 +1,25 @@
+# 福岡市 わんにゃんよかネット（東部動物愛護管理センター）収容猫
+# 一覧は静的 HTML の table.search_box だが、データ行の <tr> 開始タグが無い壊れた HTML で td が table 直下に並ぶため一覧からは 1 頭ずつ切れない。
+# 「詳細」リンク（td.detail a → /animal_posts/detail/{id}）を全部辿り、個体ページの table.search_text_box（th/td 縦並び: 管理番号・収容日・区・場所・品種・毛色・性別・体格・年齢・その他特徴・写真）を 1 頭として読む。
+# 0 頭のとき follow_all は文書を 1 つも返さず empty_text を判定できないので、一覧ページ下部ナビの自分自身へのリンク（同じ URL なのでキャッシュで再取得なし）も辿って一覧ページを文書に残す。
+# 犬か猫かは個体ページの見出し h3「センターに収容されている【猫】」。2026-09-28 時点は 0 頭（「データが見つかりませんでした。」）で、個体ページの構造は犬側（同じテンプレート）で確認したもの。
+steps:
+  - follow_all: "td.detail a, a[href='/yokanet/animal/animal_posts/index?type_id=2&sorting_id=4']"
+rows: "table.search_text_box"
+row_filter:
+  text_has_any: ["管理番号"]
+image: "img@src"
+fields:
+  management_no: {label: "管理番号"}
+  shelter_date: {label: "収容日"}
+  breed: {label: "品種"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  size: {label: "体格"}
+  age: {label: "年齢"}
+  location: {label: "場所"}
+  note: {label: "その他特徴"}
+species:
+  from: heading
+  selector: "h3"
+empty_text: ["データが見つかりませんでした"]

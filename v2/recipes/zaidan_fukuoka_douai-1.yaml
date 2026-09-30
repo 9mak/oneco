@@ -1,0 +1,13 @@
+# 福岡県動物愛護センター（保健所収容犬）
+# 一覧ページに全頭が並ぶ。1 頭 = div.animals-list li（写真 figure.list-pht img、項目は dl > dt/dd、a は詳細ページ）。
+# 個体管理ナンバー・収容日・保護した場所・収容先（各保健福祉事務所）が読める。
+# 空のときは animals-list 自体が出ず「現在、掲載されている情報はありません。」になる（猫側で 2026-09-28 に確認）。
+rows: "div.animals-list li"
+image: "figure.list-pht img@src"
+fields:
+  management_no: {label: "ナンバー"}
+  shelter_date: {label: "収容日"}
+  location: {label: "収容先"}
+  note: {regex: "保護した\\s*場所\\s*(.+?)\\s*収容先"}
+  detail: {selector: "a", attr: "href"}
+empty_text: ["現在、掲載されている情報はありません"]

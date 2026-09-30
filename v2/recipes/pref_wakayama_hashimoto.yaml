@@ -1,0 +1,25 @@
+# 橋本保健所（収容犬・猫情報）https://www.pref.wakayama.lg.jp/prefg/130300/hukushi/eisei/d00156889.html
+# ハブ pref_wakayama から分割（2026-09-29）。ハブの「橋本保健所」リンクは FAQ ページ
+# (inu-neko.html) で、本文中の「橋本保健所の収容犬・猫情報はこちら」からこのページに辿り着く。
+# 執筆時点（2026-09-29）は在庫 0（「現在、収容情報はありません。」）。1 頭以上いる状態の実例は
+# 同一テンプレートの湯浅・田辺保健所（Wayback Machine 2024-2026 の履歴）で確認済み:
+# table 1 つ = 全頭、1 行 = 1 頭。見出し行の列は 収容日/収容場所/動物種(・品種 は事務所により
+# 1 列に合体)/性別/成仔/体格/毛色/毛の長さ/首輪/備考/画像。見出し行自体は日付も番号も取れず自動で落ちる。
+rows: "table tr"
+image: "img@src"
+fields:
+  shelter_date: {label: "収容日"}
+  location: {label: "収容場所"}
+  breed: {label: "品種"}
+  species: {label: "動物種"}
+  sex: {label: "性別"}
+  age: {label: "成仔"}
+  size: {label: "体格"}
+  color: {label: "毛色"}
+  note: {label: "備考"}
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+empty_text:
+  - "現在、収容情報はありません。"
+  - "現在、収容している動物の情報はありません。"

@@ -1,0 +1,148 @@
+"""HTTP 取得。robots.txt 遵守、同一ホストへの間隔、文字コード判定、同一 URL のキャッシュ。"""
+
+from __future__ import annotations
+
+import re
+import time
+import urllib.robotparser
+from dataclasses import dataclass
+from urllib.parse import urlsplit
+
+import httpx
+from bs4 import UnicodeDammit
+
+USER_AGENT = "oneco-collector/2.0 (+https://github.com/9mak/oneco; stop/removal requests via GitHub Issues)"
+_META_CHARSET = re.compile(rb"<meta[^>]+charset=[\"']?\s*([A-Za-z0-9_\-]+)", re.I)
+
+
+class FetchError(Exception):
+    pass
+
+
+@dataclass
+class Page:
+    url: str          # 要求した URL
+    final_url: str    # リダイレクト後
+    status: int
+    content: bytes
+    html: str | None  # テキストとして解釈できたもの（PDF 等は None）
+    content_type: str
+
+
+def decode(content: bytes, header_charset: str | None, forced: str | None = None) -> str:
+    if forced:
+        return content.decode(forced, errors="replace")
+    m = _META_CHARSET.search(content[:4096])
+    for enc in (m.group(1).decode() if m else None, header_charset):
+        if not enc:
+            continue
+        try:
+            return content.decode(enc.lower().replace("shift-jis", "shift_jis").replace("x-sjis", "shift_jis"))
+        except (LookupError, UnicodeDecodeError):
+            continue
+    return UnicodeDammit(content).unicode_markup or content.decode("utf-8", errors="replace")
+
+
+class Fetcher:
+    def __init__(self, delay: float = 1.0, timeout: float = 30.0, respect_robots: bool = True) -> None:
+        self.client = httpx.Client(headers={"User-Agent": USER_AGENT}, timeout=timeout, follow_redirects=True)
+        self.delay = delay
+        self.respect_robots = respect_robots
+        self._last: dict[str, float] = {}
+        self._robots: dict[str, urllib.robotparser.RobotFileParser | None] = {}
+        self.cache: dict[str, Page] = {}
+
+    # --- politeness -------------------------------------------------------
+    def _throttle(self, url: str) -> None:
+        host = urlsplit(url).netloc
+        wait = self._last.get(host, 0) + self.delay - time.monotonic()
+        if wait > 0:
+            time.sleep(wait)
+        self._last[host] = time.monotonic()
+
+    def _allowed(self, url: str) -> bool:
+        if not self.respect_robots:
+            return True
+        parts = urlsplit(url)
+        base = f"{parts.scheme}://{parts.netloc}"
+        if base not in self._robots:
+            rp = urllib.robotparser.RobotFileParser()
+            try:
+                r = self.client.get(base + "/robots.txt")
+                if r.status_code >= 400:
+                    self._robots[base] = None
+                else:
+                    rp.parse(r.text.splitlines())
+                    self._robots[base] = rp
+            except httpx.HTTPError:
+                self._robots[base] = None
+        rp = self._robots[base]
+        return True if rp is None else rp.can_fetch(USER_AGENT, url)
+
+    # --- fetch ------------------------------------------------------------
+    def get(self, url: str, encoding: str | None = None) -> Page:
+        key = (url, encoding)
+        if key in self.cache:
+            return self.cache[key]
+        if not self._allowed(url):
+            raise FetchError(f"robots.txt により拒否: {url}")
+        self._throttle(url)
+        try:
+            r = self.client.get(url)
+        except httpx.HTTPError as e:
+            raise FetchError(f"{type(e).__name__}: {e}") from e
+        if r.status_code >= 400:
+            raise FetchError(f"HTTP {r.status_code}: {url}")
+        ctype = r.headers.get("content-type", "")
+        html = None
+        if "pdf" not in ctype and not url.lower().endswith(".pdf"):
+            html = decode(r.content, r.charset_encoding, encoding)
+        page = Page(url, str(r.url), r.status_code, r.content, html, ctype)
+        self.cache[key] = page
+        return page
+
+    def render(self, url: str, wait_ms: int = 3000) -> Page:
+        """JavaScript 描画が必要なページを Playwright で取る。"""
+        key = (url, "render")
+        if key in self.cache:
+            return self.cache[key]
+        if not self._allowed(url):
+            raise FetchError(f"robots.txt により拒否: {url}")
+        from playwright.sync_api import sync_playwright
+
+        self._throttle(url)
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            try:
+                page = browser.new_page(user_agent=USER_AGENT)
+                page.goto(url, wait_until="networkidle", timeout=60000)
+                page.wait_for_timeout(wait_ms)
+                html = page.content()
+                final = page.url
+            finally:
+                browser.close()
+        res = Page(url, final, 200, html.encode("utf-8"), html, "text/html; rendered")
+        self.cache[key] = res
+        return res
+
+
+class FakeFetcher(Fetcher):
+    """テスト用。URL → HTML/bytes の辞書だけを返す。"""
+
+    def __init__(self, pages: dict[str, str | bytes], redirects: dict[str, str] | None = None) -> None:
+        super().__init__(delay=0, respect_robots=False)
+        self.pages = pages
+        self.redirects = redirects or {}
+
+    def get(self, url: str, encoding: str | None = None) -> Page:
+        if url not in self.pages:
+            raise FetchError(f"FakeFetcher に無い URL: {url}")
+        body = self.pages[url]
+        final = self.redirects.get(url, url)
+        if isinstance(body, bytes):
+            is_pdf = body[:5] == b"%PDF-"
+            return Page(url, final, 200, body, None if is_pdf else decode(body, None, encoding), "application/pdf" if is_pdf else "text/html")
+        return Page(url, final, 200, body.encode("utf-8"), body, "text/html")
+
+    def render(self, url: str, wait_ms: int = 0) -> Page:
+        return self.get(url)

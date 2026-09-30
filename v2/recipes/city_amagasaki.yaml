@@ -1,0 +1,22 @@
+# 尼崎市動物愛護センター（返還対象動物一覧）
+# 単一ページ。本文中に複数の table.w100（連絡先一覧など）が並ぶが、
+# 動物データ表は見出し「返還対象動物一覧」の直後（兄弟要素）に現れる table.w100。
+# 列見出し（種類/性別/毛色/収容日/収容場所）はラベル駆動で拾う（label指定）。
+# 2026-09-29 時点: 「現在、返還対象動物はいません。」で 0 頭（status=empty）。
+
+rows: 'h2:-soup-contains("返還対象動物一覧") ~ table.w100 tr:has(td)'
+
+fields:
+  species: {label: "種類"}
+  sex: {label: "性別"}
+  color: {label: "毛色"}
+  age: {label: "推定年齢"}
+  shelter_date: {label: "収容日"}
+  location: {label: "収容場所"}
+
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+
+empty_text:
+  - "現在、返還対象動物はいません。"

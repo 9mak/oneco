@@ -1,0 +1,15 @@
+# 京都動物愛護センター 迷子の犬猫の保護情報（迷子猫）
+# 迷子犬ページ（kyoto_ani_love-1）と完全に同一テンプレート。div.content 配下の table.info が1頭=1個。
+# 写真は無し。保護日/受入日は年無しの日付（例:「8月12日」）。
+rows: "div.information-care-lost-content div.content table.info"
+fields:
+  location: {label: "保護場所"}
+  breed: {label: "品種"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  size: {label: "体格"}
+  age: {label: "推定年齢"}
+  shelter_date: {label: "保護日"}
+  note: {label: "備考"}
+empty_text:
+  - "現在、保護情報はありません"

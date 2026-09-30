@@ -1,0 +1,16 @@
+# 栃木県動物愛護指導センター（子猫譲渡） https://www.douai.pref.tochigi.lg.jp/work/kitten/
+# WordPress の固定レイアウト表 (table.has-fixed-layout)。2026-09 時点は 1 表 = 1 匹（ケージ名/番号/写真/性別/説明 を縦に並べる）だが、
+# 子犬ページと同じ「1 列 = 1 匹」の転置表になることもあるため transpose で読む（全行 1 セルの表は表全体で 1 匹になる）。
+# 番号は「希望表配布時に付番します」等の未確定文言のことがあるが、写真があるので動物として通る。
+transpose: "table.has-fixed-layout"
+image: "img@src"
+row_filter:
+  text_lacks: ["飼い主さん決まりました"]
+fields:
+  management_no: {regex: "番号[:：]\\s*(\\d[^\\s]*)"}
+  sex: {regex: "性別[:：]\\s*(\\S+)"}
+  note: {regex: "性別[:：]\\s*\\S+\\s*(.*)$"}
+empty_text:
+  - "子猫はいません"
+  - "子猫はおりません"
+  - "対象の子猫がいません"

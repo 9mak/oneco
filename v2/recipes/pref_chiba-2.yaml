@@ -1,0 +1,21 @@
+# 千葉県動愛センター本所（収容猫）。pref_chiba-1 と同一テンプレート
+# (<h2>収容日【...】</h2> + <div class="col2"><div class="col2L"> に写真・管理番号・収容場所・
+# 品種等)。末尾の「テンプレート」ダミーブロックは管理番号 260000-00 固定なので row_filter で除外。
+rows: "div.col2"
+row_filter:
+  text_lacks: ["260000-00"]
+image: "img@src"
+fields:
+  management_no:
+    regex: "管理番号】\\s*([^\\s（(]+)"
+  location:
+    regex: "収容場所】\\s*([^\\s【]+)"
+  breed:
+    regex: "収容場所】\\s*\\S+\\s+([^・\\s]+)・"
+  sex:
+    regex: "(オス|メス)"
+  size:
+    regex: "(超小型|超小|小型|中型|大型)"
+  age:
+    regex: "(成猫|子猫|幼猫|老猫)"
+empty_text: ["収容されている動物はいません", "現在収容している猫はいません"]

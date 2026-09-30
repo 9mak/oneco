@@ -1,0 +1,23 @@
+# 群馬県動物愛護センター本所（保護猫）: 一覧は「管理番号：…」リンク並び（現在は 0 件告知のみ）。
+# follow_all で個別ページへ辿る（1 ページ = 猫 1 頭、div#main_body div.detail_free 配下の
+# th/td ラベル値表 + 写真。旧 legacy: pref_gunma.py 参照）。同じブロックに「迷い犬・猫保護・
+# 行方不明情報ページへ戻る」(/page/7896.html) への導線リンクがあり、これは 404（サイト側の
+# リンク切れ）のため follow_all 全体が落ちないよう明示的に除外する。
+steps:
+  - follow_all: "div#main_body div.detail_free a[href*='/page/']:not([href='/page/7895.html']):not([href='/page/7896.html'])"
+rows: "body"
+image: "div#main_body img@src"
+fields:
+  management_no: {label: "管理番号"}
+  shelter_date: {label: "収容日"}
+  sex: {label: "性別"}
+  age: {label: "推定年齢"}
+  breed: {label: "種類"}
+  color: {label: "毛色"}
+  size: {label: "体格"}
+  location: {label: "収容場所"}
+  note: {label: "備考", default: null}
+empty_text:
+  - "保管期間中の犬はおりません"
+  - "保管期間中の負傷猫はいません"
+  - "保管期間中の猫はいません"

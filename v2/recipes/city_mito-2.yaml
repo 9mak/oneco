@@ -1,0 +1,20 @@
+# 水戸市（愛護センター収容中の動物たち）2043.html
+# 「こちらは公表期間終了後も元の飼い主を探している動物の情報になります。現在は掲載しておりません。」のみが
+# 本文にあり、テーブルは無い（2026-09実測、恒常的に0頭の告知状態）。
+rows: "div#main_body table"
+image: "img@src"
+fields:
+  management_no: {label: "管理番号"}
+  shelter_date: {label: "収容日時"}
+  location: {label: "収容場所"}
+  breed: {regex: "(?:犬種|猫種)\\s*(\\S+)"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  size: {label: "体格"}
+  age: {label: "年齢"}
+  note: {label: "その他"}
+species:
+  from: text
+  map: {"猫": cat, "犬": dog}
+empty_text:
+  - "現在は掲載しておりません"

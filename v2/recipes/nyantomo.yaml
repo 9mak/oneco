@@ -1,0 +1,16 @@
+# 函館どうなん動物愛護センター（里親募集） https://nyantomo.jp/donanhakodate/
+# WordPress + Elementor + JetEngine。1 頭 = div.jet-listing-grid__item 1 枚。
+# ラベルの p タグ（th/td でなく label:抽出は効かない）と値が固定の Elementor element-id
+# （テンプレート内で全カード共通の id）で並ぶため、その id を selector で直接指す。
+# カードには「函館市愛護センター」「道南愛護センター」の2施設が混在するため location で判別。
+# 運営団体が猫専門のため species は常に猫（カード内の「愛護センター」で判定）。
+rows: "div.jet-listing-grid__item"
+image: "img@src"
+fields:
+  name: {selector: ".elementor-element-64868d36 .jet-listing-dynamic-field__content"}
+  age: {selector: ".elementor-element-1deb92b"}
+  sex: {selector: ".elementor-element-ef25ac2 .jet-listing-dynamic-field__content"}
+  location: {regex: "(道南愛護センター|函館市愛護センター)"}
+species:
+  from: text
+  map: {"愛護センター": cat}

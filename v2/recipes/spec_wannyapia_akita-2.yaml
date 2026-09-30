@@ -1,0 +1,23 @@
+# ワンニャピアあきた（譲渡猫・秋田県動物愛護センター）
+# 一覧 (protective-cats) はカード（写真+種類+性別+名前+詳細リンク）。詳細は a.btn-brown@href の個別ページ (pages/animals/pNNNN) で 1 頭 = 1 ページ。
+# 台帳の species は mixed だが実際はこのページは猫専用。パンくず（元の一覧名）から犬/猫を判定する。
+steps:
+  - follow_all: "a.btn-brown@href"
+rows: "body"
+image: "img[src*='/uploads/contents/animals']@src"
+fields:
+  name: {selector: "div.page-header h1"}
+  management_no: {label: "個体管理ナンバー"}
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  age: {label: "年齢"}
+  size: {label: "体重"}
+  color: {label: "毛色"}
+  note: {label: "備考"}
+  species: {selector: "nav.breadcrumb-container", regex: "(譲渡犬|譲渡猫)"}
+species:
+  from: field
+  map: {"猫": cat, "犬": dog}
+empty_text:
+  - "現在譲渡可能な猫はおりません"
+  - "現在譲渡可能な猫はいません"

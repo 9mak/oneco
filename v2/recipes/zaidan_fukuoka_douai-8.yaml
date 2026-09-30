@@ -1,0 +1,15 @@
+# 福岡県動物愛護センター（団体譲渡猫）
+# 一覧ページに全頭（絞り込みフォームは未指定で全件）。1 頭 = div.animals-list li（写真 figure.list-pht img、番号 p.no-data、状態 span.ico-animal、dl > dt/dd に性別・登録日・推定年齢・大きさ・団体名、a は詳細ページ）。
+# 動物は登録団体の元にいるので団体名を location に入れる。品種と仮名は詳細ページにしか無いので取らない。
+# 募集中以外（面会決定・トライアル中・募集一時停止・譲渡準備中）も一覧に載るので note に状態を入れる。
+rows: "div.animals-list li"
+image: "figure.list-pht img@src"
+fields:
+  management_no: "p.no-data"
+  sex: {label: "性別"}
+  age: {label: "推定年齢"}
+  size: {label: "大きさ"}
+  location: {label: "団体名"}
+  note: "span.ico-animal"
+  detail: {selector: "a", attr: "href"}
+empty_text: ["現在、掲載されている情報はありません"]

@@ -1,0 +1,15 @@
+# おおいた動物愛護センター（譲渡犬・随時）
+# 一覧は div.information_box カード×12/ページ、a[rel="next"] で次ページへ（台帳 species=dog 固定なので species 判定は不要）。
+steps:
+  - paginate: "a[rel='next']@href"
+rows: "div.information_box"
+image: "div.information_image img@src"
+fields:
+  management_no: {selector: "dl:nth-of-type(1) dd"}
+  name: {label: "仮名"}
+  breed: {label: "種類"}
+  age: {label: "推定年齢"}
+  sex: {label: "性別"}
+  note: {label: "個別条件"}
+  detail: {selector: "a:not([rel='tag'])", attr: "href"}
+empty_text: ["現在、譲渡対象の犬はいません", "現在対象の犬はいません"]

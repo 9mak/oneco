@@ -1,0 +1,33 @@
+# 富山県（迷い犬・ねこ情報）— 窓口インデックスページ（各厚生センター・支所への案内のみ）から
+# 8 つの子ページ（新川/魚津支所/中部/高岡/射水支所/氷見支所/砺波/小矢部支所）へ follow_all。
+# 各子ページは <h2>迷い犬情報</h2><div class="col2"><div class="col2L">写真</div><div class="col2R">
+# <table class="datatable">（th=ラベル/td=値の縦並び）</div></div> という構造が犬用・猫用で 1 組ずつ
+# 並ぶ（= 1 頭最大 1 組）。犬猫の別は直前の h2 見出しで決める。
+# 動物がいない組は値セルが空（&nbsp;）で管理番号も収容日も無く、写真も汎用プレースホルダ
+# （dog.png/cat.png/cat_1.png/inai.png/inu00.png/neko00.png/img_purpose_*.png 等、事務所ごとに
+# ファイル名が違う）。実写真は全て .jpg なので image.exclude で .png を一律除外する。
+steps:
+  - follow_all: "table.datatable a[href*='/doubutsuaigo/syuyou/']@href"
+rows: "div.col2"
+image:
+  selector: "img@src"
+  exclude:
+    - "\\.png$"
+fields:
+  management_no: {label: "管理番号"}
+  shelter_date: {label: "収容日", regex: "((?:令和|平成)\\s*\\d+\\s*年.*?\\d{1,2}\\s*月\\s*\\d{1,2}\\s*日)"}
+  location: {label: "収容場所"}
+  breed: {label: "種類"}
+  size: {label: "大きさ"}
+  sex: {label: "性別"}
+  color: {label: "毛色"}
+  note: {label: "備考"}
+species:
+  from: heading
+  selector: "h2"
+  map: {"迷い犬情報": dog, "迷いねこ情報": cat}
+empty_text:
+  - "現在、保護している犬・ねこはいません"
+  - "現在保護している犬・ねこはいません"
+  - "現在保護している犬、ねこはいません"
+  - "現在保護している犬・猫はいません"

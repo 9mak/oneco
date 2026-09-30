@@ -1,0 +1,19 @@
+# 越谷市（個人保護犬猫）hogo_kojin.html
+# div#tmp_honbun 内に「犬の情報」「猫の情報」の h2 見出しがあり、その中に
+# 1 動物 = <h3 class="partsstyle_h3">R8-001</h3> の後ろへ img・p（発見場所/発見時期/毛色/特徴）が
+# 兄弟要素として並ぶ（囲む div が無い、フラットな並び）。
+# 既知の制約: このレシピエンジンは行（rows）の子孫要素しか fields で参照できないため、
+# h3 の直後に続く兄弟 p・img は取得できない（city_sendai-1 と同種の制約）。
+# h3 自身のテキストが管理番号相当（例: R8-001）で 2 桁以上の数字を含むため、
+# management_no としてそのまま採用すれば動物判定は成立する。
+# 「参考：越谷警察署」「参考：マイクロチップについて」等の見出し用 h3 は
+# div.h3bg > div > h3 に包まれており class が無いため、class="partsstyle_h3" で区別する。
+rows: "h3.partsstyle_h3"
+fields:
+  management_no: {selector: "."}
+species:
+  from: heading
+  selector: "h2"
+  map: {"犬の情報": dog, "猫の情報": cat}
+empty_text:
+  - "現在、情報はありません"

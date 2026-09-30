@@ -1,0 +1,18 @@
+# 町田市（保護情報）: single_page。h2「現在のペットの保護情報」の後、
+# 動物1頭 = <div class="h3bg"><h3>見出し(種別・性別)</h3></div> + 直後の
+# <div class="img-area-r">（写真 + <ul><li>ラベル：値</li>...</ul>）が対で並ぶ。
+# rows は img-area-r 側を拾い、種別は直前の h3 見出しから判定（犬猫混在。
+# 猫以外＝セキセイインコ等は "other" として自動で除外される）。
+rows: "div.img-area-r"
+image: "img@src"
+species:
+  from: heading
+  selector: "h3"
+fields:
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  color: {label: "毛色"}
+  note: {label: "特徴"}
+  shelter_date: {label: "保護日"}
+  location: {label: "保護場所"}
+empty_text: ["現在保護している", "現在お預かりしている情報はありません", "現在、保護している"]

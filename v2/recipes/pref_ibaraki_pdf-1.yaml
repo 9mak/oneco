@@ -1,0 +1,25 @@
+# 茨城県（収容中の動物たち） https://www.pref.ibaraki.jp/hokenfukushi/doshise/hogo/syuuyou.html
+# 一覧ページから犬 (documents/inu*.pdf) と猫 (documents/neko*.pdf) の PDF を取る。統計 PDF (r7syuuyousuu.pdf) は対象外。
+# PDF は 1 ページ 2 段組みで、丸ごと読むと左右の行が 1 行に混ざるため pdf.columns: 2 で左右を分けて読む。
+# 1 頭 = 「22-3543 市町村名 鉾田市田崎」で始まる 6 行の塊。種類=犬/猫、犬猫種=品種。犬か猫かは PDF の URL (inu / neko) で決める。
+steps:
+  - pdf_links: "a[href*='documents/inu'][href$='.pdf'], a[href*='documents/neko'][href$='.pdf']"
+pdf:
+  mode: text
+  columns: 2
+rows_regex: "^\\d{2}-\\d{3,6}\\s+市町村名"
+species:
+  from: url
+  map: {"documents/inu": dog, "documents/neko": cat}
+fields:
+  management_no: {regex: "^(\\d{2}-\\d{3,6})"}
+  location: {regex: "市町村名\\s+(\\S+)"}
+  shelter_date: {regex: "収容日\\s+(\\d{4}/\\d{1,2}/\\d{1,2})"}
+  name: {regex: "センター名\\s+(\\S+)"}
+  breed: {regex: "犬猫種\\s+(\\S+)"}
+  color: {regex: "毛色\\s+(\\S+)"}
+  sex: {regex: "性別\\s+(\\S+)"}
+  size: {regex: "体格\\s+(\\S+)"}
+# PDF の見出し（「成犬収容頭数 … 現在」「収容頭数 … 現在」）は頭数 0 でも出るので、PDF が取れて 1 頭も無ければ 0 頭とみなす
+empty_text:
+  - "収容頭数"

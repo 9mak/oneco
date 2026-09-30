@@ -1,0 +1,18 @@
+# 横須賀市（保護犬）— WordPress。一覧 ul#animals-list li a の各リンクが個体詳細ページ。
+# 詳細ページは <th> の無い2列テーブル（整理番号/分類/収容日/収容場所/種類/性別/特徴/首輪/負傷）。
+# 写真は div#photos 配下の img。フッタ #footer-text-2 に "TEL : 046-869-0040"（施設代表番号、台帳へ反映用）。
+steps:
+  - follow_all: "ul#animals-list li a@href"
+rows: "body"
+image: "div#photos img@src"
+fields:
+  management_no: {label: "整理番号"}
+  shelter_date: {label: "収容日"}
+  location: {label: "収容場所"}
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  color: {label: "特徴", regex: "^([^、,]{0,15})"}
+empty_text:
+  - "現在保護収容している犬はいません"
+  - "現在保護収容している動物はいません"
+  - "現在、収容している動物はいません"

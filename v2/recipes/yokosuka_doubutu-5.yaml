@@ -1,0 +1,16 @@
+# 横須賀市（譲渡猫）— 保護犬(-1)と同一WordPressテンプレート。一覧 ul#animals-list li a → 個体詳細。
+# 譲渡カテゴリは「収容場所」セルが無いため location は施設名で補う。
+# 「特徴」は長文の説明（年齢・体重・性格等混在）なので note に収め、年齢のみ正規表現で抜き出す。
+steps:
+  - follow_all: "ul#animals-list li a@href"
+rows: "body"
+image: "div#photos img@src"
+fields:
+  management_no: {label: "整理番号"}
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  age: {label: "特徴", regex: "(\\d+歳(?:\\d+(?:か月|ヶ月|ヵ月|カ月|ケ月))?)"}
+  note: {label: "特徴"}
+  location: {label: "収容場所", default: "横須賀市動物愛護センター"}
+empty_text:
+  - "現在情報はありません"

@@ -1,0 +1,16 @@
+# 徳島県動物愛護管理センター（譲渡猫）
+# 一覧は iframe#animalFrame の中（animalinfo/list4_2、EUC-JP）。1 頭 = ul.news > li（table.f_a3、aria-label 付きセル）。
+# 10 頭を超えると div.next で次ページ（譲渡犬 list4_1 と同じ CGI）。番号セルは「No. Ｋ２６０４３（愛称：日和）」で全角混じり。
+steps:
+  - follow: "iframe#animalFrame@src"
+  - paginate: "div.next a@href"
+encoding: euc-jp
+rows: "ul.news > li"
+image: "td.photo img@src"
+fields:
+  management_no: {label: "番号", regex: "No\\.?\\s*([A-Za-zＡ-Ｚａ-ｚ0-9０-９\\-－]+)"}
+  name: {label: "番号", regex: "愛称[:：]?\\s*(.+)[)）]"}   # 「（愛称　すいが）」のように区切りが全角空白の行もある（譲渡犬で実例）
+  sex: {label: "性別"}
+  age: {label: "推定生年月日"}
+  note: {label: "その他の情報"}
+empty_text: ["現在、掲載されている情報はありません", "現在、譲渡予定の猫はいません", "該当するデータはありません"]

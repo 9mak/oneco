@@ -1,0 +1,23 @@
+# ながさき犬猫ネット 募集中一覧（保健所収容） /syuuyou
+# WordPress。一覧 div.list-area 配下の /animal/no-xxx リンクを個体ページ方式（follow_all）で1頭=1ページとして辿る。
+# 詳細ページは <li><p>ラベル</p><p>値</p></li> 構造で dt/dd を使わないため label 抽出が効かず、正規表現で本文から拾う。
+# 犬猫の別は一覧にも詳細にも明記が無い。詳細ページの「模様・柄」が三毛/サビ/キジ/トラ（猫固有の柄）なら猫、
+# それ以外（不明・犬（猫）種特有 等）は犬とみなす（保健所収容は大半が犬のため既定値）。
+steps:
+  - follow_all: "div.list-area a[href*='/animal/no-']@href"
+rows: "body"
+image: "ul.detail-img img@src"
+fields:
+  management_no: {regex: "No\\.(\\d+)"}
+  breed: {regex: "品種\\s*(\\S+)"}
+  sex: {regex: "性別\\s*(\\S+)"}
+  age: {regex: "年齢\\s*(\\S+)"}
+  color: {regex: "毛色\\s*(\\S+)"}
+  size: {regex: "体格\\s*(\\S+)"}
+  shelter_date: {regex: "収容日\\s*(\\d{4}-\\d{2}-\\d{2})"}
+  location: {regex: "収容場所\\s*(\\S+)"}
+  species: {regex: "模様・柄\\s*(\\S+)", default: "-"}
+species:
+  from: field
+  map: {"三毛": cat, "サビ": cat, "キジ": cat, "トラ": cat, "": dog}
+empty_text: ["投稿がありません"]

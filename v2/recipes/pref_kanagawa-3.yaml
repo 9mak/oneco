@@ -1,0 +1,21 @@
+# 神奈川県動物愛護センター「当所で保護している犬・猫以外の動物の情報」。
+# 一覧本文には表が無く、PDF を1本落とす。表は No./収容日/掲載期限/動物/種類/毛色等/体格/性別/収容した場所/時間/首輪等/写真の列。全行 other 種別。
+steps:
+  - pdf_links: "a[href$='.pdf']@href"
+pdf:
+  mode: table
+  header_row: 0
+fields:
+  management_no: {header: "No"}
+  shelter_date: {header: "収容日"}
+  breed: {header: "種類"}
+  color: {header: "毛色等"}
+  size: {header: "体格"}
+  sex: {header: "性別"}
+  location: {header: "収容した場所"}
+  note: {header: "時間"}
+species:
+  from: text
+  map: {"": other}
+empty_text:
+  - "現在、収容期間中の犬・猫以外の動物はいません"

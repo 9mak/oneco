@@ -1,0 +1,16 @@
+# 徳島県動物愛護管理センター（譲渡犬）
+# 一覧は iframe#animalFrame の中（animalinfo/list4_1、EUC-JP）。1 頭 = ul.news > li（table.f_a3、aria-label 付きセル）。10 頭ごとに div.next で次ページ。
+# 番号セルは「No. Ｄ２５０２９９（愛称：グル）」のように英数が全角混じりなので regex は全角も受ける（NFKC 正規化は regex の後）。
+steps:
+  - follow: "iframe#animalFrame@src"
+  - paginate: "div.next a@href"
+encoding: euc-jp
+rows: "ul.news > li"
+image: "td.photo img@src"
+fields:
+  management_no: {label: "番号", regex: "No\\.?\\s*([A-Za-zＡ-Ｚａ-ｚ0-9０-９\\-－]+)"}
+  name: {label: "番号", regex: "愛称[:：]?\\s*(.+)[)）]"}   # 「（愛称　すいが）」のように区切りが全角空白の行もある
+  sex: {label: "性別"}
+  age: {label: "推定生年月日"}
+  note: {label: "その他の情報"}
+empty_text: ["現在、掲載されている情報はありません", "現在、譲渡予定の犬はいません", "該当するデータはありません"]

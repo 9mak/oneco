@@ -1,0 +1,17 @@
+# 熊本県動愛 センター譲渡犬（保健所・センター収容犬の譲渡情報）。
+# 一覧 ul.list-4col li = 1 頭。個別 detail ページもあるが、一覧の dl に
+# 収容日・種類・性別・個体管理ナンバー・保健所・電話番号が全て揃うため follow 不要。
+# 19 件で 1 ページに収まるが、他 slug は複数ページになるため paginate は共通で付けておく。
+steps:
+  - paginate: ".paging .next a@href"
+rows: "ul.list-4col li"
+image: "img@src"
+fields:
+  shelter_date: {label: "収容日", regex: "(\\d{4}年\\d{1,2}月\\d{1,2}日)"}
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  management_no: {label: "個体管理ナンバー"}
+  location: {label: "保健所"}
+  note: {label: "電話番号"}
+  detail: {selector: "a", attr: "href"}
+empty_text: ["0件中 0～0件目を表示"]

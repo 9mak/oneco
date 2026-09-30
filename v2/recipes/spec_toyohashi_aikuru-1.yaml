@@ -1,0 +1,16 @@
+# 豊橋市あいくる（迷い犬） — toyohashi-aikuru.jp
+# 一覧ページ (?animal_type=dog) に直書き。1 頭 = div.dog-cat-list__item（テーマ app.css で確認済みのクラス名）。
+# 写真の下の "保護日: YYYY.MM.DD" は img と同じ div.dog-cat-image 内の span テキスト。
+# 2026-09-29 時点は犬・猫とも 0 頭で div.dog-cat-list が空。「いません」等の文言は無いため、
+# 動物の有無に関係なく常に出ている案内文（見出し直後の説明文）を empty_text にする。
+rows: "div.dog-cat-list__item"
+image: "img@src"
+fields:
+  management_no: {label: "管理番号"}
+  location: {label: "保護場所"}
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  note: {label: "その他"}
+  shelter_date: {selector: "div.dog-cat-image span", regex: "保護日[:：]\\s*([\\d.]+)"}
+empty_text:
+  - "現在、動物愛護センターで保護している犬/猫の情報は下記のとおりです。"

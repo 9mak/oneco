@@ -1,0 +1,18 @@
+# 千葉市（迷子その他動物）。city_chiba-1 と同一テンプレートだが対象は犬猫以外（負傷動物）なので
+# allow_other で犬猫判定不能でも落とさない。色ラベルは「毛色」でなく「色」。
+# 2026-09-29時点0頭。空文言は上部案内文と下部見出しの2通りがあるため両方を拾う。
+rows: "p:-soup-contains('収容日：')"
+fields:
+  shelter_date: {label: "収容日"}
+  location: {label: "収容場所"}
+  breed: {label: "種類"}
+  color: {label: "色"}
+  sex: {label: "性別"}
+  size: {label: "体格"}
+  note: {label: "特徴"}
+species:
+  from: text
+  allow_other: true
+empty_text:
+  - "現在、その他の迷子動物の情報はありません"
+  - "現在、対象となる動物はいません"

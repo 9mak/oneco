@@ -1,0 +1,21 @@
+# 柏市（保護動物） hogo.html — 1 頭 = div.col2_sp2_wrap 1 つ（ラベル形式）。
+# 直前の <h3>犬</h3>/<h3>猫</h3> 見出しで species を決める。
+# 各 <p> は「番号：092505」「種類：雑種」等の「ラベル：値」。写真が無い個体もいる（管理番号で通す）。
+rows: "div.col2_sp2_wrap"
+image: "img@src"
+fields:
+  management_no: {label: "番号"}
+  breed: {label: "種類"}
+  color: {label: "毛色"}
+  shelter_date: {label: "収容", regex: "(\\d{1,2}月\\d{1,2}日)"}
+  sex: {label: "性別"}
+  location: {label: "場所"}
+  note: {label: "特徴"}
+species:
+  from: heading
+  selector: "h3"
+  map: {"犬": dog, "猫": cat}
+empty_text:
+  - "現在、保護動物はおりません"
+  - "現在保護動物はいません"
+  - "収容動物はいません"

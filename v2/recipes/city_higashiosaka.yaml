@@ -1,0 +1,24 @@
+# 東大阪市 保護収容動物情報: single_page。div.mol_imageblock が1頭=1カード。
+# カード内の1つの<p>に「個体番号:NN　収容年月日:令和X年Y月Z日<br>種類:○○　性別:...」のように
+# ラベル:値が全角空白/<br>区切りで詰め込まれている（表構造ではない）ので label 抽出で読む。
+# 在庫0件のときは同文言が本文に出て mol_imageblock はHTMLコメント化され0件になる。
+
+rows: "div.mol_imageblock"
+image: "img@src"
+fields:
+  management_no: {label: "個体番号"}
+  shelter_date: {label: "収容年月日"}
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  color: {label: "毛色"}
+  size: {label: "体格"}
+  age: {label: "推定年齢"}
+  location: {label: "収容地域"}
+  note: {label: "備考"}
+
+species:
+  from: text
+  map: {"犬": dog, "猫": cat}
+
+empty_text:
+  - "現在、保護収容動物情報はありません"

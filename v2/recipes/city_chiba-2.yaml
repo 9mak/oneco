@@ -1,0 +1,14 @@
+# 千葉市（迷子猫）。city_chiba-1 と同一テンプレート（ラベル全部が1個の<p>に<br>区切り）。
+# 管理番号(h4, 例: 26092501)は属性pの前方兄弟で届かないため row は属性p自体、収容日で動物と判定。
+# 2026-09-29時点4頭（26092501/26092401/26091801/26091401、いずれも写真なし）。
+rows: "p:-soup-contains('収容日：')"
+fields:
+  shelter_date: {label: "収容日"}
+  location: {label: "収容場所"}
+  breed: {label: "種類"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  size: {label: "体格"}
+  note: {label: "特徴"}
+empty_text:
+  - "現在迷い猫の情報はございません"

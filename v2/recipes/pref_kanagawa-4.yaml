@@ -1,0 +1,30 @@
+# 神奈川県動物愛護センター「当所以外で保護されている動物の情報」。
+# HTML本文に一覧は無く、犬/猫/その他 3本の PDF（1頭=表の1行、受付番号・受付日・保護/目撃日・場所・品種・毛色・体格・性別・首輪・特徴）を合算する。
+# 写真は掲載されないため management_no（受付番号）と shelter_date（受付日）で動物判定を通す。犬猫の別は PDF ファイル名（dog.pdf/cat.pdf/others.pdf）で決まる。
+steps:
+  - pdf_links: "a[href$='.pdf']@href"
+pdf:
+  mode: table
+  header_row: 0
+fields:
+  # 既知の制約: management_no（受付番号）は犬/猫/その他 PDF ごとに別カウンタで
+  # 採番されており、番号が PDF をまたいで重複する（例: 犬65 と 猫65）。
+  # collector のID生成（extract.py make_id）は slug + management_no のみで
+  # 一意化するため、この重複により別種の実在の行が「同じ ID」として誤って
+  # 捨てられる（実測: 59行中 16行）。shelter_date のみをキーにする代替も
+  # 試したが、同日受付の別個体が多くさらに悪化する（27行）ため不採用。
+  # レシピ側では回避不能（fields に行またぎ/文書またぎの合成値を書く手段が無い）。
+  # 恒久対応には make_id が species や doc.url も見るよう extract.py 側の
+  # 修正が必要（このレシピの担当スコープ外）。
+  management_no: {header: "受付番号"}
+  shelter_date: {header: "受付日"}
+  age: {header: "保護/目撃日"}
+  note: {header: "保護/目撃"}
+  location: {header: "場所"}
+  breed: {header: "品種"}
+  color: {header: "毛色"}
+  size: {header: "体格"}
+  sex: {header: "性別"}
+species:
+  from: url
+  map: {"dog.pdf": dog, "cat.pdf": cat}

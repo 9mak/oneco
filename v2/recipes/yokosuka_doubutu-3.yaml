@@ -1,0 +1,18 @@
+# 横須賀市（保護その他）— 保護犬(-1)と同一WordPressテンプレート。一覧 ul#animals-list li a → 個体詳細。
+# 2026-09-29 確認時点で「現在情報はありません。」表示のみで一覧項目 0 件。
+steps:
+  - follow_all: "ul#animals-list li a@href"
+rows: "body"
+image: "div#photos img@src"
+fields:
+  management_no: {label: "整理番号"}
+  shelter_date: {label: "収容日"}
+  location: {label: "収容場所"}
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  color: {label: "特徴", regex: "^([^、,]{0,15})"}
+species:
+  from: text
+  allow_other: true   # species=mixed（犬/猫以外も想定）なので other を落とさない
+empty_text:
+  - "現在情報はありません"

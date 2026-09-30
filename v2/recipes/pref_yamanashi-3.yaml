@@ -1,0 +1,12 @@
+# 山梨県（探している他のペット）— pref_yamanashi-1 と同一テンプレート（m_other）だが
+# 対象は犬猫以外（鳥・カメ・ウサギ等）なので種別は必ず other。allow_other で犬猫判定不能でも通す。
+rows: "div.menu_item"
+image: "img@src"
+fields:
+  location: "div.item_link_ttl > p.txt"
+  sex: "div.item_link_ttl > p:nth-of-type(2)"
+  color: "div.item_link_ttl > p:nth-of-type(3)"
+  detail: {selector: "div.item_link_ttl > p.txt a", attr: "href"}
+species:
+  from: text
+  allow_other: true

@@ -1,0 +1,16 @@
+# 町田市（迷子その他・捜索）: single_page。犬・猫以外（鳥・カメ等）専用ページなので
+# 全行が種別「その他」になる（allow_other必須）。構造は city_machida-2/3 と同じ CMS
+# テンプレート（<div class="h3bg"><h3>見出し</h3></div> + 直後 <div class="img-area-r">）。
+rows: "div.img-area-r"
+image: "img@src"
+species:
+  allow_other: true
+fields:
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  color: {label: "毛色"}
+  age: {label: "年齢"}
+  note: {label: "特徴"}
+  shelter_date: {regex: "(?:失踪日時|失踪日|逸走日時|逸走日)[:：]\\s*(\\S+)"}
+  location: {regex: "(?:失踪場所|逸走場所)[:：]\\s*(\\S+)"}
+empty_text: ["現在、迷子のその他の情報はありません", "現在迷子のその他の情報はありません", "現在の迷子のその他情報はありません", "現在、迷子のペット（犬・猫以外）の情報はありません"]

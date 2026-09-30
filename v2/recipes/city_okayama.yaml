@@ -1,0 +1,34 @@
+# 岡山市（保護動物情報）: 一覧ページ ul.category_end 内の記事リンクには、個体の
+# 個別情報記事に加えて「現在いません」等のお知らせ記事や、既存個体を再掲する
+# 集計記事（例: 保護犬情報一覧）が混在する。リンク文字に「個別情報」を含む
+# ものだけを辿ることで、これらの重複・非動物記事を除外する。
+# 各個別情報記事 = 1 頭。種類（毛色に対する犬種/品種）は breed、動物種別
+# (犬/猫) は h1 見出しの文言から判定する。電話番号は自由文のみのため
+# 個体側 fields には含めず、代表連絡先として結果に別途記載する。
+
+steps:
+  - follow_all: 'ul.category_end a:-soup-contains("個別情報")@href'
+
+rows: "body"
+
+image:
+  selector: "img.mol_imageblock_img_medium"
+
+fields:
+  species: {selector: "h1"}
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  age: {label: "推定年齢"}
+  color: {label: "毛色"}
+  size: {label: "体格"}
+  shelter_date: {label: "保護日"}
+  location: {label: "保護場所"}
+  management_no: {regex: "(?<![0-9A-Za-z])(\\d[A-Za-z]\\d{5,9})(?![0-9A-Za-z])"}
+
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+
+empty_text:
+  - "現在、保護犬はいません"
+  - "現在、保護猫はいません"

@@ -1,0 +1,18 @@
+# 横須賀市（譲渡その他）— 譲渡犬(-4)と同一WordPressテンプレート。一覧 ul#animals-list li a → 個体詳細。
+# 2026-09-29 確認時点で「現在情報はありません。」表示のみで一覧項目 0 件。
+steps:
+  - follow_all: "ul#animals-list li a@href"
+rows: "body"
+image: "div#photos img@src"
+fields:
+  management_no: {label: "整理番号"}
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  age: {label: "特徴", regex: "(\\d+歳(?:\\d+(?:か月|ヶ月|ヵ月|カ月|ケ月))?)"}
+  note: {label: "特徴"}
+  location: {label: "収容場所", default: "横須賀市動物愛護センター"}
+species:
+  from: text
+  allow_other: true   # species=mixed（犬/猫以外も想定）なので other を落とさない
+empty_text:
+  - "現在情報はありません"

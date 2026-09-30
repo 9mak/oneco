@@ -1,0 +1,23 @@
+# ながさき犬猫ネット 保護している動物一覧 /hogo
+# WordPress。一覧 div.list-area 配下の /animal/no-xxx リンクを個体ページ方式（follow_all）で1頭=1ページとして辿る。
+# 詳細ページは <li><p>ラベル</p><p>値</p></li> 構造で dt/dd を使わないため label 抽出が効かず、正規表現で本文から拾う。
+# 収容日に相当するのは「保護した日時」（"6/15～" 等、日付として不完全な表記もある）。場所は「保護した場所」。
+# 犬猫の別は明記が無い。「模様・柄」が三毛/サビ/キジ/トラ（猫固有の柄）なら猫、それ以外は犬とみなす（既定値）。
+steps:
+  - follow_all: "div.list-area a[href*='/animal/no-']@href"
+rows: "body"
+image: "ul.detail-img img@src"
+fields:
+  management_no: {regex: "No\\.(\\d+)"}
+  breed: {regex: "品種\\s*(\\S+)"}
+  sex: {regex: "性別\\s*(\\S+)"}
+  age: {regex: "年齢\\s*(\\S+)"}
+  color: {regex: "毛色\\s*(\\S+)"}
+  size: {regex: "体格\\s*(\\S+)"}
+  shelter_date: {regex: "保護した日時\\s*(.+?)(?=保護した場所|問い合わせ先)"}
+  location: {regex: "保護した場所\\s*(.+?)(?=問い合わせ先)"}
+  species: {regex: "模様・柄\\s*(\\S+)", default: "-"}
+species:
+  from: field
+  map: {"三毛": cat, "サビ": cat, "キジ": cat, "トラ": cat, "": dog}
+empty_text: ["投稿がありません"]

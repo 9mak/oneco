@@ -1,0 +1,21 @@
+# 川崎市（収容その他動物） https://www.city.kawasaki.jp/350/page/0000074729.html
+# city_kawasaki-1/-2 と同一テンプレート（1 頭 = table.px550 1 つ）。
+# 犬猫以外（鳥類など）のページなので「動物名」（オカメインコ 等）を breed として扱い、
+# species は行テキストに「犬」「猫」を含むかどうかで判定（含まなければ other）。
+rows: "div.main_naka_kiji table"
+fields:
+  management_no: {label: "管理番号"}
+  location: {label: "収容場所"}
+  shelter_date: {label: "収容日"}
+  breed: {label: "動物名"}
+  color: {label: "色"}
+  sex: {label: "性別"}
+  note: {label: "備考"}
+species:
+  from: text
+  map: {"犬": dog, "猫": cat}
+  allow_other: true
+empty_text:
+  - "収容（保護）されている動物はいません"
+  - "収容している動物はいません"
+  - "収容情報はありません"

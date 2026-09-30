@@ -1,0 +1,11 @@
+# 山梨県（保護されている犬）— p_dog/p_cat/p_other/m_dog/m_cat/m_other 共通テンプレート。
+# 1頭 = div.menu_item。item_link_ttl > p の並び: p.txt(保護場所へのリンク=個体detail) / 性別 / 毛色。
+# 写真は本物が無い個体でも noimage01.jpg 等のプレースホルダーが必ず入るため写真判定で全頭通る。
+# img@alt は「33810」等の個体IDのときも「写真1」等のプレースホルダーのときもあり不安定なため管理番号としては採用しない。
+rows: "div.menu_item"
+image: "img@src"
+fields:
+  location: "div.item_link_ttl > p.txt"
+  sex: "div.item_link_ttl > p:nth-of-type(2)"
+  color: "div.item_link_ttl > p:nth-of-type(3)"
+  detail: {selector: "div.item_link_ttl > p.txt a", attr: "href"}

@@ -1,0 +1,22 @@
+# 福岡市「ずっといっしょ」犬譲渡（zuttoissho.com/omukae/animal/dog/、WordPress）
+# 1 頭 = ul.omukae_list > li（a → div.frame img[data-src]（lazyload・320x320）、h3.title、p.spec）。10 件超で div.wp-pagenavi のページ送り。
+# h3.title は「d1863【仮名：ショウ　申込者あり】東部動物愛護管理センターにいます」、p.spec は「年齢 品種 毛色 性別」の空白区切り 4 語。
+# 同じ一覧に複数センター（東部動物愛護管理センター・家庭動物啓発センター等）が混ざるので location を取る。
+# ページは犬専用（猫は /cat/ の別 slug）だが台帳が mixed なので species は固定で犬。
+steps:
+  - paginate: "div.wp-pagenavi a[rel='next']@href"
+rows: "ul.omukae_list > li"
+image: "div.frame img@src"           # src が無く data-src だけの lazyload。エンジンが data-src に落ちる
+fields:
+  management_no: {selector: "h3.title", regex: "^\\s*([A-Za-zＡ-Ｚａ-ｚ]?[0-9０-９]+)"}
+  name: {selector: "h3.title", regex: "仮名[:：]\\s*([^】\\s　・]+)"}   # 「ぼうろ　申込者あり」「みぃ・トライアル中」の状態語は除く
+  note: {selector: "h3.title", regex: "(申込者あり|トライアル中)"}
+  location: {selector: "h3.title", regex: "】\\s*(.+?)にいます"}
+  age: {selector: "p.spec", regex: "^(\\S+)"}
+  breed: {selector: "p.spec", regex: "^\\S+\\s+(\\S+)"}
+  color: {selector: "p.spec", regex: "^\\S+\\s+\\S+\\s+(\\S+)"}
+  sex: {selector: "p.spec", regex: "(\\S+)$"}
+  detail: {selector: "a", attr: "href"}
+  species: {default: "犬"}
+species:
+  from: field

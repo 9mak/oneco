@@ -1,0 +1,20 @@
+# 愛媛県動物愛護センター（譲渡予定）
+# h2「猫」「犬」の下に class 無しの table が 1 つずつ。th 行がセクション見出し（愛護棟ホールにいる子猫・成猫 等）、
+# td 行が 1 頭（写真 + 「愛　称：／性　別：／毛　色：／体　重：／推定年齢：／コメント：」を <br> 区切り、ラベル内に全角空白）。
+# 犬猫は直前の h2 で決める。class="datatable" の表は案内文なので除く。
+rows: "div.detail_free table:not(.datatable) tr"
+row_filter:
+  text_has_any: ["別：", "別:", "コメント"]     # セクション見出し行（th）を除く
+image: "img@src"
+fields:
+  name: {regex: "愛[\\s\\u200b]*称[:：]\\s*(\\S+)"}
+  sex: {regex: "性[\\s\\u200b]*別[:：]\\s*(\\S+)"}
+  age: {regex: "年[\\s\\u200b]*齢[:：]\\s*([^\\s。]+)"}
+  color: {regex: "毛[\\s\\u200b]*色[:：]\\s*(\\S+)"}
+  size: {regex: "体[\\s\\u200b]*重[:：]\\s*(\\S+)"}
+  note: {regex: "コメント[:：]\\s*([^\\u200b]+)"}
+species:
+  from: heading
+  selector: "h2"
+  map: {"猫": cat, "犬": dog}
+empty_text: ["現在、おりません"]

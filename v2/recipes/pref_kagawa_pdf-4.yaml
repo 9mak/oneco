@@ -1,0 +1,25 @@
+# 小豆保健所（収容動物・迷子収容）
+# 2026-09-28 時点は 0 頭で PDF リンク無し。本文は「現在、収容動物情報はありません。」。
+# 収容があると他 3 所（東讃・中讃・西讃）と同じく本文に PDF リンクが 1 本出る想定（/documents/<ページID 6685>/ 配下と
+# 推定だが未確認なので .pdf 全部を対象にする。ページ内に他の PDF は無い）。PDF の中身も他 3 所と同じ書式の想定。
+# 注意: PDF が 0 本だと engine が docs=[] を返し empty_text を照合できない（HTML 本文が捨てられる）ため、今は show が
+# 「0 頭で empty_text も無い」で failed になる。engine 側で入口ページの本文も empty_text の照合対象にすれば empty になる。
+steps:
+  - pdf_links: "a[href$='.pdf']"
+pdf:
+  mode: text
+rows_regex: "^(?:個体)?管理番号\\s*\\d+.*$"
+fields:
+  management_no: {regex: "(?:個体)?管理番号\\s*(\\d+)"}
+  shelter_date: {regex: "収容日時\\s*(令和\\s*\\d+\\s*年\\s*\\d+\\s*月\\s*\\d+\\s*日)"}
+  species: {regex: "動物の種類[ \\t]+(\\S+)"}
+  breed: {regex: "動物の種類[ \\t]+\\S+[ \\t]+種類[ \\t]+(?!\\d)(\\S+)"}
+  age: {regex: "種類[ \\t]+\\S+[ \\t]+(\\d\\S*(?:齢|歳|才)\\S*)"}
+  color: {regex: "毛色[ \\t]+(?!性別)(\\S+)"}
+  sex: {regex: "性別[ \\t]+(?!体格)(\\S+)"}
+  size: {regex: "体格[ \\t]+(\\S+)"}
+  location: {regex: "引取り場所[ \\t]+([^\\n]+)"}
+  note: {regex: "備考[ \\t]*([^\\n]*)"}
+species:
+  from: field
+empty_text: ["現在、収容動物情報はありません", "収容動物情報はありません"]

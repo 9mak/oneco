@@ -1,0 +1,20 @@
+# 岡山県動物愛護センター（保護動物）— 単一ページに「保護収容情報（犬）」「（猫）」「（その他）」の
+# 3 テーブルが並ぶ形式。列は犬猫共通で固定: 収容日/管理番号/種類/年齢/毛色/性別/体格/特徴/場所/写真。
+# 犬猫の判定はテーブルの <caption> 文言（見出しとして最も近い直前の caption を採用）で行う。
+# 動物がいない日は該当テーブルの本文行が無い（ヘッダ行のみ）ので自動で 0 頭になる。
+rows: "table tr"
+image: "img@src"
+fields:
+  shelter_date: {selector: "td:nth-of-type(1)"}
+  management_no: {selector: "td:nth-of-type(2)"}
+  breed: {selector: "td:nth-of-type(3)"}
+  age: {selector: "td:nth-of-type(4)"}
+  color: {selector: "td:nth-of-type(5)"}
+  sex: {selector: "td:nth-of-type(6)"}
+  size: {selector: "td:nth-of-type(7)"}
+  note: {selector: "td:nth-of-type(8)"}
+  location: {selector: "td:nth-of-type(9)"}
+species:
+  from: heading
+  selector: "caption"
+  map: {"犬": dog, "猫": cat}

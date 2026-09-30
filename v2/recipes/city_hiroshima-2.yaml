@@ -1,0 +1,13 @@
+# 広島市（迷子猫） — city.hiroshima.lg.jp（犬ページと同一テンプレート）
+# 1 頭 = div#voice 配下の dl 1 つ（収容月日/種類/推定年齢/毛色/性別/首輪等/拾得等の場所/備考 が dt/dd）。
+# 写真は dl の直前の p.imagecenter img。動物が 0 頭の期間は dd が全部空の雛形 dl が残るため自動判定で落ちる。
+rows: "div#voice dl"
+image: "p.imagecenter img@src"
+fields:
+  shelter_date: {label: "収容月日"}
+  breed: {label: "種類"}
+  age: {label: "推定年齢"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  location: {label: "拾得等の場所"}
+  note: {label: "備考"}

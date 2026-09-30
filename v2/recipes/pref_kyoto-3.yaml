@@ -1,0 +1,20 @@
+# 京都府 山城南保健所（飼い主不明動物）— single_page（京都府 CMS 共通テンプレート、犬猫混在）
+# 収容中: div#tmp_contents 内に table が動物 1 頭 = 1 個で並ぶ想定。種類欄の「犬」「猫」で species を決める。
+# 現状（2026-09 確認）は 0 頭で「現在、当所で保護されている動物はありません。」の告知文のみ。
+rows: "div#tmp_contents table"
+image: "img@src"
+fields:
+  species: {label: "種類"}
+  breed: {label: "種類"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  size: {label: "体格"}
+  age: {label: "年齢"}
+  shelter_date: {label: "収容日"}
+  location: {label: "保護場所"}
+  management_no: {regex: "(\\d{2,}[-‐－–]\\d+)"}
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+empty_text:
+  - "当所で保護されている動物はありません"

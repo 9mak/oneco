@@ -1,0 +1,5 @@
+# 日次 JSON と生成サイトは git に入れない（収集サーバーと配信元に置く）
+data/
+site/dist/
+__pycache__/
+.pytest_cache/

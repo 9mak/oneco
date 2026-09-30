@@ -1,0 +1,19 @@
+# 大分市（保護犬）: index.html は説明文＋detail 記事1本へのリンクのみ。
+# detail 記事内、"探しています" h2 配下に h3 見出し（例:「令和8年3月4日飼い主さんを探しています」）＋
+# <ul>（保護した場所/種類/推定年齢/毛色/性別/体格/その他）＋<table>（写真）が兄弟要素として並ぶが、
+# 1頭ぶんを束ねる親要素が無いため、CSS 行選択では h3 と ul/table を1つの行に結び付けられない
+# （bs4 の Tag.select() は兄弟方向へは辿れない）。
+# rows は h3 自体とし、収容日のみ見出しテキストから正規表現で取得する。
+# 「お家がみつかりました」節の見出しは「探しています」を含まないため row_filter で自然に除外される。
+# 品種・性別・年齢等は ul 側にあり h3 行からは取得不可（取れるのは shelter_date のみ）。
+steps:
+  - follow: "#tmp_contents a[href*='/kurashi/pet/']:not([href*='inunohogo'])@href"
+rows: "h3"
+row_filter:
+  text_has_any: ["探しています"]
+fields:
+  shelter_date: {regex: "(令和\\s*\\d+\\s*年\\s*\\d+\\s*月\\s*\\d+\\s*日)"}
+empty_text:
+  - "現在、保護収容している犬はいません"
+  - "収容している犬はいません"
+  - "現在いません"

@@ -1,0 +1,9 @@
+# 山梨県（探している犬）— pref_yamanashi-1 と同一テンプレート（m_dog）。
+# 1頭 = div.menu_item。item_link_ttl > p の並び: p.txt(保護場所へのリンク=個体detail) / 性別 / 毛色。
+rows: "div.menu_item"
+image: "img@src"
+fields:
+  location: "div.item_link_ttl > p.txt"
+  sex: "div.item_link_ttl > p:nth-of-type(2)"
+  color: "div.item_link_ttl > p:nth-of-type(3)"
+  detail: {selector: "div.item_link_ttl > p.txt a", attr: "href"}

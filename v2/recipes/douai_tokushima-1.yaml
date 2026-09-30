@@ -1,0 +1,28 @@
+# 徳島県動物愛護管理センター（収容中・犬猫混在）
+# /stray/ の iframe#dogFrame は要約ページ animalinfo/list1/（各種別の最新 3 件だけ）。そこの「一覧はこちら」で
+# ラッパページ /stray/doglist・catlist・otherlist へ行き、各ラッパの iframe#animalFrame が全件一覧 list1_1/・list1_2/・list1_3/（EUC-JP）。
+# 1 頭 = ul.news > li（table.f_a、aria-label 付きセル）。10 頭ごとに div.next で次ページ。未記入のセルは「--」なので regex で捨てる。
+# 種類セルは全頭「雑種」で犬猫が分からないので、推定年齢の「若犬/成犬/若猫…」（無ければ本文の犬/猫）で決める。
+steps:
+  - follow: "iframe#dogFrame@src"
+  - follow_all: "li.dogMenu a, li.catMenu a, li.otherMenu a"
+  - follow: "iframe#animalFrame@src"
+  - paginate: "div.next a@href"
+encoding: euc-jp
+rows: "ul.news > li"
+image: "td.photo img@src"
+fields:
+  shelter_date: {label: "収容日"}
+  location: {label: "収容場所", regex: "^(?!-+$)(\\S+)"}   # 地名だけ。<br> 以降の「近隣住民の方から…」は捨てる
+  breed: {label: "種類", regex: "^(?!-+$)(.+)$"}
+  sex: {label: "性別", regex: "^(?!-+$)(.+)$"}
+  age: {label: "推定年齢", regex: "^(?!-+$)(.+)$"}
+  size: {label: "体格", regex: "^(?!-+$)(.+)$"}
+  color: {label: "毛色", regex: "^(?!-+$)(.+)$"}
+  note: {label: "その他特徴", regex: "^(?!-+$)(.+)$"}
+species:
+  from: text
+  map: {"若犬": dog, "成犬": dog, "子犬": dog, "仔犬": dog, "幼犬": dog, "老犬": dog, "高齢犬": dog,
+        "若猫": cat, "成猫": cat, "子猫": cat, "仔猫": cat, "幼猫": cat, "老猫": cat, "高齢猫": cat,
+        "犬": dog, "猫": cat}
+empty_text: ["現在、掲載されている情報はありません"]
