@@ -2,9 +2,12 @@
 # 一覧の a[href^=.../other-animal/xxxx] が1頭 → follow_all で個別ページへ。
 # 個別ページは table.animal-desc-table だが見出しが「不明日」「不明場所」（保護日/場所ではない）。
 # 連絡先は飼い主個人の電話（施設代表番号ではない）なので取らない。
+# 「探しています」は飼い主が迷子を探している告知で、収容されている子ではないので捨てる（2026-09-30 おまえさん指摘）。
 steps:
   - follow_all: "a[href^='https://www.douaicenter.jp/other-animal/']:not([href*='other-animal/list'])"
 rows: "body"
+row_filter:
+  field_lacks: {name: ["探しています", "探してます", "探しております"]}   # rows: body なのでメニュー文言に当たらないよう name で判定
 image:
   selector: ".animal-image .large img@src"
 fields:

@@ -52,6 +52,7 @@ row_filter:
   text_has_any: ["収容日", "管理番号"]   # どれかを含む行だけ
   text_lacks: ["見出し", "譲渡済"]        # 含む行は捨てる
   min_text_length: 10
+  field_lacks: {name: ["探しています"]}   # 取った項目にこの語があれば捨てる（rows: body で行の全文にメニュー文言が混ざるとき用）。全部捨てた日は「該当なし」扱い
 ```
 
 ## 項目（`fields`）

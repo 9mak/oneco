@@ -89,6 +89,10 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
     """docs: rows を適用する文書。visited: 入口から辿った全文書（empty_text の照合にも使う）。"""
     res = Result(docs=len(docs))
     seen_ids: set[str] = set()
+    # row_filter.field_lacks: {name: ["探しています"]} — 取った項目にこの語があれば捨てる（rows: body のように
+    # 行の全文にサイトのメニュー文言が混ざるとき、text_lacks の代わりに使う）。これで全部捨てた日は「該当なし」とみなす
+    field_lacks: dict[str, list[str]] = (recipe.row_filter or {}).get("field_lacks") or {}
+    excluded = 0
     for doc in docs:
         rows = extract_rows(recipe, doc)
         res.rows += len(rows)
@@ -96,6 +100,11 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
             f: dict[str, str | None] = {}
             for name, spec in recipe.fields.items():
                 f[name] = field_value(spec, row)
+            hit = next((f"{k}: {w}" for k, ws in field_lacks.items() for w in ws if w in (f.get(k) or "")), None)
+            if hit:
+                res.dropped.append(Dropped(f"除外語（{hit}）", row.text()[:80]))
+                excluded += 1
+                continue
             img_abs, img_raw = image_url(recipe, row)
             dv = f.pop("detail", None)   # 個体ページの URL（相対可）。写真の無い子でも個体ページがあれば動物とみなす
             has_key = looks_like_mgmt(f.get("management_no")) or looks_like_date(f.get("shelter_date")) or bool(dv)
@@ -137,4 +146,6 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
         pool = list(docs) + [d for d in (visited or []) if d not in docs]
         alltext = " ".join(d.text() for d in pool)
         res.empty_confirmed = any(t in alltext for t in recipe.empty_text)
+    if not res.animals and res.rows and excluded == res.rows:
+        res.empty_confirmed = True   # 載っている子が全部「除外語」の子（飼い主が探している告知だけ等）
     return res
