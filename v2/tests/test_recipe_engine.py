@@ -68,7 +68,7 @@ def test_row_without_photo_or_key_is_dropped():
     ex = Executor(FakeFetcher({"https://x.test/": html}), recipe)
     res = build(_source(), recipe, ex.resolve("https://x.test/"))
     assert len(res.animals) == 2
-    assert [d.reason for d in res.dropped] == ["写真も管理番号も収容日も無い"]
+    assert [d.reason for d in res.dropped] == ["写真も管理番号も収容日も個体ページも無い"]
     assert res.animals[1]["management_no"] == "26-0123" and res.animals[1]["image_url"] is None
 
 

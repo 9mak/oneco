@@ -72,11 +72,14 @@ def resolve_species(source: Source, recipe: Recipe, row: Row, fields: dict[str, 
     return "other"
 
 
-def make_id(source: Source, image_raw: str | None, f: dict[str, str | None]) -> str:
+def make_id(source: Source, image_raw: str | None, f: dict[str, str | None], detail: str | None = None) -> str:
+    """写真 → 管理番号 → 個体ページの URL → 名前＋収容日 の順で決める。同じ子は翌日も同じ ID になる。"""
     if image_raw:
         key = f"{source.slug}|{image_raw}"
     elif f.get("management_no"):
         key = f"{source.slug}|{f['management_no']}"
+    elif detail:
+        key = f"{source.slug}|{detail}"
     else:
         key = f"{source.slug}|{f.get('name')}|{f.get('shelter_date')}"
     return hashlib.sha1(key.encode("utf-8")).hexdigest()[:12]
@@ -94,19 +97,23 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
             for name, spec in recipe.fields.items():
                 f[name] = field_value(spec, row)
             img_abs, img_raw = image_url(recipe, row)
-            has_key = looks_like_mgmt(f.get("management_no")) or looks_like_date(f.get("shelter_date"))
+            dv = f.pop("detail", None)   # 個体ページの URL（相対可）。写真の無い子でも個体ページがあれば動物とみなす
+            has_key = looks_like_mgmt(f.get("management_no")) or looks_like_date(f.get("shelter_date")) or bool(dv)
             if not img_abs and not has_key:
-                res.dropped.append(Dropped("写真も管理番号も収容日も無い", row.text()[:80]))
+                res.dropped.append(Dropped("写真も管理番号も収容日も個体ページも無い", row.text()[:80]))
                 continue
             species = resolve_species(source, recipe, row, f)
             if species == "other" and source.species == "mixed" and not recipe.species.get("allow_other"):
                 res.dropped.append(Dropped("犬か猫か分からない", row.text()[:80]))
                 continue
+            # 元ページのリンク。PDF は日次で差し替わってファイル名が変わる（香川 r8-9-28.pdf、茨城 inu0924.pdf）ので
+            # 既定では入口ページを指す。レシピに source_url: doc があれば PDF そのもの
             source_url = doc.url
-            dv = f.pop("detail", None)
+            if doc.is_pdf and recipe.source_url != "doc":
+                source_url = recipe.url or source.url
             if dv:
                 source_url = urljoin(recipe.base_url or doc.url, dv)
-            aid = make_id(source, img_raw, f)
+            aid = make_id(source, img_raw, f, detail=source_url if dv else None)
             if aid in seen_ids:
                 res.dropped.append(Dropped("同じ ID の行が既にある", row.text()[:80]))
                 continue

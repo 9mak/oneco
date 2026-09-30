@@ -25,7 +25,8 @@ from .fetch import Fetcher
 _JUNK_IMAGE = re.compile(
     r"(icon|btn|button|logo|spacer|arrow|new_win|blank|banner|bnr|/common/|/design/|/img/parts|"
     r"header|footer|nav|menu|line\.|dot\.|bg_|_bg|pixel|1x1|tracking|counter|sns|facebook|twitter|"
-    r"line_|instagram|youtube|\.svg$|loading|print|mail\.|tel\.|map\.|pdf\.|zoom|search)",
+    r"line_|instagram|youtube|\.svg$|loading|print|mail\.|tel\.|map\.|pdf\.|zoom|search|"
+    r"noimage|no[-_]?image|no[-_]?photo|nophoto|placeholder|dummy|junbichu|準備中)",   # 「写真なし」のプレースホルダ（山梨 noimage01.jpg 等）
     re.I,
 )
 # 日付らしさ: 2026年9月11日 / R8.9.11 / 2026/9/11 / 9月11日（年無し。神奈川・北九州の表に多い）
@@ -56,6 +57,7 @@ class Recipe:
     notes: str | None = None
     url: str | None = None          # 台帳の URL の代わりに開く入口（省略時は台帳の URL）
     transpose: str | None = None    # 転置表（1 列 = 1 頭）の table セレクタ。指定時は rows の代わりに列を行にする
+    source_url: str | None = None   # PDF の子の元ページリンク。既定は入口ページ（日次で差し替わる PDF は翌日 404 になる）。"doc" で PDF そのもの
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> Recipe:
