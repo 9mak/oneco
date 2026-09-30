@@ -51,6 +51,25 @@ def test_placeholder_image_is_not_a_photo_but_detail_link_keeps_row():
     assert res.animals[0]["id"] != res.animals[1]["id"]          # ID は個体ページの URL で決まる
 
 
+def test_field_lacks_drops_owner_searching_notices_and_confirms_empty():
+    """旭川市あにまある: 「探しています」（飼い主の迷子告知）と「保護しています」が同じ一覧に混ざる。
+    rows: body だとサイトのメニュー文言にも「探しています」があるので、name 項目で除外する。全部除外なら「該当なし」。"""
+    menu = "<nav>ペット探しています/保護しています</nav>"
+
+    def page(title: str, img: str) -> Doc:
+        html = f"{menu}<h2>{title}</h2><img class='p' src='/{img}.png'><table><tr><th>不明日</th><td>2026/09/21</td></tr></table>"
+        return Doc(url=f"https://x.jp/{img}", html=html, soup=BeautifulSoup(html, "lxml"))
+
+    recipe = Recipe.from_dict({"rows": "body", "image": "img.p@src", "row_filter": {"field_lacks": {"name": ["探しています", "探してます"]}},
+                               "fields": {"name": "h2", "shelter_date": {"label": "不明日"}}})
+    src = _src(slug="spec_douaicenter-7", url="https://x.jp/list", species="dog")
+    res = build(src, recipe, [page("犬 探しています(フルサワ)", "a"), page("犬を保護しています(サトウ)", "b")])
+    assert [a["name"] for a in res.animals] == ["犬を保護しています(サトウ)"]
+    assert [d.reason for d in res.dropped] == ["除外語（name: 探しています）"]
+    res2 = build(src, recipe, [page("犬 探しています(フルサワ)", "a")])
+    assert res2.animals == [] and res2.empty_confirmed        # 除外だけの日は failed でなく empty
+
+
 def test_make_id_prefers_image_then_mgmt_then_detail():
     s = _src()
     assert make_id(s, "a.jpg", {}) == make_id(s, "a.jpg", {"management_no": "1"})

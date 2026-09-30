@@ -1955,14 +1955,14 @@ sources:
     pdf_link_pattern: null
 - slug: wannyan_navi_aichi
   name: 愛知県わんにゃんナビ
-  municipality: 愛知県わんにゃんナビ
+  municipality: 愛知県動物愛護センター（わんにゃんナビ）
   prefecture: 愛知県
-  phone: null
-  address: null
+  phone: 0565-58-2323
+  address: 愛知県豊田市穂積町新屋73−3（愛知県動物愛護センター 本所。子は尾張・知多・東三河の各支所にもいる。所在は各個体の収容場所欄）
   url: https://wannyan-navi.pref.aichi.jp/?page=list_dc
   kind: adoption
   species: mixed
-  mode: link_only
+  mode: recipe
   recipe: recipes/wannyan_navi_aichi.yaml
   enabled: true
   legacy:
@@ -1971,7 +1971,7 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
-  note: Bubble 製 SPA。render しても一覧は 12 頭分で残りはページ送りクリックが要る。2026-09-29 調査では初回ロードの POST /elasticsearch/search の応答に全 38 頭の _id が入り、?page=list_dc_m&no=<_id> で個体ページが描画できる。エンジンに「render 中の応答 JSON から値を抜いて URL に差し込んで辿る step」と「見出し区間内の位置ベース項目割当」が要る（T509）
+  note: Bubble 製 SPA。一覧の <a href> が無いので、エンジンの render_json（描画中の POST /elasticsearch/search の応答から _id を抜き ?page=list_dc_m&no=<_id> を辿る）で読む。2026-09-30 T509 で対応。個体ページごとに Playwright 描画するため 1 頭 5 秒ほどかかる
 - slug: pref_niigata
   name: 新潟県動物愛護センター（保護動物）
   municipality: 新潟県動物愛護センター
