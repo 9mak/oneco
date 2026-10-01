@@ -14,6 +14,10 @@ safe_url() で http(s) 以外を捨てる。
 出力先は前回の build が作ったもの（目印 .oneco-build がある）か空のときだけ中身を消して作り直す。
 それ以外のディレクトリを渡すと止まる（消してはいけない場所を消さないため）。
 
+site/static/ の中身（ブランドの SVG・favicon・about の写真）はそのまま出力先にコピーする。
+ロゴは旧サイト（frontend/public/brand/）の「ふたつの円」（コーラル = 犬のポム、ブルーグリーン = 猫のビリー）と
+細線のワードマーク。配色も旧サイト（frontend/app/globals.css）の primary #0369a1 系を引き継ぐ。
+
 config.json:
     site_name   サイト名
     base_url    公開 URL（OG タグ・sitemap の絶対 URL に使う）
@@ -39,14 +43,37 @@ ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_DATA = ROOT / "data" / "latest.json"
 DEFAULT_OUT = ROOT / "site" / "dist"
 DEFAULT_CONFIG = ROOT / "site" / "config.json"
+STATIC_DIR = ROOT / "site" / "static"
 MARKER = ".oneco-build"
 
 DEFAULT_CFG: dict[str, Any] = {
     "site_name": "oneco",
-    "base_url": "https://oneco.pages.dev",
+    "base_url": "https://oneco.9mak-0x13.workers.dev",
     "issues_url": "https://github.com/9mak/oneco/issues",
+    "repo_url": "https://github.com/9mak/oneco",
+    "tagline": "全国の保護動物情報をひとつに",
     "affiliate": [],
 }
+
+# ブランドマーク「ふたつの円」（site/static/brand/oneco-mark.svg = 旧 frontend/public/brand/oneco-mark.svg。2026-07-08 確定）。
+# コーラルの円 = 犬のポム、ブルーグリーンの円 = 猫のビリー。全ページに毎日埋め込むのでインラインでなく <img> で 1 ファイルを参照する
+MARK_IMG = '<img class="mark" src="/brand/oneco-mark.svg" width="34" height="34" alt="" decoding="async">'
+
+# ワードマーク（frontend/public/brand/oneco-logo.svg と同じ。細線ジオメトリック、色は currentColor）
+WORDMARK_SVG = """<svg class="wordmark" viewBox="-8 -8 610 136" role="img" aria-label="oneco" focusable="false">
+<g fill="none" stroke="currentColor" stroke-width="3.2">
+<circle cx="61" cy="60" r="51"/>
+<path d="M142,110 L142,10 L228,110 L228,10"/>
+<path d="M338,10 L266,10 L266,110 L338,110 M266,60 L330,60"/>
+<path d="M449.8,32.2 A51,51 0 1 0 449.8,87.8"/>
+<circle cx="533" cy="60" r="51"/>
+</g>
+</svg>"""
+
+# 「ふたつの円」を小さく並べた区切り（about ページで使う）
+TWO_CIRCLES_SVG = ('<svg width="44" height="24" viewBox="0 0 44 24" aria-hidden="true" focusable="false">'
+                   '<circle cx="17" cy="12" r="10" fill="#E8826E" fill-opacity="0.8"/>'
+                   '<circle cx="27" cy="12" r="10" fill="#6FAEBB" fill-opacity="0.8"/></svg>')
 
 SPECIES = {"dog": "犬", "cat": "猫", "other": "その他"}
 KINDS = {"adoption": "譲渡対象", "sheltered": "収容中", "stray": "迷子収容"}
@@ -173,8 +200,13 @@ def page(cfg: dict[str, Any], *, title: str, desc: str, path: str, body: str,
     site = esc(cfg["site_name"])
     base = cfg["base_url"].rstrip("/")
     url = esc(base + path)
-    og_img = f'\n<meta property="og:image" content="{esc(og_image)}">' if og_image else ""
+    # 写真の無いページは OG 画像にブランドのアバター（ふたつの円）を使う
+    og_src = og_image or f"{base}/brand/oneco-avatar-512.png"
+    og_img = f'\n<meta property="og:image" content="{esc(og_src)}">'
     full_title = esc(title) if title == cfg["site_name"] else f"{esc(title)}｜{site}"
+    tagline = esc(cfg.get("tagline") or "")
+    tagline_html = f'<span class="tagline">{tagline}</span>' if tagline else ""
+    repo = safe_url(cfg.get("repo_url")) or DEFAULT_CFG["repo_url"]
     return f"""<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -189,20 +221,26 @@ def page(cfg: dict[str, Any], *, title: str, desc: str, path: str, body: str,
 <meta property="og:description" content="{esc(desc)}">
 <meta property="og:url" content="{url}">{og_img}
 <meta name="twitter:card" content="{'summary_large_image' if og_image else 'summary'}">
-<meta name="theme-color" content="#1f3a5f">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/style.css">{extra_head}
 </head>
 <body{body_attrs}>
 <header class="site-head">
-<a class="brand" href="/">{site}</a>
-<nav class="nav"><a href="/">都道府県</a><a href="/sources/">情報源</a><a href="/about/">このサイトについて</a></nav>
+<div class="site-head-in">
+<a class="brand" href="/" aria-label="{site} トップへ">{MARK_IMG}{WORDMARK_SVG}{tagline_html}</a>
+<nav class="nav" aria-label="メインナビゲーション"><a href="/">都道府県</a><a href="/sources/">情報源</a><a href="/about/">このサイトについて</a></nav>
+</div>
 </header>
 <main class="wrap">
 {body}
 </main>
 <footer class="site-foot">
+<div class="foot-brand"><img src="/brand/oneco-mark.svg" width="28" height="28" alt="" loading="lazy"><span>ふたつの円は、犬のポムと猫のビリー。<a href="/about/">このサイトについて</a></span></div>
 <p>掲載しているのは各自治体が公開している情報です。{f'データ確認日: {esc(fmt_date(data_date))}。' if data_date else ''}最新の状況は自治体のページ・電話でご確認ください。</p>
-<p><a href="/sources/">情報源の一覧</a> ・ <a href="/about/">運営方針・撤去依頼</a></p>
+<p><a href="/sources/">情報源の一覧</a> ・ <a href="/about/">運営方針・撤去依頼</a> ・ <a href="{esc(repo)}" rel="noopener" target="_blank">GitHub</a></p>
 </footer>
 </body>
 </html>
@@ -475,13 +513,73 @@ def build_sources(cfg: dict[str, Any], data: dict[str, Any]) -> str:
                 desc="oneco が毎日確認している自治体の保護犬・保護猫ページの一覧と、本日の確認状況。")
 
 
+# about ページの写真（site/static/images/about/）。alt は旧サイト（frontend/app/about/page.tsx）から引き継ぐ
+ABOUT_PHOTOS_POM = [
+    ("pom-1.jpg", "床にちょこんと座って舌を出して笑う、白い小さな犬のポム"),
+    ("pom-2.jpg", "ベッドのそばでこちらを見上げるポム"),
+    ("pom-3.jpg", "夜の散歩中、立ち止まって振り返るポム"),
+]
+ABOUT_PHOTOS_BILLY = [
+    ("billy-1.jpg", "両手でほっぺを包まれて、されるがままのビリー"),
+    ("billy-2.jpg", "布団の上でくつろぐ、白地に黒ぶちの大きな猫のビリー"),
+    ("billy-3.jpg", "気持ちよさそうに眠るビリー"),
+    ("billy-4.jpg", "ベランダから外を眺めるビリーの後ろ姿"),
+]
+
+
+def photo_grid(photos: list[tuple[str, str]], caption: str, cls: str) -> str:
+    imgs = "".join(
+        f'<img src="/images/about/{esc(f)}" alt="{esc(alt)}" width="1200" height="815" loading="lazy" decoding="async">'
+        for f, alt in photos)
+    return f'<figure class="photos {cls}">{imgs}<figcaption>{esc(caption)}</figcaption></figure>'
+
+
 def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
     issues = safe_url(cfg.get("issues_url")) or safe_url(DEFAULT_CFG["issues_url"])
+    repo = safe_url(cfg.get("repo_url")) or DEFAULT_CFG["repo_url"]
     site = esc(cfg["site_name"])
-    body = f"""<h1>このサイトについて</h1>
+    n_src = sum(1 for s in data.get("sources", []) if isinstance(s, dict) and s.get("enabled", True))
+    n_pref = len({str(s.get("prefecture")) for s in data.get("sources", []) if isinstance(s, dict) and s.get("prefecture")})
+    body = f"""<article class="about">
+<h1>このサイトについて</h1>
+<section>
+<h2>{site} とは</h2>
+<p>{site} は、全国の自治体（動物愛護センター・保健所・市区町村）が公開している保護犬・保護猫の情報を、出典を明示して 1 か所に集めた、個人運営のサイトです。個人や団体の掲載情報は扱いません。</p>
+<p>いま、{n_pref} 都道府県・{n_src} の自治体ページを毎日確認しています。載っているのは「その日、その自治体のページに出ている子」だけです。気になる子がいたら、掲載元の自治体に直接ご連絡ください。</p>
+</section>
+<section>
+<h2>{site} という名前と、ふたつの円</h2>
+<p>{site}（ワンコ）は、「わんこ」の綴りの中に「ねこ（NECO）」がいる名前です。頭の ONE には、ばらばらの情報をひとつにという意味も重なっています。ロゴのふたつの円は、このサイトのモデルになった犬のポムと猫のビリーを表しています。</p>
+<div class="story story-pom">
+{photo_grid(ABOUT_PHOTOS_POM, "ポム", "photos-pom")}
+<p><strong>コーラルの円は、犬のポムをイメージしています。</strong>私が通っていた専門学校で生まれ、トリミング実習のモデル犬として、学生たちのカット練習に付き合ってくれていた子です。犬舎にいた頃から、私を見つけると寝転んでお腹を見せてくれる子で、学校の里親制度を通じて 4 歳のときにうちに来ました。</p>
+<p>最初は 1 階で暮らしてもらうつもりで、専門学校の友人と木のケージまで手作りしました。けれど夜にさびしそうに鳴く声を聞き、その日のうちにあきらめて、それからはずっと私たちと同じ 2 階暮らしです。体重は 3 キロほど。いつも私の横にいて、公園では子どもたちと遊び、家でのシャンプーやカットもおとなしくさせてくれる子でした。</p>
+<p>散歩は大好きだったはずが、私が散歩をさぼるうちにビリーと過ごす時間が長くなり、自分のことを猫だと思い始めたのか、気づけばキャットタワーに登ろうとしていたことも。うちで過ごしたのは 5 年間。9 歳のときにお別れをしました。</p>
+</div>
+<div class="story story-billy">
+{photo_grid(ABOUT_PHOTOS_BILLY, "ビリー", "photos-billy")}
+<p><strong>ブルーグリーンの円は、猫のビリーをイメージしています。</strong>私が働いていた動物病院の近くで兄弟猫と一緒に拾われ、兄弟が先にもらわれていくなか、ビリーだけが病院に残った子です。その後は病院猫として過ごし、体が大きかったこともあって、血液が必要な子のための輸血ドナーを務めてくれていました。</p>
+<p>ふだんの住まいは、大型犬用の犬舎。私は昼休みや仕事終わりにそこから出して、よく一緒に遊んでいました。輸血のたびに軽い麻酔でふらつく姿を見ているうちに、うちに連れて帰ることにしました。</p>
+<p>家ではおとなしく、ほっぺを揉まれてもお風呂に入れられても嫌がらない、ポムのちょっかいにも静かに付き合ってくれる子でした。うちで過ごしたのは、同じく 5 年間。9 歳のとき、リンパ腫でお別れをしました。</p>
+</div>
+<div class="two-circles">{TWO_CIRCLES_SVG}</div>
+<p><strong>ふたつの円が重なる場所に、{site} の出発点があります。</strong>ポムは実習のモデル犬として学生の学びに関わり、ビリーは輸血ドナーとして病院で過ごしました。2 匹を見送るときに、行き場を探している子たちがポムやビリーのように誰かの家族になれるようにしようと約束しました。{site} という名前は、その約束に由来しています。</p>
+</section>
+<section>
+<h2>目指していること</h2>
+<p>保護された子が里親につながること。そして殺処分をゼロに近づけること。技術はそのための手段でしかありません。</p>
+<ul>
+<li>里親を考えている方が、住んでいる地域や近くの自治体にいる保護犬・保護猫をすぐ見つけられるようにする</li>
+<li>迷子のペットを探している方が、自治体に収容されているかもしれない子を素早く確かめられるようにする</li>
+</ul>
+</section>
+<section>
+<h2>運営者</h2>
+<p>{site} を作って運営しているのは、小熊 和喜（おぐま かずき）という個人です。トリミングの専門学校を出て動物病院で働いたあと、IT の仕事に移りました。ポムとは専門学校で、ビリーとは動物病院で出会いました。</p>
+<p>サイトの中身と作業の記録は <a href="{esc(repo)}" rel="noopener" target="_blank">GitHub リポジトリ</a> で公開しています。</p>
+</section>
 <section>
 <h2>運営方針</h2>
-<p>{site} は、全国の自治体（動物愛護センター・保健所・市区町村）が公開している保護犬・保護猫の情報を、出典を明示して 1 か所に集めたサイトです。個人や団体の掲載情報は扱いません。</p>
 <ul>
 <li>掲載するのは自治体の公開ページに載っている情報だけです。写真・項目は元ページのまま、電話番号と所在地は自治体の公式情報から転記しています。</li>
 <li>毎日、各自治体のページを確認して当日の情報だけを載せます。個体を追跡したり、過去の情報を残したりはしません。</li>
@@ -501,9 +599,10 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
 <section>
 <h2>免責</h2>
 <p>掲載内容は取得時点の自治体ページに基づきます。すでに譲渡・返還されている場合や、元ページの更新が反映されていない場合があります。最終的な情報は必ず各自治体にご確認ください。</p>
-</section>"""
+</section>
+</article>"""
     return page(cfg, title="このサイトについて", path="/about/", body=body, data_date=str(data.get("date") or ""),
-                desc=f"{cfg['site_name']} の運営方針、掲載の取り下げ・訂正の窓口、運営費について。")
+                desc=f"{cfg['site_name']} の名前の由来（犬のポムと猫のビリー）、運営者、運営方針、掲載の取り下げ・訂正の窓口について。")
 
 
 def build_404(cfg: dict[str, Any]) -> str:
@@ -528,11 +627,16 @@ def build_robots(cfg: dict[str, Any]) -> str:
 # ---------------------------------------------------------------- CSS
 
 CSS = """
-:root{--bg:#f6f7f9;--card:#fff;--ink:#1c2430;--mute:#5b6775;--line:#dfe4ea;--accent:#1f3a5f;--accent-ink:#fff;--dog:#e8f0fa;--cat:#fbeee6;--adopt:#e3f4e8;--shelter:#fff4d6;--stray:#f3e8f7;--ph:#b3c0cc}
+/* 配色は旧サイト frontend/app/globals.css の WCAG AA パレットを引き継ぐ:
+   primary #0369a1（白地 7.21:1）/ #075985（hover）、文字 #1f2937 / #5b6775、focus #3b82f6。
+   ブランドの 2 色（コーラル #E8826E = 犬のポム、ブルーグリーン #6FAEBB = 猫のビリー）は
+   犬・猫のバッジと about ページの飾りに使う。区分（譲渡・収容・迷子）は旧サイトの緑・青・琥珀の淡色 */
+:root{--bg:#fcfbf9;--card:#fff;--ink:#1f2937;--mute:#5b6775;--line:#e5e7eb;--accent:#0369a1;--accent-dark:#075985;--accent-ink:#fff;--accent-50:#f0f9ff;--accent-100:#e0f2fe;--coral:#E8826E;--teal:#6FAEBB;--focus:#3b82f6;--dog:#fdeae4;--dog-ink:#9a3a26;--cat:#e4f1f4;--cat-ink:#21606c;--adopt:#d1fae5;--adopt-ink:#065f46;--shelter:#e0f2fe;--shelter-ink:#075985;--stray:#fef3c7;--stray-ink:#92400e;--ph:#b3c0cc}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",Meiryo,sans-serif;line-height:1.6;font-size:16px}
 a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 img{max-width:100%;display:block}
 h1{font-size:1.4rem;margin:.2em 0 .5em;line-height:1.35}
 h2{font-size:1.1rem;margin:1.6em 0 .5em}
@@ -540,13 +644,20 @@ h3{font-size:1rem;margin:0}
 p{margin:.4em 0}
 code{font-size:.85em;background:#eef1f4;padding:.1em .3em;border-radius:4px}
 .wrap{max-width:1040px;margin:0 auto;padding:16px}
-.site-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:var(--accent);color:var(--accent-ink)}
-.brand{color:#fff;text-decoration:none;font-weight:700;font-size:1.25rem;letter-spacing:.02em}
+.site-head{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.94);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+.site-head-in{max-width:1040px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0;color:var(--ink);text-decoration:none;border-radius:6px}
+.brand .mark{flex:none;width:34px;height:34px}
+.brand .wordmark{flex:none;width:99px;height:22px;display:block}
+.brand .tagline{font-size:.8rem;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-left:2px}
+@media (max-width:640px){.brand .tagline{display:none}}
 .nav{display:flex;gap:14px;flex-wrap:wrap;font-size:.9rem}
-.nav a{color:#fff;text-decoration:none;opacity:.92}
-.nav a:hover{text-decoration:underline}
-@media (max-width:520px){.site-head{flex-wrap:wrap;padding:10px 16px}.nav{flex:1 1 100%;gap:16px}}
+.nav a{color:var(--mute);text-decoration:none;padding:4px 2px;border-radius:4px}
+.nav a:hover{color:var(--accent);text-decoration:underline}
+@media (max-width:520px){.site-head-in{flex-wrap:wrap;padding:8px 16px}.nav{flex:1 1 100%;gap:16px}}
 .site-foot{max-width:1040px;margin:32px auto 0;padding:16px;color:var(--mute);font-size:.85rem;border-top:1px solid var(--line)}
+.foot-brand{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.foot-brand img{flex:none}
 .crumbs{font-size:.85rem;color:var(--mute);margin-bottom:8px;overflow-wrap:anywhere}
 .intro p{max-width:70ch}
 .stats{color:var(--mute);font-size:.95rem}
@@ -572,8 +683,8 @@ code{font-size:.85em;background:#eef1f4;padding:.1em .3em;border-radius:4px}
 .card .muni{font-size:.8rem;color:var(--mute);margin:0}
 .badges{display:flex;gap:6px;flex-wrap:wrap}
 .badge{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:999px;background:#eef1f4;color:var(--ink);line-height:1.5}
-.badge.sp-dog{background:var(--dog)}.badge.sp-cat{background:var(--cat)}
-.badge.kd-adoption{background:var(--adopt)}.badge.kd-sheltered{background:var(--shelter)}.badge.kd-stray{background:var(--stray)}
+.badge.sp-dog{background:var(--dog);color:var(--dog-ink)}.badge.sp-cat{background:var(--cat);color:var(--cat-ink)}
+.badge.kd-adoption{background:var(--adopt);color:var(--adopt-ink)}.badge.kd-sheltered{background:var(--shelter);color:var(--shelter-ink)}.badge.kd-stray{background:var(--stray);color:var(--stray-ink)}
 .media{position:relative;aspect-ratio:4/3;background:#e9edf1;overflow:hidden;container-type:inline-size}
 .media img{width:100%;height:100%;object-fit:cover}
 .media img+.ph{display:none}
@@ -596,7 +707,7 @@ code{font-size:.85em;background:#eef1f4;padding:.1em .3em;border-radius:4px}
 .facts dd{margin:0;overflow-wrap:anywhere;white-space:pre-line}
 .cta{display:block;background:var(--accent);color:#fff;text-decoration:none;text-align:center;font-weight:700;font-size:1.05rem;padding:14px 16px;border-radius:12px;margin:14px 0}
 .cta small{display:block;font-weight:400;font-size:.8rem;opacity:.85;margin-top:2px}
-.cta:hover{filter:brightness(1.1)}
+.cta:hover{background:var(--accent-dark)}
 .cta-none{background:#eef1f4;color:var(--ink);font-weight:400;font-size:.95rem}
 .prep{margin-top:20px;background:#fffaf0;border:1px solid #f0e2c2;border-radius:14px;padding:12px 16px}
 .prep h2{margin-top:.2em}
@@ -609,10 +720,23 @@ code{font-size:.85em;background:#eef1f4;padding:.1em .3em;border-radius:4px}
 .src-name{font-weight:600}
 .src-meta{color:var(--mute);font-size:.85rem}
 .src-status{font-size:.9rem}
-.src.st-failed .src-status{color:#a33}
+.src.st-failed .src-status{color:#b91c1c}
 .src.st-ok .src-status b{color:var(--accent)}
 .src-link{font-size:.9rem}
 .empty{color:var(--mute)}
+.about{max-width:72ch;overflow:clip;padding:0 2px}
+.about p{line-height:1.8}
+.about h2{margin-top:2em}
+.story{position:relative;isolation:isolate;margin:1.2em 0 2em}
+.story::before{content:"";position:absolute;z-index:-1;border-radius:50%;opacity:.13;pointer-events:none;width:260px;height:260px}
+.story-pom::before{background:var(--coral);left:-130px;bottom:-40px}
+.story-billy::before{background:var(--teal);right:-150px;bottom:-70px;width:340px;height:340px}
+.photos{margin:0 0 12px;display:grid;gap:8px;grid-template-columns:repeat(2,1fr)}
+.photos img{width:100%;height:auto;aspect-ratio:3/2;object-fit:cover;border-radius:10px;background:#e9edf1}
+.photos figcaption{grid-column:1/-1;text-align:center;color:var(--mute);font-size:.8rem}
+.photos-pom img:first-child{grid-column:1/-1}
+@media (min-width:600px){.photos-pom{grid-template-columns:repeat(3,1fr)}.photos-pom img:first-child{grid-column:1/3;grid-row:1/3;height:100%;aspect-ratio:auto}}
+.two-circles{display:flex;justify-content:center;margin:28px 0 14px}
 [hidden]{display:none!important}
 """
 
@@ -680,6 +804,8 @@ def build_site(data: dict[str, Any], cfg: dict[str, Any], out: Path, data_path: 
     write(out, "sitemap.xml", build_sitemap(cfg, data, prefs, animals))
     write(out, "robots.txt", build_robots(cfg))
     write(out, "style.css", CSS.strip() + "\n")
+    if STATIC_DIR.is_dir():
+        shutil.copytree(STATIC_DIR, out, dirs_exist_ok=True)
     if data_path is not None:
         shutil.copyfile(data_path, out / "data.json")
     else:
