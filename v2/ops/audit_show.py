@@ -16,8 +16,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("slug")
     ap.add_argument("--dir", required=True, type=Path)
-    ap.add_argument("--text", type=int, default=9000, help="文書本文の表示上限（文字）")
-    ap.add_argument("--imgs", type=int, default=60, help="文書ごとの img 表示上限")
+    ap.add_argument("--text", type=int, default=6000, help="文書本文の表示上限（文字）")
+    ap.add_argument("--imgs", type=int, default=40, help="文書ごとの img 表示上限")
     ap.add_argument("--docs", type=int, default=12, help="表示する文書数の上限")
     a = ap.parse_args()
     p = a.dir / f"{a.slug}.json"
