@@ -1,6 +1,8 @@
 # oneco v2 運用手順
 
-毎日 JST 0:05 に収集サーバー（手元の Mac の launchd。控えは VPS）が全自治体のページを読み、静的サイトを作り直して Cloudflare Pages に置く。人がやるのは「通知が来た日に見る」「月 1 回 discover を回す」「撤去依頼が来たら台帳を 1 行直す」の 3 つ。
+毎日 JST 0:05 に収集サーバー（手元の Mac の launchd。控えは VPS）が全自治体のページを読み、静的サイトを作り直して Cloudflare Workers（静的アセット）に置く。人がやるのは「通知が来た日に見る」「月 1 回 discover を回す」「撤去依頼が来たら台帳を 1 行直す」の 3 つ。
+
+公開 URL は `https://oneco.9mak-0x13.workers.dev`（`site/config.json` の `base_url`。独自ドメインを付けたらここも変える）。
 
 ## 1. 初期設定（1 回だけ）
 
@@ -32,6 +34,15 @@ launchctl kickstart -k gui/$(id -u)/com.oneco.collect && tail -f v2/logs/launchd
 - ログは `v2/logs/collect-<日付>.log`。`launchctl print gui/$(id -u)/com.oneco.collect` で状態と last exit code
 - 解除は `bash v2/ops/macos/install.sh --remove`
 - Claude Code のサンドボックスからは `launchctl` が拒否されるので、登録・手動実行はターミナルから
+
+#### launchd の実行が `Operation not permitted` で止まるとき（2026-10-01 に発生）
+
+`v2/logs/launchd.log` に `bash: /Users/k/Desktop/oneco/v2/ops/collect.sh: Operation not permitted` と出て、`collect-<日付>.log` が作られない日は、macOS の「ファイルとフォルダ」権限（TCC）が原因。launchd から起動した `/bin/bash` には Desktop フォルダ（`~/Desktop` 配下はシステムが保護する場所）を読む権限が無い。2026-09-30 の夜に Claude Code 側で権限ダイアログが拒否された後、0:05 の収集がこれで 1 日飛んだ。
+
+直し方はどちらか:
+
+1. システム設定 → プライバシーとセキュリティ → フルディスクアクセス → 「＋」→ ⌘⇧G で `/bin/bash` を指定して追加・オン。その後ターミナルで `launchctl kickstart -k gui/$(id -u)/com.oneco.collect && tail -f v2/logs/launchd.log` で 1 回動かして `collect-<日付>.log` ができることを確認
+2. リポジトリを `~/Desktop` の外（例 `~/oneco`）へ移して `~/.config/oneco/collect.env` の `ONECO_V2_DIR` を直す（保護フォルダの外なら権限は要らない。Claude Code 側の設定やパスも全部変わるので大掛かり）
 
 ### 1-2b. VPS（控え）
 
@@ -97,15 +108,24 @@ collect.sh は全部成功したときだけこの URL を叩き、どこかが�
 [console.anthropic.com](https://console.anthropic.com) → API Keys で発行。`/etc/oneco/collect.env` に `ANTHROPIC_API_KEY` と `ONECO_AI_REPAIR=1` を書く。
 `ONECO_AI_REPAIR=1` が無いと修復は動かない（キーだけ置いても課金されない）。使うモデルは既定 `claude-sonnet-5`、変えるなら `ONECO_AI_MODEL`。
 
+### 1-6. 残っている手動作業（2026-10-01 時点・T506）
+
+| 項目 | やること | 反映先 |
+| --- | --- | --- |
+| 独自ドメイン | ドメインを取り、Cloudflare にゾーンを作って Workers & Pages → oneco → Settings → Domains & Routes → Custom domain で付ける | `site/config.json` の `base_url` を新ドメインに変える（canonical・OG・sitemap が変わる） |
+| アフィリエイト | Amazon アソシエイト等に申し込み、承認後にリンクを作る | `site/config.json` の `affiliate` に `{"title","url","note"}` を入れる。空のあいだは「迎える準備」枠ごと出ない |
+| healthchecks | healthchecks.io で Check（Period 1 day・Grace 3 hours）を作る | `~/.config/oneco/collect.env` の `HEALTHCHECK_URL` に ping URL を入れる |
+| launchd の権限 | 上記「launchd の実行が Operation not permitted で止まるとき」の 1 か 2 | `v2/logs/collect-<日付>.log` が毎日できることを確認 |
+
 ## 2. 毎日自動で起きること
 
-`ops/collect.sh`（JST 0:00、`oneco-collect.timer`）:
+`ops/collect.sh`（Mac の launchd なら JST 0:05、VPS なら `oneco-collect.timer` で 0:00）:
 
 1. `collector run` — 台帳（`registry/sources.yaml`）の `enabled: true` のページを 1 秒間隔で全部読み、`data/animals-<日付>.json` `data/latest.json` `data/report-<日付>.json` を書く
    - ページが読めず `status: failed` になったものは、`ONECO_AI_REPAIR=1` なら **その場で 1 回だけ** Claude にレシピを書き直させる。新レシピで 1 頭以上取れたら `recipes/<slug>.yaml` を上書きして読み直す。取れなければレシピは元のまま、failed のまま
 2. `collector notify` — report に異常（failed、または AI がレシピを書き直した）があるときだけ Discord に 1 通。平常時は何も送らない
 3. `site/build.py` — `data/latest.json` から `site/dist/` を作る
-4. `wrangler pages deploy` — `site/dist/` を Cloudflare Pages へ
+4. `wrangler deploy`（`ops/wrangler.jsonc`）— `site/dist/` を Cloudflare Workers の静的アセットへ
 5. 全部成功したら `HEALTHCHECK_URL` へ ping
 
 途中で失敗しても止まらない。収集が全滅した日でも `data/latest.json` は前日のものが残っているので、サイトは「昨日のまま」出続ける（落ちない）。
@@ -183,7 +203,7 @@ cd /opt/oneco/v2   # ローカルでもよい
 | 収集サーバー（本命は手元の Mac の launchd） | 0 円 |
 | 控え: VPS 2GB（さくらのVPS / ConoHa / Vultr など） | 1,000〜1,500 円 |
 | 控え: GCP Cloud Run Jobs（1 日 10 分・2GB。無料枠 vCPU 18 万秒/月の内側） | 0〜100 円（billing の再有効化が要る） |
-| Cloudflare Pages（Free プラン。静的配信・独自ドメイン込み） | 0 円（Direct Upload は 1 日 500 デプロイまで、1 日 1 回なので余裕） |
+| Cloudflare Workers 静的アセット（Free プラン。独自ドメイン込み） | 0 円（静的アセットの配信は Workers のリクエスト数に数えない） |
 | healthchecks.io（Free、20 checks まで） | 0 円 |
 | Discord webhook | 0 円 |
 | Anthropic API（AI 修復） | 1 回あたり入力 3〜6 万トークン・出力 1 千トークン前後。claude-sonnet-5（入力 $2 / 出力 $10 per 1M）で 1 回 15〜30 円程度。壊れるのは月に数ページなので通常 100〜500 円。サイト改修が重なる年度替わり（4 月）に 1 日 10 件走っても 1 日 300 円が上限目安 |
