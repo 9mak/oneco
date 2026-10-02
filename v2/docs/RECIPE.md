@@ -9,6 +9,7 @@
 rows: "table.list tr"          # 動物 1 頭 = この CSS セレクタにマッチする要素 1 つ
 image: "img@src"               # 行の中の写真（省略時は img@src）
 # image: {selector: "td img@src", exclude: ["noimage"], strip_query: true}   # 除外パターン、?以降の除去（ID の安定化）
+# image: {selector: "p.imagecenter img@src", scope: prev_siblings}   # 写真が行の外（直前の兄弟要素）にあるとき。前の行（同じタグ）まで遡り文書順で先の 1 枚
 fields:
   name: "td:nth-of-type(2)"
   sex:  "td:nth-of-type(3)"
@@ -68,6 +69,7 @@ fields:
   shelter_date: {label: "収容日", regex: "(\\d+年\\d+月\\d+日)"}   # 組み合わせ可
   note: {selector: "td.memo", default: null}
   management_no: {index: 0}                 # PDF 表の列番号
+  management_no: {from: heading, selector: "h3", regex: "番号[:：]\\s*(\\d\\S*)"}   # 行より前にある直近の見出しから取る（regex は見出しの文字に当たる）
 ```
 
 使える項目名: `name` `sex` `age` `breed` `color` `size` `management_no` `shelter_date` `note` `species` `detail`（個体ページの URL）`location`（同じページに複数センターが混ざるときだけ）。

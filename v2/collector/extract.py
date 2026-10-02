@@ -9,7 +9,7 @@ from urllib.parse import urljoin
 
 from bs4 import Tag
 
-from .recipe import Doc, Recipe, Row, extract_rows, field_value, image_url, looks_like_date, looks_like_mgmt
+from .recipe import Doc, Recipe, Row, extract_rows, field_value, image_url, looks_like_date, looks_like_mgmt, nearest_heading
 from .registry import Source
 
 FIELD_NAMES = ["name", "sex", "age", "breed", "color", "size", "management_no", "shelter_date", "note", "location"]
@@ -31,25 +31,6 @@ class Result:
     empty_confirmed: bool = False
 
 
-def _nearest_heading(el: Tag, selector: str) -> str | None:
-    """行より前にある、selector に合う直近の要素（見出し）のテキスト。"""
-    root = el
-    while root.parent is not None and root.parent.name != "[document]":
-        root = root.parent
-    candidates = root.select(selector)
-    best = None
-    for c in candidates:
-        if c is el or el in c.descendants:
-            continue
-        # c が el より前にあるか（文書順）
-        if c.sourceline is not None and el.sourceline is not None:
-            if (c.sourceline, c.sourcepos or 0) < (el.sourceline, el.sourcepos or 0):
-                best = c
-        elif el in c.find_all_next():
-            best = c
-    return best.get_text(" ", strip=True) if best is not None else None
-
-
 def resolve_species(source: Source, recipe: Recipe, row: Row, fields: dict[str, str | None]) -> str:
     if source.species in ("dog", "cat"):
         return source.species
@@ -60,7 +41,7 @@ def resolve_species(source: Source, recipe: Recipe, row: Row, fields: dict[str, 
     if src == "field":
         text = fields.get("species")
     elif src == "heading" and row.el is not None:
-        text = _nearest_heading(row.el, spec.get("selector", "h2, h3, h4"))
+        text = nearest_heading(row.el, spec.get("selector", "h2, h3, h4"))
     elif src == "url":
         text = row.doc.url          # dog.pdf / cat.pdf のように文書の URL で決まるとき
     else:

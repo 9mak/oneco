@@ -4,8 +4,9 @@
 # 「いません」等の文言は無いため、自動判定（写真も管理番号も収容日も無い→捨てる）で 0 頭になる。
 # その場合に「本当に0頭」と確定させるため、動物の有無に関係なく常に載っている案内文を empty_text にする。
 rows: "div#voice dl"
-image: "p.imagecenter img@src"
+image: {selector: "p.imagecenter img@src", scope: prev_siblings}   # 写真は dl の直前の兄弟 p（旧指定は行の子孫しか見ず常に無写真だった。2026-10-02 監査）
 fields:
+  management_no: {from: heading, selector: "h2", regex: "整理番号[:：]\\s*(\\d\\S*)"}   # 直前の h2「整理番号：8-9-12」。雛形の空見出しは None
   shelter_date: {label: "収容月日"}
   breed: {label: "種類"}
   age: {label: "推定年齢"}
