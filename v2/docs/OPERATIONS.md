@@ -22,27 +22,22 @@
 
 ### 1-2a. Mac の launchd（本命）
 
-前提: このリポジトリが手元にあり `.venv` に `v2/requirements.txt` が入っていること、Playwright の Chromium が入っていること（`.venv/bin/playwright install chromium`）、Node.js（`brew install node`。wrangler を `npx` で呼ぶ）。
+動かすのは開発用の checkout（`~/Desktop/oneco`）ではなく、`install.sh` が `~/oneco-collect` に作る **main の本番クローン**。launchd から起動した `/bin/bash` には `~/Desktop`・`~/Documents`・`~/Downloads`（macOS が保護するフォルダ、TCC）を読む権限が無く `Operation not permitted` で止まるため（2026-10-01・02 の 2 日分がこれで飛んだ）。保護フォルダの外なら権限は要らない。
+
+前提: Node.js（`brew install node`。wrangler を `npx` で呼ぶ）、Python 3.11（`brew install python@3.11`）、git。
 
 ```bash
-bash v2/ops/macos/install.sh          # ~/.config/oneco/collect.env を置き、~/Library/LaunchAgents に登録
-vi ~/.config/oneco/collect.env        # 1-1 で取った CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID / ONECO_PAGES_PROJECT を埋める（chmod 600）
-launchctl kickstart -k gui/$(id -u)/com.oneco.collect && tail -f v2/logs/launchd.log   # 1 回手で動かして確認
+bash v2/ops/macos/install.sh          # ~/oneco-collect に main を clone（あれば pull）→ .venv・requirements・Chromium → ~/.config/oneco/collect.env を置く → launchd に登録
+vi ~/.config/oneco/collect.env        # ONECO_PAGES_PROJECT（Worker 名）・DISCORD_WEBHOOK_URL・HEALTHCHECK_URL を埋める（chmod 600）。wrangler login 済みなら CLOUDFLARE_* は空でよい
+launchctl kickstart -k gui/$(id -u)/com.oneco.collect && tail -f ~/oneco-collect/v2/logs/launchd.log   # 1 回手で動かして確認
 ```
 
-- 毎日 0:05 JST に `ops/collect.sh`（run → notify → build → deploy）が動く。Mac が寝ていて逃した日は起きたときに 1 回動く
-- ログは `v2/logs/collect-<日付>.log`。`launchctl print gui/$(id -u)/com.oneco.collect` で状態と last exit code
-- 解除は `bash v2/ops/macos/install.sh --remove`
-- Claude Code のサンドボックスからは `launchctl` が拒否されるので、登録・手動実行はターミナルから
-
-#### launchd の実行が `Operation not permitted` で止まるとき（2026-10-01 に発生）
-
-`v2/logs/launchd.log` に `bash: /Users/k/Desktop/oneco/v2/ops/collect.sh: Operation not permitted` と出て、`collect-<日付>.log` が作られない日は、macOS の「ファイルとフォルダ」権限（TCC）が原因。launchd から起動した `/bin/bash` には Desktop フォルダ（`~/Desktop` 配下はシステムが保護する場所）を読む権限が無い。2026-09-30 の夜に Claude Code 側で権限ダイアログが拒否された後、0:05 の収集がこれで 1 日飛んだ。
-
-直し方はどちらか:
-
-1. システム設定 → プライバシーとセキュリティ → フルディスクアクセス → 「＋」→ ⌘⇧G で `/bin/bash` を指定して追加・オン。その後ターミナルで `launchctl kickstart -k gui/$(id -u)/com.oneco.collect && tail -f v2/logs/launchd.log` で 1 回動かして `collect-<日付>.log` ができることを確認
-2. リポジトリを `~/Desktop` の外（例 `~/oneco`）へ移して `~/.config/oneco/collect.env` の `ONECO_V2_DIR` を直す（保護フォルダの外なら権限は要らない。Claude Code 側の設定やパスも全部変わるので大掛かり）
+- 毎日 0:05 JST に `ops/macos/collect-launchd.sh` が動く: `git pull --ff-only origin main`（失敗したら前回のコードで続行）→ `ops/collect.sh`（run → notify → build → deploy）。**main に merge すれば翌日の収集から反映される**。Mac が寝ていて逃した日は起きたときに 1 回動く
+- ログは `~/oneco-collect/v2/logs/collect-<日付>.log`（collect.sh）と `launchd.log`（起動まわり）。`launchctl print gui/$(id -u)/com.oneco.collect` で状態と last exit code
+- `data/`（日次 JSON）と `site/dist/` は本番クローン側に溜まる。開発用 checkout の `data/` は手元の試し読み用で、公開には使われない
+- 場所を変えるなら `ONECO_RUN_DIR=... bash v2/ops/macos/install.sh`（保護フォルダの下は拒否される）。解除は `bash v2/ops/macos/install.sh --remove`（クローンと collect.env は残る）
+- Claude Code からは `launchctl` と `install.sh` の実行が拒否されるので、登録・手動実行はターミナルから
+- last exit code が 126 で `launchd.log` に `Operation not permitted` と出る日は、plist が保護フォルダの下を指している（古い登録が残っている）。`install.sh` を入れ直す。collect.sh を起動できなかった日は Discord にも「収集を起動できなかった」と届く
 
 ### 1-2b. VPS（控え）
 
@@ -115,11 +110,11 @@ collect.sh は全部成功したときだけこの URL を叩き、どこかが�
 | 独自ドメイン | ドメインを取り、Cloudflare にゾーンを作って Workers & Pages → oneco → Settings → Domains & Routes → Custom domain で付ける | `site/config.json` の `base_url` を新ドメインに変える（canonical・OG・sitemap が変わる） |
 | アフィリエイト | Amazon アソシエイト等に申し込み、承認後にリンクを作る | `site/config.json` の `affiliate` に `{"title","url","note"}` を入れる。空のあいだは「迎える準備」枠ごと出ない |
 | healthchecks | healthchecks.io で Check（Period 1 day・Grace 3 hours）を作る | `~/.config/oneco/collect.env` の `HEALTHCHECK_URL` に ping URL を入れる |
-| launchd の権限 | 上記「launchd の実行が Operation not permitted で止まるとき」の 1 か 2 | `v2/logs/collect-<日付>.log` が毎日できることを確認 |
+| 本番クローンの登録 | ターミナルで `bash v2/ops/macos/install.sh`（1-2a。`~/oneco-collect` を作って launchd の登録を入れ替える）→ `launchctl kickstart -k gui/$(id -u)/com.oneco.collect` で 1 回動かす | `~/oneco-collect/v2/logs/collect-<日付>.log` が毎日できること、サイトの日付が更新されること |
 
 ## 2. 毎日自動で起きること
 
-`ops/collect.sh`（Mac の launchd なら JST 0:05、VPS なら `oneco-collect.timer` で 0:00）:
+`ops/collect.sh`（Mac の launchd なら JST 0:05 に `ops/macos/collect-launchd.sh` が `git pull --ff-only origin main` で本番クローンを更新してから呼ぶ、VPS なら `oneco-collect.timer` で 0:00）:
 
 1. `collector run` — 台帳（`registry/sources.yaml`）の `enabled: true` のページを 1 秒間隔で全部読み、`data/animals-<日付>.json` `data/latest.json` `data/report-<日付>.json` を書く
    - ページが読めず `status: failed` になったものは、`ONECO_AI_REPAIR=1` なら **その場で 1 回だけ** Claude にレシピを書き直させる。新レシピで 1 頭以上取れたら `recipes/<slug>.yaml` を上書きして読み直す。取れなければレシピは元のまま、failed のまま
@@ -151,8 +146,10 @@ AI がレシピを書き直した自治体 1 件（recipes/<slug>.yaml が変わ
 | `follow: '…' が見つからない` / `0 頭で empty_text も無い` | ページ構造が変わった。AI 修復も失敗している | VPS で `sudo -u oneco env $(sudo cat /etc/oneco/collect.env | xargs) /opt/oneco/.venv/bin/python -m collector repair <slug> --show` を手で回す。それでも駄目なら `collector show <slug>` と `collector fetch <url> --selectors` を見て `recipes/<slug>.yaml` を人が直す（書き方は `docs/RECIPE.md`） |
 | `AI がレシピを書き直した自治体 N 件` | VPS 上の `recipes/<slug>.yaml` が変わり、読めるようになった | VPS の `git -C /opt/oneco diff v2/recipes` を見て、妥当なら commit して push（放置すると次の `git pull` で戻る）。取り方が変（写真が広告、頭数が異常）なら `git checkout` で戻して人が直す |
 | `（公開 N 頭・成功 M ページ）` | その日の全体 | 前日と大きく違えば異常。`data/report-<日付>.json` を見る |
+| `失敗した工程 -> build deploy` | collect.sh の工程（run の落ち・build・deploy）が失敗した。読めないページの話ではない | `logs/collect-<日付>.log` の `-- <工程>: 失敗` の直前を見る。deploy なら `npx wrangler whoami`（OAuth 切れ）、build なら `data/latest.json` の有無 |
+| `収集を起動できなかった (exit 126)` | launchd の bash が collect.sh を実行できない（保護フォルダの下・パス違い） | ターミナルで `bash v2/ops/macos/install.sh` を入れ直す |
 
-通知が来ない日 = 全ページ読めた日。healthchecks から「ping が来ない」メールが来たら VPS 自体を見る（`systemctl status oneco-collect.timer`、`journalctl -u oneco-collect --since yesterday`）。
+通知が来ない日 = 全ページ読めた日（ただし収集サーバー自体が動かなかった日も通知は来ない。サイトの日付が 2 日以上古ければ疑う）。healthchecks から「ping が来ない」メールが来たら収集サーバー自体を見る。Mac なら `launchctl print gui/$(id -u)/com.oneco.collect` の last exit code と `~/oneco-collect/v2/logs/launchd.log`、VPS なら `systemctl status oneco-collect.timer`、`journalctl -u oneco-collect --since yesterday`。
 
 ## 4. 月 1 回: `collector discover`（新しい自治体を拾う）
 
