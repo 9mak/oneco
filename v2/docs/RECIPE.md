@@ -28,6 +28,7 @@ steps:
   - paginate: "div.next a@href"           # 「次へ」がある限り辿る（最大 max_pages、既定 20）
   - pdf_links: "a[href$='.pdf']@href"     # PDF を全部取り、文字と表にする（下記 PDF 方式）
   - render: true                          # JavaScript 描画が必要なとき（Playwright）。最初に置く
+  - render: {wait_for: "table.list tr", wait_ms: 3000}   # 描画後にこのセレクタが現れるまで待つ（最長 20 秒）。一覧を JS が後から組み立てるサイト用。現れない日はそのまま続ける（0 頭は empty_text で）
 ```
 
 `follow` 系の値は `セレクタ@属性`。`@属性` を省くと `@href`。

@@ -164,7 +164,7 @@ class Executor:
 
     def _get(self, url: str, render: bool = False, capture: str | None = None) -> Doc:
         if render:
-            page = self.fetcher.render(url, capture=capture)
+            page = self.fetcher.render(url, capture=capture, **self._render_opts())
             d = _make_doc(page.final_url, page.html or "")
             d.rendered = True
             d.captured = list(page.captured)
@@ -173,6 +173,18 @@ class Executor:
         if page.html is None:
             return _make_pdf_doc(page.final_url, page.content, columns=self._pdf_columns())
         return _make_doc(page.final_url, page.html)
+
+    def _render_opts(self) -> dict[str, Any]:
+        """steps の `render:` が辞書（{wait_for: セレクタ, wait_ms: ミリ秒}）なら、その指定を fetcher.render に渡す。"""
+        spec = next((s["render"] for s in self.recipe.steps if s.get("render")), None)
+        if not isinstance(spec, dict):
+            return {}
+        opt: dict[str, Any] = {}
+        if spec.get("wait_for"):
+            opt["wait_for"] = str(spec["wait_for"])
+        if spec.get("wait_ms") is not None:
+            opt["wait_ms"] = int(spec["wait_ms"])
+        return opt
 
     def _pdf_columns(self) -> int:
         return int((self.recipe.pdf or {}).get("columns", 1))
