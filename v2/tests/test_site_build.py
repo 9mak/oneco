@@ -237,3 +237,22 @@ def test_about_has_pom_billy_and_operator(built):
     assert "非営利" not in h            # W005: 「非営利」とは書かない
     assert "アフィリエイト" in h        # 運営費の明記
     assert "撤去・訂正依頼の窓口" in h
+
+
+def test_lost_kind_is_labelled_and_filterable(tmp_path: Path):
+    """新区分 lost（飼い主さんが探している迷子）: バッジ「探してます」・絞り込み・区分説明・項目名が収容の言い方にならない（2026-10-02）。"""
+    data = _merged()
+    a = dict(data["animals"][0])
+    a.update({"id": "lost00000001", "kind": "lost", "shelter_date": "2026年9月1日", "location": "甲府市中央"})
+    data["animals"].append(a)
+    out = tmp_path / "dist"
+    _load_build().build_site(data, CONFIG, out)
+    pref = _read(out / "pref" / a["prefecture"] / "index.html")
+    assert "kd-lost" in pref and "探してます" in pref
+    assert "'lost'" in pref or '"lost"' in pref            # 絞り込みの選択肢と JS の表示名
+    assert "里親募集" in pref and "保護中" in pref and "収容中" not in pref and "譲渡対象" not in pref
+    d = _read(out / "animals" / "lost00000001" / "index.html")
+    assert "探してます" in d and "飼い主さんが探している" in d
+    assert "いなくなった日" in d and "いなくなった場所" in d and "収容日" not in d
+    idx = _read(out / "index.html")
+    assert "探してます＝" in idx                              # 区分の意味のヒント

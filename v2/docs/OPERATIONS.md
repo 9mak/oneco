@@ -170,7 +170,7 @@ cd /opt/oneco/v2   # ローカルでもよい
 
 台帳に足す手順（1 自治体 = 1 ページ = 1 エントリ。譲渡と収容が別ページなら 2 エントリ）:
 
-1. `registry/sources.yaml` の末尾に追記。`slug` は `<ドメインの主部>-<連番>`（例 `pref_saga-1`）で重複しないこと。`kind`（adoption / sheltered / stray）、`species`（dog / cat / mixed）、電話・所在地はページの問い合わせ欄から人が書き写す
+1. `registry/sources.yaml` の末尾に追記。`slug` は `<ドメインの主部>-<連番>`（例 `pref_saga-1`）で重複しないこと。`kind`（adoption=里親募集 / sheltered=保護中 / stray=迷子＝飼い主不明のまま保護 / lost=探してます＝飼い主が探している迷子）、`species`（dog / cat / mixed）、電話・所在地はページの問い合わせ欄から人が書き写す
    ```yaml
    - slug: city_example-1
      name: 例市動物愛護センター（譲渡犬猫）

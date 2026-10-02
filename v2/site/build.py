@@ -76,13 +76,17 @@ TWO_CIRCLES_SVG = ('<svg width="44" height="24" viewBox="0 0 44 24" aria-hidden=
                    '<circle cx="27" cy="12" r="10" fill="#6FAEBB" fill-opacity="0.8"/></svg>')
 
 SPECIES = {"dog": "犬", "cat": "猫", "other": "その他"}
-KINDS = {"adoption": "譲渡対象", "sheltered": "収容中", "stray": "迷子収容"}
+# 区分の呼び方は 2026-10-02 におまえさんが決めた（「収容」を使わず、飼い主さんが探している子の区分 lost を追加）
+KINDS = {"adoption": "里親募集", "sheltered": "保護中", "stray": "迷子", "lost": "探してます"}
 KIND_HELP = {
-    "adoption": "自治体が新しい飼い主を募集している子",
-    "sheltered": "自治体に収容されている子（飼い主の迎えや譲渡を待っている）",
-    "stray": "飼い主が分からないまま収容された子（心当たりがあれば自治体へ）",
+    "adoption": "新しい家族を募集している子",
+    "sheltered": "自治体に保護されている子",
+    "stray": "飼い主が分からないまま保護されている子",
+    "lost": "飼い主さんが探している迷子の子",
 }
-KIND_ORDER = {"adoption": 0, "sheltered": 1, "stray": 2}
+KIND_ORDER = {"adoption": 0, "sheltered": 1, "stray": 2, "lost": 3}
+# 区分ごとの項目名の言い換え（探してます: 収容日・保護場所ではなく、いなくなった日・場所）
+FIELD_LABELS_BY_KIND = {"lost": {"shelter_date": "いなくなった日", "location": "いなくなった場所"}}
 STATUS = {
     "ok": "確認済み",
     "empty": "本日は 0 頭",
@@ -99,8 +103,8 @@ FIELDS = [
     ("color", "毛色"),
     ("size", "大きさ"),
     ("management_no", "管理番号"),
-    ("shelter_date", "収容日"),
-    ("location", "収容場所・発見場所"),
+    ("shelter_date", "保護日"),
+    ("location", "保護場所・発見場所"),
     ("note", "備考"),
 ]
 PREF_ORDER = [
@@ -320,7 +324,7 @@ def build_index(cfg: dict[str, Any], data: dict[str, Any], animals: list[dict[st
 <ul class="pref-list" id="pref-list">
 {chr(10).join(rows) if rows else '<li class="empty">本日の掲載はありません。</li>'}
 </ul>
-<p class="hint">区分の意味: 譲渡対象＝{esc(KIND_HELP['adoption'])}。収容中＝{esc(KIND_HELP['sheltered'])}。迷子収容＝{esc(KIND_HELP['stray'])}。</p>
+<p class="hint">区分の意味: {'。'.join(f'{esc(KINDS[k])}＝{esc(KIND_HELP[k])}' for k in KINDS)}。</p>
 </section>
 <script>
 (function(){{
@@ -350,7 +354,7 @@ PREF_JS = """
   var count=document.getElementById('count');
   var empty=document.getElementById('empty');
   var SP={dog:'犬',cat:'猫',other:'その他'};
-  var KD={adoption:'譲渡対象',sheltered:'収容中',stray:'迷子収容'};
+  var KD={adoption:'里親募集',sheltered:'保護中',stray:'迷子',lost:'探してます'};
   var q=new URLSearchParams(location.search);
   var state={species:q.get('species')||'all',kind:q.get('kind')||'all'};
   var cache=null;
@@ -399,7 +403,7 @@ def build_pref(cfg: dict[str, Any], data: dict[str, Any], pref: str, animals: li
 <p class="stats">{esc(fmt_date(data.get('date')))} 時点: 犬 {c['dog']} 頭 ・ 猫 {c['cat']} 頭{f" ・ その他 {c['other']} 頭" if c['other'] else ''}。掲載元: {esc('、'.join(munis))}</p>
 <div class="filters">
 {filter_bar('species', [('all', 'すべて'), ('dog', '犬'), ('cat', '猫')])}
-{filter_bar('kind', [('all', 'すべての区分'), ('adoption', '譲渡対象'), ('sheltered', '収容中'), ('stray', '迷子収容')])}
+{filter_bar('kind', [('all', 'すべての区分')] + list(KINDS.items()))}
 </div>
 <p class="count"><b id="count">{len(animals)}</b> 頭</p>
 <div class="grid" id="grid">
@@ -417,11 +421,12 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
     muni = str(a.get("municipality") or "")
     src = safe_url(a.get("source_url"))
     rows = []
+    labels = FIELD_LABELS_BY_KIND.get(str(a.get("kind")), {})
     for key, label in FIELDS:
         v = a.get(key)
         if v is None or str(v).strip() == "":
             continue
-        rows.append(f"<div><dt>{esc(label)}</dt><dd>{esc(v)}</dd></div>")
+        rows.append(f"<div><dt>{esc(labels.get(key, label))}</dt><dd>{esc(v)}</dd></div>")
     phone = str(a.get("phone") or "").strip()
     addr = str(a.get("address") or "").strip()
     contact = [f"<div><dt>自治体</dt><dd>{esc(muni)}</dd></div>"]
@@ -570,7 +575,7 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
 <p>保護された子が里親につながること。そして殺処分をゼロに近づけること。技術はそのための手段でしかありません。</p>
 <ul>
 <li>里親を考えている方が、住んでいる地域や近くの自治体にいる保護犬・保護猫をすぐ見つけられるようにする</li>
-<li>迷子のペットを探している方が、自治体に収容されているかもしれない子を素早く確かめられるようにする</li>
+<li>迷子のペットを探している方が、自治体に保護されているかもしれない子を素早く確かめられるようにする</li>
 </ul>
 </section>
 <section>
@@ -630,8 +635,8 @@ CSS = """
 /* 配色は旧サイト frontend/app/globals.css の WCAG AA パレットを引き継ぐ:
    primary #0369a1（白地 7.21:1）/ #075985（hover）、文字 #1f2937 / #5b6775、focus #3b82f6。
    ブランドの 2 色（コーラル #E8826E = 犬のポム、ブルーグリーン #6FAEBB = 猫のビリー）は
-   犬・猫のバッジと about ページの飾りに使う。区分（譲渡・収容・迷子）は旧サイトの緑・青・琥珀の淡色 */
-:root{--bg:#fcfbf9;--card:#fff;--ink:#1f2937;--mute:#5b6775;--line:#e5e7eb;--accent:#0369a1;--accent-dark:#075985;--accent-ink:#fff;--accent-50:#f0f9ff;--accent-100:#e0f2fe;--coral:#E8826E;--teal:#6FAEBB;--focus:#3b82f6;--dog:#fdeae4;--dog-ink:#9a3a26;--cat:#e4f1f4;--cat-ink:#21606c;--adopt:#d1fae5;--adopt-ink:#065f46;--shelter:#e0f2fe;--shelter-ink:#075985;--stray:#fef3c7;--stray-ink:#92400e;--ph:#b3c0cc}
+   犬・猫のバッジと about ページの飾りに使う。区分（里親募集・保護中・迷子）は旧サイトの緑・青・琥珀の淡色、探してます は淡い紫 */
+:root{--bg:#fcfbf9;--card:#fff;--ink:#1f2937;--mute:#5b6775;--line:#e5e7eb;--accent:#0369a1;--accent-dark:#075985;--accent-ink:#fff;--accent-50:#f0f9ff;--accent-100:#e0f2fe;--coral:#E8826E;--teal:#6FAEBB;--focus:#3b82f6;--dog:#fdeae4;--dog-ink:#9a3a26;--cat:#e4f1f4;--cat-ink:#21606c;--adopt:#d1fae5;--adopt-ink:#065f46;--shelter:#e0f2fe;--shelter-ink:#075985;--stray:#fef3c7;--stray-ink:#92400e;--lost:#ede9fe;--lost-ink:#5b21b6;--ph:#b3c0cc}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",Meiryo,sans-serif;line-height:1.6;font-size:16px}
@@ -684,7 +689,7 @@ code{font-size:.85em;background:#eef1f4;padding:.1em .3em;border-radius:4px}
 .badges{display:flex;gap:6px;flex-wrap:wrap}
 .badge{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:999px;background:#eef1f4;color:var(--ink);line-height:1.5}
 .badge.sp-dog{background:var(--dog);color:var(--dog-ink)}.badge.sp-cat{background:var(--cat);color:var(--cat-ink)}
-.badge.kd-adoption{background:var(--adopt);color:var(--adopt-ink)}.badge.kd-sheltered{background:var(--shelter);color:var(--shelter-ink)}.badge.kd-stray{background:var(--stray);color:var(--stray-ink)}
+.badge.kd-adoption{background:var(--adopt);color:var(--adopt-ink)}.badge.kd-sheltered{background:var(--shelter);color:var(--shelter-ink)}.badge.kd-stray{background:var(--stray);color:var(--stray-ink)}.badge.kd-lost{background:var(--lost);color:var(--lost-ink)}
 .media{position:relative;aspect-ratio:4/3;background:#e9edf1;overflow:hidden;container-type:inline-size}
 .media img{width:100%;height:100%;object-fit:cover}
 .media img+.ph{display:none}
@@ -786,7 +791,7 @@ def build_site(data: dict[str, Any], cfg: dict[str, Any], out: Path, data_path: 
             continue
         seen.add(aid)
         animals.append(a)
-    animals.sort(key=lambda a: KIND_ORDER.get(str(a.get("kind")), 9))   # stable: 譲渡対象→収容中→迷子。元の順は保つ
+    animals.sort(key=lambda a: KIND_ORDER.get(str(a.get("kind")), 9))   # stable: 里親募集→保護中→迷子→探してます。元の順は保つ
 
     by_pref: dict[str, list[dict[str, Any]]] = {}
     for a in animals:
