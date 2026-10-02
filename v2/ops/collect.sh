@@ -103,5 +103,13 @@ if [ "$rc" -eq 0 ]; then
   echo "#### 完了: 全部成功"
 else
   echo "#### 完了: 失敗あり ->$failed_steps"
+  # notify 工程は report（ページ単位の異常）しか見ないので、run の落ち・build・deploy の失敗はここで Discord に送る
+  if [ -n "${DISCORD_WEBHOOK_URL:-}" ]; then
+    msg="oneco v2 $DATE: 失敗した工程 ->$failed_steps（ログ: $LOG）"
+    payload="$("$PY" -c 'import json,sys; print(json.dumps({"content": sys.argv[1]}))' "$msg" 2>/dev/null \
+      || printf '{"content": "oneco v2 %s: 失敗した工程 ->%s"}' "$DATE" "$failed_steps")"
+    curl -fsS -m 15 --retry 2 -H 'Content-Type: application/json' -o /dev/null --data "$payload" "$DISCORD_WEBHOOK_URL" \
+      || echo "-- Discord に送れなかった"
+  fi
 fi
 exit "$rc"
