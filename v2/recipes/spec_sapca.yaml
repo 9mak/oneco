@@ -1,12 +1,13 @@
 # 滋賀県動物保護管理センター（迷い犬猫） https://www.sapca.jp/lost
 # 一覧 ul.list の各 li a[href*='/lost/'] を個体ページ方式（follow_all）で1頭=1ページとして辿る。
 # 詳細ページは 見出し/値 が交互に並ぶだけ（dt/dd 無し）なので label 抽出で拾う。
-# 既に飼い主の元へ「戻りました」「決まりました」ページも一覧に残るため row_filter で除外する。
+# 既に飼い主の元へ「戻りました」「決まりました」「亡くなりました」ページも一覧に残るため row_filter で除外する（2026-10-02 監査: 死亡を追加。
+# rows: body なので text_lacks だと全頭除外の日に rows=0 で failed になる。status 項目で判定して「該当なし」扱いにする）。
 steps:
   - follow_all: "ul.list li a[href*='/lost/']@href"
 rows: "body"
 row_filter:
-  text_lacks: ["戻りました", "決まりました"]
+  field_lacks: {status: ["戻りました", "決まりました", "亡くなりました"]}
 image: "img[src*='/wp-content/uploads/']@src"
 fields:
   shelter_date: {label: "収容日"}
@@ -17,6 +18,7 @@ fields:
   size: {label: "体格"}
   note: {label: "備考", default: null}
   species: {label: "種類", default: "-"}
+  status: {regex: "(戻りました|決まりました|亡くなりました)"}   # 除外判定用（animals には出ない）
 species:
   from: field
   map: {"猫": cat, "ねこ": cat, "犬": dog, "いぬ": dog}

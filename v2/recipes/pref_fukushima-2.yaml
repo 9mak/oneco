@@ -6,7 +6,7 @@
 
 rows: "div#main_body div.detail_free"
 row_filter:
-  text_lacks: ["0 匹の情報があります"]
+  text_lacks: ["0 匹の情報があります", "０ 匹の情報があります"]
 image: "img@src"
 fields:
   management_no: {label: "保護日", regex: "[（(]([^（）()]+)[）)]\\s*$"}
@@ -21,3 +21,5 @@ fields:
 empty_text:
   - "現在収容されている迷子猫は0匹です"
   - "現在収容されている迷子猫は 0 匹です"
+  - "現在収容されている迷子猫は０ 匹 です"   # 実レイアウト（全角 0・空白入り。2026-10-02 監査）
+  - "現在収容されている迷子猫は0 匹 です"

@@ -10,6 +10,8 @@ steps:
       follow: "https://wannyan-navi.pref.aichi.jp/?page=list_dc_m&no={value}"
       max: 200
 rows: "body"
+row_filter:
+  text_lacks: ["譲渡済"]   # 個体ページの状態が「譲渡済」の子は載せない（「準備中」は残す。2026-10-02 監査）
 image: {selector: "img[src*='w=1024']@src"}
 fields:
   management_no: {regex: "No\\s*\\.\\s*(\\S+)"}

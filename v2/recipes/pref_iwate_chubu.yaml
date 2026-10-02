@@ -11,7 +11,7 @@
 # img と兄弟関係の別 p にあり row からは届かないため name 等は取らず、種別だけ alt から判定する。
 steps:
   - follow_all: "a:-soup-contains('岩手県中部保健所保護動物情報'), a:-soup-contains('犬、猫の譲渡情報')"
-rows: "p.imageright"
+rows: "h2:-soup-contains('【譲渡】') + p.imageright"   # 【里親募集】は飼い主宅で飼養中の個人募集なので除外（h2 直後が写真 p であることを実 HTML で確認。2026-10-02 監査）
 fields:
   species: {selector: "img", attr: "alt"}
 species:

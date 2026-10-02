@@ -151,11 +151,11 @@ def test_placeholder_when_no_image(tmp_path: Path):
     _load_build().build_site(data, CONFIG, out)
     h = _read(out / "animals" / "noimg0000001" / "index.html")
     assert 'class="ph"' in h
-    assert "<img" not in h.split("<main")[1]   # 本文には img が無い
-    assert 'property="og:image"' not in h
+    assert "<img" not in h.split("<main")[1].split("</main>")[0]   # 本文には img が無い（フッターのロゴは除く）
+    assert 'property="og:image" content="https://oneco.pages.dev/brand/oneco-avatar-512.png"' in h   # 写真が無い子はブランド画像
     assert "D999" in h
     with_img = _read(out / "animals" / data["animals"][0]["id"] / "index.html")
-    assert "<img" in with_img and 'property="og:image"' in with_img
+    assert "<img" in with_img and 'property="og:image" content="' + data["animals"][0]["image_url"] in with_img
 
 
 def test_affiliate_box_only_when_configured(tmp_path: Path):
@@ -200,3 +200,59 @@ def test_cli(tmp_path: Path):
     assert r.returncode == 0, r.stderr
     assert (out / "index.html").exists()
     assert "22" in r.stdout   # 頭数を報告する
+
+
+# ---------------------------------------------------------------- T510 / T511（ロゴ・配色・about）
+
+def test_brand_assets_copied_and_logo_in_header(built):
+    """site/static/ のブランド素材が dist に入り、ヘッダーに「ふたつの円」とワードマークが出る。"""
+    _, _, out = built
+    for rel in ("brand/oneco-mark.svg", "brand/oneco-logo.svg", "brand/oneco-avatar-512.png",
+                "favicon.ico", "icon.svg", "apple-touch-icon.png"):
+        assert (out / rel).exists(), rel
+    index = _read(out / "index.html")
+    assert 'class="mark" src="/brand/oneco-mark.svg"' in index   # ふたつの円
+    mark = _read(out / "brand" / "oneco-mark.svg")
+    assert "#E8826E" in mark and "#6FAEBB" in mark            # コーラル（ポム）・ブルーグリーン（ビリー）
+    assert 'aria-label="oneco"' in index and 'class="wordmark"' in index
+    assert 'rel="icon" href="/favicon.ico"' in index and 'rel="apple-touch-icon"' in index
+    assert 'property="og:image" content="https://oneco.pages.dev/brand/oneco-avatar-512.png"' in index   # 写真の無いページの OG 画像
+    assert "ふたつの円は、犬のポムと猫のビリー" in index   # フッター
+    css = _read(out / "style.css")
+    assert "#0369a1" in css and "#075985" in css     # 旧サイトの primary
+    assert "#E8826E" in css and "#6FAEBB" in css     # ブランド 2 色
+    assert "#1f3a5f" not in css                      # 旧 v2 の紺は残さない
+
+
+def test_about_has_pom_billy_and_operator(built):
+    _, _, out = built
+    h = _read(out / "about" / "index.html")
+    assert "ポム" in h and "ビリー" in h
+    for f, alt in _load_build().ABOUT_PHOTOS_POM + _load_build().ABOUT_PHOTOS_BILLY:
+        assert f'/images/about/{f}' in h, f
+        assert alt in h, alt
+        assert (out / "images" / "about" / f).exists(), f
+    assert "運営者" in h and "小熊" in h
+    assert "トリミング実習" in h and "輸血ドナー" in h
+    assert "非営利" not in h            # W005: 「非営利」とは書かない
+    assert "アフィリエイト" in h        # 運営費の明記
+    assert "撤去・訂正依頼の窓口" in h
+
+
+def test_lost_kind_is_labelled_and_filterable(tmp_path: Path):
+    """新区分 lost（飼い主さんが探している迷子）: バッジ「探してます」・絞り込み・区分説明・項目名が収容の言い方にならない（2026-10-02）。"""
+    data = _merged()
+    a = dict(data["animals"][0])
+    a.update({"id": "lost00000001", "kind": "lost", "shelter_date": "2026年9月1日", "location": "甲府市中央"})
+    data["animals"].append(a)
+    out = tmp_path / "dist"
+    _load_build().build_site(data, CONFIG, out)
+    pref = _read(out / "pref" / a["prefecture"] / "index.html")
+    assert "kd-lost" in pref and "探してます" in pref
+    assert "'lost'" in pref or '"lost"' in pref            # 絞り込みの選択肢と JS の表示名
+    assert "里親募集" in pref and "保護中" in pref and "収容中" not in pref and "譲渡対象" not in pref
+    d = _read(out / "animals" / "lost00000001" / "index.html")
+    assert "探してます" in d and "飼い主さんが探している" in d
+    assert "いなくなった日" in d and "いなくなった場所" in d and "収容日" not in d
+    idx = _read(out / "index.html")
+    assert "探してます＝" in idx                              # 区分の意味のヒント

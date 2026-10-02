@@ -6,6 +6,8 @@ url: https://kochi-apc.com/jouto/
 steps:
   - follow_all: "a[href*='/center-data/']@href"
 rows: "body"
+row_filter:
+  text_lacks: ["譲渡決定 更新日"]   # 個体ページ冒頭の状態が「譲渡決定」の子は載せない（2026-10-02 監査）
 image: "ul.animal-slider img@src"
 fields:
   management_no: {label: "管理番号"}

@@ -1,6 +1,8 @@
 # oneco v2 運用手順
 
-毎日 JST 0:05 に収集サーバー（手元の Mac の launchd。控えは VPS）が全自治体のページを読み、静的サイトを作り直して Cloudflare Pages に置く。人がやるのは「通知が来た日に見る」「月 1 回 discover を回す」「撤去依頼が来たら台帳を 1 行直す」の 3 つ。
+毎日 JST 0:05 に収集サーバー（手元の Mac の launchd。控えは VPS）が全自治体のページを読み、静的サイトを作り直して Cloudflare Workers（静的アセット）に置く。人がやるのは「通知が来た日に見る」「月 1 回 discover を回す」「撤去依頼が来たら台帳を 1 行直す」の 3 つ。
+
+公開 URL は `https://oneco.9mak-0x13.workers.dev`（`site/config.json` の `base_url`。独自ドメインを付けたらここも変える）。
 
 ## 1. 初期設定（1 回だけ）
 
@@ -20,18 +22,22 @@
 
 ### 1-2a. Mac の launchd（本命）
 
-前提: このリポジトリが手元にあり `.venv` に `v2/requirements.txt` が入っていること、Playwright の Chromium が入っていること（`.venv/bin/playwright install chromium`）、Node.js（`brew install node`。wrangler を `npx` で呼ぶ）。
+動かすのは開発用の checkout（`~/Desktop/oneco`）ではなく、`install.sh` が `~/oneco-collect` に作る **main の本番クローン**。launchd から起動した `/bin/bash` には `~/Desktop`・`~/Documents`・`~/Downloads`（macOS が保護するフォルダ、TCC）を読む権限が無く `Operation not permitted` で止まるため（2026-10-01・02 の 2 日分がこれで飛んだ）。保護フォルダの外なら権限は要らない。
+
+前提: Node.js（`brew install node`。wrangler を `npx` で呼ぶ）、Python 3.11（`brew install python@3.11`）、git。
 
 ```bash
-bash v2/ops/macos/install.sh          # ~/.config/oneco/collect.env を置き、~/Library/LaunchAgents に登録
-vi ~/.config/oneco/collect.env        # 1-1 で取った CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID / ONECO_PAGES_PROJECT を埋める（chmod 600）
-launchctl kickstart -k gui/$(id -u)/com.oneco.collect && tail -f v2/logs/launchd.log   # 1 回手で動かして確認
+bash v2/ops/macos/install.sh          # ~/oneco-collect に main を clone（あれば pull）→ .venv・requirements・Chromium → ~/.config/oneco/collect.env を置く → launchd に登録
+vi ~/.config/oneco/collect.env        # ONECO_PAGES_PROJECT（Worker 名）・DISCORD_WEBHOOK_URL・HEALTHCHECK_URL を埋める（chmod 600）。wrangler login 済みなら CLOUDFLARE_* は空でよい
+launchctl kickstart -k gui/$(id -u)/com.oneco.collect && tail -f ~/oneco-collect/v2/logs/launchd.log   # 1 回手で動かして確認
 ```
 
-- 毎日 0:05 JST に `ops/collect.sh`（run → notify → build → deploy）が動く。Mac が寝ていて逃した日は起きたときに 1 回動く
-- ログは `v2/logs/collect-<日付>.log`。`launchctl print gui/$(id -u)/com.oneco.collect` で状態と last exit code
-- 解除は `bash v2/ops/macos/install.sh --remove`
-- Claude Code のサンドボックスからは `launchctl` が拒否されるので、登録・手動実行はターミナルから
+- 毎日 0:05 JST に `ops/macos/collect-launchd.sh` が動く: `git pull --ff-only origin main`（失敗したら前回のコードで続行）→ `ops/collect.sh`（run → notify → build → deploy）。**main に merge すれば翌日の収集から反映される**。Mac が寝ていて逃した日は起きたときに 1 回動く
+- ログは `~/oneco-collect/v2/logs/collect-<日付>.log`（collect.sh）と `launchd.log`（起動まわり）。`launchctl print gui/$(id -u)/com.oneco.collect` で状態と last exit code
+- `data/`（日次 JSON）と `site/dist/` は本番クローン側に溜まる。開発用 checkout の `data/` は手元の試し読み用で、公開には使われない
+- 場所を変えるなら `ONECO_RUN_DIR=... bash v2/ops/macos/install.sh`（保護フォルダの下は拒否される）。解除は `bash v2/ops/macos/install.sh --remove`（クローンと collect.env は残る）
+- Claude Code からは `launchctl` と `install.sh` の実行が拒否されるので、登録・手動実行はターミナルから
+- last exit code が 126 で `launchd.log` に `Operation not permitted` と出る日は、plist が保護フォルダの下を指している（古い登録が残っている）。`install.sh` を入れ直す。collect.sh を起動できなかった日は Discord にも「収集を起動できなかった」と届く
 
 ### 1-2b. VPS（控え）
 
@@ -97,15 +103,24 @@ collect.sh は全部成功したときだけこの URL を叩き、どこかが�
 [console.anthropic.com](https://console.anthropic.com) → API Keys で発行。`/etc/oneco/collect.env` に `ANTHROPIC_API_KEY` と `ONECO_AI_REPAIR=1` を書く。
 `ONECO_AI_REPAIR=1` が無いと修復は動かない（キーだけ置いても課金されない）。使うモデルは既定 `claude-sonnet-5`、変えるなら `ONECO_AI_MODEL`。
 
+### 1-6. 残っている手動作業（2026-10-01 時点・T506）
+
+| 項目 | やること | 反映先 |
+| --- | --- | --- |
+| 独自ドメイン | ドメインを取り、Cloudflare にゾーンを作って Workers & Pages → oneco → Settings → Domains & Routes → Custom domain で付ける | `site/config.json` の `base_url` を新ドメインに変える（canonical・OG・sitemap が変わる） |
+| アフィリエイト | Amazon アソシエイト等に申し込み、承認後にリンクを作る | `site/config.json` の `affiliate` に `{"title","url","note"}` を入れる。空のあいだは「迎える準備」枠ごと出ない |
+| healthchecks | healthchecks.io で Check（Period 1 day・Grace 3 hours）を作る | `~/.config/oneco/collect.env` の `HEALTHCHECK_URL` に ping URL を入れる |
+| 本番クローンの登録 | ターミナルで `bash v2/ops/macos/install.sh`（1-2a。`~/oneco-collect` を作って launchd の登録を入れ替える）→ `launchctl kickstart -k gui/$(id -u)/com.oneco.collect` で 1 回動かす | `~/oneco-collect/v2/logs/collect-<日付>.log` が毎日できること、サイトの日付が更新されること |
+
 ## 2. 毎日自動で起きること
 
-`ops/collect.sh`（JST 0:00、`oneco-collect.timer`）:
+`ops/collect.sh`（Mac の launchd なら JST 0:05 に `ops/macos/collect-launchd.sh` が `git pull --ff-only origin main` で本番クローンを更新してから呼ぶ、VPS なら `oneco-collect.timer` で 0:00）:
 
 1. `collector run` — 台帳（`registry/sources.yaml`）の `enabled: true` のページを 1 秒間隔で全部読み、`data/animals-<日付>.json` `data/latest.json` `data/report-<日付>.json` を書く
    - ページが読めず `status: failed` になったものは、`ONECO_AI_REPAIR=1` なら **その場で 1 回だけ** Claude にレシピを書き直させる。新レシピで 1 頭以上取れたら `recipes/<slug>.yaml` を上書きして読み直す。取れなければレシピは元のまま、failed のまま
 2. `collector notify` — report に異常（failed、または AI がレシピを書き直した）があるときだけ Discord に 1 通。平常時は何も送らない
 3. `site/build.py` — `data/latest.json` から `site/dist/` を作る
-4. `wrangler pages deploy` — `site/dist/` を Cloudflare Pages へ
+4. `wrangler deploy`（`ops/wrangler.jsonc`）— `site/dist/` を Cloudflare Workers の静的アセットへ
 5. 全部成功したら `HEALTHCHECK_URL` へ ping
 
 途中で失敗しても止まらない。収集が全滅した日でも `data/latest.json` は前日のものが残っているので、サイトは「昨日のまま」出続ける（落ちない）。
@@ -131,8 +146,10 @@ AI がレシピを書き直した自治体 1 件（recipes/<slug>.yaml が変わ
 | `follow: '…' が見つからない` / `0 頭で empty_text も無い` | ページ構造が変わった。AI 修復も失敗している | VPS で `sudo -u oneco env $(sudo cat /etc/oneco/collect.env | xargs) /opt/oneco/.venv/bin/python -m collector repair <slug> --show` を手で回す。それでも駄目なら `collector show <slug>` と `collector fetch <url> --selectors` を見て `recipes/<slug>.yaml` を人が直す（書き方は `docs/RECIPE.md`） |
 | `AI がレシピを書き直した自治体 N 件` | VPS 上の `recipes/<slug>.yaml` が変わり、読めるようになった | VPS の `git -C /opt/oneco diff v2/recipes` を見て、妥当なら commit して push（放置すると次の `git pull` で戻る）。取り方が変（写真が広告、頭数が異常）なら `git checkout` で戻して人が直す |
 | `（公開 N 頭・成功 M ページ）` | その日の全体 | 前日と大きく違えば異常。`data/report-<日付>.json` を見る |
+| `失敗した工程 -> build deploy` | collect.sh の工程（run の落ち・build・deploy）が失敗した。読めないページの話ではない | `logs/collect-<日付>.log` の `-- <工程>: 失敗` の直前を見る。deploy なら `npx wrangler whoami`（OAuth 切れ）、build なら `data/latest.json` の有無 |
+| `収集を起動できなかった (exit 126)` | launchd の bash が collect.sh を実行できない（保護フォルダの下・パス違い） | ターミナルで `bash v2/ops/macos/install.sh` を入れ直す |
 
-通知が来ない日 = 全ページ読めた日。healthchecks から「ping が来ない」メールが来たら VPS 自体を見る（`systemctl status oneco-collect.timer`、`journalctl -u oneco-collect --since yesterday`）。
+通知が来ない日 = 全ページ読めた日（ただし収集サーバー自体が動かなかった日も通知は来ない。サイトの日付が 2 日以上古ければ疑う）。healthchecks から「ping が来ない」メールが来たら収集サーバー自体を見る。Mac なら `launchctl print gui/$(id -u)/com.oneco.collect` の last exit code と `~/oneco-collect/v2/logs/launchd.log`、VPS なら `systemctl status oneco-collect.timer`、`journalctl -u oneco-collect --since yesterday`。
 
 ## 4. 月 1 回: `collector discover`（新しい自治体を拾う）
 
@@ -150,7 +167,7 @@ cd /opt/oneco/v2   # ローカルでもよい
 
 台帳に足す手順（1 自治体 = 1 ページ = 1 エントリ。譲渡と収容が別ページなら 2 エントリ）:
 
-1. `registry/sources.yaml` の末尾に追記。`slug` は `<ドメインの主部>-<連番>`（例 `pref_saga-1`）で重複しないこと。`kind`（adoption / sheltered / stray）、`species`（dog / cat / mixed）、電話・所在地はページの問い合わせ欄から人が書き写す
+1. `registry/sources.yaml` の末尾に追記。`slug` は `<ドメインの主部>-<連番>`（例 `pref_saga-1`）で重複しないこと。`kind`（adoption=里親募集 / sheltered=保護中 / stray=迷子＝飼い主不明のまま保護 / lost=探してます＝飼い主が探している迷子）、`species`（dog / cat / mixed）、電話・所在地はページの問い合わせ欄から人が書き写す
    ```yaml
    - slug: city_example-1
      name: 例市動物愛護センター（譲渡犬猫）
@@ -183,7 +200,7 @@ cd /opt/oneco/v2   # ローカルでもよい
 | 収集サーバー（本命は手元の Mac の launchd） | 0 円 |
 | 控え: VPS 2GB（さくらのVPS / ConoHa / Vultr など） | 1,000〜1,500 円 |
 | 控え: GCP Cloud Run Jobs（1 日 10 分・2GB。無料枠 vCPU 18 万秒/月の内側） | 0〜100 円（billing の再有効化が要る） |
-| Cloudflare Pages（Free プラン。静的配信・独自ドメイン込み） | 0 円（Direct Upload は 1 日 500 デプロイまで、1 日 1 回なので余裕） |
+| Cloudflare Workers 静的アセット（Free プラン。独自ドメイン込み） | 0 円（静的アセットの配信は Workers のリクエスト数に数えない） |
 | healthchecks.io（Free、20 checks まで） | 0 円 |
 | Discord webhook | 0 円 |
 | Anthropic API（AI 修復） | 1 回あたり入力 3〜6 万トークン・出力 1 千トークン前後。claude-sonnet-5（入力 $2 / 出力 $10 per 1M）で 1 回 15〜30 円程度。壊れるのは月に数ページなので通常 100〜500 円。サイト改修が重なる年度替わり（4 月）に 1 日 10 件走っても 1 日 300 円が上限目安 |

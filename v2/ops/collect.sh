@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
-# oneco v2 日次収集（収集サーバー = VPS 用）。systemd の oneco-collect.timer から毎日 JST 0:00 に呼ばれる。
+# oneco v2 日次収集。Mac の launchd（ops/macos、毎日 JST 0:05）か VPS の systemd（oneco-collect.timer、0:00）から呼ばれる。
 #
-#   run（全ページ収集）→ notify（異常があれば Discord）→ build（静的サイト）→ Cloudflare Pages へ deploy
+#   run（全ページ収集）→ notify（異常があれば Discord）→ build（静的サイト）→ Cloudflare Workers（静的アセット）へ deploy
 #   → 全部成功したら HEALTHCHECK_URL へ ping。
 #
 # どこかで失敗しても途中で止めず最後まで進み、最後に 0（全部成功）か 1（どれかが失敗）を返す。
 # 収集が失敗しても build/deploy は「前回の data/latest.json」で走るので、サイトは昨日のまま出続ける。
 #
-# 環境変数（/etc/oneco/collect.env に置き、systemd の EnvironmentFile で読む）:
+# 環境変数（Mac は ~/.config/oneco/collect.env、VPS は /etc/oneco/collect.env に置く）:
 #   ONECO_V2_DIR            v2 ディレクトリ（既定: このスクリプトの 1 つ上）
 #   ONECO_PY                venv の python（既定: $ONECO_V2_DIR/../.venv/bin/python）
 #   ONECO_LOG_DIR           ログ置き場（既定: $ONECO_V2_DIR/logs）
 #   DISCORD_WEBHOOK_URL     notify の送り先（無ければ表示だけ）
 #   ANTHROPIC_API_KEY       AI 修復（無ければ修復しない）
 #   ONECO_AI_REPAIR         1 で AI 修復を有効化
-#   CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID / ONECO_PAGES_PROJECT   Pages deploy（3 つ揃わなければ deploy を飛ばす）
+#   CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID / ONECO_PAGES_PROJECT   deploy（ONECO_PAGES_PROJECT = Worker 名。無ければ deploy を飛ばす。Mac は wrangler login の OAuth でトークン不要）
 #   HEALTHCHECK_URL         healthchecks.io などの ping URL（無ければ飛ばす）
 #   WRANGLER                wrangler の呼び方（既定: "npx --yes wrangler"）
 set -u
@@ -69,7 +69,7 @@ step notify "$PY" -m collector notify
 #    `python -m site.build` は標準ライブラリの site モジュールに阻まれて動かないので、ファイルを直接実行する
 step build "$PY" "$V2_DIR/site/build.py" --data "$V2_DIR/data/latest.json" --out "$V2_DIR/site/dist"
 
-# 4. Cloudflare Pages へ deploy
+# 4. Cloudflare Workers（静的アセット）へ deploy
 #    認証は CLOUDFLARE_API_TOKEN（VPS 向け）か、`wrangler login` で保存した OAuth（手元の Mac 向け）のどちらか。
 #    どちらも無ければ wrangler が失敗して deploy が「失敗」に数えられ、通知に載る
 if [ -n "${ONECO_PAGES_PROJECT:-}" ]; then

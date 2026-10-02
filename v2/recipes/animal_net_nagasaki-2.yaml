@@ -15,8 +15,8 @@ fields:
   color: {regex: "毛色\\s*(\\S+)"}
   size: {regex: "体格\\s*(\\S+)"}
   location: {regex: "地区\\s*(\\S+)"}
-  species: {regex: "模様・柄\\s*(\\S+)", default: "-"}
+  species: {regex: "模様・柄\\s*(?:犬（猫）種特有)?\\s*(.*?)\\s*譲渡申し込みをする", default: ""}   # 模様・柄〜備考（フッターの手前）を窓にする。値の「犬（猫）種特有」は読み飛ばす（2026-10-02 監査）
 species:
   from: field
-  map: {"三毛": cat, "サビ": cat, "キジ": cat, "トラ": cat, "": dog}
+  map: {"猫": cat, "ネコ": cat, "ねこ": cat, "ハチワレ": cat, "エイズ": cat, "白血病": cat, "三毛": cat, "キジ": cat, "サビ": cat, "トラ ": cat, "犬": dog, "": dog}   # 猫語を犬より前に。「トラ 」はトライアル誤爆避け
 empty_text: ["投稿がありません"]

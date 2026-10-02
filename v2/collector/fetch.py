@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 import re
 import time
 import urllib.robotparser
@@ -12,6 +14,8 @@ from urllib.parse import urlsplit
 import httpx
 from bs4 import UnicodeDammit
 
+log = logging.getLogger(__name__)
+WAIT_FOR_MS = 20000   # render の wait_for がセレクタを待つ上限（ミリ秒）
 USER_AGENT = "oneco-collector/2.0 (+https://github.com/9mak/oneco; stop/removal requests via GitHub Issues)"
 _META_CHARSET = re.compile(rb"<meta[^>]+charset=[\"']?\s*([A-Za-z0-9_\-]+)", re.I)
 
@@ -103,13 +107,16 @@ class Fetcher:
         self.cache[key] = page
         return page
 
-    def render(self, url: str, wait_ms: int = 3000, capture: str | None = None) -> Page:
+    def render(self, url: str, wait_ms: int = 3000, capture: str | None = None, wait_for: str | None = None) -> Page:
         """JavaScript 描画が必要なページを Playwright で取る。
 
         capture に URL の一部（例 "elasticsearch/search"）を渡すと、描画中にその URL へ返ってきた
         JSON 応答を Page.captured に集める（Bubble 製 SPA のように一覧が API 応答にしか無いサイト用）。
+        wait_for にセレクタを渡すと、networkidle の後にその要素が現れるまで（最長 WAIT_FOR_MS）待ってから HTML を取る。
+        一覧を jQuery が後から組み立てるサイト（高松市）で、networkidle 直後は見出し行だけ、という取りこぼしを防ぐ。
+        現れなければ待ち切って、その時点の HTML で続ける（0 頭の日は empty_text が拾う）。
         """
-        key = (url, "render", capture)
+        key = (url, "render", capture, wait_for)
         if key in self.cache:
             return self.cache[key]
         if not self._allowed(url):
@@ -132,6 +139,11 @@ class Fetcher:
 
                     page.on("response", _on_response)
                 page.goto(url, wait_until="networkidle", timeout=60000)
+                if wait_for:
+                    try:
+                        page.wait_for_selector(wait_for, timeout=WAIT_FOR_MS)
+                    except Exception:  # noqa: BLE001 — PlaywrightTimeoutError。現れない日はそのまま続ける
+                        log.info("render: wait_for '%s' が %d ms 待っても現れない: %s", wait_for, WAIT_FOR_MS, url)
                 page.wait_for_timeout(wait_ms)
                 html = page.content()
                 final = page.url
@@ -163,8 +175,8 @@ class FakeFetcher(Fetcher):
             return Page(url, final, 200, body, None if is_pdf else decode(body, None, encoding), "application/pdf" if is_pdf else "text/html")
         return Page(url, final, 200, body.encode("utf-8"), body, "text/html")
 
-    def render(self, url: str, wait_ms: int = 0, capture: str | None = None) -> Page:
-        self.render_calls.append((url, capture))
+    def render(self, url: str, wait_ms: int = 0, capture: str | None = None, wait_for: str | None = None) -> Page:
+        self.render_calls.append((url, capture) if wait_for is None else (url, capture, wait_for))
         page = self.get(url)
         page.captured = list(self.captures.get(url, [])) if capture else []
         return page

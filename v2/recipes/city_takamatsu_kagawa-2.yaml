@@ -6,7 +6,8 @@
 # 返還済み（statusflg=3）の子も同じ PHP が td1 に「見つかりました!」を付けたまま描画し続ける
 # （td8 の詳細リンクだけ消える）ので、その行は捨てる。同サイトの「探しています・猫」で実例確認済み。
 steps:
-  - render: true
+  # networkidle 直後は見出し行だけで tr がまだ無い日がある（T514: 10/2 の収集で行 0 → failed）。行か「情報はありません」の div が出るまで待つ
+  - render: {wait_for: "table.centar-table tr:not(.ttr), div:has-text('現在のところ情報はありません')", wait_ms: 3000}
 rows: "table.centar-table tr:not(.ttr)"
 row_filter:
   text_lacks: ["見つかりました!", "見つかりました！"]

@@ -19,7 +19,7 @@ class Source:
     municipality: str
     prefecture: str
     url: str
-    kind: str                  # adoption | sheltered | stray
+    kind: str                  # adoption（里親募集）| sheltered（保護中）| stray（迷子＝飼い主不明のまま保護）| lost（探してます＝飼い主が探している迷子。2026-10-02 追加）
     species: str = "mixed"     # dog | cat | mixed
     phone: str | None = None
     address: str | None = None

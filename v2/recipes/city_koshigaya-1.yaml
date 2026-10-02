@@ -6,11 +6,13 @@
 # 写真も管理番号も収容日も無いため、rows には収容日・収容場所が取れる場所テーブル側
 # （ヘッダに「収容場所」を含む table）の tr を全部使う。ヘッダ行自体は収容日が無く
 # 自動的に捨てられる。breed/sex/age/color/size/備考 は取得できない（仕様上の割り切り）。
+# 管理番号は表の直前の h3.partsstyle_h3 から取る（2026-10-02 監査。これが無いと同日同所の 2 頭が同じ ID になり 1 頭落ちる）。
 # 0 頭時は本文に「現在、情報はありません。」と出る。
 
-rows: "div#tmp_honbun table:has(th:-soup-contains('収容場所')) tr"
+rows: "div#tmp_honbun table:has(th:-soup-contains('収容場所')) tr:has(td)"
 fields:
   location: {selector: "td:nth-of-type(1)"}
   shelter_date: {selector: "td:nth-of-type(2)"}
+  management_no: {from: heading, selector: "h3.partsstyle_h3"}   # 表の前の見出し「R8-51」。同日同所の子が同じ ID に潰れていた（2026-10-02 監査）
 empty_text:
   - "現在、情報はありません。"
