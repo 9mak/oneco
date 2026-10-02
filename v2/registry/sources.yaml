@@ -1285,12 +1285,12 @@ sources:
     list_link_pattern: null
     pdf_link_pattern: null
 - slug: city_miyazaki-1
-  name: 宮崎市（直近保護犬）
+  name: 宮崎市（保護犬）
   municipality: 宮崎市
   prefecture: 宮崎県
   phone: 0985-85-6011
   address: null
-  url: https://www.city.miyazaki.miyazaki.jp/life/pet/protection/411118.html
+  url: https://www.city.miyazaki.miyazaki.jp/life/pet/protection/
   kind: sheltered
   species: dog
   mode: recipe
@@ -1437,7 +1437,7 @@ sources:
   phone: 055-273-5034
   address: 〒409-3812 山梨県中央市乙黒1083(山梨県動物愛護指導センター)
   url: https://www.pref.yamanashi.jp/doubutsu/m_other/index.html
-  kind: stray
+  kind: lost   # 飼い主が自分の迷子を探している告知（2026-10-02 監査で区分を追加）
   species: mixed
   mode: recipe
   recipe: recipes/pref_yamanashi-3.yaml
@@ -1473,7 +1473,7 @@ sources:
   phone: 055-273-5034
   address: 〒409-3812 山梨県中央市乙黒1083(山梨県動物愛護指導センター)
   url: https://www.pref.yamanashi.jp/doubutsu/m_dog/index.html
-  kind: stray
+  kind: lost   # 飼い主が自分の迷子を探している告知（2026-10-02 監査で区分を追加）
   species: dog
   mode: recipe
   recipe: recipes/pref_yamanashi-5.yaml
@@ -1491,7 +1491,7 @@ sources:
   phone: 055-273-5034
   address: 〒409-3812 山梨県中央市乙黒1083(山梨県動物愛護指導センター)
   url: https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html
-  kind: stray
+  kind: lost   # 飼い主が自分の迷子を探している告知（2026-10-02 監査で区分を追加）
   species: cat
   mode: recipe
   recipe: recipes/pref_yamanashi-6.yaml
@@ -2015,7 +2015,7 @@ sources:
   phone: 042-722-6727
   address: null
   url: https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/pet_fumei/search_dog.html
-  kind: stray
+  kind: lost   # 飼い主が自分の迷子を探している告知（2026-10-02 監査で区分を追加）
   species: dog
   mode: recipe
   recipe: recipes/city_machida-2.yaml
@@ -2033,7 +2033,7 @@ sources:
   phone: 042-722-6727
   address: null
   url: https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/pet_fumei/search_cat.html
-  kind: stray
+  kind: lost   # 飼い主が自分の迷子を探している告知（2026-10-02 監査で区分を追加）
   species: cat
   mode: recipe
   recipe: recipes/city_machida-3.yaml
@@ -2051,7 +2051,7 @@ sources:
   phone: 042-722-6727
   address: null
   url: https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/pet_fumei/search_sonota.html
-  kind: stray
+  kind: lost   # 飼い主が自分の迷子を探している告知（2026-10-02 監査で区分を追加）
   species: mixed
   mode: recipe
   recipe: recipes/city_machida-4.yaml
@@ -2250,7 +2250,7 @@ sources:
   phone: 098-945-3043
   address: 〒901-1202 沖縄県南城市大里字大里2000番地
   url: https://www.aniwel-pref.okinawa/animals/missing/dogs
-  kind: stray
+  kind: lost   # 飼い主が自分の迷子を探している告知（2026-10-02 監査で区分を追加）
   species: dog
   mode: recipe
   recipe: recipes/aniwel_okinawa-3.yaml
@@ -2268,7 +2268,7 @@ sources:
   phone: 098-945-3043
   address: 〒901-1202 沖縄県南城市大里字大里2000番地
   url: https://www.aniwel-pref.okinawa/animals/missing/cats
-  kind: stray
+  kind: lost   # 飼い主が自分の迷子を探している告知（2026-10-02 監査で区分を追加）
   species: cat
   mode: recipe
   recipe: recipes/aniwel_okinawa-4.yaml
@@ -2478,13 +2478,13 @@ sources:
     list_link_pattern: a[href*='/animals/detail/']
     pdf_link_pattern: null
 - slug: kumamoto_doubutuaigo-5
-  name: 熊本県動愛（個人保護犬）
+  name: 熊本県動愛（個人譲渡犬）
   municipality: 熊本県動愛
   prefecture: 熊本県
   phone: null
   address: null
   url: https://www.kumamoto-doubutuaigo.jp/post_animals/index/type_id:2/animal_id:1
-  kind: sheltered
+  kind: adoption
   species: dog
   mode: recipe
   recipe: recipes/kumamoto_doubutuaigo-5.yaml
@@ -2496,13 +2496,13 @@ sources:
     list_link_pattern: a[href*='/post_animals/detail/']
     pdf_link_pattern: null
 - slug: kumamoto_doubutuaigo-6
-  name: 熊本県動愛（個人保護猫）
+  name: 熊本県動愛（個人譲渡猫）
   municipality: 熊本県動愛
   prefecture: 熊本県
   phone: null
   address: null
   url: https://www.kumamoto-doubutuaigo.jp/post_animals/index/type_id:2/animal_id:2
-  kind: sheltered
+  kind: adoption
   species: cat
   mode: recipe
   recipe: recipes/kumamoto_doubutuaigo-6.yaml
@@ -2731,16 +2731,34 @@ sources:
     pdf_link_pattern: null
   note: 犬猫以外（鳥・ハムスター等）のページ。犬猫のみ扱うためリンクだけ出す
 - slug: pref_kanagawa-4
-  name: 神奈川県動物愛護センター（センター外保護動物）
+  name: 神奈川県動物愛護センター（センター外保護犬）
   municipality: 神奈川県動物愛護センター
   prefecture: 神奈川県
   phone: 0463-58-3411
   address: 〒259-1205 神奈川県平塚市土屋401
   url: https://www.pref.kanagawa.jp/osirase/1594/awc/lost/outside.html
   kind: sheltered
-  species: mixed
+  species: dog
   mode: recipe
   recipe: recipes/pref_kanagawa-4.yaml
+  enabled: true
+  legacy:
+    adapter_file: src/data_collector/adapters/rule_based/sites/pref_kanagawa.py
+    requires_js: false
+    pdf: false
+    list_link_pattern: null
+    pdf_link_pattern: null
+- slug: pref_kanagawa-5
+  name: 神奈川県動物愛護センター（センター外保護猫）
+  municipality: 神奈川県動物愛護センター
+  prefecture: 神奈川県
+  phone: 0463-58-3411
+  address: 〒259-1205 神奈川県平塚市土屋401
+  url: https://www.pref.kanagawa.jp/osirase/1594/awc/lost/outside.html
+  kind: sheltered
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_kanagawa-5.yaml
   enabled: true
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_kanagawa.py
@@ -3415,7 +3433,7 @@ sources:
     list_link_pattern: a[href*='/animal/no-']
     pdf_link_pattern: null
 - slug: animal_net_nagasaki-2
-  name: 長崎犬猫ネット（譲渡）
+  name: 長崎犬猫ネット（一般譲渡・個人やボランティアの掲示）
   municipality: 長崎犬猫ネット
   prefecture: 長崎県
   phone: null
@@ -3439,7 +3457,7 @@ sources:
   phone: null
   address: null
   url: https://animal-net.pref.nagasaki.jp/maigo
-  kind: stray
+  kind: lost   # 飼い主が自分の迷子を探している告知（2026-10-02 監査で区分を追加）
   species: mixed
   mode: recipe
   recipe: recipes/animal_net_nagasaki-3.yaml

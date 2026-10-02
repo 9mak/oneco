@@ -7,7 +7,7 @@ steps:
   - follow_all: "div.lists > a[href*='/animals/protection_view/']@href"
 rows: "div.animals_single"
 row_filter:
-  text_lacks: ["見つかりました", "終了しました"]
+  text_lacks: ["見つかりました", "終了しました", "目撃情報", "保護ではなく", "保護はできておりません", "保護はしていません"]   # 保護していない目撃だけの投稿は捨てる（2026-10-02 監査）
 image: "td.photo ul.slick-main img@src"
 fields:
   management_no: {label: "受付番号"}

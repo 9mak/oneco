@@ -4,12 +4,9 @@ fields:
   shelter_date:
     label: "管理番号"
     regex: '(\d{4}-\d{1,2}-\d{1,2})'
-  location:
-    index: 2
-  breed:
-    index: 3
-  sex:
-    index: 4
+  location: {label: "収容場所"}   # index は PDF 表専用で HTML 行では空になる（2026-10-02 監査）
+  breed: {label: "犬種"}
+  sex: {label: "性別"}
 empty_text:
   - "現在いません"
   - "現在収容している犬はいません"

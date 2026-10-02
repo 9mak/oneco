@@ -9,6 +9,7 @@ steps:
 rows: "div.animals_single"
 row_filter:
   text_lacks: ["返還しました", "☆", "ありませんでした"]
+  field_lacks: {note: ["死亡"]}   # 備考「庁舎内死亡」等の死亡記録の子は捨てる（全部捨てた日は「該当なし」扱い。2026-10-02 監査）
 image: "td.photo ul.slick-main img@src"
 fields:
   management_no: {label: "記号"}

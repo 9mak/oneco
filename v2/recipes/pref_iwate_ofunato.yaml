@@ -6,7 +6,7 @@
 # 行 = 写真の p.imagecenter。慰霊祭ポスター（ireisai.png）は動物の写真ではないため image の exclude で除外し、
 # 写真も取れなくなることで自動的に捨てられる。1 枚の写真に複数頭（兄弟猫）が写っている/紹介されている
 # ブロックがあり、その場合は1行=1枚の写真（複数頭まとめて1件）として数える。
-rows: "p.imagecenter"
+rows: "h2:-soup-contains('【譲渡】') + p.imagecenter, h2:-soup-contains('元の飼い主を探しています') + p.imagecenter"   # 【御礼】譲渡が決まりました・「最近の保護動物さん」の写真は除外（2026-10-02 監査）
 image:
   selector: "img@src"
   exclude: ["ireisai"]

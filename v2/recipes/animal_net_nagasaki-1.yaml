@@ -6,6 +6,8 @@
 steps:
   - follow_all: "div.list-area a[href*='/animal/no-']@href"
 rows: "body"
+row_filter:
+  text_lacks: ["譲渡先決定"]   # 備考「☆譲渡先決定しました」の子は載せない（2026-10-02 監査）
 image: "ul.detail-img img@src"
 fields:
   management_no: {regex: "No\\.(\\d+)"}
@@ -16,8 +18,8 @@ fields:
   size: {regex: "体格\\s*(\\S+)"}
   shelter_date: {regex: "収容日\\s*(\\d{4}-\\d{2}-\\d{2})"}
   location: {regex: "収容場所\\s*(\\S+)"}
-  species: {regex: "模様・柄\\s*(\\S+)", default: "-"}
+  species: {regex: "模様・柄\\s*(\\S+.*?備考\\s*.{0,60})", default: "-"}   # 模様・柄〜備考冒頭 60 字を窓にして「子猫」等も見る（2026-10-02 監査）
 species:
   from: field
-  map: {"三毛": cat, "サビ": cat, "キジ": cat, "トラ": cat, "": dog}
+  map: {"三毛": cat, "サビ": cat, "キジ": cat, "トラ": cat, "子猫": cat, "猫は現在": cat, "": dog}
 empty_text: ["投稿がありません"]

@@ -2,19 +2,20 @@
 # 本所（pref_fukushima-1/2）とは別テンプレート。div#main_body 内に <table> が1つだけあり、
 # 各行がラベル1セル（1列目）。0頭のときは1行目のラベルセルに rowspan="10" の空セルが
 # くっついているだけで、他の行には値セルが無い（本当に空の固定テンプレート）。
-# 現状（2026-09-29確認）は明記どおり0頭。
+# 1 頭いるときは 1 セルに「ラベル＋全角空白＋値」が入る（隣セルではない）ので label では取れず regex で拾う（2026-10-02 監査）。
+# 値が空のときに次のラベルを拾わないよう否定先読みを付ける。
 
 rows: "div#main_body table"
 image: "img@src"
 fields:
-  management_no: {label: "管理番号"}
-  shelter_date: {label: "保護日"}
-  location: {label: "保護場所"}
-  breed: {label: "種類"}
-  size: {label: "大きさ"}
-  color: {label: "毛色"}
-  sex: {label: "性別"}
-  age: {label: "推定年"}
-  note: {label: "その他"}
+  management_no: {regex: "管理番号\\s*((?!保護日)[0-9０-９\\-－]+)"}
+  shelter_date: {regex: "保護日\\s*(令和[\\d０-９]+年[\\d０-９]+月[\\d０-９]+日)"}
+  location: {regex: "保護場所\\s*((?!種類)\\S+)"}
+  breed: {regex: "種類\\s*((?!大きさ)\\S+)"}
+  size: {regex: "大きさ\\s*((?!毛色)\\S+)"}
+  color: {regex: "毛色\\s*((?!性別)\\S+)"}
+  sex: {regex: "性別\\s*((?!推定年)\\S+)"}
+  age: {regex: "推定年月齢\\s*((?!装着品)\\S+)"}
+  note: {regex: "その他の特徴等\\s*(.+)", default: null}
 empty_text:
   - "〇現在、収容している迷子犬は0頭です"

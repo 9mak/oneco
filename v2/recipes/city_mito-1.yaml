@@ -7,6 +7,8 @@ url: https://www.city.mito.lg.jp/site/doubutsuaigo/list358-1253.html
 steps:
   - follow_all: "a[href$='2768.html'], a[href$='2769.html']@href"
 rows: "div#main_body table"
+row_filter:
+  field_lacks: {management_no: ["目撃"]}   # 管理番号「目撃NNN」は街中の目撃報告で収容・保護ではないので捨てる。保護295・292 は「目撃場所」ラベル誤記なので regex の選択肢は残す（2026-10-02 監査）
 image: "img@src"
 fields:
   management_no: {label: "管理番号"}
