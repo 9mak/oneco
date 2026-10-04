@@ -3527,7 +3527,7 @@ sources:
   phone: null
   address: null
   url: https://animal-net.pref.nagasaki.jp/hogo
-  kind: sheltered
+  kind: stray       # 2026-10-04: 市民が保護している動物の掲示（自治体の保護ではない）。神奈川センター外と同じ扱い
   species: mixed
   mode: recipe
   recipe: recipes/animal_net_nagasaki-4.yaml

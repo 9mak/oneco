@@ -4,11 +4,13 @@
 # 個別ページの span.idnumber「ページ番号NNNNNN」（サイト固有の一意なページ番号）を management_no として使う。
 # 個別ページには h1 に一覧と同じ「令和08年09月28日　松島　猫（雑種）♀」、
 # <ul><li>保護場所：.../保護日時：.../種類：.../性別：.../毛色：.../特徴：...</li></ul> がある。
-# 写真は p.imageleft > img の alt が「写真：」で始まるものだけ（無い個体もある。runaway.gif 等の挿絵 alt は除外）。
+# 写真は src に「_page_/001/」を含む img（個体ページ配下のアップロード画像。alt は「写真：保護犬」「ねこ」等でまちまちなので alt では絞らない。
+# 共通ナビの 03_purpose アイコンと newwin 等のテンプレート画像は除外）。挿絵 runaway.gif と、負傷で画像掲載を見合わせる代替画像 keisaimiawase.jpg（水色地の「画像掲載を見合わせています」）は除外。
+# 2026-10-04 alt='写真' 始まりだけだと alt='ねこ' の実写真（1027913）を取りこぼし、keisaimiawase.jpg（代替画像）を写真として載せていたので、src 基準＋除外に変更（実写真 5→8 頭、代替画像 1→0）。
 steps:
   - follow_all: "ul.listlink.clearfix a@href"
 rows: "body"
-image: "img[alt^='写真']@src"
+image: {selector: "img[src*='_page_/001/']@src", exclude: ["03_purpose", "runaway", "keisaimiawase"]}
 fields:
   management_no: {selector: "span.idnumber", regex: "(\\d+)"}
   shelter_date: {selector: "h1", regex: "(令和\\s*\\d+\\s*年\\s*\\d+\\s*月\\s*\\d+\\s*日)"}

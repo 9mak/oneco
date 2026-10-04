@@ -1,3 +1,4 @@
+# 2026-10-04 location の見出しを 不明場所 → 保護場所 に変更（「保護しています」ページは保護場所。猫ページ 13946 で確認）。「探しています」は区分 lost の -9 に分けたので、ここは field_lacks のまま（今日は 2 頭とも探しています＝0 頭）。
 # 旭川市あにまある「ペット探しています/保護しています」一覧（/other-animal/list/dog）。
 # 一覧の a[href^=.../other-animal/xxxx] が1頭 → follow_all で個別ページへ。
 # 個別ページは table.animal-desc-table だが見出しが「不明日」「不明場所」（保護日/場所ではない）。
@@ -14,7 +15,7 @@ image:
 fields:
   name: {selector: "h2.elementor-heading-title"}
   shelter_date: {label: "不明日"}
-  location: {label: "不明場所"}
+  location: {label: "保護場所"}   # 「保護しています」ページの見出しは保護場所（「探しています」の不明場所は -9 が拾う）
   breed: {label: "種類"}
   color: {label: "毛色"}
   sex: {label: "性別"}

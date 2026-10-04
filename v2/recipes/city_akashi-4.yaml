@@ -1,0 +1,19 @@
+# あかし動物センター（飼い主募集の犬）
+# 2026-10-04 新規作成: 台帳に里親募集ページが無かった。当日 0 頭で、旧掲載はコメントアウトされている
+# （<p><img×3></p><table>仮名 / 品種（年齢） / 性別 / 体重 / 性格</table> の形。猫ページ city_akashi-3 と同じ書式の想定）。
+# 1 頭 = table 1 つ。写真は表の直前の p（直前の表で止まる）。見出し画像（inu.png 等）は除外。
+# 仮名の見出しに「譲渡が決まりました！」が付いた子は掲載終了なので捨てる。「トライアル中」は載せて note に状態を入れる。
+# 0 頭の日だけ出る「現在、飼い主を募集している犬は成犬0頭です」を empty_text にする。
+rows: "#tmp_contents table"
+row_filter:
+  text_lacks: ["譲渡が決まりました"]
+image: {selector: "img@src", scope: prev_siblings, exclude: ["inu.png", "koinu", "seiken", "seinu"]}
+fields:
+  name: {label: "仮名", regex: "^\\s*(\\S+)"}
+  breed: {label: "品種", regex: "^([^（(]+)"}
+  age: {label: "品種", regex: "[（(]([^）)]+)[）)]"}
+  sex: {label: "性別"}
+  size: {label: "体重"}
+  note: {label: "仮名", regex: "(トライアル中)"}
+empty_text:
+  - "現在、飼い主を募集している犬は成犬0頭です"

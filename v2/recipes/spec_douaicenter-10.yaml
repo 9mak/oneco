@@ -1,0 +1,21 @@
+# 2026-10-04 新規。-8 と同じ一覧（/other-animal/list/cat）から「探しています」だけを区分 lost（飼い主が迷子を探している告知）で拾う。
+# 一覧の a[href^=.../other-animal/xxxx] が1頭 → follow_all で個別ページへ。
+# 個別ページは table.animal-desc-table。見出しは「不明日」「不明場所」（飼い主が見失った日・場所）。
+# 連絡先は飼い主個人の電話・SNS なので取らない。
+steps:
+  - follow_all: "a[href^='https://www.douaicenter.jp/other-animal/']:not([href*='other-animal/list'])"
+rows: "body"
+row_filter:
+  field_has_any: {name: ["探しています", "探してます", "探しております"]}   # rows: body なのでメニュー文言に当たらないよう name で判定。語が無い行（保護しています）は -8 が拾う
+image:
+  selector: ".animal-image .large img@src"
+fields:
+  name: {selector: "h2.elementor-heading-title"}
+  shelter_date: {label: "不明日"}
+  location: {label: "不明場所"}
+  breed: {label: "種類"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  age: {label: "年齢"}
+  size: {label: "体格"}
+empty_text: ["現在、登録がございません"]

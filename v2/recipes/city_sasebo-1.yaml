@@ -1,10 +1,16 @@
 # 佐世保市（保護犬）
-# ページは JavaScript で動く。フォールバック: 静的な情報がない場合は表示されないため、
-# 「～現在、情報はありません～」のテキストで 0 頭判定。
-
-rows: "table tr"
+# 2026-10-04: 旧レシピは rows を「table tr」にしていて、動物がいる日も関連リンクの表しか拾えず 0 頭のままだった（「ページは JavaScript で動く」も誤り。静的 HTML）。
+#   動物がいる日は <p><a href="/hokenhukusi/seikat/20260313_dog01.html"><img src="/images/…/img_xxxx.jpg">令和8年3月13日（金曜日）山祇町（雑種、オス）</a></p> の形
+#   （2026-03-29 保存の tests/adapters/rule_based/fixtures/city_sasebo.html）。この p を 1 頭として読む。
+# ページは「動物愛護センターで保護している犬」「市民の方が保護している犬」の 2 節。市民保護の節の子には note に出す。
+rows: "div#tmp_contents p:has(a[href*='_dog'])"
 fields:
-  name: "td:nth-of-type(1)"
+  detail: {selector: "a[href*='_dog']", attr: href}
+  shelter_date: {regex: "((?:令\\s*和|平\\s*成)?\\s*\\d+年\\d+月\\d+日)"}
+  location: {regex: "日（[^）]*）\\s*(.+?)（"}
+  breed: {regex: "（([^（）、]+)、[^（）]*）\\s*$"}
+  sex: {regex: "、\\s*(オス|メス|雄|雌)"}
+  note: {from: heading, selector: "h2", regex: "(市民の方が保護している)", default: null}
 empty_text:
   - "～現在、情報はありません～"
   - "現在、情報はありません"

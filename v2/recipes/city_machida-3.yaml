@@ -1,16 +1,19 @@
 # 町田市（迷子猫・捜索）: single_page（過去分含め1ページに全件掲載、次へページ無し）。
 # 猫1頭 = <div class="h3bg"><h3>猫（おす/めす）</h3></div> + 直後の
 # <div class="img-area-r">（写真 + <ul><li>ラベル：値</li>...</ul>）。台帳 species=cat のため種別判定は不要。
-# ラベル表記ゆれ（毛色/色/色柄/柄、失踪日/失踪日時）があるが、レシピは1フィールド1ラベルのみ拾えるため
-# 主要ラベルだけ拾う（表記ゆれで拾えない行があっても management_no/shelter_date 判定には影響しない）。
-rows: "div.img-area-r"
+# 2026-10-04: 写真なしの 2 頭は <div class="wysiwyg_wp"><ul>...</ul></div> だけで img-area-r が無く行ごと落ちていたため rows に追加（失踪場所を含む行だけ通す）。
+# 2026-10-04: 日時のラベルが「失踪日時2020年…」とコロン無しの行があり日付が取れなかったためコロンを省略可に。色のラベルゆれ（毛色/色柄/色/柄）を 1 つの regex で拾い、名前も取る。
+rows: "div.img-area-r, div.wysiwyg_wp:has(> ul > li)"
 image: "img@src"
+row_filter:
+  text_has_any: ["失踪場所", "逸走場所"]
 fields:
+  name: {label: "名前"}
   breed: {label: "種類"}
   sex: {label: "性別"}
-  color: {label: "毛色"}
+  color: {regex: "(?:毛色|色柄|色|柄)[:：]\\s*(.+?)\\s+(?:首輪|マイクロチップ|特徴|体重|年齢|名前|しっぽ|失踪|逸走)"}
   age: {label: "年齢"}
   note: {label: "特徴"}
-  shelter_date: {regex: "(?:失踪日時|失踪日|逸走日時|逸走日)[:：]\\s*(\\S+)"}
+  shelter_date: {regex: "(?:失踪日時|失踪日|逸走日時|逸走日)[:：]?\\s*(\\S+)"}
   location: {regex: "(?:失踪場所|逸走場所)[:：]\\s*(\\S+)"}
 empty_text: ["現在、迷子の猫の情報はありません", "現在迷子の猫の情報はありません", "現在の迷子の猫情報はありません"]

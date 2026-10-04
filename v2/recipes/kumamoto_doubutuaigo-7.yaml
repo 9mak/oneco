@@ -1,4 +1,5 @@
 # 熊本県動愛 迷子犬（保健所・センターに収容された迷い犬の情報）。
+# 2026-10-04: location を label から selector に変更。label 方式は値（山鹿保健所）に「保健所」を含むと隣の値を捨てる仕様で、各保健所の行が空になっていた。
 # センター譲渡犬と同一テンプレート。一覧 ul.list-4col li = 1 頭で
 # 収容日・種類・性別・個体管理ナンバー・保健所・電話番号が全て揃う。
 steps:
@@ -10,7 +11,7 @@ fields:
   breed: {label: "種類"}
   sex: {label: "性別"}
   management_no: {label: "個体管理ナンバー"}
-  location: {label: "保健所"}
+  location: {selector: "dt:-soup-contains('保健所') + dd"}
   note: {label: "電話番号"}
   detail: {selector: "a", attr: "href"}
 empty_text: ["0件中 0～0件目を表示"]

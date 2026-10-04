@@ -21,8 +21,9 @@ site/static/ の中身（ブランドの SVG・favicon・about の写真）は�
 config.json:
     site_name   サイト名
     base_url    公開 URL（OG タグ・sitemap の絶対 URL に使う）
-    issues_url  撤去依頼などの窓口（GitHub Issues）
-    affiliate   「迎える準備」枠。[{"title": "…", "url": "https://…", "note": "…"}]。空なら枠ごと出さない
+    issues_url  取り下げ・訂正の依頼窓口（GitHub Issues）
+    contact_email  GitHub アカウントの無い人向けの連絡先メール（空なら「GitHub アカウント（無料）が必要」と書く）
+    affiliate   「迎える準備」枠。[{"title": "…", "url": "https://…", "note": "…"}]。空なら枠ごと出さない（about も「いまは広告を載せていません」になる）
 """
 
 from __future__ import annotations
@@ -52,6 +53,7 @@ DEFAULT_CFG: dict[str, Any] = {
     "issues_url": "https://github.com/9mak/oneco/issues",
     "repo_url": "https://github.com/9mak/oneco",
     "tagline": "全国の保護動物情報をひとつに",
+    "contact_email": "",
     "affiliate": [],
 }
 
@@ -244,7 +246,7 @@ def page(cfg: dict[str, Any], *, title: str, desc: str, path: str, body: str,
 <footer class="site-foot">
 <div class="foot-brand"><img src="/brand/oneco-mark.svg" width="28" height="28" alt="" loading="lazy"><span>ふたつの円は、犬のポムと猫のビリー。<a href="/about/">このサイトについて</a></span></div>
 <p>掲載しているのは各自治体が公開している情報です。{f'データ確認日: {esc(fmt_date(data_date))}。' if data_date else ''}最新の状況は自治体のページ・電話でご確認ください。</p>
-<p><a href="/sources/">情報源の一覧</a> ・ <a href="/about/">運営方針・撤去依頼</a> ・ <a href="{esc(repo)}" rel="noopener" target="_blank">GitHub</a></p>
+<p><a href="/sources/">情報源の一覧</a> ・ <a href="/about/#takedown">取り下げ・訂正の依頼</a> ・ <a href="{esc(repo)}" rel="noopener" target="_blank">GitHub</a></p>
 </footer>
 </body>
 </html>
@@ -543,18 +545,35 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
     issues = safe_url(cfg.get("issues_url")) or safe_url(DEFAULT_CFG["issues_url"])
     repo = safe_url(cfg.get("repo_url")) or DEFAULT_CFG["repo_url"]
     site = esc(cfg["site_name"])
-    n_src = sum(1 for s in data.get("sources", []) if isinstance(s, dict) and s.get("enabled", True))
-    n_pref = len({str(s.get("prefecture")) for s in data.get("sources", []) if isinstance(s, dict) and s.get("prefecture")})
+    srcs = [s for s in data.get("sources", []) if isinstance(s, dict) and s.get("enabled", True)]
+    n_src = len(srcs)
+    n_link = sum(1 for s in srcs if s.get("status") == "link_only" or s.get("mode") == "link_only")
+    n_read = n_src - n_link
+    n_pref = len({str(s.get("prefecture")) for s in srcs if s.get("prefecture")})
+    reach = f"{n_pref} 都道府県の {n_src} ページのうち {n_read} ページを毎日読み取り、{n_link} ページはリンクだけを載せています" \
+        if n_link else f"{n_pref} 都道府県の {n_src} ページを毎日読み取っています"
+    kinds = "・".join(f"{esc(KINDS[k])}（{esc(KIND_HELP[k])}）" for k in KINDS)
+    email = str(cfg.get("contact_email") or "").strip()
+    if not re.fullmatch(r"[^@\s<>\"']+@[^@\s<>\"']+\.[^@\s<>\"']+", email):
+        email = ""
+    contact = (f'GitHub アカウントをお持ちでない方は、メール（<a href="mailto:{esc(email)}">{esc(email)}</a>）でもお受けします。'
+               if email else "窓口の利用には GitHub アカウント（無料）が必要です。")
+    if cfg.get("affiliate"):
+        money = "<p>サーバー代などの運営費は、各ページの「迎える準備」枠に載せている広告（アフィリエイト）リンクでまかなっています。</p>"
+    else:
+        money = ("<p>いまは広告を載せていません。載せるときは「迎える準備」枠に広告（アフィリエイト）リンクと明示し、"
+                 "収入はサーバー代などの運営費に充てます。</p>")
     body = f"""<article class="about">
 <h1>このサイトについて</h1>
 <section>
 <h2>{site} とは</h2>
-<p>{site} は、全国の自治体（動物愛護センター・保健所・市区町村）が公開している保護犬・保護猫の情報を、出典を明示して 1 か所に集めた、個人運営のサイトです。個人や団体の掲載情報は扱いません。</p>
-<p>いま、{n_pref} 都道府県・{n_src} の自治体ページを毎日確認しています。載っているのは「その日、その自治体のページに出ている子」だけです。気になる子がいたら、掲載元の自治体に直接ご連絡ください。</p>
+<p>{site} は、全国の自治体（動物愛護センター・保健所・市区町村）が公開している保護犬・保護猫の情報を、出典を明示して 1 か所に集めた、個人運営のサイトです。自治体のページに載っていない情報（保護団体や個人の里親募集など）は扱いません。</p>
+<p>載せている子は 4 つに分けています: {kinds}。「探してます」は、飼い主さんが自分の迷子を探している告知のうち、自治体のページに載っているものです。犬猫以外の動物も、自治体のページにあれば載せています。</p>
+<p>いま、{reach}。載っているのは「その日、その自治体のページに出ている子」だけです。気になる子がいたら、掲載元の自治体に直接ご連絡ください。</p>
 </section>
 <section>
 <h2>{site} という名前と、ふたつの円</h2>
-<p>{site}（ワンコ）は、「わんこ」の綴りの中に「ねこ（NECO）」がいる名前です。頭の ONE には、ばらばらの情報をひとつにという意味も重なっています。ロゴのふたつの円は、このサイトのモデルになった犬のポムと猫のビリーを表しています。</p>
+<p>{site}（ワンコ）は、「わんこ」の綴りの中に「ねこ（NECO）」がいる名前です。頭の ONE には、ばらばらの情報をひとつに、という意味も重なっています。ロゴのふたつの円は、このサイトのモデルになった犬のポムと猫のビリーを表しています。</p>
 <div class="story story-pom">
 {photo_grid(ABOUT_PHOTOS_POM, "ポム", "photos-pom")}
 <p><strong>コーラルの円は、犬のポムをイメージしています。</strong>私が通っていた専門学校で生まれ、トリミング実習のモデル犬として、学生たちのカット練習に付き合ってくれていた子です。犬舎にいた頃から、私を見つけると寝転んでお腹を見せてくれる子で、学校の里親制度を通じて 4 歳のときにうちに来ました。</p>
@@ -580,7 +599,7 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
 </section>
 <section>
 <h2>運営者</h2>
-<p>{site} を作って運営しているのは、小熊 和喜（おぐま かずき）という個人です。トリミングの専門学校を出て動物病院で働いたあと、IT の仕事に移りました。ポムとは専門学校で、ビリーとは動物病院で出会いました。</p>
+<p>{site} を作って運営しているのは個人（GitHub: <a href="https://github.com/9mak" rel="noopener" target="_blank">9mak</a>）です。トリミングの専門学校を出て動物病院で働いたあと、IT の仕事に移りました。ポムとは専門学校で、ビリーとは動物病院で出会いました。</p>
 <p>サイトの中身と作業の記録は <a href="{esc(repo)}" rel="noopener" target="_blank">GitHub リポジトリ</a> で公開しています。</p>
 </section>
 <section>
@@ -593,17 +612,22 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
 </ul>
 </section>
 <section>
-<h2>掲載の取り下げ・訂正の依頼</h2>
-<p>自治体のご担当者様で、掲載の取り下げ・訂正・リンク方法の変更をご希望の場合は、下記の窓口（GitHub Issues）にページの URL とご要望をお書きください。確認のうえ速やかに対応します。GitHub アカウントをお持ちでない場合も、同じページに記載の方法でご連絡いただけます。</p>
-<p><a class="cta" href="{esc(issues)}" rel="noopener" target="_blank">撤去・訂正依頼の窓口（GitHub Issues）</a></p>
+<h2 id="takedown">掲載の取り下げ・訂正の依頼</h2>
+<p>自治体のご担当者様、写真や情報の権利をお持ちの方、飼い主さんなど、掲載の取り下げ・訂正・リンク方法の変更をご希望の方は、下記の窓口にページの URL とご要望をお書きください。確認のうえ速やかに対応します。{contact}</p>
+<p>自治体のページから消えた子は、{site} からも翌日の更新で消えます。</p>
+<p><a class="cta" href="{esc(issues)}" rel="noopener" target="_blank">取り下げ・訂正の依頼窓口（GitHub Issues）</a></p>
 </section>
 <section>
 <h2>運営費について</h2>
-<p>サーバー代などの運営費は、各ページの「迎える準備」枠に載せている広告（アフィリエイト）リンクでまかなっています。自治体や譲渡そのものにお金は関わりません。譲渡の条件や費用は各自治体の定めによります。</p>
+{money}
+<p>{site} は、自治体からも、譲渡を申し込む方からも、お金を受け取りません。譲渡の条件や費用は各自治体の定めによります。</p>
 </section>
 <section>
 <h2>免責</h2>
-<p>掲載内容は取得時点の自治体ページに基づきます。すでに譲渡・返還されている場合や、元ページの更新が反映されていない場合があります。最終的な情報は必ず各自治体にご確認ください。</p>
+<p>{site} は自治体の公式サイトではなく、自治体との提携や委託もない個人のサイトです。</p>
+<p>掲載内容は取得時点の自治体ページに基づきます。すでに譲渡・返還されている場合や、元ページの更新が反映されていない場合があります。ページはプログラムで自動に読み取っているため、写真や項目が別の子のものになるなどの誤りが起きることがあります。最終的な情報は必ず各自治体にご確認ください。誤りに気づいたら、上の窓口からお知らせください。</p>
+<p>写真と文章の権利は、各自治体と撮影者にあります。写真は自治体のページから直接表示しています。</p>
+<p>掲載内容によって生じた損害について、運営者は責任を負いかねます。</p>
 </section>
 </article>"""
     return page(cfg, title="このサイトについて", path="/about/", body=body, data_date=str(data.get("date") or ""),

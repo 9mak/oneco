@@ -1,9 +1,10 @@
 # 熊本県動愛 個人保護猫（一般の方からの投稿情報）。
+# 2026-10-04: 写真なし投稿に出る NO IMAGE の画像（2bd47106…_1540857959.jpg、実物確認済み）を image.exclude で除外し「写真はありません」にする。
 # 一覧 ul.list-4col li = 1 頭。項目は種類・性別・毛色のみ（収容日・個体管理ナンバー・保健所は無い）。
 steps:
   - paginate: ".paging .next a@href"
 rows: "ul.list-4col li"
-image: "img@src"
+image: {selector: "img@src", exclude: ["2bd47106ba6f130965fd28353d072fa9"]}
 fields:
   breed: {label: "種類"}
   sex: {label: "性別"}
