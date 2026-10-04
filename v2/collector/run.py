@@ -17,6 +17,16 @@ from .registry import ROOT, Source
 
 log = logging.getLogger("collector")
 DATA_DIR = ROOT / "data"
+# 読めないページがこの割合を超えた日は回線断などとみなし、latest.json を書き換えない（サイトは前日のまま出続ける）。
+# 平常日の failed は多くて 1 割未満（2026-09〜10 の実績で最大 14/229）。2026-10-04 の回線断では 119/229
+MAX_FAILED_RATIO = 0.2
+
+
+def outage(report: list[dict[str, Any]]) -> bool:
+    """読めないページが多すぎる日か（link_only・disabled は分母に入れない）。"""
+    tried = [r for r in report if r["status"] in ("ok", "empty", "failed")]
+    failed = sum(1 for r in tried if r["status"] == "failed")
+    return bool(tried) and failed > MAX_FAILED_RATIO * len(tried)
 
 
 def collect_one(source: Source, fetcher: Fetcher) -> tuple[str, Result | None, str | None, list[str]]:
@@ -82,10 +92,14 @@ def run(sources: list[Source], date: str, out_dir: Path = DATA_DIR, fetcher: Fet
         log.info("%-28s %-9s %4d %s", s.slug, status, n, err or "")
         if res:
             animals.extend(res.animals)
-    out = {"date": date, "generated_seconds": round(time.monotonic() - t0), "animals": animals,
+    held = outage(report)
+    out = {"date": date, "generated_seconds": round(time.monotonic() - t0), "animals": animals, "held": held,
            "sources": [{**{k: v for k, v in asdict(s).items() if k != "legacy"}, **next(r for r in report if r["slug"] == s.slug)} for s in sources]}
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / f"animals-{date}.json").write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
-    (out_dir / "latest.json").write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
+    if held:
+        log.warning("読めないページが %d%% を超えたので latest.json を書き換えない（サイトは前日のまま）", int(MAX_FAILED_RATIO * 100))
+    else:
+        (out_dir / "latest.json").write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
     (out_dir / f"report-{date}.json").write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
     return out
