@@ -14,6 +14,8 @@
 #   3. ~/.config/oneco/collect.env が無ければ example を置く
 #   4. plist の __REPO_DIR__ / __V2_DIR__ / __PY__ を埋めて ~/Library/LaunchAgents へ置き、launchctl で読み込む
 set -euo pipefail
+# 変数の直後に全角文字を続けるときは必ず ${VAR} と書く。$VAR（ だと bash（ロケールによる）が全角の先頭バイトを
+# 変数名の一部と読み、set -u で「unbound variable」になって止まる（2026-10-04 に 81 行目で発生）
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC_REPO="$(cd "$SCRIPT_DIR/../../.." && pwd)"      # このスクリプトがある checkout（clone 元の URL を取るだけ）
@@ -27,7 +29,7 @@ DOMAIN="gui/$(id -u)"
 if [ "${1:-}" = "--remove" ]; then
   launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
   rm -f "$PLIST_DST"
-  echo "解除した: $PLIST_DST（$RUN_DIR と $ENV_FILE は残している）"
+  echo "解除した: ${PLIST_DST}（${RUN_DIR} と ${ENV_FILE} は残している）"
   exit 0
 fi
 
@@ -67,7 +69,7 @@ mkdir -p "$ENV_DIR" "$V2_DIR/logs" "$HOME/Library/LaunchAgents"
 if [ ! -f "$ENV_FILE" ]; then
   cp "$SCRIPT_DIR/collect.env.example" "$ENV_FILE"
   chmod 600 "$ENV_FILE"
-  echo "環境変数ファイルを置いた: $ENV_FILE（ONECO_PAGES_PROJECT 等を埋めるまで deploy は飛ばされる）"
+  echo "環境変数ファイルを置いた: ${ENV_FILE}（ONECO_PAGES_PROJECT 等を埋めるまで deploy は飛ばされる）"
 fi
 
 # 4. plist
@@ -78,7 +80,7 @@ launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
 launchctl bootstrap "$DOMAIN" "$PLIST_DST"
 launchctl enable "$DOMAIN/$LABEL"
 
-echo "登録した: $PLIST_DST（repo=$RUN_DIR python=$PY）"
+echo "登録した: ${PLIST_DST}（repo=${RUN_DIR} python=${PY}）"
 launchctl print "$DOMAIN/$LABEL" | grep -E "state|last exit|program" | head -4 || true
 echo
 echo "毎日 0:05 JST に動く。今すぐ試すなら:  launchctl kickstart -k $DOMAIN/$LABEL  → tail -f $V2_DIR/logs/launchd.log"

@@ -7,7 +7,7 @@ import os
 
 import httpx
 
-from .run import DATA_DIR
+from .run import DATA_DIR, MAX_FAILED_RATIO, outage
 
 
 def build_message(report: list[dict]) -> str | None:
@@ -17,6 +17,9 @@ def build_message(report: list[dict]) -> str | None:
     if not failed and not repaired:
         return None
     lines = []
+    if outage(report):
+        lines.append(f"読めなかったページが多すぎる（{len(failed)} 件・{int(MAX_FAILED_RATIO * 100)}% 超）。回線断などとみなし、"
+                     "サイトは前日のまま。収集サーバーの回線を確かめて、直ったら手で収集し直す")
     if failed:
         lines.append(f"読めなかった自治体 {len(failed)} 件")
         for r in failed:
