@@ -1,10 +1,16 @@
 # 佐世保市（保護猫）
-# ページは JavaScript で動く。フォールバック: 静的な情報がない場合は表示されないため、
-# 「～現在、情報はありません～」のテキストで 0 頭判定。
-
-rows: "table tr"
+# 2026-10-04: 旧レシピは rows を「table tr」にしていて、動物がいる日も（猫ページは関連リンクが表ですらなく）拾えなかった。「ページは JavaScript で動く」も誤り。
+#   -1（保護犬）と同じテンプレートで、動物は <a href="/hokenhukusi/seikat/YYYYMMDD_catNN.html"> に写真と
+#   「令和8年3月13日（金曜日）場所（品種、オス）」が入る形（旧 adapter city_sasebo.py の docstring。猫の保存 fixture は無く犬の fixture からの推定）。
+#   今日は 0 頭で実物では確かめられない。その日は empty_text で 0 頭と判定する。
+rows: "div#tmp_contents p:has(a[href*='_cat'])"
 fields:
-  name: "td:nth-of-type(1)"
+  detail: {selector: "a[href*='_cat']", attr: href}
+  shelter_date: {regex: "((?:令\\s*和|平\\s*成)?\\s*\\d+年\\d+月\\d+日)"}
+  location: {regex: "日（[^）]*）\\s*(.+?)（"}
+  breed: {regex: "（([^（）、]+)、[^（）]*）\\s*$"}
+  sex: {regex: "、\\s*(オス|メス|雄|雌)"}
+  note: {from: heading, selector: "h2", regex: "(市民の方が保護している)", default: null}
 empty_text:
   - "～現在、情報はありません～"
   - "現在、情報はありません"

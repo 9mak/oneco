@@ -55,7 +55,7 @@ $PY -m collector repair <slug>                     # 読めなくなった slug 
       "prefecture": "徳島県",
       "phone": "088-636-6122",
       "address": "…",
-      "kind": "adoption",            // adoption=譲渡対象 sheltered=収容中 stray=迷子収容（飼い主不明）
+      "kind": "adoption",            // adoption=里親募集 sheltered=保護中 stray=迷子（飼い主不明のまま保護） lost=探してます（飼い主が探している迷子）
       "species": "dog",              // dog | cat | other
       "image_url": "https://…/photo2-1.JPG",   // 無いこともある（その場合 management_no か shelter_date がある）
       "source_url": "https://…",     // 個体ページがあればそれ、なければ一覧ページ

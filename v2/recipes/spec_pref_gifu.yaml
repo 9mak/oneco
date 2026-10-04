@@ -1,11 +1,13 @@
 # 岐阜県（迷い犬情報）— 入口はハブページで12保健所/センターへのリンク表のみ、動物情報は無い。
 # 各リンク先が実データ（1頭=縦型table 1つ、管理番号・収容日等はth/td or td<strong>ラベルの隣）。
-# 可茂保健所(5229)・揖斐センター(5767)は県サイト側で404（2026-09-29時点、soshiki/22706/からのリンクも同じ404）のため対象外。
+# 可茂保健所(5229)・揖斐センター(5767)は県サイト側で404（2026-09-29時点、soshiki/22706/からのリンクも同じ404）のため対象外。飛騨保健所(13689)も 404（2026-10-02 監査）。
 # 岐阜市保健所は外部ドメイン(city.gifu.lg.jp)・別サイト構造(dl形式)のためこのレシピの対象外（現状0頭）。
 steps:
-  - follow_all: "table a[href^='/page/']:not([href='/page/5229.html']):not([href='/page/5767.html'])@href"
+  - follow_all: "table a[href^='/page/']:not([href='/page/5229.html']):not([href='/page/5767.html']):not([href='/page/13689.html'])@href"
+# 2026-10-04: 西濃保健所(123142)は写真が表の直前の p にあり（他の保健所は表の中）、写真が付かなかったため
+# image を self_or_prev_siblings に変更（行の中を先に探し、無ければ直前の兄弟要素）。
 rows: "table"
-image: "img@src"
+image: {selector: "img@src", scope: self_or_prev_siblings}
 fields:
   management_no: {label: "管理番号", regex: "(No\\.?\\s*\\d+|^\\d+$)"}
   shelter_date: {label: "収容日"}

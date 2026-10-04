@@ -1,3 +1,4 @@
+# 2026-10-04 species を from: text（body 全文＝メニューの「犬」に必ず当たる）から from: field（h2 の名前）に変え allow_other を足した。0 頭で実機確認はできないがエンジンの挙動と実ページの本文から確定。
 # 旭川市あにまある「収容その他（迷子・保護中）」一覧。2026-09-29時点0頭（「現在、登録がございません。」表示）。
 # 動物が出たら slug-1/2 と同じ list_detail 構造（table.animal-desc-table）想定。
 steps:
@@ -13,7 +14,9 @@ fields:
   sex: {label: "性別"}
   age: {label: "年齢"}
   size: {label: "体格"}
+  species: {selector: "h2.elementor-heading-title"}
 species:
-  from: text
+  from: field   # from: text だと rows: body の全文（メニューの「犬・猫の情報」「犬の登録」）に必ず当たり、うさぎも犬になる
   map: {"犬": dog, "いぬ": dog, "猫": cat, "ねこ": cat}
+  allow_other: true   # 犬猫以外は「その他」として載せる
 empty_text: ["現在、登録がございません"]

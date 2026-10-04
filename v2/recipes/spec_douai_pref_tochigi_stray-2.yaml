@@ -3,7 +3,9 @@
 steps:
   - follow_all: "a[href$='.html']@href"
 rows: "body"
-image: "#gazou img"
+row_filter:
+  text_lacks: ["死亡"]   # 備考「搬入時死亡」等の子は捨てる（個体ページは項目表のみで案内文は混ざらない。2026-10-02 監査）
+image: {selector: "img@src", exclude: ["image/$"]}   # 旧 "#gazou img" は @src 無しで href 扱いになり写真が取れなかった。個体ページの img は本人の写真のみ、src が ../../image/ だけの空 img を除く（2026-10-02 監査）
 fields:
   management_no: {label: "管理番号"}
   shelter_date: {label: "収容日"}

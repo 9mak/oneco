@@ -6,22 +6,33 @@
 # 動物がいない組は値セルが空（&nbsp;）で管理番号も収容日も無く、写真も汎用プレースホルダ
 # （dog.png/cat.png/cat_1.png/inai.png/inu00.png/neko00.png/img_purpose_*.png 等、事務所ごとに
 # ファイル名が違う）。実写真は全て .jpg なので image.exclude で .png を一律除外する。
+# 2026-10-04 変更（2 点）:
+#  (1) 射水支所だけ div.col2 を使わず「写真の td + table.datatable の td」を並べた外側のレイアウト表で
+#      組んでいるため、rows が射水支所の犬・ねこを 1 件も拾えていなかった。外側の表も行に加えた。
+#  (2) 備考は <td colspan=2><p><strong>備考</strong></p><p>本文</p></td> でラベルの隣のセルが無く、
+#      label では「備考」が短いと次の行の「管理センター」を拾い（高岡 10/2 の note=管理センター）、
+#      本文が長いと（中部「首輪は厚生センターのものです。」）落ちていた。行の文字列から
+#      「備考」〜「管理センター」の間を取る regex に変更（空・「なし」は note なし）。
+#  (3) 氷見支所は犬の表の後ろに閉じタグの崩れがあり、lxml では犬の div.col2 が猫の見出し・猫の div.col2
+#      まで丸ごと飲み込む。猫だけいる日に犬の行が猫の写真・収容日を拾って幻の「犬」を作るため、
+#      写真は行の直下の col2L（または射水の写真 td）に限り、収容日・備考は行内の最初の table.datatable
+#      の文字だけから取る。
 steps:
   - follow_all: "table.datatable a[href*='/doubutsuaigo/syuyou/']@href"
-rows: "div.col2"
+rows: "div.col2, table:has(table.datatable)"
 image:
-  selector: "img@src"
+  selector: ":scope > div.col2L img, td:not(:has(table)) img@src"
   exclude:
     - "\\.png$"
 fields:
   management_no: {label: "管理番号"}
-  shelter_date: {label: "収容日", regex: "((?:令和|平成)\\s*\\d+\\s*年.*?\\d{1,2}\\s*月\\s*\\d{1,2}\\s*日)"}
+  shelter_date: {selector: "table.datatable", regex: "収容日\\s*((?:令和|平成)\\s*\\d+\\s*年.*?\\d{1,2}\\s*月\\s*\\d{1,2}\\s*日)"}
   location: {label: "収容場所"}
   breed: {label: "種類"}
   size: {label: "大きさ"}
   sex: {label: "性別"}
   color: {label: "毛色"}
-  note: {label: "備考"}
+  note: {selector: "table.datatable", regex: "備考[:：]?\\s*(?:なし\\s*(?=管理センター))?(.*?)\\s*管理センター"}
 species:
   from: heading
   selector: "h2"

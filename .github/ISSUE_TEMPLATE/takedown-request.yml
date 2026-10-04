@@ -10,7 +10,7 @@ body:
         ご連絡ありがとうございます。掲載内容に関するご懸念をお伺いし、適切に対応します。
         申し立てから **7 営業日以内** に状況をご返答します。
 
-        **個人情報・機微情報を含む場合**: 公開 Issue でなく、運営者の GitHub プロフィール経由でメールにて直接ご連絡いただけます。
+        **個人情報・機微情報を含む場合・GitHub アカウントをお持ちでない場合**: 公開 Issue でなく、メール（9mak.org@gmail.com）で直接ご連絡いただけます。
 
   - type: dropdown
     id: requester_type
@@ -36,7 +36,7 @@ body:
     id: target_url
     attributes:
       label: 対象 URL（撤去・修正してほしいページ）
-      placeholder: https://frontend-psi-ten-73.vercel.app/animals/...
+      placeholder: https://oneco.9mak-0x13.workers.dev/animals/...
     validations:
       required: true
 
@@ -65,7 +65,7 @@ body:
     id: contact_email
     attributes:
       label: 連絡先メールアドレス
-      description: 対応結果をご連絡するためのメールアドレス。公開 Issue に出ます。機微情報の場合は GitHub プロフィール経由でメール直送をご利用ください。
+      description: 対応結果をご連絡するためのメールアドレス。公開 Issue に出ます。機微情報の場合は 9mak.org@gmail.com へメールで直接お送りください。
       placeholder: contact@example.lg.jp
     validations:
       required: false

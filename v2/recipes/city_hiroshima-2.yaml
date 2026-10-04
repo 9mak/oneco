@@ -2,8 +2,9 @@
 # 1 頭 = div#voice 配下の dl 1 つ（収容月日/種類/推定年齢/毛色/性別/首輪等/拾得等の場所/備考 が dt/dd）。
 # 写真は dl の直前の p.imagecenter img。動物が 0 頭の期間は dd が全部空の雛形 dl が残るため自動判定で落ちる。
 rows: "div#voice dl"
-image: "p.imagecenter img@src"
+image: {selector: "p.imagecenter img@src", scope: prev_siblings}   # 写真は dl の直前の兄弟 p（旧指定は行の子孫しか見ず常に無写真だった。2026-10-02 監査）
 fields:
+  management_no: {from: heading, selector: "h2", regex: "整理番号[:：]\\s*(\\d\\S*)"}   # 直前の h2「整理番号：8-9-12」。雛形の空見出しは None
   shelter_date: {label: "収容月日"}
   breed: {label: "種類"}
   age: {label: "推定年齢"}

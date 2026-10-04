@@ -3,6 +3,8 @@
 # th/td が「ラベル｜値｜ラベル｜値」で並ぶ縦型テーブル。写真は table の外の兄弟 div に
 # （table の前後どちらにも）複数枚並ぶため row 単位では拾えない（management_no で通過条件は満たす）。
 rows: "div.main_naka_kiji table"
+row_filter:
+  field_lacks: {note: ["死亡"]}   # 備考「収容時死亡」「収容後死亡」の子は捨てる（2026-10-02 監査）
 fields:
   management_no: {label: "管理番号"}
   location: {label: "収容場所"}

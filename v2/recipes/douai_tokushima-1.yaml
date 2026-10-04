@@ -8,7 +8,8 @@ steps:
   - follow_all: "li.dogMenu a, li.catMenu a, li.otherMenu a"
   - follow: "iframe#animalFrame@src"
   - paginate: "div.next a@href"
-encoding: euc-jp
+# 2026-10-04: 体格「0.5㎏」の ㎏（EUC の NEC 13 区文字）が euc-jp では化けて「0.5��」になっていたので、㎏ まで読める euc_jis_2004 に変更（正規表現で切ると単位が消える）。
+encoding: euc_jis_2004
 rows: "ul.news > li"
 image: "td.photo img@src"
 fields:

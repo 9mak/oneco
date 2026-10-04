@@ -11,6 +11,9 @@ steps:
 
 rows: "body"
 
+row_filter:
+  field_lacks: {species: ["死亡"]}   # h1「…個別情報（負傷により死亡）」の死亡記事は捨てる（species 項目は h1 の生テキスト。2026-10-02 監査）
+
 image:
   selector: "img.mol_imageblock_img_medium"
 

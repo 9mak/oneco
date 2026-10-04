@@ -1,4 +1,5 @@
 # 熊本市（迷子猫一覧） https://www.city.kumamoto.jp/doubutuaigo/list03615.html
+# 2026-10-04: shelter_date の regex を「保護日時：」だけでなく「保護日：」（センター保護の記事の書式）にも当たるよう変更。
 # 一覧ページの div.kijiArea > ul.kijilist > li.loadbox の記事リンクを個別ページ（kijiNNNNNNNN）へ辿る。1 頭 = 1 記事。
 # 個別ページは table.templateForOneImages に写真、table.__wys_table（保護場所/種類/毛色/性別/推定年齢/首輪/体格）に属性。
 # 保護日時はテーブルに無く本文「保護日時：yyyy年m月d日…」から regex で取る。city_kumamoto-1（迷子犬）と同一テンプレート。
@@ -13,4 +14,4 @@ fields:
   age: {label: "推定年齢"}
   size: {label: "体格"}
   location: {label: "保護場所"}
-  shelter_date: {regex: "保護日時[:：]\\s*(\\S+)"}
+  shelter_date: {regex: "保護日(?:時)?[:：]\\s*(\\S+)"}

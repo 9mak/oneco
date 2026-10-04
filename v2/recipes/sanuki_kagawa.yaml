@@ -11,7 +11,11 @@ steps:
 pdf:
   mode: table
   header_has: "管理番号"
+row_filter:
+  field_lacks: {name: ["新"]}   # 「新しい家族に迎えられました！」の重ね書きは品種セルに「新」が混ざる（譲渡済。2026-10-02 監査）
+  text_lacks: ["迎えられました"]
 fields:
+  name: {header: "品種", regex: "(新)"}   # 譲渡済の印（通常の品種値に「新」は無い）
   management_no: {header: "管理番号", regex: "([0-9０-９]+[一-龥]\\s*[-‐‑−–—ー－]\\s*[DC][0-9０-９]{4})"}
   species: {header: "管理番号", regex: "[-‐‑−–—ー－]\\s*([DC])[0-9０-９]{4}"}
   age: {header: "生年月日", regex: "([HRhr]\\s*[0-9０-９]{1,2}\\s*\\.\\s*[0-9０-９]{1,2}\\s*\\.\\s*[0-9０-９]{1,2})"}

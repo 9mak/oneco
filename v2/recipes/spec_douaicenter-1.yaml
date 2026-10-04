@@ -1,3 +1,4 @@
+# 2026-10-04 empty_text から「現在」（どの文にも出る 1 語）を外し、0 頭の日だけ出る「現在、登録がございません」に揃えた（-2/-4/-5 と同じ。agy 指摘を確認: 構造が変わった日も 0 頭に見えて通知が来なくなる）。
 # 旭川市あにまある 一覧（li 内の a[href^=.../animal/xxxx] が動物1頭）→ follow_all で個別ページへ。
 # 個別ページ: table.animal-desc-table の th/td ラベル対応。写真は .animal-image .large img（他の img は装飾）。
 steps:
@@ -13,4 +14,4 @@ fields:
   sex: {label: "性別"}
   age: {label: "年齢"}
   size: {label: "体格"}
-empty_text: ["現在", "募集中の犬はいません", "対象の犬はいません"]
+empty_text: ["現在、登録がございません"]

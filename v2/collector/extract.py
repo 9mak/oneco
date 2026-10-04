@@ -9,7 +9,7 @@ from urllib.parse import urljoin
 
 from bs4 import Tag
 
-from .recipe import Doc, Recipe, Row, extract_rows, field_value, image_url, looks_like_date, looks_like_mgmt
+from .recipe import Doc, Recipe, Row, extract_rows, field_value, image_url, looks_like_date, looks_like_mgmt, nearest_heading
 from .registry import Source
 
 FIELD_NAMES = ["name", "sex", "age", "breed", "color", "size", "management_no", "shelter_date", "note", "location"]
@@ -31,25 +31,6 @@ class Result:
     empty_confirmed: bool = False
 
 
-def _nearest_heading(el: Tag, selector: str) -> str | None:
-    """行より前にある、selector に合う直近の要素（見出し）のテキスト。"""
-    root = el
-    while root.parent is not None and root.parent.name != "[document]":
-        root = root.parent
-    candidates = root.select(selector)
-    best = None
-    for c in candidates:
-        if c is el or el in c.descendants:
-            continue
-        # c が el より前にあるか（文書順）
-        if c.sourceline is not None and el.sourceline is not None:
-            if (c.sourceline, c.sourcepos or 0) < (el.sourceline, el.sourcepos or 0):
-                best = c
-        elif el in c.find_all_next():
-            best = c
-    return best.get_text(" ", strip=True) if best is not None else None
-
-
 def resolve_species(source: Source, recipe: Recipe, row: Row, fields: dict[str, str | None]) -> str:
     if source.species in ("dog", "cat"):
         return source.species
@@ -60,7 +41,7 @@ def resolve_species(source: Source, recipe: Recipe, row: Row, fields: dict[str, 
     if src == "field":
         text = fields.get("species")
     elif src == "heading" and row.el is not None:
-        text = _nearest_heading(row.el, spec.get("selector", "h2, h3, h4"))
+        text = nearest_heading(row.el, spec.get("selector", "h2, h3, h4"))
     elif src == "url":
         text = row.doc.url          # dog.pdf / cat.pdf のように文書の URL で決まるとき
     else:
@@ -92,6 +73,9 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
     # row_filter.field_lacks: {name: ["探しています"]} — 取った項目にこの語があれば捨てる（rows: body のように
     # 行の全文にサイトのメニュー文言が混ざるとき、text_lacks の代わりに使う）。これで全部捨てた日は「該当なし」とみなす
     field_lacks: dict[str, list[str]] = (recipe.row_filter or {}).get("field_lacks") or {}
+    # row_filter.field_has_any: {name: ["探しています"]} — field_lacks の逆。取った項目にこの語が 1 つも無い行は捨てる
+    # （同じ一覧から「探しています」だけを 4 区分目 lost の別 slug で拾う。旭川市あにまある）
+    field_has_any: dict[str, list[str]] = (recipe.row_filter or {}).get("field_has_any") or {}
     excluded = 0
     for doc in docs:
         rows = extract_rows(recipe, doc)
@@ -103,6 +87,11 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
             hit = next((f"{k}: {w}" for k, ws in field_lacks.items() for w in ws if w in (f.get(k) or "")), None)
             if hit:
                 res.dropped.append(Dropped(f"除外語（{hit}）", row.text()[:80]))
+                excluded += 1
+                continue
+            miss = next((k for k, ws in field_has_any.items() if not any(w in (f.get(k) or "") for w in ws)), None)
+            if miss:
+                res.dropped.append(Dropped(f"対象語なし（{miss}）", row.text()[:80]))
                 excluded += 1
                 continue
             img_abs, img_raw = image_url(recipe, row)
@@ -145,7 +134,10 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
     if not res.animals and recipe.empty_text:
         pool = list(docs) + [d for d in (visited or []) if d not in docs]
         alltext = " ".join(d.text() for d in pool)
-        res.empty_confirmed = any(t in alltext for t in recipe.empty_text)
+        # 0 頭のときだけ「現在、掲載する情報はありません」の画像を出すサイトがある（豊中市）ので img の alt も照合する
+        alts = " ".join(str(img.get("alt") or "") for d in pool if getattr(d, "soup", None) is not None
+                        for img in d.soup.find_all("img"))
+        res.empty_confirmed = any(t in f"{alltext} {alts}" for t in recipe.empty_text)
     if not res.animals and res.rows and excluded == res.rows:
         res.empty_confirmed = True   # 載っている子が全部「除外語」の子（飼い主が探している告知だけ等）
     return res

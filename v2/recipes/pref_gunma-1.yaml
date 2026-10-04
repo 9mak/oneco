@@ -3,8 +3,11 @@
 # th/td ラベル値表 + 写真。旧 legacy: pref_gunma.py 参照）。同じブロックに「収容の情報
 # ページへ戻る」(/page/7895.html) への導線リンクがあり、これは 404（サイト側のリンク切れ）
 # のため follow_all 全体が落ちないよう明示的に除外する。
+# 2026-10-04: 一覧に残っている 26-095 (/page/775956.html) と 26-096 (/page/776793.html) の個別ページが
+# 404（移転ではなく削除。県サイト内・soshiki/86/ にも新 URL なし。返還等で消えたが一覧のリンクだけ残る）で
+# 1 件の 404 が slug 全体を落とすため、この 2 本を除外（生きている 26-097/26-098 は取れる）。
 steps:
-  - follow_all: "div#main_body div.detail_free a[href*='/page/']:not([href='/page/7895.html']):not([href='/page/7896.html'])"
+  - follow_all: "div#main_body div.detail_free a[href*='/page/']:not([href='/page/7895.html']):not([href='/page/7896.html']):not([href='/page/775956.html']):not([href='/page/776793.html'])"
 rows: "body"
 image: "div#main_body img@src"
 fields:

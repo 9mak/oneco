@@ -3,6 +3,7 @@
 # render_json でその id を ?page=list_dc_m&no=<id> に差し込んで個体ページを描画し、1 ページ = 1 頭で読む（2026-09-30 実測 30 頭）。
 # 個体ページの「基本情報」は見出しの無い値の羅列: No. 管理番号 → 支所(市) → 品種 → 毛色 → 性別 → 体重 → 年齢。
 # 犬猫はページ下部の「犬の飼い方講習会へ」「猫の飼い方講習会へ」リンクで決める（ヘッダーの「犬の飼い方講習会」には「へ」が無い）。
+# 2026-10-04: 体重（4.20kg）が無い個体で age が空になり、「管理番号」行が無い個体で note が空になっていたので、age は性別の直後（体重は任意）から、note は「管理番号」か「譲渡をご希望の方」までで取る。
 steps:
   - render_json:
       match: "elasticsearch/search"
@@ -10,6 +11,8 @@ steps:
       follow: "https://wannyan-navi.pref.aichi.jp/?page=list_dc_m&no={value}"
       max: 200
 rows: "body"
+row_filter:
+  text_lacks: ["譲渡済"]   # 個体ページの状態が「譲渡済」の子は載せない（「準備中」は残す。2026-10-02 監査）
 image: {selector: "img[src*='w=1024']@src"}
 fields:
   management_no: {regex: "No\\s*\\.\\s*(\\S+)"}
@@ -17,8 +20,8 @@ fields:
   breed: {regex: "No\\s*\\.\\s*\\S+\\s+\\S+\\s+(\\S+)"}
   color: {regex: "No\\s*\\.\\s*\\S+\\s+\\S+\\s+\\S+\\s+(\\S+)"}
   sex: {regex: "No\\s*\\.\\s*\\S+(?:\\s+\\S+){3}\\s+(オス|メス)"}
-  age: {regex: "kg\\s+(\\d+歳\\S*)"}
-  note: {regex: "特徴\\s+(.*?)\\s+管理番号"}
+  age: {regex: "(?:オス|メス|不明)\\s+(?:[\\d.]+\\s*kg\\s+)?(\\d+歳\\S*)"}
+  note: {regex: "特徴\\s+(.*?)\\s+(?:管理番号|譲渡をご希望の方)"}
 species:
   from: text
   map: {"犬の飼い方講習会へ": dog, "猫の飼い方講習会へ": cat}

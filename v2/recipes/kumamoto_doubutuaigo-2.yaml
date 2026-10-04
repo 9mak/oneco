@@ -1,4 +1,5 @@
 # 熊本県動愛 センター譲渡猫（保健所・センター収容猫の譲渡情報）。
+# 2026-10-04: location を label から selector に変更。label 方式は値（水俣保健所）に「保健所」を含むと隣の値を捨てる仕様で、各保健所の行が空になっていた。
 # 一覧 ul.list-4col li = 1 頭。個別 detail ページもあるが、一覧の dl に
 # 収容日・種類・性別・個体管理ナンバー・保健所・電話番号が全て揃うため follow 不要。33 件で 2 ページ（paginate 必須）。
 steps:
@@ -10,7 +11,7 @@ fields:
   breed: {label: "種類"}
   sex: {label: "性別"}
   management_no: {label: "個体管理ナンバー"}
-  location: {label: "保健所"}
+  location: {selector: "dt:-soup-contains('保健所') + dd"}
   note: {label: "電話番号"}
   detail: {selector: "a", attr: "href"}
 empty_text: ["0件中 0～0件目を表示"]

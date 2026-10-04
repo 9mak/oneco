@@ -25,7 +25,8 @@ from .fetch import Fetcher
 _JUNK_IMAGE = re.compile(
     r"(icon|btn|button|logo|spacer|arrow|new_win|blank|banner|bnr|/common/|/design/|/img/parts|"
     r"header|footer|nav|menu|line\.|dot\.|bg_|_bg|pixel|1x1|tracking|counter|sns|facebook|twitter|"
-    r"line_|instagram|youtube|\.svg$|loading|print|mail\.|tel\.|map\.|pdf\.|zoom|search|"
+    r"line_|instagram|youtube|\.svg$|loading|print|mail\.|tel\.|map\.|pdf\.|zoom|"
+    r"search(?=[^/]*$)|"   # 検索ボタン。ファイル名にだけ効かせる（町田市は写真が search_cat.images/ 配下にある）
     r"noimage|no[-_]?image|no[-_]?photo|nophoto|placeholder|dummy|junbichu|準備中)",   # 「写真なし」のプレースホルダ（山梨 noimage01.jpg 等）
     re.I,
 )
@@ -164,7 +165,7 @@ class Executor:
 
     def _get(self, url: str, render: bool = False, capture: str | None = None) -> Doc:
         if render:
-            page = self.fetcher.render(url, capture=capture)
+            page = self.fetcher.render(url, capture=capture, **self._render_opts())
             d = _make_doc(page.final_url, page.html or "")
             d.rendered = True
             d.captured = list(page.captured)
@@ -173,6 +174,18 @@ class Executor:
         if page.html is None:
             return _make_pdf_doc(page.final_url, page.content, columns=self._pdf_columns())
         return _make_doc(page.final_url, page.html)
+
+    def _render_opts(self) -> dict[str, Any]:
+        """steps の `render:` が辞書（{wait_for: セレクタ, wait_ms: ミリ秒}）なら、その指定を fetcher.render に渡す。"""
+        spec = next((s["render"] for s in self.recipe.steps if s.get("render")), None)
+        if not isinstance(spec, dict):
+            return {}
+        opt: dict[str, Any] = {}
+        if spec.get("wait_for"):
+            opt["wait_for"] = str(spec["wait_for"])
+        if spec.get("wait_ms") is not None:
+            opt["wait_ms"] = int(spec["wait_ms"])
+        return opt
 
     def _pdf_columns(self) -> int:
         return int((self.recipe.pdf or {}).get("columns", 1))
@@ -453,6 +466,26 @@ def _label_value(el: Tag, label: str) -> str | None:
     return m.group(1) if m else None
 
 
+def nearest_heading(el: Tag, selector: str) -> str | None:
+    """行より前にある、selector に合う直近の要素（見出し）のテキスト。"""
+    root = el
+    while root.parent is not None and root.parent.name != "[document]":
+        root = root.parent
+    # 文書順は要素の同一性（id）で比べる。Tag の == は中身の比較なので、同じ文面の行が 2 つあると
+    # 「後の見出し」を前の行にも当ててしまう（越谷の同日同所 2 頭で発覚）
+    order = {id(t): i for i, t in enumerate(root.find_all(True))}
+    pos = order.get(id(el))
+    if pos is None:
+        return None
+    best = None
+    for c in root.select(selector):
+        if c is el or any(d is el for d in c.descendants):
+            continue
+        if order.get(id(c), -1) < pos:
+            best = c
+    return best.get_text(" ", strip=True) if best is not None else None
+
+
 def field_value(spec: Any, row: Row) -> str | None:
     if spec is None:
         return None
@@ -460,7 +493,10 @@ def field_value(spec: Any, row: Row) -> str | None:
         spec = {"selector": spec}
     val: str | None = None
     base_text = row.text()
-    if row.cells is not None:
+    from_heading = spec.get("from") == "heading"   # 行より前の直近の見出しから取る（越谷の管理番号 h3、広島の整理番号 h2）
+    if from_heading and row.el is not None:
+        val = nearest_heading(row.el, spec.get("selector", "h2, h3, h4"))
+    elif row.cells is not None:
         if "header" in spec:
             key = str(spec["header"]).replace(" ", "")
             val = next((v for k, v in row.cells.items() if key in k), None)
@@ -478,7 +514,7 @@ def field_value(spec: Any, row: Row) -> str | None:
         elif "attr" in spec:
             val = _attr(row.el, spec["attr"])
     if "regex" in spec:
-        m = re.search(spec["regex"], val if val is not None and ("selector" in spec or "label" in spec or "header" in spec) else base_text, re.S)
+        m = re.search(spec["regex"], val if val is not None and ("selector" in spec or "label" in spec or "header" in spec or from_heading) else base_text, re.S)
         val = (m.group(1) if m.groups() else m.group(0)).strip() if m else None
     if val is None and "default" in spec:
         val = spec["default"]
@@ -498,16 +534,44 @@ def image_url(recipe: Recipe, row: Row) -> tuple[str | None, str | None]:
     if attr == "href" and sel.startswith("img"):
         attr = "src"
     exclude = [re.compile(x, re.I) for x in spec.get("exclude", [])]
-    for el in row.el.select(sel):
-        src = _attr(el, attr) or _attr(el, "data-src") or _attr(el, "data-original")
-        if not src or src.startswith("data:"):
-            continue
-        if _JUNK_IMAGE.search(src) or any(p.search(src) for p in exclude):
-            continue
-        if spec.get("strip_query"):
-            src = src.split("?", 1)[0]     # 取得ごとに変わるクエリ（キャッシュ避け）を外して ID を安定させる
-        return _abs(recipe.base_url or row.doc.url, src), src
-    return None, None
+
+    def pick(root: Tag) -> tuple[str, str] | None:
+        for el in root.select(sel):
+            src = _attr(el, attr) or _attr(el, "data-src") or _attr(el, "data-original")
+            if not src or src.startswith("data:"):
+                continue
+            if _JUNK_IMAGE.search(src) or any(p.search(src) for p in exclude):
+                continue
+            if spec.get("strip_query"):
+                src = src.split("?", 1)[0]     # 取得ごとに変わるクエリ（キャッシュ避け）を外して ID を安定させる
+            return _abs(recipe.base_url or row.doc.url, src), src
+        return None
+
+    scope = spec.get("scope")
+    if scope == "self_or_prev_siblings":
+        # 行の中を先に探し、無ければ直前の兄弟要素（岐阜県: 保健所によって写真が表の中だったり、表の直前の p だったりする）
+        hit = pick(row.el)
+        if hit:
+            return hit
+    root: Tag = row.el
+    if scope in ("prev_siblings", "self_or_prev_siblings"):
+        # 写真が行の外（直前の兄弟要素）にあるとき（広島市: h2 → p.imagecenter img → dl）。
+        # 前の行（同じタグ名の兄弟）に当たるまで遡り、文書順に並べ直して探す
+        import copy
+
+        holder = BeautifulSoup('<div class="prev-siblings"></div>', "lxml").div
+        assert holder is not None
+        sibs: list[Tag] = []
+        for sib in row.el.find_previous_siblings():
+            if not isinstance(sib, Tag):
+                continue
+            if sib.name == row.el.name:
+                break
+            sibs.append(sib)
+        for sib in reversed(sibs):
+            holder.append(copy.copy(sib))
+        root = holder
+    return pick(root) or (None, None)
 
 
 def looks_like_date(s: str | None) -> bool:

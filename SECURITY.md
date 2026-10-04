@@ -5,7 +5,7 @@
 セキュリティ上の問題を発見された場合は、**公開 Issue を立てずに**以下の方法で報告してください。
 
 - GitHub Security Advisories: https://github.com/9mak/oneco/security/advisories/new
-- メール: 9mak.1112114853 [at] gmail.com（連絡先記載でやり取り）
+- メール: 9mak.org [at] gmail.com（連絡先記載でやり取り）
 
 報告いただいた内容は数日以内に確認し、影響範囲と修正方針を返信します。
 緊急性が高い場合（認証バイパス・データ漏洩等）は当日対応します。

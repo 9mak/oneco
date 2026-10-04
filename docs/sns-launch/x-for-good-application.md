@@ -116,7 +116,7 @@ oneco（https://frontend-psi-ten-73.vercel.app）は、日本全国 47 都道府
 
 ご検討よろしくお願いいたします。
 
-小熊 一輝
+9mak（oneco 運営者）
 GitHub: https://github.com/9mak
 サービス: https://frontend-psi-ten-73.vercel.app
 連絡先: (記入時にメールアドレスを補完)
