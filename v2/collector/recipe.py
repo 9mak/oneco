@@ -25,7 +25,8 @@ from .fetch import Fetcher
 _JUNK_IMAGE = re.compile(
     r"(icon|btn|button|logo|spacer|arrow|new_win|blank|banner|bnr|/common/|/design/|/img/parts|"
     r"header|footer|nav|menu|line\.|dot\.|bg_|_bg|pixel|1x1|tracking|counter|sns|facebook|twitter|"
-    r"line_|instagram|youtube|\.svg$|loading|print|mail\.|tel\.|map\.|pdf\.|zoom|search|"
+    r"line_|instagram|youtube|\.svg$|loading|print|mail\.|tel\.|map\.|pdf\.|zoom|"
+    r"search(?=[^/]*$)|"   # 検索ボタン。ファイル名にだけ効かせる（町田市は写真が search_cat.images/ 配下にある）
     r"noimage|no[-_]?image|no[-_]?photo|nophoto|placeholder|dummy|junbichu|準備中)",   # 「写真なし」のプレースホルダ（山梨 noimage01.jpg 等）
     re.I,
 )
@@ -533,8 +534,27 @@ def image_url(recipe: Recipe, row: Row) -> tuple[str | None, str | None]:
     if attr == "href" and sel.startswith("img"):
         attr = "src"
     exclude = [re.compile(x, re.I) for x in spec.get("exclude", [])]
+
+    def pick(root: Tag) -> tuple[str, str] | None:
+        for el in root.select(sel):
+            src = _attr(el, attr) or _attr(el, "data-src") or _attr(el, "data-original")
+            if not src or src.startswith("data:"):
+                continue
+            if _JUNK_IMAGE.search(src) or any(p.search(src) for p in exclude):
+                continue
+            if spec.get("strip_query"):
+                src = src.split("?", 1)[0]     # 取得ごとに変わるクエリ（キャッシュ避け）を外して ID を安定させる
+            return _abs(recipe.base_url or row.doc.url, src), src
+        return None
+
+    scope = spec.get("scope")
+    if scope == "self_or_prev_siblings":
+        # 行の中を先に探し、無ければ直前の兄弟要素（岐阜県: 保健所によって写真が表の中だったり、表の直前の p だったりする）
+        hit = pick(row.el)
+        if hit:
+            return hit
     root: Tag = row.el
-    if spec.get("scope") == "prev_siblings":
+    if scope in ("prev_siblings", "self_or_prev_siblings"):
         # 写真が行の外（直前の兄弟要素）にあるとき（広島市: h2 → p.imagecenter img → dl）。
         # 前の行（同じタグ名の兄弟）に当たるまで遡り、文書順に並べ直して探す
         import copy
@@ -551,16 +571,7 @@ def image_url(recipe: Recipe, row: Row) -> tuple[str | None, str | None]:
         for sib in reversed(sibs):
             holder.append(copy.copy(sib))
         root = holder
-    for el in root.select(sel):
-        src = _attr(el, attr) or _attr(el, "data-src") or _attr(el, "data-original")
-        if not src or src.startswith("data:"):
-            continue
-        if _JUNK_IMAGE.search(src) or any(p.search(src) for p in exclude):
-            continue
-        if spec.get("strip_query"):
-            src = src.split("?", 1)[0]     # 取得ごとに変わるクエリ（キャッシュ避け）を外して ID を安定させる
-        return _abs(recipe.base_url or row.doc.url, src), src
-    return None, None
+    return pick(root) or (None, None)
 
 
 def looks_like_date(s: str | None) -> bool:

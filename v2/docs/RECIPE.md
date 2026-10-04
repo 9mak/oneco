@@ -10,6 +10,7 @@ rows: "table.list tr"          # 動物 1 頭 = この CSS セレクタにマッ
 image: "img@src"               # 行の中の写真（省略時は img@src）
 # image: {selector: "td img@src", exclude: ["noimage"], strip_query: true}   # 除外パターン、?以降の除去（ID の安定化）
 # image: {selector: "p.imagecenter img@src", scope: prev_siblings}   # 写真が行の外（直前の兄弟要素）にあるとき。前の行（同じタグ）まで遡り文書順で先の 1 枚
+# image: {selector: "img@src", scope: self_or_prev_siblings}        # 行の中を先に探し、無ければ prev_siblings と同じ範囲（ページによって写真が表の中だったり外だったりするとき。岐阜県）
 fields:
   name: "td:nth-of-type(2)"
   sex:  "td:nth-of-type(3)"
@@ -55,6 +56,7 @@ row_filter:
   text_lacks: ["見出し", "譲渡済"]        # 含む行は捨てる
   min_text_length: 10
   field_lacks: {name: ["探しています"]}   # 取った項目にこの語があれば捨てる（rows: body で行の全文にメニュー文言が混ざるとき用）。全部捨てた日は「該当なし」扱い
+  field_has_any: {name: ["探しています"]} # field_lacks の逆。取った項目にこの語が 1 つも無い行は捨てる（同じ一覧から一部だけを別 slug で拾う。旭川市の「探してます」）
 ```
 
 ## 項目（`fields`）
@@ -113,6 +115,8 @@ empty_text: ["現在いません", "現在収容している犬はいません"]
 ```
 
 1 頭も取れず、かつ `empty_text` のどれかがページにあれば「本当に 0 頭」。どれもなければ「読めなかった」扱いになり通知に載る。
+照合するのは本文と画像の alt（0 頭のときだけ「現在、掲載する情報はありません」の画像を出すサイトがある。豊中市）。
+**常に出ている説明文（「下の欄に情報がない場合は…」「写真をクリックすると…」など）を empty_text にしない**。構造が変わって行が取れなくなった日も「0 頭」に見えて通知が来なくなる。0 頭の日にだけ出る文言を選ぶ。
 恒常的に 0 頭でリンクだけ出したいページ（動物が SNS に移った等）は、台帳で `mode: link_only` にする。
 
 ## 文字コード・その他

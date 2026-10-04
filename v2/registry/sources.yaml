@@ -310,6 +310,32 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+- slug: city_akashi-3
+  name: あかし動物センター（飼い主募集の猫）
+  municipality: あかし動物センター
+  prefecture: 兵庫県
+  phone: 078-918-5797
+  address: 〒674-0051 明石市大久保町大窪2747-1
+  url: https://www.city.akashi.lg.jp/kankyou/dobutsu/info/boshu/cat.html
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/city_akashi-3.yaml
+  enabled: true
+  note: 2026-10-04 追加（台帳に里親募集ページが無く、子猫 1・成猫 10 頭が載っていなかった）
+- slug: city_akashi-4
+  name: あかし動物センター（飼い主募集の犬）
+  municipality: あかし動物センター
+  prefecture: 兵庫県
+  phone: 078-918-5797
+  address: 〒674-0051 明石市大久保町大窪2747-1
+  url: https://www.city.akashi.lg.jp/kankyou/dobutsu/info/boshu/dog/detail-yymmdd.html
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/city_akashi-4.yaml
+  enabled: true
+  note: 2026-10-04 追加（当日 0 頭。掲載時の書式は猫ページと同じ想定）
 - slug: city_amagasaki
   name: 尼崎市動物愛護センター（収容動物）
   municipality: 尼崎市動物愛護センター
@@ -580,6 +606,32 @@ sources:
     pdf: false
     list_link_pattern: a[href*='/other-animal/']
     pdf_link_pattern: null
+- slug: spec_douaicenter-9
+  name: 旭川市あにまある（飼い主が探している犬）
+  municipality: 旭川市あにまある
+  prefecture: 北海道
+  phone: 0166-25-5271
+  address: null
+  url: https://www.douaicenter.jp/other-animal/list/dog
+  kind: lost
+  species: dog
+  mode: recipe
+  recipe: recipes/spec_douaicenter-9.yaml
+  enabled: true
+  note: -7 と同じ一覧の「探しています」（飼い主が迷子を探している告知）だけを拾う（2026-10-04、10/2 の 4 区分目 lost 決定に合わせて分割）
+- slug: spec_douaicenter-10
+  name: 旭川市あにまある（飼い主が探している猫）
+  municipality: 旭川市あにまある
+  prefecture: 北海道
+  phone: 0166-25-5271
+  address: null
+  url: https://www.douaicenter.jp/other-animal/list/cat
+  kind: lost
+  species: cat
+  mode: recipe
+  recipe: recipes/spec_douaicenter-10.yaml
+  enabled: true
+  note: -8 と同じ一覧の「探しています」だけを拾う（2026-10-04）
 - slug: city_chiba-1
   name: 千葉市（迷子犬）
   municipality: 千葉市
@@ -2737,7 +2789,7 @@ sources:
   phone: 0463-58-3411
   address: 〒259-1205 神奈川県平塚市土屋401
   url: https://www.pref.kanagawa.jp/osirase/1594/awc/lost/outside.html
-  kind: sheltered
+  kind: stray       # 2026-10-04: 県民の方のもとで保護されている動物（センター外）。自治体が保護している「保護中」ではない
   species: dog
   mode: recipe
   recipe: recipes/pref_kanagawa-4.yaml
@@ -2755,7 +2807,7 @@ sources:
   phone: 0463-58-3411
   address: 〒259-1205 神奈川県平塚市土屋401
   url: https://www.pref.kanagawa.jp/osirase/1594/awc/lost/outside.html
-  kind: sheltered
+  kind: stray       # 2026-10-04: -4 と同じ理由
   species: cat
   mode: recipe
   recipe: recipes/pref_kanagawa-5.yaml
@@ -3864,13 +3916,14 @@ sources:
     requires_js: false
     pdf: false
 - slug: pref_iwate_chubu
-  name: 岩手県（中部保健所 保護犬猫）
+  name: 岩手県（中部保健所 譲渡犬猫）
   municipality: 中部保健所
   prefecture: 岩手県
   phone: "0198-41-3276"
   address: 岩手県花巻市花城町1-41（花巻保健福祉環境センター・中部保健所）
   url: https://www.pref.iwate.jp/kennan/hana_hoken/1013542/index.html
-  kind: sheltered
+  kind: adoption    # 2026-10-04: レシピは【譲渡】の節だけを拾う（10/2 の T512 対応）ので里親募集
+
   species: mixed
   mode: recipe
   recipe: recipes/pref_iwate_chubu.yaml
