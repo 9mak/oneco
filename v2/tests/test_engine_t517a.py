@@ -2,8 +2,9 @@
 
 1. empty_selector: 0 頭の日に文言が出ず、一覧の器（div / ul）が空になるだけのサイト用（豊橋市あいくる・福岡県動物愛護センター）。
    器があって中身が空なら empty。器が無い日（構造が変わった日）は empty にしない＝failed で通知される
-2. follow_all / pdf_links の skip_errors: 子 1 本の取得失敗（404 等）でその 1 本だけ捨てて続ける（群馬県・岐阜県）。
-   辿ろうとした子が全部失敗した日は従来どおり失敗
+2. follow_all / pdf_links の skip_errors: 子 1 本が「ページが無い」（HTTP 404・410）ならその 1 本だけ捨てて続ける（群馬県・岐阜県）。
+   サーバーエラー・接続失敗は一時的なことが多く、黙って頭数を減らすより読めなかったと通知する方がよいので従来どおり失敗。
+   辿ろうとした子が全部失敗した日も従来どおり失敗。捨てた子は report.json の skipped に残す
 """
 
 import pytest
@@ -129,7 +130,8 @@ def _dog(no: str) -> str:
 
 GUNMA_PAGES = {"https://x.test/": GUNMA_LIST,
                "https://x.test/page/776839.html": _dog("26-097"),
-               "https://x.test/page/777066.html": _dog("26-098")}   # 775956 は FakeFetcher に無い＝取得失敗
+               "https://x.test/page/777066.html": _dog("26-098")}
+GONE = {"https://x.test/page/775956.html": 404}     # 一覧に残っている消えた個別ページ
 
 
 def _gunma(skip: bool) -> Recipe:
@@ -141,26 +143,62 @@ def _gunma(skip: bool) -> Recipe:
 
 
 def test_follow_all_fails_whole_slug_on_one_child_error_by_default():
-    ex = Executor(FakeFetcher(GUNMA_PAGES), _gunma(skip=False))
+    ex = Executor(FakeFetcher(GUNMA_PAGES, status=GONE), _gunma(skip=False))
     with pytest.raises(FetchError):
         ex.resolve("https://x.test/")
 
 
 def test_follow_all_skip_errors_drops_only_the_failed_child():
     recipe = _gunma(skip=True)
-    ex = Executor(FakeFetcher(GUNMA_PAGES), recipe)
+    ex = Executor(FakeFetcher(GUNMA_PAGES, status=GONE), recipe)
     docs = ex.resolve("https://x.test/")
     assert [d.url for d in docs] == ["https://x.test/page/776839.html", "https://x.test/page/777066.html"]
-    assert any(t.startswith("skip https://x.test/page/775956.html: ") for t in ex.trace)
+    assert "skip https://x.test/page/775956.html: HTTP 404: https://x.test/page/775956.html" in ex.trace
     res = build(_src(kind="sheltered"), recipe, docs, ex.visited)
     assert [a["management_no"] for a in res.animals] == ["26-097", "26-098"]
 
 
 def test_follow_all_skip_errors_still_fails_when_every_child_fails():
     """全部 404 の日を 0 頭扱いにしない。"""
-    ex = Executor(FakeFetcher({"https://x.test/": GUNMA_LIST}), _gunma(skip=True))
+    gone = {u: 404 for u in ("https://x.test/page/775956.html", "https://x.test/page/776839.html", "https://x.test/page/777066.html")}
+    ex = Executor(FakeFetcher({"https://x.test/": GUNMA_LIST}, status=gone), _gunma(skip=True))
     with pytest.raises(FetchError):
         ex.resolve("https://x.test/")
+
+
+def test_follow_all_skip_errors_skips_410_gone():
+    ex = Executor(FakeFetcher(GUNMA_PAGES, status={"https://x.test/page/775956.html": 410}), _gunma(skip=True))
+    assert len(ex.resolve("https://x.test/")) == 2
+
+
+@pytest.mark.parametrize("status", [{"https://x.test/page/775956.html": 503}, {"https://x.test/page/775956.html": 403}, {}])
+def test_follow_all_skip_errors_does_not_skip_server_or_connection_errors(status):
+    """5xx・403・接続失敗（FakeFetcher に無い URL）は飛ばさず、従来どおり slug ごと失敗にして通知に載せる。"""
+    ex = Executor(FakeFetcher(GUNMA_PAGES, status=status), _gunma(skip=True))
+    with pytest.raises(FetchError):
+        ex.resolve("https://x.test/")
+
+
+def test_run_reports_skipped_children(tmp_path, monkeypatch):
+    """skip_errors で捨てた子は report.json の skipped に URL と理由で残す（黙って頭数が減ったのを後から追える）。"""
+    import json
+
+    from collector import run as run_mod
+    from collector.extract import Result
+
+    src = Source(slug="pref_gunma-1", name="群馬県", municipality="群馬県", prefecture="群馬県", url="https://x.test/",
+                 kind="sheltered", species="dog")
+
+    def collect_one(s, fetcher):  # noqa: ANN001, ANN202
+        res = Result(docs=2)
+        res.animals.append({"id": "a1", "source": s.slug})
+        return "ok", res, None, ["entry https://x.test/", "skip https://x.test/page/775956.html: HTTP 404: https://x.test/page/775956.html",
+                                 "follow_all → 3 件 (https://x.test/)"]
+
+    monkeypatch.setattr(run_mod, "collect_one", collect_one)
+    run_mod.run([src], "2026-10-05", out_dir=tmp_path, fetcher=FakeFetcher({}), enabled=False)
+    report = json.loads((tmp_path / "report-2026-10-05.json").read_text(encoding="utf-8"))
+    assert report[0]["skipped"] == ["https://x.test/page/775956.html: HTTP 404: https://x.test/page/775956.html"]
 
 
 def test_follow_all_skip_errors_with_no_links_is_not_an_error():
@@ -194,7 +232,7 @@ def test_pdf_links_skip_errors_drops_only_the_failed_pdf():
                                "pdf": {"mode": "text"}, "rows_regex": r"^No.*$"})
     pages = {"https://x.test/": "<a href='old.pdf'>old</a><a href='new.pdf'>new</a>",
              "https://x.test/new.pdf": _tiny_pdf("No.26-001 dog")}
-    ex = Executor(FakeFetcher(pages), recipe)
+    ex = Executor(FakeFetcher(pages, status={"https://x.test/old.pdf": 404}), recipe)
     docs = ex.resolve("https://x.test/")
     assert len(docs) == 1 and "No.26-001" in (docs[0].pdf_text or "")
     assert any(t.startswith("skip https://x.test/old.pdf: ") for t in ex.trace)
@@ -205,4 +243,4 @@ def test_pdf_links_fails_on_one_error_by_default():
     pages = {"https://x.test/": "<a href='old.pdf'>old</a><a href='new.pdf'>new</a>",
              "https://x.test/new.pdf": _tiny_pdf("No.26-001 dog")}
     with pytest.raises(FetchError):
-        Executor(FakeFetcher(pages), recipe).resolve("https://x.test/")
+        Executor(FakeFetcher(pages, status={"https://x.test/old.pdf": 404}), recipe).resolve("https://x.test/")

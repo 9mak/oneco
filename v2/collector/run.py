@@ -70,7 +70,7 @@ def run(sources: list[Source], date: str, out_dir: Path = DATA_DIR, fetcher: Fet
     t0 = time.monotonic()
     for s in sources:
         t = time.monotonic()
-        status, res, err, _ = collect_one(s, fetcher)
+        status, res, err, trace = collect_one(s, fetcher)
         repair_note: str | None = None
         if status == "failed" and enabled and s.enabled and s.mode == "recipe":
             from .ai_repair import repair
@@ -78,7 +78,7 @@ def run(sources: list[Source], date: str, out_dir: Path = DATA_DIR, fetcher: Fet
             r = repair(s, fetcher=fetcher, error=err)
             if r.status == "ok":
                 repair_note = f"AI がレシピを書き直した（{r.count} 頭）"
-                status, res, err, _ = collect_one(s, fetcher)
+                status, res, err, trace = collect_one(s, fetcher)
             elif r.status == "no_key":
                 repair_note = "AI 修復: ANTHROPIC_API_KEY 未設定"
                 enabled = False   # 以降のページでも同じなので試さない
@@ -88,7 +88,9 @@ def run(sources: list[Source], date: str, out_dir: Path = DATA_DIR, fetcher: Fet
         n = len(res.animals) if res else 0
         report.append({"slug": s.slug, "name": s.name, "status": status, "count": n, "error": err,
                        "dropped": len(res.dropped) if res else 0, "seconds": round(time.monotonic() - t, 1),
-                       "repair": repair_note})
+                       "repair": repair_note,
+                       # skip_errors で捨てた子（「URL: 理由」）。通知には出さないが、黙って頭数が減ったのを後から追える
+                       "skipped": [t.removeprefix("skip ") for t in trace if t.startswith("skip ")]})
         log.info("%-28s %-9s %4d %s", s.slug, status, n, err or "")
         if res:
             animals.extend(res.animals)

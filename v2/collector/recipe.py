@@ -20,7 +20,7 @@ from bs4 import BeautifulSoup, CData, NavigableString, Tag, XMLParsedAsHTMLWarni
 
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)   # RSS を HTML として読むレシピがある
 
-from .fetch import FetchError, Fetcher
+from .fetch import FetchError, Fetcher, page_gone
 
 T = TypeVar("T")
 
@@ -384,13 +384,14 @@ class Executor:
         return out
 
     def _child(self, step: dict[str, Any], url: str, failed: list[str], fetch: Callable[[], T]) -> T | None:
-        """follow_all / pdf_links の子 1 本を取る。step に skip_errors: true があれば、取得の失敗（FetchError:
-        HTTP 4xx/5xx・接続失敗）はその 1 本だけ捨てて trace に残し、None を返す（群馬県・岐阜県: 一覧に
-        消えた個別ページへのリンクが残り、1 本の 404 で slug 全体が落ちていた）。"""
+        """follow_all / pdf_links の子 1 本を取る。step に skip_errors: true があり、失敗が「ページが無い」
+        （HTTP 404・410）なら、その 1 本だけ捨てて trace に残し、None を返す（群馬県・岐阜県: 一覧に
+        消えた個別ページへのリンクが残り、1 本の 404 で slug 全体が落ちていた）。サーバーエラー・接続失敗は
+        一時的なことが多く、黙って頭数を減らすより読めなかったと通知する方がよいので、従来どおり失敗にする。"""
         try:
             return fetch()
         except FetchError as e:
-            if not step.get("skip_errors"):
+            if not step.get("skip_errors") or not page_gone(e):
                 raise
             failed.append(f"{url}: {e}")
             self.trace.append(f"skip {url}: {e}")

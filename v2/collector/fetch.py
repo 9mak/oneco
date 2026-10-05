@@ -31,6 +31,14 @@ class FetchError(Exception):
     pass
 
 
+_GONE = re.compile(r"HTTP (404|410): ")
+
+
+def page_gone(e: FetchError) -> bool:
+    """ページが無い（HTTP 404・410）ことによる失敗か。サーバーエラー・接続失敗・robots 拒否は False。"""
+    return bool(_GONE.match(str(e)))
+
+
 @dataclass
 class Page:
     url: str          # 要求した URL
@@ -178,14 +186,17 @@ class FakeFetcher(Fetcher):
     """テスト用。URL → HTML/bytes の辞書だけを返す。captures は URL → render 中に捕まえたことにする JSON の列。"""
 
     def __init__(self, pages: dict[str, str | bytes], redirects: dict[str, str] | None = None,
-                 captures: dict[str, list[Any]] | None = None) -> None:
+                 captures: dict[str, list[Any]] | None = None, status: dict[str, int] | None = None) -> None:
         super().__init__(delay=0, respect_robots=False)
         self.pages = pages
         self.redirects = redirects or {}
         self.captures = captures or {}
+        self.status = status or {}      # URL → HTTP ステータス（400 以上なら本物の Fetcher と同じ「HTTP 404: URL」で失敗する）
         self.render_calls: list[tuple[str, str | None]] = []
 
     def get(self, url: str, encoding: str | None = None) -> Page:
+        if self.status.get(url, 200) >= 400:
+            raise FetchError(f"HTTP {self.status[url]}: {url}")
         if url not in self.pages:
             raise FetchError(f"FakeFetcher に無い URL: {url}")
         body = self.pages[url]
