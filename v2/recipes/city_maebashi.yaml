@@ -1,9 +1,9 @@
+# 2026-10-05 監査: 管理番号の列（2026-09-08 のような番号）を収容日として取っていたのを直した。収容日は写真の alt の「○年○月○日に…保護された」から取る。
 rows: "table[summary*='前橋市'] tbody tr"
 image: "img@src"
 fields:
-  shelter_date:
-    label: "管理番号"
-    regex: '(\d{4}-\d{1,2}-\d{1,2})'
+  management_no: {label: "管理番号"}   # 「2026-09-08」は収容日ではなく管理番号（個別ページの「管理番号 2026-09-08 / 収容日 2026年9月28日」で確認）
+  shelter_date: {selector: "img", attr: "alt", regex: "(\\d+年\\d+月\\d+日)"}   # 一覧に収容日の列は無い。写真の alt「2026年9月28日に池端町で保護された犬の画像です」が個別ページの収容日と一致
   location: {label: "収容場所"}   # index は PDF 表専用で HTML 行では空になる（2026-10-02 監査）
   breed: {label: "犬種"}
   sex: {label: "性別"}

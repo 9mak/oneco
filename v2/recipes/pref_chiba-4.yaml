@@ -1,3 +1,4 @@
+# 2026-10-05 監査: 収容日（直前の h2「【収容日】…」から from: heading で）と毛色（品種・毛色・性別の行の 2 番目）を取るようにした。管理番号のリンク文字「260930-2-1.jpg（JPG：…）」から拡張子を除いた
 # 千葉県動愛センター東葛飾支所（収容犬）。本所と同一テンプレート
 # (<h2>【収容日】...</h2> + <div class="col2"><div class="col2L">)。
 # 品種・毛色・性別と 体格・年齢 が別々の <p> に分かれることがある（例: "トイプードル・茶色・メス" / "小型・成犬"）。
@@ -7,8 +8,14 @@ row_filter:
   text_lacks: ["260000-0-0"]
 image: "img@src"
 fields:
+  shelter_date:
+    from: heading
+    selector: "h2"
+    regex: "(\\d+年\\d+月\\d+日)"
+  color:
+    regex: "収容場所】\\s*\\S+\\s+[^・\\s]+・([^・\\s]+)・"
   management_no:
-    regex: "管理番号】\\s*([^\\s（(]+)"
+    regex: "管理番号】\\s*([^\\s（(.]+)"
   location:
     regex: "収容場所】\\s*([^\\s【]+)"
   breed:
