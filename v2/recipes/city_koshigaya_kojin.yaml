@@ -1,16 +1,22 @@
 # 越谷市（個人保護犬猫）hogo_kojin.html
-# div#tmp_honbun 内に「犬の情報」「猫の情報」の h2 見出しがあり、その中に
-# 1 動物 = <h3 class="partsstyle_h3">R8-001</h3> の後ろへ img・p（発見場所/発見時期/毛色/特徴）が
-# 兄弟要素として並ぶ（囲む div が無い、フラットな並び）。
-# 既知の制約: このレシピエンジンは行（rows）の子孫要素しか fields で参照できないため、
-# h3 の直後に続く兄弟 p・img は取得できない（city_sendai-1 と同種の制約）。
-# h3 自身のテキストが管理番号相当（例: R8-001）で 2 桁以上の数字を含むため、
-# management_no としてそのまま採用すれば動物判定は成立する。
-# 「参考：越谷警察署」「参考：マイクロチップについて」等の見出し用 h3 は
-# div.h3bg > div > h3 に包まれており class が無いため、class="partsstyle_h3" で区別する。
+# div#main_content2 の直下に、div.h2bg（h2「犬の情報」「猫の情報」）→ h3.partsstyle_h3（R8-001）→ p 写真 → p 写真 →
+# p 発見場所：→ p 発見時期：→ p 毛色：→ p 特徴： が平らに並ぶ。row_until で h3 から次の見出しの div.h2bg までを 1 行にまとめる（T517）。
+# 「参考：越谷警察署」「参考：マイクロチップについて」等の見出し用 h3 は div.h3bg > div > h3 に包まれており class が無いので、
+# class="partsstyle_h3" だけが 1 頭の始まりになる。
+# 管理番号は始まりの h3 自身（selector: h3。from: heading にすると前の子の番号になるので使わない）。
+# 写真の 1 枚目は文字入りの迷子ポスター（maigo_pos.jpg）なので外し、2 枚目以降の写真を使う。
+# species は直前の h2（犬の情報・猫の情報）で決める。
 rows: "h3.partsstyle_h3"
+row_until: "div.h2bg"
+image:
+  selector: "img@src"
+  exclude: ["maigo_pos"]
 fields:
-  management_no: {selector: "."}
+  management_no: {selector: "h3"}
+  location: {label: "発見場所"}
+  shelter_date: {label: "発見時期"}
+  color: {label: "毛色"}
+  note: {selector: "p:-soup-contains('特徴')", regex: "特徴[:：]\\s*(.+)"}
 species:
   from: heading
   selector: "h2"
