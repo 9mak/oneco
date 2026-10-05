@@ -53,7 +53,9 @@ class Result:
     empty_confirmed: bool = False
 
 
-def resolve_species(source: Source, recipe: Recipe, row: Row, fields: dict[str, str | None]) -> str:
+def resolve_species(source: Source, recipe: Recipe, row: Row, fields: dict[str, str | None]) -> str | None:
+    """台帳の species → レシピの map → infer の順で決める。決まらなければ None（種別なし。サイトでは犬・猫の絞り込みに出ず「すべて」でだけ出る）。
+    allow_other のレシピは決まらない行を other（犬猫以外）にする（build 側）。"""
     if source.species in ("dog", "cat"):
         return source.species
     spec = recipe.species or {}
@@ -76,7 +78,7 @@ def resolve_species(source: Source, recipe: Recipe, row: Row, fields: dict[str, 
         inferred = infer_species(fields)
         if inferred:
             return inferred
-    return "other"
+    return None
 
 
 def infer_species(fields: dict[str, str | None]) -> str | None:
@@ -160,9 +162,10 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
                 res.dropped.append(Dropped("写真も管理番号も収容日も個体ページも無い", row.text()[:80]))
                 continue
             species = resolve_species(source, recipe, row, f)
-            if species == "other" and source.species == "mixed" and not recipe.species.get("allow_other"):
-                res.dropped.append(Dropped("犬か猫か分からない", row.text()[:80]))
-                continue
+            # 決まらない子は捨てずに種別なし（None）で載せる（T518。2026-10-05 おまえさん判断:「犬猫が判断できなければ
+            # フィルターやデータに格納する必要はない」）。allow_other のレシピは「map に当たらない＝犬猫以外」と言い切れる一覧なので other
+            if species is None and recipe.species.get("allow_other"):
+                species = "other"
             # 元ページのリンク。PDF は日次で差し替わってファイル名が変わる（香川 r8-9-28.pdf、茨城 inu0924.pdf）ので
             # 既定では入口ページを指す。レシピに source_url: doc があれば PDF そのもの
             source_url = doc.url

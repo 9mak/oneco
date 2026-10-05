@@ -8,6 +8,8 @@ steps:
   - follow_all: "a[href$='2768.html'], a[href$='2769.html']@href"
 rows: "div#main_body table"
 row_filter:
+  # 「飼い主に戻りました」の報告（写真・管理番号だけ残る表）を落とす。T518 まではこの表は犬か猫か決まらないことで偶然落ちていた（2026-10-05 公表180・182）
+  text_lacks: ["飼い主に戻りました"]
   field_lacks: {management_no: ["目撃"]}   # 管理番号「目撃NNN」は街中の目撃報告で収容・保護ではないので捨てる。保護295・292 は「目撃場所」ラベル誤記なので regex の選択肢は残す（2026-10-02 監査）
 image: "img@src"
 fields:

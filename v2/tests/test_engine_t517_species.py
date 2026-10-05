@@ -57,7 +57,7 @@ def _recipe(infer: bool = True) -> Recipe:
     })
 
 
-def _by_no(res: object) -> dict[str, str]:
+def _by_no(res: object) -> dict[str, str | None]:
     return {a["management_no"]: a["species"] for a in res.animals}  # type: ignore[attr-defined]
 
 
@@ -81,7 +81,9 @@ def test_infer_cat_from_breed_name_and_species_word_in_breed():
     assert _by_no(res) == {"8-3-122": "cat", "8-3-123": "cat"}
 
 
-# --- 決めない子（従来どおり捨てる） ------------------------------------------------
+# --- 決めない子 -------------------------------------------------------------------
+# T518（2026-10-05 おまえさん判断）で仕様変更: 決まらない子は「犬か猫か分からない」で捨てずに、種別なし（species: None）で載せる。
+# 「決めない」ことの確認は変えず、捨てる → None で載る、に期待値だけ変えた
 def test_shunan_20261005_rows_stay_undetermined():
     # 2026-10-05 の実ページそのまま。8-3-99 だけ猫（写真で確認）だが、品種・大きさ・毛色に犬猫を分ける語が無い
     page = _page(
@@ -91,15 +93,14 @@ def test_shunan_20261005_rows_stay_undetermined():
         _table("8-3-101", "152088", "雑種", "小", "白茶"),
     )
     res = build(_src(), _recipe(), [_doc(page)])
-    assert res.animals == []
-    assert [d.reason for d in res.dropped] == ["犬か猫か分からない"] * 4
+    assert _by_no(res) == {"8-3-98": None, "8-3-99": None, "8-3-100": None, "8-3-101": None}
+    assert res.dropped == []
 
 
 def test_dog_and_cat_words_together_are_not_decided():
     page = _page(_table("8-3-124", "152104", "柴系雑種", "中", "三毛"))
     res = build(_src(), _recipe(), [_doc(page)])
-    assert res.animals == []
-    assert res.dropped[0].reason == "犬か猫か分からない"
+    assert _by_no(res) == {"8-3-124": None}
 
 
 def test_ambiguous_words_are_not_used():
@@ -114,15 +115,14 @@ def test_only_breed_and_color_fields_are_looked_at():
     # 保護場所「柴田町」の「柴」で犬にしない
     page = _page(_table("8-3-125", "152105", "雑種", "中", "茶白", place="宮城県柴田町"))
     res = build(_src(), _recipe(), [_doc(page)])
-    assert res.animals == []
+    assert _by_no(res) == {"8-3-125": None}
 
 
 # --- 既存の挙動 -----------------------------------------------------------------
-def test_without_infer_coat_name_still_dropped():
+def test_without_infer_coat_name_is_not_decided():
     page = _page(_table("7-3-185", "143818", "雑種", "中", "キジトラ"))
     res = build(_src(), _recipe(infer=False), [_doc(page)])
-    assert res.animals == []
-    assert res.dropped[0].reason == "犬か猫か分からない"
+    assert _by_no(res) == {"7-3-185": None}
 
 
 def test_species_field_wins_over_inference():
