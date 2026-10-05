@@ -17,7 +17,7 @@ fields:
   management_no: {label: "管理番号"}
   shelter_date: {regex: "(?:収容日時|保護日|目撃日)\\s*((?:令和|平成)\\s*\\d+\\s*年\\s*\\d+\\s*月\\s*\\d+\\s*日)"}
   location: {regex: "(?:収容場所|保護場所|目撃場所)\\s*(\\S+)"}
-  breed: {regex: "(?:犬種|猫種|種類)\\s*(\\S+)"}
+  breed: {regex: "(?:犬種|猫種|種類)\\s*(?!体格|年齢|毛色|性別|特徴|備考)(\\S+)"}   # 種類の欄が空だと次の見出し「体格」を拾っていた（T518 ゲートの coverage。種別なしで載る鳥の行）
   color: {label: "毛色"}
   sex: {label: "性別"}
   size: {label: "体格"}

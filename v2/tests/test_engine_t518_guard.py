@@ -123,3 +123,17 @@ def test_closed_phrases_do_not_hit_wishes_or_conditions():
     for t in ("優しい飼い主さんが見つかりますように", "公示期間内に飼い主が見つかりませんでした", "飼い主が見つかり次第掲載を終了します",
               "飼い主の元に戻りたい", "掲載中でも、譲渡済みの場合があります", "里親さんが決まり次第お知らせします"):
         assert not _CLOSED_LISTING.search(t), t
+
+
+def test_mito_empty_kind_cell_does_not_take_the_next_heading_as_breed():
+    # 種別なしで載るようになった鳥の行（Wayback 2025-06 の 保護275）。種類の欄が空のとき、次の見出し「体格」を品種にしない
+    src = next(s for s in load_sources(ROOT / "registry" / "sources.yaml") if s.slug == "city_mito-1")
+    html = ("<div id='main_body'><table><tr><th>管理番号</th><td>保護275</td></tr><tr><td><img src='/p/275.jpg'></td></tr>"
+            "<tr><th>動物</th><td>セキセイインコ</td></tr>"
+            "<tr><th>種類</th><td></td><th>体格</th><td></td></tr><tr><th>年齢</th><td></td><th>毛色</th><td>頭が黄 胴が緑</td></tr>"
+            "<tr><th>保護日</th><td>令和7年5月20日</td></tr></table>"
+            "<table><tr><th>管理番号</th><td>保護276</td></tr><tr><th>犬種</th><td>雑種</td><th>体格</th><td>中</td></tr>"
+            "<tr><th>保護日</th><td>令和7年5月21日</td></tr></table></div>")
+    res = build(src, Recipe.load(ROOT / "recipes" / "city_mito-1.yaml"), [Doc(url=src.url, html=html, soup=BeautifulSoup(html, "lxml"))])
+    got = {a["management_no"]: (a["species"], a["breed"]) for a in res.animals}
+    assert got == {"保護275": (None, None), "保護276": ("dog", "雑種")}
