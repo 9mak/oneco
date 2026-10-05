@@ -8,7 +8,7 @@ steps:
   - follow_all: "div.list-area a[href*='/animal/no-']@href"
 rows: "body"
 row_filter:
-  text_lacks: ["譲渡先決定"]   # 備考「☆譲渡先決定しました」の子は載せない（2026-10-02 監査）
+  text_lacks: ["譲渡先決定", "譲渡になりました"]   # 備考「☆譲渡先決定しました」（2026-10-02 監査）・「☆R6.5.26譲渡になりました」（2026-10-06 T521、Wayback で 13 件）の子は載せない
 image: "ul.detail-img img@src"
 fields:
   management_no: {regex: "No\\.(\\d+)"}
