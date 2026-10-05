@@ -1,3 +1,4 @@
+# 2026-10-05 監査: 表の「その他」（耳カット・特徴）を note に追加。記事の「ID:」は CMS のページ番号（問い合わせ用）で収容番号ではないので management_no には使わない。
 # 熊本市（迷子猫一覧） https://www.city.kumamoto.jp/doubutuaigo/list03615.html
 # 2026-10-04: shelter_date の regex を「保護日時：」だけでなく「保護日：」（センター保護の記事の書式）にも当たるよう変更。
 # 一覧ページの div.kijiArea > ul.kijilist > li.loadbox の記事リンクを個別ページ（kijiNNNNNNNN）へ辿る。1 頭 = 1 記事。
@@ -14,4 +15,5 @@ fields:
   age: {label: "推定年齢"}
   size: {label: "体格"}
   location: {label: "保護場所"}
+  note: {label: "その他"}   # 耳カット・特徴など（空の子もいる）
   shelter_date: {regex: "保護日(?:時)?[:：]\\s*(\\S+)"}
