@@ -8,6 +8,7 @@
 # 2026-10-05 監査: ページは「元の飼い主さんに犬をお返しするための情報提供」（迷い犬）なので、台帳の区分を保護中から迷子（stray）に直した（名前も「福山市（迷い犬）」）。レシピは変更なし。
 steps:
   - follow_all: "a[href$='.html'][href*='/soshiki/dobutsuaigo/']@href"
+    skip_errors: true   # 2026-10-06 0:05 の収集で、一覧に残った個別ページ 1 本（ふ９－１、413553.html）の 404 で slug 全体が failed になった（T520）
 rows: "body"
 image: {selector: "img[src*='/uploaded/']@src"}
 fields:
