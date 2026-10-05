@@ -1,10 +1,17 @@
 # 岩手県 久慈保健所 — pref.iwate.jp
 # 2026-09-29時点は猫のみ（動物種の記載自体が無いページだが「一時預かりボランティアは猫」等の
-# 文脈と犬の記載が皆無なことから確認）。管理番号・保護日の記載も無く、写真は p.imageleft で
-# テキスト（愛称・毛色・性別等）とは兄弟関係のためこのエンジンからは届かない。
-# 行 = 写真の p.imageleft（フェスティバル告知のポスター等は p.imagecenter で別クラスなので混入しない）。
-# alt 属性はプレースホルダ「あ」で使い物にならないため種別は台帳の species: cat 固定に依存する。
-rows: "p.imageleft"
+# 文脈と犬の記載が皆無なことから確認）。管理番号・保護日の記載は無い。
+# 2026-10-04: 行を写真の p.imageleft から説明文の p（h2【譲渡】+ 写真 p の直後）に変え、写真は直前の兄弟から取る
+# （image.scope: prev_siblings, stop_at: row）。愛称・毛色・性別・年齢・備考が取れる。
+# ページの行は全て【譲渡】の節なので台帳 kind は adoption。種別は台帳の species: cat 固定。
+rows: "h2:-soup-contains('【譲渡】') + p.imageleft + p"
+image: {selector: "p.imageleft img@src", scope: prev_siblings, stop_at: row}
+fields:
+  name: {label: "愛称"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  age: {label: "年齢"}
+  note: {regex: "備考[:：]\\s*(.+)"}
 empty_text:
   - "現在、保護されている動物はいません"
   - "現在、保護している動物はいません"

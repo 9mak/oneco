@@ -1,6 +1,9 @@
 # おおいた動物愛護センター（譲渡猫・随時）
 # 一覧は div.information_box カード×12/ページ、a[rel="next"] で次ページへ（台帳 species=cat 固定なので species 判定は不要）。
+# 2026-10-04: 入口の「随時情報」だけでは「新規情報」タブ（/newcat/。No.26-1004-x など掲載直後の子）が落ちていたので、
+# 随時情報と新規情報の両タブを follow_all で開いてから paginate する（決定情報タブは掲載終了なので辿らない）。
 steps:
+  - follow_all: "a[href$='/information_catlist/anytimecat/'], a[href$='/information_catlist/newcat/']@href"
   - paginate: "a[rel='next']@href"
 rows: "div.information_box"
 image: "div.information_image img@src"

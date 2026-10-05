@@ -11,6 +11,7 @@ image: "img@src"               # 行の中の写真（省略時は img@src）
 # image: {selector: "td img@src", exclude: ["noimage"], strip_query: true}   # 除外パターン、?以降の除去（ID の安定化）
 # image: {selector: "p.imagecenter img@src", scope: prev_siblings}   # 写真が行の外（直前の兄弟要素）にあるとき。前の行（同じタグ）まで遡り文書順で先の 1 枚
 # image: {selector: "img@src", scope: self_or_prev_siblings}        # 行の中を先に探し、無ければ prev_siblings と同じ範囲（ページによって写真が表の中だったり外だったりするとき。岐阜県）
+# image: {selector: "p.imageright img@src", scope: prev_siblings, stop_at: row}   # 遡りを「同じタグ名」でなく「前の行（rows に当たる要素）」で止める（行も写真も p のとき。岩手県）
 fields:
   name: "td:nth-of-type(2)"
   sex:  "td:nth-of-type(3)"

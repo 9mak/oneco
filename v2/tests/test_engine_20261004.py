@@ -82,6 +82,33 @@ def test_prev_siblings_still_ignores_images_inside_the_row():
     assert image_url(recipe, rows[0]) == (None, None)        # 既存の prev_siblings（広島市）は挙動を変えない
 
 
+# --- 3b. prev_siblings の stop_at: row（2026-10-05）-----------------------------------
+IWATE = """<div id="voice">
+<h2>【譲渡】新しい飼い主さんを募集しています</h2>
+<p class="imageright"><img src="/a.jpg" alt="タロ"></p>
+<p>名前：タロ 種類：雑種 性別：オス</p>
+<p class="imageright"><img src="/b.jpg" alt="ハナ"></p>
+<p>名前：ハナ 種類：雑種 性別：メス</p>
+<p>名前：ソラ 種類：雑種 性別：メス（写真なし）</p>
+</div>"""
+
+
+def test_prev_siblings_stop_at_row_walks_past_same_tag_photo_paragraphs():
+    """岩手県: 行も写真も p。既定（同じタグ名で止まる）だと写真の p で止まって写真が付かない。
+    stop_at: row なら「前の行（rows に当たる要素）」まで遡る。写真の無い子に前の子の写真を付けない。"""
+    recipe = Recipe.from_dict({"rows": "div#voice p:-soup-contains('名前')",
+                               "image": {"selector": "p.imageright img@src", "scope": "prev_siblings", "stop_at": "row"}})
+    rows = extract_rows(recipe, _doc(IWATE))
+    assert [image_url(recipe, r)[0] for r in rows] == ["https://x.jp/a.jpg", "https://x.jp/b.jpg", None]
+
+
+def test_prev_siblings_default_still_stops_at_same_tag():
+    recipe = Recipe.from_dict({"rows": "div#voice p:-soup-contains('名前')",
+                               "image": {"selector": "p.imageright img@src", "scope": "prev_siblings"}})
+    rows = extract_rows(recipe, _doc(IWATE))
+    assert [image_url(recipe, r)[0] for r in rows] == [None, None, None]      # 既存のレシピ（広島市・明石・岐阜）の挙動は変えない
+
+
 # --- 4. row_filter.field_has_any（field_lacks の逆）---------------------------------
 def test_field_has_any_keeps_only_owner_searching_notices():
     """旭川市あにまある: 同じ一覧の「探しています」だけを 4 区分目 lost の別 slug で拾う（-7/-8 は field_lacks で除外のまま）。"""

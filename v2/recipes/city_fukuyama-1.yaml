@@ -1,14 +1,22 @@
 # 福山市動物愛護センター（迷い犬情報）
-# 1 ページ = table 1 つ（thead: 番号/保護日/保護場所/種類/毛色/性別/掲載期間、写真なし）。tbody の tr 1 つ = 1 頭。
-# 0 頭のときは全セル &nbsp; のプレースホルダ行だけが残る（min_text_length で除外、shelter_date も取れないので自動でも落ちる）。
-rows: "table tr:has(td)"
-row_filter:
-  min_text_length: 4
+# 2026-10-04: 一覧表（番号/保護日/保護場所/種類/毛色/性別/掲載期間）には写真が無く、表の下の「迷い犬個別情報番号…」
+# リンク先の個別ページ（/soshiki/dobutsuaigo/<id>.html）に写真・体格・推定年齢・備考がある。
+# 以前は一覧表だけを読んで写真なしだったので、個別ページを follow_all で辿って 1 ページ = 1 頭（rows: body）にした。
+# 個別ページは <h1>迷い犬個別情報ふ９－１</h1> + th/td の表（保護日・保護場所・種類・性別・毛色・体格・推定年齢・首輪・備考・掲載期限）。
+# 0 頭のときは個別ページへのリンクが無く（follow_all が 0 件）、一覧表には全セル &nbsp; のプレースホルダ行だけが残る。
+# empty_text は辿る前の入口ページ（visited）に対して照合される。
+steps:
+  - follow_all: "a[href$='.html'][href*='/soshiki/dobutsuaigo/']@href"
+rows: "body"
+image: {selector: "img[src*='/uploaded/']@src"}
 fields:
-  management_no: "td:nth-of-type(1)"
-  shelter_date: {selector: "td:nth-of-type(2)", regex: "(\\d+年\\d+月\\d+日)"}
-  location: "td:nth-of-type(3)"
-  breed: "td:nth-of-type(4)"
-  color: "td:nth-of-type(5)"
-  sex: "td:nth-of-type(6)"
+  management_no: {selector: "h1", regex: "個別情報(.+)$"}
+  shelter_date: {label: "保護日", regex: "(\\d+年\\d+月\\d+日)"}
+  location: {label: "保護場所"}
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  color: {label: "毛色"}
+  size: {label: "体格"}
+  age: {label: "推定年齢"}
+  note: {label: "備考", default: null}
 empty_text: ["現在、迷い犬の情報はありません", "現在、迷い犬情報はありません", "現在迷い犬の情報はありません"]

@@ -1,15 +1,25 @@
 # 岩手県 大船渡保健所 — pref.iwate.jp
-# 台帳 url は最終の一覧ページ（1014213.html。迷子・譲渡が同一ページにまとまっている）。
-# 2026-09-29時点は全頭「動物種：猫」（犬の記載なし）のため台帳 species は cat 固定。
-# 構造は他の保健所と同じフラットな並び（写真 p.imagecenter が兄弟要素でこのエンジンからは届かず、
-# 管理番号・保護日の記載も無いため、テキスト側を row にしても動物と判定できない）。
-# 行 = 写真の p.imagecenter。慰霊祭ポスター（ireisai.png）は動物の写真ではないため image の exclude で除外し、
-# 写真も取れなくなることで自動的に捨てられる。1 枚の写真に複数頭（兄弟猫）が写っている/紹介されている
-# ブロックがあり、その場合は1行=1枚の写真（複数頭まとめて1件）として数える。
-rows: "h2:-soup-contains('【譲渡】') + p.imagecenter, h2:-soup-contains('元の飼い主を探しています') + p.imagecenter"   # 【御礼】譲渡が決まりました・「最近の保護動物さん」の写真は除外（2026-10-02 監査）
-image:
-  selector: "img@src"
-  exclude: ["ireisai"]
+# 【譲渡】新しい飼い主さんを募集しています・元の飼い主を探しています の節だけを拾う
+# （【御礼】譲渡が決まりました・「最近の保護動物さん」の写真は除外。2026-10-02 監査）。
+# 2026-10-04: 行を写真の p.imagecenter から説明文の p（h2 + 写真 p の直後）に変え、写真は直前の兄弟から取る
+# （image.scope: prev_siblings, stop_at: row）。愛称・動物種・種類・性別・毛色・大きさ・年齢・発見日・発見場所・備考が取れる。
+# 慰霊祭の写真（ireisai）は除外。
+rows: "h2:-soup-contains('【譲渡】') + p.imagecenter + p, h2:-soup-contains('元の飼い主を探しています') + p.imagecenter + p"
+image: {selector: "h2 + p.imagecenter img@src", scope: prev_siblings, stop_at: row, exclude: ["ireisai"]}
+fields:
+  name: {label: "愛称"}
+  species: {label: "動物種"}
+  breed: {label: "種類"}
+  sex: {regex: "性別[:：]\\s*(.+?)(?:\\s+(?:毛色|模様)[:：]|$)"}
+  color: {regex: "(?:毛色|模様)[:：]\\s*(\\S+)"}
+  size: {label: "大きさ"}
+  age: {regex: "推定年月齢[:：]\\s*(\\S+)"}
+  shelter_date: {regex: "発見日[:：]\\s*(\\S+)"}
+  location: {regex: "発見場所[:：]\\s*(\\S+)"}
+  note: {regex: "(?:備考|その他)[:：]\\s*(.+)"}
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
 empty_text:
   - "現在、保護されている猫はいません"
   - "現在、保護されている動物はいません"

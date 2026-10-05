@@ -1,4 +1,7 @@
 # 岩手県 一関保健所 — pref.iwate.jp
+# 2026-10-04: 譲渡ページ（蘭丸）は管理番号・保護日が無く「名前：」で始まる p なので、行に「名前：」を含む p を加えた。
+#   写真は直前の p.imageright（行と同じ p タグ）。image に scope: prev_siblings を付けたが、エンジンは同じタグ名の兄弟で
+#   遡りを止めるため p.imageright に届かず、写真は取れない（engine_needs 参照）。蘭丸は保護日・管理番号も無いので現状は拾えない。
 # 台帳 url は索引ページ。follow_all で「保護動物情報（迷子）」「譲渡動物情報」の両方を辿って合算。
 # 迷子ページ: <p class="imageright"><img></p> の次に <p>管理番号 ：　9-1<br>保護日　 ：　2026.09.14<br>…</p>
 #   というフラットな並び（写真は兄弟要素でこのエンジンからは届かない）。
@@ -7,20 +10,22 @@
 #   管理番号は「9-1」のように1桁-1桁形式でエンジンの _MGMT_RE には非マッチだが、保護日
 #   （2026.09.14 のような日付）があるので動物としては通る。
 # 譲渡ページ（例: 蘭丸）: 管理番号・保護日が無く、写真も兄弟要素で届かないため、
-#   このエンジンでは「動物とみなす条件」を満たせず捕捉できない（既知の反証未了。下記 note 参照）。
+#   このエンジンでは「動物とみなす条件」を満たせず捕捉できない。
 #   仮名・動物種別・備考等の項目自体はラベルがフラット（全角スペース無し）なのでテキストは正常に読める。
 steps:
   - follow_all: "a:-soup-contains('一関保健所　保護動物情報'), a:-soup-contains('一関保健所　譲渡動物情報')"
-rows: "p:-soup-contains('管理番号')"
+rows: "p:-soup-contains('管理番号'), p:-soup-contains('名前：')"
+image: {selector: "p.imageright img@src", scope: prev_siblings, stop_at: row}   # 2026-10-04: 行も写真も p なので前の行まで遡る
 fields:
   management_no: {label: "管理番号"}
+  name: {label: "名前"}
   shelter_date: {label: "保護日"}
   location: {label: "保護場所"}
-  species: {label: "動物種"}
+  species: {regex: "動物種別?\\s*[:：]\\s*([^\\s　]+)"}
   size: {label: "大きさ"}
   breed: {regex: "種\\s*類\\s*[:：]\\s*([^\\s　]+)"}
   sex: {regex: "性\\s*別\\s*[:：]\\s*([^\\s　]+)"}
-  age: {label: "推定年齢"}
+  age: {regex: "推定年(?:月)?齢\\s*[:：]\\s*([^\\s　]+)"}
   color: {regex: "毛\\s*色\\s*[:：]\\s*([^\\s　]+)"}
   note: {regex: "備\\s*考\\s*[:：]\\s*([^\\s　]+)"}
 species:

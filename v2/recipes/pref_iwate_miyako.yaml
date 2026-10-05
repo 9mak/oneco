@@ -5,7 +5,11 @@
 # 【御報告】譲渡が決まりました💛 の既に譲渡済み個体は同じ p 内に「譲渡が決まりました」の文言があるため
 # row_filter で明示的に除外する（動物種があるので種別だけでは弾けない）。
 # 2026-09-29時点は全頭「動物種：猫」（犬の記載なし）のため台帳 species は cat 固定。
+# 2026-10-04: そらちゃんだけ「性格：」（「等」なし）で note が空だったため note を「性格(等)」の regex に変更。
+#   写真は h2 直後の figure（ローザ・アモレ・そら）は prev_siblings で取れる。大半は直前が p.imageright で、
+#   エンジンが同じ p タグで遡りを止めるため届かない（engine_needs）。p.imageright 側の selector は先に書いておく。
 rows: "p:-soup-contains('管理番号：')"
+image: {selector: "h2 + p.imageright img, h2 + figure img@src", scope: prev_siblings, stop_at: row}   # 2026-10-04: 行も写真も p なので前の行まで遡る
 row_filter:
   text_lacks: ["譲渡が決まりました"]
 fields:
@@ -16,6 +20,6 @@ fields:
   color: {label: "毛色"}
   size: {label: "体格"}
   age: {label: "推定年齢"}
-  note: {label: "性格等"}
+  note: {regex: "性格等?[:：]\\s*(.+)"}
 empty_text:
   - "現在、保護されている動物はいません"

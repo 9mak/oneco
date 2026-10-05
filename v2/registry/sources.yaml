@@ -1879,6 +1879,19 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+- slug: pref_ehime-3
+  name: 愛媛県動物愛護センター（譲渡予定・成犬）
+  municipality: 愛媛県動物愛護センター
+  prefecture: 愛媛県
+  phone: 089-977-9200
+  address: 〒791-0133 愛媛県松山市東川町乙44-7
+  url: https://www.pref.ehime.jp/page/145257.html
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/pref_ehime-3.yaml
+  enabled: true
+  note: 2026-10-04 追加。pref_ehime-2 に「室内にいる成犬は成犬紹介から」とあり、成犬 11 頭がこのページにだけ載る
 - slug: city_nagoya-1
   name: 名古屋市（飼主不明動物）
   municipality: 名古屋市
@@ -2140,7 +2153,7 @@ sources:
   address: null
   url: https://shuyojoho.metro.tokyo.lg.jp/cat
   kind: sheltered
-  species: cat
+  species: mixed    # 2026-10-05: 「猫・その他」タブ。種別はレシピで動物名から決める
   mode: recipe
   recipe: recipes/shuyojoho_tokyo-2.yaml
   enabled: true
@@ -3466,6 +3479,19 @@ sources:
     pdf: true
     list_link_pattern: null
     pdf_link_pattern: a[href*='documents/kouhyou'][href$='.pdf']
+- slug: pref_ibaraki_pdf-3
+  name: 茨城県（収容中の子犬・子猫たち）
+  municipality: 茨城県
+  prefecture: 茨城県
+  phone: 0296-72-1200
+  address: 〒309-1606 茨城県笠間市日沢47
+  url: https://www.pref.ibaraki.jp/hokenfukushi/doshise/kanri/20190418.html
+  kind: sheltered
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_ibaraki_pdf-3.yaml
+  enabled: true
+  note: 2026-10-04 追加。成犬・成猫の PDF（pdf-1）に入っていない子犬・子猫が収容日ごとの koinu*.pdf にだけ載る（当日 9 頭）
 - slug: animal_net_nagasaki-1
   name: 長崎犬猫ネット（保健所収容）
   municipality: 長崎犬猫ネット
@@ -3827,12 +3853,12 @@ sources:
     list_link_pattern: null
     pdf_link_pattern: a[href*='/documents/6103/'][href$='.pdf']
 - slug: kochi_apc
-  name: 高知県動物愛護センター
-  municipality: 高知県動物愛護センター
+  name: 高知県中央・中村小動物管理センター（譲渡）    # 2026-10-05: サイトの表記に合わせた（旧: 高知県動物愛護センター）
+  municipality: 高知県中央・中村小動物管理センター
   prefecture: 高知県
   phone: null
   address: null
-  url: https://kochi-apc.com/center-data/
+  url: https://kochi-apc.com/jouto/
   kind: adoption
   species: mixed
   mode: recipe
@@ -3905,7 +3931,7 @@ sources:
   phone: "019-629-6588"
   address: 岩手県盛岡市三ツ割5丁目17-59（県央保健所犬猫保護センター）
   url: https://www.pref.iwate.jp/morioka/hoken/1012494.html
-  kind: sheltered
+  kind: adoption    # 2026-10-05: 取れる行は全部【譲渡】新しい飼い主さんを募集しています の節（迷子が載った日は混ざる。T517）
   species: mixed
   mode: recipe
   recipe: recipes/pref_iwate_kennan.yaml
@@ -3940,12 +3966,12 @@ sources:
   phone: "0197-48-2423"
   address: 岩手県奥州市水沢大手町5-5
   url: https://www.pref.iwate.jp/kennan/hoken/1065388/doubutsu/1013511.html
-  kind: sheltered
+  kind: adoption    # 2026-10-05: 取れる行は全部【譲渡】新しい飼い主さんを募集しています の節（迷子が載った日は混ざる。T517）
   species: cat
   mode: recipe
   recipe: recipes/pref_iwate_oshu.yaml
   enabled: true
-  note: "ハブ pref_iwate から分割（2026-09-29）。ページは保護猫のみ（犬セクション無し）。既知の反証未了: 管理番号「R8-6-5」形式（1桁-1桁-1桁）はエンジンの _MGMT_RE に非マッチで4頭中3頭が自動的に捨てられる（レシピ内コメント参照）"
+  note: ハブ pref_iwate から分割（2026-09-29）。ページは保護猫のみ（犬セクション無し）。管理番号 R8-6-5 形式は 9/30 に対応済みで 4 頭とも通る（2026-10-04 確認）
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_iwate.py
     requires_js: false
@@ -3962,7 +3988,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_iwate_ichinoseki.yaml
   enabled: true
-  note: "ハブ pref_iwate から分割（2026-09-29）。既知の反証未了: 譲渡ページの個体は管理番号・保護日が無く写真も兄弟要素で届かないため捕捉不可（レシピ内コメント参照）"
+  note: ハブ pref_iwate から分割（2026-09-29）。迷子ページと譲渡ページを合算（譲渡の子は 2026-10-04 の image の stop_at=row で写真が付き拾えるようになった）。kind が混在するので分割は T517
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_iwate.py
     requires_js: false
@@ -3991,7 +4017,7 @@ sources:
   phone: "0193-27-5523"
   address: null
   url: https://www.pref.iwate.jp/engan/hoken/1014120/1014123.html
-  kind: sheltered
+  kind: adoption    # 2026-10-05: 取れる行は全部【譲渡】新しい飼い主さんを募集しています の節（迷子が載った日は混ざる。T517）
   species: mixed
   mode: recipe
   recipe: recipes/pref_iwate_kamaishi.yaml
@@ -4008,7 +4034,7 @@ sources:
   phone: "0193-64-2218"
   address: 岩手県宮古市五月町1-20
   url: https://www.pref.iwate.jp/engan/miya_hoken/hogodoubutsu/1014161.html
-  kind: sheltered
+  kind: adoption    # 2026-10-05: 取れる行は全部【譲渡】新しい飼い主さんを募集しています の節（迷子が載った日は混ざる。T517）
   species: cat
   mode: recipe
   recipe: recipes/pref_iwate_miyako.yaml
@@ -4025,7 +4051,7 @@ sources:
   phone: "0194-66-9681"
   address: null
   url: https://www.pref.iwate.jp/kenpoku/hoken/1014738.html
-  kind: sheltered
+  kind: adoption    # 2026-10-05: 取れる行は全部【譲渡】新しい飼い主さんを募集しています の節（迷子が載った日は混ざる。T517）
   species: cat
   mode: recipe
   recipe: recipes/pref_iwate_kuji.yaml
