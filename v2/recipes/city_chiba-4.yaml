@@ -7,6 +7,8 @@
 # 管理番号も数字の入った保護日も無いので捨てられ、empty_text で 0 頭になる。
 rows: "div#contents_editable > h4"
 row_until: "h2"
+# 写真は本文の p 直下の img だけ（a の中の img はバナー。-1/-2 と同じ守り。2026-10-05 再レビュー F-11）
+image: "p > img@src"
 row_filter:
   text_has_any: ["保護日"]
 fields:

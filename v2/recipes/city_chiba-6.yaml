@@ -5,6 +5,8 @@
 # 2026-10-05 時点 1 頭（A-5069、セキセイインコ、写真あり）。
 rows: "div#contents_editable > h4"
 row_until: "h2"
+# 写真は本文の p 直下の img だけ（a の中の img はバナー。-1/-2 と同じ守り。2026-10-05 再レビュー F-11）
+image: "p > img@src"
 row_filter:
   text_has_any: ["保護日"]
 fields:

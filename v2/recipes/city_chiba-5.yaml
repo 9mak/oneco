@@ -8,6 +8,8 @@
 # 2026-09-29 時点で約 20 頭確認（A-6035, A-6028, A-6027, A-6025, ...）。
 rows: "div#contents_editable > h4"
 row_until: "h2"
+# 写真は本文の p 直下の img だけ（a の中の img はバナー。-1/-2 と同じ守り。2026-10-05 再レビュー F-11）
+image: "p > img@src"
 row_filter:
   text_has_any: ["保護日"]
 fields:
