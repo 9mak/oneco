@@ -174,7 +174,7 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
                 res.dropped.append(Dropped(f"対象語なし（{miss}）", row.text()[:80]))
                 excluded += 1
                 continue
-            img_abs, img_raw = image_url(recipe, row)
+            img_abs, img_raw = image_url(recipe, row, f)   # f: image.match_field（行の管理番号を含む写真を文書全体から探す）用
             dv = f.pop("detail", None)   # 個体ページの URL（相対可）。写真の無い子でも個体ページがあれば動物とみなす
             has_key = looks_like_mgmt(f.get("management_no")) or looks_like_date(f.get("shelter_date")) or bool(dv)
             if not img_abs and not has_key:

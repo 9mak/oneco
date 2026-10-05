@@ -13,6 +13,7 @@ image: "img@src"               # 行の中の写真（省略時は img@src）
 # image: {selector: "img@src", scope: self_or_prev_siblings}        # 行の中を先に探し、無ければ prev_siblings と同じ範囲（ページによって写真が表の中だったり外だったりするとき。岐阜県）
 # image: {selector: "p.imageright img@src", scope: prev_siblings, stop_at: row}   # 遡りを「同じタグ名」でなく「前の行（rows に当たる要素）」で止める（行も写真も p のとき。岩手県）
 # image: {selector: "p.imagecenter img@src", scope: next_siblings}   # 写真が行の後ろ（直後の兄弟要素）にあるとき。prev_siblings と対称（名古屋市 譲渡猫）。self_or_next_siblings もある
+# image: {selector: "img@src", match_field: management_no}   # 写真が本体と別の表にあるとき。行で取った項目（管理番号）の値を src か alt に含む画像を文書全体から探し、文書順で先の 1 枚（仙台市 譲渡猫）。前後が英数字の位置には当てない（C2509 を c25093.jpg に当てない）。値が無い・見つからない行は写真なし
 fields:
   name: "td:nth-of-type(2)"
   sex:  "td:nth-of-type(3)"
@@ -233,6 +234,8 @@ fields:
 `mode: text` のときは `rows_regex: "^(\\d{2}-\\d{4}).*$"` で 1 頭分の塊を切り、`fields` は `regex` で取る。
 
 table モードの行は表のセルしか見えない（表の外の本文・写真は取れない）。番号が 1 桁で収容日が本文にしか無い公示（四日市市「保護・収容犬の公示」）は、表の行だけでは動物として通らないので、text モードで公示 1 枚を 1 行にして読む（`rows_regex: "^.*収容\\S*の公示"`、収容日は本文から、種類・性別等は番号で始まる表の行から regex で取る）。1 枚に 2 頭以上が並ぶと 2 頭目以降は読めない（`city_yokkaichi_pdf.yaml` の制約）。
+
+ページ最下行の下の横罫線が引かれていない表（縦罫線だけが下まで伸びている。神奈川県 センター外保護猫 cat.pdf）は、エンジンが縦罫線の下端に横罫線を補って最下行も表に入れる（レシピに書かない）。補うのは、表の中から始まる縦罫線の半分以上（2 本以上）が表の下端より下へ伸び、その長さが行の高さの 3 倍以内で、伸びた先に横罫線が無いときだけ。複数行のセル（場所が 2 行に割れる等）がある表を `mode: text` に替えると、割れた行が前後の子に混ざるので替えない。
 
 1 ページが左右 2 段組みの PDF（茨城県）は、丸ごと読むと左右の行が 1 行に混ざる。`columns` で各ページを等分して列ごとに読む:
 

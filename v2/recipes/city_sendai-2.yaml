@@ -5,7 +5,10 @@
 # 管理番号で突き合わせて結合する手段が無いため、写真は取得できない（既知の制約）。
 # 2026-10-04: management_no はページの表記どおり「C25093」で取る（旧: 数字部分だけ「25093」で、ページ・写真の alt「第C25093号」と食い違っていた。
 #   英字+数字は動物とみなす条件（looks_like_mgmt）を満たす。ID は管理番号から作るので切り替え日に 2 頭とも 1 回だけ別 ID になる）。
+# 2026-10-05 監査: 写真の表の img（src・alt に管理番号 C25093 等が入る）を image.match_field で行の管理番号から取る（エンジンに語彙を追加）。
+#   ID は写真から作るので切り替え日に 2 頭とも 1 回だけ別 ID になる。写真の表に無い子は写真なし（別の子の写真は付けない）。
 rows: "table.datatable:nth-of-type(1) tr"
+image: {selector: "img@src", match_field: management_no}
 fields:
   management_no: {selector: "td:nth-of-type(1)"}
   breed: {selector: "td:nth-of-type(2)"}
