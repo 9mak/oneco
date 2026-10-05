@@ -66,6 +66,26 @@ def make_id(source: Source, image_raw: str | None, f: dict[str, str | None], det
     return hashlib.sha1(key.encode("utf-8")).hexdigest()[:12]
 
 
+def _is_blank(el: Tag) -> bool:
+    """子要素も文字も無い（空白・コメントだけ）。"""
+    return el.find(True) is None and not el.get_text(strip=True)
+
+
+def _blank_container(doc: Doc, selectors: list[str]) -> bool:
+    """empty_selector: いずれかのセレクタに合う要素がこの文書にあり、合った要素がすべて空なら True。
+
+    0 頭の日に文言が出ず、一覧の器が空になるだけのサイト用（豊橋市あいくる div.dog-cat-list、
+    福岡県動物愛護センター div.animals-list ul）。器が無い日（構造が変わった日）は False で、failed として通知される。
+    """
+    if doc.soup is None:
+        return False
+    for sel in selectors:
+        found = doc.soup.select(sel)
+        if found and all(_is_blank(el) for el in found):
+            return True
+    return False
+
+
 def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | None = None) -> Result:
     """docs: rows を適用する文書。visited: 入口から辿った全文書（empty_text の照合にも使う）。"""
     res = Result(docs=len(docs))
@@ -131,8 +151,10 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
             for k in FIELD_NAMES:
                 animal[k] = f.get(k)
             res.animals.append(animal)
-    if not res.animals and recipe.empty_text:
-        pool = list(docs) + [d for d in (visited or []) if d not in docs]
+    pool = list(docs) + [d for d in (visited or []) if d not in docs]
+    if not res.animals and recipe.empty_selector:
+        res.empty_confirmed = any(_blank_container(d, recipe.empty_selector) for d in pool)
+    if not res.animals and recipe.empty_text and not res.empty_confirmed:
         alltext = " ".join(d.text() for d in pool)
         # 0 頭のときだけ「現在、掲載する情報はありません」の画像を出すサイトがある（豊中市）ので img の alt も照合する
         alts = " ".join(str(img.get("alt") or "") for d in pool if getattr(d, "soup", None) is not None
