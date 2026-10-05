@@ -1,8 +1,11 @@
-"""T521（2026-10-05）越谷市 保護犬・保護猫のテスト（ネットワークなし）。
+"""T521（2026-10-05）越谷市 保護犬・保護猫と、見出し行の表を読む指定 header_row のテスト（ネットワークなし）。
 
-表の見出し行の書き方が日によって違う（2023: tbody の td、2024: thead の th と tbody の td、2026: thead に見出しと値の 2 行）。
-label で読むと 2023 は隣の見出し「収容期限」を値に取り、2024 は値が取れなかった。0 頭の日に残る番号「000」の空の雛形は
-中身の無い 1 頭として載っていた。Wayback の保存 3 版を fixture にして固定する。
+越谷の表は日によって作りが違う（Wayback で確認）:
+- 2023-09: 見出し行を tbody の td で書く（label 読みは隣の見出し「収容期限」を収容日に取っていた）
+- 2024-09・2025-03: 見出しは thead の th、値は tbody の td（label 読みは値が取れなかった）
+- 2025-03 の猫: 動物ごとの h3 が無く、見出しが「収容期日」、動物の表の列順が 種類・性別・毛色・年齢（列の位置では読めない）
+- 2026-10（今）: thead に見出しと値の 2 行
+- 0 頭の日に番号「000」の空の雛形が残る（中身の無い 1 頭として載っていた）
 """
 
 from pathlib import Path
@@ -11,7 +14,7 @@ from bs4 import BeautifulSoup
 
 from collector.extract import build
 from collector.recipe import Doc, Recipe
-from collector.registry import load_sources
+from collector.registry import Source, load_sources
 
 ROOT = Path(__file__).resolve().parent.parent
 FIX = Path(__file__).resolve().parent / "fixtures"
@@ -27,6 +30,7 @@ def _fields(a: dict) -> tuple:
     return tuple(a.get(k) for k in ("management_no", "shelter_date", "location", "breed", "sex", "age", "color", "size", "note"))
 
 
+# --- 越谷市の作りごと ------------------------------------------------------------------------
 def test_koshigaya_header_row_written_with_td_cells():
     res = _run("city_koshigaya-1", "t521_koshigaya-1_wb20230925.html")
     assert [_fields(a) for a in res.animals] == [
@@ -46,8 +50,62 @@ def test_koshigaya_zero_day_with_leftover_template_000_is_empty():
     assert res.animals == [] and res.empty_confirmed
 
 
-def test_koshigaya_cat_page_uses_the_same_reading():
-    # 保護猫（-2）は同じテンプレート。同じ fixture を猫の台帳で読んでも、項目が同じに取れる（種別は台帳の固定値）
-    res = _run("city_koshigaya-2", "t521_koshigaya-1_wb20240920.html")
+def test_koshigaya_without_h3_with_other_heading_word_and_column_order():
+    res = _run("city_koshigaya-2", "t521_koshigaya-2_wb20250316.html")
     assert [_fields(a) for a in res.animals] == [
-        ("001", "令和6年9月2日", "越谷市野島地内", "トイ・プードル", "メス", "中齢", "茶", "中型", "首輪なし マイクロチップなし")]
+        (None, "令和7年3月13日", "越谷市七左町7丁目地内", "雑種", "おす", "中齢", "キジトラ", "中型", "長尾 短毛 首輪なし")]
+
+
+def test_koshigaya_current_layout_two_rows_in_thead():
+    res = _run("city_koshigaya-2", "t521_koshigaya-2_20261005.html")
+    assert [_fields(a) for a in res.animals] == [
+        ("R8-52", "令和8年10月2日", "越谷市大間野町3丁目地内", "雑種", "おす", "推定3週齢", "茶トラ", "小型", "長尾 短毛 首輪なし")]
+    assert res.animals[0]["image_url"] is None   # 例示イラスト（youreidoubutu）は写真にしない
+
+
+# --- header_row（見出し行の表）と label の候補 ----------------------------------------------------
+def _src() -> Source:
+    return Source(slug="t", name="t", municipality="t", prefecture="埼玉県", url="https://x.jp/a/", kind="sheltered", species="cat")
+
+
+def _one(table_html: str, fields: dict) -> dict:
+    html = f"<div class='row'>{table_html}</div>"
+    r = Recipe.from_dict({"rows": "div.row", "fields": {"management_no": {"regex": r"(R\d-\d+)"}, **fields}})
+    res = build(_src(), r, [Doc(url="https://x.jp/a/", html=html, soup=BeautifulSoup(html, "lxml"))])
+    assert len(res.animals) == 1
+    return res.animals[0]
+
+
+SPLIT = ("<table><thead><tr><th>収容場所</th><th>収容日</th><th>収容期限</th></tr></thead>"
+         "<tbody><tr><td>越谷市</td><td>令和8年10月2日</td><td>令和8年10月13日</td></tr></tbody></table><p>R8-52</p>")
+TD_HEAD = ("<table><tbody><tr><td>収容場所</td><td>収容日</td><td>収容期限</td></tr>"
+           "<tr><td>越谷市</td><td>令和8年10月2日</td><td>令和8年10月13日</td></tr></tbody></table><p>R8-52</p>")
+
+
+def test_header_row_reads_the_next_row_across_thead_and_tbody():
+    a = _one(SPLIT, {"location": {"label": "収容場所", "header_row": True}, "shelter_date": {"label": "収容日", "header_row": True}})
+    assert (a["location"], a["shelter_date"]) == ("越谷市", "令和8年10月2日")
+
+
+def test_header_row_does_not_take_the_neighbouring_heading_cell():
+    a = _one(TD_HEAD, {"shelter_date": {"label": "収容日", "header_row": True}})
+    assert a["shelter_date"] == "令和8年10月2日"
+
+
+def test_label_list_tries_each_word_in_order():
+    html = SPLIT.replace("<th>収容日</th>", "<th>収容期日</th>")
+    a = _one(html, {"shelter_date": {"label": ["収容日", "収容期日"], "header_row": True}})
+    assert a["shelter_date"] == "令和8年10月2日"
+
+
+def test_header_row_needs_the_exact_heading_word():
+    # 「収容日」は「収容期日」の部分ではない（見出しの語と完全に一致するセルだけを見出しとみなす）
+    html = SPLIT.replace("<th>収容日</th>", "<th>収容期日</th>")
+    a = _one(html, {"shelter_date": {"label": "収容日", "header_row": True}})
+    assert a["shelter_date"] is None
+
+
+def test_label_list_also_works_without_header_row():
+    html = "<table><tr><th>保護日</th><td>10月2日</td></tr></table><p>R8-52</p>"
+    a = _one(html, {"shelter_date": {"label": ["収容日", "保護日"]}})
+    assert a["shelter_date"] == "10月2日"

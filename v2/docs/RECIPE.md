@@ -123,6 +123,8 @@ fields:
 使える項目名: `name` `sex` `age` `breed` `color` `size` `management_no` `shelter_date` `note` `species` `detail`（個体ページの URL）`location`（同じページに複数センターが混ざるときだけ）。
 
 - `label` の値は、見出しセル（th・td・dt）の隣の td・dd。値が label の文字を含んでも取る（「保健所」→「菊池保健所」）。隣のセルが見出しに見えるとき（th・dt で label を含む・label そのもの・中に「備考: …」とある・見出しも隣も td で隣が label で始まる）だけ捨て、次の行の同じ列 → 表の先頭行 → 「label：値」の順に探す
+- `label` は候補の並びでも書ける（`{label: ["収容日", "収容期日"]}`）。前から順に試し、最初に取れた値を使う
+- `header_row: true` は、label が表の **見出し行**（1 行に項目名が並ぶ）にあるときの読み方。見出しの語と一致するセル（記号・空白を除いて label と同じ）の列を、同じ表の次の行から読む（thead と tbody をまたぐ）。隣のセルは見ない。見出し行の書き方（th・td、thead・tbody）が日によって変わるページで使う（越谷市: 2023 年は tbody の td で見出しを書き、label だけだと隣の見出し「収容期限」を収容日に取った。2024〜2025 年は thead の th と tbody の td で値が取れなかった。列の位置で読むと、列順が違う日〔種類・性別・毛色・年齢〕に取り違える）
 - 「label：値」の書き方から取るときは最初の空白までの 1 語になる。文中に空白が入る項目（特徴・備考）は `note: {selector: "p:-soup-contains('特徴')", regex: "特徴[:：]\\s*(.+)"}` のように regex で行末まで取る
 - 項目の値（selector・label・from: heading の文字と、regex を当てる全文）は、span・a・b・strong・font などインライン要素の境目に空白を入れない（佐世保市 `<span>令</span>和8年…` →「令和8年…」）。セル・p・div・li・見出し・br・img の境目と元の HTML の空白は従来どおり空白 1 つ
 - row_filter・種別の `from: text`・empty_text は、従来どおり全部の境目に空白を入れた文字で照合する（`<span>0</span>匹` は「0 匹」。福島県の text_lacks はこれに頼っている）

@@ -677,6 +677,38 @@ def _label_value(el: Tag, label: str) -> str | None:
     return None if _NEXT_LABEL.match(m.group(1)) else m.group(1)
 
 
+def _labels(spec: dict[str, Any]) -> list[str]:
+    """label は 1 語か、候補の並び（["収容日", "収容期日"]。前から順に試し、最初に取れた値を使う）。"""
+    lb = spec["label"]
+    return [str(x) for x in lb] if isinstance(lb, list) else [str(lb)]
+
+
+def _header_row_value(el: Tag, label: str) -> str | None:
+    """header_row: true の label。見出し行（表の 1 行に項目名が並ぶ）にある label の列を、同じ表の次の行から読む。
+
+    次の行は thead と tbody をまたいで探す（見出しが thead の th、値が tbody の td の表）。見出しの語と一致するセル
+    （記号・空白を除いて label と同じ）だけを見出しとみなし、隣のセルは見ない（見出し行を td で書いた表で、隣の見出し
+    「収容期限」を値に取らない）。越谷市（2026-10-05 T521。表の作りが日によって 3 通りある）。
+    """
+    for cell in el.find_all(["th", "td"]):
+        if visible_text(cell).strip(_LABEL_PUNCT) != label:
+            continue
+        tr = cell.find_parent("tr")
+        table = tr.find_parent("table") if tr is not None else None
+        if table is None:
+            continue
+        kids = tr.find_all(["th", "td"], recursive=False)
+        idx = next((i for i, c in enumerate(kids) if c is cell), None)
+        trs = [t for t in table.find_all("tr") if t.find_parent("table") is table]
+        pos = next((i for i, t in enumerate(trs) if t is tr), None)
+        if idx is None or pos is None or pos + 1 >= len(trs):
+            continue
+        cells = trs[pos + 1].find_all(["th", "td"], recursive=False)
+        if idx < len(cells):
+            return _text(cells[idx])
+    return None
+
+
 def nearest_heading(el: Tag, selector: str) -> str | None:
     """行より前にある、selector に合う直近の要素（見出し）のテキスト。"""
     root = el
@@ -714,14 +746,15 @@ def field_value(spec: Any, row: Row) -> str | None:
         elif "index" in spec:
             val = row.cells.get(str(spec["index"]))
         elif "label" in spec:
-            val = next((v for k, v in row.cells.items() if spec["label"] in k), None)
+            val = next((v for lb in _labels(spec) for k, v in row.cells.items() if lb in k), None)
     elif row.el is not None:
         if "selector" in spec:
             el = row.el.select_one(spec["selector"]) if spec["selector"] not in (".", "self") else row.el
             if el is not None:
                 val = _attr(el, spec.get("attr", "text"))
         elif "label" in spec:
-            val = _label_value(row.el, spec["label"])
+            read = _header_row_value if spec.get("header_row") else _label_value
+            val = next((v for v in (read(row.el, lb) for lb in _labels(spec)) if v is not None), None)
         elif "attr" in spec:
             val = _attr(row.el, spec["attr"])
     if "regex" in spec:

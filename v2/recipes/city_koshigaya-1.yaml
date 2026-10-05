@@ -1,26 +1,29 @@
 # 越谷市（保護犬）: city_koshigaya-2（保護猫）と同一テンプレート。
 # 2026-10-05 T521: -2 の監査の直し（動物の表の種類・性別・年齢・毛色・体格・備考が取れていなかった）を同じ作りの -1 にも当てる。
-# h3.partsstyle_h3（管理番号「R8-51」）を行の始まりにして row_until で次の節までを 1 頭分に束ね、場所の表と動物の表の両方を読む。
-# 0 頭時は本文に「現在、情報はありません。」と出る。
+# 動物 1 頭 = 見出し h3（管理番号）→ 写真 → 場所の表（収容場所・収容日・収容期限）→ 動物の表（種類・性別・年齢・毛色・体格・備考）。
+# 表の作りが日によって違う（Wayback で確認。tests/test_recipes_t521_koshigaya.py）:
+#   2023: 見出し行を tbody の td で書く / 2024・2025: 見出しは thead の th、値は tbody の td /
+#   2025-03 の猫: 動物ごとの h3 が無く、見出しが「収容期日」、動物の表の列順が 種類・性別・毛色・年齢 / 今: thead に見出しと値の 2 行。
+# label だけの読み方は 2023 で隣の見出し「収容期限」を値に取り、2024・2025 で値が取れず、列の位置で読むと列順の違う日に取り違える。
+# header_row: true で「見出しの語と一致するセルの列を、同じ表の次の行（thead と tbody をまたぐ）から読む」。
+# 0 頭時は本文に「現在、情報はありません。」か、見出しに「情報：0頭」と出る（後者は番号「000」の空の雛形が残る）。
 
-rows: "div#tmp_honbun h3.partsstyle_h3"
+# 行の始まり: 動物ごとの見出し h3（管理番号）。h3 が無い日（2025-03 の猫）は h3 の後ろに無い場所の表を始まりにする
+rows: "div#tmp_honbun h3.partsstyle_h3, div#tmp_honbun table:-soup-contains('収容場所'):not(h3.partsstyle_h3 ~ table)"
 # 区切り: 今の作りは h2.partsstyle_h2、2023〜2024 年の作りは div.h2bg（中に h2）。どちらでも次の節の手前で止める
 row_until: "h2.partsstyle_h2, div.h2bg"
 image: {selector: "img@src", exclude: ["youreidoubutu", "spacer.gif"]}   # 実写真が無いと例示イラストが載る。取らない（取ると写真 URL が ID の元になり ID も変わる）
-# 表の見出し行の書き方が日によって違う（2023: tbody の td、2024: thead の th と tbody の td、2026: thead に見出しと値の 2 行）。
-# label で読むと 2023 は隣の見出し「収容期限」を値に取り、2024 は値が取れない（Wayback で確認）。見出しの語を含まない行の n 列目を取る
 fields:
   # 自分の見出し「R8-51」。同日同所の子が同じ ID に潰れていた（2026-10-02 監査）。0 頭の日に残る雛形の見出し「000」は番号にしない
-  # （中身の無い 1 頭として載っていた。Wayback 2025-03-27）
   management_no: {selector: "h3.partsstyle_h3", regex: "^(?!0+$)(\\S+)$"}
-  location: {selector: "table:-soup-contains('収容場所') tr:not(:-soup-contains('収容場所')) > td:nth-of-type(1)"}
-  shelter_date: {selector: "table:-soup-contains('収容場所') tr:not(:-soup-contains('収容場所')) > td:nth-of-type(2)"}
-  breed: {selector: "table:-soup-contains('種類') tr:not(:-soup-contains('種類')) > td:nth-of-type(1)"}
-  sex: {selector: "table:-soup-contains('種類') tr:not(:-soup-contains('種類')) > td:nth-of-type(2)"}
-  age: {selector: "table:-soup-contains('種類') tr:not(:-soup-contains('種類')) > td:nth-of-type(3)"}
-  color: {selector: "table:-soup-contains('種類') tr:not(:-soup-contains('種類')) > td:nth-of-type(4)"}
-  size: {selector: "table:-soup-contains('種類') tr:not(:-soup-contains('種類')) > td:nth-of-type(5)"}
-  note: {selector: "table:-soup-contains('種類') tr:not(:-soup-contains('種類')) > td:nth-of-type(6)"}
+  location: {label: "収容場所", header_row: true}
+  shelter_date: {label: ["収容日", "収容期日"], header_row: true}
+  breed: {label: "種類", header_row: true}
+  sex: {label: "性別", header_row: true}
+  age: {label: "年齢", header_row: true}
+  color: {label: "毛色", header_row: true}
+  size: {label: "体格", header_row: true}
+  note: {label: "備考", header_row: true}
 empty_text:
   - "現在、情報はありません。"
   - "情報：0頭"     # 見出し「保護・収容した犬の情報(情報：0頭)」。雛形だけが残る 0 頭の日
