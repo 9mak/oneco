@@ -3,11 +3,11 @@
 # 2つ目「管理番号/写真1/写真2」に写真だけが別テーブルで分離されている（子猫ページと違い
 # 写真が本体行と同じ<tr>に無い）。レシピは1行=1セレクタ単位でしか動かせず、2つのテーブルを
 # 管理番号で突き合わせて結合する手段が無いため、写真は取得できない（既知の制約）。
-# 動物とみなす条件を満たすため、management_no は「C25093」のような英字+数字から数字部分
-# （5桁）だけを取り出して使う（末尾の数字5桁は動物ごとに一意）。
+# 2026-10-04: management_no はページの表記どおり「C25093」で取る（旧: 数字部分だけ「25093」で、ページ・写真の alt「第C25093号」と食い違っていた。
+#   英字+数字は動物とみなす条件（looks_like_mgmt）を満たす。ID は管理番号から作るので切り替え日に 2 頭とも 1 回だけ別 ID になる）。
 rows: "table.datatable:nth-of-type(1) tr"
 fields:
-  management_no: {selector: "td:nth-of-type(1)", regex: "(\\d{4,})"}
+  management_no: {selector: "td:nth-of-type(1)"}
   breed: {selector: "td:nth-of-type(2)"}
   sex: {selector: "td:nth-of-type(3)"}
   size: {selector: "td:nth-of-type(4)"}

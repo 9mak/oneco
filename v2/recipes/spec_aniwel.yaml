@@ -1,14 +1,17 @@
 # アニウェル北海道（猫の里親募集） https://aniwel.jp/afa/
 # baserCMS。一覧 /afa/ は 4 頭ずつで .bs-pagination__next に次ページ、各 h3 のリンクが個別ページ /afa/view/<名前>。
 # 個別ページは table.ta2-parts（caption = 名前、th/td = 性別・紹介文 等）。写真 URL に取得ごとに変わる ?数字 が付くので外す。
+# 2026-10-04: 年齢は静的 HTML では空で、JS が data-started-date（生年月日 "2004-2-8"）から「22歳11ヶ月」と描画する。
+#   旧レシピは属性の生の日付文字列を age に入れていたので、個別ページだけ描画（rendered: true）してページに出る年齢の文字を取る。
 steps:
   - paginate: ".bs-pagination__next a@href"
   - follow_all: "h3 a[href*='/afa/view/']@href"
+    rendered: true
 rows: "table.ta2-parts"
 image: {selector: "img@src", strip_query: true}
 fields:
   name: "caption"
   sex: {label: "性別"}
-  age: {selector: ".skill-exp[data-started-date]", attr: "data-started-date"}
+  age: {label: "年齢", regex: "^(\\S+)"}   # シンクロだけ年齢欄に 2 件（9歳11ヶ月 / 11歳）出るので先頭 1 件
   note: {label: "紹介文"}
 empty_text: ["現在、里親を募集している猫はいません", "該当する記事はありません"]

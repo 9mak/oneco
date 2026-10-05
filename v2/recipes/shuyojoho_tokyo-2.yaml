@@ -1,6 +1,8 @@
 # 東京都収容動物情報（猫等） https://shuyojoho.metro.tokyo.lg.jp/cat
 # トップの topMainBox 一覧から /animals/detail/{id} を個体ページ方式（follow_all）で辿る。犬ページと同一構造・同一 adapter。
-# /cat は「猫・その他」タブで、にわとり等の他動物が混ざることがあるが、台帳側で species=cat 固定のためレシピでは分岐しない。
+# /cat は「猫・その他」タブで、にわとり等の他動物が混ざることがある。
+# 2026-10-04: 個体ページの「動物名」（ネコ / ウサギ 等）で種別を決める。犬猫以外は「その他」として載せる。
+#   台帳の species が cat 固定のままだとこの species は読まれない（台帳を mixed にして初めて効く）。
 steps:
   - follow_all: "#topMain a[href*='/animals/detail/']@href"
 rows: "body"
@@ -13,4 +15,9 @@ fields:
   sex: {label: "性別"}
   size: {label: "大きさ"}
   color: {label: "毛色"}
+  species: {label: "動物名"}
+species:
+  from: field
+  map: {"ネコ": cat, "猫": cat, "イヌ": dog, "犬": dog}
+  allow_other: true
 empty_text: ["現在、猫・その他の収容情報はありません", "現在、収容動物情報はありません"]

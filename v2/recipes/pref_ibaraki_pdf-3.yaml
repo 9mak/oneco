@@ -1,0 +1,32 @@
+# 茨城県（収容中の子犬・子猫たち） https://www.pref.ibaraki.jp/hokenfukushi/doshise/kanri/20190418.html
+# 新規（2026-10-04）: 「収容中の動物たち」(pref_ibaraki_pdf-1) の成犬・成猫 PDF には子犬・子猫が入っておらず、別ページに
+# 収容日ごとの PDF (documents/koinu*.pdf) がある。形式は「迷い犬・猫情報」(pref_ibaraki_pdf-2) の公表 PDF と同じ
+# （1 ページ 2 段組み。空欄のテンプレート枡が並び、動物がいる枡だけ「26-0650 市町村地区名 下妻市若柳丙」で始まる。
+#  ラベルの意味が逆で、種類=品種、犬猫種=犬/猫）。体格は「子」。
+# 子猫は頭数（「12頭」）の表示だけで PDF が無いので取れない。登録ボランティア一覧 PDF (toubora*.pdf) は対象外。
+steps:
+  - pdf_links: "a[href*='documents/koinu'][href$='.pdf']"
+pdf:
+  mode: text
+  columns: 2
+rows_regex: "^\\d{2}-\\d{3,6}\\s+市町村地区名"
+# 「おうちに帰れたワン！」バナー（飼い主の元へ戻った印）が重なった枡は収容中ではないので捨てる
+row_filter:
+  text_lacks: ["帰れたワン", "帰れたニャン", "帰れたにゃん"]
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+fields:
+  management_no: {regex: "^(\\d{2}-\\d{3,6})"}
+  location: {regex: "市町村地区名\\s+(\\S+)"}
+  shelter_date: {regex: "収容日\\s+(\\d{4}/\\d{1,2}/\\d{1,2})"}
+  species: {regex: "犬猫種\\s+(犬|猫)"}
+  breed: {regex: "種類\\s+(\\S+)\\s+犬猫種"}
+  color: {regex: "毛色\\s+(\\S+)"}
+  sex: {regex: "性別\\s+(\\S+)"}
+  size: {regex: "体格\\s+(\\S+)"}
+  note: {regex: "(?m)(?:(?<=備考 )\\S[^\\n]*|^(?:負傷|衰弱)$)"}   # 負傷・衰弱は「備考」の 1 行上に単独で出る。備考が同じ行に書かれているときはその文
+# 収容がある日は PDF リンクが付き、無い日は「9月29日収容はありません」と出る。PDF が 1 本も無い 0 頭の日は後者で 0 頭とみなす
+empty_text:
+  - "公表分"
+  - "収容はありません"

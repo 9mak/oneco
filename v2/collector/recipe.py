@@ -562,10 +562,20 @@ def image_url(recipe: Recipe, row: Row) -> tuple[str | None, str | None]:
         holder = BeautifulSoup('<div class="prev-siblings"></div>', "lxml").div
         assert holder is not None
         sibs: list[Tag] = []
+        # stop_at: row なら「前の行（rows に当たる要素）」で止める（岩手県: 行も写真も p なので同じタグ名で止めると写真の p で止まる）。
+        # 既定は同じタグ名の兄弟で止める（広島市・明石・岐阜はこれで正しい）
+        stop_at_row = spec.get("stop_at") == "row" and isinstance(recipe.rows, str)
         for sib in row.el.find_previous_siblings():
             if not isinstance(sib, Tag):
                 continue
-            if sib.name == row.el.name:
+            if stop_at_row:
+                try:
+                    if sib.css.match(recipe.rows):
+                        break
+                except Exception:  # noqa: BLE001 — 解釈できないセレクタは既定の止め方に戻す
+                    if sib.name == row.el.name:
+                        break
+            elif sib.name == row.el.name:
                 break
             sibs.append(sib)
         for sib in reversed(sibs):

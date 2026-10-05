@@ -1,4 +1,5 @@
 # 岩手県 釜石保健所 — pref.iwate.jp
+# 2026-10-04: 写真が全頭で取れていなかったため image を追加（h2/h3 直後の figure を prev_siblings で拾う。14 頭すべてに写真が付く）。
 # 台帳 url は最終の一覧ページ（1014123.html。迷子・譲渡・報告が同一ページにまとまっている）。
 # 構造: <figure class="imagecenter"><img>...<figcaption>管理番号</figcaption></figure> の次に
 #   <p>仮名：...<br>管理番号：...<br>動物種別：...<br>…</p> というフラットな並び
@@ -6,7 +7,11 @@
 #   西暦4桁を含む形式でエンジンの _MGMT_RE に正しくマッチする）。
 # 【御報告】譲渡が決まりました🌸🌸 の既に譲渡済み個体は「仮名・管理番号」のみで動物種別が無いブロックのため、
 # 犬か猫か判定できず自動的に捨てられる（意図した挙動。募集中ではない個体を数えないという点で正しい）。
+# 2026-10-04: 写真 figure は行 p の直前の兄弟（figure は p と別タグなので prev_siblings で届く）。
+#   メイン写真は h2/h3 の直後の figure（imagecenter のことも imageright のこともある）。直前の個体の追加写真
+#   （figure.imageright）を拾わないよう「h2 + figure」「h3 + figure」に絞る。これで 14 頭の写真が付く。
 rows: "p:-soup-contains('管理番号：')"
+image: {selector: "h2 + figure img, h3 + figure img@src", scope: prev_siblings}
 fields:
   name: {label: "仮名"}
   management_no: {label: "管理番号"}
