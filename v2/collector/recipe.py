@@ -118,9 +118,43 @@ def _make_pdf_doc(url: str, content: bytes, columns: int = 1) -> Doc:
                 parts = [page.crop((i * w, 0, (i + 1) * w, page.height)) for i in range(columns)]
             for part in parts:
                 texts.append(part.extract_text() or "")
-                for t in part.extract_tables() or []:
+                for t in _page_tables(part):
                     tables.append([[(c or "").replace("\n", " ").strip() for c in row] for row in t])
     return Doc(url=url, pdf_tables=tables, pdf_text="\n".join(texts))
+
+
+def _page_tables(page: Any) -> list[list[list[str | None]]]:
+    """ページの表。最下行の下の横罫線が引かれていない表は、縦罫線の下端に横罫線を補って最下行も取る。
+
+    神奈川県 センター外保護猫（cat.pdf）は 1 ページ目の最下行だけ下の横罫線が無く（縦罫線は下まで伸びている）、
+    pdfplumber が表をその上の横罫線で閉じて最下行（No.46）を落としていた。補うのは次をすべて満たすときだけ:
+    - 表の中から始まる縦罫線が、表の下端より下まで伸びている（表の列の境目の半分以上、かつ 2 本以上）
+    - 伸びた先に、表の幅の横罫線がまだ無い
+    - 伸びた長さが表の行の高さの 3 倍以内（ページ枠のような長い線で本文やフッターを表にしない）
+    """
+    found = page.find_tables()
+    tol = 3.0
+    h_edges = [e for e in page.edges if e["orientation"] == "h" and e["x1"] - e["x0"] >= tol]
+    extra: list[float] = []
+    for t in found:
+        x0, top, x1, bottom = t.bbox
+        inside = [e for e in page.edges if e["orientation"] == "v" and x0 - tol <= e["x0"] <= x1 + tol
+                  and e["top"] >= top - tol and e["top"] <= bottom - tol]
+        longer = [e for e in inside if e["bottom"] > bottom + tol]
+        cols = {round(e["x0"]) for e in inside}
+        long_cols = {round(e["x0"]) for e in longer}
+        if len(long_cols) < 2 or len(long_cols) * 2 < len(cols):
+            continue
+        y = max(e["bottom"] for e in longer)
+        row_h = max((r.bbox[3] - r.bbox[1] for r in t.rows), default=0.0)
+        if row_h <= 0 or y - bottom > row_h * 3:
+            continue
+        if any(abs(h["top"] - y) <= tol and h["x0"] <= x0 + tol and h["x1"] >= x1 - tol for h in h_edges):
+            continue
+        extra.append(y)
+    if not extra:
+        return [t.extract() for t in found]
+    return page.extract_tables({"explicit_horizontal_lines": extra}) or []
 
 
 # --- 行 ---------------------------------------------------------------------
@@ -700,8 +734,8 @@ def field_value(spec: Any, row: Row) -> str | None:
     return val
 
 
-def image_url(recipe: Recipe, row: Row) -> tuple[str | None, str | None]:
-    """(絶対 URL, 生の src)。ゴミ画像は除く。"""
+def image_url(recipe: Recipe, row: Row, fields: dict[str, str | None] | None = None) -> tuple[str | None, str | None]:
+    """(絶対 URL, 生の src)。ゴミ画像は除く。fields は image.match_field で使う、この行で取った項目。"""
     if row.el is None:
         return None, None
     spec = recipe.image
@@ -711,6 +745,16 @@ def image_url(recipe: Recipe, row: Row) -> tuple[str | None, str | None]:
     if attr == "href" and sel.startswith("img"):
         attr = "src"
     exclude = [re.compile(x, re.I) for x in spec.get("exclude", [])]
+    # match_field: 写真が本体と別の表にあるページ（仙台市 譲渡猫: 「管理番号/写真1/写真2」の表）。
+    # 行で取った項目（管理番号）の値を src か alt に含む画像を文書全体から探す。前後が英数字の位置は
+    # 別の番号の一部とみなして当てない（C2509 を c25093-3.jpg に当てない）。値が無い行には写真を付けない
+    match_field = spec.get("match_field")
+    want: re.Pattern[str] | None = None
+    if match_field:
+        value = (fields or {}).get(str(match_field))
+        if not value or row.doc.soup is None:
+            return None, None
+        want = re.compile(r"(?<![A-Za-z0-9])" + re.escape(value) + r"(?![A-Za-z0-9])", re.I)
 
     def pick(root: Tag) -> tuple[str, str] | None:
         for el in root.select(sel):
@@ -719,11 +763,15 @@ def image_url(recipe: Recipe, row: Row) -> tuple[str | None, str | None]:
                 continue
             if _JUNK_IMAGE.search(src) or any(p.search(src) for p in exclude):
                 continue
+            if want is not None and not (want.search(src) or want.search(unicodedata.normalize("NFKC", str(el.get("alt") or "")))):
+                continue
             if spec.get("strip_query"):
                 src = src.split("?", 1)[0]     # 取得ごとに変わるクエリ（キャッシュ避け）を外して ID を安定させる
             return _abs(recipe.base_url or row.doc.url, src), src
         return None
 
+    if want is not None and row.doc.soup is not None:
+        return pick(row.doc.soup) or (None, None)   # 文書全体（元の文書。まとめた行・転置表の複製でなく）
     scope = spec.get("scope")
     if scope in ("self_or_prev_siblings", "self_or_next_siblings"):
         # 行の中を先に探し、無ければ兄弟要素（岐阜県: 保健所によって写真が表の中だったり、表の直前の p だったりする）
