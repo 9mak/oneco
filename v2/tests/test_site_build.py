@@ -173,6 +173,28 @@ def test_affiliate_box_only_when_configured(tmp_path: Path):
     assert 'rel="sponsored' in h
 
 
+def test_affiliate_box_only_on_adoption_pages(tmp_path: Path):
+    """T506: 「迎える準備」枠（広告）は里親募集の子のページにだけ出す。保護中・迷子・探してます の子は
+    飼い主の元に帰るかもしれない子なので、迎える準備の広告を並べない。"""
+    data = _merged()
+    base = next(a for a in data["animals"] if a["kind"] == "adoption")
+    for kind in ("stray", "lost"):
+        a = dict(base)
+        a.update({"id": f"{kind}00000001", "kind": kind})
+        data["animals"].append(a)
+    cfg = dict(CONFIG)
+    cfg["affiliate"] = [{"title": "ケージ", "url": "https://example.com/cage", "note": ""}]
+    out = tmp_path / "d"
+    _load_build().build_site(data, cfg, out)
+    kinds = {a["id"]: a["kind"] for a in data["animals"]}
+    assert set(kinds.values()) == {"adoption", "sheltered", "stray", "lost"}
+    for aid, kind in kinds.items():
+        h = _read(out / "animals" / aid / "index.html")
+        assert ("迎える準備" in h) is (kind == "adoption"), (aid, kind)
+    about = _read(out / "about" / "index.html")
+    assert "里親募集の子のページ" in about and "各ページの「迎える準備」枠" not in about
+
+
 def test_rebuild_removes_stale_pages(tmp_path: Path):
     data = _merged()
     out = tmp_path / "dist"

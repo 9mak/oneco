@@ -8,8 +8,12 @@
 # 属性 p の中身: 「雑種、推定6歳、雌<br>センターに収容された日：…<br>保護された状況：…」。
 # 0 件時は該当 p が無くなり案内文のみ残る。
 # 2026-10-04 変更: (1) 管理番号を fields.management_no（直前の h2 から）で取るようにした。h2 が兄弟でも div 入れ子でも「行より前の直近の h2」で拾える。
-#   (2) 0 頭の日の文言が「※現在迷い猫はいません。」に変わっていて empty_text に無く failed になっていたので追加。写真は直前の p が行と同じタグのため prev_siblings が効かず未対応（engine_needs）。
+#   (2) 0 頭の日の文言が「※現在迷い猫はいません。」に変わっていて empty_text に無く failed になっていたので追加。
+# 2026-10-05 変更: 写真を image で取るようにした。写真 p は行（属性 p）の直前の兄弟で、行と同じ p タグなので、同じタグ名で遡りを止める既定だと
+#   直前の写真 p で止まり届かなかった。10/5 のエンジン（image.stop_at: row = 前の行に当たるまで遡る）を当てた。h2 が兄弟でも div 入れ子でも、
+#   その子の写真 p（先頭の 1 枚）が取れ、前の子の写真は拾わない（tests/test_registry_t517_f.py）。
 rows: "div.detail_free p:-soup-contains('収容された日')"
+image: {selector: "img@src", scope: prev_siblings, stop_at: row}
 fields:
   management_no: {from: heading, selector: "h2", regex: "管理番号[:：]\\s*(\\S+)"}
   breed: {regex: "^([^、,，\\n]+)"}

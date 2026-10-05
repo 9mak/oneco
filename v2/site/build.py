@@ -23,7 +23,7 @@ config.json:
     base_url    公開 URL（OG タグ・sitemap の絶対 URL に使う）
     issues_url  取り下げ・訂正の依頼窓口（GitHub Issues）
     contact_email  GitHub アカウントの無い人向けの連絡先メール（空なら「GitHub アカウント（無料）が必要」と書く）
-    affiliate   「迎える準備」枠。[{"title": "…", "url": "https://…", "note": "…"}]。空なら枠ごと出さない（about も「いまは広告を載せていません」になる）
+    affiliate   「迎える準備」枠。[{"title": "…", "url": "https://…", "note": "…"}]。里親募集の子のページにだけ出す。空なら枠ごと出さない（about も「いまは広告を載せていません」になる）
 """
 
 from __future__ import annotations
@@ -442,7 +442,8 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
         contact.append("<div><dt>連絡先</dt><dd>電話番号は自治体のページでご確認ください。</dd></div>")
     cta = (f'<a class="cta" href="{esc(src)}" rel="noopener" target="_blank">自治体のページで詳細を見る<small>{esc(muni)}</small></a>'
            if src else f'<p class="cta cta-none">元ページの URL が取れていません。{esc(muni)}にお問い合わせください。</p>')
-    aff = cfg.get("affiliate") or []
+    # 「迎える準備」枠（広告）は里親募集の子だけ。保護中・迷子・探してます の子は飼い主の元に帰るかもしれない（T506）
+    aff = (cfg.get("affiliate") or []) if a.get("kind") == "adoption" else []
     aff_items = []
     for it in aff:
         if not isinstance(it, dict):
@@ -559,7 +560,7 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
     contact = (f'GitHub アカウントをお持ちでない方は、メール（<a href="mailto:{esc(email)}">{esc(email)}</a>）でもお受けします。'
                if email else "窓口の利用には GitHub アカウント（無料）が必要です。")
     if cfg.get("affiliate"):
-        money = "<p>サーバー代などの運営費は、各ページの「迎える準備」枠に載せている広告（アフィリエイト）リンクでまかなっています。</p>"
+        money = "<p>サーバー代などの運営費は、里親募集の子のページにある「迎える準備」枠の広告（アフィリエイト）リンクでまかなっています。</p>"
     else:
         money = ("<p>いまは広告を載せていません。載せるときは「迎える準備」枠に広告（アフィリエイト）リンクと明示し、"
                  "収入はサーバー代などの運営費に充てます。</p>")

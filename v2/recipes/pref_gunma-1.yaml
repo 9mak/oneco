@@ -6,8 +6,12 @@
 # 2026-10-04: 一覧に残っている 26-095 (/page/775956.html) と 26-096 (/page/776793.html) の個別ページが
 # 404（移転ではなく削除。県サイト内・soshiki/86/ にも新 URL なし。返還等で消えたが一覧のリンクだけ残る）で
 # 1 件の 404 が slug 全体を落とすため、この 2 本を除外（生きている 26-097/26-098 は取れる）。
+# 2026-10-05: skip_errors: true（子 1 本の取得失敗はその 1 本だけ捨てて続ける。全部失敗した日は failed）に切り替え、
+# 個体ページの 404 固定除外（775956・776793。今日も 404 で一覧に残っている）を外した。今後新しく 404 が出ても slug は落ちない。
+# 7895（「収容の情報ページへ戻る」。今は 200 で返る収容動物情報の目次）と 7896 は 404 ではなく動物でない導線なので除外を残す。
 steps:
-  - follow_all: "div#main_body div.detail_free a[href*='/page/']:not([href='/page/7895.html']):not([href='/page/7896.html']):not([href='/page/775956.html']):not([href='/page/776793.html'])"
+  - follow_all: "div#main_body div.detail_free a[href*='/page/']:not([href='/page/7895.html']):not([href='/page/7896.html'])"
+    skip_errors: true
 rows: "body"
 image: "div#main_body img@src"
 fields:

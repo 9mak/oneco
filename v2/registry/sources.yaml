@@ -376,20 +376,73 @@ sources:
   name: 兵庫県動物愛護センター（収容動物）
   municipality: 兵庫県動物愛護センター
   prefecture: 兵庫県
-  phone: null
+  phone: 06-6432-4599
   address: null
-  url: https://hyogo-douai.sakura.ne.jp/shuuyou.html
+  url: https://hyogo-douai.sakura.ne.jp/hogo1.html
   kind: sheltered
   species: mixed
   mode: recipe
   recipe: recipes/hyogo_douai.yaml
   enabled: true
+  note: 支所ごとに分割（2026-10-05 T517）。センター（本所）= hogo1。以前は一覧 shuuyou.html から全支所を辿っていた。電話は各ページの「お問い合わせはこちら」（2026-10-05）
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/hyogo_douai.py
     requires_js: false
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+- slug: hyogo_douai-2
+  name: 兵庫県動物愛護センター 三木支所（収容動物）
+  municipality: 兵庫県動物愛護センター三木支所
+  prefecture: 兵庫県
+  phone: 0794-84-3050
+  address: null
+  url: https://hyogo-douai.sakura.ne.jp/hogo2.html
+  kind: sheltered
+  species: mixed
+  mode: recipe
+  recipe: recipes/hyogo_douai-2.yaml
+  enabled: true
+  note: hyogo_douai の支所分割（2026-10-05 T517）。電話は hogo2 の「お問い合わせはこちら」
+- slug: hyogo_douai-3
+  name: 兵庫県動物愛護センター 龍野支所（収容動物）
+  municipality: 兵庫県動物愛護センター龍野支所
+  prefecture: 兵庫県
+  phone: 0791-63-5146
+  address: null
+  url: https://hyogo-douai.sakura.ne.jp/hogo3.html
+  kind: sheltered
+  species: mixed
+  mode: recipe
+  recipe: recipes/hyogo_douai-3.yaml
+  enabled: true
+  note: hyogo_douai の支所分割（2026-10-05 T517）。電話は hogo3 の「お問い合わせはこちら」
+- slug: hyogo_douai-4
+  name: 兵庫県動物愛護センター 但馬支所（収容動物）
+  municipality: 兵庫県動物愛護センター但馬支所
+  prefecture: 兵庫県
+  phone: 079-666-8071
+  address: null
+  url: https://hyogo-douai.sakura.ne.jp/hogo4.html
+  kind: sheltered
+  species: mixed
+  mode: recipe
+  recipe: recipes/hyogo_douai-4.yaml
+  enabled: true
+  note: hyogo_douai の支所分割（2026-10-05 T517）。電話は hogo4 の「お問い合わせはこちら」
+- slug: hyogo_douai-5
+  name: 兵庫県動物愛護センター 淡路支所（収容動物）
+  municipality: 兵庫県動物愛護センター淡路支所
+  prefecture: 兵庫県
+  phone: 0799-62-5811
+  address: null
+  url: https://hyogo-douai.sakura.ne.jp/hogo5.html
+  kind: sheltered
+  species: mixed
+  mode: recipe
+  recipe: recipes/hyogo_douai-5.yaml
+  enabled: true
+  note: hyogo_douai の支所分割（2026-10-05 T517）。電話は hogo5 の「お問い合わせはこちら」
 - slug: city_sapporo-1
   name: 札幌市（迷子犬）
   municipality: 札幌市
@@ -632,6 +685,32 @@ sources:
   recipe: recipes/spec_douaicenter-10.yaml
   enabled: true
   note: -8 と同じ一覧の「探しています」だけを拾う（2026-10-04）
+- slug: spec_douaicenter-11
+  name: 旭川市あにまある（飼い主が探している その他の動物）
+  municipality: 旭川市あにまある
+  prefecture: 北海道
+  phone: 0166-25-5271
+  address: null
+  url: https://www.douaicenter.jp/other-animal/list/other
+  kind: lost
+  species: mixed
+  mode: recipe
+  recipe: recipes/spec_douaicenter-11.yaml
+  enabled: true
+  note: -9（犬）・-10（猫）の兄弟。「その他の動物」の一覧の「探しています」（インコなど）だけを拾う（2026-10-05 T517 ⑨）。犬猫以外は species other で載る
+- slug: spec_douaicenter-12
+  name: 旭川市あにまある（市民保護その他の動物）
+  municipality: 旭川市あにまある
+  prefecture: 北海道
+  phone: 0166-25-5271
+  address: null
+  url: https://www.douaicenter.jp/other-animal/list/other
+  kind: sheltered
+  species: mixed
+  mode: recipe
+  recipe: recipes/spec_douaicenter-12.yaml
+  enabled: true
+  note: -7（犬）・-8（猫）の兄弟。「その他の動物」の一覧の「保護しています」だけを拾う（「探しています」は -11 が拾う。2026-10-05 T517 ⑨）。今日は 3 件とも探しています＝0 頭
 - slug: city_chiba-1
   name: 千葉市（迷子犬）
   municipality: 千葉市
@@ -1740,13 +1819,14 @@ sources:
   municipality: 広島県動物愛護センター
   prefecture: 広島県
   phone: 0848-60-8511
-  address: 〒729-0415 広島県三原市本郷町上北方字用倉山11352番（動物愛護センター代表連絡先。ページ本文に明記、台帳は現在null）
+  address: 〒729-0415 広島県三原市本郷町上北方字用倉山11352番
   url: https://www.pref.hiroshima.lg.jp/site/apc/jouto-stray-dog-list.html
   kind: stray
   species: dog
   mode: recipe
   recipe: recipes/pref_hiroshima-1.yaml
   enabled: true
+  note: 所在地は動物愛護センターの代表連絡先（ページ本文に明記）。2026-10-05 に address の括弧書きのメモをここへ移した（公開ページの所在地に出ていた）
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_hiroshima.py
     requires_js: false
@@ -1758,13 +1838,14 @@ sources:
   municipality: 広島県動物愛護センター
   prefecture: 広島県
   phone: 0848-60-8511
-  address: 〒729-0415 広島県三原市本郷町上北方字用倉山11352番（動物愛護センター代表連絡先。dogページと同一施設・同一表記。台帳は現在null）
+  address: 〒729-0415 広島県三原市本郷町上北方字用倉山11352番
   url: https://www.pref.hiroshima.lg.jp/site/apc/jouto-stray-cat-list.html
   kind: stray
   species: cat
   mode: recipe
   recipe: recipes/pref_hiroshima-2.yaml
   enabled: true
+  note: 所在地は動物愛護センターの代表連絡先（犬のページと同じ施設・同じ表記）。2026-10-05 に address の括弧書きのメモをここへ移した
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_hiroshima.py
     requires_js: false
@@ -3977,39 +4058,65 @@ sources:
     requires_js: false
     pdf: false
 - slug: pref_iwate_ichinoseki
-  name: 岩手県（一関保健所 保護犬猫）
+  name: 岩手県（一関保健所 迷子）
   municipality: 一関保健所
   prefecture: 岩手県
   phone: "0191-34-4691"
   address: 岩手県一関市竹山町7-5
   url: https://www.pref.iwate.jp/kennan/ichi_hoken/doubutsu/index.html
-  kind: sheltered
+  kind: stray       # 2026-10-05 T517: 迷子ページ「保護動物情報」だけ（譲渡ページは -2 に分けた）
   species: mixed
   mode: recipe
   recipe: recipes/pref_iwate_ichinoseki.yaml
   enabled: true
-  note: ハブ pref_iwate から分割（2026-09-29）。迷子ページと譲渡ページを合算（譲渡の子は 2026-10-04 の image の stop_at=row で写真が付き拾えるようになった）。kind が混在するので分割は T517
+  note: ハブ pref_iwate から分割（2026-09-29）。2026-10-05 に迷子（この slug）と譲渡（-2）を分けた。元の slug を迷子に残したのは迷子の犬が 9/29 から載っていて ID を引き継ぐため
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_iwate.py
     requires_js: false
     pdf: false
+- slug: pref_iwate_ichinoseki-2
+  name: 岩手県（一関保健所 譲渡）
+  municipality: 一関保健所
+  prefecture: 岩手県
+  phone: "0191-34-4691"
+  address: 岩手県一関市竹山町7-5
+  url: https://www.pref.iwate.jp/kennan/ichi_hoken/doubutsu/index.html
+  kind: adoption
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_iwate_ichinoseki-2.yaml
+  enabled: true
+  note: pref_iwate_ichinoseki から譲渡ページ「譲渡動物情報」だけを分けた slug（2026-10-05 T517）。譲渡の猫（蘭丸）は 10/5 から載っていて、ここで ID が新しくなる
 - slug: pref_iwate_ofunato
-  name: 岩手県（大船渡保健所 保護猫）
+  name: 岩手県（大船渡保健所 譲渡猫）
   municipality: 大船渡保健所
   prefecture: 岩手県
   phone: "0192-27-9923"
   address: 岩手県大船渡市猪川町字前田6-1
   url: https://www.pref.iwate.jp/engan/ofuna_hoken/1014212/1014213.html
-  kind: sheltered
+  kind: adoption    # 2026-10-05 T517: 【譲渡】の節だけ（迷子の節「元の飼い主を探しています」は -2 に分けた）
   species: cat
   mode: recipe
   recipe: recipes/pref_iwate_ofunato.yaml
   enabled: true
-  note: ハブ pref_iwate から分割（2026-09-29）。2026-09-29時点は猫のみ
+  note: ハブ pref_iwate から分割（2026-09-29）。2026-10-05 に譲渡（この slug）と迷子（-2）を分けた。元の slug を譲渡に残したのは譲渡の猫 9 頭の ID を引き継ぐため。2026-09-29時点は猫のみ
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_iwate.py
     requires_js: false
     pdf: false
+- slug: pref_iwate_ofunato-2
+  name: 岩手県（大船渡保健所 迷子猫）
+  municipality: 大船渡保健所
+  prefecture: 岩手県
+  phone: "0192-27-9923"
+  address: 岩手県大船渡市猪川町字前田6-1
+  url: https://www.pref.iwate.jp/engan/ofuna_hoken/1014212/1014213.html
+  kind: stray
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_iwate_ofunato-2.yaml
+  enabled: true
+  note: pref_iwate_ofunato と同じページの「元の飼い主を探しています」の節だけ（2026-10-05 T517）。節に動物種の欄が無いので species は cat 固定（犬が載る日は未確認）
 - slug: pref_iwate_kamaishi
   name: 岩手県（釜石保健所 保護犬猫）
   municipality: 釜石保健所

@@ -18,10 +18,25 @@ log = logging.getLogger(__name__)
 WAIT_FOR_MS = 20000   # render の wait_for がセレクタを待つ上限（ミリ秒）
 USER_AGENT = "oneco-collector/2.0 (+https://github.com/9mak/oneco; stop/removal requests via GitHub Issues)"
 _META_CHARSET = re.compile(rb"<meta[^>]+charset=[\"']?\s*([A-Za-z0-9_\-]+)", re.I)
+# get で取り直す一過性の失敗 = 確立済みの接続をサーバーが閉じた／切った種類だけ。
+# 熊本県動物愛護センターは Keep-Alive: timeout=1 で delay（1 秒）とほぼ同じため、使い回した接続が送信の瞬間に閉じられ
+# RemoteProtocolError「Server disconnected without sending a response」になる（2026-10-04・10-05 の全件収集で -2・-6 が失敗）。
+# ConnectError（DNS 不達・回線断）とタイムアウトは取り直さない: 回線断の日（10/4 は 119/229 が ConnectError）に
+# 1 ページ 7 秒ずつ全体が長引くだけで、その日は latest.json を据え置くため得るものが無い。5xx は実績が無いので入れない。
+RETRY_ERRORS: tuple[type[httpx.HTTPError], ...] = (httpx.RemoteProtocolError, httpx.ReadError, httpx.WriteError)
+RETRY_WAITS: tuple[float, ...] = (2.0, 5.0)   # 再試行前の待ち（秒）。要素数 = 再試行の回数
 
 
 class FetchError(Exception):
     pass
+
+
+_GONE = re.compile(r"HTTP (404|410): ")
+
+
+def page_gone(e: FetchError) -> bool:
+    """ページが無い（HTTP 404・410）ことによる失敗か。サーバーエラー・接続失敗・robots 拒否は False。"""
+    return bool(_GONE.match(str(e)))
 
 
 @dataclass
@@ -50,10 +65,12 @@ def decode(content: bytes, header_charset: str | None, forced: str | None = None
 
 
 class Fetcher:
-    def __init__(self, delay: float = 1.0, timeout: float = 30.0, respect_robots: bool = True) -> None:
+    def __init__(self, delay: float = 1.0, timeout: float = 30.0, respect_robots: bool = True,
+                 retry_waits: tuple[float, ...] = RETRY_WAITS) -> None:
         self.client = httpx.Client(headers={"User-Agent": USER_AGENT}, timeout=timeout, follow_redirects=True)
         self.delay = delay
         self.respect_robots = respect_robots
+        self.retry_waits = retry_waits
         self._last: dict[str, float] = {}
         self._robots: dict[str, urllib.robotparser.RobotFileParser | None] = {}
         self.cache: dict[str, Page] = {}
@@ -92,11 +109,7 @@ class Fetcher:
             return self.cache[key]
         if not self._allowed(url):
             raise FetchError(f"robots.txt により拒否: {url}")
-        self._throttle(url)
-        try:
-            r = self.client.get(url)
-        except httpx.HTTPError as e:
-            raise FetchError(f"{type(e).__name__}: {e}") from e
+        r = self._get_with_retry(url)
         if r.status_code >= 400:
             raise FetchError(f"HTTP {r.status_code}: {url}")
         ctype = r.headers.get("content-type", "")
@@ -106,6 +119,21 @@ class Fetcher:
         page = Page(url, str(r.url), r.status_code, r.content, html, ctype)
         self.cache[key] = page
         return page
+
+    def _get_with_retry(self, url: str) -> httpx.Response:
+        """RETRY_ERRORS の失敗だけ、retry_waits の秒数を待って取り直す（取り直しは httpx が新しい接続で行う）。"""
+        waits = list(self.retry_waits)
+        while True:
+            self._throttle(url)
+            try:
+                return self.client.get(url)
+            except RETRY_ERRORS as e:
+                if not waits:
+                    raise FetchError(f"{type(e).__name__}: {e}") from e
+                log.info("get: %s のため %.0f 秒後に取り直す: %s", type(e).__name__, waits[0], url)
+                time.sleep(waits.pop(0))
+            except httpx.HTTPError as e:
+                raise FetchError(f"{type(e).__name__}: {e}") from e
 
     def render(self, url: str, wait_ms: int = 3000, capture: str | None = None, wait_for: str | None = None) -> Page:
         """JavaScript 描画が必要なページを Playwright で取る。
@@ -158,14 +186,17 @@ class FakeFetcher(Fetcher):
     """テスト用。URL → HTML/bytes の辞書だけを返す。captures は URL → render 中に捕まえたことにする JSON の列。"""
 
     def __init__(self, pages: dict[str, str | bytes], redirects: dict[str, str] | None = None,
-                 captures: dict[str, list[Any]] | None = None) -> None:
+                 captures: dict[str, list[Any]] | None = None, status: dict[str, int] | None = None) -> None:
         super().__init__(delay=0, respect_robots=False)
         self.pages = pages
         self.redirects = redirects or {}
         self.captures = captures or {}
+        self.status = status or {}      # URL → HTTP ステータス（400 以上なら本物の Fetcher と同じ「HTTP 404: URL」で失敗する）
         self.render_calls: list[tuple[str, str | None]] = []
 
     def get(self, url: str, encoding: str | None = None) -> Page:
+        if self.status.get(url, 200) >= 400:
+            raise FetchError(f"HTTP {self.status[url]}: {url}")
         if url not in self.pages:
             raise FetchError(f"FakeFetcher に無い URL: {url}")
         body = self.pages[url]

@@ -1,12 +1,15 @@
 # 長野県動物愛護センター（ハローアニマル）譲渡猫: single_page。
-# 「飼い主募集中の猫の詳細」h2 の後、猫が複数頭ぶん h3(管理番号)+<p>(写真/種類/性別/生年月/備考) が
-# 1つの <div class="section"> にフラットに並ぶ（h3 で区切られた範囲という概念が無い）。
-# rows エンジンは行=1タグの子孫しか読めないため、h3 起点では隣接pの属性が取れない。
-# 写真は1頭1枚・出現順が管理番号と一致するので、写真を持つ<p>を行にして「頭数と写真」だけ正確に取る。
-# 性別・年齢・備考は構造上このレシピでは取得できない（下の 2026-10-04 のコメント参照）。
-rows: "p:has(img)"
+# 「飼い主募集中の猫の詳細」h2 の後、猫が複数頭ぶん h3.section（管理番号）→ p 写真 → p 種類： → p 性別： → p 生年月： → p 備考：
+# が 1 つの div.section にフラットに並ぶ。h3 を 1 頭の始まりにし、row_until で次の h3（または h2）までをまとめる（T517。
+# 以前は「写真を持つ p」を行にして頭数と写真だけ取っていた）。
+# 管理番号は始まりの h3 自身（selector: h3。from: heading にすると前の子の番号になるので使わない）。
+# 備考は文中に空白が入ることがあるので、label でなく regex で行末まで取る。
+rows: "div.section > h3"
+row_until: "h2, h3"
 image: "img@src"
-# 2026-10-04: 管理番号は行（写真の p）より前の直近の h3 から取れる（from: heading）。
-# 種類・性別・生年月・備考は写真の p の「後ろの兄弟 p」にあり、今のエンジンでは行の外なので取れない（engine_needs）。
 fields:
-  management_no: {from: heading, selector: "h3", regex: "(\\d{4}-\\d+)"}
+  management_no: {selector: "h3", regex: "(\\d{4}-\\d+)"}
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  age: {label: "生年月"}
+  note: {selector: "p:-soup-contains('備考')", regex: "備考[:：]\\s*(.+)"}

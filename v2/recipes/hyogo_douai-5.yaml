@@ -1,4 +1,4 @@
-# 兵庫県動物愛護センター（センター＝本所）の収容動物 https://hyogo-douai.sakura.ne.jp/hogo1.html
+# 兵庫県動物愛護センター 淡路支所の収容動物 https://hyogo-douai.sakura.ne.jp/hogo5.html
 # 2026-10-05 T517: 一覧 shuuyou.html から follow_all で全 hogo*.html を辿っていたのを、支所ごとの slug に分けて url を各ページに固定した
 #   （hyogo_douai = hogo1 センター / -2 = hogo2 三木 / -3 = hogo3 龍野 / -4 = hogo4 但馬 / -5 = hogo5 淡路。レシピは支所ごとに同じ形で 1 枚ずつ）。
 #   どの支所に誰がいるか・どの支所の表が壊れたかが分かる。一覧の表（#sp-table-7）の <a> は収容が無い日も付いていて（2026-10-05: 龍野・淡路の犬にリンクがあるが両ページとも表は無い）、

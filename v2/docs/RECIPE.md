@@ -12,6 +12,7 @@ image: "img@src"               # 行の中の写真（省略時は img@src）
 # image: {selector: "p.imagecenter img@src", scope: prev_siblings}   # 写真が行の外（直前の兄弟要素）にあるとき。前の行（同じタグ）まで遡り文書順で先の 1 枚
 # image: {selector: "img@src", scope: self_or_prev_siblings}        # 行の中を先に探し、無ければ prev_siblings と同じ範囲（ページによって写真が表の中だったり外だったりするとき。岐阜県）
 # image: {selector: "p.imageright img@src", scope: prev_siblings, stop_at: row}   # 遡りを「同じタグ名」でなく「前の行（rows に当たる要素）」で止める（行も写真も p のとき。岩手県）
+# image: {selector: "p.imagecenter img@src", scope: next_siblings}   # 写真が行の後ろ（直後の兄弟要素）にあるとき。prev_siblings と対称（名古屋市 譲渡猫）。self_or_next_siblings もある
 fields:
   name: "td:nth-of-type(2)"
   sex:  "td:nth-of-type(3)"
@@ -34,6 +35,18 @@ steps:
 ```
 
 `follow` 系の値は `セレクタ@属性`。`@属性` を省くと `@href`。
+
+`follow_all` と `pdf_links` に `skip_errors: true` を付けると、子が「ページが無い」（HTTP 404・410）ときはその 1 本だけ捨てて続ける（一覧に消えた個別ページへのリンクが残る群馬県・岐阜県）。捨てた子は `collector show` の trace（`skip <URL>: <理由>`）と report.json の `skipped` に残る。
+
+```yaml
+steps:
+  - follow_all: "div.detail_free a[href*='/page/']@href"
+    skip_errors: true
+```
+
+- サーバーエラー・接続失敗・robots 拒否は捨てない（一時的なことが多く、黙って頭数を減らすより読めなかったと通知する方がよい）
+- 辿ろうとした子が全部失敗した日は従来どおり失敗（全部 404 の日を 0 頭にしない）。リンクが 1 本も無い日は文書 0 で続き、0 頭かどうかは empty_text / empty_selector で決まる
+- 404 の URL を `:not([href=...])` で固定除外しない（ページが戻っても読めなくなる。岐阜県の揖斐センターは 2026-10-05 に戻っていた）。動物でない導線（「一覧へ戻る」等）の除外は従来どおりセレクタで
 
 一覧が API 応答にしか無く `<a href>` が無い SPA（愛知わんにゃんナビ = Bubble）は `render_json`。入口を描画しながら `match` を含む URL の JSON 応答を捕まえ、`path` の値を `follow` の `{value}` に差し込んで個体ページを（既定では描画して）辿る:
 
@@ -60,6 +73,30 @@ row_filter:
   field_has_any: {name: ["探しています"]} # field_lacks の逆。取った項目にこの語が 1 つも無い行は捨てる（同じ一覧から一部だけを別 slug で拾う。旭川市の「探してます」）
 ```
 
+## 1 頭分が兄弟要素に分かれているページ（`row_until`）
+
+「h2（管理番号）→ p（写真）→ p（種類：…）→ p（性別：…）」のように、1 頭を包む要素が無く兄弟要素が平らに並ぶページ（鹿児島市・大分市・千葉市・長野県 等）。`rows` に当たった要素を 1 頭の始まりとし、後ろの兄弟要素を次のどれかの手前までまとめて 1 行にする。
+
+- 次の始まり（`rows` に当たる要素）か、それを中に含む要素（さいたま市: 2 頭目だけ div に包まれている）
+- `row_until` に当たる要素（節や掲載日の見出しなど、1 頭分でない区切り）
+
+```yaml
+rows: "#tmp_contents > h2"     # 1 頭の始まり。row_filter はまとめた行の全文に効くので本文の範囲に絞る
+row_until: "h2"                # 区切り。次の始まりで止めるだけなら rows と同じでよい（まとめを有効にするのに必要）
+fields:
+  management_no: {selector: "h2", regex: "No\\.?\\s*(\\d+)"}   # 自分の見出しは selector で（下の注意）
+  sex: {label: "性別"}
+image: "img@src"               # まとめた行の中の 1 枚目
+```
+
+- まとめた行は元の要素を複製した div。`fields`・`image`・`row_filter` はその中を探す。`from: heading` と `image` の `prev_siblings` / `next_siblings` は、元の文書上の始まりの要素を基準にする
+- 始まりの要素が見出しそのもの（`rows: h2` 等）のとき、`from: heading` は「前の子の見出し」を指す。自分の見出しは `selector` で取る
+- 始まりの候補に動物でないもの（先頭の注意書き・区切りだけの div・空の雛形）が混ざるときは `text_has_any`（保護日・管理番号 等）や `text_lacks` で落とす
+- 1 頭ごとに区切りの h3 を包む div が前に付くページは、その div を始まりにする（川崎市 その他動物: `rows: "div.main_naka_kiji div:has(> h3)"`、`row_until: "div:has(> h2)"`）。写真が表の前でも後ろでも同じ子に付く。同じ CMS でも包みの無いページ（川崎市 収容犬は h3 が本文の div の直下に並ぶ）では本文全体が 1 行になり 2 頭目以降が消えるので、動物が載った日の実物で確かめてから使う
+- 始まりの間にある裸の文字（`<h3>No.1</h3>種類：柴<br>…`）もまとめた行に入る。区切りが兄弟の中にある（`<div><h2>お家が決まりました</h2>…</div>`）ときも、その兄弟の手前で止まる
+- 最後の子は、区切りが無ければ親要素の終わりまでをまとめる。後ろにバナー等の画像があるページでは、写真の無い最後の子がそれを拾わないよう `image` の selector か `exclude` で絞る
+- 1 枚目が文字入りのポスターのときは `image: {selector: "img@src", exclude: ["maigo_pos"]}` のように外す（越谷市）
+
 ## 項目（`fields`）
 
 値は次のどれか。
@@ -78,6 +115,11 @@ fields:
 
 使える項目名: `name` `sex` `age` `breed` `color` `size` `management_no` `shelter_date` `note` `species` `detail`（個体ページの URL）`location`（同じページに複数センターが混ざるときだけ）。
 
+- `label` の値は、見出しセル（th・td・dt）の隣の td・dd。値が label の文字を含んでも取る（「保健所」→「菊池保健所」）。隣のセルが見出しに見えるとき（th・dt で label を含む・label そのもの・中に「備考: …」とある・見出しも隣も td で隣が label で始まる）だけ捨て、次の行の同じ列 → 表の先頭行 → 「label：値」の順に探す
+- 「label：値」の書き方から取るときは最初の空白までの 1 語になる。文中に空白が入る項目（特徴・備考）は `note: {selector: "p:-soup-contains('特徴')", regex: "特徴[:：]\\s*(.+)"}` のように regex で行末まで取る
+- 項目の値（selector・label・from: heading の文字と、regex を当てる全文）は、span・a・b・strong・font などインライン要素の境目に空白を入れない（佐世保市 `<span>令</span>和8年…` →「令和8年…」）。セル・p・div・li・見出し・br・img の境目と元の HTML の空白は従来どおり空白 1 つ
+- row_filter・種別の `from: text`・empty_text は、従来どおり全部の境目に空白を入れた文字で照合する（`<span>0</span>匹` は「0 匹」。福島県の text_lacks はこれに頼っている）
+
 ## 種別（犬か猫か）
 
 台帳の `species` が `dog` か `cat` ならそれを使う。`mixed` のページはレシピで決める。
@@ -88,7 +130,11 @@ species:
   selector: "h3"                # heading: 行より前にある直近の見出し
   # from: field なら fields.species の値、from: text なら行のテキスト全体、from: url なら文書の URL（dog.pdf / cat.pdf で分かれるとき）
   map: {"犬": dog, "猫": cat, "ねこ": cat, "イヌ": dog}   # 部分一致。どれにも当たらなければ other
+  # allow_other: true           # 犬猫以外も other で載せる（無ければ台帳 mixed のページでは「犬か猫か分からない」で捨てる）
+  # infer: true                 # 下記
 ```
+
+動物種の欄が無く犬猫が混ざる表（山口県 周南）は `infer: true`。`map` で決まらない行に限り、`breed`・`color` の欄に犬だけ・猫だけに使う語（柴・チワワ・プードル・テリア… / キジ・サバトラ・三毛・ハチワレ・シャム…。エンジンが持つ表）があればそれで決める。両方当たる行・どちらも無い行は決めず、従来どおり捨てる。雑種・MIX・茶トラ・サビ・大きさ（小・中・大）は犬猫どちらにも使われるので見ない。保護場所や備考も見ない（「柴田町」で犬にしない）。既定値（全部犬 等）を `map` に置くと猫を犬と誤表示するので使わない。
 
 ## 動物とみなす条件（自動・レシピに書かない）
 
@@ -120,6 +166,12 @@ empty_text: ["現在いません", "現在収容している犬はいません"]
 **常に出ている説明文（「下の欄に情報がない場合は…」「写真をクリックすると…」など）を empty_text にしない**。構造が変わって行が取れなくなった日も「0 頭」に見えて通知が来なくなる。0 頭の日にだけ出る文言を選ぶ。
 恒常的に 0 頭でリンクだけ出したいページ（動物が SNS に移った等）は、台帳で `mode: link_only` にする。
 
+0 頭の日に文言を出さず、一覧の器が空になるだけのサイトは `empty_selector`（文字列か列）。合う要素があり、合った要素がすべて空（子要素も文字も無い。空白とコメントは無視）なら 0 頭。器が無い日（構造が変わった日）や、器に中身があるのに行が取れない日は「読めなかった」で通知に載る。empty_text と併用でき、どちらかが当たれば 0 頭。常に出ている見出しを empty_text に入れて代用しない。
+
+```yaml
+empty_selector: "div.dog-cat-list"     # 豊橋市あいくる。福岡県動物愛護センターは "div.animals-list ul"
+```
+
 ## 文字コード・その他
 
 ```yaml
@@ -127,6 +179,24 @@ encoding: euc-jp          # 自動判定で化けるときだけ
 max_pages: 30             # paginate の上限
 base_url: https://…       # 相対 URL の基準を変えたいとき（通常不要）
 ```
+
+## 取得の失敗と取り直し（エンジンの既定・レシピに書かない）
+
+- 同じホストへの要求は 1 秒あける
+- 確立した接続をサーバーが閉じた・切ったとき（RemoteProtocolError「Server disconnected without sending a response」・ReadError・WriteError）だけ、2 秒、次に 5 秒待って新しい接続で 2 回まで取り直す。熊本県動物愛護センターは Keep-Alive の timeout が 1 秒でこの間隔とほぼ同じため、空いた接続を使い回した瞬間に閉じられることがある
+- 接続失敗（DNS 不達・回線断）・タイムアウト・HTTP 4xx/5xx は取り直さず、その slug は failed（回線断の日を長引かせない。その日は読めないページが 2 割を超え、latest.json は前日のまま）
+- render（Playwright）は取り直さない（Chromium が自分で処理する）
+
+## 1 つのページに区分が混ざるとき（slug を分ける）
+
+台帳の kind は slug に 1 つ。1 ページに迷子（stray）と譲渡（adoption）が混ざるときは、節ごとに slug を分ける（岩手県 大船渡・一関）。
+
+- 同じ url の slug を 2 つ作り、rows を節の見出しで絞る（`h2:-soup-contains('【譲渡】') + p.imagecenter + p`）
+- 元の slug は載っている子が多い側に残す（ID は slug ごとに決まるので、新しい slug の子は ID が新しくなる）
+- `image` に `scope: prev_siblings, stop_at: row` を使うときは、image の selector も節の見出しで絞る。stop_at: row は「この slug の rows」で止まるので、別の節の行が rows に無いと遡りが別の節まで届く
+- 0 頭の文言は節ごとに empty_text に入れる
+- 索引から別ページに分かれるとき（一関）は、台帳 url は索引のまま、follow_all のリンク文言を slug ごとに絞る
+- 支所ごとにページが分かれるとき（兵庫県動物愛護センター）は、一覧からの follow_all をやめ、支所ごとに url を固定した slug にする
 
 ## PDF 方式
 

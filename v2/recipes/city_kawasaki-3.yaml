@@ -1,10 +1,17 @@
 # 川崎市（収容その他動物） https://www.city.kawasaki.jp/350/page/0000074729.html
-# city_kawasaki-1/-2 と同一テンプレート（1 頭 = table.px550 1 つ）。
+# city_kawasaki-1/-2 と同一テンプレート。1 頭 = h3「=====」だけの div（区切り）→ 写真の div.mol_imageblock ×1〜2 →
+# 表の div.mol_tableblock（table。キャプションが管理番号）。写真は表の外の兄弟 div にある。
+# 区切りの div（直下に h3 を持つ div）を 1 頭の始まりにし、次の区切りまでをまとめて 1 行にする（T517）。
+# 区切りは動物の間と末尾に 1 つずつあるので、末尾の区切りだけの塊は row_filter（管理番号が無い）で落ちる。
+# row_until は区切りより大きい見出しの div（h2）。
 # 犬猫以外（鳥類など）のページなので「動物名」（オカメインコ 等）を breed として扱い、
 # species は行テキストに「犬」「猫」を含むかどうかで判定（含まなければ other）。
-rows: "div.main_naka_kiji table"
+rows: "div.main_naka_kiji div:has(> h3)"
+row_until: "div:has(> h2)"
 row_filter:
+  text_has_any: ["管理番号"]
   field_lacks: {note: ["死亡"]}   # 備考「収容時死亡」「収容後死亡」の子は捨てる（2026-10-02 監査）
+image: "img@src"
 fields:
   management_no: {label: "管理番号"}
   location: {label: "収容場所"}
@@ -18,6 +25,7 @@ species:
   map: {"犬": dog, "猫": cat}
   allow_other: true
 empty_text:
+  - "収容（保護）されているその他のどうぶつはいません"   # 0 頭の日の実際の文言（2026-10-05 15 時台に確認）
   - "収容（保護）されている動物はいません"
   - "収容している動物はいません"
   - "収容情報はありません"

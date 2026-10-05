@@ -12,15 +12,17 @@ import unicodedata
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, Iterator, TypeVar
 from urllib.parse import urljoin
 
 import yaml
-from bs4 import BeautifulSoup, Tag, XMLParsedAsHTMLWarning
+from bs4 import BeautifulSoup, CData, NavigableString, PageElement, Tag, XMLParsedAsHTMLWarning
 
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)   # RSS を HTML として読むレシピがある
 
-from .fetch import Fetcher
+from .fetch import FetchError, Fetcher, page_gone
+
+T = TypeVar("T")
 
 _JUNK_IMAGE = re.compile(
     r"(icon|btn|button|logo|spacer|arrow|new_win|blank|banner|bnr|/common/|/design/|/img/parts|"
@@ -50,6 +52,7 @@ class Recipe:
     fields: dict[str, Any] = field(default_factory=dict)
     species: dict[str, Any] = field(default_factory=dict)
     empty_text: list[str] = field(default_factory=list)
+    empty_selector: list[str] = field(default_factory=list)   # 0 頭の日に空になる一覧の器（文言が出ないサイト用）。extract.build で照合
     encoding: str | None = None
     max_pages: int = 20
     base_url: str | None = None
@@ -58,13 +61,15 @@ class Recipe:
     notes: str | None = None
     url: str | None = None          # 台帳の URL の代わりに開く入口（省略時は台帳の URL）
     transpose: str | None = None    # 転置表（1 列 = 1 頭）の table セレクタ。指定時は rows の代わりに列を行にする
+    row_until: str | None = None    # 指定時は rows の要素を 1 頭の始まりとし、後ろの兄弟要素を次の始まりかこの要素の手前までまとめて 1 行にする
     source_url: str | None = None   # PDF の子の元ページリンク。既定は入口ページ（日次で差し替わる PDF は翌日 404 になる）。"doc" で PDF そのもの
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> Recipe:
         known = {k: v for k, v in raw.items() if k in cls.__dataclass_fields__}
-        if isinstance(known.get("empty_text"), str):
-            known["empty_text"] = [known["empty_text"]]
+        for key in ("empty_text", "empty_selector"):
+            if isinstance(known.get(key), str):
+                known[key] = [known[key]]
         return cls(**known)
 
     @classmethod
@@ -125,13 +130,76 @@ class Row:
     el: Tag | None = None                   # HTML の行
     cells: dict[str, str] | None = None     # PDF 表の行（見出し名 → 値、"0","1".. も入れる）
     chunk: str | None = None                # PDF テキストの 1 頭分
+    anchor: Tag | None = None               # row_until でまとめた行の、元の文書上の始まりの要素（el は複製なので位置を持たない）
+
+    @property
+    def origin(self) -> Tag | None:
+        """文書上の位置の基準（from: heading・prev/next_siblings 用）。まとめた行は元の始まりの要素。"""
+        return self.anchor if self.anchor is not None else self.el
 
     def text(self) -> str:
+        """行の全文（row_filter・種別・捨てた理由の表示に使う）。要素の境目は全部空白。"""
         if self.el is not None:
             return self.el.get_text(" ", strip=True)
         if self.cells is not None:
             return " ".join(v for k, v in self.cells.items() if not k.isdigit())
         return self.chunk or ""
+
+    def field_text(self) -> str:
+        """項目の regex を当てる全文。インライン要素の境目は詰める（visible_text）。
+
+        text() は変えない: row_filter の text_lacks が「<span>0</span>匹」の境目の空白込みの文言
+        （福島県「0 匹の情報があります」）で書かれているため。
+        """
+        if self.el is not None:
+            return visible_text(self.el)
+        return self.text()
+
+
+# --- 文字の連結 ---------------------------------------------------------------
+# 見た目で文字が続くインライン要素。この境目には空白を入れない（佐世保市「<span>令</span>和8年…」）
+_INLINE_TAGS = frozenset({
+    "a", "abbr", "b", "bdi", "bdo", "big", "cite", "code", "data", "del", "dfn", "em", "font", "i", "ins", "kbd",
+    "label", "mark", "nobr", "q", "rb", "ruby", "s", "samp", "small", "span", "strike", "strong", "sub", "sup",
+    "time", "tt", "u", "var", "wbr",
+})
+
+
+def visible_text(el: Tag) -> str:
+    """要素の文字。get_text(" ", strip=True) と同じだが、インライン要素の境目には空白を入れない。
+
+    ブロック要素（td・th・li・p・div・dt・dd・h1-6 等）・br・img の境目と、元の HTML にある空白は
+    今まで通り空白 1 つ（「犬」「オス」が別のセルなら「犬 オス」のまま）。文字列ごとの前後の空白は落とす。
+    """
+    parts: list[str] = []
+    gap = False     # 次の文字列との間に空白を入れるか
+    # 再帰でなく明示のスタックで回す（閉じ忘れの strong が数百段重なるページで RecursionError にしない。千葉県で 52 段の実例）。
+    # 要素は (子の反復子, ブロック要素か)。ブロック要素に入るときと出るときに空白を入れる
+    stack: list[tuple[Iterator[PageElement], bool]] = [(iter(el.children), False)]
+    while stack:
+        it, block = stack[-1]
+        c = next(it, None)
+        if c is None:
+            stack.pop()
+            if block:
+                gap = True
+            continue
+        if isinstance(c, Tag):
+            inline = c.name in _INLINE_TAGS
+            if not inline:
+                gap = True
+            stack.append((iter(c.children), not inline))
+        elif type(c) in (NavigableString, CData):     # get_text と同じく注釈・script 等は除く
+            s = str(c)
+            t = s.strip()
+            if not t:
+                gap = gap or bool(s)
+                continue
+            if parts:
+                parts.append(" " if gap or s[0] != t[0] else "")
+            parts.append(t)
+            gap = s[-1] != t[-1]
+    return "".join(parts)
 
 
 # --- セレクタ -----------------------------------------------------------------
@@ -145,7 +213,7 @@ def parse_sel(spec: str) -> tuple[str, str]:
 
 def _attr(el: Tag, attr: str) -> str | None:
     if attr == "text":
-        return el.get_text(" ", strip=True)
+        return visible_text(el)
     v = el.get(attr)
     if isinstance(v, list):
         v = " ".join(v)
@@ -239,6 +307,8 @@ class Executor:
         elif "follow_all" in step:
             sel, attr = parse_sel(step["follow_all"])
             limit = int(step.get("max", 200))
+            tried = 0
+            failed: list[str] = []
             for d in docs:
                 seen: set[str] = set()
                 for el in d.soup.select(sel) if d.soup else []:
@@ -249,8 +319,12 @@ class Executor:
                     if url in seen or len(seen) >= limit:
                         continue
                     seen.add(url)
-                    out.append(self._get(url, render=step.get("rendered", False)))
+                    tried += 1
+                    doc = self._child(step, url, failed, lambda u=url: self._get(u, render=step.get("rendered", False)))
+                    if doc is not None:
+                        out.append(doc)
                 self.trace.append(f"follow_all → {len(seen)} 件 ({d.url})")
+            self._raise_if_all_failed("follow_all", tried, failed)
         elif "paginate" in step:
             sel, attr = parse_sel(step["paginate"])
             limit = int(step.get("max", self.recipe.max_pages))
@@ -273,6 +347,8 @@ class Executor:
         elif "pdf_links" in step:
             sel, attr = parse_sel(step["pdf_links"])
             limit = int(step.get("max", 50))
+            tried = 0
+            failed = []
             for d in docs:
                 seen = set()
                 for el in d.soup.select(sel) if d.soup else []:
@@ -283,9 +359,12 @@ class Executor:
                     if url in seen or len(seen) >= limit:
                         continue
                     seen.add(url)
-                    page = self.fetcher.get(url)
-                    out.append(_make_pdf_doc(page.final_url, page.content, columns=self._pdf_columns()))
+                    tried += 1
+                    page = self._child(step, url, failed, lambda u=url: self.fetcher.get(u))
+                    if page is not None:
+                        out.append(_make_pdf_doc(page.final_url, page.content, columns=self._pdf_columns()))
                 self.trace.append(f"pdf_links → {len(seen)} 件")
+            self._raise_if_all_failed("pdf_links", tried, failed)
         elif "render_json" in step:
             # 描画中に捕まえた JSON 応答（match の URL）から path の値を抜き、follow の {value} に差し込んで辿る。
             # 一覧が API 応答にしか無く <a href> が無い SPA（愛知わんにゃんナビ = Bubble）用
@@ -306,6 +385,26 @@ class Executor:
         else:
             raise RecipeError(f"未知の step: {step}")
         return out
+
+    def _child(self, step: dict[str, Any], url: str, failed: list[str], fetch: Callable[[], T]) -> T | None:
+        """follow_all / pdf_links の子 1 本を取る。step に skip_errors: true があり、失敗が「ページが無い」
+        （HTTP 404・410）なら、その 1 本だけ捨てて trace に残し、None を返す（群馬県・岐阜県: 一覧に
+        消えた個別ページへのリンクが残り、1 本の 404 で slug 全体が落ちていた）。サーバーエラー・接続失敗は
+        一時的なことが多く、黙って頭数を減らすより読めなかったと通知する方がよいので、従来どおり失敗にする。"""
+        try:
+            return fetch()
+        except FetchError as e:
+            if not step.get("skip_errors") or not page_gone(e):
+                raise
+            failed.append(f"{url}: {e}")
+            self.trace.append(f"skip {url}: {e}")
+            return None
+
+    @staticmethod
+    def _raise_if_all_failed(kind: str, tried: int, failed: list[str]) -> None:
+        """skip_errors で捨てた結果、辿ろうとした子が全部失敗していたら従来どおり失敗にする（全部 404 の日を 0 頭扱いにしない）。"""
+        if tried and len(failed) == tried:
+            raise FetchError(f"{kind}: 辿った {tried} 本がすべて取得に失敗（{failed[0]}）")
 
 
 def _json_values(obj: Any, path: str) -> list[Any]:
@@ -335,6 +434,8 @@ def extract_rows(recipe: Recipe, doc: Doc) -> list[Row]:
     assert doc.soup is not None
     if recipe.transpose:
         rows = _transposed_rows(recipe, doc)
+    elif recipe.row_until:
+        rows = _grouped_rows(recipe, doc)
     else:
         rows = [Row(doc=doc, el=el) for el in doc.soup.select(recipe.rows)]
     return _filter_rows(recipe, rows)
@@ -366,6 +467,37 @@ def _transposed_rows(recipe: Recipe, doc: Doc) -> list[Row]:
                 elif len(cells) == 1:
                     holder.append(copy.copy(cells[0]))
             rows.append(Row(doc=doc, el=holder))
+    return rows
+
+
+def _grouped_rows(recipe: Recipe, doc: Doc) -> list[Row]:
+    """1 頭分がフラットな兄弟要素に分かれているページ（鹿児島市: h2 番号 → p 写真 → p 種類 …）。
+
+    rows に当たった要素を 1 頭の始まりとし、後ろの兄弟要素を「次の始まり（またはそれを中に含む要素）」か
+    「row_until に当たる要素」の手前までまとめ、複製を入れた div を行にする（_transposed_rows と同じ作り）。
+    fields・image・row_filter はこの div の中を探す。元の位置は Row.anchor に持たせる。
+    """
+    import copy
+
+    if doc.soup is None:
+        return []
+    starts = doc.soup.select(recipe.rows)
+    start_ids = {id(s) for s in starts}
+    rows: list[Row] = []
+    for start in starts:
+        holder = BeautifulSoup("", "lxml").new_tag("div", attrs={"class": "grouped"})
+        holder.append(copy.copy(start))
+        for sib in start.next_siblings:
+            if not isinstance(sib, Tag):
+                if type(sib) is NavigableString:
+                    holder.append(NavigableString(str(sib)))   # 始まりの間の裸の文字（「<h3>No.1</h3>種類：柴<br>…」）
+                continue
+            if id(sib) in start_ids or any(id(d) in start_ids for d in sib.find_all(True)):
+                break      # 次の子の始まり（さいたま市: 2 頭目だけ div に包まれている）
+            if sib.css.match(recipe.row_until or "") or sib.select_one(recipe.row_until or "") is not None:
+                break      # 区切り（大分市: 「お家がみつかりました」の h2、千葉市: 掲載日の h2）。兄弟の中にあっても止める
+            holder.append(copy.copy(sib))
+        rows.append(Row(doc=doc, el=holder, anchor=start))
     return rows
 
 
@@ -424,24 +556,65 @@ def _pdf_rows(recipe: Recipe, doc: Doc) -> list[Row]:
 
 # --- fields -----------------------------------------------------------------
 def _text(t: Tag) -> str | None:
-    return t.get_text(" ", strip=True) or None
+    return visible_text(t) or None
+
+
+# 「性別：」のような項目名＋コロン（_label_value の最後の読み取り用）。数字（18:30）・英字（TEL:・https://）で始まるものは値
+_NEXT_LABEL = re.compile(r"(?![A-Za-zＡ-Ｚａ-ｚ])[^\s\d:：]{1,8}[:：]")
+_LABEL_PUNCT = " \t\r\n　:：・、。()（）[]［］【】「」<>＜＞*＊"
+
+
+def _looks_like_heading(head: Tag, cand: Tag, label: str) -> bool:
+    """label のセル head に対応する値の候補 cand が、値ではなく見出しに見えるか。
+
+    見出しが横に並ぶ表（td「収容日」｜td「収容場所」の次の行が値）では、label「収容」の隣は別の見出しなので
+    捨てて次の行を見る。この判定は以前「cand が label の文字を含めば捨てる」だったため、値が label を含むだけ
+    （label「保健所」の値「菊池保健所」、熊本県動愛）でも捨てていた。今は次のときだけ見出しとみなす:
+    - cand が th / dt（見出しのタグ）で label を含む
+    - cand の文字が label そのもの（「性別：」のように記号・空白を除くと label と同じ）
+    - cand の中に「label: …」と書かれている（値のセルの中に項目名つきで書く作り。従来どおり最後の読み取りに任せる）
+    - head も cand も td で、cand が label で始まる（「収容日｜収容場所」のように見出しが並ぶ行）
+    - head も cand も td で、どちらも label で終わり cand が短い（label「場所」の「保護場所｜収容場所」）
+    th → td、dt → dd の組は見出しと値がタグで分かれているので、label を含むだけの値は取る。
+    """
+    if label not in cand.get_text():
+        return False
+    text = cand.get_text("", strip=True)
+    if cand.name in ("th", "dt"):
+        return True
+    if text.strip(_LABEL_PUNCT) == label:
+        return True
+    if re.search(re.escape(label) + r"\s*[:：]", text):
+        return True     # セルの中に「備考: …」と書かれている（高知 kochi_apc）。最後の「label：値」の読み取りに任せる
+    if head.name == "td":
+        # 見出しが td で横に並ぶ行。候補が label で始まる（「収容日｜収容場所」）なら見出し。
+        # 見出しセルも候補も label で終わり（label「場所」に「保護場所」「収容場所」）、候補が短いときも見出し。
+        # 見出しセルが label そのもの（「保健所｜水俣保健所」）や、label が見出しの途中にある（岐阜「毛 色｜虎毛」の label「毛」）
+        # なら候補は値。捨てても次の行の同じ列を見るので、旧挙動より悪くはならない
+        if text.startswith(label):
+            return True
+        head_text = head.get_text("", strip=True).strip(_LABEL_PUNCT)
+        cand_text = text.strip(_LABEL_PUNCT)
+        return (head_text != label and head_text.endswith(label) and cand_text.endswith(label)
+                and len(cand_text) <= len(label) + 4)
+    return False
 
 
 def _label_value(el: Tag, label: str) -> str | None:
     """「性別」と書かれたセルに対応する値。
 
     対応順: aria-label 属性 → th/dt の隣の td/dd → 見出し行の同じ列（次の tr）→ 表の先頭行が見出し
-    → 「性別：メス」のようにテキスト内に書かれたもの。
+    → 「性別：メス」のようにテキスト内に書かれたもの。値が見出しに見えるとき（_looks_like_heading）は捨てて次を見る。
     """
     c = el.select_one(f'[aria-label*="{label}"]')
     if c is not None:
         return _text(c)
     for cell in el.find_all(["th", "td", "dt"]):
-        t = cell.get_text(" ", strip=True)
+        t = visible_text(cell)
         if label not in t or len(t) > len(label) + 12:
             continue
         sib = cell.find_next_sibling(["td", "dd"])
-        if sib is not None and label not in sib.get_text():
+        if sib is not None and not _looks_like_heading(cell, sib, label):
             return _text(sib)
         tr = cell.find_parent("tr")
         if tr is not None:
@@ -450,20 +623,24 @@ def _label_value(el: Tag, label: str) -> str | None:
             if cell in kids and nxt is not None:
                 idx = kids.index(cell)
                 cells = nxt.find_all(["th", "td"], recursive=False)
-                if idx < len(cells) and label not in cells[idx].get_text():
+                if idx < len(cells) and not _looks_like_heading(cell, cells[idx], label):
                     return _text(cells[idx])
     if el.name == "tr":
         table = el.find_parent("table")
         head = table.find("tr") if table else None
         if head is not None and head is not el:
-            heads = [c.get_text(" ", strip=True) for c in head.find_all(["th", "td"])]
+            heads = [visible_text(c) for c in head.find_all(["th", "td"])]
             for i, h in enumerate(heads):
                 if label in h:
                     cells = el.find_all(["td", "th"])
                     if i < len(cells):
                         return _text(cells[i])
-    m = re.search(re.escape(label) + r"\s*[:：]\s*([^\s　]+)", el.get_text(" ", strip=True))
-    return m.group(1) if m else None
+    m = re.search(re.escape(label) + r"\s*[:：]\s*([^\s　]+)", visible_text(el))
+    if m is None:
+        return None
+    # 値が空欄の項目（「毛色：」の次の行が「性別：不明」）では、次の項目を値として拾ってしまう。
+    # 別の項目名＋「：」に見える値は取らない（数字で始まる「18:30」は項目名ではないので取る）
+    return None if _NEXT_LABEL.match(m.group(1)) else m.group(1)
 
 
 def nearest_heading(el: Tag, selector: str) -> str | None:
@@ -483,7 +660,7 @@ def nearest_heading(el: Tag, selector: str) -> str | None:
             continue
         if order.get(id(c), -1) < pos:
             best = c
-    return best.get_text(" ", strip=True) if best is not None else None
+    return visible_text(best) if best is not None else None
 
 
 def field_value(spec: Any, row: Row) -> str | None:
@@ -492,10 +669,10 @@ def field_value(spec: Any, row: Row) -> str | None:
     if isinstance(spec, str):
         spec = {"selector": spec}
     val: str | None = None
-    base_text = row.text()
+    base_text = row.field_text()
     from_heading = spec.get("from") == "heading"   # 行より前の直近の見出しから取る（越谷の管理番号 h3、広島の整理番号 h2）
-    if from_heading and row.el is not None:
-        val = nearest_heading(row.el, spec.get("selector", "h2, h3, h4"))
+    if from_heading and row.origin is not None:
+        val = nearest_heading(row.origin, spec.get("selector", "h2, h3, h4"))
     elif row.cells is not None:
         if "header" in spec:
             key = str(spec["header"]).replace(" ", "")
@@ -548,40 +725,48 @@ def image_url(recipe: Recipe, row: Row) -> tuple[str | None, str | None]:
         return None
 
     scope = spec.get("scope")
-    if scope == "self_or_prev_siblings":
-        # 行の中を先に探し、無ければ直前の兄弟要素（岐阜県: 保健所によって写真が表の中だったり、表の直前の p だったりする）
+    if scope in ("self_or_prev_siblings", "self_or_next_siblings"):
+        # 行の中を先に探し、無ければ兄弟要素（岐阜県: 保健所によって写真が表の中だったり、表の直前の p だったりする）
         hit = pick(row.el)
         if hit:
             return hit
     root: Tag = row.el
-    if scope in ("prev_siblings", "self_or_prev_siblings"):
-        # 写真が行の外（直前の兄弟要素）にあるとき（広島市: h2 → p.imagecenter img → dl）。
-        # 前の行（同じタグ名の兄弟）に当たるまで遡り、文書順に並べ直して探す
-        import copy
-
-        holder = BeautifulSoup('<div class="prev-siblings"></div>', "lxml").div
-        assert holder is not None
-        sibs: list[Tag] = []
-        # stop_at: row なら「前の行（rows に当たる要素）」で止める（岩手県: 行も写真も p なので同じタグ名で止めると写真の p で止まる）。
-        # 既定は同じタグ名の兄弟で止める（広島市・明石・岐阜はこれで正しい）
-        stop_at_row = spec.get("stop_at") == "row" and isinstance(recipe.rows, str)
-        for sib in row.el.find_previous_siblings():
-            if not isinstance(sib, Tag):
-                continue
-            if stop_at_row:
-                try:
-                    if sib.css.match(recipe.rows):
-                        break
-                except Exception:  # noqa: BLE001 — 解釈できないセレクタは既定の止め方に戻す
-                    if sib.name == row.el.name:
-                        break
-            elif sib.name == row.el.name:
-                break
-            sibs.append(sib)
-        for sib in reversed(sibs):
-            holder.append(copy.copy(sib))
-        root = holder
+    if scope in ("prev_siblings", "self_or_prev_siblings", "next_siblings", "self_or_next_siblings"):
+        # 写真が行の外の兄弟要素にあるとき。prev は直前（広島市: h2 → p.imagecenter img → dl）、
+        # next は直後（名古屋市 譲渡猫: h2 → p.imagecenter img）。次／前の行に当たるまで進み、文書順に並べて探す
+        root = _sibling_holder(recipe, spec, row.origin or root, forward=scope.endswith("next_siblings"))
     return pick(root) or (None, None)
+
+
+def _sibling_holder(recipe: Recipe, spec: dict[str, Any], base: Tag, forward: bool) -> Tag:
+    """base の前（forward なら後ろ）の兄弟要素を、前／次の行に当たる手前まで集め、文書順に複製した div。
+
+    既定は base と同じタグ名の兄弟で止める（広島市・明石・岐阜）。stop_at: row なら「rows に当たる要素」で止める
+    （岩手県: 行も写真も p なので、同じタグ名で止めると写真の p で止まる）。
+    まとめた行（row_until）では base は元の始まりの要素。
+    """
+    import copy
+
+    holder = BeautifulSoup("", "lxml").new_tag("div", attrs={"class": "next-siblings" if forward else "prev-siblings"})
+    sibs: list[Tag] = []
+    stop_at_row = spec.get("stop_at") == "row" and isinstance(recipe.rows, str)
+    walk = base.find_next_siblings() if forward else base.find_previous_siblings()
+    for sib in walk:
+        if not isinstance(sib, Tag):
+            continue
+        if stop_at_row:
+            try:
+                if sib.css.match(recipe.rows):
+                    break
+            except Exception:  # noqa: BLE001 — 解釈できないセレクタは既定の止め方に戻す
+                if sib.name == base.name:
+                    break
+        elif sib.name == base.name:
+            break
+        sibs.append(sib)
+    for sib in (sibs if forward else reversed(sibs)):
+        holder.append(copy.copy(sib))
+    return holder
 
 
 def looks_like_date(s: str | None) -> bool:
