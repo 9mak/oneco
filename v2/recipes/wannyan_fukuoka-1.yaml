@@ -1,4 +1,5 @@
 # 福岡市 わんにゃんよかネット（東部動物愛護管理センター）収容犬
+# 2026-10-05 監査: 状況「返還済」の子と、その他特徴に「死亡」とある子（猫 3 頭は全員）を row_filter で外す。
 # 一覧は静的 HTML の table.search_box だが、データ行の <tr> 開始タグが無い壊れた HTML で td が table 直下に並ぶため一覧からは 1 頭ずつ切れない。
 # 「詳細」リンク（td.detail a → /animal_posts/detail/{id}）を全部辿り、個体ページの table.search_text_box（th/td 縦並び: 管理番号・収容日・区・場所・品種・毛色・性別・体格・年齢・その他特徴・写真）を 1 頭として読む。
 # 0 頭のとき follow_all は文書を 1 つも返さず empty_text を判定できないので、一覧ページ下部ナビの自分自身へのリンク（同じ URL なのでキャッシュで再取得なし）も辿って一覧ページを文書に残す。
@@ -8,6 +9,8 @@ steps:
 rows: "table.search_text_box"
 row_filter:
   text_has_any: ["管理番号"]
+  text_lacks: ["返還済"]          # 「状況 返還済」の子は飼い主に戻っているので載せない（2026-10-05 監査）
+  field_lacks: {note: ["死亡"]}   # 「その他特徴」に「10/3死亡」「事故で死亡」とある子は載せない（2026-10-05 監査）
 image: "img@src"
 fields:
   management_no: {label: "管理番号"}
