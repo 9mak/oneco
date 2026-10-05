@@ -1,11 +1,22 @@
-# 千葉市（市民保護犬）。#contents_editable に <h4>管理番号</h4><p><img></p>(任意)<p>保護日：...</p>
-# <p>保護場所：...</p><p>種類：...</p><p>毛色：...</p><p>性別：...</p><p>体格：...</p><p>特徴：...</p> が
-# 動物ごとに並ぶ（保護系＝ラベルごとに別々のp）。このエンジンの fields.label / image は row 要素の子孫しか
-# 見ないため、ラベルが兄弟pに分かれるこの構造では収容日・性別等・写真は取得不可（city_utsunomiya.yaml と同じ制約）。
-# row を h4 にし管理番号のみ取得する。
-# 2026-09-29時点0頭「現在情報はありません」（保護日：令和年月日 は数字の無いプレースホルダなので判定除外）。
-rows: "div#contents_editable h4"
+# 千葉市（市民保護犬）。city_chiba-5（市民保護猫）と同じ作り（T518）。
+# div#contents_editable の直下に h2（掲載日）→ h4（管理番号 B-5024）→ p 写真（無い子が多い）→ p 保護日： → p 保護場所： →
+# p 種類： → p 毛色： → p 性別： → p 体格： → p 特徴： が平らに並ぶ（Wayback 2025-09-06 の 5 頭で確認。2024-10 は掲載日が h3）。
+# h4 を 1 頭の始まりにし、row_until で次の掲載日の h2（次の h4 の手前でも自動で止まる）までをまとめる。
+# 特徴・毛色・種類は文中に空白が入ることがあるので、その p を指して regex で行末まで取る（city_chiba-5 と同じ）。
+# 0 頭の日は h2「現在情報はありません」の下に空の h4 と「保護日：令和年月日」の雛形が残る（2026-10-05）。雛形の h4 は行になるが、
+# 管理番号も数字の入った保護日も無いので捨てられ、empty_text で 0 頭になる。
+rows: "div#contents_editable > h4"
+row_until: "h2"
+row_filter:
+  text_has_any: ["保護日"]
 fields:
-  management_no: {selector: "."}
+  management_no: {selector: "h4"}
+  shelter_date: {label: "保護日"}
+  location: {label: "保護場所"}
+  breed: {selector: "p:-soup-contains('種類')", regex: "種類[:：]\\s*(.+)"}
+  color: {selector: "p:-soup-contains('毛色')", regex: "毛色[:：]\\s*(.+)"}
+  sex: {label: "性別"}
+  size: {label: "体格"}
+  note: {selector: "p:-soup-contains('特徴')", regex: "特徴[:：]\\s*(.+)"}
 empty_text:
   - "現在情報はありません"
