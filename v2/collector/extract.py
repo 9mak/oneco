@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urljoin
@@ -94,6 +95,24 @@ def infer_species(fields: dict[str, str | None]) -> str | None:
     return None
 
 
+# 掲載が終わったことを示す言い方（「返還期限」「〇〇で見つかりました」のような迷子の説明には当たらないものだけ）
+_CLOSED_LISTING = re.compile(r"返還(?:しました|済|することができました|されました)|飼い主(?:さん)?(?:が見つかり|の(?:元|もと)に戻り|に戻りました)"
+                             r"|(?:譲渡|飼い主)が決まりました|譲渡済")
+_DESCRIPTIVE = ("breed", "color", "sex", "age", "size", "location", "note")
+
+
+def _empty_or_closed(row: Row, f: dict[str, str | None], img_abs: str | None) -> bool:
+    """種別が決まらない行のうち、捨てるもの（T518 再レビュー F-10）。
+
+    種別が決まらない行は以前「犬か猫か分からない」で捨てていたので、動物でない行もそこで偶然落ちていた。種別なしで
+    載せるようにしたので、掲載が終わった行（山形「飼い主さんが見つかり、返還することができました」）と、写真が無く
+    項目も 2 つ未満の行（0 頭の雛形に番号だけ残ったもの。佐賀「保護動物（251118-1）現在保護中の動物はいません」）は捨てる。
+    """
+    if _CLOSED_LISTING.search(row.text()):
+        return True
+    return not img_abs and sum(bool(f.get(k)) for k in _DESCRIPTIVE) < 2
+
+
 def make_id(source: Source, image_raw: str | None, f: dict[str, str | None], detail: str | None = None) -> str:
     """写真 → 管理番号 → 個体ページの URL → 名前＋収容日 の順で決める。同じ子は翌日も同じ ID になる。"""
     if image_raw:
@@ -166,6 +185,9 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
             # フィルターやデータに格納する必要はない」）。allow_other のレシピは「map に当たらない＝犬猫以外」と言い切れる一覧なので other
             if species is None and recipe.species.get("allow_other"):
                 species = "other"
+            if species is None and _empty_or_closed(row, f, img_abs):
+                res.dropped.append(Dropped("種別が決まらず、掲載が終わった行か中身の無い行", row.text()[:80]))
+                continue
             # 元ページのリンク。PDF は日次で差し替わってファイル名が変わる（香川 r8-9-28.pdf、茨城 inu0924.pdf）ので
             # 既定では入口ページを指す。レシピに source_url: doc があれば PDF そのもの
             source_url = doc.url
