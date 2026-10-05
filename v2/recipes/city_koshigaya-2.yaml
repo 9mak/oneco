@@ -1,23 +1,29 @@
 # 越谷市（保護猫）: city_koshigaya-1（保護犬）と同一テンプレート。
 # 2026-10-05 監査: 動物の表（種類・性別・年齢・毛色・体格・備考）が取れていなかったのを、h3.partsstyle_h3（管理番号「R8-52」）を行の始まりにして
-# row_until で次の h3 か h2.partsstyle_h2 までを 1 頭分に束ね、場所の表と動物の表の両方を label で読むようにして解決した。
-# 構造: h3.partsstyle_h3（管理番号）→ 写真代わりの例示 img（yourei。実写真ではないので image は取らない）→
-# 「収容場所/収容日/収容期限」の場所テーブル → 「種類/性別/年齢/毛色/体格/備考」の動物テーブル（動物ごとに繰り返す）。
-# CMS のマークアップが壊れていて、データ行が <tbody> ではなく <thead> の 2 行目に入っている（label は次の行の同じ列で読める）。
+# row_until で次の節までを 1 頭分に束ね、場所の表と動物の表の両方を読むようにした。
+# 構造: h3.partsstyle_h3（管理番号）→ 写真か例示 img（yourei。実写真ではないので image は取らない）→
+# 「収容場所/収容日/収容期限」の場所テーブル → 「種類/性別/年齢/毛色/体格/備考」の動物テーブル（動物ごとに繰り返す。2023 年の作りは写真が表の後ろ）。
 # 0 頭時は本文に「現在、情報はありません。」と出る。
 
 rows: "div#tmp_honbun h3.partsstyle_h3"
-row_until: "h2.partsstyle_h2"
-image: {selector: "img@src", exclude: ["youreidoubutu"]}   # 実写真が無いと例示イラストが載る。取らない（取ると写真 URL が ID の元になり ID も変わる）
+# 区切り: 今の作りは h2.partsstyle_h2、2023〜2024 年の作りは div.h2bg（中に h2）。どちらでも次の節の手前で止める
+row_until: "h2.partsstyle_h2, div.h2bg"
+image: {selector: "img@src", exclude: ["youreidoubutu", "spacer.gif"]}   # 実写真が無いと例示イラストが載る。取らない（取ると写真 URL が ID の元になり ID も変わる）
+# 表の見出し行の書き方が日によって違う（2023: tbody の td、2024: thead の th と tbody の td、2026: thead に見出しと値の 2 行）。
+# label で読むと 2023 は隣の見出し「収容期限」を値に取り、2024 は値が取れない（Wayback で確認）。見出しの語を含まない行の n 列目を取る
 fields:
-  management_no: {selector: "h3.partsstyle_h3"}   # 自分の見出し「R8-51」。同日同所の子が同じ ID に潰れていた（2026-10-02 監査）
-  location: {label: "収容場所"}
-  shelter_date: {label: "収容日"}
-  breed: {label: "種類"}
-  sex: {label: "性別"}
-  age: {label: "年齢"}
-  color: {label: "毛色"}
-  size: {label: "体格"}
-  note: {label: "備考"}
+  # 自分の見出し「R8-51」。同日同所の子が同じ ID に潰れていた（2026-10-02 監査）。0 頭の日に残る雛形の見出し「000」は番号にしない
+  # （中身の無い 1 頭として載っていた。Wayback 2025-03-27）
+  management_no: {selector: "h3.partsstyle_h3", regex: "^(?!0+$)(\\S+)$"}
+  location: {selector: "table:-soup-contains('収容場所') tr:not(:-soup-contains('収容場所')) > td:nth-of-type(1)"}
+  shelter_date: {selector: "table:-soup-contains('収容場所') tr:not(:-soup-contains('収容場所')) > td:nth-of-type(2)"}
+  breed: {selector: "table:-soup-contains('種類') tr:not(:-soup-contains('種類')) > td:nth-of-type(1)"}
+  sex: {selector: "table:-soup-contains('種類') tr:not(:-soup-contains('種類')) > td:nth-of-type(2)"}
+  age: {selector: "table:-soup-contains('種類') tr:not(:-soup-contains('種類')) > td:nth-of-type(3)"}
+  color: {selector: "table:-soup-contains('種類') tr:not(:-soup-contains('種類')) > td:nth-of-type(4)"}
+  size: {selector: "table:-soup-contains('種類') tr:not(:-soup-contains('種類')) > td:nth-of-type(5)"}
+  note: {selector: "table:-soup-contains('種類') tr:not(:-soup-contains('種類')) > td:nth-of-type(6)"}
 empty_text:
   - "現在、情報はありません。"
+  - "情報：0頭"     # 見出し「保護・収容した犬の情報(情報：0頭)」。雛形だけが残る 0 頭の日
+  - "情報：０頭"
