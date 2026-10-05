@@ -12,8 +12,10 @@ rows: "div.wysiwyg_area p:-soup-contains('管理番号')"
 row_until: "h2"
 row_filter:
   text_lacks: ["収容日： "]
+# 写真の代わりの共通画像（alt「負傷」=「負傷動物のため写真の公開はありません」045_s.jpg、alt「作業」= 雛形の 093_s.jpg）は写真にしない。
+# 写真から ID を作るので、負傷の子が同じ日に 2 頭以上いると ID が衝突して 1 頭しか載らなかった（Wayback 2024-02 の R05-85〜87）。T521
 image:
-  selector: "img:not([alt*='作成用'])@src"
+  selector: "img:not([alt*='作成用']):not([alt='負傷']):not([alt='作業'])@src"
 fields:
   management_no: {regex: "管理番号\\s*([A-Za-z]?\\d+-\\d+)"}
   shelter_date: {label: "収容日"}
@@ -24,7 +26,10 @@ fields:
   size: {label: "体格"}
   age: {label: "推定年齢"}
   note: {label: "備考"}
-empty_text:
-  - "管理番号 R08-"
+empty_text:   # 0 頭の日も残る雛形カード「管理番号 R08-」（年度で変わる。Wayback 2025-02 は R06-）
+  - "管理番号 R06-"
   - "管理番号 R07-"
+  - "管理番号 R08-"
   - "管理番号 R09-"
+  - "管理番号 R10-"
+  - "管理番号 R11-"

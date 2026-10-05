@@ -63,6 +63,20 @@ def test_koshigaya_current_layout_two_rows_in_thead():
     assert res.animals[0]["image_url"] is None   # 例示イラスト（youreidoubutu）は写真にしない
 
 
+# --- さいたま市 保護猫（同じく Wayback で見つかったもの） -----------------------------------------------
+def test_saitama_injured_placeholder_is_not_a_photo_and_ids_do_not_collide():
+    # 負傷の 3 頭が同じ共通画像（「負傷動物のため写真の公開はありません」）。写真から ID を作ると衝突して 1 頭しか載らなかった
+    res = _run("city_saitama-2", "t521_saitama-2_wb20240226.html")
+    assert [a["management_no"] for a in res.animals] == ["R05-85", "R05-86", "R05-87"]
+    assert all(a["image_url"] is None for a in res.animals)
+    assert len({a["id"] for a in res.animals}) == 3
+
+
+def test_saitama_template_only_day_is_empty():
+    res = _run("city_saitama-2", "t521_saitama-2_wb20250209.html")   # 雛形カード「管理番号 R06-」だけ
+    assert res.animals == [] and res.empty_confirmed
+
+
 # --- header_row（見出し行の表）と label の候補 ----------------------------------------------------
 def _src() -> Source:
     return Source(slug="t", name="t", municipality="t", prefecture="埼玉県", url="https://x.jp/a/", kind="sheltered", species="cat")
