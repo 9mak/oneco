@@ -126,3 +126,33 @@ def test_chiba_6_three_animals_keep_their_own_photos():
     assert a09["location"] == "花見川区千種町付近"   # 保護日と保護場所の間に空の p があっても取る
     assert a16["size"] is None
     assert res.dropped == []
+
+
+# --- 公開前レビュー（10/5 19:40）F-01・F-02: Wayback の別の作りの日 --------------------------------------------
+# 2026-02-09 の迷子猫ページは h2「このページのご利用について」が雛形より前にあり、row_until の h2 で止まらない。
+# 写真を既定の img@src で探すと、雛形の行に子猫の育成ボランティアのバナー（konekobosyu.gif）が付いて偽の 1 頭になる。
+def test_chiba_2_empty_day_with_heading_first_is_not_a_fake_animal():
+    res = _run("city_chiba-2", _fixture("t518_chiba-2_wb20260209_empty.html"))
+    assert res.animals == []
+    assert res.empty_confirmed is True
+
+
+def test_chiba_2_last_animal_without_photo_gets_no_banner():
+    res = _run("city_chiba-2", _fixture("t518_chiba-2_wb20250911.html"))
+    by_no = {a["management_no"]: a for a in res.animals}
+    assert set(by_no) == {"25090901", "25090801"}
+    assert by_no["25090801"]["image_url"] is None                     # 元ページに写真が無い子
+    assert all("konekobosyu" not in (a["image_url"] or "") for a in res.animals)
+
+
+def test_chiba_2_fourth_animal_without_photo_gets_no_banner():
+    res = _run("city_chiba-2", _fixture("t518_chiba-2_wb20260417.html"))
+    by_no = {a["management_no"]: a for a in res.animals}
+    assert set(by_no) == {"26041501", "26041403", "26041402", "26041401"}
+    assert by_no["26041401"]["image_url"] is None
+    assert all("konekobosyu" not in (a["image_url"] or "") for a in res.animals)
+
+
+def test_chiba_1_empty_day_wording_of_2026_04():
+    res = _run("city_chiba-1", _fixture("t518_chiba-1_wb20260412_empty.html"))
+    assert res.animals == [] and res.empty_confirmed is True

@@ -5,6 +5,9 @@
 # Wayback 2025-09-11 の 0 頭の日は文言も雛形も無く、何も載らないだけだった（empty_text が当たらず「読めなかった」になる。T518 followups）。
 rows: "div#contents_editable > h4"
 row_until: "h2"
+# 写真は本文の p 直下の img だけ（a の中の img は子猫の育成ボランティア等のバナー。Wayback 27 ページで確認。
+# 既定の img@src だと、写真の無い最後の子や 0 頭の日の雛形にバナーが付く。2026-10-05 公開前レビュー）
+image: "p > img@src"
 row_filter:
   text_has_any: ["収容日"]
 fields:
@@ -18,3 +21,4 @@ fields:
   note: {selector: "p:-soup-contains('特徴')", regex: "特徴[:：]\\s*(.+)"}
 empty_text:
   - "現在迷い猫の情報はございません"
+  - "現在、対象となる動物はいません"
