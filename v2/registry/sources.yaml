@@ -1730,7 +1730,7 @@ sources:
   prefecture: 島根県
   phone: null
   address: null
-  url: https://www.pref.shimane.lg.jp/infra/nature/animal/matsue_hoken/doubutu/hogozyouhou_kakobunn/syuyouari.html
+  url: https://www.pref.shimane.lg.jp/infra/nature/animal/matsue_hoken/doubutu/
   kind: sheltered
   species: mixed
   mode: recipe
@@ -1743,13 +1743,13 @@ sources:
     list_link_pattern: null
     pdf_link_pattern: null
 - slug: city_fukuyama-1
-  name: 福山市（保護犬）
+  name: 福山市（迷い犬）
   municipality: 福山市
   prefecture: 広島県
   phone: 084-970-1201
   address: 〒720-1143 福山市駅家町下山守546番地14
   url: https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/237722.html
-  kind: sheltered
+  kind: stray
   species: dog
   mode: recipe
   recipe: recipes/city_fukuyama-1.yaml
@@ -2702,7 +2702,7 @@ sources:
   phone: null
   address: null
   url: https://www.pref.ishikawa.lg.jp/yakuji/doubutsu/hogoinuneko.html
-  kind: sheltered
+  kind: stray
   species: mixed
   mode: recipe
   recipe: recipes/pref_ishikawa.yaml
@@ -3796,7 +3796,7 @@ sources:
   phone: null
   address: null
   url: https://www.pref.shizuoka.jp/kenkofukushi/eiseiyakuji/dobutsuaigo/1066835/index.html
-  kind: sheltered
+  kind: stray
   species: dog
   mode: recipe
   recipe: recipes/pref_shizuoka.yaml

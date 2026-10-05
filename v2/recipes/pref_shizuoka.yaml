@@ -2,6 +2,7 @@
 # 「迷い犬情報 2609FD001」のような迷い犬情報一覧で、1リンク=1個体の detail ページを follow_all で辿る（1頭=1ページ）。
 # 政令市（静岡市・浜松市）分は ul.objectlink の外部リンクのみで動物データが無いため除外（follow_all のセレクタで絞る）。
 # detail ページは dl/dt/dd のラベル値。連絡先（保健所）は個体ごとに異なり代表電話が無いため note に入れる。
+# 2026-10-05 監査: ページは「迷い犬情報一覧」なので、台帳の区分を保護中から迷子（stray）に直した。レシピは変更なし。
 steps:
   - follow_all: "article#content ul.listlink a@href"
 rows: "body"

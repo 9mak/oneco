@@ -3,10 +3,11 @@
 # 写真は dl の直前の p.imagecenter img。動物が 0 頭の期間は dd が全部 &nbsp; の雛形 dl が残るだけで
 # 「いません」等の文言は無いため、自動判定（写真も管理番号も収容日も無い→捨てる）で 0 頭になる。
 # その場合に「本当に0頭」と確定させるため、動物の有無に関係なく常に載っている案内文を empty_text にする。
+# 2026-10-05 監査: 見出しが「整理番号：8-9-12」から「8-9-2」だけに変わり管理番号が取れなかったので、「整理番号：」は付いていても付いていなくても数字で始まる部分を取る。
 rows: "div#voice dl"
 image: {selector: "p.imagecenter img@src", scope: prev_siblings}   # 写真は dl の直前の兄弟 p（旧指定は行の子孫しか見ず常に無写真だった。2026-10-02 監査）
 fields:
-  management_no: {from: heading, selector: "h2", regex: "整理番号[:：]\\s*(\\d\\S*)"}   # 直前の h2「整理番号：8-9-12」。雛形の空見出しは None
+  management_no: {from: heading, selector: "h2", regex: "^(?:整理番号[:：]\\s*)?(\\d\\S*)"}   # 直前の h2「8-9-12」（以前は「整理番号：8-9-12」）。雛形の空見出しは None
   shelter_date: {label: "収容月日"}
   breed: {label: "種類"}
   age: {label: "推定年齢"}

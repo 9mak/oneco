@@ -1,15 +1,34 @@
 # 島根県 松江保健所（収容動物）
-# 2 つのテーブル（犬猫別）に management_no / 写真 / 収容日 が並ぶ。
-# 見出しテーブル行と空のテンプレート行は th で空文字なので自動で落ちる。
-# 縦スコープ: caption で犬猫を判定（heading から closest caption を見る）。
-rows: "table tbody tr"
-image: "img@src"
+# 入口は「保護情報（松江・安来）」の現行一覧（doubutu/）。ここに保護動物 1 頭ごと（または「保護・収容情報はありません」の知らせ 1 枚）の
+# ページが ul.page_list で並び、古くなったものは「保護情報_過去分」（hogozyouhou_kakobunn/）へ移される。
+# 台帳の URL は過去分の中のページ（hogozyouhou_kakobunn/syuyouari.html。見出し付きの犬・猫の空の表だけが残る）だった。
+# 2026-10-05 監査: 現行一覧へ変え、個別ページを follow_all で辿って 1 ページ = 1 頭（rows: body）にした。
+#   個別ページ（dobutu5.html 犬・dobutu7.html 猫 の実例）は「管理番号」表（th に「管理番号２６D４」）と「詳細」表（th/td の 収容日・収容場所・動物種別・大きさ・種類・性別・年齢・毛色・毛の長さ・首輪・備考）+ 写真 p。
+#   現行一覧が空の日は ul.page_list が空（子要素も文字も無い）なので empty_selector で 0 頭と確定する。
+#   「保護・収容情報はありません」の知らせのページが載る日は、そのページの表は空で行が捨てられ、一覧のリンク文言で 0 頭と確定する。
+#   以前の empty_text「現在保護収容している動物がおりません」は動物がいる日も載っている案内文（「下の欄に動物情報がない場合は…」）だったので外した。
+# 収容後に死亡した子（備考「負傷猫、収容後死亡」）は載せない。
+steps:
+  - follow_all: "ul.page_list a@href"
+    skip_errors: true
+rows: "body"
+row_filter:
+  text_lacks: ["死亡"]
+image: "img[src*='.data/']@src"
 fields:
-  management_no: {index: 0}
-  shelter_date: {index: 2}
+  species: {regex: "動物種別\\s*(犬|猫)"}
+  management_no: {regex: "管理番号\\s*([0-9０-９]\\S*)"}
+  shelter_date: {regex: "収容日\\s*(\\S+)"}   # 詳細表の 1 行目は th だけが並ぶ（収容日｜日付｜HP公開期限｜日付｜収容場所｜場所）ので label では取れず、全文に regex
+  location: {regex: "収容場所\\s*(\\S+)"}
+  breed: {regex: "種類\\s*(\\S+)"}
+  sex: {regex: "性別\\s*(\\S+)"}
+  color: {regex: "毛色\\s*(\\S+)"}
+  size: {regex: "大きさ\\s*(\\S+)"}
+  age: {regex: "年齢\\s*(\\S+)"}
+  note: {label: "備考"}
 species:
-  from: heading
-  selector: "caption"
-  map: {"収容犬": dog, "収容猫": cat}
+  from: field
+  map: {"犬": dog, "猫": cat}
+empty_selector: "ul.page_list"
 empty_text:
-  - "現在保護収容している動物がおりません"
+  - "保護・収容情報はありません"
