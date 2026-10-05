@@ -2,6 +2,7 @@
 # 「飼い主募集中の猫の詳細」h2 の後、猫が複数頭ぶん h3.section（管理番号）→ p 写真 → p 種類： → p 性別： → p 生年月： → p 備考：
 # が 1 つの div.section にフラットに並ぶ。h3 を 1 頭の始まりにし、row_until で次の h3（または h2）までをまとめる（T517。
 # 以前は「写真を持つ p」を行にして頭数と写真だけ取っていた）。
+# 2026-10-05 監査: 種類「ミックス（白灰）」は括弧の中が毛色なので、品種（括弧の前）と毛色（括弧の中）に分ける。括弧が無い値は品種のみで毛色は空。
 # 管理番号は始まりの h3 自身（selector: h3。from: heading にすると前の子の番号になるので使わない）。
 # 備考は文中に空白が入ることがあるので、label でなく regex で行末まで取る。
 rows: "div.section > h3"
@@ -9,7 +10,8 @@ row_until: "h2, h3"
 image: "img@src"
 fields:
   management_no: {selector: "h3", regex: "(\\d{4}-\\d+)"}
-  breed: {label: "種類"}
+  breed: {label: "種類", regex: "^([^（(]+)"}
+  color: {label: "種類", regex: "[（(]([^）)]+)[）)]"}
   sex: {label: "性別"}
   age: {label: "生年月"}
   note: {selector: "p:-soup-contains('備考')", regex: "備考[:：]\\s*(.+)"}

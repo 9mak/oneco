@@ -1,5 +1,6 @@
 # 岩手県 釜石保健所 — pref.iwate.jp
 # 2026-10-04: 写真が全頭で取れていなかったため image を追加（h2/h3 直後の figure を prev_siblings で拾う。14 頭すべてに写真が付く）。
+# 2026-10-05 監査: 海ちゃん・ペッパーくんは「性格等：」が名前の p でなく次の p に分かれていて note が空だった。row_until で次の個体の p・見出し・写真 figure の手前までを 1 頭分にまとめ、note は性格等から次の項目（不妊去勢手術・備考）の手前まで取る。
 # 台帳 url は最終の一覧ページ（1014123.html。迷子・譲渡・報告が同一ページにまとまっている）。
 # 構造: <figure class="imagecenter"><img>...<figcaption>管理番号</figcaption></figure> の次に
 #   <p>仮名：...<br>管理番号：...<br>動物種別：...<br>…</p> というフラットな並び
@@ -11,6 +12,7 @@
 #   メイン写真は h2/h3 の直後の figure（imagecenter のことも imageright のこともある）。直前の個体の追加写真
 #   （figure.imageright）を拾わないよう「h2 + figure」「h3 + figure」に絞る。これで 14 頭の写真が付く。
 rows: "p:-soup-contains('管理番号：')"
+row_until: "h2, h3, figure"
 image: {selector: "h2 + figure img, h3 + figure img@src", scope: prev_siblings}
 fields:
   name: {label: "仮名"}
@@ -21,7 +23,7 @@ fields:
   sex: {label: "性別"}
   age: {regex: "(?:推定)?年齢[:：]\\s*([^\\s　]+)"}
   color: {label: "毛色"}
-  note: {label: "性格等"}
+  note: {regex: "性格等?[:：]\\s*(.+?)\\s*(?:不妊去勢手術[:：]|三種混合ワクチン[:：]|備考[:：]|$)"}
 species:
   from: field
   map: {"犬": dog, "猫": cat}

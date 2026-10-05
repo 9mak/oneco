@@ -3,10 +3,12 @@
 # 「特徴」は長文の説明（年齢・体重・性格等混在）なので note に収め、年齢のみ正規表現で抜き出す。
 steps:
   - follow_all: "ul#animals-list li a@href"
+# 2026-10-05 監査: 特徴の「名前はかぶと（仮）です」から name を取る（「（仮）」は付けない。他の slug の仮名と同じ扱い）。
 rows: "body"
 image: "div#photos img@src"
 fields:
   management_no: {label: "整理番号"}
+  name: {label: "特徴", regex: "名前(?:は)?([^、。()（）\\s]+)"}
   breed: {label: "種類"}
   sex: {label: "性別"}
   age: {label: "特徴", regex: "(\\d+歳(?:\\d+(?:か月|ヶ月|ヵ月|カ月|ケ月))?)"}

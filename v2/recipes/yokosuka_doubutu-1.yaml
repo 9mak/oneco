@@ -3,6 +3,7 @@
 # 写真は div#photos 配下の img。フッタ #footer-text-2 に "TEL : 046-869-0040"（施設代表番号、台帳へ反映用）。
 steps:
   - follow_all: "ul#animals-list li a@href"
+# 2026-10-05 監査: 特徴「虎毛、推定1歳」から年齢（age）が取れていなかったので、特徴の中の「N歳」「Nか月」を age に、特徴そのものを note に足した。
 rows: "body"
 image: "div#photos img@src"
 fields:
@@ -12,6 +13,8 @@ fields:
   breed: {label: "種類"}
   sex: {label: "性別"}
   color: {label: "特徴", regex: "^([^、,]{0,15})"}
+  age: {label: "特徴", regex: "(\\d+(?:か月|ヶ月|ヵ月|カ月|ケ月|週|歳)齢?)"}
+  note: {label: "特徴"}
 # 2026-10-04: 0 頭の日の実文言「現在情報はありません。」を追加（同じテンプレートの横須賀 -3〜-6 が 2026-10-02 の監査で 0 頭の日にこの文言だったのを確認。-1 自体は今日 1 頭で未再現）。
 empty_text:
   - "現在情報はありません"

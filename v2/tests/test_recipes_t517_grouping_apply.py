@@ -101,7 +101,8 @@ def test_nagano_hello_animal_2_reads_label_paragraphs_after_h3():
     res = _run("nagano_hello_animal-2", _fixture("t517_nagano_hello_animal-2.html"))
     assert [a["management_no"] for a in res.animals] == ["2026-304", "2026-301"]
     first, second = res.animals
-    assert _pick(first, "breed", "sex", "age") == {"breed": "ミックス(白灰)", "sex": "オス(去勢済み)", "age": "2024年7月頃生まれ"}
+    assert _pick(first, "breed", "sex", "age") == {"breed": "ミックス", "sex": "オス(去勢済み)", "age": "2024年7月頃生まれ"}   # 10/5 監査: 括弧の中（白灰）は毛色に分けた
+    assert first["color"] == "白灰" and second["color"] == "黒"
     assert first["image_url"].endswith("/inu-neko/images/304.jpg") and second["image_url"].endswith("/inu-neko/images/2026301.jpg")
     assert first["note"].startswith("右後ろ足のケガで長期治療") and "人馴れ練習中" not in first["note"]
     assert second["note"] == "慎重な性格で、人馴れ練習中です。"
