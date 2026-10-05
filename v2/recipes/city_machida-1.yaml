@@ -1,8 +1,8 @@
 # 町田市（保護情報）: single_page。h2「現在のペットの保護情報」の後、
 # 動物1頭 = <div class="h3bg"><h3>見出し(種別・性別)</h3></div> + 直後の
 # <div class="img-area-r">（写真 + <ul><li>ラベル：値</li>...</ul>）が対で並ぶ。
-# rows は img-area-r 側を拾い、種別は直前の h3 見出しから判定（犬猫混在。
-# 猫以外＝セキセイインコ等は "other" として自動で除外される）。
+# rows は img-area-r 側を拾い、種別は直前の h3 見出しから判定（犬猫混在）。
+# 犬猫以外（セキセイインコ等）は 2026-10-05 T518 から種別なし（species: null）で載る（それまでは除外されていた）。
 rows: "div.img-area-r"
 image: "img@src"
 species:
