@@ -1,0 +1,25 @@
+# 岩手県 一関保健所（譲渡動物情報）— pref.iwate.jp
+# 2026-10-05 T517: pref_iwate_ichinoseki（迷子）から譲渡ページを分けた slug（kind = adoption）。「一関保健所　譲渡動物情報」だけを辿る。
+# 台帳 url は索引ページ（迷子側と同じ）。follow_all で譲渡ページを辿る（ページ番号 1074707 が変わっても索引から追える）。
+# 譲渡ページ（例: 蘭丸）: 管理番号・保護日が無く、「名前：」で始まる p が行。写真は直前の p.imageright（行と同じ p タグ）で、
+#   image.stop_at: row で前の行まで遡る（2026-10-04）。管理番号も保護日も無いので、写真が取れたとき動物として通る。
+# 0 頭の日の文言は未確認（今日は 1 頭。いる日の見出しは「現在、里親さんを募集している犬猫は次のとおりです。」）。empty_text は旧レシピの推測のまま
+#   （外れたら「読めなかった」扱いで通知される側に倒れる）。
+steps:
+  - follow_all: "a:-soup-contains('一関保健所　譲渡動物情報')"
+rows: "p:-soup-contains('名前：')"
+image: {selector: "p.imageright img@src", scope: prev_siblings, stop_at: row}
+fields:
+  name: {label: "名前"}
+  species: {regex: "動物種別?\\s*[:：]\\s*([^\\s　]+)"}
+  size: {label: "大きさ"}
+  breed: {regex: "種\\s*類\\s*[:：]\\s*([^\\s　]+)"}
+  sex: {regex: "性\\s*別\\s*[:：]\\s*([^\\s　]+)"}
+  age: {regex: "推定年(?:月)?齢\\s*[:：]\\s*([^\\s　]+)"}
+  color: {regex: "毛\\s*色\\s*[:：]\\s*([^\\s　]+)"}
+  note: {regex: "備\\s*考\\s*[:：]\\s*([^\\s　]+)"}
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+empty_text:
+  - "現在、里親さんを募集している犬猫はいません"

@@ -1,11 +1,15 @@
-# 岩手県 大船渡保健所 — pref.iwate.jp
-# 【譲渡】新しい飼い主さんを募集しています・元の飼い主を探しています の節だけを拾う
+# 岩手県 大船渡保健所（譲渡）— pref.iwate.jp
+# 【譲渡】新しい飼い主さんを募集しています の節だけを拾う
 # （【御礼】譲渡が決まりました・「最近の保護動物さん」の写真は除外。2026-10-02 監査）。
 # 2026-10-04: 行を写真の p.imagecenter から説明文の p（h2 + 写真 p の直後）に変え、写真は直前の兄弟から取る
 # （image.scope: prev_siblings, stop_at: row）。愛称・動物種・種類・性別・毛色・大きさ・年齢・発見日・発見場所・備考が取れる。
 # 慰霊祭の写真（ireisai）は除外。
-rows: "h2:-soup-contains('【譲渡】') + p.imagecenter + p, h2:-soup-contains('元の飼い主を探しています') + p.imagecenter + p"
-image: {selector: "h2 + p.imagecenter img@src", scope: prev_siblings, stop_at: row, exclude: ["ireisai"]}
+# 2026-10-05 T517: 同じページの「元の飼い主を探しています」の節（迷子 = stray）は pref_iwate_ofunato-2 に分けた（台帳の kind は slug に 1 つ）。
+#   この slug は譲渡の節だけ（kind = adoption）。元の slug を譲渡側に残したのは、譲渡の子 9 頭の ID（写真 URL から決まる）を引き継ぐため。
+#   0 頭の日の文言は未確認（今日は 9 頭）。empty_text は旧レシピの推測のまま（外れたら「読めなかった」扱いで通知される側に倒れる）。
+#   image の h2 も【譲渡】に絞った: 迷子の行がこの slug の行ではなくなり、遡りが迷子の節まで届くため、絞らないと最初の子が迷子の写真を拾う（実ページで確認）。
+rows: "h2:-soup-contains('【譲渡】') + p.imagecenter + p"
+image: {selector: "h2:-soup-contains('【譲渡】') + p.imagecenter img@src", scope: prev_siblings, stop_at: row, exclude: ["ireisai"]}
 fields:
   name: {label: "愛称"}
   species: {label: "動物種"}

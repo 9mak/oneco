@@ -1,0 +1,28 @@
+# 2026-10-05 T517 ⑨ 新規。-9（犬）・-10（猫）の兄弟で、「その他の動物」の一覧（/other-animal/list/other）から「探しています」だけを区分 lost（飼い主が迷子を探している告知）で拾う。
+# 2026-10-05 の実ページはインコ 3 件（15496・15027・14939、全部「探しています」）。-9/-10 は台帳の species が dog/cat 固定でこの一覧を読めなかった。
+# 一覧の a[href^=.../other-animal/xxxx] が 1 頭 → follow_all で個別ページへ。
+# 個別ページは table.animal-desc-table。見出しは「不明日」「不明場所」（飼い主が見失った日・場所）。
+# 連絡先は飼い主個人の電話・SNS なので取らない。
+# 種別は h2 の名前から（-3・-6 と同じ。from: text だと rows: body の全文＝メニューの「犬・猫の情報」に必ず当たるので使わない）。犬・猫以外は allow_other で「その他」として載せる。
+steps:
+  - follow_all: "a[href^='https://www.douaicenter.jp/other-animal/']:not([href*='other-animal/list'])"
+rows: "body"
+row_filter:
+  field_has_any: {name: ["探しています", "探してます", "探しております"]}   # rows: body なのでメニュー文言に当たらないよう name で判定。語が無い行（保護しています）は -12 が拾う
+image:
+  selector: ".animal-image .large img@src"
+fields:
+  name: {selector: "h2.elementor-heading-title"}
+  shelter_date: {label: "不明日"}
+  location: {label: "不明場所"}
+  breed: {label: "種類"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  age: {label: "年齢"}
+  size: {label: "体格"}
+  species: {selector: "h2.elementor-heading-title"}
+species:
+  from: field
+  map: {"犬": dog, "いぬ": dog, "猫": cat, "ねこ": cat}
+  allow_other: true   # 犬猫以外は「その他」として載せる
+empty_text: ["現在、登録がございません"]

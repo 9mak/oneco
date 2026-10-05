@@ -1,0 +1,29 @@
+# 2026-10-05 T517 ⑨ 新規。-7（犬）・-8（猫）の兄弟で、「その他の動物」の一覧（/other-animal/list/other）から「保護しています」を拾う（区分は -7/-8 と同じ sheltered）。
+# 「探しています」は飼い主が迷子を探している告知なので捨てる（区分 lost の -11 が拾う）。2026-10-05 の実ページは 3 件とも「探しています」なので 0 頭
+#   （全部が除外語の日は「該当なし」とみなす）。保護しています のその他の動物の個別ページはまだ見ていない（ラベルは -7/-8 の保護場所に合わせた）。
+# 一覧の a[href^=.../other-animal/xxxx] が 1 頭 → follow_all で個別ページへ。
+# 連絡先は飼い主個人の電話（施設代表番号ではない）なので取らない。
+# 種別は h2 の名前から（-3・-6 と同じ。from: text だと rows: body の全文＝メニューの「犬・猫の情報」に必ず当たるので使わない）。犬・猫以外は allow_other で「その他」として載せる。
+steps:
+  - follow_all: "a[href^='https://www.douaicenter.jp/other-animal/']:not([href*='other-animal/list'])"
+rows: "body"
+row_filter:
+  text_lacks: ["保護はしていません"]   # 「保護はしていませんが念のため掲載」＝保護できていない目撃だけの告知は捨てる（-8 と同じ）
+  field_lacks: {name: ["探しています", "探してます", "探しております"]}   # rows: body なのでメニュー文言に当たらないよう name で判定
+image:
+  selector: ".animal-image .large img@src"
+fields:
+  name: {selector: "h2.elementor-heading-title"}
+  shelter_date: {label: "不明日"}
+  location: {label: "保護場所"}   # 「保護しています」ページの見出しは保護場所（「探しています」の不明場所は -11 が拾う）
+  breed: {label: "種類"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  age: {label: "年齢"}
+  size: {label: "体格"}
+  species: {selector: "h2.elementor-heading-title"}
+species:
+  from: field
+  map: {"犬": dog, "いぬ": dog, "猫": cat, "ねこ": cat}
+  allow_other: true   # 犬猫以外は「その他」として載せる
+empty_text: ["現在、登録がございません"]
