@@ -120,36 +120,13 @@ def test_kawasaki_3_takes_photos_outside_the_table():
     assert res.dropped == []
 
 
-# --- 川崎市 収容犬: 今日は 0 頭。-3 と同じ CMS なので同じ作り（区切り → 写真 → 表。写真が表の後ろにある子もいる）---------------
-KAWASAKI_1_MODEL = """<div class="main_naka_kiji"><div class="mol_contents">
-<div id="index-1-1"><h2>犬の収容（保護）情報</h2></div>
-<div id="index-2-3"><h3>=========</h3></div>
-<div class="mol_imageblock"><div><img alt="写真1" src="../cmsfiles/contents/0000077/77270/a1.jpg"></div></div>
-<div class="mol_imageblock"><div><img alt="写真2" src="../cmsfiles/contents/0000077/77270/a2.jpg"></div></div>
-<div class="mol_tableblock"><table class="px550"><caption>R8-170</caption><tr><th>管理番号</th><td>R8-170</td><th>収容場所</th><td>多摩区</td></tr>
-<tr><th>収容日</th><td>2026年10月1日</td><th>公開期限</th><td>2026年10月8日</td></tr>
-<tr><th>種類</th><td>柴犬</td><th>毛色</th><td>茶</td></tr><tr><th>性別</th><td>オス</td><th>備考</th><td></td></tr></table></div>
-<div id="index-2-8"><h3>=========</h3></div>
-<div class="mol_tableblock"><table class="px550"><caption>R8-171</caption><tr><th>管理番号</th><td>R8-171</td><th>収容場所</th><td>宮前区</td></tr>
-<tr><th>収容日</th><td>2026年10月2日</td><th>公開期限</th><td>2026年10月9日</td></tr>
-<tr><th>種類</th><td>雑種</td><th>毛色</th><td>白</td></tr><tr><th>性別</th><td>メス</td><th>備考</th><td></td></tr></table></div>
-<div class="mol_imageblock"><div><img alt="写真" src="../cmsfiles/contents/0000077/77270/b1.jpg"></div></div>
-<div id="index-2-9"><h3>=========</h3></div>
-<div class="mol_tableblock"><table class="px550"><caption>R8-172</caption><tr><th>管理番号</th><td>R8-172</td><th>収容場所</th><td>高津区</td></tr>
-<tr><th>収容日</th><td>2026年10月3日</td><th>公開期限</th><td></td></tr>
-<tr><th>種類</th><td>雑種</td><th>毛色</th><td>黒</td></tr><tr><th>性別</th><td>オス</td><th>備考</th><td>収容後死亡</td></tr></table></div>
-<div id="index-2-10"><h3>=========</h3></div>
-</div></div>"""
-
-
-def test_kawasaki_1_model_page_photos_before_and_after_the_table():
-    res = _run("city_kawasaki-1", KAWASAKI_1_MODEL)
-    assert [a["management_no"] for a in res.animals] == ["R8-170", "R8-171"]     # 死亡の子（R8-172）は今までどおり捨てる
-    first, second = res.animals
-    base = "https://www.city.kawasaki.jp/350/cmsfiles/contents/0000077/77270/"
-    assert first["image_url"] == base + "a1.jpg"
-    assert second["image_url"] == base + "b1.jpg"        # 表の後ろの写真もその子のもの（次の子に取られない）
-    assert _pick(first, "breed", "color", "sex", "location", "species") == {"breed": "柴犬", "color": "茶", "sex": "オス", "location": "多摩区", "species": "dog"}
+# --- 川崎市 収容犬: row_until に切り替えない（2026-10-05 公開前レビュー F-01）---------------------------------------
+# 犬が載っていた日の実ページ（Wayback 2019〜2022）は区切りの h3 が div.mol_contents の直下に並び、-3（猫・その他）のように
+# 区切りを包む div が無い。-3 と同じ rows: "div.main_naka_kiji div:has(> h3)" にすると mol_contents 全体が 1 行になり、
+# 2 頭目以降が消える。レシピは「表 1 つ = 1 頭」（写真なし）のまま。fixture は 2022-01-21 版に 2 頭目を複製したもの
+def test_kawasaki_1_keeps_one_animal_per_table_on_the_real_markup():
+    res = _run("city_kawasaki-1", _fixture("t517_kawasaki-1_wayback20220121_2dogs.html"))
+    assert [a["management_no"] for a in res.animals] == ["R3-354", "R3-355"]
 
 
 def test_kawasaki_1_empty_page_is_still_confirmed_empty():

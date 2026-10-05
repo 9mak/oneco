@@ -1,17 +1,10 @@
 # 川崎市（収容犬） https://www.city.kawasaki.jp/350/page/0000077270.html
-# city_kawasaki-3（収容その他動物）と同じ CMS・同じ作り。1 頭 = h3「=====」だけの div（区切り）→ 写真の div.mol_imageblock ×1〜2 →
-# 表の div.mol_tableblock（table。キャプションが管理番号。class は px550/px650/無しと揺れる）。
-# 写真は表の外の兄弟 div にある（監査の記録では table の前にも後ろにも並ぶ）。
-# 区切りの div を 1 頭の始まりにし、次の区切りまでをまとめて 1 行にする（T517）ので、写真が表の前でも後ろでも同じ子に付く。
-# th/td が「ラベル｜値｜ラベル｜値」で並ぶ縦型テーブル。末尾の区切りだけの塊は row_filter（管理番号が無い）で落ちる。
-# 注意: 2026-10-05 は 0 頭（「現在、収容（保護）されている犬はいません」）で、実ページでこの構造は確かめられていない
-# （-3 の構造と過去の記録からの推測。犬が出た日に写真と項目が付くか要確認）。
-rows: "div.main_naka_kiji div:has(> h3)"
-row_until: "div:has(> h2)"
+# 1 頭 = div.main_naka_kiji 内の table 1 つ（キャプションが管理番号。class は px550/px650/無しと揺れる）。
+# th/td が「ラベル｜値｜ラベル｜値」で並ぶ縦型テーブル。写真は table の外の兄弟 div に
+# （table の前後どちらにも）複数枚並ぶため row 単位では拾えない（management_no で通過条件は満たす）。
+rows: "div.main_naka_kiji table"
 row_filter:
-  text_has_any: ["管理番号"]
   field_lacks: {note: ["死亡"]}   # 備考「収容時死亡」「収容後死亡」の子は捨てる（2026-10-02 監査）
-image: "img@src"
 fields:
   management_no: {label: "管理番号"}
   location: {label: "収容場所"}
