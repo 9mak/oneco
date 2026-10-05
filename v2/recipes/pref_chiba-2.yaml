@@ -1,3 +1,4 @@
+# 2026-10-05 監査: 収容日（直前の h2「【収容日】…」から from: heading で）と毛色（品種・毛色・性別の行の 2 番目）を取るようにした
 # 千葉県動愛センター本所（収容猫）。pref_chiba-1 と同一テンプレート
 # (<h2>収容日【...】</h2> + <div class="col2"><div class="col2L"> に写真・管理番号・収容場所・
 # 品種等)。末尾の「テンプレート」ダミーブロックは管理番号 260000-00 固定なので row_filter で除外。
@@ -6,6 +7,12 @@ row_filter:
   text_lacks: ["260000-00"]
 image: "img@src"
 fields:
+  shelter_date:
+    from: heading
+    selector: "h2"
+    regex: "(\\d+年\\d+月\\d+日)"
+  color:
+    regex: "収容場所】\\s*\\S+\\s+[^・\\s]+・([^・\\s]+)・"
   management_no:
     regex: "管理番号】\\s*([^\\s（(]+)"
   location:

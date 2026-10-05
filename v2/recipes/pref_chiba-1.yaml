@@ -1,13 +1,20 @@
+# 2026-10-05 監査: 収容日（直前の h2「【収容日】…」から from: heading で）と毛色（品種・毛色・性別の行の 2 番目）を取るようにした
 # 千葉県動愛センター本所（収容犬）。1 ページに複数頭がブロックで並ぶ
 # single_page 形式: <h2>【収容日】...</h2> の次に <div class="col2"><div class="col2L">
 # 写真・【管理番号】・【収容場所】・品種等・【掲載期限】が <p> で並ぶ。
 # ページ末尾に実データではない「テンプレート」ダミーブロック（管理番号 2600000-01 固定）
-# があるので row_filter で除外する。収容日は h2（兄弟要素）側にあり行に含まれないため取得しない。
+# があるので row_filter で除外する。収容日は h2（兄弟要素）側にあるので from: heading で取る。
 rows: "div.col2"
 row_filter:
   text_lacks: ["2600000-01"]
 image: "img@src"
 fields:
+  shelter_date:
+    from: heading
+    selector: "h2"
+    regex: "(\\d+年\\d+月\\d+日)"
+  color:
+    regex: "収容場所】\\s*\\S+\\s+[^・\\s]+・([^・\\s]+)・"
   management_no:
     regex: "管理番号】\\s*([^\\s（(]+)"
   location:
