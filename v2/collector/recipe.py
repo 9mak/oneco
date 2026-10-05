@@ -427,11 +427,40 @@ def _text(t: Tag) -> str | None:
     return t.get_text(" ", strip=True) or None
 
 
+_LABEL_PUNCT = " \t\r\n　:：・、。()（）[]［］【】「」<>＜＞*＊"
+
+
+def _looks_like_heading(head: Tag, cand: Tag, label: str) -> bool:
+    """label のセル head に対応する値の候補 cand が、値ではなく見出しに見えるか。
+
+    見出しが横に並ぶ表（td「収容日」｜td「収容場所」の次の行が値）では、label「収容」の隣は別の見出しなので
+    捨てて次の行を見る。この判定は以前「cand が label の文字を含めば捨てる」だったため、値が label を含むだけ
+    （label「保健所」の値「菊池保健所」、熊本県動愛）でも捨てていた。今は次のときだけ見出しとみなす:
+    - cand が th / dt（見出しのタグ）で label を含む
+    - cand の文字が label そのもの（「性別：」のように記号・空白を除くと label と同じ）
+    - cand の中に「label: …」と書かれている（値のセルの中に項目名つきで書く作り。従来どおり最後の読み取りに任せる）
+    - head も cand も td で、cand が label で始まる（「収容日｜収容場所」のように見出しが並ぶ行）
+    th → td、dt → dd の組は見出しと値がタグで分かれているので、label を含むだけの値は取る。
+    """
+    if label not in cand.get_text():
+        return False
+    text = cand.get_text("", strip=True)
+    if cand.name in ("th", "dt"):
+        return True
+    if text.strip(_LABEL_PUNCT) == label:
+        return True
+    if re.search(re.escape(label) + r"\s*[:：]", text):
+        return True     # セルの中に「備考: …」と書かれている（高知 kochi_apc）。最後の「label：値」の読み取りに任せる
+    if head.name == "td":
+        return text.startswith(label)
+    return False
+
+
 def _label_value(el: Tag, label: str) -> str | None:
     """「性別」と書かれたセルに対応する値。
 
     対応順: aria-label 属性 → th/dt の隣の td/dd → 見出し行の同じ列（次の tr）→ 表の先頭行が見出し
-    → 「性別：メス」のようにテキスト内に書かれたもの。
+    → 「性別：メス」のようにテキスト内に書かれたもの。値が見出しに見えるとき（_looks_like_heading）は捨てて次を見る。
     """
     c = el.select_one(f'[aria-label*="{label}"]')
     if c is not None:
@@ -441,7 +470,7 @@ def _label_value(el: Tag, label: str) -> str | None:
         if label not in t or len(t) > len(label) + 12:
             continue
         sib = cell.find_next_sibling(["td", "dd"])
-        if sib is not None and label not in sib.get_text():
+        if sib is not None and not _looks_like_heading(cell, sib, label):
             return _text(sib)
         tr = cell.find_parent("tr")
         if tr is not None:
@@ -450,7 +479,7 @@ def _label_value(el: Tag, label: str) -> str | None:
             if cell in kids and nxt is not None:
                 idx = kids.index(cell)
                 cells = nxt.find_all(["th", "td"], recursive=False)
-                if idx < len(cells) and label not in cells[idx].get_text():
+                if idx < len(cells) and not _looks_like_heading(cell, cells[idx], label):
                     return _text(cells[idx])
     if el.name == "tr":
         table = el.find_parent("table")
