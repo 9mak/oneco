@@ -1,6 +1,6 @@
 # 環境省リンク集（collector discover）と台帳の差分のうち、人が確認したもの。2026-10-05 T518 で作成
 #
-# collector discover --notify は、ここに無い差分だけを Discord に送る（同じ差分を毎週繰り返し送らない）。
+# collector discover --notify は、ここに無い差分だけを Discord に送る（ここに足すまでは毎週送る。足せば止まる）。
 # status:
 #   pending  台帳への追加待ち（task: 受け持つタスク）。台帳に足したらこの行を消す（tests/test_discover_t518.py が確かめる）
 #   excluded 対象外（note: 理由）

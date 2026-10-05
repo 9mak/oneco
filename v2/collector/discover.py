@@ -5,7 +5,7 @@ https://www.env.go.jp/nature/dobutsu/aigo/shuyo/link.html に約 130 主体の�
 
 確認済みの差分は registry/discover_known.yaml にドメインごとに持つ（pending = 台帳への追加待ち、
 excluded = 対象外、covered = 別ドメインの slug で載せている）。`--notify` では一覧に無い差分だけを
-Discord に 1 通送る（同じ差分を毎週繰り返し送らない）。実行時の状態は持たない。
+Discord に 1 通送る（一覧に足すまでは毎週送る。足せば止まる）。実行時の状態は持たない。
 ops/collect.sh が毎週月曜にだけ `discover --notify` を走らせる（2026-10-05 T518）。
 """
 
@@ -106,8 +106,8 @@ def env_links(html: str) -> dict[str, list[tuple[str, str]]]:
     links: dict[str, list[tuple[str, str]]] = {}
     for a in soup.select("a[href]"):
         href = urljoin(ENV_URL, a["href"])
-        if "env.go.jp" in href:
-            continue
+        if not href.startswith(("http://", "https://")) or "env.go.jp" in href:
+            continue   # javascript:・mailto:・tel: は自治体のリンクではない（空のドメインとして数えると誤報になる）
         links.setdefault(_domain(href), []).append((href, a.get_text(" ", strip=True)))
     return links
 

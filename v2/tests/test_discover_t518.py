@@ -213,8 +213,7 @@ def test_discover_fetch_failure_without_notify_does_not_send(tmp_path, monkeypat
 def test_repo_known_covers_20261005_diff():
     html = (FIXTURES / "t518_env_link_20261005.html").read_text(encoding="utf-8")
     d = compute(env_links(html), load_sources(), load_known())
-    assert len(d.new) == 48 and len(d.gone) == 9
-    assert d.unknown_new == {} and d.unknown_gone == []
+    assert d.unknown_new == {} and d.unknown_gone == []   # 件数は台帳に足すと減るので見ない（T519）
 
 
 def test_repo_known_is_consistent_with_registry():
@@ -228,3 +227,10 @@ def test_repo_known_is_consistent_with_registry():
         if k.status == "covered":
             assert k.slugs, f"{domain}: covered には slugs が要る"
             assert set(k.slugs) <= slugs, f"{domain}: 台帳に無い slug {set(k.slugs) - slugs}"
+
+
+def test_env_links_ignores_non_http_links():
+    """javascript:・mailto:・tel: のリンクは空のドメインとして数えない（「新しい自治体」の誤報になる。2026-10-05 公開前レビュー F-03）。"""
+    html = ('<a href="javascript:void(0)">戻る</a><a href="mailto:info@env.example">メール</a><a href="tel:0000">電話</a>'
+            '<a href="https://www.city.example.lg.jp/a.html">例市</a>')
+    assert list(env_links(html)) == ["city.example.lg.jp"]
