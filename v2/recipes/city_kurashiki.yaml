@@ -7,8 +7,10 @@
 # 写真は src に「_page_/001/」を含む img（個体ページ配下のアップロード画像。alt は「写真：保護犬」「ねこ」等でまちまちなので alt では絞らない。
 # 共通ナビの 03_purpose アイコンと newwin 等のテンプレート画像は除外）。挿絵 runaway.gif と、負傷で画像掲載を見合わせる代替画像 keisaimiawase.jpg（水色地の「画像掲載を見合わせています」）は除外。
 # 2026-10-04 alt='写真' 始まりだけだと alt='ねこ' の実写真（1027913）を取りこぼし、keisaimiawase.jpg（代替画像）を写真として載せていたので、src 基準＋除外に変更（実写真 5→8 頭、代替画像 1→0）。
+# 2026-10-05 夕方: 一覧に残った個別ページ 1 本（1027993.html）が 404 になり、slug 全体が failed になった。404 の子だけ捨てる（skip_errors）。
 steps:
   - follow_all: "ul.listlink.clearfix a@href"
+    skip_errors: true
 rows: "body"
 image: {selector: "img[src*='_page_/001/']@src", exclude: ["03_purpose", "runaway", "keisaimiawase"]}
 fields:
