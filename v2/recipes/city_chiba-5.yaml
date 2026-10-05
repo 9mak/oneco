@@ -3,7 +3,8 @@
 # p 種類： → p 毛色： → p 性別： → p 体格： → p 特徴： → p 空 が平らに並ぶ。
 # h4 を 1 頭の始まりにし、row_until で次の掲載日の h2（次の h4 の手前でも自動で止まる）までをまとめる（T517）。
 # 先頭の h4「猫は逃がさないように飼いましょう」は動物ではない（保護日が無いので row_filter で落とす）。
-# 管理番号は始まりの h4 自身（selector: h4）。特徴は文中に空白が入ることがあるので、label でなく regex で行末まで取る。
+# 管理番号は始まりの h4 自身（selector: h4）。特徴・毛色・種類は文中に空白が入ることがある（「毛色：三毛　サビ」）ので、
+# label（最初の空白までの 1 語）でなく、その p を指して regex で行末まで取る（2026-10-05 公開前レビュー）。
 # 2026-09-29 時点で約 20 頭確認（A-6035, A-6028, A-6027, A-6025, ...）。
 rows: "div#contents_editable > h4"
 row_until: "h2"
@@ -13,8 +14,8 @@ fields:
   management_no: {selector: "h4"}
   shelter_date: {label: "保護日"}
   location: {label: "保護場所"}
-  breed: {label: "種類"}
-  color: {label: "毛色"}
+  breed: {selector: "p:-soup-contains('種類')", regex: "種類[:：]\\s*(.+)"}
+  color: {selector: "p:-soup-contains('毛色')", regex: "毛色[:：]\\s*(.+)"}
   sex: {label: "性別"}
   size: {label: "体格"}
   note: {selector: "p:-soup-contains('特徴')", regex: "特徴[:：]\\s*(.+)"}

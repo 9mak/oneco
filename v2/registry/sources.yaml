@@ -1819,13 +1819,14 @@ sources:
   municipality: 広島県動物愛護センター
   prefecture: 広島県
   phone: 0848-60-8511
-  address: 〒729-0415 広島県三原市本郷町上北方字用倉山11352番（動物愛護センター代表連絡先。ページ本文に明記、台帳は現在null）
+  address: 〒729-0415 広島県三原市本郷町上北方字用倉山11352番
   url: https://www.pref.hiroshima.lg.jp/site/apc/jouto-stray-dog-list.html
   kind: stray
   species: dog
   mode: recipe
   recipe: recipes/pref_hiroshima-1.yaml
   enabled: true
+  note: 所在地は動物愛護センターの代表連絡先（ページ本文に明記）。2026-10-05 に address の括弧書きのメモをここへ移した（公開ページの所在地に出ていた）
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_hiroshima.py
     requires_js: false
@@ -1837,13 +1838,14 @@ sources:
   municipality: 広島県動物愛護センター
   prefecture: 広島県
   phone: 0848-60-8511
-  address: 〒729-0415 広島県三原市本郷町上北方字用倉山11352番（動物愛護センター代表連絡先。dogページと同一施設・同一表記。台帳は現在null）
+  address: 〒729-0415 広島県三原市本郷町上北方字用倉山11352番
   url: https://www.pref.hiroshima.lg.jp/site/apc/jouto-stray-cat-list.html
   kind: stray
   species: cat
   mode: recipe
   recipe: recipes/pref_hiroshima-2.yaml
   enabled: true
+  note: 所在地は動物愛護センターの代表連絡先（犬のページと同じ施設・同じ表記）。2026-10-05 に address の括弧書きのメモをここへ移した
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_hiroshima.py
     requires_js: false
