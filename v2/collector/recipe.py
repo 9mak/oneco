@@ -12,7 +12,7 @@ import unicodedata
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, TypeVar
 from urllib.parse import urljoin
 
 import yaml
@@ -20,7 +20,9 @@ from bs4 import BeautifulSoup, Tag, XMLParsedAsHTMLWarning
 
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)   # RSS を HTML として読むレシピがある
 
-from .fetch import Fetcher
+from .fetch import FetchError, Fetcher
+
+T = TypeVar("T")
 
 _JUNK_IMAGE = re.compile(
     r"(icon|btn|button|logo|spacer|arrow|new_win|blank|banner|bnr|/common/|/design/|/img/parts|"
@@ -50,6 +52,7 @@ class Recipe:
     fields: dict[str, Any] = field(default_factory=dict)
     species: dict[str, Any] = field(default_factory=dict)
     empty_text: list[str] = field(default_factory=list)
+    empty_selector: list[str] = field(default_factory=list)   # 0 頭の日に空になる一覧の器（文言が出ないサイト用）。extract.build で照合
     encoding: str | None = None
     max_pages: int = 20
     base_url: str | None = None
@@ -63,8 +66,9 @@ class Recipe:
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> Recipe:
         known = {k: v for k, v in raw.items() if k in cls.__dataclass_fields__}
-        if isinstance(known.get("empty_text"), str):
-            known["empty_text"] = [known["empty_text"]]
+        for key in ("empty_text", "empty_selector"):
+            if isinstance(known.get(key), str):
+                known[key] = [known[key]]
         return cls(**known)
 
     @classmethod
@@ -239,6 +243,8 @@ class Executor:
         elif "follow_all" in step:
             sel, attr = parse_sel(step["follow_all"])
             limit = int(step.get("max", 200))
+            tried = 0
+            failed: list[str] = []
             for d in docs:
                 seen: set[str] = set()
                 for el in d.soup.select(sel) if d.soup else []:
@@ -249,8 +255,12 @@ class Executor:
                     if url in seen or len(seen) >= limit:
                         continue
                     seen.add(url)
-                    out.append(self._get(url, render=step.get("rendered", False)))
+                    tried += 1
+                    doc = self._child(step, url, failed, lambda u=url: self._get(u, render=step.get("rendered", False)))
+                    if doc is not None:
+                        out.append(doc)
                 self.trace.append(f"follow_all → {len(seen)} 件 ({d.url})")
+            self._raise_if_all_failed("follow_all", tried, failed)
         elif "paginate" in step:
             sel, attr = parse_sel(step["paginate"])
             limit = int(step.get("max", self.recipe.max_pages))
@@ -273,6 +283,8 @@ class Executor:
         elif "pdf_links" in step:
             sel, attr = parse_sel(step["pdf_links"])
             limit = int(step.get("max", 50))
+            tried = 0
+            failed = []
             for d in docs:
                 seen = set()
                 for el in d.soup.select(sel) if d.soup else []:
@@ -283,9 +295,12 @@ class Executor:
                     if url in seen or len(seen) >= limit:
                         continue
                     seen.add(url)
-                    page = self.fetcher.get(url)
-                    out.append(_make_pdf_doc(page.final_url, page.content, columns=self._pdf_columns()))
+                    tried += 1
+                    page = self._child(step, url, failed, lambda u=url: self.fetcher.get(u))
+                    if page is not None:
+                        out.append(_make_pdf_doc(page.final_url, page.content, columns=self._pdf_columns()))
                 self.trace.append(f"pdf_links → {len(seen)} 件")
+            self._raise_if_all_failed("pdf_links", tried, failed)
         elif "render_json" in step:
             # 描画中に捕まえた JSON 応答（match の URL）から path の値を抜き、follow の {value} に差し込んで辿る。
             # 一覧が API 応答にしか無く <a href> が無い SPA（愛知わんにゃんナビ = Bubble）用
@@ -306,6 +321,25 @@ class Executor:
         else:
             raise RecipeError(f"未知の step: {step}")
         return out
+
+    def _child(self, step: dict[str, Any], url: str, failed: list[str], fetch: Callable[[], T]) -> T | None:
+        """follow_all / pdf_links の子 1 本を取る。step に skip_errors: true があれば、取得の失敗（FetchError:
+        HTTP 4xx/5xx・接続失敗）はその 1 本だけ捨てて trace に残し、None を返す（群馬県・岐阜県: 一覧に
+        消えた個別ページへのリンクが残り、1 本の 404 で slug 全体が落ちていた）。"""
+        try:
+            return fetch()
+        except FetchError as e:
+            if not step.get("skip_errors"):
+                raise
+            failed.append(f"{url}: {e}")
+            self.trace.append(f"skip {url}: {e}")
+            return None
+
+    @staticmethod
+    def _raise_if_all_failed(kind: str, tried: int, failed: list[str]) -> None:
+        """skip_errors で捨てた結果、辿ろうとした子が全部失敗していたら従来どおり失敗にする（全部 404 の日を 0 頭扱いにしない）。"""
+        if tried and len(failed) == tried:
+            raise FetchError(f"{kind}: 辿った {tried} 本がすべて取得に失敗（{failed[0]}）")
 
 
 def _json_values(obj: Any, path: str) -> list[Any]:
