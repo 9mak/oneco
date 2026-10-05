@@ -92,3 +92,34 @@ def test_guard_does_not_touch_allow_other_rows():
     html = "<div class='row'><p>インコ 10月6日</p></div>"
     res = _run(html, species={"allow_other": True})
     assert [a["species"] for a in res.animals] == ["other"]
+
+
+# --- 3 回目のゲート G-01・G-02（2026-10-05 23:10） ---------------------------------------------
+def test_ninohe_adopted_dog_under_closed_heading_is_not_published():
+    # 見出し「譲渡先が決まりました。」の下の譲渡済みの犬 R7-121-1 は載せない。募集中の 2 頭（見出し「【譲渡】里親さんを募集しています。」）は種別なしで載る
+    res = _run_slug("pref_iwate_ninohe", "t518_ninohe_wb20260213.html")
+    assert sorted(a["management_no"] for a in res.animals) == ["R6-10-4", "R6-10-5"]
+    assert all(a["species"] is None for a in res.animals)
+
+
+def test_species_none_row_under_closed_heading_is_dropped_but_open_heading_is_kept():
+    html = ("<h2>里親さんを募集しています</h2><div class='row'><p>10月1日 場所：二戸市 種類：雑種 性別：オス</p></div>"
+            "<h2>新しい家族が決まりました！</h2><div class='row'><p>9月1日 場所：二戸市 種類：雑種 性別：メス</p></div>")
+    res = _run(html)
+    assert [a["sex"] for a in res.animals] == ["オス"]
+
+
+def test_closed_phrases_cover_common_wordings():
+    from collector.extract import _CLOSED_LISTING
+
+    for t in ("返還いたしました", "返還となりました", "譲渡先が決まりました", "里親さんが決まりました", "新しい家族が決まりました",
+              "譲渡決定", "譲渡されました", "飼主が見つかりました", "飼い主様が見つかりました", "飼い主の元へ戻りました"):
+        assert _CLOSED_LISTING.search(t), t
+
+
+def test_closed_phrases_do_not_hit_wishes_or_conditions():
+    from collector.extract import _CLOSED_LISTING
+
+    for t in ("優しい飼い主さんが見つかりますように", "公示期間内に飼い主が見つかりませんでした", "飼い主が見つかり次第掲載を終了します",
+              "飼い主の元に戻りたい", "掲載中でも、譲渡済みの場合があります", "里親さんが決まり次第お知らせします"):
+        assert not _CLOSED_LISTING.search(t), t
