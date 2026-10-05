@@ -1,3 +1,4 @@
+# 2026-10-05 監査: 「コメント欄」を note、「保護場所」を location に追加。
 # 旭川市あにまある 一覧（li 内の a[href^=.../animal/xxxx] が動物1頭）→ follow_all で個別ページへ。
 # 個別ページ: table.animal-desc-table の th/td ラベル対応。写真は .animal-image .large img。
 steps:
@@ -13,4 +14,6 @@ fields:
   sex: {label: "性別"}
   age: {label: "年齢"}
   size: {label: "体格"}
+  location: {label: "保護場所"}   # 見つかった場所（無い子もいる）
+  note: {selector: ".elementor-widget-wrap:has(> .elementor-widget-heading .elementor-heading-title:-soup-contains('コメント欄')) > .elementor-widget-text-editor", regex: "(.+?)(?:\\s*猫エイズ・白血病ってどんな病気？|$)"}   # 個体ページの「コメント欄」（表の外）。末尾の定型リンク文言は除く
 empty_text: ["現在、登録がございません"]

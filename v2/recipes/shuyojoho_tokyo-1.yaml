@@ -1,3 +1,4 @@
+# 2026-10-05 監査: 個体ページの「その他」（負傷・尾の形など）を note に追加。
 # 東京都収容動物情報（犬） https://shuyojoho.metro.tokyo.lg.jp/
 # トップの topMainBox 一覧から /animals/detail/{id} を個体ページ方式（follow_all）で辿る。
 # 詳細ページは <dl id="dataGroup0X"><dt>/<dd></dl> 構造。0頭時は「現在、犬の収容情報はありません。」の静的文言。
@@ -13,4 +14,5 @@ fields:
   sex: {label: "性別"}
   size: {label: "大きさ"}
   color: {label: "毛色"}
+  note: {label: "その他"}   # 負傷・尾の形など（個体ページの dl「その他」）
 empty_text: ["現在、犬の収容情報はありません"]

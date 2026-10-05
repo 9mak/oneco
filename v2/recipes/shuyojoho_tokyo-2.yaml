@@ -1,3 +1,4 @@
+# 2026-10-05 監査: 個体ページの「その他」（負傷・尾の形など）を note に追加。
 # 東京都収容動物情報（猫等） https://shuyojoho.metro.tokyo.lg.jp/cat
 # トップの topMainBox 一覧から /animals/detail/{id} を個体ページ方式（follow_all）で辿る。犬ページと同一構造・同一 adapter。
 # /cat は「猫・その他」タブで、にわとり等の他動物が混ざることがある。
@@ -15,6 +16,7 @@ fields:
   sex: {label: "性別"}
   size: {label: "大きさ"}
   color: {label: "毛色"}
+  note: {label: "その他"}   # 負傷・尾の形など（個体ページの dl「その他」）
   species: {label: "動物名"}
 species:
   from: field

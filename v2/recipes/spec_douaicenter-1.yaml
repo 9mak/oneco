@@ -1,3 +1,4 @@
+# 2026-10-05 監査: 個体ページの「コメント欄」（性格・健康状態・飼育条件）を note に追加。
 # 2026-10-04 empty_text から「現在」（どの文にも出る 1 語）を外し、0 頭の日だけ出る「現在、登録がございません」に揃えた（-2/-4/-5 と同じ。agy 指摘を確認: 構造が変わった日も 0 頭に見えて通知が来なくなる）。
 # 旭川市あにまある 一覧（li 内の a[href^=.../animal/xxxx] が動物1頭）→ follow_all で個別ページへ。
 # 個別ページ: table.animal-desc-table の th/td ラベル対応。写真は .animal-image .large img（他の img は装飾）。
@@ -14,4 +15,5 @@ fields:
   sex: {label: "性別"}
   age: {label: "年齢"}
   size: {label: "体格"}
+  note: {selector: ".elementor-widget-wrap:has(> .elementor-widget-heading .elementor-heading-title:-soup-contains('コメント欄')) > .elementor-widget-text-editor"}   # 個体ページの「コメント欄」（表の外。性格・健康状態・飼育条件が書かれる）
 empty_text: ["現在、登録がございません"]
