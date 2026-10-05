@@ -127,7 +127,7 @@ def cmd_run(args: argparse.Namespace) -> int:
 def cmd_discover(args: argparse.Namespace) -> int:
     from .discover import discover
 
-    return discover(json_out=args.json)
+    return discover(json_out=args.json, notify=args.notify)
 
 
 def cmd_notify(args: argparse.Namespace) -> int:
@@ -198,8 +198,9 @@ def main(argv: list[str] | None = None) -> int:
     a.add_argument("--no-robots", action="store_true")
     a.add_argument("--no-ai-repair", action="store_true", help="読めないページの AI 修復をしない（既定は環境変数 ONECO_AI_REPAIR=1 のとき有効）")
     a.set_defaults(fn=cmd_run)
-    a = sub.add_parser("discover", help="環境省リンク集と台帳の差分")
+    a = sub.add_parser("discover", help="環境省リンク集と台帳の差分（確認済みは registry/discover_known.yaml）")
     a.add_argument("--json", action="store_true")
+    a.add_argument("--notify", action="store_true", help="確認済み一覧に無い差分があれば Discord へ 1 通（DISCORD_WEBHOOK_URL が無ければ表示だけ）")
     a.set_defaults(fn=cmd_discover)
     a = sub.add_parser("notify", help="直近 report の異常を Discord へ")
     a.add_argument("--dry-run", action="store_true")
