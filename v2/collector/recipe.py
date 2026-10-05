@@ -61,6 +61,7 @@ class Recipe:
     notes: str | None = None
     url: str | None = None          # 台帳の URL の代わりに開く入口（省略時は台帳の URL）
     transpose: str | None = None    # 転置表（1 列 = 1 頭）の table セレクタ。指定時は rows の代わりに列を行にする
+    row_until: str | None = None    # 指定時は rows の要素を 1 頭の始まりとし、後ろの兄弟要素を次の始まりかこの要素の手前までまとめて 1 行にする
     source_url: str | None = None   # PDF の子の元ページリンク。既定は入口ページ（日次で差し替わる PDF は翌日 404 になる）。"doc" で PDF そのもの
 
     @classmethod
@@ -129,6 +130,12 @@ class Row:
     el: Tag | None = None                   # HTML の行
     cells: dict[str, str] | None = None     # PDF 表の行（見出し名 → 値、"0","1".. も入れる）
     chunk: str | None = None                # PDF テキストの 1 頭分
+    anchor: Tag | None = None               # row_until でまとめた行の、元の文書上の始まりの要素（el は複製なので位置を持たない）
+
+    @property
+    def origin(self) -> Tag | None:
+        """文書上の位置の基準（from: heading・prev/next_siblings 用）。まとめた行は元の始まりの要素。"""
+        return self.anchor if self.anchor is not None else self.el
 
     def text(self) -> str:
         """行の全文（row_filter・種別・捨てた理由の表示に使う）。要素の境目は全部空白。"""
@@ -423,6 +430,8 @@ def extract_rows(recipe: Recipe, doc: Doc) -> list[Row]:
     assert doc.soup is not None
     if recipe.transpose:
         rows = _transposed_rows(recipe, doc)
+    elif recipe.row_until:
+        rows = _grouped_rows(recipe, doc)
     else:
         rows = [Row(doc=doc, el=el) for el in doc.soup.select(recipe.rows)]
     return _filter_rows(recipe, rows)
@@ -454,6 +463,35 @@ def _transposed_rows(recipe: Recipe, doc: Doc) -> list[Row]:
                 elif len(cells) == 1:
                     holder.append(copy.copy(cells[0]))
             rows.append(Row(doc=doc, el=holder))
+    return rows
+
+
+def _grouped_rows(recipe: Recipe, doc: Doc) -> list[Row]:
+    """1 頭分がフラットな兄弟要素に分かれているページ（鹿児島市: h2 番号 → p 写真 → p 種類 …）。
+
+    rows に当たった要素を 1 頭の始まりとし、後ろの兄弟要素を「次の始まり（またはそれを中に含む要素）」か
+    「row_until に当たる要素」の手前までまとめ、複製を入れた div を行にする（_transposed_rows と同じ作り）。
+    fields・image・row_filter はこの div の中を探す。元の位置は Row.anchor に持たせる。
+    """
+    import copy
+
+    if doc.soup is None:
+        return []
+    starts = doc.soup.select(recipe.rows)
+    start_ids = {id(s) for s in starts}
+    rows: list[Row] = []
+    for start in starts:
+        holder = BeautifulSoup("", "lxml").new_tag("div", attrs={"class": "grouped"})
+        holder.append(copy.copy(start))
+        for sib in start.find_next_siblings():
+            if not isinstance(sib, Tag):
+                continue
+            if id(sib) in start_ids or any(id(d) in start_ids for d in sib.find_all(True)):
+                break      # 次の子の始まり（さいたま市: 2 頭目だけ div に包まれている）
+            if sib.css.match(recipe.row_until or ""):
+                break      # 区切り（大分市: 「お家がみつかりました」の h2、千葉市: 掲載日の h2）
+            holder.append(copy.copy(sib))
+        rows.append(Row(doc=doc, el=holder, anchor=start))
     return rows
 
 
@@ -611,8 +649,8 @@ def field_value(spec: Any, row: Row) -> str | None:
     val: str | None = None
     base_text = row.field_text()
     from_heading = spec.get("from") == "heading"   # 行より前の直近の見出しから取る（越谷の管理番号 h3、広島の整理番号 h2）
-    if from_heading and row.el is not None:
-        val = nearest_heading(row.el, spec.get("selector", "h2, h3, h4"))
+    if from_heading and row.origin is not None:
+        val = nearest_heading(row.origin, spec.get("selector", "h2, h3, h4"))
     elif row.cells is not None:
         if "header" in spec:
             key = str(spec["header"]).replace(" ", "")
@@ -665,40 +703,48 @@ def image_url(recipe: Recipe, row: Row) -> tuple[str | None, str | None]:
         return None
 
     scope = spec.get("scope")
-    if scope == "self_or_prev_siblings":
-        # 行の中を先に探し、無ければ直前の兄弟要素（岐阜県: 保健所によって写真が表の中だったり、表の直前の p だったりする）
+    if scope in ("self_or_prev_siblings", "self_or_next_siblings"):
+        # 行の中を先に探し、無ければ兄弟要素（岐阜県: 保健所によって写真が表の中だったり、表の直前の p だったりする）
         hit = pick(row.el)
         if hit:
             return hit
     root: Tag = row.el
-    if scope in ("prev_siblings", "self_or_prev_siblings"):
-        # 写真が行の外（直前の兄弟要素）にあるとき（広島市: h2 → p.imagecenter img → dl）。
-        # 前の行（同じタグ名の兄弟）に当たるまで遡り、文書順に並べ直して探す
-        import copy
-
-        holder = BeautifulSoup('<div class="prev-siblings"></div>', "lxml").div
-        assert holder is not None
-        sibs: list[Tag] = []
-        # stop_at: row なら「前の行（rows に当たる要素）」で止める（岩手県: 行も写真も p なので同じタグ名で止めると写真の p で止まる）。
-        # 既定は同じタグ名の兄弟で止める（広島市・明石・岐阜はこれで正しい）
-        stop_at_row = spec.get("stop_at") == "row" and isinstance(recipe.rows, str)
-        for sib in row.el.find_previous_siblings():
-            if not isinstance(sib, Tag):
-                continue
-            if stop_at_row:
-                try:
-                    if sib.css.match(recipe.rows):
-                        break
-                except Exception:  # noqa: BLE001 — 解釈できないセレクタは既定の止め方に戻す
-                    if sib.name == row.el.name:
-                        break
-            elif sib.name == row.el.name:
-                break
-            sibs.append(sib)
-        for sib in reversed(sibs):
-            holder.append(copy.copy(sib))
-        root = holder
+    if scope in ("prev_siblings", "self_or_prev_siblings", "next_siblings", "self_or_next_siblings"):
+        # 写真が行の外の兄弟要素にあるとき。prev は直前（広島市: h2 → p.imagecenter img → dl）、
+        # next は直後（名古屋市 譲渡猫: h2 → p.imagecenter img）。次／前の行に当たるまで進み、文書順に並べて探す
+        root = _sibling_holder(recipe, spec, row.origin or root, forward=scope.endswith("next_siblings"))
     return pick(root) or (None, None)
+
+
+def _sibling_holder(recipe: Recipe, spec: dict[str, Any], base: Tag, forward: bool) -> Tag:
+    """base の前（forward なら後ろ）の兄弟要素を、前／次の行に当たる手前まで集め、文書順に複製した div。
+
+    既定は base と同じタグ名の兄弟で止める（広島市・明石・岐阜）。stop_at: row なら「rows に当たる要素」で止める
+    （岩手県: 行も写真も p なので、同じタグ名で止めると写真の p で止まる）。
+    まとめた行（row_until）では base は元の始まりの要素。
+    """
+    import copy
+
+    holder = BeautifulSoup("", "lxml").new_tag("div", attrs={"class": "next-siblings" if forward else "prev-siblings"})
+    sibs: list[Tag] = []
+    stop_at_row = spec.get("stop_at") == "row" and isinstance(recipe.rows, str)
+    walk = base.find_next_siblings() if forward else base.find_previous_siblings()
+    for sib in walk:
+        if not isinstance(sib, Tag):
+            continue
+        if stop_at_row:
+            try:
+                if sib.css.match(recipe.rows):
+                    break
+            except Exception:  # noqa: BLE001 — 解釈できないセレクタは既定の止め方に戻す
+                if sib.name == base.name:
+                    break
+        elif sib.name == base.name:
+            break
+        sibs.append(sib)
+    for sib in (sibs if forward else reversed(sibs)):
+        holder.append(copy.copy(sib))
+    return holder
 
 
 def looks_like_date(s: str | None) -> bool:

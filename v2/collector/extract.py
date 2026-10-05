@@ -62,8 +62,8 @@ def resolve_species(source: Source, recipe: Recipe, row: Row, fields: dict[str, 
     text: str | None
     if src == "field":
         text = fields.get("species")
-    elif src == "heading" and row.el is not None:
-        text = nearest_heading(row.el, spec.get("selector", "h2, h3, h4"))
+    elif src == "heading" and row.origin is not None:
+        text = nearest_heading(row.origin, spec.get("selector", "h2, h3, h4"))   # まとめた行（row_until）は元の始まりの位置から
     elif src == "url":
         text = row.doc.url          # dog.pdf / cat.pdf のように文書の URL で決まるとき
     else:
