@@ -16,7 +16,7 @@ from typing import Any, Callable, TypeVar
 from urllib.parse import urljoin
 
 import yaml
-from bs4 import BeautifulSoup, Tag, XMLParsedAsHTMLWarning
+from bs4 import BeautifulSoup, CData, NavigableString, Tag, XMLParsedAsHTMLWarning
 
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)   # RSS を HTML として読むレシピがある
 
@@ -131,11 +131,65 @@ class Row:
     chunk: str | None = None                # PDF テキストの 1 頭分
 
     def text(self) -> str:
+        """行の全文（row_filter・種別・捨てた理由の表示に使う）。要素の境目は全部空白。"""
         if self.el is not None:
             return self.el.get_text(" ", strip=True)
         if self.cells is not None:
             return " ".join(v for k, v in self.cells.items() if not k.isdigit())
         return self.chunk or ""
+
+    def field_text(self) -> str:
+        """項目の regex を当てる全文。インライン要素の境目は詰める（visible_text）。
+
+        text() は変えない: row_filter の text_lacks が「<span>0</span>匹」の境目の空白込みの文言
+        （福島県「0 匹の情報があります」）で書かれているため。
+        """
+        if self.el is not None:
+            return visible_text(self.el)
+        return self.text()
+
+
+# --- 文字の連結 ---------------------------------------------------------------
+# 見た目で文字が続くインライン要素。この境目には空白を入れない（佐世保市「<span>令</span>和8年…」）
+_INLINE_TAGS = frozenset({
+    "a", "abbr", "b", "bdi", "bdo", "big", "cite", "code", "data", "del", "dfn", "em", "font", "i", "ins", "kbd",
+    "label", "mark", "nobr", "q", "rb", "ruby", "s", "samp", "small", "span", "strike", "strong", "sub", "sup",
+    "time", "tt", "u", "var", "wbr",
+})
+
+
+def visible_text(el: Tag) -> str:
+    """要素の文字。get_text(" ", strip=True) と同じだが、インライン要素の境目には空白を入れない。
+
+    ブロック要素（td・th・li・p・div・dt・dd・h1-6 等）・br・img の境目と、元の HTML にある空白は
+    今まで通り空白 1 つ（「犬」「オス」が別のセルなら「犬 オス」のまま）。文字列ごとの前後の空白は落とす。
+    """
+    parts: list[str] = []
+    gap = False     # 次の文字列との間に空白を入れるか
+
+    def walk(node: Tag) -> None:
+        nonlocal gap
+        for c in node.children:
+            if isinstance(c, Tag):
+                inline = c.name in _INLINE_TAGS
+                if not inline:
+                    gap = True
+                walk(c)
+                if not inline:
+                    gap = True
+            elif type(c) in (NavigableString, CData):     # get_text と同じく注釈・script 等は除く
+                s = str(c)
+                t = s.strip()
+                if not t:
+                    gap = gap or bool(s)
+                    continue
+                if parts:
+                    parts.append(" " if gap or s[0] != t[0] else "")
+                parts.append(t)
+                gap = s[-1] != t[-1]
+
+    walk(el)
+    return "".join(parts)
 
 
 # --- セレクタ -----------------------------------------------------------------
@@ -149,7 +203,7 @@ def parse_sel(spec: str) -> tuple[str, str]:
 
 def _attr(el: Tag, attr: str) -> str | None:
     if attr == "text":
-        return el.get_text(" ", strip=True)
+        return visible_text(el)
     v = el.get(attr)
     if isinstance(v, list):
         v = " ".join(v)
@@ -458,24 +512,53 @@ def _pdf_rows(recipe: Recipe, doc: Doc) -> list[Row]:
 
 # --- fields -----------------------------------------------------------------
 def _text(t: Tag) -> str | None:
-    return t.get_text(" ", strip=True) or None
+    return visible_text(t) or None
+
+
+_LABEL_PUNCT = " \t\r\n　:：・、。()（）[]［］【】「」<>＜＞*＊"
+
+
+def _looks_like_heading(head: Tag, cand: Tag, label: str) -> bool:
+    """label のセル head に対応する値の候補 cand が、値ではなく見出しに見えるか。
+
+    見出しが横に並ぶ表（td「収容日」｜td「収容場所」の次の行が値）では、label「収容」の隣は別の見出しなので
+    捨てて次の行を見る。この判定は以前「cand が label の文字を含めば捨てる」だったため、値が label を含むだけ
+    （label「保健所」の値「菊池保健所」、熊本県動愛）でも捨てていた。今は次のときだけ見出しとみなす:
+    - cand が th / dt（見出しのタグ）で label を含む
+    - cand の文字が label そのもの（「性別：」のように記号・空白を除くと label と同じ）
+    - cand の中に「label: …」と書かれている（値のセルの中に項目名つきで書く作り。従来どおり最後の読み取りに任せる）
+    - head も cand も td で、cand が label で始まる（「収容日｜収容場所」のように見出しが並ぶ行）
+    th → td、dt → dd の組は見出しと値がタグで分かれているので、label を含むだけの値は取る。
+    """
+    if label not in cand.get_text():
+        return False
+    text = cand.get_text("", strip=True)
+    if cand.name in ("th", "dt"):
+        return True
+    if text.strip(_LABEL_PUNCT) == label:
+        return True
+    if re.search(re.escape(label) + r"\s*[:：]", text):
+        return True     # セルの中に「備考: …」と書かれている（高知 kochi_apc）。最後の「label：値」の読み取りに任せる
+    if head.name == "td":
+        return text.startswith(label)
+    return False
 
 
 def _label_value(el: Tag, label: str) -> str | None:
     """「性別」と書かれたセルに対応する値。
 
     対応順: aria-label 属性 → th/dt の隣の td/dd → 見出し行の同じ列（次の tr）→ 表の先頭行が見出し
-    → 「性別：メス」のようにテキスト内に書かれたもの。
+    → 「性別：メス」のようにテキスト内に書かれたもの。値が見出しに見えるとき（_looks_like_heading）は捨てて次を見る。
     """
     c = el.select_one(f'[aria-label*="{label}"]')
     if c is not None:
         return _text(c)
     for cell in el.find_all(["th", "td", "dt"]):
-        t = cell.get_text(" ", strip=True)
+        t = visible_text(cell)
         if label not in t or len(t) > len(label) + 12:
             continue
         sib = cell.find_next_sibling(["td", "dd"])
-        if sib is not None and label not in sib.get_text():
+        if sib is not None and not _looks_like_heading(cell, sib, label):
             return _text(sib)
         tr = cell.find_parent("tr")
         if tr is not None:
@@ -484,19 +567,19 @@ def _label_value(el: Tag, label: str) -> str | None:
             if cell in kids and nxt is not None:
                 idx = kids.index(cell)
                 cells = nxt.find_all(["th", "td"], recursive=False)
-                if idx < len(cells) and label not in cells[idx].get_text():
+                if idx < len(cells) and not _looks_like_heading(cell, cells[idx], label):
                     return _text(cells[idx])
     if el.name == "tr":
         table = el.find_parent("table")
         head = table.find("tr") if table else None
         if head is not None and head is not el:
-            heads = [c.get_text(" ", strip=True) for c in head.find_all(["th", "td"])]
+            heads = [visible_text(c) for c in head.find_all(["th", "td"])]
             for i, h in enumerate(heads):
                 if label in h:
                     cells = el.find_all(["td", "th"])
                     if i < len(cells):
                         return _text(cells[i])
-    m = re.search(re.escape(label) + r"\s*[:：]\s*([^\s　]+)", el.get_text(" ", strip=True))
+    m = re.search(re.escape(label) + r"\s*[:：]\s*([^\s　]+)", visible_text(el))
     return m.group(1) if m else None
 
 
@@ -517,7 +600,7 @@ def nearest_heading(el: Tag, selector: str) -> str | None:
             continue
         if order.get(id(c), -1) < pos:
             best = c
-    return best.get_text(" ", strip=True) if best is not None else None
+    return visible_text(best) if best is not None else None
 
 
 def field_value(spec: Any, row: Row) -> str | None:
@@ -526,7 +609,7 @@ def field_value(spec: Any, row: Row) -> str | None:
     if isinstance(spec, str):
         spec = {"selector": spec}
     val: str | None = None
-    base_text = row.text()
+    base_text = row.field_text()
     from_heading = spec.get("from") == "heading"   # 行より前の直近の見出しから取る（越谷の管理番号 h3、広島の整理番号 h2）
     if from_heading and row.el is not None:
         val = nearest_heading(row.el, spec.get("selector", "h2, h3, h4"))
