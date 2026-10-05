@@ -12,11 +12,11 @@ import unicodedata
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, TypeVar
+from typing import Any, Callable, Iterator, TypeVar
 from urllib.parse import urljoin
 
 import yaml
-from bs4 import BeautifulSoup, CData, NavigableString, Tag, XMLParsedAsHTMLWarning
+from bs4 import BeautifulSoup, CData, NavigableString, PageElement, Tag, XMLParsedAsHTMLWarning
 
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)   # RSS を HTML として読むレシピがある
 
@@ -173,29 +173,32 @@ def visible_text(el: Tag) -> str:
     """
     parts: list[str] = []
     gap = False     # 次の文字列との間に空白を入れるか
-
-    def walk(node: Tag) -> None:
-        nonlocal gap
-        for c in node.children:
-            if isinstance(c, Tag):
-                inline = c.name in _INLINE_TAGS
-                if not inline:
-                    gap = True
-                walk(c)
-                if not inline:
-                    gap = True
-            elif type(c) in (NavigableString, CData):     # get_text と同じく注釈・script 等は除く
-                s = str(c)
-                t = s.strip()
-                if not t:
-                    gap = gap or bool(s)
-                    continue
-                if parts:
-                    parts.append(" " if gap or s[0] != t[0] else "")
-                parts.append(t)
-                gap = s[-1] != t[-1]
-
-    walk(el)
+    # 再帰でなく明示のスタックで回す（閉じ忘れの strong が数百段重なるページで RecursionError にしない。千葉県で 52 段の実例）。
+    # 要素は (子の反復子, ブロック要素か)。ブロック要素に入るときと出るときに空白を入れる
+    stack: list[tuple[Iterator[PageElement], bool]] = [(iter(el.children), False)]
+    while stack:
+        it, block = stack[-1]
+        c = next(it, None)
+        if c is None:
+            stack.pop()
+            if block:
+                gap = True
+            continue
+        if isinstance(c, Tag):
+            inline = c.name in _INLINE_TAGS
+            if not inline:
+                gap = True
+            stack.append((iter(c.children), not inline))
+        elif type(c) in (NavigableString, CData):     # get_text と同じく注釈・script 等は除く
+            s = str(c)
+            t = s.strip()
+            if not t:
+                gap = gap or bool(s)
+                continue
+            if parts:
+                parts.append(" " if gap or s[0] != t[0] else "")
+            parts.append(t)
+            gap = s[-1] != t[-1]
     return "".join(parts)
 
 
@@ -484,13 +487,15 @@ def _grouped_rows(recipe: Recipe, doc: Doc) -> list[Row]:
     for start in starts:
         holder = BeautifulSoup("", "lxml").new_tag("div", attrs={"class": "grouped"})
         holder.append(copy.copy(start))
-        for sib in start.find_next_siblings():
+        for sib in start.next_siblings:
             if not isinstance(sib, Tag):
+                if type(sib) is NavigableString:
+                    holder.append(NavigableString(str(sib)))   # 始まりの間の裸の文字（「<h3>No.1</h3>種類：柴<br>…」）
                 continue
             if id(sib) in start_ids or any(id(d) in start_ids for d in sib.find_all(True)):
                 break      # 次の子の始まり（さいたま市: 2 頭目だけ div に包まれている）
-            if sib.css.match(recipe.row_until or ""):
-                break      # 区切り（大分市: 「お家がみつかりました」の h2、千葉市: 掲載日の h2）
+            if sib.css.match(recipe.row_until or "") or sib.select_one(recipe.row_until or "") is not None:
+                break      # 区切り（大分市: 「お家がみつかりました」の h2、千葉市: 掲載日の h2）。兄弟の中にあっても止める
             holder.append(copy.copy(sib))
         rows.append(Row(doc=doc, el=holder, anchor=start))
     return rows
@@ -554,6 +559,7 @@ def _text(t: Tag) -> str | None:
     return visible_text(t) or None
 
 
+_NEXT_LABEL = re.compile(r"[^\s\d:：]{1,8}[:：]")   # 「性別：」のような項目名＋コロン（_label_value の最後の読み取り用）
 _LABEL_PUNCT = " \t\r\n　:：・、。()（）[]［］【】「」<>＜＞*＊"
 
 
@@ -579,7 +585,12 @@ def _looks_like_heading(head: Tag, cand: Tag, label: str) -> bool:
     if re.search(re.escape(label) + r"\s*[:：]", text):
         return True     # セルの中に「備考: …」と書かれている（高知 kochi_apc）。最後の「label：値」の読み取りに任せる
     if head.name == "td":
-        return text.startswith(label)
+        # 見出しが td で横に並ぶ行。候補が label で始まる（「収容日｜収容場所」）なら見出し。
+        # 見出しセルが label より長い（label「場所」が「保護場所」に当たった）ときは、label を含む短い隣（「収容場所」）も見出し。
+        # 見出しセルが label そのもの（「保健所」）なら隣は値とみなす（「水俣保健所」）。捨てても次の行の同じ列を見る
+        if text.startswith(label):
+            return True
+        return head.get_text("", strip=True).strip(_LABEL_PUNCT) != label and len(text) <= len(label) + 4
     return False
 
 
@@ -619,7 +630,11 @@ def _label_value(el: Tag, label: str) -> str | None:
                     if i < len(cells):
                         return _text(cells[i])
     m = re.search(re.escape(label) + r"\s*[:：]\s*([^\s　]+)", visible_text(el))
-    return m.group(1) if m else None
+    if m is None:
+        return None
+    # 値が空欄の項目（「毛色：」の次の行が「性別：不明」）では、次の項目を値として拾ってしまう。
+    # 別の項目名＋「：」に見える値は取らない（数字で始まる「18:30」は項目名ではないので取る）
+    return None if _NEXT_LABEL.match(m.group(1)) else m.group(1)
 
 
 def nearest_heading(el: Tag, selector: str) -> str | None:
