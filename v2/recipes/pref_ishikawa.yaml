@@ -2,6 +2,7 @@
 # 案内のみで動物個別データなし。実データは外部サイト aigo-ishikawa.jp の「迷子情報」
 # ページに div.data_boxes を JS が動的描画する形で載っている（要 render: true）。
 # 各カード div.data_box の data-type 属性が種別（0=犬 / 1=猫）を表す。
+# 2026-10-05 監査: ページは「迷子の犬・猫情報」（返還の手続きつき）なので、台帳の区分を保護中から迷子（stray）に直した。レシピは変更なし。
 url: https://aigo-ishikawa.jp/lostpet_list/
 steps:
   - render: true

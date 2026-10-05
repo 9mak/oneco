@@ -2,8 +2,9 @@
 # 1 頭 = <div class="img-area">（写真＋近くの説明文に管理番号・収容日・性別等）。動物がいない時は
 # 同じ div に no_info.gif だけが入り alt="現在、掲載する情報はありません"（img alt は get_text() に
 # 出ないため empty_text では直接検出できない）。row_filter で管理番号/収容日等の語が無い div を除外して
-# 0件にし、0件のときは常に本文にある案内文（動物有無に関係なく載っている定型文）を empty_text にして
-# 「本当に0頭」と確定させる。
+# 0件にし、0件のときは no_info.gif の alt（empty_text は本文と画像の alt を照合する）で「本当に0頭」と確定させる。
+# 2026-10-05 監査: empty_text が「情報の更新は原則収容当日ですが…」（動物がいる日も載っている案内文）だったので、0 頭の日にだけ出る alt の文言に直した。
+# 構造が変わって行が取れなくなった日も 0 頭に見えて通知が来なくなるのを防ぐ。
 url: https://www.city.toyonaka.osaka.jp/kurashi/pettp-inuneko/shuyou.html
 rows: ".img-area"
 row_filter:
@@ -19,4 +20,4 @@ species:
   from: text
   map: {"犬": dog, "猫": cat}
 empty_text:
-  - "情報の更新は原則収容当日ですが、収容する時間帯によっては翌開庁日になることがあります。"
+  - "現在、掲載する情報はありません"
