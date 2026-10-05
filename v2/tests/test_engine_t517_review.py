@@ -66,3 +66,18 @@ def test_grouped_rows_stop_before_sibling_that_contains_a_separator():
     assert len(rows) == 1
     assert "No.9" not in rows[0].text()
     assert image_url(recipe, rows[0]) == (None, None)       # 写真の無い No.1 に No.9 の写真を付けない
+
+
+# --- 再レビュー（17:20）F-08: 見出しの文字の一部を label にした 2 列表で、短い値を見出しにしない ------------------------
+def test_label_in_two_column_td_table_takes_short_value_containing_label():
+    """岐阜県の表は「毛 色｜虎毛」のような td の 2 列で、レシピは label「毛」。値「虎毛」は label を含み短いが値。"""
+    html = "<table><tr><td>毛 色</td><td>虎毛</td></tr><tr><td>首 輪</td><td>なし</td></tr></table>"
+    _, rows = _row(html, rows="table")
+    assert field_value({"label": "毛"}, rows[0]) == "虎毛"
+
+
+# --- 再レビュー（17:20）F-09: 「TEL:」「https://」で始まる値は項目名ではない --------------------------------------------
+def test_label_fallback_keeps_values_starting_with_ascii_word_and_colon():
+    _, rows = _row("<div class='a'><p>連絡先：TEL:0120-000-000</p><p>詳細：https://example.jp/a</p></div>")
+    assert field_value({"label": "連絡先"}, rows[0]) == "TEL:0120-000-000"
+    assert field_value({"label": "詳細"}, rows[0]) == "https://example.jp/a"

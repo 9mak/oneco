@@ -559,7 +559,8 @@ def _text(t: Tag) -> str | None:
     return visible_text(t) or None
 
 
-_NEXT_LABEL = re.compile(r"[^\s\d:：]{1,8}[:：]")   # 「性別：」のような項目名＋コロン（_label_value の最後の読み取り用）
+# 「性別：」のような項目名＋コロン（_label_value の最後の読み取り用）。数字（18:30）・英字（TEL:・https://）で始まるものは値
+_NEXT_LABEL = re.compile(r"(?![A-Za-zＡ-Ｚａ-ｚ])[^\s\d:：]{1,8}[:：]")
 _LABEL_PUNCT = " \t\r\n　:：・、。()（）[]［］【】「」<>＜＞*＊"
 
 
@@ -573,6 +574,7 @@ def _looks_like_heading(head: Tag, cand: Tag, label: str) -> bool:
     - cand の文字が label そのもの（「性別：」のように記号・空白を除くと label と同じ）
     - cand の中に「label: …」と書かれている（値のセルの中に項目名つきで書く作り。従来どおり最後の読み取りに任せる）
     - head も cand も td で、cand が label で始まる（「収容日｜収容場所」のように見出しが並ぶ行）
+    - head も cand も td で、どちらも label で終わり cand が短い（label「場所」の「保護場所｜収容場所」）
     th → td、dt → dd の組は見出しと値がタグで分かれているので、label を含むだけの値は取る。
     """
     if label not in cand.get_text():
@@ -586,11 +588,15 @@ def _looks_like_heading(head: Tag, cand: Tag, label: str) -> bool:
         return True     # セルの中に「備考: …」と書かれている（高知 kochi_apc）。最後の「label：値」の読み取りに任せる
     if head.name == "td":
         # 見出しが td で横に並ぶ行。候補が label で始まる（「収容日｜収容場所」）なら見出し。
-        # 見出しセルが label より長い（label「場所」が「保護場所」に当たった）ときは、label を含む短い隣（「収容場所」）も見出し。
-        # 見出しセルが label そのもの（「保健所」）なら隣は値とみなす（「水俣保健所」）。捨てても次の行の同じ列を見る
+        # 見出しセルも候補も label で終わり（label「場所」に「保護場所」「収容場所」）、候補が短いときも見出し。
+        # 見出しセルが label そのもの（「保健所｜水俣保健所」）や、label が見出しの途中にある（岐阜「毛 色｜虎毛」の label「毛」）
+        # なら候補は値。捨てても次の行の同じ列を見るので、旧挙動より悪くはならない
         if text.startswith(label):
             return True
-        return head.get_text("", strip=True).strip(_LABEL_PUNCT) != label and len(text) <= len(label) + 4
+        head_text = head.get_text("", strip=True).strip(_LABEL_PUNCT)
+        cand_text = text.strip(_LABEL_PUNCT)
+        return (head_text != label and head_text.endswith(label) and cand_text.endswith(label)
+                and len(cand_text) <= len(label) + 4)
     return False
 
 
