@@ -15,6 +15,28 @@ from .registry import Source
 FIELD_NAMES = ["name", "sex", "age", "breed", "color", "size", "management_no", "shelter_date", "note", "location"]
 _SPECIES_DEFAULT_MAP = {"犬": "dog", "いぬ": "dog", "イヌ": "dog", "猫": "cat", "ねこ": "cat", "ネコ": "cat", "仔猫": "cat", "子猫": "cat", "子犬": "dog", "仔犬": "dog"}
 
+# species.infer: true のときだけ使う「品種・毛色の欄にあれば犬猫が確実に言える語」（部分一致）。
+# 全国の掲載（2026-10-05 の 1,622 頭）で、反対の種別に一度も使われていない語だけを置く。
+# 使わない語: 雑種・MIX・ミックス・不明（両方に使う）、茶トラ・サビ・トラ・虎（犬の例あり: 山梨「お尻の部分が茶トラ」・
+# 高知「茶サビ」・甲斐犬の「虎毛」）、大きさ（小・中・大、小型・中型・大型は猫にも使う。周南 8-3-99 は猫で「小」）
+_INFER_DOG = (
+    "犬", "いぬ", "イヌ",
+    "柴", "秋田", "紀州", "狆", "チワワ", "チワプー", "ダックス", "プードル", "マルプー", "ポメ", "シーズー", "シー・ズー",
+    "マルチーズ", "ヨークシャー", "ヨーキー", "パピヨン", "ビーグル", "コーギー", "ラブラド", "レトリ", "シェパード",
+    "ハスキー", "コリー", "シェルティ", "シェットランド", "ポインター", "セッター", "テリア", "ハウンド", "ブルドッグ",
+    "ブルドック", "パグ", "シュナウザー", "ドーベルマン", "ペキニーズ", "キャバリア", "スピッツ", "ピンシャー",
+    "ピットブル", "ピット・ブル", "サモエド", "ピレニーズ", "バーナード",
+)
+_INFER_CAT = (
+    "猫", "ねこ", "ネコ",
+    "キジ", "サバトラ", "サバ白", "三毛", "ミケ", "ハチワレ", "はちわれ", "タビー",
+    "スコティッシュ", "アメリカンショート", "アメショ", "ブリティッシュ", "ロシアンブルー", "シャム", "ペルシャ",
+    "ヒマラヤン", "メインクーン", "ノルウェージャン", "ラグドール", "マンチカン", "ミヌエット", "ベンガル", "アビシニアン",
+    "ソマリ", "エキゾチック", "キンカロー", "サイベリアン", "ラパーマ", "セルカーク", "バーマン", "トンキニーズ",
+    "シンガプーラ", "スフィンクス", "オシキャット", "ターキッシュ",
+)
+_INFER_FIELDS = ("breed", "color")   # 保護場所（柴田町）や備考（「子犬 4 頭授乳中」）は見ない
+
 
 @dataclass
 class Dropped:
@@ -50,7 +72,24 @@ def resolve_species(source: Source, recipe: Recipe, row: Row, fields: dict[str, 
         for k, v in mapping.items():
             if k in text:
                 return v
+    if spec.get("infer"):
+        inferred = infer_species(fields)
+        if inferred:
+            return inferred
     return "other"
+
+
+def infer_species(fields: dict[str, str | None]) -> str | None:
+    """品種・毛色の欄に犬だけ・猫だけの語（柴・チワワ・キジトラ・三毛 等）があれば種別を返す。
+    動物種の欄が無い表（山口県 周南）で使う。犬の語と猫の語が両方当たる、またはどちらも無いときは None（決めない）。"""
+    text = " ".join(fields.get(k) or "" for k in _INFER_FIELDS)
+    dog = any(w in text for w in _INFER_DOG)
+    cat = any(w in text for w in _INFER_CAT)
+    if dog and not cat:
+        return "dog"
+    if cat and not dog:
+        return "cat"
+    return None
 
 
 def make_id(source: Source, image_raw: str | None, f: dict[str, str | None], detail: str | None = None) -> str:
