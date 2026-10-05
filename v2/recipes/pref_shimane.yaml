@@ -13,7 +13,7 @@ steps:
     skip_errors: true
 rows: "body"
 row_filter:
-  text_lacks: ["死亡"]
+  text_lacks: ["死亡", "下の欄に動物情報がない場合"]   # 2026-10-05 T521 統合: 告知ページ（空の表と案内文だけ）は種別なし掲載（T518）で 1 頭に見えるので落とす
 image: "img[src*='.data/']@src"
 fields:
   species: {regex: "動物種別\\s*(犬|猫)"}
