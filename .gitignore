@@ -87,6 +87,7 @@ test-*.png
 oneco-*.png
 # ブランドアセットは例外 (SNSアバター等の公式画像)
 !frontend/public/brand/oneco-*.png
+!v2/site/static/brand/oneco-*.png
 mobile-header.png
 
 # ローカル SQLite (本番は Supabase、local 専用 cache)
