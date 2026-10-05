@@ -35,7 +35,8 @@ $PY -m collector fetch https://example.jp/ --text  # ページを取って本文
 $PY -m collector run --date 2026-09-28            # 全ページ収集 → data/animals-2026-09-28.json, data/latest.json, data/report-*.json
 $PY -m collector run --only pref_saga             # slug の前方一致で絞る
 $PY site/build.py                                  # data/latest.json → site/dist/（-m site.build は標準ライブラリの site と衝突して使えない）
-$PY -m collector discover                          # 環境省リンク集と台帳の差分
+$PY -m collector discover                          # 環境省リンク集と台帳の差分（確認済みは registry/discover_known.yaml）
+$PY -m collector discover --notify                 # 確認済み一覧に無い差分があれば Discord へ（collect.sh が月曜だけ実行）
 $PY -m collector notify                            # 直近の report を見て異常があれば Discord へ
 $PY -m collector repair <slug>                     # 読めなくなった slug のレシピを Claude に書き直させる（ANTHROPIC_API_KEY 必須）
 ```

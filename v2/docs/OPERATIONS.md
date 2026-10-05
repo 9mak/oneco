@@ -1,6 +1,6 @@
 # oneco v2 運用手順
 
-毎日 JST 0:05 に収集サーバー（手元の Mac の launchd。控えは VPS）が全自治体のページを読み、静的サイトを作り直して Cloudflare Workers（静的アセット）に置く。人がやるのは「通知が来た日に見る」「月 1 回 discover を回す」「撤去依頼が来たら台帳を 1 行直す」の 3 つ。
+毎日 JST 0:05 に収集サーバー（手元の Mac の launchd。控えは VPS）が全自治体のページを読み、静的サイトを作り直して Cloudflare Workers（静的アセット）に置く。人がやるのは「通知が来た日に見る」「新しい自治体の通知（週 1 回・増減があるときだけ）が来たらセッションで台帳への追加を頼む」「撤去依頼が来たら台帳を 1 行直す」の 3 つ。
 
 公開 URL は `https://oneco.9mak-0x13.workers.dev`（`site/config.json` の `base_url`。独自ドメインを付けたらここも変える）。
 
@@ -121,7 +121,8 @@ collect.sh は全部成功したときだけこの URL を叩き、どこかが�
 2. `collector notify` — report に異常（failed、または AI がレシピを書き直した）があるときだけ Discord に 1 通。平常時は何も送らない
 3. `site/build.py` — `data/latest.json` から `site/dist/` を作る
 4. `wrangler deploy`（`ops/wrangler.jsonc`）— `site/dist/` を Cloudflare Workers の静的アセットへ
-5. 全部成功したら `HEALTHCHECK_URL` へ ping
+5. **月曜（JST）だけ** `collector discover --notify` — 環境省リンク集と台帳の差分のうち、確認済み一覧（`registry/discover_known.yaml`）に無いもの（新しく増えた・消えた自治体）があるときだけ Discord に 1 通（4 節）。成否は「全部成功」に数えない（失敗しても rc・healthcheck・「失敗した工程」通知に影響しない）
+6. 全部成功したら `HEALTHCHECK_URL` へ ping
 
 途中で失敗しても止まらない。収集が全滅した日でも `data/latest.json` は前日のものが残っているので、サイトは「昨日のまま」出続ける（落ちない）。
 
@@ -148,22 +149,36 @@ AI がレシピを書き直した自治体 1 件（recipes/<slug>.yaml が変わ
 | `（公開 N 頭・成功 M ページ）` | その日の全体 | 前日と大きく違えば異常。`data/report-<日付>.json` を見る |
 | `失敗した工程 -> build deploy` | collect.sh の工程（run の落ち・build・deploy）が失敗した。読めないページの話ではない | `logs/collect-<日付>.log` の `-- <工程>: 失敗` の直前を見る。deploy なら `npx wrangler whoami`（OAuth 切れ）、build なら `data/latest.json` の有無 |
 | `収集を起動できなかった (exit 126)` | launchd の bash が collect.sh を実行できない（保護フォルダの下・パス違い） | ターミナルで `bash v2/ops/macos/install.sh` を入れ直す |
+| `環境省リンク集に新しい自治体 N 件` / `リンク集から消えた N 件`（月曜だけ） | 環境省リンク集と台帳の差分が、確認済み一覧に無い形で増減した | セッションで「差分を台帳に足して」と依頼する（4 節） |
+| `環境省リンク集を読めなかった`（月曜だけ） | リンク集が取れない、またはリンクが極端に少ない（ページの形が変わった）。日次収集とは無関係でサイトはふだんどおり | 1 回なら放置でよい。翌週も来たら `collector discover` を手で回し、URL の移転なら `collector/discover.py` の `ENV_URL`、形の変化なら読み方を直す |
 
 通知が来ない日 = 全ページ読めた日（ただし収集サーバー自体が動かなかった日も通知は来ない。サイトの日付が 2 日以上古ければ疑う）。healthchecks から「ping が来ない」メールが来たら収集サーバー自体を見る。Mac なら `launchctl print gui/$(id -u)/com.oneco.collect` の last exit code と `~/oneco-collect/v2/logs/launchd.log`、VPS なら `systemctl status oneco-collect.timer`、`journalctl -u oneco-collect --since yesterday`。
 
-## 4. 月 1 回: `collector discover`（新しい自治体を拾う）
+## 4. 週 1 回の自動通知: `collector discover`（新しい自治体を拾う）
 
-環境省の「収容動物の情報を掲載している自治体リンク先一覧」と台帳を突き合わせる。
+環境省の「収容動物の情報を掲載している自治体リンク先一覧」（`collector/discover.py` の `ENV_URL`）と台帳をドメイン単位で突き合わせる。`ops/collect.sh` が毎週月曜（JST）に `collector discover --notify` を走らせる（2 節）。
+
+- 差分は 2 種類: `台帳に無いドメイン`（リンク集にだけある）と `台帳にあるがリンク集に無いドメイン`
+- 人が確認した差分は `registry/discover_known.yaml` にドメインごとに書いてある。`status` は `pending`（台帳への追加待ち。`task` に受け持つタスク）・`excluded`（対象外。`note` に理由）・`covered`（別ドメインの slug で載せている。`slugs` と `note`）
+- 通知は一覧に無い差分（新しく増えた・消えた自治体）があるときだけ 1 通。差分が同じなら毎週送らない。実行時の状態は持たない（一覧は repo の中だけ）
+- リンク集が取れない・80 ドメイン未満（ふだんは 130 前後。ページの形が変わった）ときは差分を出さず「環境省リンク集を読めなかった」を 1 通（日次収集の失敗には数えない）
+- 2026-10-05 時点の一覧: covered 13（東京都・愛知県・秋田県・滋賀県と、リンク集が県のページを指している専用サイト 9）・pending 43（台帳に無い自治体。T519）・excluded 1（環境省の動画）。北海道と大分県は保健所へのリンク集で、一部しか載せていないので pending
+
+手で見るとき（`--notify` を付けなければ送らない。`DISCORD_WEBHOOK_URL` が無ければ `--notify` でも表示だけ）:
 
 ```bash
-cd /opt/oneco/v2   # ローカルでもよい
-/opt/oneco/.venv/bin/python -m collector discover
+cd v2   # 本番クローンなら ~/oneco-collect/v2
+../.venv/bin/python -m collector discover          # 差分を状態つきで表示（[未確認] が通知の対象）
+../.venv/bin/python -m collector discover --json   # unknown_new / unknown_gone / known / stale
 ```
 
-出力:
+### 通知が来たら
 
-- `台帳に無いドメイン N 件` — 候補。1 つずつブラウザで開き、犬猫の一覧ページなら台帳に足す
-- `台帳にあるがリンク集に無いドメイン N 件` — リンク集の網羅漏れが多い。自治体が掲載をやめていたら `enabled: false`
+1. セッションで「差分を台帳に足して」と依頼する。Claude が通知の自治体ごとにページを開き、犬猫の一覧なら下の手順で台帳・レシピ・実ページ確認・PR まで進める
+2. 足した自治体は `registry/discover_known.yaml` の行を消す（`pending` のまま台帳に入れると `tests/test_discover_t518.py` が落ちる）。台帳に足さない自治体は `excluded`（理由）か `covered`（載せている slug）で一覧に足す
+3. `リンク集から消えた` は、移転なら台帳の `url` を直し、掲載をやめたなら `enabled: false`。リンク集が県のページを指しているだけなら `covered` で一覧に足す
+4. 北海道・大分県のようなハブ（保健所へのリンク集）は、その先を全部台帳に入れたら `pending` を `covered` に変える
+5. 表示の最後の `確認済み一覧にあるが今の差分に無い` は、台帳に入った・リンク集から消えたもの。一覧から外してよい
 
 台帳に足す手順（1 自治体 = 1 ページ = 1 エントリ。譲渡と収容が別ページなら 2 エントリ）:
 
@@ -186,6 +201,7 @@ cd /opt/oneco/v2   # ローカルでもよい
 3. `python -m collector show city_example-1` で取れた行・捨てた行を確認。写真・性別・収容日が合っていること
 4. `python -m pytest tests -q`（台帳とレシピが読めることを確認するテストが入っている）
 5. commit → push → VPS で `git -C /opt/oneco pull`。翌日 0:00 から載る。すぐ載せたいなら `sudo systemctl start oneco-collect.service`
+6. discover の通知から足したなら、同じコミットで `registry/discover_known.yaml` のその行を消す（上の「通知が来たら」の 2）
 
 ## 5. 撤去依頼が来たら
 
