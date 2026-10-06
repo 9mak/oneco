@@ -77,6 +77,19 @@ def test_saitama_template_only_day_is_empty():
     assert res.animals == [] and res.empty_confirmed
 
 
+# --- 千葉県（雛形ブロックの番号が年度で変わる） -------------------------------------------------------
+def test_chiba_template_block_of_another_year_is_not_an_animal():
+    # 2025 年版の雛形「2500000ｰ01」は今年の番号の指定に当たらない。1 ブロックの左右の列に 2 頭（sa250827-01・ks250827-01）が並ぶ日でも両方を取る
+    res = _run("pref_chiba-1", "t521_pref_chiba-1_wb20250831.html")
+    assert sorted(a["management_no"] for a in res.animals) == ["ks250827-01", "kt250818-01", "sa250827-01", "sa250829-01"]
+    assert not any(a.get("breed") == "種類" or a.get("color") == "毛色" for a in res.animals)
+
+
+def test_chiba_template_only_day_is_empty():
+    res = _run("pref_chiba-2", "t521_pref_chiba-2_wb20250826.html")
+    assert res.animals == [] and res.empty_confirmed
+
+
 # --- header_row（見出し行の表）と label の候補 ----------------------------------------------------
 def _src() -> Source:
     return Source(slug="t", name="t", municipality="t", prefecture="埼玉県", url="https://x.jp/a/", kind="sheltered", species="cat")
