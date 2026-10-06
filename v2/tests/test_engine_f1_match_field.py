@@ -105,3 +105,18 @@ def test_without_match_field_row_scope_is_unchanged():
     recipe = Recipe.from_dict({**RECIPE, "image": "img@src"})
     res = build(_src(), recipe, [_doc(SENDAI)])
     assert [a["image_url"] for a in res.animals] == [None, None, None]   # 行（本体の表の tr）の中には写真が無い
+
+
+def test_match_field_allows_a_single_letter_suffix_like_a_or_b():
+    # T521 ゲート F3: 仙台市 譲渡猫の Wayback 2023-03 で写真名に枝番の英字（c22068b.jpg・alt「譲渡猫情報C22068B」）が付く。
+    # 1 文字の英字の枝番は同じ子とみなす。2 文字以上の英字や数字が続くものは別の番号
+    html = """<table class="a"><tr><td>C22068</td></tr></table>
+<p><img alt="x" src="/img/c22068ab.jpg"><img alt="譲渡猫情報C22068B" src="/img/c22068b.jpg"></p>"""
+    recipe = Recipe.from_dict({
+        "rows": "table.a tr",
+        "image": {"selector": "img@src", "match_field": "management_no"},
+        "fields": {"management_no": {"selector": "td"}},
+    })
+    rows = extract_rows(recipe, _doc(html, "https://x.jp/"))
+    assert image_url(recipe, rows[0], {"management_no": "C22068"})[0] == "https://x.jp/img/c22068b.jpg"
+    assert image_url(recipe, rows[0], {"management_no": "C2206"}) == (None, None)

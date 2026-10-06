@@ -10,8 +10,10 @@ row_until: "h2, h3"
 image: "img@src"
 fields:
   management_no: {selector: "h3", regex: "(\\d{4}-\\d+)"}
-  breed: {label: "種類", regex: "^([^（(]+)"}
-  color: {label: "種類", regex: "[（(]([^）)]+)[）)]"}
+  # 種類の行が無い子（Wayback 2023-03 の h3 と写真・種類が別の div にある作り）では label が見つからず、regex が行の全文の先頭
+  # （管理番号）に当たって品種になっていた（T521 ゲート F-01）。種類の p に絞り、regex も「種類：」から書く
+  breed: {selector: "p:-soup-contains('種類')", regex: "種類[：:]\\s*([^（(\\s]+)"}
+  color: {selector: "p:-soup-contains('種類')", regex: "種類[：:][^（(]*[（(]([^）)]+)[）)]"}
   sex: {label: "性別"}
   age: {label: "生年月"}
   note: {selector: "p:-soup-contains('備考')", regex: "備考[:：]\\s*(.+)"}

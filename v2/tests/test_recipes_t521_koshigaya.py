@@ -85,6 +85,16 @@ def test_chiba_template_block_of_another_year_is_not_an_animal():
     assert not any(a.get("breed") == "種類" or a.get("color") == "毛色" for a in res.animals)
 
 
+def test_nagano_breed_is_never_the_management_number():
+    # T521 ゲート F-01: 長野 譲渡猫の Wayback 2023-03 は h3（管理番号）と写真・種類が別の div にあり、種類の欄が見つからない子で
+    # regex が行の全文の先頭（管理番号）を品種にしていた
+    res = _run("nagano_hello_animal-2", "t521_nagano-2_wb20230322.html")
+    got = {a["management_no"]: (a["breed"], a["color"]) for a in res.animals}
+    assert got["2022-316"] == ("ミックス", "キジ白、白多め") and got["2022-306"] == ("ミックス", "茶トラ白")
+    assert all(b != m for m, (b, _) in got.items())
+    assert got["2022-307"] == (None, None)   # 種類が別の div にある作り。誤った値は入れない（取れないのは以前からの制約）
+
+
 def test_chiba_template_only_day_is_empty():
     res = _run("pref_chiba-2", "t521_pref_chiba-2_wb20250826.html")
     assert res.animals == [] and res.empty_confirmed

@@ -10,7 +10,7 @@ row_until: "h2, h3"
 image: "img@src"
 fields:
   management_no: {selector: "h3", regex: "管理番号\\s*([A-Za-z]*\\d[A-Za-z0-9-]*)"}
-  name: {selector: "h3", regex: "愛称[：:]\\s*([^）)]+)"}
+  name: {selector: "h3", regex: "愛称[：:]\\s*(.+?)\\s*）\\s*$"}   # 愛称に半角の括弧が入る子（Ohana (オハナ)・作(サク)）がいる（T521 ゲート）
   breed: {regex: "種類[：:]\\s*(.+?)\\s*性別[：:]"}
   sex: {label: "性別"}
   age: {label: "年齢"}

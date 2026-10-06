@@ -780,14 +780,15 @@ def image_url(recipe: Recipe, row: Row, fields: dict[str, str | None] | None = N
     exclude = [re.compile(x, re.I) for x in spec.get("exclude", [])]
     # match_field: 写真が本体と別の表にあるページ（仙台市 譲渡猫: 「管理番号/写真1/写真2」の表）。
     # 行で取った項目（管理番号）の値を src か alt に含む画像を文書全体から探す。前後が英数字の位置は
-    # 別の番号の一部とみなして当てない（C2509 を c25093-3.jpg に当てない）。値が無い行には写真を付けない
+    # 別の番号の一部とみなして当てない（C2509 を c25093-3.jpg に当てない）。値が無い行には写真を付けない。
+    # 後ろの 1 文字の英字の枝番（c22068b.jpg・alt「C22068B」）は同じ子とみなす（仙台市 Wayback 2023-03。T521 ゲート）
     match_field = spec.get("match_field")
     want: re.Pattern[str] | None = None
     if match_field:
         value = (fields or {}).get(str(match_field))
         if not value or row.doc.soup is None:
             return None, None
-        want = re.compile(r"(?<![A-Za-z0-9])" + re.escape(value) + r"(?![A-Za-z0-9])", re.I)
+        want = re.compile(r"(?<![A-Za-z0-9])" + re.escape(value) + r"(?![0-9])(?![A-Za-z][A-Za-z0-9])", re.I)
 
     def pick(root: Tag) -> tuple[str, str] | None:
         for el in root.select(sel):
