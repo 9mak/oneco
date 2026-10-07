@@ -155,6 +155,17 @@ def _blank_container(doc: Doc, selectors: list[str]) -> bool:
     return False
 
 
+def _absent_list(doc: Doc, spec: dict[str, str]) -> bool:
+    """empty_absent: この文書に枠（page）があり、一覧の器や個体へのリンク（none）が 1 つも無ければ True。
+
+    0 頭の日に一覧の器ごと消え、文言も出ないサイト用（静岡県 迷い犬情報一覧の ul.listlink）。枠が無い日（ブロック画面・
+    作り替え）や、器の名前が変わってもリンクが残る日は False で、failed として通知される。
+    """
+    if doc.soup is None:
+        return False
+    return bool(doc.soup.select(spec["page"])) and not doc.soup.select(spec["none"])
+
+
 def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | None = None) -> Result:
     """docs: rows を適用する文書。visited: 入口から辿った全文書（empty_text の照合にも使う）。"""
     res = Result(docs=len(docs))
@@ -227,6 +238,8 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
     pool = list(docs) + [d for d in (visited or []) if d not in docs]
     if not res.animals and recipe.empty_selector:
         res.empty_confirmed = any(_blank_container(d, recipe.empty_selector) for d in pool)
+    if not res.animals and recipe.empty_absent and not res.empty_confirmed:
+        res.empty_confirmed = any(_absent_list(d, recipe.empty_absent) for d in pool)
     if not res.animals and recipe.empty_text and not res.empty_confirmed:
         alltext = " ".join(d.text() for d in pool)
         # 0 頭のときだけ「現在、掲載する情報はありません」の画像を出すサイトがある（豊中市）ので img の alt も照合する

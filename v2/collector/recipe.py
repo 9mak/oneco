@@ -53,6 +53,7 @@ class Recipe:
     species: dict[str, Any] = field(default_factory=dict)
     empty_text: list[str] = field(default_factory=list)
     empty_selector: list[str] = field(default_factory=list)   # 0 頭の日に空になる一覧の器（文言が出ないサイト用）。extract.build で照合
+    empty_absent: dict[str, str] = field(default_factory=dict)   # {page, none}: 0 頭の日に器ごと消えるサイト用。extract.build で照合
     encoding: str | None = None
     max_pages: int = 20
     base_url: str | None = None
@@ -734,6 +735,15 @@ def field_value(spec: Any, row: Row) -> str | None:
         return None
     if isinstance(spec, str):
         spec = {"selector": spec}
+    if "join" in spec:
+        # 複数の指定で取った値を sep でつなぐ（取れなかったものと、前と同じ値は飛ばす）。明石 飼い主募集の猫の
+        # 「トライアル中」の印と性格（2026-10-07 T521）
+        parts: list[str] = []
+        for sub in spec["join"]:
+            v = field_value(sub, row)
+            if v and v not in parts:
+                parts.append(v)
+        return str(spec.get("sep", " ")).join(parts) or None
     val: str | None = None
     base_text = row.field_text()
     from_heading = spec.get("from") == "heading"   # 行より前の直近の見出しから取る（越谷の管理番号 h3、広島の整理番号 h2）

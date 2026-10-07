@@ -1742,6 +1742,19 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+- slug: pref_shimane-2
+  name: 島根県 松江保健所（収容動物の表）
+  municipality: 島根県 松江保健所
+  prefecture: 島根県
+  phone: null
+  address: null
+  url: https://www.pref.shimane.lg.jp/infra/nature/animal/matsue_hoken/doubutu/hogozyouhou_kakobunn/syuyouari.html
+  kind: sheltered
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_shimane-2.yaml
+  enabled: true
+  note: 2026-10-07 T521 ゲート（judgeB2 F-01）。2023〜2026-02 は収容した子をこの表のページに載せていた。pref_shimane（現行一覧から 1 頭 1 ページ）と別に、表の作りに戻る日に備えて読む
 - slug: city_fukuyama-1
   name: 福山市（迷い犬）
   municipality: 福山市
@@ -3790,7 +3803,7 @@ sources:
     list_link_pattern: null
     pdf_link_pattern: null
 - slug: pref_shizuoka
-  name: 静岡県（保護犬猫情報）
+  name: 静岡県（迷い犬情報）
   municipality: 静岡県
   prefecture: 静岡県
   phone: null
@@ -4088,14 +4101,14 @@ sources:
   enabled: true
   note: pref_iwate_ichinoseki から譲渡ページ「譲渡動物情報」だけを分けた slug（2026-10-05 T517）。譲渡の猫（蘭丸）は 10/5 から載っていて、ここで ID が新しくなる
 - slug: pref_iwate_ofunato
-  name: 岩手県（大船渡保健所 譲渡猫）
+  name: 岩手県（大船渡保健所 譲渡）
   municipality: 大船渡保健所
   prefecture: 岩手県
   phone: "0192-27-9923"
   address: 岩手県大船渡市猪川町字前田6-1
   url: https://www.pref.iwate.jp/engan/ofuna_hoken/1014212/1014213.html
   kind: adoption    # 2026-10-05 T517: 【譲渡】の節だけ（迷子の節「元の飼い主を探しています」は -2 に分けた）
-  species: cat
+  species: mixed    # 2026-10-07 T520: 猫固定をやめる（Wayback 2024-04 の譲渡に柴犬 231203 がいて、猫として載っていた）。種別はレシピの動物種の欄と品種・毛色から決める
   mode: recipe
   recipe: recipes/pref_iwate_ofunato.yaml
   enabled: true

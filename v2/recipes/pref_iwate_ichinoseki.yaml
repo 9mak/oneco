@@ -12,6 +12,8 @@
 steps:
   - follow_all: "a:-soup-contains('一関保健所　保護動物情報')"
 rows: "p:-soup-contains('管理番号')"
+row_filter:
+  field_lacks: {note: ["死亡"]}   # 備考「死亡した状態で発見されました」の子は載せない（2026-10-07 T520。他の自治体と同じ扱い）
 image: {selector: "p.imageright img@src", scope: prev_siblings, stop_at: row}
 fields:
   management_no: {label: "管理番号"}

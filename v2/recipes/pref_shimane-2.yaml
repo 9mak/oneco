@@ -1,0 +1,27 @@
+# 島根県 松江保健所（収容動物の表）— 2026-10-07 T521 ゲート（judgeB2 F-01）
+# 2023〜2026-02 は、収容した子を「保護情報_過去分」の中の表のページ（hogozyouhou_kakobunn/syuyouari.html）に載せていた
+# （Wayback 2023-02・2025-04・2025-12・2026-02）。2026-08 以降は現行一覧（doubutu/）に 1 頭 1 ページで載せる作りで、それは
+# pref_shimane が読む。T521 で pref_shimane の入口を現行一覧に変えたので、表の作りに戻る日に備えてこの表のページも読む。
+# 表は犬・猫で 2 つ（caption「収容犬」「収容猫」）。見出し行も動物の行もセルが全部 th（管理番号｜写真｜収容日｜収容場所｜動物種別｜種類｜性別）
+# なので、列は位置で取る。写真が無い子は写真の欄に「*負傷猫のため画像はありません」と書かれる（2026-02-12 の 25C131）ので備考に入れる。
+# 0 頭の日は見出し行だけか、空の雛形の行（動物種別の欄が「（）」）だけになり、0 頭の文言は無い。管理番号に数字の無い行（雛形）は
+# row_filter で落とす（落とした行が全部なら 0 頭）。行が 1 本も無い日は empty_absent で 0 頭（表の caption があり、見出し以外の行が無い）。
+rows: "table:has(> caption) tr:not(:-soup-contains('管理番号'))"
+row_filter:
+  field_has_any: {management_no: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]}
+image: "img@src"
+fields:
+  management_no: {selector: ":scope > :nth-child(1)"}
+  note: {selector: ":scope > :nth-child(2)", regex: "^[*＊\\s]*(.+)"}
+  shelter_date: {selector: ":scope > :nth-child(3)"}
+  location: {selector: ":scope > :nth-child(4)"}
+  species: {selector: ":scope > :nth-child(5)"}
+  age: {selector: ":scope > :nth-child(5)", regex: "[（(]「?\\s*([^）)」\\s]+)"}
+  breed: {selector: ":scope > :nth-child(6)"}
+  sex: {selector: ":scope > :nth-child(7)"}
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+empty_absent:
+  page: "caption:-soup-contains('収容犬')"
+  none: "table:has(> caption) tr:not(:-soup-contains('管理番号'))"
