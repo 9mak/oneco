@@ -2,7 +2,8 @@
 # oneco v2 日次収集。Mac の launchd（ops/macos、毎日 JST 0:05）か VPS の systemd（oneco-collect.timer、0:00）から呼ばれる。
 #
 #   run（全ページ収集）→ notify（異常があれば Discord）→ build（静的サイト）→ Cloudflare Workers（静的アセット）へ deploy
-#   → 全部成功したら HEALTHCHECK_URL へ ping。
+#   →（月曜だけ）discover（環境省リンク集と台帳の差分。確認済み一覧に無い差分があれば Discord）
+#   → 全部成功したら HEALTHCHECK_URL へ ping。discover の成否は「全部成功」に数えない。
 #
 # どこかで失敗しても途中で止めず最後まで進み、最後に 0（全部成功）か 1（どれかが失敗）を返す。
 # 収集が失敗しても build/deploy は「前回の data/latest.json」で走るので、サイトは昨日のまま出続ける。
@@ -87,7 +88,23 @@ else
   echo "== deploy: ONECO_PAGES_PROJECT が無いので飛ばす"
 fi
 
-# 5. 死活監視への ping（全部成功したときだけ本体 URL。失敗時は /fail を叩いて「失敗した」と知らせる）
+# 5. 週 1 回（JST の月曜）: 環境省リンク集と台帳の差分（collector discover --notify）
+#    registry/discover_known.yaml に無い差分（新しく増えた・消えた自治体）があるときだけ Discord に 1 通。
+#    リンク集が読めない・形が変わったときも 1 通送るが、日次収集の失敗には数えない（step を使わず rc を変えない。
+#    healthcheck の /fail や「失敗した工程」通知にもならない）
+if [ "$(TZ=Asia/Tokyo date +%u)" = "1" ]; then
+  echo "== [$(date '+%H:%M:%S')] discover（週 1 回）"
+  if "$PY" -m collector discover --notify; then
+    echo "-- discover: ok"
+  else
+    discover_code=$?
+    echo "-- discover: 失敗 (exit ${discover_code}) 日次収集の失敗には数えない"
+  fi
+else
+  echo "== discover: 月曜だけ（今日は飛ばす）"
+fi
+
+# 6. 死活監視への ping（全部成功したときだけ本体 URL。失敗時は /fail を叩いて「失敗した」と知らせる）
 if [ -n "${HEALTHCHECK_URL:-}" ]; then
   if [ "$rc" -eq 0 ]; then
     step healthcheck curl -fsS -m 10 --retry 3 -o /dev/null "$HEALTHCHECK_URL"

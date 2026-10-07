@@ -1,9 +1,24 @@
-# 千葉市（市民保護その他）。city_chiba-4 と同一テンプレート（ラベルごとに別々のp）だが対象は犬猫以外なので
-# allow_other で通す。row を h4 にし管理番号のみ取得（他項目・写真は city_chiba-4 と同じ理由で取得不可）。
-# 2026-09-29時点1頭（A-5069、セキセイインコ）。
-rows: "div#contents_editable h4"
+# 千葉市（市民保護その他）。city_chiba-5（市民保護猫）と同じ作り（h2 掲載日 → h4 管理番号 → p 写真 → p 保護日： … p 特徴：）（T518）。
+# 対象は犬猫以外（インコ・ウサギ 等）なので allow_other で通す。種別は「種類：」の p で決める（行の全文で決めると、
+# 特徴に「猫に襲われた」等とあったときに猫になるため）。
+# h4 を 1 頭の始まりにし、row_until で次の掲載日の h2 までをまとめる。Wayback 2025-06-13 の 3 頭（写真 3 枚）で写真の対応を確認。
+# 2026-10-05 時点 1 頭（A-5069、セキセイインコ、写真あり）。
+rows: "div#contents_editable > h4"
+row_until: "h2"
+# 写真は本文の p 直下の img だけ（a の中の img はバナー。-1/-2 と同じ守り。2026-10-05 再レビュー F-11）
+image: "p > img@src"
+row_filter:
+  text_has_any: ["保護日"]
 fields:
-  management_no: {selector: "."}
+  management_no: {selector: "h4"}
+  shelter_date: {label: "保護日"}
+  location: {label: "保護場所"}
+  species: {selector: "p:-soup-contains('種類')", regex: "種類[:：]\\s*(.+)"}
+  breed: {selector: "p:-soup-contains('種類')", regex: "種類[:：]\\s*(.+)"}
+  color: {selector: "p:-soup-contains('毛色')", regex: "毛色[:：]\\s*(.+)"}
+  sex: {label: "性別"}
+  size: {label: "体格"}
+  note: {selector: "p:-soup-contains('特徴')", regex: "特徴[:：]\\s*(.+)"}
 species:
-  from: text
+  from: field
   allow_other: true

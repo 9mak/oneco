@@ -35,7 +35,8 @@ $PY -m collector fetch https://example.jp/ --text  # ページを取って本文
 $PY -m collector run --date 2026-09-28            # 全ページ収集 → data/animals-2026-09-28.json, data/latest.json, data/report-*.json
 $PY -m collector run --only pref_saga             # slug の前方一致で絞る
 $PY site/build.py                                  # data/latest.json → site/dist/（-m site.build は標準ライブラリの site と衝突して使えない）
-$PY -m collector discover                          # 環境省リンク集と台帳の差分
+$PY -m collector discover                          # 環境省リンク集と台帳の差分（確認済みは registry/discover_known.yaml）
+$PY -m collector discover --notify                 # 確認済み一覧に無い差分があれば Discord へ（collect.sh が月曜だけ実行）
 $PY -m collector notify                            # 直近の report を見て異常があれば Discord へ
 $PY -m collector repair <slug>                     # 読めなくなった slug のレシピを Claude に書き直させる（ANTHROPIC_API_KEY 必須）
 ```
@@ -56,7 +57,7 @@ $PY -m collector repair <slug>                     # 読めなくなった slug 
       "phone": "088-636-6122",
       "address": "…",
       "kind": "adoption",            // adoption=里親募集 sheltered=保護中 stray=迷子（飼い主不明のまま保護） lost=探してます（飼い主が探している迷子）
-      "species": "dog",              // dog | cat | other
+      "species": "dog",              // dog | cat | other（犬猫以外） | null（種別なし: 自治体のページで犬か猫か決められない子。サイトでは犬・猫の絞り込みに出ない）
       "image_url": "https://…/photo2-1.JPG",   // 無いこともある（その場合 management_no か shelter_date がある）
       "source_url": "https://…",     // 個体ページがあればそれ、なければ一覧ページ
       "name": null, "sex": "メス", "age": null, "breed": null,

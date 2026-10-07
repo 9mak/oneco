@@ -82,7 +82,7 @@ SPECIES = {"dog": "犬", "cat": "猫", "other": "その他"}
 KINDS = {"adoption": "里親募集", "sheltered": "保護中", "stray": "迷子", "lost": "探してます"}
 KIND_HELP = {
     "adoption": "新しい家族を募集している子",
-    "sheltered": "自治体に保護されている子",
+    "sheltered": "自治体や市民に保護されている子",   # 千葉市・越谷市の「個人保護」は市民が保護している子（T518）
     "stray": "飼い主が分からないまま保護されている子",
     "lost": "飼い主さんが探している迷子の子",
 }
@@ -174,8 +174,24 @@ def iso_date(s: Any) -> str:
     return date.today().isoformat()
 
 
+def species_key(a: dict[str, Any]) -> str:
+    """dog | cat | other | none。species が null・空の子（自治体のページで犬か猫か分からない子。T518）は none で、
+    犬・猫の絞り込みに入れず「すべて」でだけ出す。dog・cat・other 以外の値は従来どおり other。"""
+    sp = a.get("species")
+    if sp is None or sp == "":
+        return "none"
+    return str(sp) if str(sp) in SPECIES else "other"
+
+
 def species_label(a: dict[str, Any]) -> str:
-    return SPECIES.get(str(a.get("species")), SPECIES["other"])
+    """種別の表示名。種別なしの子は空（バッジを出さない）。"""
+    k = species_key(a)
+    return "" if k == "none" else SPECIES[k]
+
+
+def species_noun(a: dict[str, Any]) -> str:
+    """見出し・説明文の「◯◯の犬」の部分。種別なしの子は「子」（保護中の子）。"""
+    return species_label(a) or "子"
 
 
 def kind_label(a: dict[str, Any]) -> str:
@@ -185,7 +201,7 @@ def kind_label(a: dict[str, Any]) -> str:
 def headline(a: dict[str, Any]) -> str:
     """カード・詳細の見出し。名前があれば名前、無ければ種別。"""
     name = a.get("name")
-    return str(name) if name else f"{kind_label(a)}の{species_label(a)}"
+    return str(name) if name else f"{kind_label(a)}の{species_noun(a)}"
 
 
 def subline(a: dict[str, Any]) -> str:
@@ -272,15 +288,15 @@ def media(a: dict[str, Any], *, big: bool = False) -> str:
 
 
 def badges(a: dict[str, Any]) -> str:
-    sp, kd = str(a.get("species") or "other"), str(a.get("kind") or "")
-    return (f'<span class="badge sp-{esc(sp)}">{esc(species_label(a))}</span>'
-            f'<span class="badge kd-{esc(kd)}">{esc(kind_label(a))}</span>')
+    sp, kd = species_key(a), str(a.get("kind") or "")
+    sp_html = f'<span class="badge sp-{esc(sp)}">{esc(species_label(a))}</span>' if species_label(a) else ""   # 種別なしの子はバッジなし
+    return sp_html + f'<span class="badge kd-{esc(kd)}">{esc(kind_label(a))}</span>'
 
 
 def card(a: dict[str, Any]) -> str:
     sub = subline(a)
     sub_html = f'<p class="sub">{esc(sub)}</p>' if sub else ""
-    return f"""<a class="card" href="{esc(animal_path(a['id']))}" data-species="{esc(a.get('species') or 'other')}" data-kind="{esc(a.get('kind') or '')}">
+    return f"""<a class="card" href="{esc(animal_path(a['id']))}" data-species="{esc(species_key(a))}" data-kind="{esc(a.get('kind') or '')}">
 {media(a)}
 <div class="card-body">
 <div class="badges">{badges(a)}</div>
@@ -304,9 +320,9 @@ def build_index(cfg: dict[str, Any], data: dict[str, Any], animals: list[dict[st
     by_pref: dict[str, Counter[str]] = {}
     for a in animals:
         c = by_pref.setdefault(str(a.get("prefecture") or "不明"), Counter())
-        c[str(a.get("species") or "other")] += 1
+        c[species_key(a)] += 1
         c["total"] += 1
-    total = Counter(str(a.get("species") or "other") for a in animals)
+    total = Counter(species_key(a) for a in animals)
     ok_sources = sum(1 for s in data.get("sources", []) if s.get("status") == "ok")
     rows = []
     for p in sorted(by_pref, key=pref_key):
@@ -318,7 +334,7 @@ def build_index(cfg: dict[str, Any], data: dict[str, Any], animals: list[dict[st
     body = f"""<section class="intro">
 <h1>保護犬・保護猫を、自治体から探す</h1>
 <p>{esc(cfg['site_name'])} は、全国の自治体（動物愛護センター・保健所など）が公開している保護犬・保護猫の情報を 1 か所にまとめたサイトです。毎日それぞれの自治体のページを確認し、その日に掲載されている子だけを出典つきで載せています。気になる子がいたら、掲載元の自治体に直接ご連絡ください。</p>
-<p class="stats">{esc(fmt_date(data.get('date')))} 時点: 犬 <b>{total['dog']}</b> 頭 ・ 猫 <b>{total['cat']}</b> 頭{f" ・ その他 <b>{total['other']}</b> 頭" if total['other'] else ''}（{len(by_pref)} 都道府県・{ok_sources} 自治体ページ）</p>
+<p class="stats">{esc(fmt_date(data.get('date')))} 時点: 犬 <b>{total['dog']}</b> 頭 ・ 猫 <b>{total['cat']}</b> 頭{f" ・ その他 <b>{total['other']}</b> 頭" if total['other'] else ''}{f" ・ 犬猫の区別なし <b>{total['none']}</b> 頭" if total['none'] else ''}（{len(by_pref)} 都道府県・{ok_sources} 自治体ページ）</p>
 </section>
 <section>
 <h2>都道府県から探す</h2>
@@ -364,14 +380,14 @@ PREF_JS = """
   function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e;}
   function ph(){var d=el('div','ph');d.setAttribute('role','img');d.setAttribute('aria-label','写真はありません');d.appendChild(el('span',null,'写真はありません'));return d;}
   function card(a){
-    var sp=a.species||'other', kd=a.kind||'';
+    var sp=a.species||'none', kd=a.kind||'';
     var c=el('a','card');c.href='/animals/'+encodeURIComponent(a.id)+'/';c.dataset.species=sp;c.dataset.kind=kd;
     var m=el('div','media');
-    if(ok(a.image_url)){var img=el('img');img.src=a.image_url;img.alt=(a.name||((KD[kd]||kd)+'の'+(SP[sp]||sp)))+'（'+(a.municipality||'')+'）';img.loading='lazy';img.referrerPolicy='no-referrer';img.onerror=function(){m.classList.add('noimg');img.remove();};m.appendChild(img);}
+    if(ok(a.image_url)){var img=el('img');img.src=a.image_url;img.alt=(a.name||((KD[kd]||kd)+'の'+(SP[sp]||'子')))+'（'+(a.municipality||'')+'）';img.loading='lazy';img.referrerPolicy='no-referrer';img.onerror=function(){m.classList.add('noimg');img.remove();};m.appendChild(img);}
     m.appendChild(ph());c.appendChild(m);
     var b=el('div','card-body');var bd=el('div','badges');
-    bd.appendChild(el('span','badge sp-'+sp,SP[sp]||sp));bd.appendChild(el('span','badge kd-'+kd,KD[kd]||kd));b.appendChild(bd);
-    b.appendChild(el('h3',null,a.name||((KD[kd]||kd)+'の'+(SP[sp]||sp))));
+    if(SP[sp])bd.appendChild(el('span','badge sp-'+sp,SP[sp]));bd.appendChild(el('span','badge kd-'+kd,KD[kd]||kd));b.appendChild(bd);
+    b.appendChild(el('h3',null,a.name||((KD[kd]||kd)+'の'+(SP[sp]||'子'))));
     var sub=[a.breed,a.sex,a.age].filter(Boolean).join(' / ');if(sub)b.appendChild(el('p','sub',sub));
     b.appendChild(el('p','muni',a.municipality||''));c.appendChild(b);return c;
   }
@@ -379,7 +395,7 @@ PREF_JS = """
   function syncButtons(){document.querySelectorAll('[data-filter]').forEach(function(b){b.setAttribute('aria-pressed',state[b.dataset.filter]===b.dataset.value?'true':'false');});}
   function apply(){
     syncButtons();var n=0;
-    if(cache){grid.textContent='';cache.forEach(function(a){if(match(a.species||'other',a.kind||'')){grid.appendChild(card(a));n++;}});}
+    if(cache){grid.textContent='';cache.forEach(function(a){if(match(a.species||'none',a.kind||'')){grid.appendChild(card(a));n++;}});}
     else{grid.querySelectorAll('.card').forEach(function(c){var s=match(c.dataset.species,c.dataset.kind);c.hidden=!s;if(s)n++;});}
     count.textContent=n;empty.hidden=n!==0;
     var p=new URLSearchParams();if(state.species!=='all')p.set('species',state.species);if(state.kind!=='all')p.set('kind',state.kind);
@@ -397,12 +413,14 @@ PREF_JS = """
 
 
 def build_pref(cfg: dict[str, Any], data: dict[str, Any], pref: str, animals: list[dict[str, Any]]) -> str:
-    c = Counter(str(a.get("species") or "other") for a in animals)
+    c = Counter(species_key(a) for a in animals)
     munis = sorted({str(a.get("municipality") or "") for a in animals})
     cards = "\n".join(card(a) for a in animals)
+    rest = c["other"] + c["none"]   # 犬猫以外 + 種別なし
+    rest_desc = f"（ほか {rest} 頭）" if rest else ""
     body = f"""<nav class="crumbs"><a href="/">都道府県</a> › <span>{esc(pref)}</span></nav>
 <h1>{esc(pref)}の保護犬・保護猫</h1>
-<p class="stats">{esc(fmt_date(data.get('date')))} 時点: 犬 {c['dog']} 頭 ・ 猫 {c['cat']} 頭{f" ・ その他 {c['other']} 頭" if c['other'] else ''}。掲載元: {esc('、'.join(munis))}</p>
+<p class="stats">{esc(fmt_date(data.get('date')))} 時点: 犬 {c['dog']} 頭 ・ 猫 {c['cat']} 頭{f" ・ その他 {c['other']} 頭" if c['other'] else ''}{f" ・ 犬猫の区別なし {c['none']} 頭" if c['none'] else ''}。掲載元: {esc('、'.join(munis))}</p>
 <div class="filters">
 {filter_bar('species', [('all', 'すべて'), ('dog', '犬'), ('cat', '猫')])}
 {filter_bar('kind', [('all', 'すべての区分')] + list(KINDS.items()))}
@@ -415,7 +433,7 @@ def build_pref(cfg: dict[str, Any], data: dict[str, Any], pref: str, animals: li
 <script>{PREF_JS}</script>"""
     return page(cfg, title=f"{pref}の保護犬・保護猫", path=pref_path(pref), body=body,
                 body_attrs=f' data-pref="{esc(pref)}"', data_date=str(data.get("date") or ""),
-                desc=f"{pref}の自治体が{fmt_date(data.get('date'))}に公開している保護犬 {c['dog']} 頭・保護猫 {c['cat']} 頭の一覧。出典つき。")
+                desc=f"{pref}の自治体が{fmt_date(data.get('date'))}に公開している保護犬 {c['dog']} 頭・保護猫 {c['cat']} 頭{rest_desc}の一覧。出典つき。")
 
 
 def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -> str:
@@ -455,7 +473,7 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
         aff_items.append(f'<li><a href="{esc(u)}" rel="sponsored noopener" target="_blank">{esc(t)}</a>{note}</li>')
     aff_html = (f'<aside class="prep"><h2>迎える準備</h2><p>迎えると決めたら、最初の数日に要るものをまとめました（広告リンクを含みます。運営費に充てています）。</p><ul>{"".join(aff_items)}</ul></aside>'
                 if aff_items else "")
-    desc = f"{muni}が{fmt_date(data.get('date'))}時点で公開している{kind_label(a)}の{species_label(a)}。"
+    desc = f"{muni}が{fmt_date(data.get('date'))}時点で公開している{kind_label(a)}の{species_noun(a)}。"
     if subline(a):
         desc += subline(a) + "。"
     if a.get("note"):
@@ -569,7 +587,7 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
 <section>
 <h2>{site} とは</h2>
 <p>{site} は、全国の自治体（動物愛護センター・保健所・市区町村）が公開している保護犬・保護猫の情報を、出典を明示して 1 か所に集めた、個人運営のサイトです。自治体のページに載っていない情報（保護団体や個人の里親募集など）は扱いません。</p>
-<p>載せている子は 4 つに分けています: {kinds}。「探してます」は、飼い主さんが自分の迷子を探している告知のうち、自治体のページに載っているものです。犬猫以外の動物も、自治体のページにあれば載せています。</p>
+<p>載せている子は 4 つに分けています: {kinds}。「探してます」は、飼い主さんが自分の迷子を探している告知のうち、自治体のページに載っているものです。犬猫以外の動物も、自治体のページにあれば載せています。自治体のページで犬か猫か分からない子は、種別を付けずに載せています（犬・猫の絞り込みには出ず、「すべて」に出ます）。</p>
 <p>いま、{reach}。載っているのは「その日、その自治体のページに出ている子」だけです。気になる子がいたら、掲載元の自治体に直接ご連絡ください。</p>
 </section>
 <section>

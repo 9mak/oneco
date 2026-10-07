@@ -7,7 +7,11 @@
 steps:
   - follow_all: "h2:-soup-contains(\"県で保護・収容している動物の情報\") ~ ul a@href"
 
-rows: "#tmp_main table tr"
+# 2026-10-05 T518: th だけの見出し行は落とす（最上保健所の表では見出し行が label で下の行の値を拾い、写真の無い 2 頭目になる。
+# これまでは見出し行に「犬」の字が無く犬か猫か決まらないことで偶然落ちていた）。td で見出しを書く表（置賜・庄内）は値が日付にならず落ちる
+rows: "#tmp_main table tr:has(> td), #tmp_main table tr:has(img)"
+row_filter:
+  text_lacks: ["返還することができました"]
 image: "img@src"
 fields:
   shelter_date: {label: "収容"}
