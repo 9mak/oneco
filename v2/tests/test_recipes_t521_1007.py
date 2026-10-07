@@ -12,7 +12,8 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 
 from collector.extract import build
-from collector.recipe import Doc, Recipe
+from collector.fetch import FakeFetcher
+from collector.recipe import Doc, Executor, Recipe
 from collector.registry import load_sources
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -72,29 +73,51 @@ def test_hiroshima_returned_dogs_are_dropped_and_breed_is_not_sex():
     assert (a["management_no"], a["breed"], a["sex"], a["age"]) == ("1HD20250058", "雑種", "雌", "推定3歳")
 
 
-def test_shimane_table_page_reads_each_year_layout():
-    # 島根県 松江保健所の収容動物の表（pref_shimane-2）。T521 で pref_shimane の入口を現行一覧に変えたので（judgeB2 F-01）、
-    # 2023〜2026-02 に子を載せていた表のページを別の slug で読む。セルは全部 th
-    def got(fx: str) -> dict:
-        return {a["management_no"]: (a["species"], a["shelter_date"], a["location"], a["sex"]) for a in
-                _run("pref_shimane-2", fx).animals}
+# --- 島根県 松江保健所の収容動物の表（pref_shimane-2） -------------------------------------------------------------
+# T521 で pref_shimane の入口を現行一覧に変えたので（judgeB2 F-01）、2023〜2026-02 に子を載せていた表のページを別の slug で読む。
+# 表には死亡が書かれないまま行が残る日がある（Wayback 2023-06-02 の 23C130。個別ページの備考は「収容後死亡しました」。最終ゲート F-01）
+# ので、表の行のリンクを辿って個別ページを pref_shimane と同じ読み方・同じ除外で読む。
 
-    assert got("t521_shimane-2_wb20230206.html") == {"22D210": ("dog", "令和5年1月30日", "松江市美保関町千酌", "メス")}
-    assert got("t521_shimane-2_wb20250422.html") == {"25D103": ("dog", "令和7年4月22日", "松江市上乃木9丁目", "メス"),
-                                                    "25C101": ("cat", "令和7年4月17日", "松江市矢田町", "メス")}
-    assert got("t521_shimane-2_wb20251209.html") == {"25D9": ("dog", "R7.12.3", "安来市広瀬町", "メス")}
+SHIMANE_TABLE = "https://www.pref.shimane.lg.jp/infra/nature/animal/matsue_hoken/doubutu/hogozyouhou_kakobunn/syuyouari.html"
+SHIMANE_PAST = "https://www.pref.shimane.lg.jp/infra/nature/animal/matsue_hoken/doubutu/hogozyouhou_kakobunn/"
 
 
-def test_shimane_injured_cat_without_photo_is_listed_with_the_note():
-    # 2026-02-12 の 25C131（負傷猫・写真の欄に「*負傷猫のため画像はありません」）。以前はどの版でも落ちていた
-    (a,) = _run("pref_shimane-2", "t521_shimane-2_wb20260212.html").animals
-    assert (a["management_no"], a["species"], a["note"], a["image_url"]) == ("25C131", "cat", "負傷猫のため画像はありません", None)
+def _shimane_table(pages: dict[str, str]):
+    src = next(s for s in load_sources(ROOT / "registry" / "sources.yaml") if s.slug == "pref_shimane-2")
+    recipe = Recipe.load(ROOT / src.recipe)
+    ex = Executor(FakeFetcher({u: (FIX / f).read_text(encoding="utf-8") for u, f in pages.items()}), recipe)
+    docs = ex.resolve(src.url)
+    return build(src, recipe, docs, ex.visited)
+
+
+def test_shimane_table_dead_cat_left_in_the_table_is_not_listed():
+    res = _shimane_table({SHIMANE_TABLE: "t521_shimane-2_wb20230602.html",
+                          SHIMANE_PAST + "dobutu7.html": "t521_shimane-2_dobutu7_wb20230601.html"})
+    assert res.animals == [] and not res.empty_confirmed   # 0 頭とも確定しない（読めなかった側で通知に載る）
+
+
+def test_shimane_table_follows_the_link_and_reads_the_detail_page():
+    # 表 2023-02-06 の 22D210 のリンク先 jyohoinu.html は、同じファイル名を後の子が使い回すので、保存（2023-04-21）は 23D1 の頁。
+    # ここでは表から個別ページを辿って読めること（と 2023 年の「管理番号・23D1」の書き方）を確かめる
+    (a,) = _shimane_table({SHIMANE_TABLE: "t521_shimane-2_wb20230206.html",
+                           SHIMANE_PAST + "jyohoinu.html": "t521_shimane-2_jyohoinu_wb20230421.html"}).animals
+    assert (a["management_no"], a["species"], a["shelter_date"], a["location"], a["sex"]) == (
+        "23D1", "dog", "2023年4月13日", "安来市利弘町地内", "オス")
 
 
 def test_shimane_table_zero_days_are_empty():
     for fx in ("t521_shimane-2_wb20260315.html", "t521_shimane-2_20261005.html"):
-        res = _run("pref_shimane-2", fx)
+        res = _shimane_table({SHIMANE_TABLE: fx})
         assert res.animals == [] and res.empty_confirmed
+
+
+def test_shimane_table_with_links_but_unreadable_details_is_not_empty():
+    # 表に子のリンクがあるのに個別ページが 1 本も読めない日は 0 頭にしない
+    res = build(next(s for s in load_sources(ROOT / "registry" / "sources.yaml") if s.slug == "pref_shimane-2"),
+                Recipe.load(ROOT / "recipes" / "pref_shimane-2.yaml"), [],
+                [Doc(url=SHIMANE_TABLE, html=(h := (FIX / "t521_shimane-2_wb20250422.html").read_text(encoding="utf-8")),
+                     soup=BeautifulSoup(h, "lxml"))])
+    assert res.empty_confirmed is False
 
 
 def test_hiroshima_attributes_split_over_paragraphs():

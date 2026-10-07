@@ -17,7 +17,7 @@ row_filter:
 image: "img[src*='.data/']@src"
 fields:
   species: {regex: "動物種別\\s*(犬|猫)"}
-  management_no: {regex: "管理番号\\s*([0-9０-９]\\S*)"}
+  management_no: {regex: "管理番号[\\s・:：]*([0-9０-９]\\S*)"}   # 2023 年の個別ページは caption が「管理番号・23D1」（2026-10-08 T521 最終ゲート）
   shelter_date: {regex: "収容日\\s*(\\S+)"}   # 詳細表の 1 行目は th だけが並ぶ（収容日｜日付｜HP公開期限｜日付｜収容場所｜場所）ので label では取れず、全文に regex
   location: {regex: "収容場所\\s*(\\S+)"}
   breed: {regex: "種類\\s*(\\S+)"}
