@@ -2,13 +2,14 @@
 # <h4>犬</h4><table>… <h4>猫</h4><table>… の並び。1 table = 1 頭（受付番号 th を持つ縦並び表）。
 # 在庫 0 件でも同じ構造の空 table が残る（受付番号 td が &nbsp;）ので自動で捨てられる。犬猫は直前の h4 見出しで決める。
 # 政令市連絡先の table.datatable は受付番号を持たないので row_filter で除外。
+# 2026-10-05 監査: 収容日が西暦「2026年10月3日」の表記になり取れていなかったので、和暦に加えて西暦も取る。
 rows: "table"
 row_filter:
   text_has_any: ["受付番号"]
 image: "img@src"
 fields:
   management_no: {label: "受付番号"}
-  shelter_date: {label: "収容日", regex: "((?:令和|平成)\\s*\\d+\\s*年.*?\\d{1,2}\\s*月\\s*\\d{1,2}\\s*日)"}
+  shelter_date: {label: "収容日", regex: "(\\d{4}\\s*年\\s*\\d{1,2}\\s*月\\s*\\d{1,2}\\s*日|(?:令和|平成)\\s*\\d+\\s*年.*?\\d{1,2}\\s*月\\s*\\d{1,2}\\s*日)"}   # 和暦に加え西暦「2026年10月3日」も（2026-10-05 監査。西暦の表記になって取れていなかった）
   location: {label: "収容場所"}
   breed: {label: "種類"}
   sex: {label: "性別"}

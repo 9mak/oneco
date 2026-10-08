@@ -13,6 +13,7 @@ image: "img@src"               # 行の中の写真（省略時は img@src）
 # image: {selector: "img@src", scope: self_or_prev_siblings}        # 行の中を先に探し、無ければ prev_siblings と同じ範囲（ページによって写真が表の中だったり外だったりするとき。岐阜県）
 # image: {selector: "p.imageright img@src", scope: prev_siblings, stop_at: row}   # 遡りを「同じタグ名」でなく「前の行（rows に当たる要素）」で止める（行も写真も p のとき。岩手県）
 # image: {selector: "p.imagecenter img@src", scope: next_siblings}   # 写真が行の後ろ（直後の兄弟要素）にあるとき。prev_siblings と対称（名古屋市 譲渡猫）。self_or_next_siblings もある
+# image: {selector: "img@src", match_field: management_no}   # 写真が本体と別の表にあるとき。行で取った項目（管理番号）の値を src か alt に含む画像を文書全体から探し、文書順で先の 1 枚（仙台市 譲渡猫）。前が英数字・後ろが数字の位置には当てない（C2509 を c25093.jpg に当てない）。後ろに英字 1 文字の枝番が付くもの（c22068b.jpg・alt「C22068B」）は同じ子として当て、英字 2 文字以上や英字の後ろに英数字が続くものは当てない。枝番の英字が別の子を表すサイト（本体の表に C25093A・C25093B がある）では使わない。値が無い・見つからない行は写真なし
 fields:
   name: "td:nth-of-type(2)"
   sex:  "td:nth-of-type(3)"
@@ -115,13 +116,17 @@ fields:
   breed: {regex: "犬種[:：]\\s*(\\S+)"}      # 行のテキストに正規表現、group(1)
   shelter_date: {label: "収容日", regex: "(\\d+年\\d+月\\d+日)"}   # 組み合わせ可
   note: {selector: "td.memo", default: null}
-  management_no: {index: 0}                 # PDF 表の列番号
+  management_no: {index: 0}                 # PDF 表の列番号（HTML の行には効かない。HTML の表の n 列目は下の :nth-child）
+  management_no: {selector: ":scope > :nth-child(1)"}   # HTML の表の行の 1 列目（th・td どちらでも。見出しも値も th の表＝島根県の収容動物の表）
   management_no: {from: heading, selector: "h3", regex: "番号[:：]\\s*(\\d\\S*)"}   # 行より前にある直近の見出しから取る（regex は見出しの文字に当たる）
 ```
 
 使える項目名: `name` `sex` `age` `breed` `color` `size` `management_no` `shelter_date` `note` `species` `detail`（個体ページの URL）`location`（同じページに複数センターが混ざるときだけ）。
 
 - `label` の値は、見出しセル（th・td・dt）の隣の td・dd。値が label の文字を含んでも取る（「保健所」→「菊池保健所」）。隣のセルが見出しに見えるとき（th・dt で label を含む・label そのもの・中に「備考: …」とある・見出しも隣も td で隣が label で始まる）だけ捨て、次の行の同じ列 → 表の先頭行 → 「label：値」の順に探す
+- `label` は候補の並びでも書ける（`{label: ["収容日", "収容期日"]}`）。前から順に試し、最初に取れた値を使う
+- `header_row: true` は、label が表の **見出し行**（1 行に項目名が並ぶ）にあるときの読み方。見出しの語と一致するセル（記号・空白を除いて label と同じ）の列を、同じ表の次の行から読む（thead と tbody をまたぐ）。隣のセルは見ない。見出し行の書き方（th・td、thead・tbody）が日によって変わるページで使う（越谷市: 2023 年は tbody の td で見出しを書き、label だけだと隣の見出し「収容期限」を収容日に取った。2024〜2025 年は thead の th と tbody の td で値が取れなかった。列の位置で読むと、列順が違う日〔種類・性別・毛色・年齢〕に取り違える）
+- `join` は、並べた指定（上のどれでも）で取った値を `sep`（既定は空白）でつなぐ。取れなかった値と、前と同じ値は飛ばす。状態の印と本文が別のセルにあるとき（明石 飼い主募集の猫: `note: {join: [{label: "仮名", regex: "(トライアル(?:中|予定))"}, {label: "性格"}], sep: "。"}` →「トライアル中。<性格>」）
 - 「label：値」の書き方から取るときは最初の空白までの 1 語になる。文中に空白が入る項目（特徴・備考）は `note: {selector: "p:-soup-contains('特徴')", regex: "特徴[:：]\\s*(.+)"}` のように regex で行末まで取る
 - 項目の値（selector・label・from: heading の文字と、regex を当てる全文）は、span・a・b・strong・font などインライン要素の境目に空白を入れない（佐世保市 `<span>令</span>和8年…` →「令和8年…」）。セル・p・div・li・見出し・br・img の境目と元の HTML の空白は従来どおり空白 1 つ
 - row_filter・種別の `from: text`・empty_text は、従来どおり全部の境目に空白を入れた文字で照合する（`<span>0</span>匹` は「0 匹」。福島県の text_lacks はこれに頼っている）
@@ -163,7 +168,7 @@ species:
 
 行は次のどれかを満たすときだけ動物として通る。満たさない行は捨てる。
 
-- 写真がある（`image` で取れ、その URL が元の HTML に実在する）。自治体の「写真なし」プレースホルダ（`noimage01.jpg`・`no_photo`・`準備中` 等）は写真とみなさず、サイトでは「写真はありません」になる
+- 写真がある（`image` で取れ、その URL が元の HTML に実在する）。自治体の「写真なし」プレースホルダ（`noimage01.jpg`・`no_photo`・`no_gazou.png`・`準備中` 等）は写真とみなさず、サイトでは「写真はありません」になる
 - `management_no` または `shelter_date` が取れた
 - `detail`（個体ページの URL）が取れた
 
@@ -193,6 +198,14 @@ empty_text: ["現在いません", "現在収容している犬はいません"]
 
 ```yaml
 empty_selector: "div.dog-cat-list"     # 豊橋市あいくる。福岡県動物愛護センターは "div.animals-list ul"
+```
+
+0 頭の日に一覧の器ごと消え、文言も出ないサイトは `empty_absent`。`page`（0 頭の日も出る枠。見出し等）に合う要素があり、`none`（一覧の器と個体ページへのリンク）に合う要素が 1 つも無い文書があれば 0 頭。枠が無い日（ブロック画面・作り替え）や、器の名前が変わってもリンクが残る日は「読めなかった」で通知に載る。`none` には器だけでなく個体ページへのリンクも入れる（器の名前だけだと、名前が変わった日を 0 頭に見せる）。
+
+```yaml
+empty_absent:                          # 静岡県 迷い犬情報一覧（0 頭の日は ul.listlink が出ない。Wayback 2025-08-31・10-10 も同じ）
+  page: "article#content h1:-soup-contains('迷い犬情報一覧')"
+  none: "article#content ul.listlink, article#content a[href*='dobutsuaigo/1066835/']:not([href*='index.html'])"
 ```
 
 ## 文字コード・その他
@@ -238,6 +251,8 @@ fields:
 `mode: text` のときは `rows_regex: "^(\\d{2}-\\d{4}).*$"` で 1 頭分の塊を切り、`fields` は `regex` で取る。
 
 table モードの行は表のセルしか見えない（表の外の本文・写真は取れない）。番号が 1 桁で収容日が本文にしか無い公示（四日市市「保護・収容犬の公示」）は、表の行だけでは動物として通らないので、text モードで公示 1 枚を 1 行にして読む（`rows_regex: "^.*収容\\S*の公示"`、収容日は本文から、種類・性別等は番号で始まる表の行から regex で取る）。1 枚に 2 頭以上が並ぶと 2 頭目以降は読めない（`city_yokkaichi_pdf.yaml` の制約）。
+
+ページ最下行の下の横罫線が引かれていない表（縦罫線だけが下まで伸びている。神奈川県 センター外保護猫 cat.pdf）は、エンジンが縦罫線の下端に横罫線を補って最下行も表に入れる（レシピに書かない）。補うのは、表の中から始まる縦罫線の半分以上（2 本以上）が表の下端より下へ伸び、その長さが行の高さの 3 倍以内で、伸びた先に横罫線が無いときだけ。複数行のセル（場所が 2 行に割れる等）がある表を `mode: text` に替えると、割れた行が前後の子に混ざるので替えない。
 
 1 ページが左右 2 段組みの PDF（茨城県）は、丸ごと読むと左右の行が 1 行に混ざる。`columns` で各ページを等分して列ごとに読む:
 

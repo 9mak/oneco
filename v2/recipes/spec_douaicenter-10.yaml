@@ -1,3 +1,4 @@
+# 2026-10-05 監査: 表の「他特徴」を note に追加（連絡先は引き続き取らない）。
 # 2026-10-04 新規。-8 と同じ一覧（/other-animal/list/cat）から「探しています」だけを区分 lost（飼い主が迷子を探している告知）で拾う。
 # 一覧の a[href^=.../other-animal/xxxx] が1頭 → follow_all で個別ページへ。
 # 個別ページは table.animal-desc-table。見出しは「不明日」「不明場所」（飼い主が見失った日・場所）。
@@ -18,4 +19,5 @@ fields:
   sex: {label: "性別"}
   age: {label: "年齢"}
   size: {label: "体格"}
+  note: {label: "他特徴"}   # 「他特徴」（名前・首輪・耳カット・性格など）。連絡先は取らない
 empty_text: ["現在、登録がございません"]

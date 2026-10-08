@@ -1,0 +1,486 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" dir="ltr" lang="ja">
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta http-equiv="Content-Script-Type" content="text/javascript" />
+<meta http-equiv="Content-Style-Type" content="text/css" />
+<meta http-equiv="pragma" content="no-cache" />
+<meta http-equiv="imagetoolbar" content="no" />
+<meta name="Keywords" content="島根県,自治体,行政" />
+<meta name="Description" content="島根県" />
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/site.webmanifest" />
+<link type="text/css" rel="stylesheet" href="/stylesheets/reset.css" media="all" />
+<link type="text/css" rel="stylesheet" href="/stylesheets/style.css" media="all" />
+<link type="text/css" rel="stylesheet" href="/stylesheets/style-normal.css" media="all" />
+<link type="text/css" rel="alternate stylesheet" href="/stylesheets/black.css" media="all" title="black" />
+<link type="text/css" rel="alternate stylesheet" href="/stylesheets/beige.css" media="all" title="beige" />
+<script type="text/javascript" src="/javascripts/jquery-3.5.1.min.js"></script>
+<script type="text/javascript" src="/javascripts/styleswitcher.js"></script>
+<script type="text/javascript" src="/javascripts/jquery.cookie.js"></script>
+<script type="text/javascript" src="/javascripts/jquery.belatedPNG.js"></script>
+<script type="text/javascript" src="/javascripts/heightLine.js"></script>
+<script type="text/javascript" src="/javascripts/common.js"></script>
+<script type="text/javascript" src="/javascripts/banner.js"></script>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-1590645-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-1590645-1');
+</script>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-K8T7BV9');</script>
+<!-- End Google Tag Manager -->
+
+<!-- IE6PNG対策 -->
+<!--[if IE 6]>
+<script type="text/javascript">
+  $(function() {
+    $("img").fixPng();
+  })
+</script>
+<![endif]-->
+<!-- 文字サイズ変更 -->
+<script type="text/javascript">
+	function normal() {
+		document.getElementById('allchar').style.fontSize="95%";
+		$('#menu > ul > li > a').css('height','auto');
+		$('#page-menu > ul > li > a').css('height','auto');
+		$('#page-fmenu > ul > li > a').css('height','auto');
+	}
+	function large150() {
+		document.getElementById('allchar').style.fontSize="150%";
+		$('#menu > ul > li > a').css('height','80px');
+		$('#page-menu > ul > li > a').css('height','120px');
+		$('#page-fmenu > ul > li > a').css('height','120px');
+	}
+	function large200() {
+		document.getElementById('allchar').style.fontSize="200%";
+		$('#menu > ul > li > a').css('height','160px');
+		$('#page-menu > ul > li > a').css('height','180px');
+		$('#page-fmenu > ul > li > a').css('height','180px');
+	}
+</script>
+
+<!-- 文字サイズ変更 -->
+<title>島根県：保護・収容情報（トップ / 環境・県土づくり / 自然・景観・動物 / 動物 / 動物情報（松江・安来） / 保護情報（松江・安来） / 保護情報_過去分）</title>
+</head>
+<body id="allchar" onload="loadCookie();" >
+<div id="wrapper">
+  <div id="head-line">
+    <div id="top">
+      <div id="skip">
+        <p class="skiplink" id="skiplink"><a href="#honbun">本文へ移動</a></p>
+      </div>
+    </div>
+    <div id="hmenu" class="clearfix">
+      <div id="hmenu-left">
+        <ul>
+          <li><a href="/phone_top.html">お問合せ</a></li>
+          <li><a href="#" onclick="selectLanguage('pc')">Language</a></li>
+        </ul>
+      </div>
+      <div id="hmenu-right">
+        <ul>
+          <li>
+            背景色&nbsp;
+            <input type="button" value="白" onclick="setActiveStyleSheet('style'); return false;" />
+            <input type="button" value="黒" onclick="setActiveStyleSheet('black'); return false;" />
+            <input type="button" value="ベージュ" onclick="setActiveStyleSheet('beige'); return false;" />
+          </li>
+          <li>
+            文字サイズ&nbsp;
+            <input type="button" value="標準" onclick="normal()" />
+            <input type="button" value="拡大(150%)" onclick="large150()" />
+            <input type="button" value="拡大(200%)" onclick="large200()" />
+          </li>
+        </ul>
+      </div>
+    </div><!-- end hmenu -->
+  </div><!-- end head-line -->
+	<div id="header-wrapper">
+  <div id="header" class="clearfix">
+    <h1 id="logo-title"><a href="/"><img width="258" height="60" src="/images/shimane-logo.png" alt="島根県トップページ" /></a></h1>
+    <!-- banner -->
+    <div id="banner">
+      <a href="/admin/seisaku/keikaku/koukoku/ad1.html">
+        <img src="/index.data/banner_title.jpg" height="60" alt="企業広告について" />
+      </a>
+      <a id="header_banner_anchor" target="_blank" class="banner">
+        <img id="header_banner_image" style="margin-top: 0px;" src="/index.data/banner.jpg" alt="" height="60" width="234" />
+      </a>
+    </div><!-- banner end -->
+    <div id="search-box">
+      <div id="top_search_keyword">
+        <form action="/search.html" id="cse-search-box" name="cse-search-box">
+          <input type="hidden" name="cx" value="" />
+          <input type="hidden" name="cof" value="" />
+          <input type="hidden" name="ie" value="UTF-8" />
+          <label class="ss" for="tmp_query">サイト内検索</label>
+          <input type="text" name="q" value="" id="tmp_query" />
+          <input type="submit" id="submit" name="sa" value="検索" />
+        </form>
+        <script type="text/javascript" src="https://www.google.com/coop/cse/brand?form=cse-search-box"></script><!-- Google Custom Search -->
+      </div>
+      <div id="search-criteria">
+        <ul>
+          <li><a href="/section.html">組織から探す</a></li>
+          <li><a href="/sitemap.html">サイトマップ</a></li>
+          <li><a href="https://www3.pref.shimane.jp/houdou/">報道発表資料（外部サイト）</a></li>
+        </ul>
+      </div>
+    </div>
+  </div><!-- end header -->
+</div><!-- end header-wrapper -->
+
+  <div class="menu-border-bottom">
+    <div id="menu-wrapper">
+      <div id="menu">
+        <ul class="heightLineParent clear fix">
+          <li><a href="/top.html"><span class="box-icon"><img src="/images/menu-01.png" alt="" /></span>トップ</a></li>
+          <li><a href="/bousai_info/"><span class="box-icon"><img src="/images/menu-02.png" alt="" /></span>防災・安全</a>
+            <ul>
+              <li><a href="/bousai_info/bousai/">防災・防犯</a></li>
+              <li><a href="/bousai_info/syoku/">消費・食生活</a></li>
+              <li><a href="/bousai_info/yakuji/">薬事・衛生・感染症</a></li>
+              <li><a href="/bousai_info/medical/">医療</a></li>
+              <li><a href="/bousai_info/environment/">環境</a></li>
+              <li><a href="/bousai_info/access/">交通</a></li>
+              <li class="last-child"><a href="/bousai_info/norin/">農林業</a></li>
+            </ul>
+
+          </li>
+          <li><a href="/tourism/"><span class="box-icon"><img src="/images/menu-03.png" alt="" /></span>観光</a>
+            <ul>
+              <li><a href="/tourism/tourist/">観光振興</a></li>
+              <li><a href="/tourism/nature/">自然・景観</a></li>
+              <li class="last-child"><a href="/tourism/access/">交通</a></li>
+            </ul>
+
+          </li>
+          <li><a href="/education/"><span class="box-icon"><img src="/images/menu-04.png" alt="" /></span>子育て・教育</a>
+            <ul>
+              <li><a href="/education/child/">子ども・家庭</a></li>
+              <li><a href="/education/syoushika/">少子化・子育て </a></li>
+              <li class="last-child"><a href="/education/kyoiku/">教育・学習</a></li>
+            </ul>
+
+          </li>
+          <li><a href="/medical/"><span class="box-icon"><img src="/images/menu-05.png" alt="" /></span>医療・福祉</a>
+            <ul>
+              <li><a href="/medical/kenko/">健康・医療</a></li>
+              <li><a href="/medical/fukushi/">福祉</a></li>
+              <li class="last-child"><a href="/medical/yakuji/">薬事・衛生・感染症</a></li>
+            </ul>
+
+          </li>
+          <li><a href="/life/"><span class="box-icon"><img src="/images/menu-06.png" alt="" /></span>くらし</a>
+            <ul>
+              <li><a href="/life/kenko/">健康</a></li>
+              <li><a href="/life/syoku/">消費・食生活</a></li>
+              <li><a href="/life/zei/">税金</a></li>
+              <li><a href="/life/zei_shosi/">証紙</a></li>
+              <li><a href="/life/bunka/">文化・スポーツ</a></li>
+              <li><a href="/life/international/">国際交流・パスポート</a></li>
+              <li><a href="/life/information/">情報化</a></li>
+              <li><a href="/life/jinken/">人権・男女共同参画</a></li>
+              <li><a href="/life/region/">地域振興・交通</a></li>
+              <li class="last-child"><a href="/life/douro_kisei/">道路情報</a></li>
+            </ul>
+
+          </li>
+          <li><a href="/industry/"><span class="box-icon"><img src="/images/menu-07.png" alt="" /></span>しごと・産業</a>
+            <ul>
+              <li><a href="/industry/syoko/">商工業</a></li>
+              <li><a href="/industry/norin/">農林業</a></li>
+              <li><a href="/industry/suisan/">水産業</a></li>
+              <li><a href="/industry/employ/">雇用・労働</a></li>
+              <li class="last-child"><a href="/industry/enterprise/">企業立地・支援</a></li>
+            </ul>
+
+          </li>
+          <li id="menu_kendo"><a href="/infra/"><span class="box-icon"><img src="/images/menu-08.png" alt="" /></span>環境・県土づくり</a>
+            <ul>
+              <li><a href="/infra/kankyo/">環境・リサイクル</a></li>
+              <li><a href="/infra/nature/">自然・景観・動物</a></li>
+              <li><a href="/infra/energy/">エネルギー</a></li>
+              <li><a href="/infra/road/">道路</a></li>
+              <li><a href="/infra/river/">河川・治水・治山</a></li>
+              <li><a href="/infra/port/">港湾・空港</a></li>
+              <li><a href="/infra/toshi/">都市計画・土地</a></li>
+              <li><a href="/infra/jyoge/">上下水道</a></li>
+              <li><a href="/infra/build/">建築・住宅</a></li>
+              <li><a href="/infra/land/">用地</a></li>
+              <li><a href="/infra/kouji/">技術管理</a></li>
+              <li><a href="/infra/infos/">開通・規制情報</a></li>
+              <li><a href="/infra/kensetsu/">建設産業</a></li>
+              <li class="last-child"><a href="/infra/saigai/">災害復旧</a></li>
+            </ul>
+
+          </li>
+          <li><a href="/admin/"><span class="box-icon"><img src="/images/menu-09.png" alt="" /></span>県政・統計</a>
+            <ul>
+              <li><a href="/admin/pref/">県情報</a></li>
+              <li><a href="/admin/seisaku/">政策・財政</a></li>
+              <li><a href="/admin/region/">地域振興・交通</a></li>
+              <li><a href="/admin/nonprofit/">NPO</a></li>
+              <li><a href="/admin/sichoson/">市町村情報</a></li>
+              <li><a href="/admin/bid/">入札・契約</a></li>
+              <li><a href="/admin/license/">資格・試験・登録</a></li>
+              <li><a href="/admin/commission/">各種委員会</a></li>
+              <li class="last-child"><a href="/admin/syokuin/">職員募集</a></li>
+            </ul>
+
+          </li>
+        </ul>
+      </div><!-- end menu -->
+    </div><!-- end menu-wrapper -->
+  </div>
+
+  <div id="content-wrapper" class="clearfix">
+    <div id="content" class="clearfix">
+      <div id="content-single">
+        <div id="crumbs" class="clearfix">
+
+    <div class="topic_section" style="float:right;">
+      <a href="/matsue_hoken/">【松江保健所】</a>
+    </div>
+
+  <ul>
+    <li><a href="/top.html">トップ</a></li>
+    <li>&nbsp;&gt;&nbsp;</li>
+    <li><a href="/infra/">環境・県土づくり</a></li>
+    <li>&nbsp;&gt;&nbsp;</li>
+    <li><a href="/infra/nature/">自然・景観・動物</a></li>
+    <li>&nbsp;&gt;&nbsp;</li>
+    <li><a href="/infra/nature/animal/">動物</a></li>
+    <li>&nbsp;&gt;&nbsp;</li>
+    <li><a href="/infra/nature/animal/matsue_hoken/">動物情報（松江・安来）</a></li>
+    <li>&nbsp;&gt;&nbsp;</li>
+    <li><a href="/infra/nature/animal/matsue_hoken/doubutu/">保護情報（松江・安来）</a></li>
+    <li>&nbsp;&gt;&nbsp;</li>
+
+    <li><a href="/infra/nature/animal/matsue_hoken/doubutu/hogozyouhou_kakobunn/">保護情報_過去分</a></li>
+    <li>&nbsp;&gt;&nbsp;</li>
+    <li>保護・収容情報</li>
+  </ul>
+</div>
+
+        <div id="honbun">
+        <!-- begin_content -->
+        <div id="page-content">
+            <div class="susanoo-editable-field">
+<h1>
+<img width="196" height="96" title="inu a" alt="inua" src="/infra/nature/animal/matsue_hoken/doubutu/hogozyouhou_kakobunn/syuyouari.data/67migCA4UVYFV.jpg" style="height:96px; width:196px" />保護・収容動物情報</h1>
+<div>
+<p>管理番号をクリックすると詳細がご覧いただけます。下の欄に動物情報がない場合は、現在保護収容している動物がおりません。</p>
+<p> </p>
+<p>保護動物一覧</p>
+<p> </p>
+</div>
+<div>
+<table cellpadding="1" cellspacing="1" style="width:1100px" summary="収容猫1">
+<caption>収容犬</caption>
+<tbody>
+<tr>
+<th scope="col" style="text-align:center">管理番号</th>
+<th scope="col" style="text-align:center">写真</th>
+<th scope="col" style="text-align:center">収容日</th>
+<th scope="col" style="text-align:center">収容場所</th>
+<th scope="col" style="text-align:center">動物種別</th>
+<th scope="col" style="text-align:center">種類</th>
+<th scope="col" style="text-align:center">性別</th>
+</tr>
+</tbody>
+</table>
+<p> </p>
+</div>
+<div></div>
+<div>
+<table cellpadding="1" cellspacing="1" summary="収容犬1" style="width:900px">
+<caption>収容猫</caption>
+<tbody>
+<tr>
+<th scope="col" style="text-align:center">管理番号</th>
+<th scope="col" style="text-align:center">写真</th>
+<th scope="col" style="text-align:center">収容日</th>
+<th scope="col" style="text-align:center">収容場所</th>
+<th scope="col" style="text-align:center">動物種別</th>
+<th scope="col" style="text-align:center">種類</th>
+<th scope="col" style="text-align:center">性別</th>
+</tr>
+<tr>
+<th scope="col" style="text-align:center">
+<a href="/infra/nature/animal/matsue_hoken/doubutu/hogozyouhou_kakobunn/dobutu7.html">２３C１３０</a>
+</th>
+<th scope="col" style="text-align:center">
+<a href="/infra/nature/animal/matsue_hoken/doubutu/hogozyouhou_kakobunn/dobutu7.html">＊負傷のため画像はありません</a>
+</th>
+<th scope="col" style="text-align:center">令和５年５月２４日</th>
+<th scope="col" style="text-align:center">松江市鹿島町名分</th>
+<th scope="col" style="text-align:center">猫・成猫</th>
+<th scope="col" style="text-align:center">雑種</th>
+<th scope="col" style="text-align:center">オス</th>
+</tr>
+</tbody>
+</table>
+<p> </p>
+</div>
+<h1>住民の方が保護してる犬・猫の情報</h1>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p>一般の保護（捜索）情報は、ありません。</p>
+<p> </p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p class="left"></p>
+<p class="left"></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p class="left"></p>
+<p></p>
+<p></p>
+<p></p>
+<p class="left"></p>
+<p class="left"></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p class="left"></p>
+<p class="left"></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p class="left"></p>
+<p class="left"></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p class="left"></p>
+<p class="left"></p>
+<p></p>
+<p></p>
+<p></p>
+<p class="left"></p>
+<p class="left"></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p class="left"></p>
+<p class="left"></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p class="left"></p>
+<p class="left"></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p class="left"></p>
+<p class="left"></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p class="left"></p>
+<p class="left"></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p class="left"></p>
+<p class="left"></p>
+<p></p>
+<p></p>
+<p></p>
+</div>
+
+        </div><!-- end page-content -->
+        <!-- end_content -->
+        </div><!-- end honbun -->
+        <br style="clear:both;" />
+        <div class="box-left">
+          <div class="content-border-bottom"><h3 class="content-title"><span>お問い合わせ先</span></h3></div>
+          <div class="section">
+              <p class="lead">松江保健所</p>
+              <pre>〒690-0011　島根県松江市東津田町1741-3（いきいきプラザ島根３階）
+
+（お知らせ）
+　松江保健所は平成３０年４月から島根県と松江市が共同で設置運営しています。
+　従来、松江保健所が行っていた業務のほとんどは引き続き同じ場所で行いますが、一部取扱いが変更になったものがあります。
+　変更となった業務、手続きについてはお問合せください。
+
+　　TEL 0852-23-1313(代表)
+　　FAX 0852-21-2770 / 0852-31-6694
+　　matsue-hc@pref.shimane.lg.jp
+</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end page -->
+
+<div id="footer-wrapper" class="clearfix">
+<div id="footer-top">
+  <div class="pagetop">
+    <a href="#skip">ページの先頭へ戻る</a>
+  </div>
+</div>
+<div id="footer" class="clearfix">
+  <div class="box-left">
+    <div class="fmenu">
+      <ul class="clearfix">
+        <li><a href="/privacy.html">個人情報の取り扱い</a></li>
+        <li><a href="/cl.html">著作権・リンク等</a></li>
+        <li><a href="/ac.html">アクセシビリティ</a></li>
+        <li><a href="/smp.html">ソーシャルメディア利用指針</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="box-right clearfix">
+    <div class="qr">
+      <img alt="携帯サイトQRコード" width="74" height="74" src="/index.data/index.png" />
+    </div>
+    <div class="txt">
+      <p>QRコード<br />
+      携帯電話で島根県公式ホームページにアクセスできます。</p>
+    </div>
+  </div>
+</div>
+<div id="footer-copyright">
+  <p>Copyright (C) 2020 Shimane Prefectural Government. All Rights Reserved.</p>
+</div>
+</div><!-- end footer-wrapper -->
+</body>
+</html>
+

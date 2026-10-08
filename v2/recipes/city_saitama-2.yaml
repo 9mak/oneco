@@ -1,3 +1,5 @@
+# 2026-10-05 監査: 1 頭目が div に包まれず「管理番号 <p>・写真 <p>・属性 <ul>」が平らに並ぶ日（R08-57）、写真だけ取れて収容日・場所・毛色などが全部空だった。
+# 行の始まりを「管理番号」の p にし row_until で次の始まり（またはそれを含む div）か h2 まで束ねる。管理番号も本文の「管理番号 R08-57」から取る（写真の alt は「負傷」等で当てにならない）。
 # さいたま市（保護猫・その他） — city_saitama-1 と同一テンプレート（single_page）。
 # 通常の1頭 = div.wysiwyg_area > div（管理番号<p> + 写真<p> + <ul>属性リスト）。
 # 在庫0件でも全項目が空の「管理番号 R08-」テンプレートカードがdivでラップされて常に1枚残る
@@ -6,13 +8,16 @@
 # 写真行も拾う（その場合 収容日等は取れない）。
 # 空テンプレートの写真alt表記は「作成用（要保存）」「作業」等ページごとに揺れて当てにならないため、
 # 「収容日：」の直後に値が無く即スペース（＝空欄）で判定して落とす（row_filter）。
-rows: "div.wysiwyg_area > div:has(ul), div.wysiwyg_area > p:has(img)"
+rows: "div.wysiwyg_area p:-soup-contains('管理番号')"
+row_until: "h2"
 row_filter:
   text_lacks: ["収容日： "]
+# 写真の代わりの共通画像（alt「負傷」=「負傷動物のため写真の公開はありません」045_s.jpg、alt「作業」= 雛形の 093_s.jpg）は写真にしない。
+# 写真から ID を作るので、負傷の子が同じ日に 2 頭以上いると ID が衝突して 1 頭しか載らなかった（Wayback 2024-02 の R05-85〜87）。T521
 image:
-  selector: "img:not([alt*='作成用'])@src"
+  selector: "img:not([alt*='作成用']):not([alt='負傷']):not([alt='作業'])@src"
 fields:
-  management_no: {selector: "img:not([alt*='作成用'])", attr: "alt", regex: "[A-Za-z]?\\d+-\\d+"}
+  management_no: {regex: "管理番号\\s*([A-Za-z]?\\d+-\\d+)"}
   shelter_date: {label: "収容日"}
   location: {label: "収容場所"}
   breed: {label: "種類"}
@@ -21,7 +26,10 @@ fields:
   size: {label: "体格"}
   age: {label: "推定年齢"}
   note: {label: "備考"}
-empty_text:
-  - "管理番号 R08-"
+empty_text:   # 0 頭の日も残る雛形カード「管理番号 R08-」（年度で変わる。Wayback 2025-02 は R06-）
+  - "管理番号 R06-"
   - "管理番号 R07-"
+  - "管理番号 R08-"
   - "管理番号 R09-"
+  - "管理番号 R10-"
+  - "管理番号 R11-"

@@ -6,8 +6,8 @@
 # 0 頭の日の文言は同じ CMS の県央保健所の実例（「現在、元の飼い主さんを探している動物は保護されていません」）から推測した。大船渡では未確認（今日は 1 頭）。
 #   外れたら「読めなかった」扱いで通知される側に倒れる。この文言は譲渡の節には出ないので、迷子だけの 0 頭を言い当てられる。
 #   image の h2 も迷子の節に絞った（譲渡側と対称。節の順が入れ替わっても、他の節の写真を拾わない）。
-rows: "h2:-soup-contains('元の飼い主を探しています') + p.imagecenter + p"
-image: {selector: "h2:-soup-contains('元の飼い主を探しています') + p.imagecenter img@src", scope: prev_siblings, stop_at: row, exclude: ["ireisai"]}
+rows: "h2:-soup-contains('を探しています') + p:has(> img) + p"
+image: {selector: "h2:-soup-contains('を探しています') + p:has(> img) img@src", scope: prev_siblings, stop_at: row, exclude: ["ireisai"]}
 fields:
   name: {label: "愛称"}
   breed: {label: "種類"}
@@ -20,3 +20,4 @@ fields:
   note: {regex: "(?:備考|その他)[:：]\\s*(.+)"}
 empty_text:
   - "現在、元の飼い主さんを探している動物は保護されていません"
+  - "現在、もとの飼主さんを待っている動物はおりません"

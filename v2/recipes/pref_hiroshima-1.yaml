@@ -11,14 +11,20 @@
 # 2026-10-05 変更: 写真を image で取るようにした。写真 p は行（属性 p）の直前の兄弟で、行と同じ p タグなので、同じタグ名で遡りを止める既定だと
 #   直前の写真 p で止まり届かなかった。10/5 のエンジン（image.stop_at: row = 前の行に当たるまで遡る）を当てた。h2 が兄弟でも div 入れ子でも、
 #   その子の写真 p（先頭の 1 枚）が取れ、前の子の写真は拾わない（tests/test_registry_t517_f.py）。
-rows: "div.detail_free p:-soup-contains('収容された日')"
-image: {selector: "img@src", scope: prev_siblings, stop_at: row}
+# 2026-10-05 監査: 属性 p の最後の行「保護時に茶色の皮の首輪を装着」（保護された状況の次の行）が取れていなかったので note に入れる。
+rows: "div.detail_free h2:-soup-contains('管理番号')"
+row_until: "h2"
+row_filter:
+  text_has_any: ["収容された日"]
+  text_lacks: ["返還されました"]
+image: "p > img@src"
 fields:
-  management_no: {from: heading, selector: "h2", regex: "管理番号[:：]\\s*(\\S+)"}
-  breed: {regex: "^([^、,，\\n]+)"}
+  management_no: {selector: "h2", regex: "管理番号[:：]?\\s*(\\S+)"}
+  breed: {regex: "(?:^|[、,，\\s])((?:(?!推定|雄|雌|\\d)[^、,，\\s])+)[、,，]"}
   age: {regex: "(推定\\s*\\d+\\s*歳|\\d+\\s*歳|\\d+\\s*(?:ヶ月|か月|カ月)|成犬|成猫|子犬|子猫|幼犬|幼猫)"}
   sex: {regex: "(雄|雌)"}
   shelter_date: {regex: "収容された日[:：]\\s*([^\\s]+)"}
+  note: {regex: "(?:保護|発見)されました。\\s*(\\S.*)$"}   # 保護された状況の次の行（保護時の首輪など）。行の文字は改行なしの空白区切り
   location: {regex: "保護された状況[:：]\\s*(?:(?:令和|平成|昭和)?\\s*\\d+\\s*年\\s*\\d+\\s*月\\s*\\d+\\s*日[^に]*に\\s*)?(.+?)(?:で(?:保護|発見)されました|$)"}
 empty_text:
   - "現在迷い犬はいません"

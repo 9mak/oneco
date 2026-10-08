@@ -1,0 +1,733 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="ja" xml:lang="ja">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=9" />
+<meta http-equiv="Content-Style-Type" content="text/css" />
+<meta http-equiv="Content-Script-Type" content="text/javascript" />
+
+<title>猫の飼い主さん募集／あかしっぽ（あかし動物センター）</title>
+<meta name="keywords" content="あかし動物センター,あかしっぽ,明石,動物愛護,動物センター" />
+
+<meta name="author" content="明石市" />
+<meta name="viewport" content="width=device-width, maximum-scale=3.0" />
+<meta name="format-detection" content="telephone=no" />
+
+
+
+
+
+
+<meta name="description" content="あかし動物センターを拠点に、「人と動物の共生によるぬくもりとやすらぎのあるまち　明石」を目指し、動物に対する理解や命の大切さを伝える普及啓発を行い、動物を飼っている人も飼っていない人も、動物と共生できる社会の実現を目指します。" />
+<link rel="apple-touch-icon" href="/shared/templates/akashippo/images/faviocn/apple-touch-icon.png" />
+<link rel="icon" type="image/png" href="/shared/templates/akashippo/images/faviocn/favicon-32x32.png" />
+<link rel="icon" type="image/png" href="/shared/templates/akashippo/images/faviocn/favicon-16x16.png" />
+<link rel="manifest" href="/shared/templates/akashippo/images/faviocn/site.webmanifest" />
+<link rel="mask-icon" href="/shared/templates/akashippo/images/faviocn/safari-pinned-tab.svg" />
+<meta name="apple-mobile-web-app-title" content="あかしっぽ" />
+<meta name="application-name" content="あかしっぽ" />
+<meta name="msapplication-TileColor" content="#5a3922" />
+<meta name="theme-color" content="#ffffff" />
+
+<link href="/shared/templates/akashippo/style/edit.css" rel="stylesheet" type="text/css" media="all" />
+<link href="/shared/templates/akashippo/style/shared.css" rel="stylesheet" type="text/css" media="all" />
+
+<!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.2/html5shiv.js"></script>
+    <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+<![endif]-->
+<script src="/shared/js/ga.js" type="text/javascript"></script>
+</head>
+<body>
+<noscript>
+<div class="noscript">このサイトではJavaScriptを使用したコンテンツ・機能を提供しています。JavaScriptを有効にするとご利用いただけます。</div>
+</noscript>
+<p class="skip-outer"><a href="#tmp_honbun" class="skip">本文へスキップします。</a></p>
+<div id="header">
+  <div id="header-function" class="hidden-xs hidden-sm">
+    <div class="container">
+      <div class="row">
+        <div class="col-xs-12">
+          <ul class="pull-right nav nav-pills">
+            <li><a href="/kankyou/dobutsu/index.html">HOME</a></li>
+            <li><a href="/kankyou/dobutsu/faq/index.html">よくあるご質問</a></li>
+            <li><a href="/kankyou/dobutsu/sitemap/index.html">サイトマップ</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="row clearfix">
+      <div class="hidden-xs hidden-sm col-md-12 col-lg-3 text-center"> <a href="/kankyou/dobutsu/index.html" id="logo"><img src="/shared/templates/akashippo/images/logo.jpg" alt="あかし動物センター" /></a> </div>
+      <div class="col-lg-9 col-md-12 col-xs-12"> <a href="/kankyou/dobutsu/index.html" id="logo-sm" class="visible-xs-inline-block"><img src="/shared/templates/akashippo/images/logo.jpg" alt="あかし動物センター「あかしっぽ」" /></a>
+        <button type="button" id="global-menu-sp" class="navbar-toggle collapsed"> <span class="sr-only">Toggle navigation</span> <span class="icon-bar"></span> <span class="icon-bar"></span> <span class="icon-bar"></span> <span class="menu-name">MENU</span> </button>
+        <ul id="global-menu" class="nav nav-justified navbar-collapse collapse">
+          <li><a href="/kankyou/dobutsu/about/index.html"><img src="/shared/templates/akashippo/images/gmenu_about.png" alt="あかし動物センターアイコン" />あかし動物センターとは</a></li>
+          <li><a href="/kankyou/dobutsu/info/index.html"><img src="/shared/templates/akashippo/images/gmenu_info.png" alt="犬猫の情報アイコン" />犬猫の情報</a></li>
+          <li><a href="/kankyou/dobutsu/kainushi/index.html"><img src="/shared/templates/akashippo/images/gmenu_kainushi.png" alt="飼い主の方へアイコン" />飼い主の方へ</a></li>
+          <li><a href="/kankyou/dobutsu/gyosha/index.html"><img src="/shared/templates/akashippo/images/gmenu_gyosha.png" alt="動物取扱業についてアイコン" />動物取扱業について</a></li>
+          <li><a href="/kankyou/dobutsu/kansensho/index.html"><img src="/shared/templates/akashippo/images/gmenu_animal.png" alt="動物由来感染症アイコン" />動物由来感染症</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+<h1>犬猫の情報</h1>
+<div id="main">
+  <div class="container">
+    <p id="pankuzu" class="pankuzu breadcrumb">
+      <a href="/kankyou/dobutsu/index.html">あかしっぽ あかし動物センター</a> &gt; 猫の飼い主さん募集
+    </p>
+  </div>
+  <div class="container">
+    <div class="dropdown cat-002">
+      <button type="button" id="sp-category-menu" class="btn btn-default btn-block visible-sm visible-xs dropdown-toggle">カテゴリ選択<span class="caret"></span> </button>
+   
+   
+<ul class="nav nav-pills nav178">
+   
+<li class="cat017 cat001"><a href="/kankyou/dobutsu/about/index.html">概要</a></li>
+   
+<li class="cat017 cat001"><a href="/kankyou/dobutsu/about/access.html">交通アクセス</a></li>
+   
+<li class="cat017 cat001"><a href="/kankyou/dobutsu/about/barirre.html">バリアフリーの取り組み</a></li>
+   
+<li class="cat017 cat001"><a href="/kankyou/dobutsu/about/calendar.html">開館日カレンダー</a></li>
+   
+</ul>
+   
+   
+   
+<ul class="nav nav-pills nav179">
+   
+<li class="cat017 cat002"><a href="/kankyou/dobutsu/info/index.html">犬猫の失踪・保護・返還</a></li>
+   
+<li class="cat017 cat002"><a href="/kankyou/dobutsu/info/maigo.html">迷子の情報</a></li>
+   
+<li class="cat017 cat002"><a href="/kankyou/dobutsu/info/boshu.html">犬・猫の飼い主募集</a></li>
+   
+<li class="cat017 cat002"><a href="/kankyou/dobutsu/info/maigo/cat.html">猫の迷子情報</a></li>
+   
+<li class="cat017 cat002"><a href="/kankyou/dobutsu/info/maigo/dog.html">犬の迷子情報</a></li>
+   
+<li class="cat002 cat&nbsp;"><a href="/kankyou/dobutsu/info/yougokaisetsu.html">飼い主のいない猫によるトラブルを解決するため</a></li>
+   
+<li class="cat002 cat&nbsp;"><a href="/kankyou/dobutsu/info/tatou.html">多頭飼育崩壊について</a></li>
+   
+<li class="cat002 cat&nbsp;"><a href="/kankyou/dobutsu/info/houkaisei2019.html">法改正について</a></li>
+   
+<li class="cat017 cat&nbsp;"><a href="/kankyou/dobutsu/info/mc.html">犬、猫のマイクロチップの義務化とワンストップサービスについて</a></li>
+   
+<li class="cat017 cat&nbsp;"><a href="/kankyou/dobutsu/info/insta.html">インスタグラムの利用及び運用ポリシーについて</a></li>
+   
+</ul>
+   
+   
+   
+<ul class="nav nav-pills nav180">
+   
+<li class="cat017 cat003"><a href="/kankyou/dobutsu/kainushi/index.html">飼い主の方へ</a></li>
+   
+<li class="cat017 cat003"><a href="/kankyou/dobutsu/kainushi/for-dog.html">犬の飼い主さんへ</a></li>
+   
+<li class="cat017 cat003"><a href="/kankyou/dobutsu/kainushi/for-cat.html">猫の飼い主さんへ</a></li>
+   
+<li class="cat017 cat003"><a href="/kankyou/dobutsu/kainushi/kyokenbyo.html">犬の登録・狂犬病予防注射について</a></li>
+   
+<li class="cat017 cat003"><a href="/kankyou/dobutsu/kainushi/change.html">犬の住所変更などについて</a></li>
+   
+<li class="cat017 cat&nbsp;"><a href="/kankyou/dobutsu/kainushi/lost.html">犬の鑑札等の破損・紛失</a></li>
+   
+<li class="cat017 cat003"><a href="/kankyou/dobutsu/kainushi/yuusou.html">犬の登録・注射済票のweb・郵送手続き</a></li>
+   
+<li class="cat017 cat003"><a href="/kankyou/dobutsu/kainushi/itaku.html">市委託動物病院</a></li>
+   
+<li class="cat017 cat003"><a href="/kankyou/dobutsu/kainushi/inunoshibou.html">犬が死亡した場合</a></li>
+   
+</ul>
+   
+   
+   
+<ul class="nav nav-pills nav181">
+   
+<li class="cat017 cat004"><a href="/kankyou/dobutsu/gyosha/sekininsha.html">動物取扱責任者について</a></li>
+   
+<li class="cat017 cat004"><a href="/kankyou/dobutsu/gyosha/regist.html">新規登録</a></li>
+   
+<li class="cat017 cat004"><a href="/kankyou/dobutsu/gyosha/update.html">登録更新</a></li>
+   
+<li class="cat017 cat004"><a href="/kankyou/dobutsu/gyosha/change.html">変更・廃業</a></li>
+   
+<li class="cat017 cat004"><a href="/kankyou/dobutsu/gyosha/tokutei.html">特定動物について</a></li>
+   
+</ul>
+   
+   
+   
+<ul class="nav nav-pills nav182">
+   
+<li class="cat017 cat005"><a href="/kankyou/dobutsu/kansensho/index.html">動物由来感染症について</a></li>
+   
+<li class="cat017 cat005"><a href="/kankyou/dobutsu/kansensho/yobo.html">予防について</a></li>
+   
+</ul>
+   
+	  </div>
+    <p id="tmp_honbun" class="skip">ここから本文です。</p>
+    <div id="tmp_contents"><h2>猫の飼い主さん募集</h2>
+<ul class="row-boshu">
+	<li class="col-md-4">
+	<h6>2024年10月1日更新</h6>
+	</li>
+	<li class="col-md-4">
+	<h6>　現在、飼い主を募集している猫は子猫7頭、成猫7頭です。（掲載していない猫もいます。）</h6>
+	</li>
+	<li class="col-md-4">
+	<h5>　事前の飼い主登録も受け付けておりますので譲渡希望の方はお電話ください。</h5>
+	</li>
+	<li class="col-md-4">
+	<h6>　譲渡の条件・申し込みの詳しい方法は<a href="/kankyou/dobutsu/info/boshu.html">こちら</a></h6>
+	</li>
+	<li class="col-md-4">
+	<h6>　<strong>&quot;トライアル中&quot;</strong>の猫は飼い主が仮決定しており、現在体験飼育中です。</h6>
+	</li>
+</ul>
+<hr />
+<p class="col-md-4">&nbsp;<img alt="子猫" height="45" src="/kankyou/dobutsu/info/boshu/images/koneko.png" width="149" /></p>
+<h6>　現在、飼い主を募集している子猫は7頭です。</h6>
+<p class="col-md-4"><img alt="kai1" height="300" src="/kankyou/dobutsu/info/boshu/images/kairi1.jpg" width="300" /><img alt="kai2" height="300" src="/kankyou/dobutsu/info/boshu/images/kairi2.jpg" width="300" /><img alt="kai3" height="300" src="/kankyou/dobutsu/info/boshu/images/kairi3.jpg" width="300" /></p>
+<table>
+	<tbody>
+		<tr>
+			<th>
+			<p>品種（年齢）</p>
+			</th>
+			<td>
+			<h6>MIX（約10週齢）</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性別</th>
+			<td>
+			<h6>オス</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>体重</th>
+			<td>
+			<h6>750g （8月15日現在）</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性格</th>
+			<td>
+			<p>元気いっぱいな男の子です。おもちゃが大好きで、一匹でも上手に遊べます。</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<hr />
+<p class="col-md-4"><img alt="dec1" height="300" src="/kankyou/dobutsu/info/boshu/images/deco1.jpg" width="300" /><img alt="dec2" height="300" src="/kankyou/dobutsu/info/boshu/images/deco2.jpg" width="300" /><img alt="dec3" height="300" src="/kankyou/dobutsu/info/boshu/images/deco3.jpg" width="300" /></p>
+<table>
+	<tbody>
+		<tr>
+			<th>
+			<p>品種（年齢）</p>
+			</th>
+			<td>
+			<h6>MIX（約10週齢）</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性別</th>
+			<td>
+			<h6>オス</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>体重</th>
+			<td>
+			<h6>650g （8月15日現在）</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性格</th>
+			<td>
+			<p>明るく元気な性格です。ご飯も好き嫌いせず、しっかり食べてくれます。</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<hr />
+<p class="col-md-4"><img alt="r2" height="300" src="/kankyou/dobutsu/info/boshu/images/ran2.jpg" width="300" /><img alt="r1" height="300" src="/kankyou/dobutsu/info/boshu/images/ran1.jpg" width="300" /><img alt="r3" height="300" src="/kankyou/dobutsu/info/boshu/images/ran3.jpg" width="300" /></p>
+<table>
+	<tbody>
+		<tr>
+			<th>
+			<p>品種（年齢）</p>
+			</th>
+			<td>
+			<h6>MIX（約17週齢）<strong>トライアル予定</strong></h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性別</th>
+			<td>
+			<h6>メス</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>体重</th>
+			<td>
+			<h6>1.7kg （9月20日現在）</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性格</th>
+			<td>
+			<p>とても人懐こく、なでられるのがとても大好きです。</p>
+			<p>遊んだ後はよく無防備な格好で寝ています。</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<hr />
+<p class="col-md-4"><img alt="pon3" height="300" src="/kankyou/dobutsu/info/boshu/images/pon3.jpg" width="300" /><img alt="pon1" height="300" src="/kankyou/dobutsu/info/boshu/images/pon1.jpg" width="300" /><img alt="pon2" height="300" src="/kankyou/dobutsu/info/boshu/images/pon2.jpg" width="300" /></p>
+<table>
+	<tbody>
+		<tr>
+			<th>
+			<p>品種（年齢）</p>
+			</th>
+			<td>
+			<h6>MIX（約10週齢）<strong>トライアル中</strong></h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性別</th>
+			<td>
+			<h6>メス</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>体重</th>
+			<td>
+			<h6>600g （8月15日現在）</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性格</th>
+			<td>
+			<p>素直で愛想の良い女の子です。爪切りや抱っこも嫌がらずにさせてくれます。</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<hr />
+<p class="col-md-4"><img alt="ra3" height="300" src="/kankyou/dobutsu/info/boshu/images/ra-3.jpg" width="300" /><img alt="ra2" height="300" src="/kankyou/dobutsu/info/boshu/images/ra-2.jpg" width="300" /><img alt="ra1" height="300" src="/kankyou/dobutsu/info/boshu/images/ra-1.jpg" width="300" /></p>
+<table>
+	<tbody>
+		<tr>
+			<th>
+			<p>品種（年齢）</p>
+			</th>
+			<td>
+			<h6>MIX（約20週齢）<strong>トライアル中</strong></h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性別</th>
+			<td>
+			<h6>メス</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>体重</th>
+			<td>
+			<h6>1.9kg （9月20日現在）</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性格</th>
+			<td>
+			<p>兄弟の中で一番元気で活発な女の子です。</p>
+			<p>怖がりですが、慣れた人にはお腹を見せてゴロゴロ言ってくれます。</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<hr />
+<p class="col-md-4"><img alt="iju1" height="300" src="/kankyou/dobutsu/info/boshu/images/ijun1.jpg" width="300" /><img alt="iju2" height="300" src="/kankyou/dobutsu/info/boshu/images/ijun2.jpg" width="300" /><img alt="iju3" height="300" src="/kankyou/dobutsu/info/boshu/images/ijun3.jpg" width="300" /></p>
+<table>
+	<tbody>
+		<tr>
+			<th>
+			<p>品種（年齢）</p>
+			</th>
+			<td>
+			<h6>MIX（約11週齢）<strong>譲渡が決まりました！</strong></h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性別</th>
+			<td>
+			<h6>オス</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>体重</th>
+			<td>
+			<h6>750g （8月15日現在）</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性格</th>
+			<td>
+			<p>穏やかで扱いやすい性格です。尻尾の先が曲がっているのがチャームポイントです。</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<hr />
+<p class="col-md-4"><img alt="shiu1" height="300" src="/kankyou/dobutsu/info/boshu/images/shiu1.jpg" width="300" /><img alt="shiu2" height="300" src="/kankyou/dobutsu/info/boshu/images/shiu2.jpg" width="300" /><img alt="shiu3" height="300" src="/kankyou/dobutsu/info/boshu/images/shiu3.jpg" width="300" /></p>
+<table>
+	<tbody>
+		<tr>
+			<th>
+			<p>品種（年齢）</p>
+			</th>
+			<td>
+			<h6>MIX（約11週齢）<strong>譲渡が決まりました！</strong></h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性別</th>
+			<td>
+			<h6>オス</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>体重</th>
+			<td>
+			<h6>800kg （8月15日現在）</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性格</th>
+			<td>
+			<p>フレンドリーな男の子です。人が大好きで、「ニャー」と可愛い声で鳴いて甘えてきます。</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<hr />
+<p class="col-md-4">&nbsp;<img alt="成猫" height="45" src="/kankyou/dobutsu/info/boshu/images/seineko.png" width="149" /></p>
+<h6>　現在、飼い主を募集している成猫は7頭です。（掲載していない猫もいます。）</h6>
+<p class="col-md-4"><img alt="osu1" height="300" src="/kankyou/dobutsu/info/boshu/images/osugi.jpg" width="300" /><img alt="osu2" height="300" src="/kankyou/dobutsu/info/boshu/images/osugi2.jpg" width="300" /><img alt="osu3" height="300" src="/kankyou/dobutsu/info/boshu/images/osugi3.jpg" width="300" /></p>
+<table>
+	<tbody>
+		<tr>
+			<th>
+			<p>品種（年齢）</p>
+			</th>
+			<td>
+			<h6>Mix（4歳）　</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性別</th>
+			<td>
+			<h6>オス（不妊済み）</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性格</th>
+			<td>
+			<p>ケージに体をこすりつけてアピールするくらい人懐っこい男の子です。人見知りも少なく、穏やかです。</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<hr />
+<p class="col-md-4"><img alt="ma3" height="300" src="/kankyou/dobutsu/info/boshu/images/maton3.jpg" width="300" /><img alt="ma2" height="300" src="/kankyou/dobutsu/info/boshu/images/maton2.jpg" width="300" /><img alt="ma1" height="300" src="/kankyou/dobutsu/info/boshu/images/maton1.jpg" width="300" /></p>
+<table>
+	<tbody>
+		<tr>
+			<th>
+			<p>品種（年齢）</p>
+			</th>
+			<td>
+			<h6>Mix（3歳）　</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性別</th>
+			<td>
+			<h6>オス（不妊済み）</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性格</th>
+			<td>
+			<p>控えめに見えますが、実はとても甘えん坊で人が大好きです。足元にすりすり寄ってくる姿がとても可愛いです。</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<hr />
+<p class="col-md-4"><img alt="mary1" height="300" src="/kankyou/dobutsu/info/boshu/images/mary1.jpg" width="300" /><img alt="mary2" height="300" src="/kankyou/dobutsu/info/boshu/images/mary2.jpg" width="300" /><img alt="mary3" height="300" src="/kankyou/dobutsu/info/boshu/images/mary3.jpg" width="300" /></p>
+<table>
+	<tbody>
+		<tr>
+			<th>
+			<p>品種（年齢）</p>
+			</th>
+			<td>
+			<h6>Mix（3歳）　</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性別</th>
+			<td>
+			<h6>メス（不妊済み）</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性格</th>
+			<td>
+			<p>おとなしく、素直な女の子です。穏やかな気質で扱いやすい性格をしています。</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<hr />
+<p class="col-md-4"><img alt="po3" height="300" src="/kankyou/dobutsu/info/boshu/images/pomu3.jpg" width="300" /><img alt="po1" height="300" src="/kankyou/dobutsu/info/boshu/images/pomu1.jpg" width="300" /><img alt="po2" height="300" src="/kankyou/dobutsu/info/boshu/images/pomu2.jpg" width="300" /></p>
+<table>
+	<tbody>
+		<tr>
+			<th>
+			<p>品種（年齢）</p>
+			</th>
+			<td>
+			<h6>Mix（4歳）　</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性別</th>
+			<td>
+			<h6>メス（不妊済み）</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性格</th>
+			<td>
+			<p>穏やかでフレンドリーです。聞き分けが良く、お利口さんなので、初めて猫を飼われる方にもおすすめです。</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<hr />
+<p class="col-md-4"><img alt="t1" height="300" src="/kankyou/dobutsu/info/boshu/images/t1.jpg" width="300" /><img alt="t2" height="300" src="/kankyou/dobutsu/info/boshu/images/t2.jpg" width="300" /><img alt="t3" height="300" src="/kankyou/dobutsu/info/boshu/images/t3.jpg" width="300" /></p>
+<table>
+	<tbody>
+		<tr>
+			<th>
+			<p>品種（年齢）</p>
+			</th>
+			<td>
+			<h6>Mix（4歳）　</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性別</th>
+			<td>
+			<h6>オス（不妊済み）</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性格</th>
+			<td>
+			<p>兄弟の中で一番人が好きで、人が近づくと必ず寄ってきます。</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<hr />
+<p class="col-md-4"><img alt="p1" height="300" src="/kankyou/dobutsu/info/boshu/images/p1.jpg" width="300" /><img alt="p3" height="300" src="/kankyou/dobutsu/info/boshu/images/p3.jpg" width="300" /><img alt="p2" height="300" src="/kankyou/dobutsu/info/boshu/images/p2.jpg" width="300" /></p>
+<table>
+	<tbody>
+		<tr>
+			<th>
+			<p>品種（年齢）</p>
+			</th>
+			<td>
+			<h6>Mix（3歳）　</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性別</th>
+			<td>
+			<h6>オス（不妊済み）</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性格</th>
+			<td>
+			<p>とても人懐っこく、寝転がりゴロゴロして触ってアピールをしてきます。</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<hr />
+<p class="col-md-4"><img alt="u1" height="300" src="/kankyou/dobutsu/info/boshu/images/ura1_1.jpg" width="300" /><img alt="u2" height="300" src="/kankyou/dobutsu/info/boshu/images/ura2_1.jpg" width="300" /><img alt="u3" height="300" src="/kankyou/dobutsu/info/boshu/images/ura3_1.jpg" width="300" /></p>
+<table>
+	<tbody>
+		<tr>
+			<th>
+			<p>品種（年齢）</p>
+			</th>
+			<td>
+			<h6>Mix（3歳）　</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性別</th>
+			<td>
+			<h6>オス（不妊済み）</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性格</th>
+			<td>
+			<p>おとなしい性格ですが、ご飯の催促は兄弟の中で一番声が大きいです。</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<hr /><!----
+<p class="col-md-4"><img alt="koha6" height="300" src="/kankyou/dobutsu/info/boshu/images/koha6.jpg" width="300" /><img alt="koha3" height="300" src="/kankyou/dobutsu/info/boshu/images/koha3.jpg" width="300" /><img alt="koha1" height="300" src="/kankyou/dobutsu/info/boshu/images/koha1.jpg" width="300" /><img alt="koha4" height="300" src="/kankyou/dobutsu/info/boshu/images/koha4.jpg" width="300" /><img alt="koha2" height="300" src="/kankyou/dobutsu/info/boshu/images/koha2.jpg" width="300" /><img alt="koha5" height="300" src="/kankyou/dobutsu/info/boshu/images/koha5.jpg" width="300" /></p>
+<blockquote data-instgrm-captioned="" data-instgrm-permalink="https://www.instagram.com/reel/Czcnde7Pf4w/?utm_source=ig_embed&amp;utm_campaign=loading" data-instgrm-version="14" style=" background:#FFF; border:0; border-radius:3px; box-shadow:0 0 1px 0 rgba(0,0,0,0.5),0 1px 10px 0 rgba(0,0,0,0.15); margin: 1px; max-width:300px; min-width:300px; padding:0; width:99.375%; width:-webkit-calc(100% - 2px); width:calc(100% - 2px);" class="instagram-media">
+<div style="padding:16px;">
+<div style=" display: flex; flex-direction: row; align-items: center;">
+<div style="background-color: #F4F4F4; border-radius: 50%; flex-grow: 0; height: 40px; margin-right: 14px; width: 40px;">&nbsp;</div>
+<div style="display: flex; flex-direction: column; flex-grow: 1; justify-content: center;">
+<div style=" background-color: #F4F4F4; border-radius: 4px; flex-grow: 0; height: 14px; margin-bottom: 6px; width: 100px;">&nbsp;</div>
+<div style=" background-color: #F4F4F4; border-radius: 4px; flex-grow: 0; height: 14px; width: 60px;">&nbsp;</div>
+</div>
+</div>
+<div style="display:block; height:50px; margin:0 auto 12px; width:50px;"><a href="https://www.instagram.com/reel/Czcnde7Pf4w/?utm_source=ig_embed&amp;utm_campaign=loading"><svg height="50px" version="1.1" viewbox="0 0 60 60" width="50px" xmlns="https://www.w3.org/2000/svg" xmlns:xlink="https://www.w3.org/1999/xlink"><g fill="none" fill-rule="evenodd" stroke="none" stroke-width="1"><g fill="#000000" transform="translate(-511.000000, -20.000000)"><g><path d="M556.869,30.41 C554.814,30.41 553.148,32.076 553.148,34.131 C553.148,36.186 554.814,37.852 556.869,37.852 C558.924,37.852 560.59,36.186 560.59,34.131 C560.59,32.076 558.924,30.41 556.869,30.41 M541,60.657 C535.114,60.657 530.342,55.887 530.342,50 C530.342,44.114 535.114,39.342 541,39.342 C546.887,39.342 551.658,44.114 551.658,50 C551.658,55.887 546.887,60.657 541,60.657 M541,33.886 C532.1,33.886 524.886,41.1 524.886,50 C524.886,58.899 532.1,66.113 541,66.113 C549.9,66.113 557.115,58.899 557.115,50 C557.115,41.1 549.9,33.886 541,33.886 M565.378,62.101 C565.244,65.022 564.756,66.606 564.346,67.663 C563.803,69.06 563.154,70.057 562.106,71.106 C561.058,72.155 560.06,72.803 558.662,73.347 C557.607,73.757 556.021,74.244 553.102,74.378 C549.944,74.521 548.997,74.552 541,74.552 C533.003,74.552 532.056,74.521 528.898,74.378 C525.979,74.244 524.393,73.757 523.338,73.347 C521.94,72.803 520.942,72.155 519.894,71.106 C518.846,70.057 518.197,69.06 517.654,67.663 C517.244,66.606 516.755,65.022 516.623,62.101 C516.479,58.943 516.448,57.996 516.448,50 C516.448,42.003 516.479,41.056 516.623,37.899 C516.755,34.978 517.244,33.391 517.654,32.338 C518.197,30.938 518.846,29.942 519.894,28.894 C520.942,27.846 521.94,27.196 523.338,26.654 C524.393,26.244 525.979,25.756 528.898,25.623 C532.057,25.479 533.004,25.448 541,25.448 C548.997,25.448 549.943,25.479 553.102,25.623 C556.021,25.756 557.607,26.244 558.662,26.654 C560.06,27.196 561.058,27.846 562.106,28.894 C563.154,29.942 563.803,30.938 564.346,32.338 C564.756,33.391 565.244,34.978 565.378,37.899 C565.522,41.056 565.552,42.003 565.552,50 C565.552,57.996 565.522,58.943 565.378,62.101 M570.82,37.631 C570.674,34.438 570.167,32.258 569.425,30.349 C568.659,28.377 567.633,26.702 565.965,25.035 C564.297,23.368 562.623,22.342 560.652,21.575 C558.743,20.834 556.562,20.326 553.369,20.18 C550.169,20.033 549.148,20 541,20 C532.853,20 531.831,20.033 528.631,20.18 C525.438,20.326 523.257,20.834 521.349,21.575 C519.376,22.342 517.703,23.368 516.035,25.035 C514.368,26.702 513.342,28.377 512.574,30.349 C511.834,32.258 511.326,34.438 511.181,37.631 C511.035,40.831 511,41.851 511,50 C511,58.147 511.035,59.17 511.181,62.369 C511.326,65.562 511.834,67.743 512.574,69.651 C513.342,71.625 514.368,73.296 516.035,74.965 C517.703,76.634 519.376,77.658 521.349,78.425 C523.257,79.167 525.438,79.673 528.631,79.82 C531.831,79.965 532.853,80.001 541,80.001 C549.148,80.001 550.169,79.965 553.369,79.82 C556.562,79.673 558.743,79.167 560.652,78.425 C562.623,77.658 564.297,76.634 565.965,74.965 C567.633,73.296 568.659,71.625 569.425,69.651 C570.167,67.743 570.674,65.562 570.82,62.369 C570.966,59.17 571,58.147 571,50 C571,41.851 570.966,40.831 570.82,37.631"></path></g></g></g></svg></a></div>
+<div style="padding-top: 8px;">
+<div style=" color:#3897f0; font-family:Arial,sans-serif; font-size:14px; font-style:normal; font-weight:550; line-height:18px;"><a href="https://www.instagram.com/reel/Czcnde7Pf4w/?utm_source=ig_embed&amp;utm_campaign=loading">この投稿をInstagramで見る</a></div>
+</div>
+<div style="padding: 12.5% 0;">&nbsp;</div>
+<div style="display: flex; flex-direction: row; margin-bottom: 14px; align-items: center;">
+<div>
+<div style="background-color: #F4F4F4; border-radius: 50%; height: 12.5px; width: 12.5px; transform: translateX(0px) translateY(7px);">&nbsp;</div>
+<div style="background-color: #F4F4F4; height: 12.5px; transform: rotate(-45deg) translateX(3px) translateY(1px); width: 12.5px; flex-grow: 0; margin-right: 14px; margin-left: 2px;">&nbsp;</div>
+<div style="background-color: #F4F4F4; border-radius: 50%; height: 12.5px; width: 12.5px; transform: translateX(9px) translateY(-18px);">&nbsp;</div>
+</div>
+<div style="margin-left: 8px;">
+<div style=" background-color: #F4F4F4; border-radius: 50%; flex-grow: 0; height: 20px; width: 20px;">&nbsp;</div>
+<div style=" width: 0; height: 0; border-top: 2px solid transparent; border-left: 6px solid #f4f4f4; border-bottom: 2px solid transparent; transform: translateX(16px) translateY(-4px) rotate(30deg)">&nbsp;</div>
+</div>
+<div style="margin-left: auto;">
+<div style=" width: 0px; border-top: 8px solid #F4F4F4; border-right: 8px solid transparent; transform: translateY(16px);">&nbsp;</div>
+<div style=" background-color: #F4F4F4; flex-grow: 0; height: 12px; width: 16px; transform: translateY(-4px);">&nbsp;</div>
+<div style=" width: 0; height: 0; border-top: 8px solid #F4F4F4; border-left: 8px solid transparent; transform: translateY(-4px) translateX(8px);">&nbsp;</div>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; flex-grow: 1; justify-content: center; margin-bottom: 24px;">
+<div style=" background-color: #F4F4F4; border-radius: 4px; flex-grow: 0; height: 14px; margin-bottom: 6px; width: 224px;">&nbsp;</div>
+<div style=" background-color: #F4F4F4; border-radius: 4px; flex-grow: 0; height: 14px; width: 144px;">&nbsp;</div>
+</div>
+<p style=" color:#c9c8cd; font-family:Arial,sans-serif; font-size:14px; line-height:17px; margin-bottom:0; margin-top:8px; overflow:hidden; padding:8px 0 7px; text-align:center; text-overflow:ellipsis; white-space:nowrap;"><a href="https://www.instagram.com/reel/Czcnde7Pf4w/?utm_source=ig_embed&amp;utm_campaign=loading">あかし動物センター(&#64;akashidobutu)がシェアした投稿</a></p>
+</div>
+</blockquote>
+<script async src="//www.instagram.com/embed.js"></script>
+<table>
+	<tbody>
+		<tr>
+			<th>
+			<p>品種（年齢）</p>
+			</th>
+			<td>
+			<h6>ブリティッシュ・ショートヘア（推定5歳）　<strong>譲渡が決まりました！</strong></h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性別</th>
+			<td>
+			<h6>メス（不妊済み）</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>体重</th>
+			<td>
+			<h6>3.0kg （12月7日現在）</h6>
+			</td>
+		</tr>
+		<tr>
+			<th>性格</th>
+			<td>
+			<p>フレンドリーで愛嬌のある女の子です。</p>
+			<p>とても穏やかで、誰とでも仲良くできます。</p>
+			<p>※持病のため、指定のフードと薬を与える必要があります。詳細はお電話で。</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<hr />
+-->
+	  </div>
+	  
+  </div>
+</div>
+<!--</div>-->
+<p id="pageTop"><a href="#top"><img src="/shared/templates/akashippo/images/pagetop.png" alt="ページトップ" /></a></p>
+<div id="cta">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-4">
+        <p><a href="/kankyou/dobutsu/volunteer/index.html" class="btn btn-volunteer">ボランティア団体情報</a></p>
+      </div>
+      <div class="col-md-4">
+        <p><a href="/kankyou/dobutsu/bousai/index.html" class="btn btn-saigai">防災</a></p>
+      </div>
+      <div class="col-md-4"><p><a href="/kankyou/dobutsu/news/event.html" class="btn btn-shitsuke">イベント情報</a></p></div>
+    </div>
+  </div>
+</div>
+<div id="footer">
+  <div id="footer-contents">
+    <div class="container">
+      <h2>あかし動物センター</h2>
+      <p>〒674-0051　明石市大久保町大窪2747-1</p>
+      <p class="tel">TEL:078-918-5797</p>
+      <div class="row clearfix hidden-xs">
+        <div class="col-md-8 col-md-offset-2">
+          <ul>
+            <li><a href="/kankyou/dobutsu/index.html">HOME</a></li>
+            <li><a href="/kankyou/dobutsu/about/index.html">あかし動物センターとは</a></li>
+            <li><a href="/kankyou/dobutsu/info/index.html">犬猫の情報</a></li>
+            <li><a href="/kankyou/dobutsu/kainushi/index.html">飼い主の方へ</a></li>
+            <li><a href="/kankyou/dobutsu/gyosha/index.html">動物取扱業について</a></li>
+            <li><a href="/kankyou/dobutsu/kansensho/index.html">動物由来感染症について</a></li>
+            <li><a href="/kankyou/dobutsu/bousai/index.html">災害時の対応について</a></li>
+            <li><a href="/kankyou/dobutsu/faq/index.html">よくあるご質問</a></li>
+            <li><a href="/kankyou/dobutsu/sitemap/index.html">サイトマップ</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="copyright">
+    <p>Copyright &copy; あかし動物センター All Rights Reserved.</p>
+  </div>
+</div>
+<script src="/shared/templates/akashippo/js/jquery.js" type="text/javascript"></script> 
+<script src="/shared/templates/akashippo/js/bootstrap.js" type="text/javascript"></script> 
+<script src="/shared/templates/akashippo/js/custom.js" type="text/javascript"></script> 
+</body>
+</html>

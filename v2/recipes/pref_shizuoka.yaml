@@ -1,7 +1,12 @@
-# 静岡県（保護犬猫情報）。入口ページの article#content ul.listlink 内の <li><a> は
+# 静岡県（迷い犬情報）。入口ページの article#content ul.listlink 内の <li><a> は
 # 「迷い犬情報 2609FD001」のような迷い犬情報一覧で、1リンク=1個体の detail ページを follow_all で辿る（1頭=1ページ）。
 # 政令市（静岡市・浜松市）分は ul.objectlink の外部リンクのみで動物データが無いため除外（follow_all のセレクタで絞る）。
 # detail ページは dl/dt/dd のラベル値。連絡先（保健所）は個体ごとに異なり代表電話が無いため note に入れる。
+# 2026-10-05 監査: ページは「迷い犬情報一覧」なので、台帳の区分を保護中から迷子（stray）に直した。レシピは変更なし。
+# 2026-10-07: 0 頭の日は ul.listlink が丸ごと出なくなり、0 頭の文言も無い（10/6・10/7 の 0:05 が failed）。Wayback 2025-08-31・
+#   2025-10-10 も同じ作りの 0 頭の日で、ul.listlink が無い以外は動物がいる日（2025-03〜2026-05 の 8 版）と同じ。
+#   見出し「迷い犬情報一覧」があり、一覧の器も個体ページ（1066835/ の下）へのリンクも無い日だけ 0 頭とする（empty_absent）。
+#   ブロック画面（見出しが無い）や、器の名前が変わってリンクが残る日は failed のまま通知される。台帳の名前も見出しに合わせた。
 steps:
   - follow_all: "article#content ul.listlink a@href"
 rows: "body"
@@ -19,3 +24,6 @@ species:
   from: text
   map: {"猫": cat, "犬": dog}
 empty_text: ["現在、迷い犬情報はありません", "迷い犬情報はありません", "該当する情報はありません"]
+empty_absent:
+  page: "article#content h1:-soup-contains('迷い犬情報一覧')"
+  none: "article#content ul.listlink, article#content a[href*='dobutsuaigo/1066835/']:not([href*='index.html'])"

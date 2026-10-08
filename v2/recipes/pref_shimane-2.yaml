@@ -1,0 +1,33 @@
+# 島根県 松江保健所（収容動物の表）— 2026-10-07 T521 ゲート（judgeB2 F-01）
+# 2023〜2026-02 は、収容した子を「保護情報_過去分」の中の表のページ（hogozyouhou_kakobunn/syuyouari.html）に載せていた
+# （Wayback 2023-02・2025-04・2025-12・2026-02）。2026-08 以降は現行一覧（doubutu/）に 1 頭 1 ページで載せる作りで、それは
+# pref_shimane が読む。T521 で pref_shimane の入口を現行一覧に変えたので、表の作りに戻る日に備えてこの表のページも読む。
+# 表は犬・猫で 2 つ（caption「収容犬」「収容猫」）で、動物の行の管理番号は個別ページ（hogozyouhou_kakobunn/dobutu7.html 等）への
+# リンク。表には死亡が書かれないまま行が残る日がある（Wayback 2023-06-02 の 23C130。個別ページは「収容後死亡しました」）ので、
+# 表の行は使わず、リンクを辿って個別ページを pref_shimane と同じ読み方・同じ除外で読む（2026-10-08 最終ゲート F-01）。
+# 0 頭の日は見出し行だけか空の雛形の行（リンク無し）だけになり、0 頭の文言は無い。表の caption があり、表の中にリンクが 1 本も無い日を
+# empty_absent で 0 頭と確定する。
+steps:
+  - follow_all: "table:has(> caption) tr a@href"
+    skip_errors: true
+rows: "body"
+row_filter:
+  text_lacks: ["死亡", "下の欄に動物情報がない場合"]
+image: "img[src*='.data/']@src"
+fields:
+  species: {regex: "動物種別\\s*(犬|猫)"}
+  management_no: {regex: "管理番号[\\s・:：]*([0-9０-９]\\S*)"}   # 2023 年の個別ページは caption が「管理番号・23D1」
+  shelter_date: {regex: "収容日\\s*(\\S+)"}
+  location: {regex: "収容場所\\s*(\\S+)"}
+  breed: {regex: "種類\\s*(\\S+)"}
+  sex: {regex: "性別\\s*(\\S+)"}
+  color: {regex: "毛色\\s*(\\S+)"}
+  size: {regex: "大きさ\\s*(\\S+)"}
+  age: {regex: "年齢\\s*(\\S+)"}
+  note: {label: "備考"}
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+empty_absent:
+  page: "caption:-soup-contains('収容犬')"
+  none: "table:has(> caption) tr a[href]"

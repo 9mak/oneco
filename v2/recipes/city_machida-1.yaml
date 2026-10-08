@@ -3,6 +3,7 @@
 # <div class="img-area-r">（写真 + <ul><li>ラベル：値</li>...</ul>）が対で並ぶ。
 # rows は img-area-r 側を拾い、種別は直前の h3 見出しから判定（犬猫混在）。
 # 犬猫以外（セキセイインコ等）は 2026-10-05 T518 から種別なし（species: null）で載る（それまでは除外されていた）。
+# 2026-10-05 監査: 毛色「キジトラ　ハチワレ　白ベース」のように値の中に全角空白があると label では先頭の 1 語で切れたので、毛色の li を regex で行末まで取る。
 rows: "div.img-area-r"
 image: "img@src"
 species:
@@ -11,7 +12,7 @@ species:
 fields:
   breed: {label: "種類"}
   sex: {label: "性別"}
-  color: {label: "毛色"}
+  color: {selector: "li:-soup-contains('毛色')", regex: "毛色[:：]?\\s*(.+)"}
   note: {label: "特徴"}
   shelter_date: {label: "保護日"}
   location: {label: "保護場所"}

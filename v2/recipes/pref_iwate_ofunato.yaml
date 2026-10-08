@@ -8,9 +8,14 @@
 #   この slug は譲渡の節だけ（kind = adoption）。元の slug を譲渡側に残したのは、譲渡の子 9 頭の ID（写真 URL から決まる）を引き継ぐため。
 #   0 頭の日の文言は未確認（今日は 9 頭）。empty_text は旧レシピの推測のまま（外れたら「読めなかった」扱いで通知される側に倒れる）。
 #   image の h2 も【譲渡】に絞った: 迷子の行がこの slug の行ではなくなり、遡りが迷子の節まで届くため、絞らないと最初の子が迷子の写真を拾う（実ページで確認）。
-rows: "h2:-soup-contains('【譲渡】') + p.imagecenter + p"
-image: {selector: "h2:-soup-contains('【譲渡】') + p.imagecenter img@src", scope: prev_siblings, stop_at: row, exclude: ["ireisai"]}
+# 2026-10-07 T520: Wayback 2024-04・2024-06・2025-09・2026-03 の作り（写真が p.imageright）で譲渡も迷子も failed だった。写真の p を
+#   p:has(> img) に広げ、管理番号を取り、本文に「飼い主さんが決まりました」とある子（2025-09 の 250105）は載せない。
+rows: "h2:-soup-contains('【譲渡】') + p:has(> img) + p"
+image: {selector: "h2:-soup-contains('【譲渡】') + p:has(> img) img@src", scope: prev_siblings, stop_at: row, exclude: ["ireisai"]}
+row_filter:
+  text_lacks: ["飼い主さんが決まりました"]
 fields:
+  management_no: {label: "管理番号"}
   name: {label: "愛称"}
   species: {label: "動物種"}
   breed: {label: "種類"}
@@ -21,9 +26,10 @@ fields:
   shelter_date: {regex: "発見日[:：]\\s*(\\S+)"}
   location: {regex: "発見場所[:：]\\s*(\\S+)"}
   note: {regex: "(?:備考|その他)[:：]\\s*(.+)"}
-species:
+species:   # 2026-10-07 T520: 台帳の猫固定をやめた。動物種の欄が無い作り（Wayback 2024-04）は品種・毛色から推定し、決まらなければ種別なし
   from: field
   map: {"犬": dog, "猫": cat}
+  infer: true
 empty_text:
   - "現在、保護されている猫はいません"
   - "現在、保護されている動物はいません"

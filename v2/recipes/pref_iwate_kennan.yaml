@@ -4,6 +4,7 @@
 #   動物種が無く捨てられていた。名前の p を行にすると動物種・名前・性別などは取れる（管理番号だけは別 p なので空）。
 #   ただし写真（直前の p.imageleft）は行と同じ p タグのため、エンジンが遡りを止めて現状は届かない（engine_needs）。
 #   写真が無いカテリーナは、管理番号も無いので現状は捨てられる（エンジンが直れば 7 頭になる）。
+# 2026-10-05 監査: カテリーナ（10/5 13 時台）は「名前〜特徴」「その他」「管理番号」が 3 つの p に割れ、管理番号が空だった。row_until で次の写真 p・見出しの手前までを 1 頭分にまとめて管理番号を取る（エンジンが row_until に対応したため。同日夕方の実ページでは割れた個体は載っていない）。
 # 台帳 url は最終の一覧ページ（morioka/hoken/1012494.html）を直接指す
 # （ハブ→doubutsu/index.html→1012494.html と2段だが、台帳側で最終URLを直接指定）。
 # 構造: article#content 直下がフラットな並びで、写真 <p class="imageleft"><img></p> の次に
@@ -11,6 +12,7 @@
 # （両方を包む共通コンテナが無く、img は兄弟要素の p の中）。
 # 迷子（元の飼い主探し）セクションは通常0件、譲渡候補セクションが本体。
 rows: "p:-soup-contains('名前：')"
+row_until: "p.imageleft, p.imagecenter, h2, h3"
 image: {selector: "p.imageleft img@src", scope: prev_siblings, stop_at: row}   # 2026-10-04: 行も写真も p なので前の行まで遡る
 fields:
   name: {label: "名前"}
