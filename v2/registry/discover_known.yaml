@@ -8,55 +8,20 @@
 # 「リンク集にあって台帳に無いドメイン」も「台帳にあってリンク集に無いドメイン」も同じ表に書く。
 domains:
   # --- リンク集にあって台帳に無いドメイン（2026-10-05 時点 48 件）
-  city.akita.lg.jp: {status: pending, name: 秋田市, task: T519}
-  city.aomori.aomori.jp: {status: pending, name: 青森市, task: T519}
-  city.fujisawa.kanagawa.jp: {status: pending, name: 藤沢市, task: T519}
-  city.fukui.lg.jp: {status: pending, name: 福井市, task: T519}
-  city.fukushima.fukushima.jp: {status: pending, name: 福島市, task: T519}
-  city.gifu.lg.jp: {status: pending, name: 岐阜市, task: T519}
-  city.hachinohe.aomori.jp: {status: pending, name: 八戸市, task: T519}
+  city.fukui.lg.jp: {status: covered, name: 福井市, slugs: [fapscsite-1, fapscsite-2, fapscsite-3], note: "リンク先（犬・猫の保護、返還について）は、愛護管理を委託した福井県動物愛護センターのサイト fapscsite.com（ふくい動物愛護管理支援センター協会）の「犬・猫の情報」へ案内する。それを載せている（福井市分も県内他市町分も同じ一覧）"}
   city.hachioji.tokyo.jp: {status: pending, name: 八王子市, task: T519}
-  city.hakodate.hokkaido.jp: {status: pending, name: 函館市, task: T519}
-  city.himeji.lg.jp: {status: pending, name: 姫路市, task: T519}
-  city.ichinomiya.aichi.jp: {status: pending, name: 一宮市, task: T519}
-  city.iwaki.lg.jp: {status: pending, name: いわき市, task: T519}
-  city.kawagoe.saitama.jp: {status: pending, name: 川越市, task: T519}
-  city.kawaguchi.lg.jp: {status: pending, name: 川口市, task: T519}
-  city.kofu.yamanashi.jp: {status: pending, name: 甲府市, task: T519}
-  city.koriyama.lg.jp: {status: pending, name: 郡山市, task: T519}
-  city.kure.lg.jp: {status: pending, name: 呉市, task: T519}
   city.kurume.fukuoka.jp: {status: pending, name: 久留米市, task: T519}
-  city.matsumoto.nagano.jp: {status: pending, name: 松本市, task: T519}
-  city.morioka.iwate.jp: {status: pending, name: 盛岡市, task: T519}
-  city.nagano.nagano.jp: {status: pending, name: 長野市, task: T519}
-  city.neyagawa.osaka.jp: {status: pending, name: 寝屋川市, task: T519}
-  city.niigata.lg.jp: {status: pending, name: 新潟市, task: T519}
-  city.otaru.lg.jp: {status: pending, name: 小樽市, task: T519}
   city.sagamihara.kanagawa.jp: {status: pending, name: 相模原市, task: T519}
-  city.shimonoseki.lg.jp: {status: pending, name: 下関市, task: T519}
-  city.shizuoka.lg.jp: {status: pending, name: 静岡市, task: T519}
-  city.suita.osaka.jp: {status: pending, name: 吹田市, task: T519}
-  city.takasaki.gunma.jp: {status: pending, name: 高崎市, task: T519}
-  city.tottori.lg.jp: {status: pending, name: 鳥取市, task: T519}
-  city.toyama.lg.jp: {status: pending, name: 富山市, task: T519}
-  city.yamagata-yamagata.lg.jp: {status: pending, name: 山形市, task: T519}
-  city.yao.osaka.jp: {status: pending, name: 八尾市, task: T519}
-  dog.pref.miyazaki.lg.jp: {status: pending, name: 宮崎県, task: T519}
-  dogcat.pref.kagoshima.jp: {status: pending, name: 鹿児島県, task: T519}
-  eonet.ne.jp: {status: pending, name: 堺市, task: T519}
   hokeniryo.metro.tokyo.lg.jp: {status: covered, name: 東京都, slugs: [shuyojoho_tokyo-1, shuyojoho_tokyo-2], note: "リンク先（東京都動物愛護相談センター「収容動物情報について」）は shuyojoho.metro.tokyo.lg.jp へ案内する。それを載せている"}
-  nishi.or.jp: {status: pending, name: 西宮市, task: T519}
   pref.aichi.jp: {status: covered, name: 愛知県, slugs: [wannyan_navi_aichi], note: "リンク先（愛知県動物愛護センター）は譲渡を wannyan-navi.pref.aichi.jp へ案内する。それを載せている"}
   pref.akita.lg.jp: {status: covered, name: 秋田県, slugs: [spec_wannyapia_akita-1, spec_wannyapia_akita-2], note: "リンク先（県の動物愛護ジャンル）は譲渡をワンニャピアあきた（wannyapia.akita.jp）へ案内する。それを載せている"}
   pref.hokkaido.lg.jp: {status: pending, name: 北海道, task: T519, slugs: [spec_aniwel, nyantomo, spec_douaicenter-1, city_sapporo-1], note: "道内の振興局・保健所 40 余りへのリンク集。aniwel.jp・nyantomo.jp・douaicenter.jp・札幌市は載せているが、振興局（*.pref.hokkaido.lg.jp）のページは未掲載"}
-  pref.miyagi.jp: {status: pending, name: 宮城県, task: T519}
-  pref.nara.jp: {status: pending, name: 奈良県, task: T519}
-  pref.oita.jp: {status: pending, name: 大分県, task: T519, slugs: [oita_aigo-1, city_oita], note: "保健所へのリンク集。おおいた動物愛護センター（oita-aigo.com）と大分市は載せているが、西部・北部・豊後高田の保健所ページは未掲載"}
-  pref.saitama.lg.jp: {status: pending, name: 埼玉県, task: T519}
+  pref.nara.jp: {status: covered, name: 奈良県, slugs: [pref_nara-1, pref_nara-2, pref_nara-3], note: "リンク先（www.pref.nara.jp/dd.aspx?menuid=8439）は 2026-10 にサイトが www.pref.nara.lg.jp/n070/ へ移り、旧ドメインは証明書が失効したまま 301 で新ドメインへ飛ばすだけになった。台帳は新ドメインの URL で載せている（T519v G5）"}
+  pref.oita.jp: {status: covered, name: 大分県, slugs: [oita_aigo-1, city_oita, pref_oita-1, pref_oita-2, pref_oita-3], note: "保健所へのリンク集。おおいた動物愛護センター（oita-aigo.com）・大分市は既存、西部・北部・豊後高田の保健所ページは pref_oita-1〜3（2026-10-05 T519）で載せている"}
   pref.shiga.lg.jp: {status: covered, name: 滋賀県, slugs: [spec_sapca], note: "リンク先（飼い犬・猫が行方不明になったら）は sapca.jp/lost へ案内する。それを載せている"}
-  www4.city.kanazawa.lg.jp: {status: pending, name: 金沢市, task: T519}
   youtube.com: {status: excluded, note: "環境省ページ内の動画（自治体ではない）"}
   # --- 台帳にあってリンク集に無いドメイン（2026-10-05 時点 9 件。専用サイトで、リンク集は自治体のページを指している）
+  pref.nara.lg.jp: {status: covered, slugs: [pref_nara-1, pref_nara-2, pref_nara-3], note: "リンク集は旧ドメイン（pref.nara.jp）を指す。奈良県が 2026-10 に移った先で、台帳はこちらの URL で載せている"}
   aniwel.jp: {status: covered, slugs: [spec_aniwel], note: "リンク集は北海道（pref.hokkaido.lg.jp）を指し、そこから案内される専用サイト"}
   douai.sakura.ne.jp: {status: covered, slugs: [spec_douai_pref_tochigi_stray-1, spec_douai_pref_tochigi_stray-2], note: "リンク集は栃木県（douai.pref.tochigi.lg.jp）を指し、そこから案内される専用サイト"}
   nyantomo.jp: {status: covered, slugs: [nyantomo], note: "リンク集は北海道（pref.hokkaido.lg.jp）を指し、そこから案内される専用サイト"}
@@ -66,3 +31,6 @@ domains:
   wannyan-navi.pref.aichi.jp: {status: covered, slugs: [wannyan_navi_aichi], note: "リンク集は愛知県（pref.aichi.jp）を指し、そこから案内される専用サイト"}
   wannyapia.akita.jp: {status: covered, slugs: [spec_wannyapia_akita-1, spec_wannyapia_akita-2], note: "リンク集は秋田県（pref.akita.lg.jp）を指し、そこから案内される専用サイト"}
   zuttoissho.com: {status: covered, slugs: [zuttoissho_fukuoka-1, zuttoissho_fukuoka-2], note: "リンク集は福岡市（wannyan.city.fukuoka.lg.jp）を指し、そこから案内される専用サイト"}
+  fapscsite.com: {status: covered, slugs: [fapscsite-1, fapscsite-2, fapscsite-3], note: "リンク集は福井市（city.fukui.lg.jp）を指し、そこから案内される専用サイト（福井県動物愛護センターの公示・譲渡情報）"}
+  ikutopia.com: {status: covered, slugs: [ikutopia-1], note: "リンク集は新潟市（city.niigata.lg.jp）を指し、その譲渡猫ページの「動物ふれあいセンター」の節から案内される別サイト（いくとぴあ食花）"}
+  wannyan-musubi.pref.miyagi.jp: {status: covered, slugs: [wannyan_musubi_miyagi-1, wannyan_musubi_miyagi-2], note: "リンク集は宮城県（pref.miyagi.jp）を指し、その保健所の譲渡ページが「今後は本サイトに掲載」と案内する県の譲渡情報サイト（県の収容犬猫のみ）"}

@@ -1,0 +1,48 @@
+# 八戸市 捕獲・収容動物の情報（迷子動物）— city.hachinohe.aomori.jp（2026-10-05 T519 環境省リンク集から追加。2026-10-07 T519v で Wayback に当てて直した）
+# 構造: 1 頭 = table 1 つ（caption「捕獲・保護されている犬、ねこ等の情報」）。行は 2 列（見出しセル | 値）で、
+#   番号・種類・毛色・体格・性別・特徴・捕獲・保護した場所・捕獲・保護した日・画像・抑留の場所・連絡先 の順。
+#   写真は PDF へのリンク（「収容動物画像(PDFファイル)」）で img が無い。写真なしで載り、保護日（shelter_date）で動物として通る。
+# 犬猫以外（カメ・ニワトリ。2026-10-05 は 2 頭ともカメ）も載る一覧なので、種類の語で犬・猫・その他を決める。
+#   「雑種（猫）」「雑種(犬)」のように括弧で書く。犬猫の語が無い品種（柴・チワワ等）は infer で決め、決まらない子は種別なしで載る。
+# 0 頭の日（Wayback 2026-06-28 で確認）は表が無く「現在、捕獲・収容されている迷子動物はいません。」。
+rows: "article table:has(caption)"
+fields:
+  management_no: {label: "番号"}
+  breed: {label: "種類"}
+  species: {label: "種類"}
+  color: {label: "毛色"}
+  size: {label: "体格"}
+  sex: {label: "性別"}
+  note: {label: "特徴"}
+  location: {label: "捕獲・保護した場所"}
+  shelter_date: {label: "捕獲・保護した日"}
+species:
+  from: field
+  map:
+    "猫": cat
+    "ねこ": cat
+    "ネコ": cat
+    "犬": dog
+    "イヌ": dog
+    "いぬ": dog
+    "カメ": other
+    "亀": other
+    "ウサギ": other
+    "うさぎ": other
+    "インコ": other
+    "鳥": other
+    "ニワトリ": other
+    "鶏": other
+    "アヒル": other
+    "ハト": other
+    "カラス": other
+    "ハムスター": other
+    "フェレット": other
+    "ヘビ": other
+    "タヌキ": other
+    "キツネ": other
+    "アライグマ": other
+    "ハクビシン": other
+  infer: true
+empty_text:
+  - "捕獲・収容されている迷子動物はいません"

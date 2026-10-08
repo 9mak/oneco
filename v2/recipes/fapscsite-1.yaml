@@ -1,0 +1,28 @@
+# 福井県動物愛護センター（保護した動物 公示情報 — ふくい動物愛護管理支援センター協会） — fapscsite.com/lost_animal/
+# 2026-10-05 T519 新規作成（福井市は動物の愛護管理を福井県動物愛護センターに委託していて、福井市のリンク先ページ p021331 の「犬・猫の情報」がこのサイトの inunekojoho → lost_animal）。
+# 構造: WordPress の一覧。1 頭（または 1 組）= article.animal-item（写真 ul.uk-slideshow-items の img、h2「管理番号：HC26409（敦賀市）」、dl.spec の dt/dd: 公示期間・保護エリア・保護した場所・保護日・品種・性別・年齢・体格・毛種／毛色・その他・収容場所）。
+#   犬猫の別は article の class「animal_kind-cat / animal_kind-dog」。それ以外（鳥 等。animal_kind-<番号>）は other。
+# 同じ一覧の後半（#user-info-lost「一般の方から寄せられた保護情報」）は article.sender-user。最初の T519 は「令和 5〜7 年の「No.5T-10-4」等の古い投稿が残っている（解決したか分からない）」として読まなかったが、
+#   2026-10-08 T519 v2-g3 で読むことにした: 協会が自分のサイトに「動物を保護しています」の札で載せている保護情報で（2026-10-07 時点 16 件。管理番号の No.8＝令和 8 年が新しい投稿、No.5〜7 の古い投稿も残る）、
+#   問い合わせ先は本所で個人の連絡先は載らない。fapscsite-3（一般の方の飼い主募集）を読むのと同じ理由で、掲載どおりに載せる（掲載漏れを避ける）。保護日・公示期間は載らず、収容場所は「保護主宅（福井エリア）…」。
+#   センターの公示（article.sender-centre）は 2026-10-05 時点 13 件（2026-05〜10 の公示。公示期間が終わっても一定期間掲載が続く）。
+# 1 件に複数頭（「FC26380.381」＝子猫 2 頭、「HC26336~26344」＝ 9 頭）が入るので、1 件 = 1 行として載る（性別・毛色は「オス2匹、メス5匹」のように文のまま）。
+# 未確認: 0 件の日の文言（empty_text は置かない＝0 件の日は「読めなかった」で通知に出る）。
+rows: "article.animal-item"
+image: "ul.uk-slideshow-items img@src"
+species:
+  from: field
+  map: {"cat": cat, "dog": dog}
+  allow_other: true
+fields:
+  species: {selector: ".", attr: class, regex: 'animal_kind-(\w+)'}
+  management_no: {selector: "h2.entry-title", regex: '管理番号[:：]\s*([A-Za-z0-9.~～\-①②③➀➁➂]+)'}   # 「No.7F-6-2迷い猫を保護しています。」のように題が続く投稿は番号の部分だけ
+  detail: {selector: "a[href*='/lost_animal/']", attr: href}
+  shelter_date: {label: "保護日"}
+  location: {join: [{label: ["保護エリア", "収容場所"]}, {label: "保護した場所"}]}   # センターの公示は「敦賀市 沢」（保護エリア + 保護した場所）、一般の方の保護情報は「保護主宅（福井エリア）　問い合わせ先：本所」
+  breed: {label: "品種"}
+  sex: {label: "性別"}
+  age: {label: "年齢"}
+  size: {label: "体格"}
+  color: {label: "毛種／毛色"}
+  note: {label: "その他"}

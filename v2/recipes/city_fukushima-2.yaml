@@ -1,0 +1,31 @@
+# 福島市保健所（迷子（保護）の犬猫）。
+# h2「迷子（保護）犬情報について」「迷子（保護）猫情報について」の下に、1 頭 = 1 つの table が付く（Wayback 2025-07-30 の犬 1 頭で確認）。
+# 表の caption の中に p「現在保護している迷子犬は以下の通りです。」・h5「保護犬R7いー3」・p（写真 2 枚、alt なし、// で始まる相対 URL）があり、
+# 表の本体は th が項目名・td が値: 捕獲月日（令和7年6月24日（保健所収容日））・捕獲場所・種類・推定年齢・毛の色・毛の長さ・性別・体格・特徴。
+# 猫の表は保存に無い（猫が載った日が見つからなかった）ので、犬と同じ作りで 捕獲月日／拾得月日／保護月日・捕獲場所／拾得場所／保護場所 のどれでも読めるようにしてある（推測）。
+# 種別は直前の h2（犬／猫）から決める。管理番号は h5 の「保護犬R7いー3」の「R7いー3」。
+# 0 頭の日（今日 2026-10-07）は表が 1 つも無く、「現在、保護している迷子犬／猫はおりません。」の 1 文だけ（末尾に中身の空の h5 が 2 つ残る）。
+# 0 頭の印は文言でなく「迷子の節の見出しがあり、表・中身のある h5・写真のどれも無い」ことにする（犬の文は猫がいる日にも出る常時の文なので文言にしない。
+# 構造が変わって表が無くなった日や、h5 に名前が入った日は「読めなかった」の通知になる）。
+rows: "table:has(caption h5), table:has(th:-soup-contains('月日'))"
+row_filter:
+  text_lacks: ["死亡"]
+species:
+  from: heading
+  selector: "h2"
+  map: {"犬": dog, "猫": cat}
+fields:
+  management_no: {selector: "caption h5", regex: "保護[犬猫]\\s*(\\S+)"}
+  name: {selector: "caption h5"}
+  shelter_date: {label: ["捕獲月日", "拾得月日", "保護月日"]}
+  location: {label: ["捕獲場所", "拾得場所", "保護場所"]}
+  breed: {label: "種類"}
+  age: {label: "推定年齢"}
+  color: {label: ["毛の色", "毛色"]}
+  sex: {label: "性別"}
+  size: {label: "体格"}
+  note: {label: "特徴"}
+image: {selector: "caption img@src"}
+empty_absent:
+  page: "h2:-soup-contains('迷子（保護）犬情報'), h2:-soup-contains('迷子（保護）猫情報')"
+  none: "table, h5:-soup-contains('保護'), img[src*='material/images/group']"

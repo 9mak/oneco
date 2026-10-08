@@ -1,0 +1,24 @@
+# 甲府市 迷子の犬猫「探しています」（飼い主が探している告知）。ページの 2 つ目の表（h2「探しています」の後ろの table）。
+# 列: ID / 逸走日（年なし）/ 逸走場所 / 犬・猫等 / 種類・体格 / 性別 / 年齢 / 毛の特徴 / 首輪 / その他の特徴（名前など）/ 画像。
+# 画像の欄が「準備中」「なし」の行がある（ID があるので動物として通る）。名前は「その他の特徴」に「名前は「チビ」」と書かれる。
+# 表の class（datatable）は編集の仕方で付いたり付かなかったりする（2020〜2026-04 の保存版には無い）ので、h2「探しています」の位置で表を決める。
+# 列の並びは日によって違う: 2020〜2022-11 の保存版は 毛の特徴・性別・年齢 の順、2026-04 と 2026-10 は 性別・年齢・毛の特徴 の順（今の並びで読む。
+# 戻ると性別に毛色、年齢に性別が入る。見出し行で列を決める header_row は行が tr のレシピでは使えない）。
+# 0 頭の日の文言は未確認（保存版でも 0 頭の日は見つからなかった。10/7 は 51 頭）。
+rows: "h2:-soup-contains('探しています') ~ table tr:has(td)"
+image: "td:nth-of-type(11) img@src"
+fields:
+  management_no: "td:nth-of-type(1)"
+  shelter_date: "td:nth-of-type(2)"
+  location: "td:nth-of-type(3)"
+  species: "td:nth-of-type(4)"
+  breed: "td:nth-of-type(5)"
+  sex: "td:nth-of-type(6)"
+  age: "td:nth-of-type(7)"
+  color: "td:nth-of-type(8)"
+  name: {selector: "td:nth-of-type(10)", regex: "名前は[「『](.+?)[」』]"}
+  note: "td:nth-of-type(10)"
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+  allow_other: true

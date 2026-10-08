@@ -1,0 +1,25 @@
+# 金沢市動物愛護管理センター（譲渡猫） — www4.city.kanazawa.lg.jp/soshikikarasagasu/dobutsuaigokanricenter/gyomuannai/1/jouto_info/7301.html
+# 2026-10-05 T519 新規作成（環境省リンク集のリンク先 .../1/3/index.html の親「ペットについて」→「新しい飼い主さん大募集」→「猫の譲渡情報」）。
+# 構造: 1 頭ごとに figure.img-item（写真）→ div.wysiwyg > table（caption「動物番号：C060926」、thead に 種類・毛色・性別・推定年齢・体格 の見出し行と「特徴」の値の行、tbody の「その他」に「名前は『キングくん』です」…）。
+# 写真は表の直前の兄弟（prev_siblings。前の表の div で止まる）。値は見出しセルの下の同じ列（label が拾う）。
+# 2026-10-07 T519 v-g3: 作りが 2 つある。2026 年は figure.img-item → div.wysiwyg > table（caption に動物番号）、2025-01 は h3「動物番号 C060209」→ 写真だけの div.wysiwyg（p > img）→ 表の div.wysiwyg。
+#   後者は管理番号が表の外（h3）なので取れない（写真は読む）。動物番号は caption にある日だけ入る。
+# 未確認: 0 頭の日の文言（Wayback の保存に 0 頭の日が無かった）。empty_text は置かない（0 頭の日は「読めなかった」で通知に出る＝安全側）。
+# 写真（2026-10-07 T519 v-g3）: 表の前の figure.img-item の img（か、2025-01 の猫の譲渡ページのように直前の div.wysiwyg の p > img）から読む。本文冒頭の飾りのイラスト
+#   （ファイル名 pet_inu.jpg・pet_doubutu_*.jpg、alt「…のイラスト」）は除く。以前の「前の兄弟の最初の 1 枚」は、前の行が無い 1 頭目で本文冒頭のイラストまで遡り、
+#   1 頭目に別の写真（イラスト）を付けた（猫の収容 2024-08 の 1 頭目、犬の譲渡 2024-04 の 1 頭目）。0 頭の日の空の雛形の表にもこのイラストだけが写真になり、
+#   中身が空の「動物 1 頭」が載った（犬の譲渡 2024-08・2024-11。偽の動物）。写真が無い子は写真なしで載る。
+# 2026-10-08 T519 v2-g3: 2025-01 の作り（動物番号が表の外の h3）でも管理番号を読む（from: heading の h3）。2026 年の作り（caption）は今までどおり。
+rows: "div.wysiwyg:has(> table)"
+row_filter:
+  text_has_any: ["推定年齢"]    # 動物番号は 2026 年の作りでは表の caption にあるが、2025-01 の作りでは表の前の h3 にあるので、表に必ずある見出しで絞る（2025-01 は 0 件で failed だった）
+image: {selector: "figure.img-item img:not([alt*='イラスト']), div.wysiwyg > p > img:not([alt*='イラスト'])@src", exclude: ["/pet_"], scope: prev_siblings, stop_at: row}
+fields:
+  management_no: {join: [{regex: '動物番号[:：]?\s*([A-Za-z]\d+)'}, {from: heading, selector: 'h3', regex: '動物番号\s*([A-Za-z]\d+)'}]}
+  name: {regex: '名前は[『「]([^』」]+)[』」]'}
+  breed: {label: "種類"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  age: {label: "推定年齢"}
+  size: {label: "体格"}
+  note: {label: "その他"}

@@ -1,0 +1,19 @@
+# 新潟市動物愛護センター（猫の新しい飼い主を募集しています） — city.niigata.lg.jp/kurashi/animal/animal_aigo/jyouto/dobutsuaigo2021n.html
+# 2026-10-05 T519 新規作成（環境省リンク集のリンク先 hogoshuyo/index.html の左メニュー「犬・猫 譲渡情報」から辿った譲渡ページ）。
+# 構造は犬ページ（city_niigata-3）と同じ: 「譲渡猫情報」h2 の後に、1 頭ごと div.h3bg（h3「猫ID　R8－124」「R8-160」）→ div.img-area → div.wysiwyg_wp（愛称／猫種／性別／毛色／年齢／体重／… ）。
+# このページに載るのは「動物愛護センター」で飼育している猫だけ。「動物ふれあいセンター」で飼育展示している猫はこのページに無く、外部サイト いくとぴあ食花（slug ikutopia-1）の一覧にある。
+# h3bg には「（1）動物ふれあいセンター」「（2）動物愛護センター」（節の見出し）も混ざるが、愛称・性別を含まないので row_filter で落とす。
+# 未確認: 0 頭の日の文言。empty_text は置かない（0 頭の日は「読めなかった」で通知に出る＝安全側）。
+rows: "div.h3bg"
+row_until: "div.h3bg, div.h2bg"
+row_filter:
+  text_has_any: ["愛称", "性別"]
+image: "img@src"
+fields:
+  management_no: {selector: "h3", regex: "(R\\d+\\s*[-－ー]\\s*\\d+)"}
+  name: {regex: "愛称\\s*(\\S+)"}
+  breed: {regex: "猫種\\s*(\\S+)"}
+  sex: {regex: "性別\\s*(\\S+)"}
+  color: {regex: "毛色\\s*(\\S+)"}
+  age: {regex: "年齢\\s*(\\S+)"}
+  note: {regex: "(体重.+?)(?=\\s*PDF形式のファイルを開くには|\\s*このページの作成担当|$)"}

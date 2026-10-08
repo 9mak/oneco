@@ -1,0 +1,22 @@
+# 金沢市動物愛護管理センター（譲渡犬） — www4.city.kanazawa.lg.jp/soshikikarasagasu/dobutsuaigokanricenter/gyomuannai/1/jouto_info/5380.html
+# 2026-10-05 T519 新規作成（環境省リンク集のリンク先 .../1/3/index.html の親「ペットについて」→「新しい飼い主さん大募集」→「犬の譲渡情報」）。
+# 構造: 1 頭ごとに h2「里親募集中（N）」→ figure.img-item（写真）→ div.wysiwyg > table（特徴: ul の li「種類：雑種」毛色・性別・推定年齢 / 動物番号 / 募集期限 / その他: 「名前は『ぽんぽん』くん♪」…）。
+# 写真は表の直前の兄弟（prev_siblings。前の表の div で止まる）。冒頭の案内（div.wysiwyg に表は無い）は rows に当たらない。
+# 未確認: 0 頭の日の文言。empty_text は置かない（0 頭の日は「読めなかった」で通知に出る＝安全側）。
+# 写真（2026-10-07 T519 v-g3）: 表の前の figure.img-item の img（か、2025-01 の猫の譲渡ページのように直前の div.wysiwyg の p > img）から読む。本文冒頭の飾りのイラスト
+#   （ファイル名 pet_inu.jpg・pet_doubutu_*.jpg、alt「…のイラスト」）は除く。以前の「前の兄弟の最初の 1 枚」は、前の行が無い 1 頭目で本文冒頭のイラストまで遡り、
+#   1 頭目に別の写真（イラスト）を付けた（猫の収容 2024-08 の 1 頭目、犬の譲渡 2024-04 の 1 頭目）。0 頭の日の空の雛形の表にもこのイラストだけが写真になり、
+#   中身が空の「動物 1 頭」が載った（犬の譲渡 2024-08・2024-11。偽の動物）。写真が無い子は写真なしで載る。
+rows: "div.wysiwyg:has(> table)"
+row_filter:
+  text_has_any: ["動物番号"]
+image: {selector: "figure.img-item img:not([alt*='イラスト']), div.wysiwyg > p > img:not([alt*='イラスト'])@src", exclude: ["/pet_"], scope: prev_siblings, stop_at: row}
+fields:
+  management_no: {regex: '動物番号[:：]?\s*([A-Za-z]\d+)'}
+  name: {regex: '名前は[『「]([^』」]+)[』」]'}
+  breed: {selector: "li:-soup-contains('種類')", regex: '種類[:：]\s*(\S.*)'}
+  color: {selector: "li:-soup-contains('毛色')", regex: '毛色[:：]\s*(\S.*)'}
+  sex: {selector: "li:-soup-contains('性別')", regex: '性別[:：]\s*(\S.*)'}
+  age: {selector: "li:-soup-contains('年齢')", regex: '年齢[:：]\s*(\S.*)'}
+  note: {label: "その他"}
+empty_text: ["里親を募集中の犬は、いません", "里親を募集中の犬はいません", "種類： 毛色： 性別： 推定年齢："]

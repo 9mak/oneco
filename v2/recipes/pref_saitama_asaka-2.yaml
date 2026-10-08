@@ -1,0 +1,19 @@
+# 埼玉県 朝霞保健所管内 個人保護犬情報: 住民が迷子を保護して飼い主を探している情報（職員が手で更新するページ）。1 頭 = 管理番号の行を持つ table 1 つ。
+# 写真は table の中か直前の p（ページごとに作りが違うので self_or_prev_siblings）。
+# 0 頭の日は空欄の雛形 table（番号「2026-」、保護日「2026年月日」等）が残り、新着情報に「保護情報はありません」等と書く。
+# 雛形を動物にしないよう、番号は「西暦-連番」、保護日は日まで入った日付が取れたときだけ読む。
+rows: "#tmp_contents table:-soup-contains('管理番号')"
+image: {selector: "img@src", scope: self_or_prev_siblings, exclude: ["new.gif"]}
+fields:
+  management_no: {label: "管理番号", regex: "(\\d{4}\\s*[-‐‑₋−ー－–]\\s*(?:[A-Za-z]\\s*[-‐‑₋−ー－–]\\s*)?\\d+)"}
+  shelter_date: {label: "保護日", regex: "((?:令和|平成)?\\s*\\d+年\\s*\\d+月\\s*\\d+日)"}
+  location: {label: "保護場所"}
+  size: {label: "大きさ"}
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  age: {label: "推定年齢"}
+  color: {label: "毛色"}
+  note: {label: "備考"}
+empty_text:
+  - "保護情報はありません"
+  - "個人による犬の保護情報はありません"

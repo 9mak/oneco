@@ -1,0 +1,34 @@
+# 松本市 新しい飼い主を探している猫の情報（1534）で、1 つの掲載に猫が複数並ぶ表の 4 頭目（city_matsumoto-5 は 1 頭目、-6 は 2 頭目、-7 は 3 頭目）。
+# 掲載ごとに h3「譲渡猫No.8－8」+ p（写真）+ p（掲載日）+ table。表は 1 行 = 1 項目で、行の先頭の td が項目名、その後ろが猫ごとのセル
+# （2026-10 は 1 頭目のセルが colspan 2、2022〜2023 は colspan 無し。どちらも 4 頭目は行の 5 つ目の td）。
+# 4 頭目が無い掲載（表に 5 つ目の td が無い）は 性別が取れず row_filter で捨てる。1 掲載の猫は 2022-09 に最大 4 頭（5 つ目の td）あった。
+# 写真: 猫の数と写真（/uploaded/ の img）の数が同じ掲載だけ、写真の並び順 = 表の列の順として 4 枚目を付ける。
+#   並び順が列の順と同じことは 2026-10-07 の 4 掲載（8-8・8-5・8-2・8-1）で写真を見て確かめた（alt の枝番は逆順のことがあるので見ない）。
+#   数が違う掲載（2022〜2023 の保存版では複数頭の掲載の約半分。2 頭に 1 枚〔集合写真〕・2 頭に 3 枚 等）は、どの写真がどの猫か決められないので写真なしにする（誤った猫の写真を載せない）。
+# 管理番号が「4-5」のように 1 桁-1 桁だと写真も収容日も無い行は動物として通らない（エンジンの管理番号らしさは 2 桁以上）ので、
+# 個体ページの欄に掲載のページそのもの（1534）を置いて動物として通す（元ページのリンクも同じ 1534 になる）。
+# 管理番号は 1 頭目と同じ（掲載の番号）。掲載希望者（個人の名前と電話番号）は取らない。
+# 「譲渡されました」の印が犬種・種類の欄に書かれた子は載せない。
+# 該当する掲載が無い日は rows が 0 になる。猫の表に 5 つ目の td が 1 つも無く、ページが松本市の猫の譲渡ページであれば 0 頭（empty_absent）。
+# 5 つ目の td があるのに読めなければ「読めなかった」で通知に出る。
+rows: "h3"
+row_until: "h2, h3"
+row_filter:
+  text_has_any: ["掲載日", "猫の情報"]   # 2022-04 の版は掲載日が無い（表の見出し「猫の情報」で動物の表と決める）
+  field_has_any: {sex: ["オス", "メス", "不明"]}
+  field_lacks: {breed: ["譲渡されました", "譲渡済"], note: ["譲渡されました", "譲渡済", "新しい飼い主が見つかりました"]}
+image:
+  selector: ":scope:has(tr:-soup-contains('種類'):has(> td:nth-of-type(5):last-child)) p:has(> img[src*='/uploaded/']:nth-child(4 of img[src*='/uploaded/'])):not(:has(> img[src*='/uploaded/']:nth-child(5 of img[src*='/uploaded/']))) > img[src*='/uploaded/']:nth-child(4 of img[src*='/uploaded/'])@src"
+  exclude: ["5-28-2"]
+fields:
+  detail: {selector: "span.__none__", default: "https://www.city.matsumoto.nagano.jp/soshiki/231/1534.html"}
+  management_no: {selector: "h3", regex: "No[.．]?\\s*(\\S+)"}
+  breed: {selector: "tr:-soup-contains('種類') > td:nth-of-type(5)"}
+  color: {selector: "tr:-soup-contains('毛色') > td:nth-of-type(5)"}
+  sex: {selector: "tr:-soup-contains('性別') > td:nth-of-type(5)"}
+  age: {selector: "tr:-soup-contains('年齢') > td:nth-of-type(5)"}
+  size: {selector: "tr:-soup-contains('体格') > td:nth-of-type(5)"}
+  note: {selector: "tr:-soup-contains('性格') > td:nth-of-type(5)"}
+empty_absent:
+  page: "h1:-soup-contains('新しい飼い主を探している猫の情報')"
+  none: "table:has(th:-soup-contains('猫の情報')) tr > td:nth-of-type(5)"

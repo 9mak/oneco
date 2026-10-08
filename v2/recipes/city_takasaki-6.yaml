@@ -1,0 +1,24 @@
+# 高崎市 飼い主が行方を捜している動物一覧（猫、その他）: city_takasaki-5 と同じ表。種別欄（動物種・種類）は「猫・雑種」「鳥・セキセイインコ」。
+# 猫は猫、犬は犬、それ以外（鳥等）は犬猫以外（other）として載せる。行方不明日が「令和8年3月中旬」のような旬の行も読む。
+# 一覧は解決した行を消さず、2024 年 9 月からの受付が全部残る（131 行）。古い届け出を「今探している」ように見せないため、受付が令和8年以降の行だけ載せる（令和8〜12 年を書いてある。令和13年までに row_filter を更新する。古い年を外すのは令和9年に入ってから）。
+rows: "table tr:has(td)"
+row_filter:
+  text_has_any: ["令和8年", "令和9年", "令和10年", "令和11年", "令和12年"]
+image: "img@src"
+species:
+  from: field
+  map: {"猫": cat, "犬": dog}
+  allow_other: true
+fields:
+  species: {selector: "td:nth-of-type(3)"}
+  name: {selector: "td:nth-of-type(6)", regex: "呼[び]?名[:：]\\s*(\\S+)"}
+  management_no: {selector: "td:nth-of-type(1)", regex: "(\\d{4}\\s*[-‐‑₋−ー－–]\\s*(?:[A-Za-z]\\s*[-‐‑₋−ー－–]\\s*)?\\d+)"}
+  shelter_date: {selector: "td:nth-of-type(2)", regex: "((?:令和|平成)?\\s*\\d+年\\s*\\d+月\\s*(?:\\d+日|[上中下]旬)?)"}
+  location: {selector: "td:nth-of-type(2)", regex: "年\\s*\\d+月\\s*(?:\\d+日(?:[～~]\\d+日)?|[上中下]旬)?\\s*(.+)$"}
+  breed: {selector: "td:nth-of-type(3)", regex: "^(?:猫・|犬・|鳥・)?(.+)$"}
+  sex: {selector: "td:nth-of-type(4)", regex: "^([^・]+)"}
+  size: {selector: "td:nth-of-type(4)", regex: "^[^・]+・([^・]+)"}
+  age: {selector: "td:nth-of-type(4)", regex: "^[^・]+・[^・]+・(.+)$"}
+  color: {selector: "td:nth-of-type(5)"}
+  note: {selector: "td:nth-of-type(6)"}
+empty_selector: "table tr:has(td) td"

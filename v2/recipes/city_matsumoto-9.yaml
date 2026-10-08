@@ -1,0 +1,28 @@
+# 松本市 新しい飼い主を探している犬の情報（1529）で、1 つの掲載に犬が 2 頭並ぶ表の 2 頭目（city_matsumoto-4 は 1 頭目）。
+# 2024-10 の保存版に実在した（譲渡犬No.6-1: 犬種の欄が「柴犬（中型犬） 譲渡されました」と「柴犬（中型犬） 募集中です」の 2 列。-4 は 1 頭目の
+# 譲渡されました側を読んでいた）。表は 1 行 = 1 項目で、行の先頭の td が項目名、その後ろが犬ごとのセル（2 頭目は行の 3 つ目の td）。
+# 写真は載せない: 6-1 は犬 2 頭に写真 3 枚（alt 6-1-4〜6）で、どの写真がどの犬か決められない（誤った犬の写真を載せない）。
+# 「譲渡されました」の印が犬種の欄に書かれた子は載せない。
+# 2 頭の掲載が無い日は rows が 0 になる。表に 3 つ目の td が 1 つも無く、ページが松本市の犬の譲渡ページであれば 0 頭（empty_absent）。
+rows: "h3, h4"
+row_until: "h2, h3, h4"
+row_filter:
+  text_has_any: ["犬の情報"]
+  field_has_any: {sex: ["オス", "メス", "不明"]}
+  text_lacks: ["募集を終了しました"]   # -4 と同じ（T519 ゲート 2 回目 F-04）
+  field_lacks: {breed: ["譲渡されました", "譲渡済"], note: ["譲渡されました", "譲渡済", "新しい飼い主が見つかりました"]}
+image: {selector: "img@src", exclude: ["."]}   # すべて除外 = 写真なし
+# 管理番号が「6-1」のように 1 桁-1 桁だと、写真も収容日も無い行は動物として通らない（エンジンの管理番号らしさは 2 桁以上）ので、
+# 個体ページの欄に掲載のページそのもの（1529）を置いて動物として通す（元ページのリンクも同じ 1529 になる）。
+fields:
+  detail: {selector: "span.__none__", default: "https://www.city.matsumoto.nagano.jp/soshiki/231/1529.html"}
+  management_no: {selector: "h3, h4", regex: "No[.．]?\\s*(\\S+)"}
+  breed: {selector: "tr:-soup-contains('犬種') > td:nth-of-type(3)", regex: "^\\s*(.*?)\\s*(?:募集中です)?\\s*$"}   # 状態の語「募集中です」は取らない（「譲渡されました」は残して row_filter で捨てる）
+  sex: {selector: "tr:-soup-contains('性別') > td:nth-of-type(3)"}
+  color: {selector: "tr:-soup-contains('毛色') > td:nth-of-type(3)"}
+  age: {selector: "tr:-soup-contains('年齢') > td:nth-of-type(3)"}
+  size: {selector: "tr:-soup-contains('体格') > td:nth-of-type(3)"}
+  note: {selector: "tr:-soup-contains('備考') > td:nth-of-type(3), tr:-soup-contains('性格・その他') > td:nth-of-type(3)"}
+empty_absent:
+  page: "h1:-soup-contains('新しい飼い主を探している犬の情報')"
+  none: "table:has(th:-soup-contains('犬の情報')) tr > td:nth-of-type(3)"

@@ -1,0 +1,24 @@
+# 呉市動物愛護センター（迷い犬・猫の情報） https://www.city.kure.lg.jp/soshiki/127/hogo.html（2026-10-07 T519v 検証で link_only から recipe にした）
+# センターに収容された迷い犬・猫の掲載ページ。動物がいない日は「迷い犬・猫の情報」の説明文（常に出ている）だけで、写真も表も無い（Wayback 2020-05・2020-08・2021-04・2022-06 と 2026-10-07 の実ページで確認）。
+# 動物がいる日は説明文の後ろに「呉市動物愛護センター収容：迷子犬１」（2025 年は「【呉市動物愛護センター収容:迷子犬１】」）の見出しの p が 1 頭ごとに並び、
+# その後ろに 種類・推定年齢・性別・毛色・体格・装着物・備考（保護日と場所）が ul の li（2023-03）か 1 つの p の br 区切り（2025-02）で、写真の p が続く（Wayback 2023-03-20・2025-02-22 で確認）。
+# 見出しの p を 1 頭の始まりとして row_until でまとめる。猫は Wayback 2022-12-09 に「迷子猫１」（種類：日本猫）で載っていた。見出しの「迷子猫」「迷子犬」・種類の「日本犬」で犬猫を決め、どれも無ければ種別なし。
+# 0 頭の日の判定: 枠の見出し「迷い犬・猫の情報」があり、動物の見出し・写真・ul・表・h3 が 1 つも無い日（empty_absent。0 頭の 9 版〔2019-12〜2024-04・2026-10-07〕は全部この形）。見出しが変わる・写真だけが載る日は「読めなかった」として通知に載る。
+rows: "div.detail_free > p:-soup-contains('呉市動物愛護センター収容')"
+row_until: "p:-soup-contains('呉市動物愛護センター収容')"
+row_filter:
+  text_has_any: ["種類", "性別", "推定年齢"]
+image: "img@src"
+fields:
+  breed: {regex: "種類[:：]\\s*([^\\s・]+)"}
+  age: {regex: "推定年齢[:：]\\s*([^\\s・]+)"}
+  sex: {regex: "性別[:：]\\s*([^\\s・]+)"}
+  color: {regex: "毛色[:：]\\s*([^\\s・]+)"}
+  size: {regex: "体格[:：]\\s*([^\\s・]+)"}
+  note: {regex: "備考[:：]\\s*(.+)$"}
+species:
+  from: text
+  map: {"迷子猫": cat, "迷子犬": dog, "日本犬": dog, "洋犬": dog}
+empty_absent:
+  page: "div.detail_free h2:-soup-contains('迷い犬・猫の情報')"
+  none: "div.detail_free img, div.detail_free ul, div.detail_free table, div.detail_free h3, div.detail_free p:-soup-contains('呉市動物愛護センター収容')"

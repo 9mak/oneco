@@ -1,0 +1,31 @@
+# 堺市動物指導センター（保護収容動物）。入口は FrontPage で作られた案内ページ（eonet.ne.jp/~sakai-doshi/）で、
+# 「堺市の保護動物収容情報はこちら」の先 html/menu.html（Shift_JIS）が収容情報の入口。2026-10-07 T519v で Wayback の版に当てて直した。
+# 0 頭の日（2025-03・2026-10 の menu.html。2024-07 も同じ）: menu.html に直接「現在、保護・収容動物情報は／ありません。」と案内文だけが出る。
+# 動物がいる日（Wayback の menu.html 2022-05-27・2024-12-09 は 441 文字の入口だけ。迷い犬のページ 2022-03-0001.html が 2022-04-18 に保存されている）:
+#   menu.html は「<h1>動物情報</h1> <a href='./stray/menu2.html'>迷子情報</a>」だけになり、動物は
+#   stray/menu2.html（犬・猫の一覧への入口）→ stray/dog/list.html・stray/cat/list.html（1 頭 = 表の 1 行
+#   [管理番号（個体ページへのリンク）| 写真 | 収容場所 | 動物種別（犬・猫）| 種類 | 性別]。2008〜2015 の保存で確認）→ 個体ページ（収容日・掲載期限・大きさ・毛色・備考。2022 の保存で確認）。
+#   一覧の行で動物として通る（写真・管理番号がある）ので個体ページは辿らず、リンクを detail に残す（個体ページが消えても掲載漏れにしない）。
+#   2024 年以降に動物がいた日の menu2.html・一覧の保存は無く、今の作りで読めるかは未確認（違えば 0 行→「読めなかった」で通知に出る）。
+# 一覧が空の日（見出しの行だけ）は一覧の表に個体ページへのリンクが 1 つも無いこと（empty_absent）で 0 頭と確定する。
+steps:
+  - follow: "a[href*='menu.html']@href"
+  - follow_all: "a[href*='stray/menu2.html']@href"
+  - follow_all: "a[href$='list.html']@href"
+rows: "table tr:has(td a[href])"
+fields:
+  management_no: {selector: ":scope > :nth-child(1)"}
+  location: {selector: ":scope > :nth-child(3)"}
+  species: {selector: ":scope > :nth-child(4)"}
+  breed: {selector: ":scope > :nth-child(5)"}
+  sex: {selector: ":scope > :nth-child(6)"}
+  detail: {selector: "td a", attr: href}
+species:
+  from: field
+  map: {"猫": cat, "ねこ": cat, "ネコ": cat, "犬": dog, "いぬ": dog, "イヌ": dog}
+  infer: true
+empty_text:
+  - "保護・収容動物情報は ありません"
+empty_absent:
+  page: "h1:-soup-contains('動物情報一覧')"
+  none: "table a[href]"

@@ -1,0 +1,29 @@
+# 青森市保健所 迷い犬・猫等の情報 — city.aomori.aomori.jp（2026-10-08 T519v で link_only から recipe に変更）
+# 入口（1009080）は一覧ページで、保護している動物がいる日だけ ul.listlink に個別ページへのリンク「迷子の動物情報(安方・猫・オス・雑種)」が 1 頭 1 本並ぶ
+# （Wayback 2025-05-12 で確認）。0 頭の日は 2 通り: 「現在、保護している動物はいません」の文（Wayback 2025-10-06）と、
+# 本文が空で文言も ul も無い（2026-10-05〜07 の実ページ）。
+# 個別ページ（Wayback 2025-05-13 で確認。1009130）: 1 頭 = 1 ページ。h2「迷子の動物を保護しています」→ p.imagecenter（写真）→
+#   dl（dt 動物種・保護日・保護場所・種類・性別・毛色・体格・特徴 / dd）。管理番号は無い（保護日と写真で動物として通る）。
+# 個別ページの作りが変わった日は rows が 0 になり、0 頭の文言も無いので「読めなかった」で通知に載る。
+steps:
+  - follow_all: "article#content ul.listlink a[href*='1009080/']@href"
+rows: "article#content"
+image: "p.imagecenter img@src"
+fields:
+  species: {label: "動物種"}
+  shelter_date: {label: "保護日"}
+  location: {label: "保護場所"}
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  color: {label: "毛色"}
+  size: {label: "体格"}
+  note: {label: "特徴"}
+species:
+  from: field
+  map: {"猫": cat, "犬": dog}
+empty_text:
+  - "現在、保護している動物はいません"
+# 本文が空の日（文言も一覧も出ない）。枠（h1）はあるが、一覧の器 ul.listlink も個別ページへのリンクも 1 つも無いとき 0 頭。
+empty_absent:
+  page: "article#content h1:-soup-contains('迷い犬・猫等の情報')"
+  none: "article#content ul.listlink, article#content a[href*='1009080/10']"

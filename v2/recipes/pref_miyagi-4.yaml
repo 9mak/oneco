@@ -1,0 +1,30 @@
+# 大崎保健所管内 保護動物情報（nh-hwfz/oosakihogoken.html）。
+# 犬と猫が 1 つの表に並び、種別の列は無い（列: No.・保護月日・保護場所・種類・毛色・性別・体格・特徴その他・写真）。
+# 種別は infer: true で「種類」（柴・柴系・柴犬など犬だけに使う語）から決め、決まらない子（雑種）は種別なしで載る。
+# 表の見出し行（保護月日を含む）は row_filter で落とす。動物の行が td でなく th で書かれる日がある（Wayback 2022-09-27。犬 1 頭が全部 th）ので、
+# rows は tr 全部にして、項目は :scope > :nth-child(n)（th・td どちらでも）で取る。収容後に死亡した子（「死亡」を含む行）は載せない。
+# 2026-10-07 時点: 犬 3 頭（柴系・雑種・柴犬）を実ページで確認。猫の行は Wayback 2024-04・2024-07 で確認（同じ表。種類の語で猫と決まる子と雑種は種別なし）。
+# 0 頭の日の文言は日によって違った: 「現在，保護動物は，いません。」（2021）・「現在保護動物はいません。」（2023-10）・「現在保護対象動物はいません。」（2024-02・08・11）。
+# 動物がいる日は「現在保護動物は犬1頭います」「現在保護動物は犬3頭です。」なので、「動物はいません」「動物は，いません」を 0 頭の印にする。
+rows: "table tr"
+row_filter:
+  text_lacks: ["保護月日", "死亡"]
+species:
+  from: field
+  infer: true
+fields:
+  management_no: {selector: ":scope > :nth-child(1)"}
+  shelter_date: {selector: ":scope > :nth-child(2)"}
+  location: {selector: ":scope > :nth-child(3)"}
+  breed: {selector: ":scope > :nth-child(4)"}
+  color: {selector: ":scope > :nth-child(5)"}
+  sex: {selector: ":scope > :nth-child(6)"}
+  size: {selector: ":scope > :nth-child(7)"}
+  note: {selector: ":scope > :nth-child(8)"}
+image: {selector: ":scope > :nth-child(9) img@src"}
+empty_text:
+  - "動物はいません"
+  - "動物は，いません"
+  - "動物は、いません"
+  - "動物はおりません"
+  - "動物は0頭"

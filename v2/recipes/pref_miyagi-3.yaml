@@ -1,0 +1,35 @@
+# 塩釜保健所岩沼支所 保護動物の情報（sh-helth-i/hogokeniwanuma.html）。
+# 「保護犬情報」「保護猫情報」「その他の保護動物情報」の 3 つの表（caption は 保護犬情報一覧・保護猫情報一覧・その他の保護動物情報）。
+# 列: 管理番号・収容年月日・保護された場所・種類・特徴等（p が 1 行 1 項目「種類：雑種」「性別：オス」「毛色：…」「首輪等：…」「その他：…」）・写真。
+# 種別は caption から決め、「その他」の表は読まない。
+# 動物の行が td でなく th で書かれる日がある（Wayback 2022-10-12: 犬の表の ID16306 の行が全部 th。空の雛形の行も犬の表だけ th）。
+# そのため rows は tr 全部にして、見出し行（「管理番号」を含む）を落とし、項目は :scope > :nth-child(n)（th・td どちらでも）で取る。
+# 〜2022-10-01 は列が分かれた別の作り（管理番号・収容年月日・保護された場所・種類・性別・特徴=毛色・首輪・その他 の 8 列で、
+# 見出しが 2 行。写真は管理番号のセルの中のリンク「ID15160 [359KB]」）。この作りは項目の列が違い（種類が 4 列目で
+# 「雑種」だけ）、列の足りない行（Wayback 2022-10-01 の ID16103）もあるので、読み方は合わせていない（2022-10-12 以降は新しい作り）。
+# 2026-10-07 時点: 3 つの表とも空の雛形（&nbsp; だけの 1 行）で 0 頭。猫が載った日の読み方は Wayback に無く未確認
+# （犬の th の行と同じ列の並びの推測）。0 頭の日の文言は無いので empty_selector で判定する。
+rows: "table:has(> caption:-soup-contains('犬')) tr, table:has(> caption:-soup-contains('猫')) tr"
+row_filter:
+  text_lacks: ["管理番号", "死亡"]   # 見出し行と、収容後に死亡した子（「収容後死亡」「収容中死亡」。載せない）
+species:
+  from: heading
+  selector: "caption"
+  map: {"犬": dog, "猫": cat}
+fields:
+  management_no: {selector: ":scope > :nth-child(1)", regex: "^([A-Za-z]*\\d+)"}
+  shelter_date: {selector: ":scope > :nth-child(2)"}
+  location: {selector: ":scope > :nth-child(3)"}
+  breed: {selector: ":scope > :nth-child(4)", regex: "種類[:：]\\s*(\\S+)"}
+  sex: {selector: ":scope > :nth-child(4)", regex: "性別[:：]\\s*(\\S+)"}
+  color: {selector: ":scope > :nth-child(4)", regex: "毛色[:：]\\s*(\\S+)"}
+  size: {selector: ":scope > :nth-child(4)", regex: "体格[:：]\\s*(\\S+)"}
+  age: {selector: ":scope > :nth-child(4)", regex: "年齢[:：]\\s*(\\S+)"}
+  note:
+    join:
+      - {selector: ":scope > :nth-child(4)", regex: "首輪等[:：]\\s*(.+?)(?=\\s+その他[:：]|$)"}
+      - {selector: ":scope > :nth-child(4)", regex: "その他[:：]\\s*(.+)"}
+    sep: "。"
+image: {selector: ":scope > :nth-child(5) img@src"}
+# 空の雛形の行の 2 列目（収容年月日）が全部空なら 0 頭。動物が載ると中身が入るので「読めなかった」になる。
+empty_selector: "table:has(> caption:-soup-contains('犬')) tr:last-of-type > :nth-child(2), table:has(> caption:-soup-contains('猫')) tr:last-of-type > :nth-child(2)"
