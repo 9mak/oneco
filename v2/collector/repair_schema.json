@@ -1,0 +1,1 @@
+{"type":"object","properties":{"recipe_yaml":{"type":"string"},"note":{"type":"string"}},"required":["recipe_yaml","note"]}
