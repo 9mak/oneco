@@ -3,7 +3,6 @@
 from pathlib import Path
 
 from bs4 import BeautifulSoup
-
 from collector.extract import _split_parent, build, expected_labels
 from collector.recipe import Doc, Recipe
 from collector.registry import load_sources
