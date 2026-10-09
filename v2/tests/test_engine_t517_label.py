@@ -5,7 +5,6 @@
 """
 
 from bs4 import BeautifulSoup
-
 from collector.recipe import Doc, Row, field_value
 
 

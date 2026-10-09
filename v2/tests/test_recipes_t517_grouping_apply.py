@@ -8,7 +8,6 @@ tests/fixtures/t517_*.html は 2026-10-05 の実ページから 1 頭分ずつ�
 from pathlib import Path
 
 from bs4 import BeautifulSoup
-
 from collector.extract import build
 from collector.recipe import Doc, Recipe
 from collector.registry import Source, load_sources

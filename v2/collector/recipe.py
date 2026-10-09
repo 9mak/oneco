@@ -10,9 +10,10 @@ import io
 import re
 import unicodedata
 import warnings
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Iterator, TypeVar
+from typing import Any, TypeVar
 from urllib.parse import urljoin
 
 import yaml
@@ -21,7 +22,7 @@ from bs4 import BeautifulSoup, CData, NavigableString, PageElement, Tag, XMLPars
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)   # RSS を HTML として読むレシピがある
 
 from .errors import ErrorInfo
-from .fetch import FetchError, Fetcher, page_gone
+from .fetch import Fetcher, FetchError, page_gone
 
 T = TypeVar("T")
 
@@ -857,7 +858,7 @@ def _sibling_holder(recipe: Recipe, spec: dict[str, Any], base: Tag, forward: bo
             try:
                 if sib.css.match(recipe.rows):
                     break
-            except Exception:  # noqa: BLE001 — 解釈できないセレクタは既定の止め方に戻す
+            except Exception:
                 if sib.name == base.name:
                     break
         elif sib.name == base.name:

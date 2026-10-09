@@ -7,7 +7,6 @@
 """
 
 from bs4 import BeautifulSoup
-
 from collector.recipe import Doc, Recipe, extract_rows, field_value, image_url, visible_text
 
 

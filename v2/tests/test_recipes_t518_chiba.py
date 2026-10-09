@@ -10,7 +10,6 @@ fixture は実ページから本文（div#contents_editable）だけを抜いた
 from pathlib import Path
 
 from bs4 import BeautifulSoup
-
 from collector.extract import build
 from collector.recipe import Doc, Recipe
 from collector.registry import Source, load_sources

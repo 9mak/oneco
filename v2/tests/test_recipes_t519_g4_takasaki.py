@@ -10,7 +10,6 @@ fixture は実ページ（2026-10-06 の取得）の一覧の table だけを抜
 from pathlib import Path
 
 from bs4 import BeautifulSoup
-
 from collector.extract import build
 from collector.recipe import Doc, Recipe
 from collector.registry import Source, load_sources

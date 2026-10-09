@@ -9,7 +9,6 @@
 from pathlib import Path
 
 from bs4 import BeautifulSoup
-
 from collector.extract import Result, build
 from collector.fetch import FakeFetcher
 from collector.recipe import Executor, Recipe

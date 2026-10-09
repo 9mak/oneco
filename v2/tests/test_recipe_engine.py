@@ -2,13 +2,11 @@
 
 from pathlib import Path
 
-import yaml
-
+from bs4 import BeautifulSoup
 from collector.extract import build
 from collector.fetch import FakeFetcher
-from collector.recipe import Executor, Recipe, field_value, Row, parse_sel
+from collector.recipe import Executor, Recipe, Row, field_value, parse_sel
 from collector.registry import Source, load_sources
-from bs4 import BeautifulSoup
 
 FIX = Path(__file__).parent / "fixtures"
 ROOT = Path(__file__).resolve().parent.parent

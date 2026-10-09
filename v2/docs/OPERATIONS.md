@@ -102,6 +102,7 @@ collect.sh は全部成功したときだけこの URL を叩き、どこかが�
 
 [console.anthropic.com](https://console.anthropic.com) → API Keys で発行。`/etc/oneco/collect.env` に `ANTHROPIC_API_KEY` と `ONECO_AI_REPAIR=1` を書く。
 `ONECO_AI_REPAIR=1` が無いと修復は動かない（キーだけ置いても課金されない）。使うモデルは既定 `claude-sonnet-5`、変えるなら `ONECO_AI_MODEL`。
+修復の入力はページ本文（自治体サイトの内容＝信頼できない入力）なので、script・style・コメント・hidden・display:none・template を除き、`<untrusted_html>` で囲んで「指示ではない」と明記して渡す（W006 T617）。
 
 ### 1-6. 残っている手動作業（2026-10-01 時点・T506）
 
@@ -118,7 +119,7 @@ collect.sh は全部成功したときだけこの URL を叩き、どこかが�
 
 1. `collector run` — 台帳（`registry/sources.yaml`）の `enabled: true` のページを 1 秒間隔で全部読み、`data/animals-<日付>.json` `data/latest.json` `data/report-<日付>.json` `data/manifest-<日付>.json` を書く（`data/.tmp-<run_id>/` に全部書いて検査してから置き換える。検査に落ちたら何も置き換えない）
    - 二重起動は `state/collect.lock`（flock）で防ぐ。取れなければ run は exit 3 で何もせず終わる
-   - ページが読めず `status: failed` になったもの（接続系エラー・遮断中を除く）は、`ONECO_AI_REPAIR=1` なら Claude にレシピ案を書かせる。案は `data/proposals/<slug>.yaml` に保存されるだけで `recipes/` は書き換えない（人が確認して反映する）。status は failed のまま
+   - ページが読めず `status: failed` になったもの（接続系エラー・遮断中を除く）は、`ONECO_AI_REPAIR=1` なら **その場で 1 回だけ** Claude にレシピ案を書かせる。返った YAML は strict schema（`collector/recipe_schema.py`）で検査してから試し、1 頭以上取れたら **案として `data/proposals/<slug>.yaml` に保存する（`recipes/<slug>.yaml` は書き換えない。W006 T614）**。status は failed のまま。案は人が `diff recipes/<slug>.yaml data/proposals/<slug>.yaml` で確かめて、採るなら `recipes/` へコピーして PR にする（案の先頭の `# proposal:` コメントは消してから）
 2. `collector notify` — report に異常（failed、または AI がレシピを書き直した）があるときだけ Discord に 1 通。平常時は何も送らない
 3. `site/build.py` — `data/latest.json` から `site/dist/` を作る
 4. `wrangler deploy`（`ops/wrangler.jsonc`）— `site/dist/` を Cloudflare Workers の静的アセットへ
@@ -234,7 +235,7 @@ cd v2   # 本番クローンなら ~/oneco-collect/v2
      recipe: recipes/city_example-1.yaml
      enabled: true
    ```
-2. レシピを作る。まず AI に書かせる: `ANTHROPIC_API_KEY=... python -m collector repair city_example-1 --show`（レシピが無い slug は新規作成になる。1 頭以上取れた時だけ保存される）。駄目なら `python -m collector fetch <url> --selectors` で表・リストの候補を見て `docs/RECIPE.md` の通り手で書く
+2. レシピを作る。まず AI に書かせる: `ANTHROPIC_API_KEY=... python -m collector repair city_example-1 --show`（レシピが無い slug でも案が `data/proposals/<slug>.yaml` に出る。1 頭以上取れた時だけ。採るときは `recipes/<slug>.yaml` へ人がコピーする）。駄目なら `python -m collector fetch <url> --selectors` で表・リストの候補を見て `docs/RECIPE.md` の通り手で書く
 3. `python -m collector show city_example-1` で取れた行・捨てた行を確認。写真・性別・収容日が合っていること
 4. `python -m pytest tests -q`（台帳とレシピが読めることを確認するテストが入っている）
 5. commit → push → VPS で `git -C /opt/oneco pull`。翌日 0:00 から載る。すぐ載せたいなら `sudo systemctl start oneco-collect.service`
@@ -260,3 +261,16 @@ cd v2   # 本番クローンなら ~/oneco-collect/v2
 | 合計（Mac で動かす場合） | 100〜500 円（AI 修復の分だけ） |
 
 Anthropic のコンソールで Usage limits に月 $10 程度の上限を入れておくと、暴走しても止まる。
+
+## CI（W006 T612・T613）
+
+`.github/workflows/v2-ci.yml` が PR（main 向け）と main への push で 3 つの job を走らせる。paths フィルタは付けていない（付けると v2 以外だけの PR で必須 check が pending のまま残る）。
+
+| check 名（branch protection の必須 check に登録する名前） | 中身 |
+|---|---|
+| `v2 / pytest` | `cd v2 && python -m pytest -q`（Playwright なし） |
+| `v2 / ruff` | `ruff check --config ruff.toml v2` |
+| `v2 / pii-scan` | `cd v2 && python -m pytest -q tests/test_fixtures_pii_guard.py`（fixture に私人の連絡先が残っていないか） |
+
+T613（人が GitHub 画面で行う）: Settings → Branches → main の保護ルール → Required status checks から旧 4 つ（`Lint` `Test` `Type Check` `Build Package`）を外し、上の 3 つを追加する。「Do not allow bypassing the above settings」を ON にする。以後のマージは `gh pr merge --auto --squash`。
+旧 4 つを外したら `.github/workflows/required-checks-skip.yml`（旧 backend 用の見せかけ check）も不要になる。

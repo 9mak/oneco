@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from collector.extract import build  # noqa: E402
-from collector.fetch import FetchError, Fetcher  # noqa: E402
+from collector.fetch import Fetcher, FetchError  # noqa: E402
 from collector.recipe import Doc, Executor, Recipe, RecipeError  # noqa: E402
 from collector.registry import REGISTRY_PATH, load_sources, select  # noqa: E402
 
@@ -109,7 +109,7 @@ def dump_one(s, fetcher: Fetcher, note: str | None = None) -> dict[str, Any]:
         entry["status"] = "failed"
         entry["error"] = str(e)
         return entry
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         entry["status"] = "failed"
         entry["error"] = f"{type(e).__name__}: {e}"
         entry["traceback"] = traceback.format_exc()[-2000:]
@@ -151,7 +151,7 @@ def main() -> int:
         t = time.monotonic()
         try:
             e = dump_one(s, fetcher, notes.get(s.slug))
-        except Exception as ex:  # noqa: BLE001 — 1 ページで全体を止めない
+        except Exception as ex:
             e = {"registry": {"slug": s.slug, "name": s.name, "prefecture": s.prefecture, "kind": s.kind,
                               "species": s.species, "mode": s.mode, "url": s.url},
                  "status": "failed", "error": f"dump: {type(ex).__name__}: {ex}", "animals": [], "dropped": [], "docs": []}

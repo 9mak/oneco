@@ -2,7 +2,6 @@
 写真を行の直前の兄弟要素から取る（image.scope: prev_siblings）。ネットワークなし。"""
 
 from bs4 import BeautifulSoup
-
 from collector.extract import build
 from collector.recipe import Doc, Recipe, extract_rows, field_value
 from collector.registry import Source

@@ -11,7 +11,17 @@ from urllib.parse import urljoin
 
 from bs4 import Tag
 
-from .recipe import Doc, Recipe, Row, extract_rows, field_value, image_url, looks_like_date, looks_like_mgmt, nearest_heading
+from .recipe import (
+    Doc,
+    Recipe,
+    Row,
+    extract_rows,
+    field_value,
+    image_url,
+    looks_like_date,
+    looks_like_mgmt,
+    nearest_heading,
+)
 from .registry import Source
 
 FIELD_NAMES = ["name", "sex", "age", "breed", "color", "size", "management_no", "shelter_date", "note", "location"]

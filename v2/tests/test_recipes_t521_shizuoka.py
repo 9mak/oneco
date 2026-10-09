@@ -10,7 +10,6 @@ ul.listlink が無い以外は動物がいる日（2025-03〜2026-05 の 8 版�
 from pathlib import Path
 
 from bs4 import BeautifulSoup
-
 from collector.extract import build
 from collector.fetch import FakeFetcher
 from collector.recipe import Doc, Executor, Recipe

@@ -5,7 +5,6 @@ span 等のインライン要素の境目には空白を入れない（佐世保
 """
 
 from bs4 import BeautifulSoup
-
 from collector.extract import build
 from collector.recipe import Doc, Recipe, Row, field_value
 from collector.registry import Source

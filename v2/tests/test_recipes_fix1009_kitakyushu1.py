@@ -8,7 +8,6 @@ Wayback 10 版〔2024-12〜2026-03〕中 3 版も同じ）。収容日に数字�
 from pathlib import Path
 
 from bs4 import BeautifulSoup
-
 from collector.extract import build
 from collector.recipe import Doc, Recipe
 from collector.registry import load_sources

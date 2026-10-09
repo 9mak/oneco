@@ -12,7 +12,6 @@ fixture（tests/fixtures/t519v_g4b_*.html）は保存ページの本文だけを
 from pathlib import Path
 
 from bs4 import BeautifulSoup
-
 from collector.extract import build
 from collector.recipe import Doc, Recipe
 from collector.registry import load_sources

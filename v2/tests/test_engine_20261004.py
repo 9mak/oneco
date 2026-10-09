@@ -6,7 +6,6 @@
 """
 
 from bs4 import BeautifulSoup
-
 from collector.extract import build
 from collector.recipe import Doc, Recipe, extract_rows, image_url
 from collector.registry import Source

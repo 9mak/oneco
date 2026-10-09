@@ -26,7 +26,7 @@ def status(url: str) -> tuple[str, int | str]:
         with httpx.Client(follow_redirects=True, timeout=20, headers={"User-Agent": UA}) as c:
             r = c.get(url)
             return url, r.status_code
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return url, type(e).__name__
 
 
