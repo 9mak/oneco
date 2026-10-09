@@ -9,5 +9,5 @@ image: "img@src"
 fields:
   name: {selector: "img", attr: alt}
   sex: {selector: "figcaption", regex: "^\\s*(オス|メス|雄|雌)"}
-  age: {selector: "figcaption", regex: "(\\d+(?:\\s*[-－~～〜ー]\\s*\\d+)?\\s*(?:歳|ヶ月|か月|カ月)[^\\s]*)"}   # 「3－5歳」は範囲ごと（以前は「5歳」だけ取っていた）
+  age: {selector: "figcaption", regex: "(\\d++(?:\\s*+[-－~～〜ー]\\s*+\\d++)?\\s*+(?:歳|ヶ月|か月|カ月)[^\\s]*+)"}   # 「3－5歳」は範囲ごと（以前は「5歳」だけ取っていた）
   note: {selector: "figcaption", regex: "^\\s*(?:オス|メス|雄|雌)\\s*\\S+\\s*(.+)"}

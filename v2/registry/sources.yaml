@@ -2714,7 +2714,7 @@ sources:
   prefecture: 石川県
   phone: null
   address: null
-  url: https://www.pref.ishikawa.lg.jp/yakuji/doubutsu/hogoinuneko.html
+  url: https://aigo-ishikawa.jp/lostpet_list/   # 県ページ（pref.ishikawa.lg.jp/yakuji/doubutsu/hogoinuneko.html）は案内だけで、実データは委託先のこのページ
   kind: stray
   species: mixed
   mode: recipe

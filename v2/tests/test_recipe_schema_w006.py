@@ -65,7 +65,7 @@ def test_benign_quadratic_and_delimited_repeat_regexes_pass():
 
 
 def test_selector_count_and_length():
-    assert _has(_ok({"rows": "t" * 201}), "セレクタが 201 文字")
+    assert _has(_ok({"rows": "t" * 401}), "セレクタが 401 文字")
     assert _ok({"rows": ", ".join(["t" * 150] * 3)}) == []   # カンマ区切りは 1 本ずつ数える（各 150 文字）
     many = {f"f{i}": f"td.c{i}" for i in range(45)}
     raw = {"rows": "tr", "fields": many, "empty_selector": [f"div.e{i}" for i in range(10)]}
@@ -105,18 +105,7 @@ def _urls_by_recipe():
 URLS = _urls_by_recipe()
 
 # 既存レシピのうち schema に通らないもの（W006 T617 の報告事項。schema を緩めず、人が判断するまで現状を固定する）
-KNOWN_VIOLATIONS = {
-    "pref_ishikawa": "別のホスト",       # 入口が委託先サイト aigo-ishikawa.jp（台帳は pref.ishikawa.lg.jp）
-    "city_matsumoto-6": "セレクタが 281 文字",   # image.selector が 200 文字超の単一セレクタ
-    "city_matsumoto-7": "セレクタが 281 文字",
-    "city_matsumoto-8": "セレクタが 281 文字",
-    # 数字だけのダミー 1 万文字で 2 乗以上に遅い日付 regex（reviewer S2 で数字入りダミーを足して検出）。
-    # 実ページの行は短いので動作上は問題ないが、LLM 出力の門としては落とす。人が書き直すまで固定
-    "city_toyama-1": "正規表現が遅い",
-    "pref_oita-1": "正規表現が",
-    "pref_oita-2": "正規表現が",
-    "pref_oita-3": "正規表現が",
-}
+KNOWN_VIOLATIONS: dict[str, str] = {}   # 2026-10-10 に 8 件を直して全レシピ合格（石川の台帳 url・松本のセレクタ上限・富山/大分の所有量指定子）
 
 
 @pytest.mark.parametrize("path", RECIPES, ids=lambda p: p.stem)
