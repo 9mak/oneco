@@ -95,7 +95,7 @@ def collect_one(source: Source, fetcher: Fetcher) -> Collected:
 
 
 def ai_repair_enabled() -> bool:
-    """環境変数 ONECO_AI_REPAIR=1 のときだけ、読めなかったページのレシピを Claude に書き直させる。"""
+    """環境変数 ONECO_AI_REPAIR=1 のときだけ、読めなかったページのレシピ案を agy に書かせる（案は data/proposals/ に置くだけ。本番は PR の merge で入る）。"""
     return os.environ.get("ONECO_AI_REPAIR", "") == "1"
 
 
