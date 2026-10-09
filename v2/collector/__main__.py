@@ -1,4 +1,4 @@
-"""CLI: show / fetch / run / discover / notify / repair"""
+"""CLI: show / fetch / run / discover / notify / promote / repair"""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from .ai_repair import DEFAULT_MODEL
-from .fetch import FetchError, Fetcher
+from .fetch import Fetcher, FetchError
 from .registry import load_sources, select
 
 JST = timezone(timedelta(hours=9))
@@ -110,13 +110,18 @@ def cmd_fetch(args: argparse.Namespace) -> int:
 
 def cmd_run(args: argparse.Namespace) -> int:
     from .run import run
+    from .state import AlreadyRunningError
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     logging.getLogger("httpx").setLevel(logging.WARNING)
     date = args.date or datetime.now(JST).strftime("%Y-%m-%d")
     sources = select(load_sources(), args.only)
-    out = run(sources, date, fetcher=Fetcher(respect_robots=not args.no_robots),
-              enabled=False if args.no_ai_repair else None)
+    try:
+        out = run(sources, date, fetcher=Fetcher(respect_robots=not args.no_robots),
+                  enabled=False if args.no_ai_repair else None)
+    except AlreadyRunningError as e:
+        print(f"{e}（state/collect.lock）。何もせず終わる")
+        return 3
     st = {}
     for s in out["sources"]:
         st[s["status"]] = st.get(s["status"], 0) + 1
@@ -134,6 +139,14 @@ def cmd_notify(args: argparse.Namespace) -> int:
     from .notify import notify
 
     return notify(dry_run=args.dry_run)
+
+
+def cmd_promote(args: argparse.Namespace) -> int:
+    """据え置かれた日の animals-<date>.json を latest.json に戻す（T623）。0=戻した 2=できない"""
+    from .publish import promote
+    from .run import DATA_DIR
+
+    return promote(args.date, DATA_DIR)
 
 
 def cmd_repair(args: argparse.Namespace) -> int:
@@ -205,6 +218,9 @@ def main(argv: list[str] | None = None) -> int:
     a = sub.add_parser("notify", help="直近 report の異常を Discord へ")
     a.add_argument("--dry-run", action="store_true")
     a.set_defaults(fn=cmd_notify)
+    a = sub.add_parser("promote", help="animals-<date>.json を latest.json に戻す（回線断などで据え置かれた日を確認のうえ公開）")
+    a.add_argument("--date", required=True, help="YYYY-MM-DD")
+    a.set_defaults(fn=cmd_promote)
     a = sub.add_parser("repair", help="読めなくなった slug のレシピを Claude に書き直させる（ANTHROPIC_API_KEY 必須）")
     a.add_argument("slug", help="台帳の slug（完全一致）")
     a.add_argument("--model", help=f"既定は環境変数 ONECO_AI_MODEL か {DEFAULT_MODEL}")

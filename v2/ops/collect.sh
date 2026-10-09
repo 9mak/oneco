@@ -5,6 +5,7 @@
 #   →（月曜だけ）discover（環境省リンク集と台帳の差分。確認済み一覧に無い差分があれば Discord）
 #   → 全部成功したら HEALTHCHECK_URL へ ping。discover の成否は「全部成功」に数えない。
 #
+# 収集の二重起動は run 自身が state/collect.lock（flock）で防ぐ。取れなければ run が exit 3 で終わり、ここでは run の失敗として扱う。
 # どこかで失敗しても途中で止めず最後まで進み、最後に 0（全部成功）か 1（どれかが失敗）を返す。
 # 収集が失敗しても build/deploy は「前回の data/latest.json」で走るので、サイトは昨日のまま出続ける。
 #
@@ -103,6 +104,10 @@ if [ "$(TZ=Asia/Tokyo date +%u)" = "1" ]; then
 else
   echo "== discover: 月曜だけ（今日は飛ばす）"
 fi
+
+# 5b. 古いログの削除（30 日より前の collect-*.log と events-*.jsonl。find の対象は $LOG_DIR 直下に固定）
+find "$LOG_DIR" -maxdepth 1 -type f \( -name 'collect-*.log' -o -name 'events-*.jsonl' \) -mtime +30 -delete \
+  || echo "-- 古いログの削除に失敗（続行）"
 
 # 6. 死活監視への ping（全部成功したときだけ本体 URL。失敗時は /fail を叩いて「失敗した」と知らせる）
 if [ -n "${HEALTHCHECK_URL:-}" ]; then
