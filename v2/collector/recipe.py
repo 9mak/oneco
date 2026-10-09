@@ -20,6 +20,7 @@ from bs4 import BeautifulSoup, CData, NavigableString, PageElement, Tag, XMLPars
 
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)   # RSS を HTML として読むレシピがある
 
+from .errors import ErrorInfo
 from .fetch import FetchError, Fetcher, page_gone
 
 T = TypeVar("T")
@@ -40,7 +41,11 @@ _MGMT_RE = re.compile(r"[A-Za-z]?\d{1,4}[-‐\-–]\d{2,6}|[A-Za-z]\d{1,2}[-‐\
 
 
 class RecipeError(Exception):
-    pass
+    """レシピの定義・実行の失敗。info.kind は recipe（判定用）。"""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+        self.info = ErrorInfo("recipe", phase="parse")
 
 
 @dataclass
@@ -439,7 +444,8 @@ class Executor:
     def _raise_if_all_failed(kind: str, tried: int, failed: list[str]) -> None:
         """skip_errors で捨てた結果、辿ろうとした子が全部失敗していたら従来どおり失敗にする（全部 404 の日を 0 頭扱いにしない）。"""
         if tried and len(failed) == tried:
-            raise FetchError(f"{kind}: 辿った {tried} 本がすべて取得に失敗（{failed[0]}）")
+            raise FetchError(f"{kind}: 辿った {tried} 本がすべて取得に失敗（{failed[0]}）",
+                             getattr(failed[0], "info", None) if failed and isinstance(failed[0], FetchError) else None)
 
 
 def _json_values(obj: Any, path: str) -> list[Any]:

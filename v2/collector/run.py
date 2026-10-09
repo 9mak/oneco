@@ -6,10 +6,11 @@ import json
 import logging
 import os
 import time
-from dataclasses import asdict
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+from .errors import ErrorInfo, error_to_dict
 from .extract import Result, build
 from .fetch import FetchError, Fetcher
 from .recipe import Recipe, RecipeError, Executor
@@ -29,29 +30,52 @@ def outage(report: list[dict[str, Any]]) -> bool:
     return bool(tried) and failed > MAX_FAILED_RATIO * len(tried)
 
 
-def collect_one(source: Source, fetcher: Fetcher) -> tuple[str, Result | None, str | None, list[str]]:
-    """(status, result, error, trace)。status: ok | empty | failed | link_only | disabled"""
+@dataclass
+class Collected:
+    """collect_one の結果。status: ok | empty | failed | link_only | disabled。
+    error は表示用の文字列、error_info は判定用（kind / status / host / phase）。"""
+
+    status: str
+    result: Result | None = None
+    error: str | None = None
+    trace: list[str] = field(default_factory=list)
+    error_info: dict[str, Any] | None = None
+
+    def __iter__(self):  # noqa: ANN204 — 旧来の (status, result, error, trace) の unpack を保つ
+        return iter((self.status, self.result, self.error, self.trace))
+
+
+def _as_collected(c: Any) -> Collected:
+    """テストが collect_one を (status, result, error, trace) のタプルで差し替えても扱えるようにする。"""
+    if isinstance(c, Collected):
+        return c
+    status, res, err, trace = c
+    return Collected(status, res, err, list(trace), ErrorInfo("other").to_dict() if status == "failed" else None)
+
+
+def collect_one(source: Source, fetcher: Fetcher) -> Collected:
     if not source.enabled:
-        return "disabled", None, None, []
+        return Collected("disabled")
     if source.mode == "link_only":
-        return "link_only", None, None, []
+        return Collected("link_only")
     if not source.recipe_path.exists():
-        return "failed", None, f"レシピが無い: {source.recipe_path.name}", []
+        return Collected("failed", error=f"レシピが無い: {source.recipe_path.name}", error_info=ErrorInfo("recipe", phase="parse").to_dict())
     try:
         recipe = Recipe.load(source.recipe_path)
         ex = Executor(fetcher, recipe)
         docs = ex.resolve(source.url)
         res = build(source, recipe, docs, getattr(ex, "visited", None))
     except (FetchError, RecipeError) as e:
-        return "failed", None, str(e), []
+        return Collected("failed", error=str(e), error_info=error_to_dict(e))
     except Exception as e:  # noqa: BLE001 — 1 ページの失敗で全体を止めない
         log.exception("%s", source.slug)
-        return "failed", None, f"{type(e).__name__}: {e}", []
+        return Collected("failed", error=f"{type(e).__name__}: {e}", error_info=ErrorInfo("other", phase="parse").to_dict())
     if res.animals:
-        return "ok", res, None, ex.trace
+        return Collected("ok", res, trace=ex.trace)
     if res.empty_confirmed:
-        return "empty", res, None, ex.trace
-    return "failed", res, f"0 頭で empty_text も無い（行 {res.rows}・捨てた {len(res.dropped)}）", ex.trace
+        return Collected("empty", res, trace=ex.trace)
+    return Collected("failed", res, f"0 頭で empty_text も無い（行 {res.rows}・捨てた {len(res.dropped)}）", ex.trace,
+                     ErrorInfo("parser", phase="parse", host=None).to_dict())
 
 
 def ai_repair_enabled() -> bool:
@@ -70,7 +94,8 @@ def run(sources: list[Source], date: str, out_dir: Path = DATA_DIR, fetcher: Fet
     t0 = time.monotonic()
     for s in sources:
         t = time.monotonic()
-        status, res, err, trace = collect_one(s, fetcher)
+        c = _as_collected(collect_one(s, fetcher))
+        status, res, err, trace = c
         repair_note: str | None = None
         if status == "failed" and enabled and s.enabled and s.mode == "recipe":
             from .ai_repair import repair
@@ -78,7 +103,8 @@ def run(sources: list[Source], date: str, out_dir: Path = DATA_DIR, fetcher: Fet
             r = repair(s, fetcher=fetcher, error=err)
             if r.status == "ok":
                 repair_note = f"AI がレシピを書き直した（{r.count} 頭）"
-                status, res, err, trace = collect_one(s, fetcher)
+                c = _as_collected(collect_one(s, fetcher))
+                status, res, err, trace = c
             elif r.status == "no_key":
                 repair_note = "AI 修復: ANTHROPIC_API_KEY 未設定"
                 enabled = False   # 以降のページでも同じなので試さない
@@ -87,6 +113,7 @@ def run(sources: list[Source], date: str, out_dir: Path = DATA_DIR, fetcher: Fet
             log.info("%-28s %s", s.slug, repair_note)
         n = len(res.animals) if res else 0
         report.append({"slug": s.slug, "name": s.name, "status": status, "count": n, "error": err,
+                       "error_info": c.error_info if status == "failed" else None,
                        "dropped": len(res.dropped) if res else 0, "seconds": round(time.monotonic() - t, 1),
                        "repair": repair_note,
                        # skip_errors で捨てた子（「URL: 理由」）。通知には出さないが、黙って頭数が減ったのを後から追える

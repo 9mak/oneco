@@ -14,6 +14,8 @@ from urllib.parse import urlsplit
 import httpx
 from bs4 import UnicodeDammit
 
+from .errors import ErrorInfo, classify_exception, host_of
+
 log = logging.getLogger(__name__)
 WAIT_FOR_MS = 20000   # render の wait_for がセレクタを待つ上限（ミリ秒）
 USER_AGENT = "oneco-collector/2.0 (+https://github.com/9mak/oneco; stop/removal requests via GitHub Issues)"
@@ -28,7 +30,11 @@ RETRY_WAITS: tuple[float, ...] = (2.0, 5.0)   # 再試行前の待ち（秒）�
 
 
 class FetchError(Exception):
-    pass
+    """取得の失敗。info（ErrorInfo）に kind / status / host / phase を持つ。文字列は表示用。"""
+
+    def __init__(self, message: str, info: ErrorInfo | None = None) -> None:
+        super().__init__(message)
+        self.info = info or ErrorInfo("other")
 
 
 _GONE = re.compile(r"HTTP (404|410): ")
@@ -36,6 +42,9 @@ _GONE = re.compile(r"HTTP (404|410): ")
 
 def page_gone(e: FetchError) -> bool:
     """ページが無い（HTTP 404・410）ことによる失敗か。サーバーエラー・接続失敗・robots 拒否は False。"""
+    info = getattr(e, "info", None)
+    if info is not None and info.kind == "http":
+        return info.status in (404, 410)
     return bool(_GONE.match(str(e)))
 
 
@@ -108,10 +117,11 @@ class Fetcher:
         if key in self.cache:
             return self.cache[key]
         if not self._allowed(url):
-            raise FetchError(f"robots.txt により拒否: {url}")
+            raise FetchError(f"robots.txt により拒否: {url}", ErrorInfo("robots", host=host_of(url), url=url))
         r = self._get_with_retry(url)
         if r.status_code >= 400:
-            raise FetchError(f"HTTP {r.status_code}: {url}")
+            raise FetchError(f"HTTP {r.status_code}: {url}",
+                             ErrorInfo("http", status=r.status_code, host=host_of(url), url=url))
         ctype = r.headers.get("content-type", "")
         html = None
         if "pdf" not in ctype and not url.lower().endswith(".pdf"):
@@ -123,17 +133,19 @@ class Fetcher:
     def _get_with_retry(self, url: str) -> httpx.Response:
         """RETRY_ERRORS の失敗だけ、retry_waits の秒数を待って取り直す（取り直しは httpx が新しい接続で行う）。"""
         waits = list(self.retry_waits)
+        attempt = 1
         while True:
             self._throttle(url)
             try:
                 return self.client.get(url)
             except RETRY_ERRORS as e:
                 if not waits:
-                    raise FetchError(f"{type(e).__name__}: {e}") from e
+                    raise FetchError(f"{type(e).__name__}: {e}", classify_exception(e, url, attempt=attempt)) from e
                 log.info("get: %s のため %.0f 秒後に取り直す: %s", type(e).__name__, waits[0], url)
                 time.sleep(waits.pop(0))
+                attempt += 1
             except httpx.HTTPError as e:
-                raise FetchError(f"{type(e).__name__}: {e}") from e
+                raise FetchError(f"{type(e).__name__}: {e}", classify_exception(e, url, attempt=attempt)) from e
 
     def render(self, url: str, wait_ms: int = 3000, capture: str | None = None, wait_for: str | None = None) -> Page:
         """JavaScript 描画が必要なページを Playwright で取る。
@@ -148,7 +160,7 @@ class Fetcher:
         if key in self.cache:
             return self.cache[key]
         if not self._allowed(url):
-            raise FetchError(f"robots.txt により拒否: {url}")
+            raise FetchError(f"robots.txt により拒否: {url}", ErrorInfo("robots", host=host_of(url), url=url, phase="render"))
         from playwright.sync_api import sync_playwright
 
         self._throttle(url)
@@ -196,9 +208,9 @@ class FakeFetcher(Fetcher):
 
     def get(self, url: str, encoding: str | None = None) -> Page:
         if self.status.get(url, 200) >= 400:
-            raise FetchError(f"HTTP {self.status[url]}: {url}")
+            raise FetchError(f"HTTP {self.status[url]}: {url}", ErrorInfo("http", status=self.status[url], host=host_of(url), url=url))
         if url not in self.pages:
-            raise FetchError(f"FakeFetcher に無い URL: {url}")
+            raise FetchError(f"FakeFetcher に無い URL: {url}", ErrorInfo("connect", host=host_of(url), url=url))
         body = self.pages[url]
         final = self.redirects.get(url, url)
         if isinstance(body, bytes):
