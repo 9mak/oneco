@@ -6159,3 +6159,28 @@ sources:
   recipe: recipes/city_matsumoto-9.yaml
   enabled: true
   note: 環境省リンク集から追加（2026-10-05 T519）。city_matsumoto-4 と同じページ（1529）で、1 つの掲載に犬が 2 頭並ぶ表の 2 頭目だけを読む（Wayback 2024-10-07 の No.6-1 に実在。2026-10-07 時点のページには無いので 0 頭）。2 頭に写真 3 枚でどの写真がどの犬か決められないため写真は付けない。「譲渡されました」の印がある子は載せない。
+- slug: city_sagamihara-1
+  name: 相模原市（譲渡対象猫）
+  municipality: 相模原市保健所 動物愛護センター準備室
+  prefecture: 神奈川県
+  phone: 042-769-8347
+  address: 神奈川県相模原市中央区富士見6-1-1 ウェルネスさがみはらA館4階
+  url: https://www.city.sagamihara.kanagawa.jp/kosodate/kenko/1026628/pet/1023495.html
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/city_sagamihara-1.yaml
+  enabled: true
+  note: 環境省リンク集から追加（2026-10-05 T519）。市が保護して新しい飼い主を募集している猫（預かりサポーターの家にいる子）。1 頭ごとに h3「譲渡対象猫」・写真・仮名・種類・性別・毛色・年齢・備考。管理番号は無い。2026-10-05 時点は本文「10 頭」と h3 の数が一致。0 頭の日の文言は未確認。リンク集のリンク先は収容犬のページ（city_sagamihara-2）で、猫の譲渡は別ページ。市の譲渡面接会・譲渡会（市民が保護する猫を含む）の猫一覧は PDF・Instagram で、収容・保護の台帳ではないため載せない
+- slug: city_sagamihara-2
+  name: 相模原市（収容犬の公示）
+  municipality: 相模原市保健所 動物愛護センター準備室
+  prefecture: 神奈川県
+  phone: 042-769-8347
+  address: 神奈川県相模原市中央区富士見6-1-1 ウェルネスさがみはらA館4階
+  url: https://www.city.sagamihara.kanagawa.jp/kosodate/kenko/1026628/pet/1007470.html
+  kind: stray
+  species: dog
+  mode: link_only
+  enabled: true
+  note: 環境省リンク集から追加（2026-10-05 T519）。迷い犬として収容した犬の公示（公示の翌日から原則 2 週間掲載。返還済みの犬も含む）。h2「公示に基づく収容犬情報」の下に、0 頭の日は「現在、迷い犬の情報はありません。」の 1 文だけが出る（2026-10-05 時点・更新日 2026-09-15）。犬が載った日の構造を実ページで確かめられないため link_only（載った日の読み方が分かったらレシピ化する）。猫・その他の迷子は掲載なし（電話で問い合わせ）

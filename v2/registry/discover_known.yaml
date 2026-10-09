@@ -9,9 +9,9 @@
 domains:
   # --- リンク集にあって台帳に無いドメイン（2026-10-05 時点 48 件）
   city.fukui.lg.jp: {status: covered, name: 福井市, slugs: [fapscsite-1, fapscsite-2, fapscsite-3], note: "リンク先（犬・猫の保護、返還について）は、愛護管理を委託した福井県動物愛護センターのサイト fapscsite.com（ふくい動物愛護管理支援センター協会）の「犬・猫の情報」へ案内する。それを載せている（福井市分も県内他市町分も同じ一覧）"}
-  city.hachioji.tokyo.jp: {status: pending, name: 八王子市, task: T519}
+  city.hachioji.tokyo.jp: {status: covered, name: 八王子市, slugs: [shuyojoho_tokyo-1, shuyojoho_tokyo-2], note: "リンク先（迷い犬・迷い猫等について）に一覧は無く、収容中の犬猫は東京都動物愛護相談センターの収容動物情報（shuyojoho.metro.tokyo.lg.jp）へ案内する。それを載せている。市の保健所は収容した動物をその日のうちに都（多摩支所）へ移送する。2026-10-05 確認"}
   city.kurume.fukuoka.jp: {status: pending, name: 久留米市, task: T519}
-  city.sagamihara.kanagawa.jp: {status: pending, name: 相模原市, task: T519}
+  city.sagamihara.kanagawa.jp: {status: covered, name: 相模原市, slugs: [city_sagamihara-1, city_sagamihara-2], note: "リンク先は収容犬の公示（city_sagamihara-2・link_only）。市の譲渡対象猫は別ページ（city_sagamihara-1・recipe）。2026-10-09 追加"}
   hokeniryo.metro.tokyo.lg.jp: {status: covered, name: 東京都, slugs: [shuyojoho_tokyo-1, shuyojoho_tokyo-2], note: "リンク先（東京都動物愛護相談センター「収容動物情報について」）は shuyojoho.metro.tokyo.lg.jp へ案内する。それを載せている"}
   pref.aichi.jp: {status: covered, name: 愛知県, slugs: [wannyan_navi_aichi], note: "リンク先（愛知県動物愛護センター）は譲渡を wannyan-navi.pref.aichi.jp へ案内する。それを載せている"}
   pref.akita.lg.jp: {status: covered, name: 秋田県, slugs: [spec_wannyapia_akita-1, spec_wannyapia_akita-2], note: "リンク先（県の動物愛護ジャンル）は譲渡をワンニャピアあきた（wannyapia.akita.jp）へ案内する。それを載せている"}
