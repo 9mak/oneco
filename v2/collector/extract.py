@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+import unicodedata
 from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urljoin
@@ -52,6 +53,9 @@ class Result:
     docs: int = 0
     rows: int = 0
     empty_confirmed: bool = False
+    empty_evidence: str | None = None    # 0 頭を確定した根拠: empty_selector / empty_absent / empty_text / all_excluded+headings / all_excluded+container
+    ambiguous_empty: bool = False        # 全行除外だが肯定的な証拠が無く、0 頭とも読み取り失敗とも言い切れない（W006 T605）
+    ambiguous_reason: str | None = None
 
 
 def resolve_species(source: Source, recipe: Recipe, row: Row, fields: dict[str, str | None]) -> str | None:
@@ -166,6 +170,112 @@ def _absent_list(doc: Doc, spec: dict[str, str]) -> bool:
     return bool(doc.soup.select(spec["page"])) and not doc.soup.select(spec["none"])
 
 
+def expected_labels(recipe: Recipe) -> set[str]:
+    """レシピが項目名で引いている語（fields の label / header。join の中も含む）。見出しの照合に使う。"""
+    return {lb for g in _label_groups(recipe) for lb in g}
+
+
+def _label_groups(recipe: Recipe) -> list[list[str]]:
+    """項目ごとの期待する見出し語の候補（label に候補の並びを書いた項目は 1 項目 = 1 グループ）。"""
+    groups: list[list[str]] = []
+
+    def walk(spec: Any) -> None:
+        if not isinstance(spec, dict):
+            return
+        for sub in spec.get("join") or []:
+            walk(sub)
+        raw = spec.get("label", spec.get("header"))
+        if raw is None:
+            return
+        names = [raw] if isinstance(raw, str) else list(raw)
+        names = [_norm_label(str(n)) for n in names]
+        names = [n for n in names if n]
+        if names:
+            groups.append(names)
+
+    for spec in recipe.fields.values():
+        walk(spec)
+    return groups
+
+
+def _norm_label(text: str) -> str:
+    return re.sub(r"[\s:：]+", "", unicodedata.normalize("NFKC", text))
+
+
+def _table_headings(el: Tag) -> set[str]:
+    table = el if el.name == "table" else el.find_parent("table")
+    if table is None:
+        return set()
+    # 見出しは th、無ければ最初の行の td。縦並びの表（左の列が項目名・右の列が値。福島県 相双支所）も読むため、
+    # 各行の最初のセルのうち短いもの（値の長文を見出しと取り違えない）も見る
+    cells = table.find_all("th")
+    if not cells:
+        tr = table.find("tr")
+        cells = tr.find_all("td") if tr else []
+    for tr in table.find_all("tr"):
+        first = tr.find(["th", "td"])
+        if first is not None:
+            cells.append(first)
+    texts = (_norm_label(c.get_text(" ", strip=True)) for c in cells)
+    return {t for t in texts if t and len(t) <= 20}
+
+
+def _split_parent(selector: str) -> str | None:
+    """セレクタの最後の 1 段を除いたもの。括弧・引用符の中の空白や > は区切りにしない。単一段・カンマ列は None。"""
+    depth, quote, last = 0, "", -1
+    for i, ch in enumerate(selector):
+        if quote:
+            quote = "" if ch == quote else quote
+        elif ch in "'\"":
+            quote = ch
+        elif ch in "([":
+            depth += 1
+        elif ch in ")]":
+            depth -= 1
+        elif depth == 0 and ch == ",":
+            return None
+        elif depth == 0 and ch in " >+~":
+            last = i
+    if last < 0:
+        return None
+    parent = selector[:last].strip().rstrip(">+~ ").strip()
+    return parent or None
+
+
+def _all_excluded_evidence(recipe: Recipe, docs: list[Doc]) -> tuple[str | None, str]:
+    """全行除外の 0 頭を確定する肯定的な証拠。(根拠, 無いときの理由)。"""
+    html_docs = [d for d in docs if getattr(d, "soup", None) is not None]
+    groups = _label_groups(recipe)
+    seen_headings: set[str] = set()
+    if groups:
+        for d in html_docs:
+            for row in extract_rows(recipe, d):
+                if row.el is None:
+                    continue
+                heads = _table_headings(row.el)
+                seen_headings |= heads
+                hit = sum(1 for g in groups if any(lb in h for lb in g for h in heads))
+                if hit * 2 >= len(groups):
+                    return "all_excluded+headings", ""
+    exp = "・".join(sorted(expected_labels(recipe))) or "なし"
+    act = "・".join(sorted(seen_headings)) or "なし"
+    reasons = [f"全行除外だが見出しの項目名が一致しない（期待 {exp}・実際 {act}）"]
+    if seen_headings:
+        # 見出しを読めたのに項目名が合わない＝表の作りが変わった証拠。コンテナが残っていても 0 頭にしない
+        return None, reasons[0]
+    sel = recipe.empty_container or _split_parent(recipe.rows)
+    if sel:
+        try:
+            if any(d.soup.select_one(sel) is not None for d in html_docs):  # type: ignore[union-attr]
+                return "all_excluded+container", ""
+        except ValueError:
+            pass   # 不正なセレクタは証拠なし扱い
+        reasons.append(f"全行除外だがコンテナ {sel} が無い")
+    else:
+        reasons.append("コンテナの証拠も使えない（rows が単一段で empty_container 未指定）")
+    return None, "。".join(reasons)
+
+
 def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | None = None) -> Result:
     """docs: rows を適用する文書。visited: 入口から辿った全文書（empty_text の照合にも使う）。"""
     res = Result(docs=len(docs))
@@ -238,14 +348,28 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
     pool = list(docs) + [d for d in (visited or []) if d not in docs]
     if not res.animals and recipe.empty_selector:
         res.empty_confirmed = any(_blank_container(d, recipe.empty_selector) for d in pool)
+        if res.empty_confirmed:
+            res.empty_evidence = "empty_selector"
     if not res.animals and recipe.empty_absent and not res.empty_confirmed:
         res.empty_confirmed = any(_absent_list(d, recipe.empty_absent) for d in pool)
+        if res.empty_confirmed:
+            res.empty_evidence = "empty_absent"
     if not res.animals and recipe.empty_text and not res.empty_confirmed:
         alltext = " ".join(d.text() for d in pool)
         # 0 頭のときだけ「現在、掲載する情報はありません」の画像を出すサイトがある（豊中市）ので img の alt も照合する
         alts = " ".join(str(img.get("alt") or "") for d in pool if getattr(d, "soup", None) is not None
                         for img in d.soup.find_all("img"))
         res.empty_confirmed = any(t in f"{alltext} {alts}" for t in recipe.empty_text)
-    if not res.animals and res.rows and excluded == res.rows:
-        res.empty_confirmed = True   # 載っている子が全部「除外語」の子（飼い主が探している告知だけ等）
+        if res.empty_confirmed:
+            res.empty_evidence = "empty_text"
+    if not res.animals and res.rows and excluded == res.rows and not res.empty_confirmed:
+        # 載っている子が全部「除外語」の子（飼い主が探している告知だけ等）。ただし構造が変わって全行が除外語に
+        # 当たる日と区別するため、見出しの項目名一致かコンテナ存在の肯定的な証拠が要る（W006 T605）
+        evidence, reason = _all_excluded_evidence(recipe, docs)
+        if evidence:
+            res.empty_confirmed = True
+            res.empty_evidence = evidence
+        else:
+            res.ambiguous_empty = True
+            res.ambiguous_reason = reason
     return res

@@ -6,6 +6,8 @@
 steps:
   - paginate: "div.pagenation li.current + li:not(.last) a@href"
 rows: "div.card"
+# 2026-10-09 W006 T605: 全行除外の 0 頭を確定する根拠（rows が単一段なので親が取れない）。カードを並べる器
+empty_container: "div.list"
 row_filter:
   field_lacks: {location: ["動物愛護センタ"]}
 fields:

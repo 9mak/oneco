@@ -208,6 +208,18 @@ empty_absent:                          # 静岡県 迷い犬情報一覧（0 頭
   none: "article#content ul.listlink, article#content a[href*='dobutsuaigo/1066835/']:not([href*='index.html'])"
 ```
 
+行が全部 `row_filter` の除外に当たって 0 頭になる日（雛形だけの表・探している告知だけの一覧）は、次のどちらかの肯定的な証拠が無いと 0 頭にしない（`Result.ambiguous_empty`。run では「読めなかった」とも「0 頭」とも言い切れない扱い）。2026-10-09 W006 T605。
+
+1. 見出しの項目名一致: 行の元の表の見出し（th。無ければ最初の行の td。縦並びの表は各行の最初のセル）に、`fields` の `label` / `header` で引いている項目名の半数以上が含まれる。見出しを読めたのに合わない日は、コンテナが残っていても 0 頭にしない（表の作りが変わった日）。
+2. コンテナ存在: 見出しを読めない形（表でない一覧）のとき、`rows` の最後の 1 段を除いた親（`ul.list > li` なら `ul.list`）が文書にある。`rows` が単一段なら `empty_container` に器のセレクタを書く。
+
+```yaml
+rows: "p.row"
+empty_container: "div#list"       # rows が単一段で表でない一覧の、全行除外の 0 頭の根拠
+```
+
+`empty_selector` / `empty_absent` / `empty_text` による確定は従来どおりで、この規則を通らない。
+
 ## 文字コード・その他
 
 ```yaml

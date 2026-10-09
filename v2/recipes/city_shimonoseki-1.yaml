@@ -11,6 +11,8 @@ steps:
   - follow_all: "div.detail_free a[href*='/soshiki/52/']:not([href$='/1784.html']):not([href$='/1803.html'])@href"
     skip_errors: true
 rows: "div.detail_free"
+# 2026-10-09 W006 T605: 全行除外の 0 頭を確定する根拠（rows が単一段なので親が取れない）。ページ本文の枠
+empty_container: "div#main_body"
 row_filter:
   text_has_any: ["No.", "収容日"]
   field_lacks: {status: ["決まりました", "決定", "譲渡済"]}

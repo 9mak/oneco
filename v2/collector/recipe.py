@@ -59,6 +59,7 @@ class Recipe:
     empty_text: list[str] = field(default_factory=list)
     empty_selector: list[str] = field(default_factory=list)   # 0 頭の日に空になる一覧の器（文言が出ないサイト用）。extract.build で照合
     empty_absent: dict[str, str] = field(default_factory=dict)   # {page, none}: 0 頭の日に器ごと消えるサイト用。extract.build で照合
+    empty_container: str | None = None   # rows が単一段のとき、全行除外の 0 頭を確定する根拠にする一覧の器（W006 T605）。extract.build で照合
     encoding: str | None = None
     max_pages: int = 20
     base_url: str | None = None

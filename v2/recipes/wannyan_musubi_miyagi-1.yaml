@@ -6,6 +6,8 @@
 steps:
   - paginate: "div.pagenation li.current + li:not(.last) a@href"
 rows: "div.card"
+# 2026-10-09 W006 T605: 全行除外の 0 頭を確定する根拠（rows が単一段なので親が取れない）。カードを並べる器
+empty_container: "div.list"
 # センターの猫は センター自身のページ（pref_miyagi-7。名前・ID つき）で載せているので、ここでは「【動物愛護センタ...」で始まる募集を除く
 # （同じ猫が 2 回載らないように）。センターの猫だけの日は全部除外で「該当なし」（0 頭）になる。
 row_filter:
