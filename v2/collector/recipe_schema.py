@@ -25,7 +25,7 @@ from urllib.parse import urlparse
 from .recipe import Recipe
 
 MAX_REGEX_LEN = 200
-MAX_SELECTOR_LEN = 200
+MAX_SELECTOR_LEN = 400   # 実在する最長は松本市 -6/-7/-8 の image.selector（281 文字）
 MAX_SELECTORS = 50
 MAX_LIST_ITEMS = 50
 MAX_MAP_ITEMS = 100

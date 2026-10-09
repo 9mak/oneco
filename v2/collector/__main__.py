@@ -1,4 +1,4 @@
-"""CLI: show / fetch / run / discover / notify / promote / repair"""
+"""CLI: show / fetch / run / discover / notify / promote / repair / propose"""
 
 from __future__ import annotations
 
@@ -10,7 +10,6 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from .ai_repair import DEFAULT_MODEL
 from .fetch import Fetcher, FetchError
 from .registry import load_sources, select
 
@@ -150,15 +149,12 @@ def cmd_promote(args: argparse.Namespace) -> int:
 
 
 def cmd_repair(args: argparse.Namespace) -> int:
-    """読めなくなった slug のレシピを Claude に書き直させる。0=保存した 1=失敗 2=未設定/slug 無し"""
+    """読めなくなった slug のレシピ案を agy に書かせる。0=保存した 1=失敗 2=agy 無し/slug 無し"""
     from .ai_repair import repair
     from .run import collect_one
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     logging.getLogger("httpx").setLevel(logging.WARNING)
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        print("ANTHROPIC_API_KEY 未設定")
-        return 2
     sources = [s for s in load_sources() if s.slug == args.slug]
     if not sources:
         print(f"台帳に無い slug: {args.slug}")
@@ -172,19 +168,26 @@ def cmd_repair(args: argparse.Namespace) -> int:
             print(f"{s.slug}: 今は読めている（{status}・{len(res.animals) if res else 0} 頭）。--force で強制的に書き直す")
             return 0
         print(f"{s.slug}: {status} {error or ''}")
-    r = repair(s, fetcher=fetcher, model=args.model, error=error, save=not args.dry_run)
+    r = repair(s, fetcher=fetcher, error=error, save=not args.dry_run)
     if r.recipe_text and (args.show or r.status != "ok"):
-        print("---- Claude が返したレシピ ----")
+        print("---- agy が返したレシピ ----")
         print(r.recipe_text.rstrip())
         print("-------------------------------")
     if r.status == "ok":
-        print(f"{s.slug}: 新レシピで {r.count} 頭。" + (f"保存した: {s.recipe_path}" if r.saved else "（--dry-run なので保存しない）"))
+        print(f"{s.slug}: 新レシピで {r.count} 頭。" + (f"案を保存した: {r.proposal_path}（recipes/ は変えていない）。`python -m collector propose` で PR にする" if r.saved else "（--dry-run なので保存しない）"))
         return 0
     if r.status == "no_key":
-        print("ANTHROPIC_API_KEY 未設定")
+        print(r.error)
         return 2
     print(f"{s.slug}: 修復できなかった。{r.error}（レシピは元のまま）")
     return 1
+
+
+def cmd_propose(args: argparse.Namespace) -> int:
+    """data/proposals の案を draft PR にする。merge はオーナー。"""
+    from .propose import propose
+
+    return propose(dry_run=args.dry_run)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -221,14 +224,16 @@ def main(argv: list[str] | None = None) -> int:
     a = sub.add_parser("promote", help="animals-<date>.json を latest.json に戻す（回線断などで据え置かれた日を確認のうえ公開）")
     a.add_argument("--date", required=True, help="YYYY-MM-DD")
     a.set_defaults(fn=cmd_promote)
-    a = sub.add_parser("repair", help="読めなくなった slug のレシピを Claude に書き直させる（ANTHROPIC_API_KEY 必須）")
+    a = sub.add_parser("repair", help="読めなくなった slug のレシピ案を agy に書かせて data/proposals/ に保存する（PATH に agy が必要）")
     a.add_argument("slug", help="台帳の slug（完全一致）")
-    a.add_argument("--model", help=f"既定は環境変数 ONECO_AI_MODEL か {DEFAULT_MODEL}")
     a.add_argument("--dry-run", action="store_true", help="レシピを作って試すだけで保存しない")
     a.add_argument("--force", action="store_true", help="今読めていても書き直す")
     a.add_argument("--show", action="store_true", help="成功時も返ったレシピを表示")
     a.add_argument("--no-robots", action="store_true")
     a.set_defaults(fn=cmd_repair)
+    a = sub.add_parser("propose", help="data/proposals の案を draft PR にする（作業用 clone から。merge はオーナー）")
+    a.add_argument("--dry-run", action="store_true", help="PR にする予定の案を表示するだけ")
+    a.set_defaults(fn=cmd_propose)
     args = p.parse_args(argv)
     return args.fn(args)
 

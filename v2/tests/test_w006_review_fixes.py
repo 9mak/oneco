@@ -1,7 +1,6 @@
 """PR #44 の reviewer 差し戻し（M1〜M3・S2）の回帰テスト。
 
-M1 サイトが ambiguous_empty と stale_since を表示する
-M2 ambiguous_empty の保持は MAX_STALE_DAYS で打ち切る
+簡素化: ambiguous_empty の日はその slug の子を載せず、サイトは「読めませんでした」と出す
 M3 breaker の翌日 probe は接続系・5xx 以外の失敗を「成功」とみなして閉じる
 S2 recipe_schema の regex 計測が数字入りのダミーでも遅いものを落とす
 """
@@ -73,23 +72,7 @@ def test_probe_keeps_breaker_on_transport_failure(tmp_path, monkeypatch):
     assert all("遮断" in (by[f"a{i}"]["error"] or "") for i in range(1, 4))
 
 
-# ---------------------------------------------------------------- M2
-def test_carry_over_expires_after_max_stale_days(tmp_path, monkeypatch):
-    srcs = [_src("s0", "h.jp")]
-    prev = {"date": "2026-10-01", "animals": [{"id": "s0-old", "source": "s0"}]}
-    (tmp_path / "latest.json").write_text(json.dumps(prev), encoding="utf-8")
-    limit = run_mod.MAX_STALE_DAYS
-    # stale_since は 10-01。保持は 10-01 + limit 日まで
-    last_ok_day = f"2026-10-{1 + limit:02d}"
-    out = _run(tmp_path, last_ok_day, srcs, {"s0": _ambiguous}, monkeypatch)
-    assert out["animals"] and out["animals"][0]["stale_since"] == "2026-10-01"
-    out = _run(tmp_path, f"2026-10-{2 + limit:02d}", srcs, {"s0": _ambiguous}, monkeypatch)
-    row = out["sources"][0]
-    assert out["animals"] == [] and row["status"] == "failed" and row["count"] == 0
-    assert row["error_info"]["kind"] == "ambiguous_empty" and "日を超えた" in row["error"]
-
-
-# ---------------------------------------------------------------- M1
+# ---------------------------------------------------------------- 簡素化
 def _load_build():
     spec = importlib.util.spec_from_file_location("oneco_site_build_w006", ROOT / "site" / "build.py")
     mod = importlib.util.module_from_spec(spec)
@@ -98,34 +81,25 @@ def _load_build():
     return mod
 
 
-def test_site_shows_ambiguous_status_and_stale_since(tmp_path):
+def test_ambiguous_empty_drops_children_and_site_says_unreadable(tmp_path, monkeypatch):
+    srcs = [_src("s0", "h.jp"), _src("s1", "g.jp")]
+    # 前日に載っていた s0 の子は、ambiguous_empty の日に持ち越されない
+    (tmp_path / "latest.json").write_text(
+        json.dumps({"date": "2026-10-08", "animals": [{"id": "s0-old", "source": "s0"}]}), encoding="utf-8")
+    out = _run(tmp_path, "2026-10-09", srcs, {"s0": _ambiguous, "s1": lambda: _ok("s1")}, monkeypatch)
+    assert [a["source"] for a in out["animals"]] == ["s1"]
+    row = next(r for r in out["sources"] if r["slug"] == "s0")
+    assert row["status"] == "ambiguous_empty" and row["count"] == 0 and "stale_since" not in row
+
     mod = _load_build()
-    data = {"date": "2026-10-09", "animals": [
-        {"id": "x1", "source": "s0", "municipality": "A市", "prefecture": "東京都", "kind": "stray", "species": "dog",
-         "name": "ポチ", "stale_since": "2026-10-07"},
-        {"id": "x2", "source": "s1", "municipality": "B市", "prefecture": "東京都", "kind": "stray", "species": "dog", "name": "タマ"},
-    ], "sources": [
-        {"slug": "s0", "name": "A市", "municipality": "A市", "prefecture": "東京都", "url": "https://a.jp/", "kind": "stray",
-         "species": "dog", "status": "ambiguous_empty", "count": 1, "stale_since": "2026-10-07"},
-        {"slug": "s1", "name": "B市", "municipality": "B市", "prefecture": "東京都", "url": "https://b.jp/", "kind": "stray",
-         "species": "dog", "status": "ok", "count": 1},
-    ]}
     p = tmp_path / "latest.json"
-    p.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-    out = tmp_path / "dist"
-    mod.build(p, out, {"site_name": "oneco", "base_url": "https://x.test", "affiliate": []})
-    sources = (out / "sources" / "index.html").read_text(encoding="utf-8")
-    assert ">ambiguous_empty<" not in sources   # 生の status 名が表示文言として出ない（CSS クラス st-… は可）
-    assert "最終確認 2026年10月7日" in sources and "本日は確定できず" in sources
-    assert "確定できず 1 件" in sources
-    detail = (out / "animals" / "x1" / "index.html").read_text(encoding="utf-8")
-    assert "最終確認 2026年10月7日" in detail
-    detail2 = (out / "animals" / "x2" / "index.html").read_text(encoding="utf-8")
-    assert "最終確認" not in detail2
-    animals_json = json.loads((out / "animals.json").read_text(encoding="utf-8")) if (out / "animals.json").exists() else None
-    if animals_json is not None:
-        x1 = next(a for a in (animals_json if isinstance(animals_json, list) else animals_json["animals"]) if a["id"] == "x1")
-        assert x1.get("stale_since") == "2026-10-07"
+    p.write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
+    dist = tmp_path / "dist"
+    mod.build(p, dist, {"site_name": "oneco", "base_url": "https://x.test", "affiliate": []})
+    sources = (dist / "sources" / "index.html").read_text(encoding="utf-8")
+    assert "本日は読めませんでした。自治体のページをご確認ください" in sources
+    assert ">ambiguous_empty<" not in sources and "最終確認" not in sources and "前回確認分" not in sources
+    assert "確認できず 1 件" in sources
 
 
 # ---------------------------------------------------------------- S2

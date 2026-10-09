@@ -17,11 +17,13 @@ domains:
   pref.akita.lg.jp: {status: covered, name: 秋田県, slugs: [spec_wannyapia_akita-1, spec_wannyapia_akita-2], note: "リンク先（県の動物愛護ジャンル）は譲渡をワンニャピアあきた（wannyapia.akita.jp）へ案内する。それを載せている"}
   pref.hokkaido.lg.jp: {status: pending, name: 北海道, task: T519, slugs: [spec_aniwel, nyantomo, spec_douaicenter-1, city_sapporo-1], note: "道内の振興局・保健所 40 余りへのリンク集。aniwel.jp・nyantomo.jp・douaicenter.jp・札幌市は載せているが、振興局（*.pref.hokkaido.lg.jp）のページは未掲載"}
   pref.nara.jp: {status: covered, name: 奈良県, slugs: [pref_nara-1, pref_nara-2, pref_nara-3], note: "リンク先（www.pref.nara.jp/dd.aspx?menuid=8439）は 2026-10 にサイトが www.pref.nara.lg.jp/n070/ へ移り、旧ドメインは証明書が失効したまま 301 で新ドメインへ飛ばすだけになった。台帳は新ドメインの URL で載せている（T519v G5）"}
+  pref.ishikawa.lg.jp: {status: covered, name: 石川県, slugs: [pref_ishikawa], note: "リンク先（保護犬・猫情報）は案内だけで、実データは委託先 aigo-ishikawa.jp の迷子情報。台帳の url は 2026-10-10 にそちらへ変えた"}
   pref.oita.jp: {status: covered, name: 大分県, slugs: [oita_aigo-1, city_oita, pref_oita-1, pref_oita-2, pref_oita-3], note: "保健所へのリンク集。おおいた動物愛護センター（oita-aigo.com）・大分市は既存、西部・北部・豊後高田の保健所ページは pref_oita-1〜3（2026-10-05 T519）で載せている"}
   pref.shiga.lg.jp: {status: covered, name: 滋賀県, slugs: [spec_sapca], note: "リンク先（飼い犬・猫が行方不明になったら）は sapca.jp/lost へ案内する。それを載せている"}
   youtube.com: {status: excluded, note: "環境省ページ内の動画（自治体ではない）"}
   # --- 台帳にあってリンク集に無いドメイン（2026-10-05 時点 9 件。専用サイトで、リンク集は自治体のページを指している）
   pref.nara.lg.jp: {status: covered, slugs: [pref_nara-1, pref_nara-2, pref_nara-3], note: "リンク集は旧ドメイン（pref.nara.jp）を指す。奈良県が 2026-10 に移った先で、台帳はこちらの URL で載せている"}
+  aigo-ishikawa.jp: {status: covered, slugs: [pref_ishikawa], note: "リンク集は石川県（pref.ishikawa.lg.jp）を指し、そこから案内される委託先サイト"}
   aniwel.jp: {status: covered, slugs: [spec_aniwel], note: "リンク集は北海道（pref.hokkaido.lg.jp）を指し、そこから案内される専用サイト"}
   douai.sakura.ne.jp: {status: covered, slugs: [spec_douai_pref_tochigi_stray-1, spec_douai_pref_tochigi_stray-2], note: "リンク集は栃木県（douai.pref.tochigi.lg.jp）を指し、そこから案内される専用サイト"}
   nyantomo.jp: {status: covered, slugs: [nyantomo], note: "リンク集は北海道（pref.hokkaido.lg.jp）を指し、そこから案内される専用サイト"}
