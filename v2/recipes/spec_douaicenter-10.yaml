@@ -6,6 +6,8 @@
 steps:
   - follow_all: "a[href^='https://www.douaicenter.jp/other-animal/']:not([href*='other-animal/list'])"
 rows: "body"
+# 2026-10-09 W006 T605: 全行除外の 0 頭を確定する根拠（rows が単一段なので親が取れない）。個体ページの項目表
+empty_container: "table.animal-desc-table"
 row_filter:
   field_has_any: {name: ["探しています", "探してます", "探しております"]}   # rows: body なのでメニュー文言に当たらないよう name で判定。語が無い行（保護しています）は -8 が拾う
 image:
