@@ -29,6 +29,8 @@ MAX_SELECTOR_LEN = 200
 MAX_SELECTORS = 50
 MAX_LIST_ITEMS = 50
 MAX_MAP_ITEMS = 100
+MAX_PAGES = 200          # steps[].max / max_pages の上限（最大の台帳でも数十ページ）
+MAX_WAIT_MS = 60_000     # render.wait_ms の上限（fetch.WAIT_FOR_MS と同じ 60 秒）
 # 10,000 文字・0.2 秒だと、(\d+)年 や \s* を並べた普通の抽出 regex（探索が O(n^2) になるだけ）まで 30 本ほど落ちる。
 # 指数的・3 乗以上の遅さは 2,000 文字・0.2 秒で確実に落ち、2 乗は 10,000 文字・3 秒の上限で許す
 REGEX_TIME_LIMIT = 0.2
@@ -67,7 +69,9 @@ short, long_ = __SHORT__, __LONG__
 
 
 def probes(n):
-    return ["a" * n + "!", " " * n + "!", "\u3042" * n, "a " * (n // 2) + "!", "-" * n]
+    # 数字・数字と空白の交互も入れる（(\d+\s?)+$ 型は数字だけで指数的に伸びる。reviewer S2）
+    return ["a" * n + "!", " " * n + "!", "\u3042" * n, "a " * (n // 2) + "!", "-" * n,
+            "1" * n + "!", "1 " * (n // 2) + "!", "12" * (n // 2) + "!"]
 
 
 def worst(rx, n):
@@ -127,6 +131,14 @@ class _Check:
         self.base_host = _host(source_url)
         self.selectors: list[tuple[str, str]] = []
         self.regexes: list[tuple[str, str]] = []
+
+    def int_max(self, where: str, v: Any, limit: int) -> None:
+        if v is None:
+            return
+        if isinstance(v, bool) or not isinstance(v, int):
+            self.err(f"{where}: 整数でない")
+        elif v < 0 or v > limit:
+            self.err(f"{where}: {v} は 0〜{limit} の範囲外")
 
     def err(self, msg: str) -> None:
         self.errors.append(msg)
@@ -290,9 +302,12 @@ def validate_recipe_dict(raw: dict[str, Any], source_url: str) -> list[str]:
     c = _Check(source_url)
     c.keys("recipe", raw, set(Recipe.__dataclass_fields__))
 
-    for key in ("rows", "row_until", "transpose"):
+    for key in ("rows", "row_until", "transpose", "empty_container"):
         if raw.get(key) is not None:
             c.selector(key, raw[key])
+    c.int_max("max_pages", raw.get("max_pages"), MAX_PAGES)
+    if raw.get("encoding") is not None and not (isinstance(raw["encoding"], str) and len(raw["encoding"]) <= 40):
+        c.err("encoding: 40 文字以内の文字列でない")
     if raw.get("rows_regex") is not None:
         c.regex("rows_regex", raw["rows_regex"])
     for key in ("url", "base_url"):
@@ -324,14 +339,17 @@ def validate_recipe_dict(raw: dict[str, Any], source_url: str) -> list[str]:
                         c.step_link(f"{w}.{k}", d[k])
                 if "follow_text" in d and not isinstance(d["follow_text"], str):
                     c.err(f"{w}.follow_text: 文字列でない")
+                c.int_max(f"{w}.max", d.get("max"), MAX_PAGES)
                 if isinstance(d.get("render"), dict):
                     rd = c.keys(f"{w}.render", d["render"], RENDER_KEYS)
                     if "wait_for" in rd:
                         c.selector(f"{w}.render.wait_for", rd["wait_for"])
+                    c.int_max(f"{w}.render.wait_ms", rd.get("wait_ms"), MAX_WAIT_MS)
                 if "render_json" in d:
                     rj = c.keys(f"{w}.render_json", d["render_json"], RENDER_JSON_KEYS)
                     if "follow" in rj:
                         c.step_link(f"{w}.render_json.follow", rj["follow"])
+                    c.int_max(f"{w}.render_json.max", rj.get("max"), MAX_PAGES)
 
     if "row_filter" in raw:
         rf = c.keys("row_filter", raw["row_filter"], ROW_FILTER_KEYS)
@@ -359,6 +377,9 @@ def validate_recipe_dict(raw: dict[str, Any], source_url: str) -> list[str]:
                 c.selector("image.selector", d["selector"], with_attr=True)
             if "exclude" in d:
                 c.str_list("image.exclude", d["exclude"])
+            for k in ("scope", "stop_at"):
+                if d.get(k) is not None:
+                    c.selector(f"image.{k}", d[k])
 
     if "fields" in raw:
         fields = raw["fields"]

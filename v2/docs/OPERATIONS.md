@@ -161,6 +161,9 @@ Discord の文面はこの形:
 - 通知は同じ失敗を毎日送らない。送るのは 3 種だけ: 初回（slug・kind・HTTP status・host の組が前回通知と違う）、3 日継続（連続失敗 3 日目、以降 7 日ごと）、復旧（前日 failed/ambiguous_empty が今日 ok/empty）。文面に「経過 N 日・最後に成功 YYYY-MM-DD（M 頭）」が付く。`collector notify --dry-run` は文面を出すだけで状態を書かない
 - 回線断: 接続系エラー（dns/connect/tls/timeout）の failed が、異なるホスト 3 つ以上かつ試行数の 10% 以上の日だけ。`latest.json` と `manifest-latest.json` を据え置く（`animals-<日付>.json` は書く）。parser や HTTP エラーが多くても据え置かない
 - ホスト遮断: 同一ホストで接続系エラーか 5xx が 3 件連続したら、その run の残りの同ホストは取りに行かず failed（「ホスト遮断中」）。`state/sources.json` の `breaker` に残り、翌日は同ホストの最初の 1 slug だけ試す。成功で閉じる。手で閉じるには該当ホストの項目を `breaker` から消す
+- 0 頭に見えるが確定できない日（`ambiguous_empty`。全行除外なのに見出しの項目名もコンテナも合わない）は、前回公開したその slug の子をそのまま載せ続け、各レコードと report に `stale_since`（最後に成功した日）が付く。サイトでは「最終確認 YYYY年M月D日」のバッジと「情報源の一覧」の「本日は確定できず」で分かる。保持は **7 日まで**（`run.py` の `MAX_STALE_DAYS`。多くの自治体の収容公示は 1 週間前後で入れ替わるため）。超えたら failed になり掲載から外れる（通知の文面に「7 日を超えた」と出る）
+- 翌日の probe で遮断を閉じる条件は「接続系エラーか 5xx でない」こと。parser 失敗や 404 はサイトが生きている証拠なので閉じて残りを通常どおり読む（同一ホストに複数レシピがある自治体で 1 本の崩れが全部を止めない）
+- 通常の failed（404・5xx・保守ページ・parser 失敗）の日は、その slug の子は載らない（前回分を保持するのは ambiguous_empty と回線断の日だけ）。一時障害の日も保持するかは W006 の後続で決める
 - 据え置かれた日を手で公開する: `data/animals-<日付>.json` と `report-<日付>.json` を見て妥当なら
   `python -m collector promote --date YYYY-MM-DD`（`latest.json` と `manifest-latest.json` をその日に戻す。`held` は false になる）。その後 `site/build.py` と deploy を手で回す
 - `data/manifest-<日付>.json`: `run_id`・`date`・`code_sha`・`recipe_sha`・`registry_sha`・`animals_count`・`sources_ok`・`sources_failed`・`held`。「この日のデータはどのコード・レシピで作ったか」の記録

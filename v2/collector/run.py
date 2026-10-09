@@ -130,6 +130,17 @@ def run(sources: list[Source], date: str, out_dir: Path = DATA_DIR, fetcher: Fet
         return _run_locked(sources, date, out_dir, fetcher, enabled, state_dir, log_dir, now or datetime.now(JST))
 
 
+# ambiguous_empty で前回公開分を保持し続ける上限（日）。多くの自治体の収容公示は 1 週間前後で入れ替わるので、
+# それを超えて保持すると譲渡・返還済みの子を「いる」として出し続ける（reviewer M2）。超えたら failed にして掲載から外す。
+MAX_STALE_DAYS = 7
+
+
+def _stale_days(stale_since: str, date: str) -> int:
+    from datetime import date as _d
+
+    return (_d.fromisoformat(date) - _d.fromisoformat(stale_since)).days
+
+
 def _previous_animals(out_dir: Path) -> tuple[str | None, dict[str, list[dict[str, Any]]]]:
     """前回公開した latest.json の (日付, slug → 子) を返す。無い・壊れているときは (None, {})。"""
     path = out_dir / "latest.json"
@@ -191,9 +202,9 @@ def _run_locked(sources: list[Source], date: str, out_dir: Path, fetcher: Fetche
             info["host"] = host
         if counted and not skipped_by_breaker:
             failed_trip = status == "failed" and _is_trip_failure(info)
-            if host in probing:   # 翌日以降の probe: 成功なら閉じる、失敗なら当日の残りを飛ばす
+            if host in probing:   # 翌日以降の probe: 接続系・5xx 以外なら「サイトは生きている」ので閉じる（reviewer M3）
                 probing.discard(host)
-                if status not in FAILING:
+                if not failed_trip:
                     breaker.pop(host, None)
                 else:
                     streak[host] = BREAKER_TRIP
@@ -206,9 +217,9 @@ def _run_locked(sources: list[Source], date: str, out_dir: Path, fetcher: Fetche
                     breaker[host] = {"opened": breaker.get(host, {}).get("opened", date), "failures": streak[host]}
             else:
                 streak[host] = 0
-        # 接続系・遮断中は読めない原因がサイト側なので、レシピの AI 修復はしない
+        # 接続系・遮断中・保守ページ（content）は読めない原因がサイト側なので、レシピの AI 修復はしない
         if status == "failed" and enabled and s.enabled and s.mode == "recipe" and not _is_trip_failure(info) \
-                and not skipped_by_breaker:
+                and not skipped_by_breaker and (info or {}).get("kind") != "content":
             from .ai_repair import repair
 
             r = repair(s, fetcher=fetcher, error=err)
@@ -223,6 +234,10 @@ def _run_locked(sources: list[Source], date: str, out_dir: Path, fetcher: Fetche
         stale_since: str | None = None
         if status == "ambiguous_empty":
             kept, stale_since = _carry_over(prev_date, prev_animals, s.slug)
+            if stale_since and _stale_days(stale_since, date) > MAX_STALE_DAYS:
+                err = f"0 頭だが確定できない日が {MAX_STALE_DAYS} 日を超えた（最後に成功 {stale_since}）ので保持をやめる。{err}"
+                status, kept, stale_since = "failed", [], None
+                info = {**(info or {}), "kind": "ambiguous_empty", "stale_expired": True}
             animals.extend(kept)
             n = len(kept)
         else:

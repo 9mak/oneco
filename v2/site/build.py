@@ -93,6 +93,7 @@ STATUS = {
     "ok": "確認済み",
     "empty": "本日は 0 頭",
     "failed": "本日は確認できませんでした",
+    "ambiguous_empty": "本日は確定できず（前回確認分を掲載）",
     "link_only": "リンクのみ",
     "disabled": "停止中",
 }
@@ -290,7 +291,16 @@ def media(a: dict[str, Any], *, big: bool = False) -> str:
 def badges(a: dict[str, Any]) -> str:
     sp, kd = species_key(a), str(a.get("kind") or "")
     sp_html = f'<span class="badge sp-{esc(sp)}">{esc(species_label(a))}</span>' if species_label(a) else ""   # 種別なしの子はバッジなし
-    return sp_html + f'<span class="badge kd-{esc(kd)}">{esc(kind_label(a))}</span>'
+    stale = f'<span class="badge stale">最終確認 {esc(fmt_date(a["stale_since"]))}</span>' if a.get("stale_since") else ""
+    return sp_html + f'<span class="badge kd-{esc(kd)}">{esc(kind_label(a))}</span>' + stale
+
+
+def stale_note(a: dict[str, Any]) -> str:
+    """前回確認分を保持している子（stale_since あり）には、最終確認の日付を先に出す。"""
+    if not a.get("stale_since"):
+        return ""
+    return (f'<strong>最終確認 {esc(fmt_date(a["stale_since"]))}。</strong>この日以降、自治体のページを確定して読めていないため、'
+            f'前回確認した内容をそのまま載せています。')
 
 
 def card(a: dict[str, Any]) -> str:
@@ -495,7 +505,7 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
 <dl class="facts">
 {chr(10).join(contact)}
 </dl>
-<p class="fine">この情報は {esc(fmt_date(data.get('date')))} に自治体のページから取得したものです。すでに譲渡・返還されている場合があります。ID: <code>{esc(a['id'])}</code></p>
+<p class="fine">{stale_note(a)}この情報は {esc(fmt_date(data.get('date')))} に自治体のページから取得したものです。すでに譲渡・返還されている場合があります。ID: <code>{esc(a['id'])}</code></p>
 </div>
 </article>
 {aff_html}"""
@@ -520,6 +530,9 @@ def build_sources(cfg: dict[str, Any], data: dict[str, Any]) -> str:
             sp = SPECIES.get(str(s.get("species")), "犬・猫")
             if status == "ok":
                 res = f'<b>{int(s.get("count") or 0)} 頭</b>'
+            elif status == "ambiguous_empty":
+                res = (f'{esc(STATUS[status])} {int(s.get("count") or 0)} 頭'
+                       + (f'・最終確認 {esc(fmt_date(s.get("stale_since")))}' if s.get("stale_since") else ""))
             elif status == "link_only":
                 res = "このページは一覧を読み取らず、リンクだけ載せています"
             else:
@@ -530,6 +543,8 @@ def build_sources(cfg: dict[str, Any], data: dict[str, Any]) -> str:
                 f'<span class="src-status">{res}</span><span class="src-link">{link}</span></li>')
         sections.append(f'<h2 id="{esc(p)}">{esc(p)}</h2><ul class="src-list">{"".join(items)}</ul>')
     summary = f"確認済み {st['ok']} 件、本日 0 頭 {st['empty']} 件、確認できず {st['failed']} 件、リンクのみ {st['link_only']} 件"
+    if st["ambiguous_empty"]:
+        summary += f"、確定できず {st['ambiguous_empty']} 件（前回確認分を掲載）"
     if st["disabled"]:
         summary += f"、停止中 {st['disabled']} 件"
     body = f"""<h1>情報源（自治体ページ）の一覧</h1>

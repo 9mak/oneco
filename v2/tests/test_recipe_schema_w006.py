@@ -110,6 +110,12 @@ KNOWN_VIOLATIONS = {
     "city_matsumoto-6": "セレクタが 281 文字",   # image.selector が 200 文字超の単一セレクタ
     "city_matsumoto-7": "セレクタが 281 文字",
     "city_matsumoto-8": "セレクタが 281 文字",
+    # 数字だけのダミー 1 万文字で 2 乗以上に遅い日付 regex（reviewer S2 で数字入りダミーを足して検出）。
+    # 実ページの行は短いので動作上は問題ないが、LLM 出力の門としては落とす。人が書き直すまで固定
+    "city_toyama-1": "正規表現が遅い",
+    "pref_oita-1": "正規表現が",
+    "pref_oita-2": "正規表現が",
+    "pref_oita-3": "正規表現が",
 }
 
 
