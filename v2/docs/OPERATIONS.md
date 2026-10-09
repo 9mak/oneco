@@ -141,29 +141,30 @@ Discord の文面はこの形:
 
 | 行 | 意味 | やること |
 | --- | --- | --- |
-| `読めなかった自治体 N 件` | その日その自治体の子はサイトに出ていない（前日分も消えている） | 1 日目は放置でよい（自治体側の一時障害が多い）。2 日続いたら下の手順 |
+| `新たに読めなくなった自治体 N 件` | その自治体の子はサイトに出ていない（前日分も載せない。情報源の一覧に「自治体のページをご確認ください」と出る）。同じ顔ぶれの 2 日目以降は通知が来ない | 1 日目は放置でよい（自治体側の一時障害が多い）。サイトの情報源の一覧で数日続いていれば下の手順 |
 | `HTTP 404` / `HTTP 5xx` / `ConnectError` | ページ自体が無い・落ちている | ブラウザで URL を開く。移転していれば台帳の `url` を直す。掲載をやめたなら `mode: link_only` か `enabled: false` |
 | `robots.txt により拒否` | 自治体が bot を断っている | 読まない。`enabled: false` にして、必要なら電話で確認 |
 | `follow: '…' が見つからない` / `0 頭で empty_text も無い` | ページ構造が変わった。AI 修復も失敗している | VPS で `sudo -u oneco env $(sudo cat /etc/oneco/collect.env | xargs) /opt/oneco/.venv/bin/python -m collector repair <slug> --show` を手で回す。それでも駄目なら `collector show <slug>` と `collector fetch <url> --selectors` を見て `recipes/<slug>.yaml` を人が直す（書き方は `docs/RECIPE.md`） |
 | `（AI がレシピ案を書いた（N 頭・data/proposals/<slug>.yaml））` | 読めなかった行に付く。案は書かれただけで `recipes/` は元のまま | 案の中身を見て、妥当なら `recipes/<slug>.yaml` に反映して commit。取り方が変（写真が広告、頭数が異常）なら捨てて人が直す |
-| `復旧した自治体 N 件` | 前日まで読めなかった自治体が読めた | 何もしない |
+| `読めるようになった自治体 N 件` | 前日まで読めなかった自治体が読めた | 何もしない |
+| `引き続き読めない N 件` | 前日も読めなかった自治体の件数（一覧は出ない） | 何もしない。一覧は `data/report-<日付>.json` |
 | `（公開 N 頭・成功 M ページ）` | その日の全体 | 前日と大きく違えば異常。`data/report-<日付>.json` を見る |
 | `失敗した工程 -> build deploy` | collect.sh の工程（run の落ち・build・deploy）が失敗した。読めないページの話ではない | `logs/collect-<日付>.log` の `-- <工程>: 失敗` の直前を見る。deploy なら `npx wrangler whoami`（OAuth 切れ）、build なら `data/latest.json` の有無 |
 | `収集を起動できなかった (exit 126)` | launchd の bash が collect.sh を実行できない（保護フォルダの下・パス違い） | ターミナルで `bash v2/ops/macos/install.sh` を入れ直す |
 | `環境省リンク集に新しい自治体 N 件` / `リンク集から消えた N 件`（月曜だけ） | 環境省リンク集と台帳の差分が、確認済み一覧に無い形で増減した | セッションで「差分を台帳に足して」と依頼する（4 節） |
 | `環境省リンク集を読めなかった`（月曜だけ） | リンク集が取れない、またはリンクが極端に少ない（ページの形が変わった）。日次収集とは無関係でサイトはふだんどおり | 1 回なら放置でよい。翌週も来たら `collector discover` を手で回し、URL の移転なら `collector/discover.py` の `ENV_URL`、形の変化なら読み方を直す |
 
-通知が来ない日 = 全ページ読めた日か、同じ失敗の継続中（次節）（ただし収集サーバー自体が動かなかった日も通知は来ない。サイトの日付が 2 日以上古ければ疑う）。healthchecks から「ping が来ない」メールが来たら収集サーバー自体を見る。Mac なら `launchctl print gui/$(id -u)/com.oneco.collect` の last exit code と `~/oneco-collect/v2/logs/launchd.log`、VPS なら `systemctl status oneco-collect.timer`、`journalctl -u oneco-collect --since yesterday`。
+通知が来ない日 = 全ページ読めた日か、読めない顔ぶれが前日と同じ日（次節）（ただし収集サーバー自体が動かなかった日も通知は来ない。サイトの日付が 2 日以上古ければ疑う）。healthchecks から「ping が来ない」メールが来たら収集サーバー自体を見る。Mac なら `launchctl print gui/$(id -u)/com.oneco.collect` の last exit code と `~/oneco-collect/v2/logs/launchd.log`、VPS なら `systemctl status oneco-collect.timer`、`journalctl -u oneco-collect --since yesterday`。
 
 ### 3-1. 状態・通知の dedup・ホスト遮断・据え置き（W006）
 
-- 状態は `v2/state/sources.json`（git 管理外）。slug ごとに `last_ok`・`last_ok_count`・`consecutive_failures`（日数）・`first_failed`・`last_status`・`notified`、ホストごとに `breaker`。壊れていたら警告して空から始まる（消してよい）
-- 通知は同じ失敗を毎日送らない。送るのは 3 種だけ: 初回（slug・kind・HTTP status・host の組が前回通知と違う）、3 日継続（連続失敗 3 日目、以降 7 日ごと）、復旧（前日 failed/ambiguous_empty が今日 ok/empty）。文面に「経過 N 日・最後に成功 YYYY-MM-DD（M 頭）」が付く。`collector notify --dry-run` は文面を出すだけで状態を書かない
+- 状態は `v2/state/sources.json`（git 管理外）。slug ごとに `last_ok`・`last_ok_count`・`consecutive_failures`（日数）・`first_failed`・`last_status`・`prev_status`、ホストごとに `breaker`。壊れていたら警告して空から始まる（消してよい）
+- 通知は読めない自治体の顔ぶれが前日と変わった日だけ。新たに読めなくなった（今日 failed/ambiguous_empty で前日は違う・記録なし）か、読めるようになった（前日 failed/ambiguous_empty で今日 ok/empty）が 1 件でもあれば送る。同じ顔ぶれの 2 日目以降は送らず、送る日の「引き続き読めない N 件」は件数だけ。回線断の日は必ず送る。`collector notify` は state を読むだけで書かない（`--dry-run` は文面を出すだけ）
 - 回線断: 接続系エラー（dns/connect/tls/timeout）の failed が、異なるホスト 3 つ以上かつ試行数の 10% 以上の日だけ。`latest.json` と `manifest-latest.json` を据え置く（`animals-<日付>.json` は書く）。parser や HTTP エラーが多くても据え置かない
 - ホスト遮断: 同一ホストで接続系エラーか 5xx が 3 件連続したら、その run の残りの同ホストは取りに行かず failed（「ホスト遮断中」）。`state/sources.json` の `breaker` に残り、翌日は同ホストの最初の 1 slug だけ試す。成功で閉じる。手で閉じるには該当ホストの項目を `breaker` から消す
-- 0 頭に見えるが確定できない日（`ambiguous_empty`。全行除外なのに見出しの項目名もコンテナも合わない）は、前回公開したその slug の子をそのまま載せ続け、各レコードと report に `stale_since`（最後に成功した日）が付く。サイトでは「最終確認 YYYY年M月D日」のバッジと「情報源の一覧」の「本日は確定できず」で分かる。保持は **7 日まで**（`run.py` の `MAX_STALE_DAYS`。多くの自治体の収容公示は 1 週間前後で入れ替わるため）。超えたら failed になり掲載から外れる（通知の文面に「7 日を超えた」と出る）
+- 読めない日（failed、および 0 頭に見えるが確定できない `ambiguous_empty`。全行除外なのに見出しの項目名もコンテナも合わない）は、その自治体の子は 1 頭も載らず、「情報源の一覧」に「本日は読めませんでした。自治体のページをご確認ください」と出る。前回分は保持しない（実サイトでは譲渡・返還済みかもしれないため）。`ambiguous_empty` は「取得失敗」と区別する診断用に status 名だけ report・state・events に残る
 - 翌日の probe で遮断を閉じる条件は「接続系エラーか 5xx でない」こと。parser 失敗や 404 はサイトが生きている証拠なので閉じて残りを通常どおり読む（同一ホストに複数レシピがある自治体で 1 本の崩れが全部を止めない）
-- 通常の failed（404・5xx・保守ページ・parser 失敗）の日は、その slug の子は載らない（前回分を保持するのは ambiguous_empty と回線断の日だけ）。一時障害の日も保持するかは W006 の後続で決める
+- 404・5xx・保守ページ・parser 失敗の日も同じで、その slug の子は載らない（サイトを前日のまま据え置くのは回線断の日だけ）
 - 据え置かれた日を手で公開する: `data/animals-<日付>.json` と `report-<日付>.json` を見て妥当なら
   `python -m collector promote --date YYYY-MM-DD`（`latest.json` と `manifest-latest.json` をその日に戻す。`held` は false になる）。その後 `site/build.py` と deploy を手で回す
 - `data/manifest-<日付>.json`: `run_id`・`date`・`code_sha`・`recipe_sha`・`registry_sha`・`animals_count`・`sources_ok`・`sources_failed`・`held`。「この日のデータはどのコード・レシピで作ったか」の記録

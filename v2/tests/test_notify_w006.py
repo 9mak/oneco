@@ -1,78 +1,72 @@
-"""W006 T608: 通知の dedup（初回・3 日継続・復旧の 3 種だけ）。"""
+"""通知は「読めない slug の顔ぶれが前日と変わった日」だけ（回線断の日は例外で送る）。"""
 
 import json
 
 from collector import notify as nt
-from collector.state import load_state, save_state, update_sources
+from collector.state import save_state, update_sources
 
 
-def _row(status="failed", kind="parser", host="a.jp", slug="a", count=0, err="0 頭で empty_text も無い"):
+def _row(status="failed", kind="parser", host="a.jp", slug="a", count=0, err="0 頭で empty_text も無い", name="A市"):
     info = {"kind": kind, "status": None, "host": host} if status in ("failed", "ambiguous_empty") else None
-    return {"slug": slug, "name": "A市", "status": status, "count": count, "error": err, "error_info": info, "repair": None}
+    return {"slug": slug, "name": name, "status": status, "count": count, "error": err, "error_info": info, "repair": None}
 
 
 def _day(state, date, rows):
     update_sources(state, rows, date)
-    return nt.build_message(rows, state, date), nt.decide(rows, state)
+    return nt.build_message(rows, state)
 
 
-def _sent(state, events, date):
-    nt._mark_notified(state, events, date)
-
-
-def test_first_then_silent_then_day3_then_every_7(tmp_path):
+def test_new_failure_sends_then_same_set_is_silent():
     state = {"sources": {}, "breaker": {}}
-    ok = _row("ok", count=5)
-    _day(state, "2026-10-01", [ok])
-    got = []
-    for d in range(2, 20):
-        date = f"2026-10-{d:02d}"
-        msg, ev = _day(state, date, [_row()])
-        if msg:
-            got.append((date, state["sources"]["a"]["consecutive_failures"]))
-            _sent(state, ev, date)
-    assert got == [("2026-10-02", 1), ("2026-10-04", 3), ("2026-10-11", 10), ("2026-10-18", 17)]
+    assert _day(state, "2026-10-01", [_row("ok", count=5)]) is None
+    msg = _day(state, "2026-10-02", [_row()])
+    assert msg is not None and "新たに読めなくなった自治体 1 件" in msg and "- A市: 0 頭で empty_text も無い" in msg
+    for d in range(3, 12):   # 同じ顔ぶれの 2 日目以降は何日続いても送らない
+        assert _day(state, f"2026-10-{d:02d}", [_row()]) is None
 
 
-def test_message_has_elapsed_and_last_success(tmp_path):
+def test_first_run_without_record_counts_as_new_failure():
+    msg = nt.build_message([_row()], None)
+    assert msg is not None and "新たに読めなくなった自治体 1 件" in msg
+
+
+def test_recovery_sends_with_count_and_only_once():
     state = {"sources": {}, "breaker": {}}
-    _day(state, "2026-10-01", [_row("ok", count=12)])
-    msg, _ = _day(state, "2026-10-02", [_row()])
-    assert "経過 1 日" in msg and "最後に成功 2026-10-01（12 頭）" in msg
+    _day(state, "2026-10-01", [_row()])
+    msg = _day(state, "2026-10-02", [_row("ok", count=7)])
+    assert msg is not None and "読めるようになった自治体 1 件" in msg and "- A市（7 頭）" in msg
+    assert _day(state, "2026-10-03", [_row("ok", count=7)]) is None
 
 
-def test_ambiguous_empty_wording():
+def test_ambiguous_empty_counts_as_failing_both_ways():
     state = {"sources": {}, "breaker": {}}
     _day(state, "2026-10-01", [_row("ok", count=12)])
-    # run.py が前日分を保持して count と stale_since（最後に成功した日）を report に書く
-    row = {**_row("ambiguous_empty", kind="ambiguous_empty", err="根拠なし"), "count": 12, "stale_since": "2026-10-01"}
-    msg, _ = _day(state, "2026-10-02", [row])
-    assert "0 頭に見えるが確定できないので前日分 12 頭を保持（stale_since 2026-10-01）" in msg
+    msg = _day(state, "2026-10-02", [_row("ambiguous_empty", kind="ambiguous_empty", err="根拠なし")])
+    assert msg is not None and "新たに読めなくなった自治体 1 件" in msg and "- A市: 根拠なし" in msg
+    # failed への切り替わりは「読めない」のまま = 顔ぶれが変わらないので送らない
+    assert _day(state, "2026-10-03", [_row()]) is None
+    msg = _day(state, "2026-10-04", [_row("empty")])
+    assert msg is not None and "読めるようになった自治体 1 件" in msg
 
 
-def test_fingerprint_change_notifies_again():
+def test_still_failing_is_count_only():
     state = {"sources": {}, "breaker": {}}
-    msg, ev = _day(state, "2026-10-01", [_row()])
-    _sent(state, ev, "2026-10-01")
-    msg, _ = _day(state, "2026-10-02", [_row()])
-    assert msg is None
-    msg, _ = _day(state, "2026-10-03", [_row(kind="dns", err="dns")])
-    assert msg is not None
+    both = lambda b: [_row(slug="a", name="A市"), b]   # noqa: E731
+    _day(state, "2026-10-01", both(_row("ok", slug="b", name="B市", count=1)))
+    msg = _day(state, "2026-10-02", both(_row(slug="b", name="B市")))
+    assert msg is not None and "新たに読めなくなった自治体 1 件" in msg
+    assert "引き続き読めない 1 件" in msg and "- A市" not in msg
 
 
-def test_recovery_notified_once():
+def test_repair_note_in_parentheses_and_footer():
     state = {"sources": {}, "breaker": {}}
-    _, ev = _day(state, "2026-10-01", [_row()])
-    _sent(state, ev, "2026-10-01")
-    msg, ev = _day(state, "2026-10-02", [_row("ok", count=7)])
-    assert msg is not None and "復旧" in msg and ev[0]["type"] == "recovered"
-    _sent(state, ev, "2026-10-02")
-    assert state["sources"]["a"]["notified"] is None
-    msg, _ = _day(state, "2026-10-03", [_row("ok", count=7)])
-    assert msg is None
+    _day(state, "2026-10-01", [_row("ok", count=3), _row("ok", slug="o", name="O市", count=4)])
+    rows = [{**_row(), "repair": "AI がレシピ案を書いた"}, _row("ok", slug="o", name="O市", count=4)]
+    msg = _day(state, "2026-10-02", rows)
+    assert "- A市: 0 頭で empty_text も無い（AI がレシピ案を書いた）" in msg and msg.endswith("（公開 4 頭・成功 1 ページ）")
 
 
-def test_notify_writes_state_only_when_sent(tmp_path, monkeypatch):
+def test_notify_reads_state_but_never_writes(tmp_path, monkeypatch):
     data, sd = tmp_path / "data", tmp_path / "state"
     data.mkdir()
     rows = [_row()]
@@ -80,20 +74,22 @@ def test_notify_writes_state_only_when_sent(tmp_path, monkeypatch):
     st = {"sources": {}, "breaker": {}}
     update_sources(st, rows, "2026-10-02")
     save_state(st, sd)
-    assert nt.notify(dry_run=True, data_dir=data, state_dir=sd) == 0
-    assert load_state(sd)["sources"]["a"].get("notified") is None           # dry-run は書かない
+    before = (sd / "sources.json").read_text(encoding="utf-8")
     posted = []
     monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://example.invalid/hook")
 
     class _R:
         def raise_for_status(self): ...
     monkeypatch.setattr(nt.httpx, "post", lambda url, json, timeout: posted.append(json) or _R())
-    assert nt.notify(data_dir=data, state_dir=sd) == 0
-    assert len(posted) == 1 and load_state(sd)["sources"]["a"]["notified"]["last_at"] == "2026-10-02"
-    assert nt.notify(data_dir=data, state_dir=sd) == 0 and len(posted) == 1   # 2 回目は送らない
+    assert nt.notify(dry_run=True, data_dir=data, state_dir=sd) == 0 and not posted
+    assert nt.notify(data_dir=data, state_dir=sd) == 0 and len(posted) == 1
+    assert (sd / "sources.json").read_text(encoding="utf-8") == before
 
 
-def test_outage_line_comes_first():
+def test_outage_line_comes_first_and_sends_even_without_change():
     rep = [_row(kind="dns", host=f"h{i}.jp", slug=f"s{i}") for i in range(3)] + [_row("ok", slug="o", count=1)]
-    msg = nt.build_message(rep, {"sources": {}}, "2026-10-04")
+    state = {"sources": {}, "breaker": {}}
+    update_sources(state, rep, "2026-10-03")
+    update_sources(state, rep, "2026-10-04")   # 顔ぶれは前日と同じ
+    msg = nt.build_message(rep, state)
     assert msg is not None and msg.startswith("接続できなかったページが")

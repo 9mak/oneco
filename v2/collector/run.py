@@ -130,44 +130,6 @@ def run(sources: list[Source], date: str, out_dir: Path = DATA_DIR, fetcher: Fet
         return _run_locked(sources, date, out_dir, fetcher, enabled, state_dir, log_dir, now or datetime.now(JST))
 
 
-# ambiguous_empty で前回公開分を保持し続ける上限（日）。多くの自治体の収容公示は 1 週間前後で入れ替わるので、
-# それを超えて保持すると譲渡・返還済みの子を「いる」として出し続ける（reviewer M2）。超えたら failed にして掲載から外す。
-MAX_STALE_DAYS = 7
-
-
-def _stale_days(stale_since: str, date: str) -> int:
-    from datetime import date as _d
-
-    return (_d.fromisoformat(date) - _d.fromisoformat(stale_since)).days
-
-
-def _previous_animals(out_dir: Path) -> tuple[str | None, dict[str, list[dict[str, Any]]]]:
-    """前回公開した latest.json の (日付, slug → 子) を返す。無い・壊れているときは (None, {})。"""
-    path = out_dir / "latest.json"
-    if not path.exists():
-        return None, {}
-    try:
-        prev = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        log.warning("latest.json が読めないので ambiguous_empty の日の保持はしない")
-        return None, {}
-    by: dict[str, list[dict[str, Any]]] = {}
-    for a in prev.get("animals", []):
-        if isinstance(a, dict) and a.get("source"):
-            by.setdefault(a["source"], []).append(a)
-    return prev.get("date"), by
-
-
-def _carry_over(prev_date: str | None, prev: dict[str, list[dict[str, Any]]], slug: str) -> tuple[list[dict[str, Any]], str | None]:
-    """ambiguous_empty の slug は前回公開した子をそのまま保持する（fail-closed）。
-    stale_since は最後に成功した日（既に保持中の子なら元の stale_since を引き継ぐ）。"""
-    kept = prev.get(slug) or []
-    if not kept or not prev_date:
-        return [], None
-    since = kept[0].get("stale_since") or prev_date
-    return [{**a, "stale_since": since} for a in kept], since
-
-
 def _run_locked(sources: list[Source], date: str, out_dir: Path, fetcher: Fetcher | None, enabled: bool | None,
                 state_dir: Path, log_dir: Path, now: datetime) -> dict[str, Any]:
     if enabled is None:
@@ -182,7 +144,6 @@ def _run_locked(sources: list[Source], date: str, out_dir: Path, fetcher: Fetche
     animals: list[dict[str, Any]] = []
     report: list[dict[str, Any]] = []
     events: list[dict[str, Any]] = []
-    prev_date, prev_animals = _previous_animals(out_dir)
     t0 = time.monotonic()
     for s in sources:
         t = time.monotonic()
@@ -231,20 +192,10 @@ def _run_locked(sources: list[Source], date: str, out_dir: Path, fetcher: Fetche
             else:
                 repair_note = f"AI 修復に失敗: {r.error}"
             log.info("%-28s %s", s.slug, repair_note)
-        stale_since: str | None = None
-        if status == "ambiguous_empty":
-            kept, stale_since = _carry_over(prev_date, prev_animals, s.slug)
-            if stale_since and _stale_days(stale_since, date) > MAX_STALE_DAYS:
-                err = f"0 頭だが確定できない日が {MAX_STALE_DAYS} 日を超えた（最後に成功 {stale_since}）ので保持をやめる。{err}"
-                status, kept, stale_since = "failed", [], None
-                info = {**(info or {}), "kind": "ambiguous_empty", "stale_expired": True}
-            animals.extend(kept)
-            n = len(kept)
-        else:
-            n = len(res.animals) if res else 0
+        n = len(res.animals) if (res and status != "ambiguous_empty") else 0
         secs = round(time.monotonic() - t, 1)
         row = {"slug": s.slug, "name": s.name, "status": status, "count": n, "error": err,
-               "error_info": info, "run_id": run_id, "stale_since": stale_since,
+               "error_info": info, "run_id": run_id,
                "dropped": len(res.dropped) if res else 0, "seconds": secs,
                "repair": repair_note,
                # skip_errors で捨てた子（「URL: 理由」）。通知には出さないが、黙って頭数が減ったのを後から追える

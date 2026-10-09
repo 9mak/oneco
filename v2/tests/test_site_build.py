@@ -115,7 +115,7 @@ def test_sources_page_status(tmp_path: Path):
     _load_build().build_site(data, CONFIG, out)
     h = _read(out / "sources" / "index.html")
     assert "徳島県動物愛護管理センター（譲渡犬）" in h and "20 頭" in h
-    assert "本日は確認できませんでした" in h and "https://example.jp/failed" in h
+    assert "本日は読めませんでした。自治体のページをご確認ください" in h and "https://example.jp/failed" in h
     assert "リンク市（譲渡）" in h and "https://example.jp/link" in h
     assert "timeout" not in h   # エラー内容は公開しない
 

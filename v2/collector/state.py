@@ -1,7 +1,7 @@
 """収集の状態を日をまたいで持つ（W006 T607）。state/sources.json（git 管理外）。
 
 slug ごと: last_ok / last_ok_count / consecutive_failures（日数）/ first_failed / last_status /
-           last_error_kind / last_host / last_date / prev_status / notified（T608 の通知状態）
+           last_error_kind / last_host / last_date / prev_status
 ホストごと: breaker[host] = {opened: 日付, failures: 件数}（T603）
 """
 

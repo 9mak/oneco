@@ -35,7 +35,7 @@ def test_outage_keeps_previous_latest(tmp_path, monkeypatch):
     assert out["held"] is True
     assert json.loads((tmp_path / "latest.json").read_text())["date"] == "2026-10-03"     # 前日のまま
     assert (tmp_path / "animals-2026-10-04.json").exists() and (tmp_path / "report-2026-10-04.json").exists()
-    msg = build_message(json.loads((tmp_path / "report-2026-10-04.json").read_text()), {}, "2026-10-04")
+    msg = build_message(json.loads((tmp_path / "report-2026-10-04.json").read_text()), {})
     assert msg is not None and msg.startswith("接続できなかったページが")                # 通知の先頭で分かる
 
 
@@ -46,5 +46,5 @@ def test_normal_day_updates_latest(tmp_path, monkeypatch):
     out = run_mod.run(srcs, "2026-10-04", out_dir=tmp_path, fetcher=FakeFetcher({}), enabled=False)
     assert out["held"] is False
     assert json.loads((tmp_path / "latest.json").read_text())["date"] == "2026-10-04"
-    msg = build_message(json.loads((tmp_path / "report-2026-10-04.json").read_text()), {}, "2026-10-04")
-    assert msg is not None and msg.startswith("読めなかった自治体 1 件")
+    msg = build_message(json.loads((tmp_path / "report-2026-10-04.json").read_text()), {})
+    assert msg is not None and msg.startswith("新たに読めなくなった自治体 1 件")
