@@ -11,7 +11,6 @@
 from pathlib import Path
 
 from bs4 import BeautifulSoup
-
 from collector.extract import build
 from collector.recipe import Doc, Recipe
 from collector.registry import Source, load_sources
@@ -36,7 +35,7 @@ def _real(slug: str, html: str):
 def _shunan_table(no: str, img: str, breed: str, size: str, color: str, place: str = "下松市西豊井") -> str:
     """周南健康福祉センター（10022.html）の 1 頭 = table 1 つ。2023 年 3 月から「動物種」欄が無い。"""
     return f"""<table style="width:92%"><tbody>
-<tr><td>管理番号</td><td><p>{no}</p></td><td rowspan="10"><p><img alt="{no.split('-')[-1]}" src="/uploaded/image/{img}.jpg">​</p></td></tr>
+<tr><td>管理番号</td><td><p>{no}</p></td><td rowspan="10"><p><img alt="{no.rsplit('-', maxsplit=1)[-1]}" src="/uploaded/image/{img}.jpg">\u200b</p></td></tr>
 <tr><td>掲載年月日</td><td>R8.10.1</td></tr>
 <tr><td>保護場所</td><td>{place}</td></tr>
 <tr><td>品種</td><td>{breed}</td></tr>

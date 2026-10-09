@@ -8,7 +8,6 @@ import json
 from pathlib import Path
 
 from bs4 import BeautifulSoup
-
 from collector.extract import build
 from collector.recipe import Doc, Recipe
 from collector.registry import Source, load_sources
@@ -53,7 +52,7 @@ def test_himeji_never_carries_the_posters_email_address():
 def test_himeji_second_posting_gets_its_own_photo_and_species():
     cat = (
         '<div class="mol_textblock"><p><em>猫を探しています。</em></p></div>'
-        f'<div class="mol_imageblock"><div><img alt="探している猫" src="./cmsfiles/contents/0000031/31472/cat1.jpg"></div></div>'
+        '<div class="mol_imageblock"><div><img alt="探している猫" src="./cmsfiles/contents/0000031/31472/cat1.jpg"></div></div>'
         '<div class="mol_tableblock"><table><caption>令和8年9月1日姫路駅付近</caption><tbody>'
         '<tr><th scope="row">逸走日時</th><td>令和8年9月1日</td></tr>'
         '<tr><th scope="row">ペットの種別</th><td>猫</td></tr>'

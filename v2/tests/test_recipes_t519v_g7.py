@@ -8,7 +8,6 @@
 from pathlib import Path
 
 from bs4 import BeautifulSoup
-
 from collector.extract import build
 from collector.recipe import Doc, Recipe
 from collector.registry import load_sources
@@ -68,7 +67,7 @@ def test_tottori_2_row_without_management_no_is_not_silently_dropped():
 
 def test_tottori_2_zero_day_with_only_blank_rows_is_zero_not_failed():
     html = ('<div class="detail_free"><table><thead><tr><th>種類</th><th>特徴</th><th>その他</th></tr>'
-            '<tr><td>\xa0</td><td>\xa0</td><td>​</td></tr></thead></table></div>')
+            '<tr><td>\xa0</td><td>\xa0</td><td>\u200b</td></tr></thead></table></div>')
     res = _build("city_tottori-2", html)
     assert res.animals == [] and res.empty_confirmed
 
@@ -100,7 +99,7 @@ def test_shimonoseki_1_dog_item_fields():
     res = _build("city_shimonoseki-1", _fixture("t519v_g7_shimonoseki-1_age_space_item.html"))
     a = res.animals[0]
     assert a["age"] and "推定" in a["age"] and a["name"] == "チョコ"   # 「不明(推定 中~高齢)」のように空白を含む年齢を途中で切らない
-    assert "​" not in a["name"]
+    assert "\u200b" not in a["name"]
 
 
 # --- 大分県 -3 -----------------------------------------------------------------------------------

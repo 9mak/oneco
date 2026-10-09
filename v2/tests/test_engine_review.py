@@ -1,7 +1,6 @@
 """公開前レビュー（2026-09-30）の指摘に対するエンジンのテスト: PDF の source_url、プレースホルダ画像、detail リンクを持つ行。"""
 
 from bs4 import BeautifulSoup
-
 from collector.extract import build, make_id
 from collector.recipe import Doc, Recipe
 from collector.registry import Source
@@ -60,7 +59,7 @@ def test_field_lacks_drops_owner_searching_notices_and_confirms_empty():
         html = f"{menu}<h2>{title}</h2><img class='p' src='/{img}.png'><table><tr><th>不明日</th><td>2026/09/21</td></tr></table>"
         return Doc(url=f"https://x.jp/{img}", html=html, soup=BeautifulSoup(html, "lxml"))
 
-    recipe = Recipe.from_dict({"rows": "body", "image": "img.p@src", "row_filter": {"field_lacks": {"name": ["探しています", "探してます"]}},
+    recipe = Recipe.from_dict({"rows": "body", "empty_container": "table", "image": "img.p@src", "row_filter": {"field_lacks": {"name": ["探しています", "探してます"]}},
                                "fields": {"name": "h2", "shelter_date": {"label": "不明日"}}})
     src = _src(slug="spec_douaicenter-7", url="https://x.jp/list", species="dog")
     res = build(src, recipe, [page("犬 探しています(フルサワ)", "a"), page("犬を保護しています(サトウ)", "b")])

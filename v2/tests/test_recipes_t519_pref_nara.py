@@ -9,7 +9,6 @@ T519 G5（2026-10-05）は証明書の失効で link_only にしていたが、�
 from pathlib import Path
 
 from bs4 import BeautifulSoup
-
 from collector.extract import build
 from collector.recipe import Doc, Recipe
 from collector.registry import Source, load_sources

@@ -91,6 +91,20 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 # try ブロック内の条件付き import は既存コード
 "src/notification_manager/adapters/line_adapter.py" = ["F401"]
 
+# --- v2（保護犬猫の日次収集。2026-10 に CI 化した時点の既存コード負債。ロジックは変えず ignore で緑にする） ---
+# 新規ルール違反を増やさないため v2 全体への一括 ignore でなく、実際に出た規則だけ列挙する
+"v2/**/*.py" = [
+    "PLR0917", # too-many-positional-arguments（テストの補助関数・repair() の引数。キーワード引数で呼んでいる）
+    "RUF005",  # 小さなリストの + 連結（可読性は同等）
+    "RUF059",  # テストで使わないタプル展開の変数
+    "B905",    # zip() の strict= 未指定（テスト内で長さは揃っている）
+    "PLW0108", # テストの lambda（モンキーパッチ用に明示している）
+    "PLW2901", # for ループ変数の再代入（discover.py の正規化）
+    "N802",    # テスト関数名に固有名詞の大文字（H 番号）を含む
+]
+# recipe.py は warnings.filterwarnings を import の間に置いている（他 builder 編集中のファイル、触らない）
+"v2/collector/recipe.py" = ["E402"]
+
 [lint.isort]
 # Import sorting configuration
 known-first-party = ["data_collector", "notification_manager", "syndication_service"]

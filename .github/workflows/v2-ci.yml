@@ -1,0 +1,59 @@
+name: v2 CI
+
+# v2（保護犬猫の日次収集）用。main のブランチ保護の必須 check にする名前は次の 3 つ（W006 T612・T613）:
+#   v2 / pytest   v2 / ruff   v2 / pii-scan
+# paths フィルタは付けない。付けると v2 以外だけの PR で check が起動せず、必須 check が pending のまま
+# マージできなくなる（GitHub docs「Handling skipped but required checks」）。
+# 代わりに毎回走らせる（pytest は数分）。Playwright は入れない（render のテストは FakeFetcher で動く）。
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v2-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    name: v2 / pytest
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install httpx beautifulsoup4 lxml pyyaml pdfplumber pytest
+      - run: python -m pytest -q
+        working-directory: v2
+
+  ruff:
+    name: v2 / ruff
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install ruff
+      - run: ruff check --config ruff.toml v2
+
+  pii-scan:
+    name: v2 / pii-scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install beautifulsoup4 lxml pyyaml pytest
+      - run: python -m pytest -q tests/test_fixtures_pii_guard.py
+        working-directory: v2

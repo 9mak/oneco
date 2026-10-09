@@ -6,7 +6,6 @@ species に infer: true を書いたレシピだけ、行内の語で決まら�
 """
 
 from bs4 import BeautifulSoup
-
 from collector.extract import build, infer_species
 from collector.recipe import Doc, Recipe
 from collector.registry import Source
@@ -24,7 +23,7 @@ def _table(no: str, img: str, breed: str, size: str, color: str, place: str = "�
     """周南の 1 頭 = table 1 つ（2026-10-05 の実ページから。写真セルは rowspan）。species を渡すと他センターと同じ「動物種」行を足す。"""
     sp = f"<tr><td>動物種</td><td>{species}</td></tr>" if species else ""
     return f"""<table style="width:92%"><tbody>
-<tr><td>管理番号</td><td><p>{no}</p></td><td rowspan="10"><p><img alt="{no.split('-')[-1]}" src="/uploaded/image/{img}.jpg">​</p></td></tr>
+<tr><td>管理番号</td><td><p>{no}</p></td><td rowspan="10"><p><img alt="{no.rsplit('-', maxsplit=1)[-1]}" src="/uploaded/image/{img}.jpg">\u200b</p></td></tr>
 <tr><td>掲載年月日</td><td>R8.10.1</td></tr>
 <tr><td>保護場所</td><td>{place}</td></tr>{sp}
 <tr><td>品種</td><td>{breed}</td></tr>

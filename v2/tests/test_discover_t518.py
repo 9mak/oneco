@@ -8,10 +8,17 @@
 from pathlib import Path
 
 import pytest
-
 from collector import discover as dmod
-from collector.discover import (ENV_URL, Known, compute, discover, env_links, load_known, message,
-                                failure_message)
+from collector.discover import (
+    ENV_URL,
+    Known,
+    compute,
+    discover,
+    env_links,
+    failure_message,
+    load_known,
+    message,
+)
 from collector.fetch import FakeFetcher
 from collector.registry import Source, load_sources
 
@@ -37,7 +44,7 @@ class _Post:
     def __init__(self) -> None:
         self.sent: list[str] = []
 
-    def __call__(self, url: str, json: dict, timeout: float):  # noqa: A002
+    def __call__(self, url: str, json: dict, timeout: float):
         self.sent.append(json["content"])
 
         class _R:

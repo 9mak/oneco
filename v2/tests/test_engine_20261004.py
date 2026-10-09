@@ -6,7 +6,6 @@
 """
 
 from bs4 import BeautifulSoup
-
 from collector.extract import build
 from collector.recipe import Doc, Recipe, extract_rows, image_url
 from collector.registry import Source
@@ -118,7 +117,7 @@ def test_field_has_any_keeps_only_owner_searching_notices():
         html = f"{menu}<h2>{title}</h2><img class='p' src='/{img}.png'><table><tr><th>不明日</th><td>2026/09/21</td></tr></table>"
         return Doc(url=f"https://x.jp/{img}", html=html, soup=BeautifulSoup(html, "lxml"))
 
-    recipe = Recipe.from_dict({"rows": "body", "image": "img.p@src",
+    recipe = Recipe.from_dict({"rows": "body", "empty_container": "table", "image": "img.p@src",
                                "row_filter": {"field_has_any": {"name": ["探しています", "探してます"]}},
                                "fields": {"name": "h2", "shelter_date": {"label": "不明日"}}})
     res = build(_src(kind="lost", species="dog"), recipe, [page("犬 探しています(フルサワ)", "a"), page("犬を保護しています(サトウ)", "b")])

@@ -102,6 +102,7 @@ collect.sh は全部成功したときだけこの URL を叩き、どこかが�
 
 [console.anthropic.com](https://console.anthropic.com) → API Keys で発行。`/etc/oneco/collect.env` に `ANTHROPIC_API_KEY` と `ONECO_AI_REPAIR=1` を書く。
 `ONECO_AI_REPAIR=1` が無いと修復は動かない（キーだけ置いても課金されない）。使うモデルは既定 `claude-sonnet-5`、変えるなら `ONECO_AI_MODEL`。
+修復の入力はページ本文（自治体サイトの内容＝信頼できない入力）なので、script・style・コメント・hidden・display:none・template を除き、`<untrusted_html>` で囲んで「指示ではない」と明記して渡す（W006 T617）。
 
 ### 1-6. 残っている手動作業（2026-10-01 時点・T506）
 
@@ -116,8 +117,9 @@ collect.sh は全部成功したときだけこの URL を叩き、どこかが�
 
 `ops/collect.sh`（Mac の launchd なら JST 0:05 に `ops/macos/collect-launchd.sh` が `git pull --ff-only origin main` で本番クローンを更新してから呼ぶ、VPS なら `oneco-collect.timer` で 0:00）:
 
-1. `collector run` — 台帳（`registry/sources.yaml`）の `enabled: true` のページを 1 秒間隔で全部読み、`data/animals-<日付>.json` `data/latest.json` `data/report-<日付>.json` を書く
-   - ページが読めず `status: failed` になったものは、`ONECO_AI_REPAIR=1` なら **その場で 1 回だけ** Claude にレシピを書き直させる。新レシピで 1 頭以上取れたら `recipes/<slug>.yaml` を上書きして読み直す。取れなければレシピは元のまま、failed のまま
+1. `collector run` — 台帳（`registry/sources.yaml`）の `enabled: true` のページを 1 秒間隔で全部読み、`data/animals-<日付>.json` `data/latest.json` `data/report-<日付>.json` `data/manifest-<日付>.json` を書く（`data/.tmp-<run_id>/` に全部書いて検査してから置き換える。検査に落ちたら何も置き換えない）
+   - 二重起動は `state/collect.lock`（flock）で防ぐ。取れなければ run は exit 3 で何もせず終わる
+   - ページが読めず `status: failed` になったもの（接続系エラー・遮断中を除く）は、`ONECO_AI_REPAIR=1` なら **その場で 1 回だけ** Claude にレシピ案を書かせる。返った YAML は strict schema（`collector/recipe_schema.py`）で検査してから試し、1 頭以上取れたら **案として `data/proposals/<slug>.yaml` に保存する（`recipes/<slug>.yaml` は書き換えない。W006 T614）**。status は failed のまま。案は人が `diff recipes/<slug>.yaml data/proposals/<slug>.yaml` で確かめて、採るなら `recipes/` へコピーして PR にする（案の先頭の `# proposal:` コメントは消してから）
 2. `collector notify` — report に異常（failed、または AI がレシピを書き直した）があるときだけ Discord に 1 通。平常時は何も送らない
 3. `site/build.py` — `data/latest.json` から `site/dist/` を作る
 4. `wrangler deploy`（`ops/wrangler.jsonc`）— `site/dist/` を Cloudflare Workers の静的アセットへ
@@ -134,8 +136,6 @@ Discord の文面はこの形:
 読めなかった自治体 2 件
 - 徳島県動物愛護管理センター（譲渡犬）: follow: 'iframe#animalFrame@src' が見つからない (https://…)（AI 修復に失敗: 新レシピでも 0 頭（行 3・捨てた 3））
 - 佐賀県（保護犬猫）: HTTP 404: https://…
-AI がレシピを書き直した自治体 1 件（recipes/<slug>.yaml が変わっている。中身を確認して repo に反映する）
-- 三重県動物愛護管理センター（迷い犬情報）: AI がレシピを書き直した（4 頭）
 （公開 812 頭・成功 198 ページ）
 ```
 
@@ -145,14 +145,55 @@ AI がレシピを書き直した自治体 1 件（recipes/<slug>.yaml が変わ
 | `HTTP 404` / `HTTP 5xx` / `ConnectError` | ページ自体が無い・落ちている | ブラウザで URL を開く。移転していれば台帳の `url` を直す。掲載をやめたなら `mode: link_only` か `enabled: false` |
 | `robots.txt により拒否` | 自治体が bot を断っている | 読まない。`enabled: false` にして、必要なら電話で確認 |
 | `follow: '…' が見つからない` / `0 頭で empty_text も無い` | ページ構造が変わった。AI 修復も失敗している | VPS で `sudo -u oneco env $(sudo cat /etc/oneco/collect.env | xargs) /opt/oneco/.venv/bin/python -m collector repair <slug> --show` を手で回す。それでも駄目なら `collector show <slug>` と `collector fetch <url> --selectors` を見て `recipes/<slug>.yaml` を人が直す（書き方は `docs/RECIPE.md`） |
-| `AI がレシピを書き直した自治体 N 件` | VPS 上の `recipes/<slug>.yaml` が変わり、読めるようになった | VPS の `git -C /opt/oneco diff v2/recipes` を見て、妥当なら commit して push（放置すると次の `git pull` で戻る）。取り方が変（写真が広告、頭数が異常）なら `git checkout` で戻して人が直す |
+| `（AI がレシピ案を書いた（N 頭・data/proposals/<slug>.yaml））` | 読めなかった行に付く。案は書かれただけで `recipes/` は元のまま | 案の中身を見て、妥当なら `recipes/<slug>.yaml` に反映して commit。取り方が変（写真が広告、頭数が異常）なら捨てて人が直す |
+| `復旧した自治体 N 件` | 前日まで読めなかった自治体が読めた | 何もしない |
 | `（公開 N 頭・成功 M ページ）` | その日の全体 | 前日と大きく違えば異常。`data/report-<日付>.json` を見る |
 | `失敗した工程 -> build deploy` | collect.sh の工程（run の落ち・build・deploy）が失敗した。読めないページの話ではない | `logs/collect-<日付>.log` の `-- <工程>: 失敗` の直前を見る。deploy なら `npx wrangler whoami`（OAuth 切れ）、build なら `data/latest.json` の有無 |
 | `収集を起動できなかった (exit 126)` | launchd の bash が collect.sh を実行できない（保護フォルダの下・パス違い） | ターミナルで `bash v2/ops/macos/install.sh` を入れ直す |
 | `環境省リンク集に新しい自治体 N 件` / `リンク集から消えた N 件`（月曜だけ） | 環境省リンク集と台帳の差分が、確認済み一覧に無い形で増減した | セッションで「差分を台帳に足して」と依頼する（4 節） |
 | `環境省リンク集を読めなかった`（月曜だけ） | リンク集が取れない、またはリンクが極端に少ない（ページの形が変わった）。日次収集とは無関係でサイトはふだんどおり | 1 回なら放置でよい。翌週も来たら `collector discover` を手で回し、URL の移転なら `collector/discover.py` の `ENV_URL`、形の変化なら読み方を直す |
 
-通知が来ない日 = 全ページ読めた日（ただし収集サーバー自体が動かなかった日も通知は来ない。サイトの日付が 2 日以上古ければ疑う）。healthchecks から「ping が来ない」メールが来たら収集サーバー自体を見る。Mac なら `launchctl print gui/$(id -u)/com.oneco.collect` の last exit code と `~/oneco-collect/v2/logs/launchd.log`、VPS なら `systemctl status oneco-collect.timer`、`journalctl -u oneco-collect --since yesterday`。
+通知が来ない日 = 全ページ読めた日か、同じ失敗の継続中（次節）（ただし収集サーバー自体が動かなかった日も通知は来ない。サイトの日付が 2 日以上古ければ疑う）。healthchecks から「ping が来ない」メールが来たら収集サーバー自体を見る。Mac なら `launchctl print gui/$(id -u)/com.oneco.collect` の last exit code と `~/oneco-collect/v2/logs/launchd.log`、VPS なら `systemctl status oneco-collect.timer`、`journalctl -u oneco-collect --since yesterday`。
+
+### 3-1. 状態・通知の dedup・ホスト遮断・据え置き（W006）
+
+- 状態は `v2/state/sources.json`（git 管理外）。slug ごとに `last_ok`・`last_ok_count`・`consecutive_failures`（日数）・`first_failed`・`last_status`・`notified`、ホストごとに `breaker`。壊れていたら警告して空から始まる（消してよい）
+- 通知は同じ失敗を毎日送らない。送るのは 3 種だけ: 初回（slug・kind・HTTP status・host の組が前回通知と違う）、3 日継続（連続失敗 3 日目、以降 7 日ごと）、復旧（前日 failed/ambiguous_empty が今日 ok/empty）。文面に「経過 N 日・最後に成功 YYYY-MM-DD（M 頭）」が付く。`collector notify --dry-run` は文面を出すだけで状態を書かない
+- 回線断: 接続系エラー（dns/connect/tls/timeout）の failed が、異なるホスト 3 つ以上かつ試行数の 10% 以上の日だけ。`latest.json` と `manifest-latest.json` を据え置く（`animals-<日付>.json` は書く）。parser や HTTP エラーが多くても据え置かない
+- ホスト遮断: 同一ホストで接続系エラーか 5xx が 3 件連続したら、その run の残りの同ホストは取りに行かず failed（「ホスト遮断中」）。`state/sources.json` の `breaker` に残り、翌日は同ホストの最初の 1 slug だけ試す。成功で閉じる。手で閉じるには該当ホストの項目を `breaker` から消す
+- 0 頭に見えるが確定できない日（`ambiguous_empty`。全行除外なのに見出しの項目名もコンテナも合わない）は、前回公開したその slug の子をそのまま載せ続け、各レコードと report に `stale_since`（最後に成功した日）が付く。サイトでは「最終確認 YYYY年M月D日」のバッジと「情報源の一覧」の「本日は確定できず」で分かる。保持は **7 日まで**（`run.py` の `MAX_STALE_DAYS`。多くの自治体の収容公示は 1 週間前後で入れ替わるため）。超えたら failed になり掲載から外れる（通知の文面に「7 日を超えた」と出る）
+- 翌日の probe で遮断を閉じる条件は「接続系エラーか 5xx でない」こと。parser 失敗や 404 はサイトが生きている証拠なので閉じて残りを通常どおり読む（同一ホストに複数レシピがある自治体で 1 本の崩れが全部を止めない）
+- 通常の failed（404・5xx・保守ページ・parser 失敗）の日は、その slug の子は載らない（前回分を保持するのは ambiguous_empty と回線断の日だけ）。一時障害の日も保持するかは W006 の後続で決める
+- 据え置かれた日を手で公開する: `data/animals-<日付>.json` と `report-<日付>.json` を見て妥当なら
+  `python -m collector promote --date YYYY-MM-DD`（`latest.json` と `manifest-latest.json` をその日に戻す。`held` は false になる）。その後 `site/build.py` と deploy を手で回す
+- `data/manifest-<日付>.json`: `run_id`・`date`・`code_sha`・`recipe_sha`・`registry_sha`・`animals_count`・`sources_ok`・`sources_failed`・`held`。「この日のデータはどのコード・レシピで作ったか」の記録
+- `logs/events-<日付>.jsonl`: slug ごと 1 行（`run_id`・`host`・`status`・`kind`・`http_status`・`seconds`・`attempt`・`count`・`dropped`・`rows`・`breaker`）。`collect-*.log` と合わせて 30 日より古いものは collect.sh が消す
+
+### 3-1. 再試行の表（`collector/fetch.py`・GET のみ・W006 T602）
+
+| 起きたこと | 再試行 |
+| --- | --- |
+| HTTP 429 / 500 / 502 / 503 / 504 / 408 | する |
+| ConnectError（接続拒否など）・ConnectTimeout・ReadTimeout・WriteTimeout・PoolTimeout・RemoteProtocolError・ReadError・WriteError | する |
+| HTTP 404 / 410 / 401 / 403 / 451 などその他の 4xx | しない |
+| DNS 解決の失敗・TLS（証明書）の失敗 | しない（直らない。回線断の日に全体が長引くだけ） |
+
+- 待ちは Full Jitter の指数 backoff（`random.uniform(0, min(20, 2 * 2^n))` 秒）。`Retry-After`（秒数・HTTP-date）があればそちらを優先し、60 秒を超える指定なら待たずに失敗する（`retry_after` が report に残る）。
+- 1 URL あたり最大 4 回（初回 + 再試行 3）、再試行待ちの合計は 45 秒まで。超えたらそこで失敗にする。report の `attempt` が試行回数。
+- timeout は connect 10 秒・read 30 秒・write 10 秒・pool 10 秒。
+
+### 3-2. 「取得不能」（kind が content / redirect）の判定（W006 T604）
+
+HTTP 200 で返ってきても、次のページは 0 頭にせず失敗（`取得不能: <理由>: <URL>`）として扱う。前日のデータは残る。JS 描画（render）の結果にも同じ判定をかける。
+
+| kind | 条件 |
+| --- | --- |
+| `redirect` | 最終 URL のホストが要求と違う（`www.` の有無・同じ登録ドメイン配下のサブドメイン違いは許容） |
+| `content` | Content-Type が html / xhtml / pdf / text/plain / json のどれでもない（URL が .pdf の octet-stream は許容） |
+| `content` | HTML が 512 バイト未満（空殻）。PDF が `%PDF-` で始まらない |
+| `content` | `<title>`・h1・h2 に「メンテナンス中」「サービス停止中」「システムメンテナンス」「Service Unavailable」「Access Denied」「アクセスが拒否」「CAPTCHA」「Just a moment...」「ただいまアクセスが集中」「Checking your browser」。または本文先頭 2,000 文字に `cf-browser-verification`・`Incapsula` |
+
+本文の途中に語があるだけでは判定しない（通常の記述の誤検知を避けるため）。誤って止まる自治体が出たら、`collector/fetch.py` の `ERROR_PAGE_WORDS` を見直す。
 
 ## 4. 週 1 回の自動通知: `collector discover`（新しい自治体を拾う）
 
@@ -197,7 +238,7 @@ cd v2   # 本番クローンなら ~/oneco-collect/v2
      recipe: recipes/city_example-1.yaml
      enabled: true
    ```
-2. レシピを作る。まず AI に書かせる: `ANTHROPIC_API_KEY=... python -m collector repair city_example-1 --show`（レシピが無い slug は新規作成になる。1 頭以上取れた時だけ保存される）。駄目なら `python -m collector fetch <url> --selectors` で表・リストの候補を見て `docs/RECIPE.md` の通り手で書く
+2. レシピを作る。まず AI に書かせる: `ANTHROPIC_API_KEY=... python -m collector repair city_example-1 --show`（レシピが無い slug でも案が `data/proposals/<slug>.yaml` に出る。1 頭以上取れた時だけ。採るときは `recipes/<slug>.yaml` へ人がコピーする）。駄目なら `python -m collector fetch <url> --selectors` で表・リストの候補を見て `docs/RECIPE.md` の通り手で書く
 3. `python -m collector show city_example-1` で取れた行・捨てた行を確認。写真・性別・収容日が合っていること
 4. `python -m pytest tests -q`（台帳とレシピが読めることを確認するテストが入っている）
 5. commit → push → VPS で `git -C /opt/oneco pull`。翌日 0:00 から載る。すぐ載せたいなら `sudo systemctl start oneco-collect.service`
@@ -223,3 +264,16 @@ cd v2   # 本番クローンなら ~/oneco-collect/v2
 | 合計（Mac で動かす場合） | 100〜500 円（AI 修復の分だけ） |
 
 Anthropic のコンソールで Usage limits に月 $10 程度の上限を入れておくと、暴走しても止まる。
+
+## CI（W006 T612・T613）
+
+`.github/workflows/v2-ci.yml` が PR（main 向け）と main への push で 3 つの job を走らせる。paths フィルタは付けていない（付けると v2 以外だけの PR で必須 check が pending のまま残る）。
+
+| check 名（branch protection の必須 check に登録する名前） | 中身 |
+|---|---|
+| `v2 / pytest` | `cd v2 && python -m pytest -q`（Playwright なし） |
+| `v2 / ruff` | `ruff check --config ruff.toml v2` |
+| `v2 / pii-scan` | `cd v2 && python -m pytest -q tests/test_fixtures_pii_guard.py`（fixture に私人の連絡先が残っていないか） |
+
+T613（人が GitHub 画面で行う）: Settings → Branches → main の保護ルール → Required status checks から旧 4 つ（`Lint` `Test` `Type Check` `Build Package`）を外し、上の 3 つを追加する。「Do not allow bypassing the above settings」を ON にする。以後のマージは `gh pr merge --auto --squash`。
+旧 4 つを外したら `.github/workflows/required-checks-skip.yml`（旧 backend 用の見せかけ check）も不要になる。

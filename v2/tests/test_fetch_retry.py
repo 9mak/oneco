@@ -1,23 +1,28 @@
-"""T517 ⑩ Fetcher.get の再試行（ネットワークなし。httpx.MockTransport で応答を差し替える）。
+"""T517 ⑩ / W006 T602 Fetcher.get の再試行（ネットワークなし。httpx.MockTransport で応答を差し替える）。
 
 熊本県動物愛護センター（www.kumamoto-doubutuaigo.jp）は Keep-Alive: timeout=1 で、同一ホストの間隔（delay 1.0 秒）と
 ほぼ同じ。前の応答から 0.99 秒前後あけて同じ接続を使い回すと、送った瞬間にサーバーが接続を閉じて
 RemoteProtocolError「Server disconnected without sending a response」になる（2026-10-05 に実ページで再現）。
-新しい接続で取り直せば通るので、確立済みの接続が切られた種類だけ再試行する。
-ConnectError（DNS 不達・回線断）とタイムアウトは再試行しない（回線断の日に全体が長引くだけで、latest.json はどうせ据え置き）。
+新しい接続で取り直せば通るので再試行する。
+W006 T602 で方針を広げた: timeout・5xx・429 も再試行する（上限 4 回・待ち合計 45 秒）。DNS 不達・TLS 失敗は再試行しない。
+再試行の表の網羅テストは test_fetch_w006.py。
 """
 
 import httpx
 import pytest
-
 from collector import fetch as fetch_mod
-from collector.fetch import FetchError, Fetcher
+from collector.fetch import Fetcher, FetchError
 
 URL = "https://www.kumamoto-doubutuaigo.jp/animals/index/type_id:2/animal_id:2"
-HTML = "<html><body><ul class='list-4col'><li>猫</li></ul></body></html>"
+HTML = "<html><head><title>一覧</title></head><body><ul class='list-4col'><li>猫</li></ul>" + "<p>.</p>" * 100 + "</body></html>"
 
 
-def _fetcher(errors: list[Exception | int], retry_waits: tuple[float, ...] | None = (0, 0)) -> tuple[Fetcher, list[str]]:
+@pytest.fixture(autouse=True)
+def _no_sleep(monkeypatch):
+    monkeypatch.setattr(fetch_mod.time, "sleep", lambda s: None)
+
+
+def _fetcher(errors: list[Exception | int]) -> tuple[Fetcher, list[str]]:
     """errors を先頭から 1 回ずつ起こし（int は HTTP ステータス）、尽きたら 200 を返す Fetcher と、受けた要求の記録。"""
     calls: list[str] = []
     queue = list(errors)
@@ -31,8 +36,7 @@ def _fetcher(errors: list[Exception | int], retry_waits: tuple[float, ...] | Non
             raise e
         return httpx.Response(200, text=HTML, headers={"content-type": "text/html; charset=UTF-8"}, request=request)
 
-    kw = {} if retry_waits is None else {"retry_waits": retry_waits}
-    f = Fetcher(delay=0, respect_robots=False, **kw)
+    f = Fetcher(delay=0, respect_robots=False)
     f.client = httpx.Client(transport=httpx.MockTransport(handler), follow_redirects=True)
     return f, calls
 
@@ -54,41 +58,50 @@ def test_retries_read_error_too():
     assert len(calls) == 2
 
 
-def test_gives_up_after_two_retries_with_the_original_message():
-    f, calls = _fetcher([_disconnected(), _disconnected(), _disconnected(), _disconnected()])
+def test_gives_up_after_three_retries_with_the_original_message():
+    f, calls = _fetcher([_disconnected()] * 4)
     with pytest.raises(FetchError, match="RemoteProtocolError: Server disconnected"):
         f.get(URL)
-    assert len(calls) == 3                                   # 最初の 1 回 + 再試行 2 回まで
+    assert len(calls) == 4                                   # 最初の 1 回 + 再試行 3 回まで（MAX_ATTEMPTS = 4）
 
 
-def test_connect_error_is_not_retried():
+def test_dns_failure_is_not_retried():
     f, calls = _fetcher([httpx.ConnectError("[Errno 8] nodename nor servname provided, or not known")])
     with pytest.raises(FetchError, match="ConnectError"):
         f.get(URL)
     assert len(calls) == 1                                   # 回線断の日（10/4 は 119/229）に全体を長引かせない
 
 
-def test_timeout_is_not_retried():
+def test_timeout_is_retried():
+    """W006 T602 で方針変更（以前は再試行しない）。connect 10 秒・read 30 秒に分け、4 回・45 秒の上限を付けたので、
+    一過性の timeout は取り直す。回線断の日の長期化は DNS 不達を再試行しないことと上限で抑える。"""
     f, calls = _fetcher([httpx.ReadTimeout("timed out")])
-    with pytest.raises(FetchError, match="ReadTimeout"):
-        f.get(URL)
-    assert len(calls) == 1                                   # 30 秒待ちを繰り返さない
+    assert f.get(URL).status == 200
+    assert len(calls) == 2
 
 
-def test_http_error_status_is_not_retried():
+def test_http_503_is_retried():
+    """W006 T602 で方針変更（以前は 5xx を再試行しない）。"""
     f, calls = _fetcher([503])
-    with pytest.raises(FetchError, match="HTTP 503"):
+    assert f.get(URL).status == 200
+    assert len(calls) == 2
+
+
+def test_http_404_is_not_retried():
+    f, calls = _fetcher([404])
+    with pytest.raises(FetchError, match="HTTP 404"):
         f.get(URL)
-    assert len(calls) == 1                                   # 5xx は実績が無いので今は再試行しない
+    assert len(calls) == 1
 
 
-def test_default_waits_are_2_then_5_seconds(monkeypatch):
+def test_waits_follow_full_jitter_backoff(monkeypatch):
     slept: list[float] = []
     monkeypatch.setattr(fetch_mod.time, "sleep", lambda s: slept.append(s))
-    f, calls = _fetcher([_disconnected(), _disconnected()], retry_waits=None)
+    monkeypatch.setattr(fetch_mod.random, "uniform", lambda a, b: b)
+    f, calls = _fetcher([_disconnected(), _disconnected()])
     assert f.get(URL).status == 200
     assert len(calls) == 3
-    assert slept == [2.0, 5.0]                               # delay=0 なので throttle の待ちは混ざらない
+    assert slept == [2.0, 4.0]                               # delay=0 なので throttle の待ちは混ざらない
 
 
 def test_retry_result_is_cached_like_a_normal_fetch():

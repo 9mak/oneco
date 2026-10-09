@@ -19,7 +19,6 @@ fixture は Wayback Machine の保存ページ（本文の要素だけ）。2026
 from pathlib import Path
 
 from bs4 import BeautifulSoup
-
 from collector.extract import build
 from collector.recipe import Doc, Recipe
 from collector.registry import Source, load_sources

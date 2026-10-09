@@ -9,7 +9,6 @@
 
 import pytest
 from bs4 import BeautifulSoup
-
 from collector.extract import build
 from collector.fetch import FakeFetcher, FetchError
 from collector.recipe import Doc, Executor, Recipe
@@ -160,7 +159,7 @@ def test_follow_all_skip_errors_drops_only_the_failed_child():
 
 def test_follow_all_skip_errors_still_fails_when_every_child_fails():
     """全部 404 の日を 0 頭扱いにしない。"""
-    gone = {u: 404 for u in ("https://x.test/page/775956.html", "https://x.test/page/776839.html", "https://x.test/page/777066.html")}
+    gone = dict.fromkeys(("https://x.test/page/775956.html", "https://x.test/page/776839.html", "https://x.test/page/777066.html"), 404)
     ex = Executor(FakeFetcher({"https://x.test/": GUNMA_LIST}, status=gone), _gunma(skip=True))
     with pytest.raises(FetchError):
         ex.resolve("https://x.test/")
@@ -189,7 +188,7 @@ def test_run_reports_skipped_children(tmp_path, monkeypatch):
     src = Source(slug="pref_gunma-1", name="群馬県", municipality="群馬県", prefecture="群馬県", url="https://x.test/",
                  kind="sheltered", species="dog")
 
-    def collect_one(s, fetcher):  # noqa: ANN001, ANN202
+    def collect_one(s, fetcher):
         res = Result(docs=2)
         res.animals.append({"id": "a1", "source": s.slug})
         return "ok", res, None, ["entry https://x.test/", "skip https://x.test/page/775956.html: HTTP 404: https://x.test/page/775956.html",

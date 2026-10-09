@@ -22,7 +22,7 @@ import httpx
 import yaml
 from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
 
-from .fetch import FetchError, Fetcher
+from .fetch import Fetcher, FetchError
 from .registry import ROOT, Source, load_sources
 
 ENV_URL = "https://www.env.go.jp/nature/dobutsu/aigo/shuyo/link.html"

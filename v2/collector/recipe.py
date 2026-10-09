@@ -10,9 +10,10 @@ import io
 import re
 import unicodedata
 import warnings
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Iterator, TypeVar
+from typing import Any, TypeVar
 from urllib.parse import urljoin
 
 import yaml
@@ -20,7 +21,8 @@ from bs4 import BeautifulSoup, CData, NavigableString, PageElement, Tag, XMLPars
 
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)   # RSS を HTML として読むレシピがある
 
-from .fetch import FetchError, Fetcher, page_gone
+from .errors import ErrorInfo
+from .fetch import Fetcher, FetchError, page_gone
 
 T = TypeVar("T")
 
@@ -40,7 +42,11 @@ _MGMT_RE = re.compile(r"[A-Za-z]?\d{1,4}[-‐\-–]\d{2,6}|[A-Za-z]\d{1,2}[-‐\
 
 
 class RecipeError(Exception):
-    pass
+    """レシピの定義・実行の失敗。info.kind は recipe（判定用）。"""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+        self.info = ErrorInfo("recipe", phase="parse")
 
 
 @dataclass
@@ -54,6 +60,7 @@ class Recipe:
     empty_text: list[str] = field(default_factory=list)
     empty_selector: list[str] = field(default_factory=list)   # 0 頭の日に空になる一覧の器（文言が出ないサイト用）。extract.build で照合
     empty_absent: dict[str, str] = field(default_factory=dict)   # {page, none}: 0 頭の日に器ごと消えるサイト用。extract.build で照合
+    empty_container: str | None = None   # rows が単一段のとき、全行除外の 0 頭を確定する根拠にする一覧の器（W006 T605）。extract.build で照合
     encoding: str | None = None
     max_pages: int = 20
     base_url: str | None = None
@@ -439,7 +446,8 @@ class Executor:
     def _raise_if_all_failed(kind: str, tried: int, failed: list[str]) -> None:
         """skip_errors で捨てた結果、辿ろうとした子が全部失敗していたら従来どおり失敗にする（全部 404 の日を 0 頭扱いにしない）。"""
         if tried and len(failed) == tried:
-            raise FetchError(f"{kind}: 辿った {tried} 本がすべて取得に失敗（{failed[0]}）")
+            raise FetchError(f"{kind}: 辿った {tried} 本がすべて取得に失敗（{failed[0]}）",
+                             getattr(failed[0], "info", None) if failed and isinstance(failed[0], FetchError) else None)
 
 
 def _json_values(obj: Any, path: str) -> list[Any]:
@@ -850,7 +858,7 @@ def _sibling_holder(recipe: Recipe, spec: dict[str, Any], base: Tag, forward: bo
             try:
                 if sib.css.match(recipe.rows):
                     break
-            except Exception:  # noqa: BLE001 — 解釈できないセレクタは既定の止め方に戻す
+            except Exception:
                 if sib.name == base.name:
                     break
         elif sib.name == base.name:
