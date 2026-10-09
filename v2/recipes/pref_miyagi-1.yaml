@@ -1,0 +1,29 @@
+# 宮城県動物愛護センター 保護動物情報（hogoaigo.html）。
+# 「保護した犬」「保護した猫」「その他の動物」の 3 つの表（caption が節名）。列は No.・保護月日・保護した場所・種類・特徴等・画像。
+# 種別は表の caption から決める。「その他の動物」の表は犬猫でないので読まない（rows を caption に 犬 か 猫 のある表に絞る）。
+# 同じページの下にある「保健所情報」の表（caption「保健所情報」）は動物でないので外れる。
+# 動物の行が td でなく th で書かれる日がある（岩沼支所 pref_miyagi-3 の Wayback 2022-10-12。空の雛形の行も表によって th）ので、
+# rows は tr 全部にして見出し行（「保護月日」を含む）を落とし、項目は :scope > :nth-child(n)（th・td どちらでも）で取る。
+# 2026-10-07 時点: 3 つの表とも空の雛形（&nbsp; だけの 1〜2 行）で 0 頭。動物が載った日の読み方は未確認
+# （同じ宮城県の仙南保健所ページ pref_miyagi-2 と同じ列の並びの推測）。0 頭の日の文言は無いので empty_selector で判定する。
+# Wayback: 2026-05-13 より前の保存は動物愛護センターでなく県の入口（各保健所・支所の一覧だけの別ページ）で、動物の表が無い。
+# 2026-05-13 の保存（3 つの表とも空）が今のページの作りで最も古い。動物がいた日の保存は無い。
+rows: "table:has(> caption:-soup-contains('犬')) tr, table:has(> caption:-soup-contains('猫')) tr"
+row_filter:
+  text_lacks: ["保護月日", "死亡"]   # 見出し行と、収容後に死亡した子（「収容後死亡」「収容中死亡」。載せない）
+species:
+  from: heading
+  selector: "caption"
+  map: {"犬": dog, "猫": cat}
+fields:
+  management_no: {selector: ":scope > :nth-child(1)"}
+  shelter_date: {selector: ":scope > :nth-child(2)"}
+  location: {selector: ":scope > :nth-child(3)"}
+  breed: {selector: ":scope > :nth-child(4)", regex: "種類[:：]\\s*(\\S+)"}
+  color: {selector: ":scope > :nth-child(4)", regex: "毛色[:：]\\s*(\\S+)"}
+  sex: {selector: ":scope > :nth-child(4)", regex: "性別[:：]\\s*(\\S+)"}
+  size: {selector: ":scope > :nth-child(4)", regex: "体格[:：]\\s*(\\S+)"}
+  note: {selector: ":scope > :nth-child(4)", regex: "(?:その他|特徴)[:：]\\s*(.+)"}
+image: {selector: ":scope > :nth-child(5) img@src"}
+# 空の雛形の行の 2 列目（保護月日）が全部空なら 0 頭。動物が載ると中身が入るので「読めなかった」になる。
+empty_selector: "table:has(> caption:-soup-contains('犬')) tr:last-of-type > :nth-child(2), table:has(> caption:-soup-contains('猫')) tr:last-of-type > :nth-child(2)"

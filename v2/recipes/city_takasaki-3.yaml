@@ -1,0 +1,19 @@
+# 高崎市 一般の方が保護している動物一覧（犬）: 1 頭 = table の 1 行。1 列目は「受付日 預かり犬 管理番号」、2 列目は「保護日 保護場所」、3 列目に種別（犬種）、4 列目「性別・体格・年齢」、5 列目「毛色・首輪」、6 列目に特徴（写真があれば同じ欄）。
+# 掲載期間は 90 日。0 頭の日の作りは 3 通り（Wayback 2024〜2025 で確認）: ①見出しの行だけ ②見出し + 空欄の td の行（td の中が空の p のことも）③見出し + 空欄の th の行。見出しの行（th）は row_filter の field_lacks で「該当なし」に数え、文字が 1 つも無い行は min_text_length で数えないので、どれも 0 頭になる。文字の入った行なのに番号が取れない日は「読めなかった」通知。
+rows: "table tr"
+row_filter:
+  min_text_length: 1                                  # 文字が 1 つも無い行（空欄の行。td が空・空の p・空の th のどれも）は数えない
+  field_lacks: {head: ["管理番号", "受付日時"]}        # 見出しの行（th）は「該当なし」として数える。見出しの行だけ残った日は 0 頭
+image: "img@src"
+fields:
+  head: {selector: "th"}   # row_filter 用で出力しない
+  management_no: {selector: "td:nth-of-type(1)", regex: "(\\d{4}\\s*[-‐‑₋−ー－–]\\s*(?:[A-Za-z]\\s*[-‐‑₋−ー－–]\\s*)?\\d+)"}
+  shelter_date: {selector: "td:nth-of-type(2)", regex: "((?:令和|平成)?\\s*\\d+年\\s*\\d+月\\s*\\d+日)"}
+  location: {selector: "td:nth-of-type(2)", regex: "\\d+日\\s*(.+)$"}
+  breed: {selector: "td:nth-of-type(3)"}
+  sex: {selector: "td:nth-of-type(4)", regex: "^([^・]+)"}
+  size: {selector: "td:nth-of-type(4)", regex: "^[^・]+・([^・]+)"}
+  age: {selector: "td:nth-of-type(4)", regex: "^[^・]+・[^・]+・(.+)$"}
+  color: {selector: "td:nth-of-type(5)"}
+  note: {selector: "td:nth-of-type(6)"}
+empty_selector: "table tr:has(td) td"

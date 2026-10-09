@@ -1,0 +1,91 @@
+# 石巻保健所 保護動物情報（et-hc/jueki-hogoken.html）。
+# 「〈犬〉保護犬」「〈猫〉保護猫」の 2 つの表（caption が節名）。セルの中身が p に割れている（「石巻」「市広渕字」「女形」。「10」「月5」「日」と数字の途中でも割れる）。
+# p は空白なしでつなぐ（join の sep が空）と元の語に戻る。そのまま読むと「石巻 市広渕字 女形」「10 月5 日」と空白が入り、日付は regex に当たらない。
+# 犬・猫の表の列: 保護月日・保護した場所・種類、毛色／性別、体格（2 行 1 セル。「柴犬 茶白 オス 中」「柴犬、茶白 オス、中」）・ID特徴 その他 公示期限・写真（複数）。
+# 手数料の表（caption「手数料等」）は犬猫の語が無いので外れる。見出し行は「公示期限」を含むので落とす。
+# 動物の行が td でなく th で書かれる作りがあった（Wayback 2021-05 は犬の行が全部 th。見出しも thead）ので、行は tr 全部にして :scope > :nth-child(n) で読む。
+# 2021 年は列が分かれた別の作り（保護月日・場所・種類・毛色・性別・体格・その他 ID 特徴・公示期限・写真の 9 列。p の割れは無い）。
+# 8 列目より前の列（:has(~ :nth-child(8))）だけ、この作りの位置で読む。
+# 管理番号は ID の語（p が 2 つに割れる日は ID13 と 359 をつなぐ。同じ県の動物愛護センターの ID 12915・13055 と同じ 5 桁の並び）。割れない日（ID16338）はそのまま。
+# 収容後に死亡した子（「死亡」を含む行）は載せない。
+# 2026-10-07 時点: 犬 2 頭（柴犬・茶白・オス・中、石巻市広渕字女形／雑種・白薄茶・メス・小、登米市登米町小島西針田）・猫 0 頭を実ページで確認。
+# 猫が載った日の読み方は Wayback 2023-12-02（雑種・黒・オス・中、石巻市めぐみの野3丁目）で確認（犬と同じ表。猫の列は「種類、毛色」「性別、体格」の 2 語組）。
+rows: "table:has(> caption:-soup-contains('犬')) tr:has(> :nth-child(5)), table:has(> caption:-soup-contains('猫')) tr:has(> :nth-child(5))"
+row_filter:
+  text_lacks: ["公示期限", "死亡"]
+species:
+  from: heading
+  selector: "caption"
+  map: {"犬": dog, "猫": cat}
+fields:
+  management_no:
+    join:
+      - {selector: ":scope > :nth-child(4):not(:has(~ :nth-child(8))) p:nth-of-type(1)", regex: "(ID\\d+)"}
+      - {selector: ":scope > :nth-child(4):not(:has(~ :nth-child(8))) p:nth-of-type(2)", regex: "^(\\d{2,4})$"}
+      - {selector: ":scope > :nth-child(7):has(~ :nth-child(8))", regex: "(ID\\d+)"}
+    sep: ""
+  shelter_date:
+    join:
+      - {selector: ":scope > :nth-child(1) p:nth-of-type(1)"}
+      - {selector: ":scope > :nth-child(1) p:nth-of-type(2)"}
+      - {selector: ":scope > :nth-child(1) p:nth-of-type(3)"}
+      - {selector: ":scope > :nth-child(1) p:nth-of-type(4)"}
+      - {selector: ":scope > :nth-child(1):not(:has(p))"}
+    sep: ""
+  location:
+    join:
+      - {selector: ":scope > :nth-child(2) p:nth-of-type(1)"}
+      - {selector: ":scope > :nth-child(2) p:nth-of-type(2)"}
+      - {selector: ":scope > :nth-child(2) p:nth-of-type(3)"}
+      - {selector: ":scope > :nth-child(2) p:nth-of-type(4)"}
+      - {selector: ":scope > :nth-child(2) p:nth-of-type(5)"}
+      - {selector: ":scope > :nth-child(2) p:nth-of-type(6)"}
+      - {selector: ":scope > :nth-child(2) p:nth-of-type(7)"}
+      - {selector: ":scope > :nth-child(2) p:nth-of-type(8)"}
+      - {selector: ":scope > :nth-child(2) p:nth-of-type(9)"}
+      - {selector: ":scope > :nth-child(2) p:nth-of-type(10)"}
+      - {selector: ":scope > :nth-child(2):not(:has(p))"}
+    sep: ""
+  breed:
+    join:
+      - {selector: ":scope > :nth-child(3)", regex: "^([^\\s、（(]+)"}
+  color:
+    join:
+      - {selector: ":scope > :nth-child(3)", regex: "^[^\\s、]+[\\s、]+([^\\s、]+)"}
+      - {selector: ":scope > :nth-child(4):has(~ :nth-child(8))"}
+  sex:
+    join:
+      - {selector: ":scope > :nth-child(3)", regex: "(オス|メス|雄|雌)"}
+      - {selector: ":scope > :nth-child(5):has(~ :nth-child(8))"}
+  size:
+    join:
+      - {selector: ":scope > :nth-child(3)", regex: "(?:オス|メス|雄|雌)[\\s、]*(\\S+)$"}
+      - {selector: ":scope > :nth-child(6):has(~ :nth-child(8))"}
+  note:
+    join:
+      - {selector: ":scope > :nth-child(4):not(:has(~ :nth-child(8))) p:nth-of-type(1)"}
+      - {selector: ":scope > :nth-child(4):not(:has(~ :nth-child(8))) p:nth-of-type(2)"}
+      - {selector: ":scope > :nth-child(4):not(:has(~ :nth-child(8))) p:nth-of-type(3)"}
+      - {selector: ":scope > :nth-child(4):not(:has(~ :nth-child(8))) p:nth-of-type(4)"}
+      - {selector: ":scope > :nth-child(4):not(:has(~ :nth-child(8))) p:nth-of-type(5)"}
+      - {selector: ":scope > :nth-child(4):not(:has(~ :nth-child(8))) p:nth-of-type(6)"}
+      - {selector: ":scope > :nth-child(4):not(:has(~ :nth-child(8))) p:nth-of-type(7)"}
+      - {selector: ":scope > :nth-child(4):not(:has(~ :nth-child(8))) p:nth-of-type(8)"}
+      - {selector: ":scope > :nth-child(4):not(:has(~ :nth-child(8))) p:nth-of-type(9)"}
+      - {selector: ":scope > :nth-child(4):not(:has(~ :nth-child(8))) p:nth-of-type(10)"}
+      - {selector: ":scope > :nth-child(4):not(:has(~ :nth-child(8))) p:nth-of-type(11)"}
+      - {selector: ":scope > :nth-child(4):not(:has(~ :nth-child(8))) p:nth-of-type(12)"}
+      - {selector: ":scope > :nth-child(4):not(:has(~ :nth-child(8))) p:nth-of-type(13)"}
+      - {selector: ":scope > :nth-child(4):not(:has(~ :nth-child(8))) p:nth-of-type(14)"}
+      - {selector: ":scope > :nth-child(4):not(:has(p)):not(:has(~ :nth-child(8)))"}
+      - {selector: ":scope > :nth-child(7):has(~ :nth-child(8))"}
+    sep: ""
+image: {selector: "img@src"}
+# 「★現在の保護動物情報は 0件 です。」の件数の文（犬猫とも 0 の日にだけ 0 件になる）。件数の数字は strong に入ることがあり、
+# 文字にすると「は 0件 です」（Wayback 2021-10・2022-10）と「は2 件 です」（今日の 2 件）のように空白の入り方が違うので両方を置く。
+# 犬・猫の「現在、保護している犬はいません。」は片方だけ 0 の日にも出るので 0 頭の印にしない。
+empty_text:
+  - "現在の保護動物情報は 0件"
+  - "現在の保護動物情報は0 件"
+  - "現在の保護動物情報は0件"
+  - "現在の保護動物情報は 0 件"

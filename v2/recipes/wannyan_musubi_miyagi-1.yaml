@@ -1,0 +1,19 @@
+# みやぎわんにゃん家族むすび（県の譲渡情報共有サイト）の猫。入口は「県の収容犬猫のみ表示」（has_management_no=1）に絞った猫の一覧（category=0）。
+# 一覧は div.card（写真・「【石巻保健所】...」の名前欄・「メス / 0歳 / 茶トラ」）。1 ページ 16 頭で、ページ送りは div.pagenation の番号リンク（?page=N。最後の矢印は最終ページへ飛ぶものなので使わない）。
+# 名前欄は 20 字で切れた募集文の頭で、頭の【…】が募集した保健所・センター名なので location に取る。名前・管理番号は一覧に無い（個体ページ /animal/<id> にある）ので detail（個体ページの URL）で見分ける。
+# 民間の保護団体・個人の投稿は has_management_no を付けない一覧に出る。この入口は県の収容犬猫だけ。
+# 2026-10-05 時点: 実ページで確認（一覧 2 ページ）。0 頭の日の文言は未確認。
+steps:
+  - paginate: "div.pagenation li.current + li:not(.last) a@href"
+rows: "div.card"
+# センターの猫は センター自身のページ（pref_miyagi-7。名前・ID つき）で載せているので、ここでは「【動物愛護センタ...」で始まる募集を除く
+# （同じ猫が 2 回載らないように）。センターの猫だけの日は全部除外で「該当なし」（0 頭）になる。
+row_filter:
+  field_lacks: {location: ["動物愛護センタ"]}
+fields:
+  detail: {selector: "a", attr: "href"}
+  location: {selector: "p.name", regex: "【([^】.…]+)"}
+  sex: {selector: "p.gender_age", regex: "^(オス|メス)"}
+  age: {selector: "p.gender_age", regex: "/\\s*([^/\\s]+)\\s*/"}
+  color: {selector: "p.gender_age", regex: "/\\s*[^/]+/\\s*([^/\\s]+)\\s*$"}
+image: {selector: "p.img img@src"}

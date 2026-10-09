@@ -1,0 +1,17 @@
+# みやぎわんにゃん家族むすび（県の譲渡情報共有サイト）の犬。入口は「県の収容犬猫のみ表示」（has_management_no=1）に絞った犬の一覧（category=1）。
+# 作りは猫（wannyan_musubi_miyagi-1）と同じ。犬は 3 つ目の項目が毛色でなく大きさ（「オス / 5歳 / 中型」）。
+# センターの犬は センター自身のページ（pref_miyagi-8。名前・ID つき）で載せているので、「【動物愛護センタ...」で始まる募集を除く
+# （同じ犬が 2 回載らないように）。2026-10-05 時点は県の犬 2 頭がどちらもセンターの犬で、全部除外の「該当なし」（0 頭）になる。
+# 保健所（石巻・大崎・仙南・岩沼・気仙沼）の犬が載った日の読み方は未確認（猫と同じ作りのはず）。
+steps:
+  - paginate: "div.pagenation li.current + li:not(.last) a@href"
+rows: "div.card"
+row_filter:
+  field_lacks: {location: ["動物愛護センタ"]}
+fields:
+  detail: {selector: "a", attr: "href"}
+  location: {selector: "p.name", regex: "【([^】.…]+)"}
+  sex: {selector: "p.gender_age", regex: "^(オス|メス)"}
+  age: {selector: "p.gender_age", regex: "/\\s*([^/\\s]+)\\s*/"}
+  size: {selector: "p.gender_age", regex: "/\\s*[^/]+/\\s*([^/\\s]+)\\s*$"}
+image: {selector: "p.img img@src"}

@@ -1,0 +1,24 @@
+# 姫路市 迷子のペット情報掲示板（飼い主が探している迷子。市民が申請した告知を市が載せる）。
+# h2「現在掲載中のペット」の下に、1 件ごと 説明の文（div.mol_textblock）→ 写真（div.mol_imageblock が 1〜2 枚）→ 項目の表（div.mol_tableblock、th/td の縦並び）。
+# その後の h3「掲載例」にも同じ作りの見本（写真 neko.jpg + 〇〇年××月△△日 の表）があるので、見本は text_lacks で落とす。
+# 写真は表の前の兄弟要素（stop_at: row で前の表まで）。表の連絡先欄は個人のメールアドレスなので取り込まない（元ページへのリンクで見てもらう）。
+# 種別は表の「ペットの種別」（犬・猫。それ以外は種別なしで載る）。品種の欄名は実例が「ペットの品種」、見本が「種類」。
+# 2026-10-05 の保存 HTML（犬 1 件）で確かめた。複数件が並ぶ日の作りは未確認。
+# 0 件の日は h2「現在掲載中のペット」の下が「現在掲載中のペットはいません。」の 1 行になる（Wayback 2026-02-19・04-13 の保存版。掲載例の表だけが残る）。この文は掲載がある日には出ない。
+rows: "div.mol_tableblock:has(th)"
+row_filter:
+  text_lacks: ["〇〇年××月△△日"]
+image: {selector: "div.mol_imageblock img@src", scope: prev_siblings, stop_at: row}
+fields:
+  species: {label: "ペットの種別"}
+  shelter_date: {label: "逸走日時"}
+  breed: {regex: "(?:品種|種類)\\s+(?!性別|年齢|避妊)(\\S+)"}
+  sex: {label: "性別"}
+  age: {label: "年齢"}
+  color: {label: "毛色"}
+  size: {label: "体格"}
+  note: {selector: "caption"}
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+empty_text: ["現在掲載中のペットはいません"]

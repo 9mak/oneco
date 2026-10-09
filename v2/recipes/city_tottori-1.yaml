@@ -1,0 +1,27 @@
+# 鳥取市（迷い犬猫収容情報） https://www.city.tottori.lg.jp/page/5071.html（2026-10-05 T519 で追加）
+# 鳥取市保健所が収容した迷い犬猫の公示。表が 6 つ: 表1 犬 / 表2 猫 / 表3 その他の動物（以上は保健所収容）、
+# 表4 犬 / 表5 猫 / 表6 その他の動物（保健所以外で保護されている犬猫等）。表の caption が「表N」。
+# 0 頭の日は表の見出し行の下に空白だけの行（td が全部空）が残る。写真は無く、収容日は「9月11日」のように年が無い。
+# 猫の行には備考に「収容猫TC53　詳細 [Wordファイル]」（個体の詳細は docx）があり、管理番号 TC53 をそこから取る。
+# 列の並びは表1〜3 が [収容日,収容場所,種類,毛色,性別,体格,推定年齢,首輪の色,(マイクロチップ),その他特徴,備考]、
+# 表4〜6 は 推定年齢と体格が逆（[…,性別,推定年齢,体格,…]）。年齢は regex、体格は取らない（表で列が違うため）。
+# 空白行は行の項目が全部空なので shelter_date に月が無く、field_has_any で捨てる（捨てた数 = 行数なら「0 頭」と確定する）。
+# 2026-10-05 の実ページ: 表2 に猫 1 頭（TC53、写真なし）、他の 5 表は空行のみ。犬が載った日の読み方（表1・表4 の列）は未確認（列見出しから推定）。
+# 鳥取県の迷子動物情報（pref_tottori。中部・西部総合事務所）とは別ページ（東部 = 鳥取市保健所）。
+rows: "div.detail_free table tr:has(td)"
+row_filter:
+  field_has_any: {shelter_date: ["月"]}
+fields:
+  shelter_date: "td:nth-of-type(1)"
+  location: "td:nth-of-type(2)"
+  breed: "td:nth-of-type(3)"
+  color: "td:nth-of-type(4)"
+  sex: {regex: "(オス|メス|不明)"}
+  age: {regex: "(\\d+\\s*(?:歳|ヶ月|か月|カ月|ヵ月)\\S*)"}
+  note: "td:last-of-type"
+  management_no: {regex: "(T[CD]\\d+)"}
+species:
+  from: heading
+  selector: "caption"
+  map: {"表1": dog, "表2": cat, "表4": dog, "表5": cat}
+  allow_other: true   # 表3・表6（その他の動物。ウサギ・鳥 等）は map に当たらず other（犬猫以外）になる

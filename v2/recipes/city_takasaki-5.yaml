@@ -1,0 +1,18 @@
+# 高崎市 飼い主が行方を捜している動物一覧（犬）: 1 頭 = table の 1 行。1 列目は「受付日 行方不明犬2026-22」、2 列目は「行方不明日 行方不明場所」、3 列目に犬種、4 列目「性別・体格・年齢」、5 列目「毛色・首輪」、6 列目に特徴（「呼名：りま」等）。
+# 一覧は解決した行を消さず、2024 年 10 月からの受付が全部残る（犬 46 行）。古い届け出を「今探している」ように見せないため、受付が令和8年以降の行だけ載せる（令和8〜12 年を書いてある。令和13年までに row_filter を更新する。古い年を外すのは令和9年に入ってから。行方不明日が「令和8年3月中旬」のような旬の行も読む）。受付が令和8年以降の行が 1 つも無い日（2025 年の保存ページ等）は 0 行になり「読めなかった」通知が出る。
+rows: "table tr:has(td)"
+row_filter:
+  text_has_any: ["令和8年", "令和9年", "令和10年", "令和11年", "令和12年"]
+image: "img@src"
+fields:
+  name: {selector: "td:nth-of-type(6)", regex: "呼[び]?名[:：]\\s*(\\S+)"}
+  management_no: {selector: "td:nth-of-type(1)", regex: "(\\d{4}\\s*[-‐‑₋−ー－–]\\s*(?:[A-Za-z]\\s*[-‐‑₋−ー－–]\\s*)?\\d+)"}
+  shelter_date: {selector: "td:nth-of-type(2)", regex: "((?:令和|平成)?\\s*\\d+年\\s*\\d+月\\s*(?:\\d+日|[上中下]旬)?)"}
+  location: {selector: "td:nth-of-type(2)", regex: "年\\s*\\d+月\\s*(?:\\d+日(?:[～~]\\d+日)?|[上中下]旬)?\\s*(.+)$"}
+  breed: {selector: "td:nth-of-type(3)"}
+  sex: {selector: "td:nth-of-type(4)", regex: "^([^・]+)"}
+  size: {selector: "td:nth-of-type(4)", regex: "^[^・]+・([^・]+)"}
+  age: {selector: "td:nth-of-type(4)", regex: "^[^・]+・[^・]+・(.+)$"}
+  color: {selector: "td:nth-of-type(5)"}
+  note: {selector: "td:nth-of-type(6)"}
+empty_selector: "table tr:has(td) td"

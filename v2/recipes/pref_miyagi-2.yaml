@@ -1,0 +1,46 @@
+# 仙南保健所 保護動物情報（sn-hohuku/hogodoubutu.html）。
+# 「保護した犬」「保護した猫」「その他の動物」の 3 つの表。種別は表の caption（保護した犬／保護した猫）から決める。
+# 「その他の動物」の表は caption が無く犬猫でもないので読まない（rows を caption に 犬 か 猫 のある表に絞る）。
+# 列: No.・保護月日（colspan 2）・保護した場所・種類・特徴等（p が 1 行 1 項目「種類：雑種」「毛色：…」）・画像（写真が複数）。
+# 2021-12 より前の Wayback は列が分かれた作り（No.・保護月日・保護した場所・種類・毛色・性別・体格・その他の特徴・写真の 9 列。
+# 種類の列に「種類：」の語が無く「秋田犬」だけ）。9 列の行だけ列の位置で読む（:nth-child(4):has(~ :nth-child(8)) = 8 列目より前の列）。
+# 行は th・td どちらでも読むよう :scope > :nth-child(n) で取り、見出し行（「保護月日」を含む）を落とす。
+# 2026-10-07 時点: 犬 1 頭（柴田町松ケ越1丁目）・猫 0 頭を実ページで確認。猫が載った日の読み方は Wayback 2022-05・2023-09 で確認。
+rows: "table:has(> caption:-soup-contains('犬')) tr, table:has(> caption:-soup-contains('猫')) tr"
+row_filter:
+  text_lacks: ["保護月日", "死亡"]   # 見出し行と、収容後に死亡した子（「収容後死亡」「収容中死亡」。載せない）
+species:
+  from: heading
+  selector: "caption"
+  map: {"犬": dog, "猫": cat}
+fields:
+  management_no: {selector: ":scope > :nth-child(1)"}
+  shelter_date: {selector: ":scope > :nth-child(2)"}
+  location: {selector: ":scope > :nth-child(3)"}
+  breed:
+    join:
+      - {selector: ":scope > :nth-child(4)", regex: "種類[:：]\\s*(\\S+)"}
+      - {selector: ":scope > :nth-child(4):has(~ :nth-child(8))"}
+  color:
+    join:
+      - {selector: ":scope > :nth-child(4)", regex: "毛色[:：]\\s*(\\S+)"}
+      - {selector: ":scope > :nth-child(5):has(~ :nth-child(8))"}
+  sex:
+    join:
+      - {selector: ":scope > :nth-child(4)", regex: "性別[:：]\\s*(\\S+)"}
+      - {selector: ":scope > :nth-child(6):has(~ :nth-child(8))"}
+  size:
+    join:
+      - {selector: ":scope > :nth-child(4)", regex: "体格[:：]\\s*(\\S+)"}
+      - {selector: ":scope > :nth-child(7):has(~ :nth-child(8))"}
+  note:
+    join:
+      - {selector: ":scope > :nth-child(4)", regex: "(?:その他|特徴)[:：]\\s*(.+)"}
+      - {selector: ":scope > :nth-child(8):has(~ :nth-child(9))"}
+image: "img@src"
+# 0 頭の日の文言。猫の「現在、保護猫の情報はありません。」は Wayback 2023-03〜2026-03 と今日で確認（2021 は読点が「，」）。
+# 犬・猫のどちらか 1 つの文言で 0 頭と判定するので、猫が 0 頭のまま犬の表が読めなくなった日は 0 頭に見える（確認済みの欠点）。
+# 犬の文言（「現在、保護犬の情報はありません」）は猫がいる日に出るので入れない（猫の表が読めなくなった日も 0 頭に見える）。
+empty_text:
+  - "現在、保護猫の情報はありません"
+  - "現在，保護猫の情報はありません"

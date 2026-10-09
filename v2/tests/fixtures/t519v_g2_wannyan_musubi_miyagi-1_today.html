@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="csrf-token" content="masked">
+    <title>わんにゃんリスト</title>
+
+    <link rel="apple-touch-icon" sizes="57x57" href="https://wannyan-musubi.pref.miyagi.jp/img/common/favicon/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="https://wannyan-musubi.pref.miyagi.jp/img/common/favicon/apple-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="https://wannyan-musubi.pref.miyagi.jp/img/common/favicon/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="https://wannyan-musubi.pref.miyagi.jp/img/common/favicon/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="https://wannyan-musubi.pref.miyagi.jp/img/common/favicon/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="https://wannyan-musubi.pref.miyagi.jp/img/common/favicon/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="https://wannyan-musubi.pref.miyagi.jp/img/common/favicon/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="https://wannyan-musubi.pref.miyagi.jp/img/common/favicon/apple-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://wannyan-musubi.pref.miyagi.jp/img/common/favicon/apple-icon-180x180.png">
+    <link rel="icon" type="image/png" sizes="192x192"  href="https://wannyan-musubi.pref.miyagi.jp/img/common/favicon/android-icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://wannyan-musubi.pref.miyagi.jp/img/common/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="https://wannyan-musubi.pref.miyagi.jp/img/common/favicon/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://wannyan-musubi.pref.miyagi.jp/img/common/favicon/favicon-16x16.png">
+    <link rel="manifest" href="https://wannyan-musubi.pref.miyagi.jp/img/common/favicon/manifest.json">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="https://wannyan-musubi.pref.miyagi.jp/img/common/favicon/ms-icon-144x144.png">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="login-url" content="https://wannyan-musubi.pref.miyagi.jp/login">
+    <meta name="favorite-url" content="https://wannyan-musubi.pref.miyagi.jp/animal/__ANIMAL_ID__/favorite">
+
+    <!-- fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+Antique:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <script>
+    (function(d) {
+        var config = {
+        kitId: 'pqq7onk',
+        scriptTimeout: 3000,
+        async: true
+        },
+        h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='https://use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+    })(document);
+    </script>
+
+    <link rel="stylesheet" href="https://wannyan-musubi.pref.miyagi.jp/css/style.css">
+    <link rel="stylesheet" href="https://wannyan-musubi.pref.miyagi.jp/js/script.js">
+
+    <!-- swiper -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+
+    <div class="wrapper" id="page-animals_list">
+        <header>
+    <div class="header_btn">
+                    <div id="login_btn">
+                <a href="https://wannyan-musubi.pref.miyagi.jp/login"><img src="https://wannyan-musubi.pref.miyagi.jp/img/common/btn_login.svg" alt="ログイン"></a>
+            </div>
+                <div id="menu_btn">
+            <img src="https://wannyan-musubi.pref.miyagi.jp/img/common/btn_menu.svg" alt="メニュー">
+        </div>
+    </div>
+</header>
+
+        <div class="page_row">
+            <div id="side_menu">
+    <h1>
+        <a href="https://wannyan-musubi.pref.miyagi.jp">
+            <span class="pc"><img src="https://wannyan-musubi.pref.miyagi.jp/img/common/logo.svg" alt="みやぎわんにゃん家族むすび"></span>
+            <span class="sp"><img src="https://wannyan-musubi.pref.miyagi.jp/img/common/logo_sp.svg" alt="みやぎわんにゃん家族むすび"></span>
+        </a>
+    </h1>
+    <aside>
+        <nav>
+            <ul>
+                <li class=""><a href="https://wannyan-musubi.pref.miyagi.jp/news">お知らせ</a></li>
+                                    <li class=""><a href="https://wannyan-musubi.pref.miyagi.jp/login">ログイン/利用者登録</a></li>
+                                <li class="current"><a href="https://wannyan-musubi.pref.miyagi.jp/animal">わんにゃんリスト</a></li>
+                <li class=""><a href="https://wannyan-musubi.pref.miyagi.jp/event">譲渡会情報</a></li>
+                <li class=""><a href="https://wannyan-musubi.pref.miyagi.jp/my_animal_letter">うちの子だより</a></li>
+                <li class=""><a href="https://wannyan-musubi.pref.miyagi.jp/guide/how_to_use">このサイトの使い方</a></li>
+                <li class=""><a href="https://wannyan-musubi.pref.miyagi.jp/guide/new_owner">これから飼い主になる<br>あなたへ</a></li>
+                <li class=""><a href="https://wannyan-musubi.pref.miyagi.jp/animal_welfare">動物愛護情報</a></li>
+                <li class=""><a href="https://wannyan-musubi.pref.miyagi.jp/faq">よくあるご質問</a></li>
+                <li class=""><a href="https://wannyan-musubi.pref.miyagi.jp/contact">お問い合わせ</a></li>
+                <li class=""><a href="https://wannyan-musubi.pref.miyagi.jp/terms">利用規約</a></li>
+                <li class=""><a href="https://wannyan-musubi.pref.miyagi.jp/privacy">プライバシーポリシー</a></li>
+                            </ul>
+        </nav>
+    </aside>
+</div>
+
+<script>
+    const logoutBtn = document.getElementById('logout');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            sendLogout("https://wannyan-musubi.pref.miyagi.jp/mypage/logout", "fHsxgiMCeIzYk45LkqHy7h2OCkzonxi4XsHNqsqE", "https://wannyan-musubi.pref.miyagi.jp");
+        });
+    }
+</script>
+
+            <main>
+                                <section id="mv">
+                    <div class="deco"></div>
+                    <h2>
+                                                    わんにゃんリスト
+                                            </h2>
+                                    </section>
+                
+                
+    <section id="search_form">
+        <div class="inner">
+            <h2><img src="https://wannyan-musubi.pref.miyagi.jp/img/animals_list/title_search.svg" alt="わんにゃんを探す"></h2>
+            <div class="form">
+                <form action="">
+                    <div class="list">
+                        <div class="item">
+                            <p class="ttl">カテゴリー</p>
+                            <div class="input">
+                                <p class="radio">
+                                    <input type="radio" id="category_cat" name="category" value="0"
+                                        checked>
+                                    <label for="category_cat">猫</label>
+                                    <input type="radio" id="category_dog" name="category" value="1"
+                                        >
+                                    <label for="category_dog">犬</label>
+                                    <input type="radio" id="category_all" name="category" value="all"
+                                        >
+                                    <label for="category_all">すべて</label>
+                                </p>
+                            </div>
+                        </div>
+                        <div id="search_cat">
+                            <div class="item cats_color">
+                                <p class="ttl">毛色(猫のみ)</p>
+                                <div class="input">
+                                    <p class="checkbox">
+                                        <select name="cats_color" id="cats_color">
+                                                                                            <option value="all"
+                                                    >
+                                                    すべて
+                                                </option>
+                                                                                            <option value="0"
+                                                    >
+                                                    白系
+                                                </option>
+                                                                                            <option value="1"
+                                                    >
+                                                    茶系
+                                                </option>
+                                                                                            <option value="2"
+                                                    >
+                                                    グレー系
+                                                </option>
+                                                                                            <option value="3"
+                                                    >
+                                                    黒系
+                                                </option>
+                                                                                            <option value="4"
+                                                    >
+                                                    三毛
+                                                </option>
+                                                                                            <option value="5"
+                                                    >
+                                                    キジトラ
+                                                </option>
+                                                                                            <option value="6"
+                                                    >
+                                                    サバトラ
+                                                </option>
+                                                                                            <option value="7"
+                                                    >
+                                                    茶トラ
+                                                </option>
+                                                                                            <option value="8"
+                                                    >
+                                                    サビ
+                                                </option>
+                                                                                            <option value="9"
+                                                    >
+                                                    その他
+                                                </option>
+                                                                                    </select>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="search_dog">
+                            <div class="item dogs_size">
+                                <p class="ttl">サイズ(犬のみ)</p>
+                                <div class="input">
+                                    <p class="checkbox">
+                                        <select name="dogs_size" id="dogs_size">
+                                                                                            <option value="all"
+                                                    >
+                                                    すべて
+                                                </option>
+                                                                                            <option value="0"
+                                                    >
+                                                    不明
+                                                </option>
+                                                                                            <option value="1"
+                                                    >
+                                                    小型
+                                                </option>
+                                                                                            <option value="2"
+                                                    >
+                                                    中型
+                                                </option>
+                                                                                            <option value="3"
+                                                    >
+                                                    大型
+                                                </option>
+                                                                                    </select>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="item">
+                            <p class="ttl">性別</p>
+                            <div class="input">
+                                <p class="checkbox">
+                                    <select name="gender" id="gender">
+                                                                                    <option value="all"
+                                                >
+                                                すべて
+                                            </option>
+                                                                                    <option value="0"
+                                                >
+                                                オス
+                                            </option>
+                                                                                    <option value="1"
+                                                >
+                                                メス
+                                            </option>
+                                                                            </select>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="item">
+                            <p class="ttl">年齢</p>
+                            <div class="input">
+                                <p class="age">
+                                    <select name="age_group" id="age_group">
+                                                                                    <option value="all"
+                                                >
+                                                すべて
+                                            </option>
+                                                                                    <option value="child"
+                                                >
+                                                子猫・子犬（0歳）
+                                            </option>
+                                                                                    <option value="adult"
+                                                >
+                                                成猫・成犬（1〜7歳）
+                                            </option>
+                                                                                    <option value="senior"
+                                                >
+                                                シニア（8歳〜）
+                                            </option>
+                                                                            </select>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="item">
+                            <p class="ttl">キーワード</p>
+                            <div class="input">
+                                <input type="text" id="keyword" name="keyword" value="">
+                            </div>
+                        </div>
+                        <div class="item conditions">
+                            <p class="ttl">表示条件</p>
+                            <div class="input">
+                                <p class="checkbox">
+                                    <input type="checkbox" id="has_management_no" name="has_management_no" value="1"
+                                        checked>
+                                    <label for="has_management_no">県の収容犬猫のみ表示</label>
+                                </p>
+                                
+                                
+                            </div>
+                        </div>
+                    </div>
+                    <div class="btns">
+                        <p class="btn reset"><button type="button" id="reset">リセット</button></p>
+                        <p class="btn"><button type="submit">検索</button></p>
+                    </div>
+                                        <input type="hidden" name="sort" id="sort_hidden" value="by_latest">
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <section id="animals_list">
+        <div class="inner">
+            <select name="sort" id="sort">
+                                    <option value="by_latest" selected>
+                        新着順
+                    </option>
+                                    <option value="by_age" >
+                        年齢昇順
+                    </option>
+                            </select>
+                    <div class="list">
+                                <div class="card">
+                    <a href="https://wannyan-musubi.pref.miyagi.jp/animal/399">
+                                                    <span class="badge new"><img src="https://wannyan-musubi.pref.miyagi.jp/img/common/label_new.svg" alt=""></span>
+                                                <p class="img"><img src="https://wannyan-musubi.pref.miyagi.jp/storage/animals/yhV7yAEGDMZdVgnVTkyx760GIRORUReff4zYtJA0.jpg" alt="【石巻保健所】
+..."></p>
+                        <div class="txt">
+                            <p class="name">【石巻保健所】
+...</p>
+                                                            <p class="gender_age">メス / 0歳 / 三毛</p>
+                                                    </div>
+                    </a>
+                    <button class="favorite_btn   unknown " data-animal-id="399"></button>
+                </div>
+                                <div class="card">
+                    <a href="https://wannyan-musubi.pref.miyagi.jp/animal/317">
+                                                <p class="img"><img src="https://wannyan-musubi.pref.miyagi.jp/storage/animals/l3rL7wwcChPaHCNCysWNJxG6aij3A6JWZJa1lwsv.jpg" alt="【石巻保健所】
+..."></p>
+                        <div class="txt">
+                            <p class="name">【石巻保健所】
+...</p>
+                                                            <p class="gender_age">メス / 0歳 / 茶トラ</p>
+                                                    </div>
+                    </a>
+                    <button class="favorite_btn   unknown " data-animal-id="317"></button>
+                </div>
+                                <div class="card">
+                    <a href="https://wannyan-musubi.pref.miyagi.jp/animal/393">
+                                                <p class="img"><img src="https://wannyan-musubi.pref.miyagi.jp/storage/animals/y6SSJIOZ90FYV6gXkjgongOjseTkORV6Cp1ATdDV.jpg" alt="【石巻保健所】
+..."></p>
+                        <div class="txt">
+                            <p class="name">【石巻保健所】
+...</p>
+                                                            <p class="gender_age">オス / 0歳 / キジトラ</p>
+                                                    </div>
+                    </a>
+                    <button class="favorite_btn   unknown " data-animal-id="393"></button>
+                </div>
+                                <div class="card">
+                    <a href="https://wannyan-musubi.pref.miyagi.jp/animal/392">
+                                                <p class="img"><img src="https://wannyan-musubi.pref.miyagi.jp/storage/animals/H5s2SPPRnGKrdv6GWQJPF5M4IREKWEFvhTGlp4RF.jpg" alt="【石巻保健所】
+..."></p>
+                        <div class="txt">
+                            <p class="name">【石巻保健所】
+...</p>
+                                                            <p class="gender_age">オス / 0歳 / キジトラ</p>
+                                                    </div>
+                    </a>
+                    <button class="favorite_btn   unknown " data-animal-id="392"></button>
+                </div>
+                                <div class="card">
+                    <a href="https://wannyan-musubi.pref.miyagi.jp/animal/391">
+                                                <p class="img"><img src="https://wannyan-musubi.pref.miyagi.jp/storage/animals/ZLTZN0fAftiQ32TKS4fEiC9pw9rXMP9Ym8jMBKnl.jpg" alt="【石巻保健所】
+..."></p>
+                        <div class="txt">
+                            <p class="name">【石巻保健所】
+...</p>
+                                                            <p class="gender_age">オス / 0歳 / キジトラ</p>
+                                                    </div>
+                    </a>
+                    <button class="favorite_btn   unknown " data-animal-id="391"></button>
+                </div>
+                                <div class="card">
+                    <a href="https://wannyan-musubi.pref.miyagi.jp/animal/324">
+                                                <p class="img"><img src="https://wannyan-musubi.pref.miyagi.jp/storage/animals/O8zAF5hrSGxgy72109qltRri29UP06V61VRWj25E.jpg" alt="【塩釜保健所岩沼..."></p>
+                        <div class="txt">
+                            <p class="name">【塩釜保健所岩沼...</p>
+                                                            <p class="gender_age">メス / 0歳 / 黒系</p>
+                                                    </div>
+                    </a>
+                    <button class="favorite_btn   unknown " data-animal-id="324"></button>
+                </div>
+                                <div class="card">
+                    <a href="https://wannyan-musubi.pref.miyagi.jp/animal/377">
+                                                <p class="img"><img src="https://wannyan-musubi.pref.miyagi.jp/storage/animals/g7xRHTmcaD3VsIDITNIVE5j16KfNEWZO8r9WuZhO.jpg" alt="【気仙沼保健所】..."></p>
+                        <div class="txt">
+                            <p class="name">【気仙沼保健所】...</p>
+                                                            <p class="gender_age">オス / 0歳 / キジトラ</p>
+                                                    </div>
+                    </a>
+                    <button class="favorite_btn   unknown " data-animal-id="377"></button>
+                </div>
+                                <div class="card">
+                    <a href="https://wannyan-musubi.pref.miyagi.jp/animal/348">
+                                                <p class="img"><img src="https://wannyan-musubi.pref.miyagi.jp/storage/animals/LwLjkhsY0VspocNWfqujCMNOVozcbtGA9vgsA2GG.jpg" alt="【大崎保健所】
+..."></p>
+                        <div class="txt">
+                            <p class="name">【大崎保健所】
+...</p>
+                                                            <p class="gender_age">オス / 0歳 / キジトラ</p>
+                                                    </div>
+                    </a>
+                    <button class="favorite_btn   unknown " data-animal-id="348"></button>
+                </div>
+                                <div class="card">
+                    <a href="https://wannyan-musubi.pref.miyagi.jp/animal/347">
+                                                <p class="img"><img src="https://wannyan-musubi.pref.miyagi.jp/storage/animals/8pjWacI73OGOnRi1EZxr3eU4p6Go8s2xZiZh62bG.jpg" alt="【大崎保健所】
+..."></p>
+                        <div class="txt">
+                            <p class="name">【大崎保健所】
+...</p>
+                                                            <p class="gender_age">オス / 0歳 / キジトラ</p>
+                                                    </div>
+                    </a>
+                    <button class="favorite_btn   unknown " data-animal-id="347"></button>
+                </div>
+                                <div class="card">
+                    <a href="https://wannyan-musubi.pref.miyagi.jp/animal/354">
+                                                <p class="img"><img src="https://wannyan-musubi.pref.miyagi.jp/storage/animals/p6PVXj8UZAtgLeP6urnrnfW06K4q86Rd9WL7UDAI.jpg" alt="【大崎保健所】
+..."></p>
+                        <div class="txt">
+                            <p class="name">【大崎保健所】
+...</p>
+                                                            <p class="gender_age">オス / 0歳 / 白系</p>
+                                                    </div>
+                    </a>
+                    <button class="favorite_btn   unknown " data-animal-id="354"></button>
+                </div>
+                                <div class="card">
+                    <a href="https://wannyan-musubi.pref.miyagi.jp/animal/353">
+                                                <p class="img"><img src="https://wannyan-musubi.pref.miyagi.jp/storage/animals/xO6ClCKM6YpURMWskk4OgbAGEApwiq2GHySEIfHw.jpg" alt="【大崎保健所】
+..."></p>
+                        <div class="txt">
+                            <p class="name">【大崎保健所】
+...</p>
+                                                            <p class="gender_age">オス / 0歳 / 白系</p>
+                                                    </div>
+                    </a>
+                    <button class="favorite_btn   unknown " data-animal-id="353"></button>
+                </div>
+                                <div class="card">
+                    <a href="https://wannyan-musubi.pref.miyagi.jp/animal/352">
+                                                <p class="img"><img src="https://wannyan-musubi.pref.miyagi.jp/storage/animals/AhWaGNTmIZfdATTPX7Ah3Nb2b3rV865Ju5EocLA5.jpg" alt="【大崎保健所】
+..."></p>
+                        <div class="txt">
+                            <p class="name">【大崎保健所】
+...</p>
+                                                            <p class="gender_age">オス / 0歳 / 白系</p>
+                                                    </div>
+                    </a>
+                    <button class="favorite_btn   unknown " data-animal-id="352"></button>
+                </div>
+                                <div class="card">
+                    <a href="https://wannyan-musubi.pref.miyagi.jp/animal/351">
+                                                <p class="img"><img src="https://wannyan-musubi.pref.miyagi.jp/storage/animals/cXYvsyYELhT6BFnAtwcN411CqZNWkAqthfNOPr1X.jpg" alt="【大崎保健所】
+..."></p>
+                        <div class="txt">
+                            <p class="name">【大崎保健所】
+...</p>
+                                                            <p class="gender_age">メス / 0歳 / 白系</p>
+                                                    </div>
+                    </a>
+                    <button class="favorite_btn   unknown " data-animal-id="351"></button>
+                </div>
+                                <div class="card">
+                    <a href="https://wannyan-musubi.pref.miyagi.jp/animal/350">
+                                                <p class="img"><img src="https://wannyan-musubi.pref.miyagi.jp/storage/animals/GTFHy3Fwv0yesdyl1vkKiN8skOO7jmMU0DIHkm7A.jpg" alt="【大崎保健所】
+..."></p>
+                        <div class="txt">
+                            <p class="name">【大崎保健所】
+...</p>
+                                                            <p class="gender_age">メス / 0歳 / キジトラ</p>
+                                                    </div>
+                    </a>
+                    <button class="favorite_btn   unknown " data-animal-id="350"></button>
+                </div>
+                                <div class="card">
+                    <a href="https://wannyan-musubi.pref.miyagi.jp/animal/335">
+                                                <p class="img"><img src="https://wannyan-musubi.pref.miyagi.jp/storage/animals/BCaZrwrLR644VQG7OgElPNiQuXUX71nMOHj6UmC3.jpg" alt="【大崎保健所】
+..."></p>
+                        <div class="txt">
+                            <p class="name">【大崎保健所】
+...</p>
+                                                            <p class="gender_age">オス / 0歳 / 白系</p>
+                                                    </div>
+                    </a>
+                    <button class="favorite_btn   unknown " data-animal-id="335"></button>
+                </div>
+                                <div class="card">
+                    <a href="https://wannyan-musubi.pref.miyagi.jp/animal/327">
+                                                <p class="img"><img src="https://wannyan-musubi.pref.miyagi.jp/storage/animals/sBgJ2z83gMrhaVTd2nf9XxxoHZr0vrCGDTiFVj5h.jpg" alt="【大崎保健所】
+..."></p>
+                        <div class="txt">
+                            <p class="name">【大崎保健所】
+...</p>
+                                                            <p class="gender_age">オス / 0歳 / 白系</p>
+                                                    </div>
+                    </a>
+                    <button class="favorite_btn   unknown " data-animal-id="327"></button>
+                </div>
+                            </div>
+
+            <!-- <nav class="d-flex justify-items-center justify-content-between"> -->
+<div class="pagenation">
+    <ul>
+        
+        
+        
+            
+                                                <li class="current"><a>1</a></li>
+                                                                <li><a href="https://wannyan-musubi.pref.miyagi.jp/animal?category=0&amp;has_management_no=1&amp;page=2">2</a></li>
+                            
+            
+                            <li class="last">
+                    <a href="https://wannyan-musubi.pref.miyagi.jp/animal?category=0&amp;has_management_no=1&amp;page=2" rel="last">
+                        <img src="https://wannyan-musubi.pref.miyagi.jp/img/common/arrow_next.svg">
+                    </a>
+                </li>
+            
+        
+            </ul>
+</div>
+    <!-- <div>
+        <p class="small text-muted">
+            <span class="fw-semibold">27</span>
+            pagination.results            <span class="fw-semibold">1</span>
+            pagination.from            <span class="fw-semibold">16</span>
+            pagination.showing        </p>
+    </div> -->
+
+    <!-- <div class="d-none flex-sm-fill d-sm-flex align-items-sm-center justify-content-sm-between">
+        <div>
+            <p class="small text-muted">
+                <span class="fw-semibold">27</span>
+                pagination.results                <span class="fw-semibold">1</span>
+                pagination.from                <span class="fw-semibold">16</span>
+                pagination.showing            </p>
+        </div>
+
+        <div>
+            <ul class="pagination">
+                
+                                    <li class="page-item disabled" aria-disabled="true" aria-label="pagination.previous">
+                        <span class="page-link" aria-hidden="true">&lsaquo;</span>
+                    </li>
+                
+                
+                                    
+                    
+                    
+                                                                                                        <li class="page-item active" aria-current="page"><span class="page-link">1</span></li>
+                                                                                                                <li class="page-item"><a class="page-link" href="https://wannyan-musubi.pref.miyagi.jp/animal?category=0&amp;has_management_no=1&amp;page=2">2</a></li>
+                                                                                        
+                
+                                    <li class="page-item">
+                        <a class="page-link" href="https://wannyan-musubi.pref.miyagi.jp/animal?category=0&amp;has_management_no=1&amp;page=2" rel="next" aria-label="pagination.next">&rsaquo;</a>
+                    </li>
+                            </ul>
+        </div>
+    </div> -->
+<!-- </nav> -->
+
+
+                </div>
+    </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const hasQuery = window.location.search.length > 0;
+            const target = document.getElementById('animals_list');
+            if (hasQuery && target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    </script>
+
+
+                <footer>
+    <div class="inner">
+        <p class="logo"><a href="https://wannyan-musubi.pref.miyagi.jp"><img src="https://wannyan-musubi.pref.miyagi.jp/img/common/logo_footer.svg" alt="みやぎわんにゃん家族むすび"></a></p>
+    </div>
+    <p class="copy">Copyright &copy; Miyagi Prefectural Government<br class="sp"> All Rights Reserved.</p>
+</footer>            </main>
+        </div>
+    </div>
+
+    <script src="https://wannyan-musubi.pref.miyagi.jp/js/script.js"></script>
+            <script src="https://wannyan-musubi.pref.miyagi.jp/js/animals_list.js"></script>
+    
+    
+
+    
+    </body>
+</html>

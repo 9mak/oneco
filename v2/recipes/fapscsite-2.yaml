@@ -1,0 +1,27 @@
+# 福井県動物愛護センター（譲渡できる動物たち — ふくい動物愛護管理支援センター協会） — fapscsite.com/adoptable_animal/
+# 2026-10-05 T519 新規作成（福井市のリンク先 p021331 の「犬・猫の情報」→ fapscsite.com の「譲渡できる動物達」。福井市は動物の愛護管理を福井県動物愛護センターに委託）。
+# 構造: WordPress の一覧（1 ページ 12 件、paginate の a.next.page-numbers で次ページ。2026-10-05 は 3 ページ）。1 頭（または 1 組）= article.animal-item
+#   （写真 ul.uk-slideshow-items の img、「新しい飼い主を募集中」か「譲渡準備中」の札、h2「管理番号：FC26359.364(花堂北3 えびてん)」、dl.spec の dt/dd: 品種・性別・年齢・体格・毛種／毛色・その他・収容場所）。
+#   犬猫の別は article の class「animal_kind-cat / animal_kind-dog」。
+# 「譲渡準備中」の札の子（ボランティア宅で人馴れ訓練中等）も、センターの一覧に載っているので載せる（その他の欄に状況が書いてある）。
+# 1 件に複数頭（子猫の兄弟姉妹）が入るので、1 件 = 1 行（性別は「オス：1匹、メス：1匹」のように文のまま）。
+# 未確認: 0 件の日の文言（empty_text は置かない＝0 件の日は「読めなかった」で通知に出る）。
+steps:
+  - paginate: "a.next.page-numbers@href"
+rows: "article.animal-item"
+image: "ul.uk-slideshow-items img@src"
+species:
+  from: field
+  map: {"cat": cat, "dog": dog}
+  allow_other: true
+fields:
+  species: {selector: ".", attr: class, regex: 'animal_kind-(\w+)'}
+  management_no: {selector: "h2.entry-title", regex: '管理番号[:：]\s*([^（(\s]+)'}
+  detail: {selector: "a[href*='/adoptable_animal/']", attr: href}
+  breed: {label: "品種"}
+  sex: {label: "性別"}
+  age: {label: "年齢"}
+  size: {label: "体格"}
+  color: {label: "毛種／毛色"}
+  location: {label: "収容場所"}
+  note: {label: "その他"}

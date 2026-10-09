@@ -1,0 +1,16 @@
+# 高崎市 譲渡予定の動物一覧（猫）: city_takasaki-7 から種類・備考の列を除いた表（管理番号・写真・仮称・毛色・性別・推定誕生月）。
+# 0 頭の日の作りは 3 通り（Wayback 2024〜2025 で確認）: ①見出しの行だけ ②見出し + 空欄の td の行（td の中が空の p のことも）③見出し + 空欄の th の行。見出しの行（th）は row_filter の field_lacks で「該当なし」に数え、文字が 1 つも無い行は min_text_length で数えないので、どれも 0 頭になる。文字の入った行なのに番号が取れない日は「読めなかった」通知。
+rows: "table tr"
+row_filter:
+  min_text_length: 1                                  # 文字が 1 つも無い行（空欄の行。td が空・空の p・空の th のどれも）は数えない
+  field_lacks: {head: ["管理番号", "受付日時"]}        # 見出しの行（th）は「該当なし」として数える。見出しの行だけ残った日は 0 頭
+image: "img@src"
+fields:
+  head: {selector: "th"}   # row_filter 用で出力しない
+  management_no: {selector: "td:nth-of-type(1)", regex: "(\\d{4}\\s*[-‐‑₋−ー－–]\\s*(?:[A-Za-z]\\s*[-‐‑₋−ー－–]\\s*)?\\d+)"}
+  name: {selector: "td:nth-of-type(3)"}
+  color: {selector: "td:nth-of-type(4)"}
+  sex: {selector: "td:nth-of-type(5)"}
+  age: {selector: "td:nth-of-type(6)"}
+  detail: {selector: "a", attr: href}
+empty_selector: "table tr:has(td) td"

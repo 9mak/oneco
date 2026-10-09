@@ -1,0 +1,27 @@
+# 岐阜市 迷い犬猫情報（一覧）。h2「【迷い犬猫情報】 収容数：N頭」の下に、1 頭ごとに見出し + p.imagecenter（写真 1〜2 枚）+ dl（収容年月日・収容場所・種類・性別・毛色・体格・年齢・その他）。
+# 見出しは日によって違う: 2026-10 は h2「管理番号　犬No.13-1」、2025-08（Wayback）は h3「管理番号No.15-3」（犬か猫かの語が見出しに無い）。両方を始まりにする。
+# 種別: 見出しの「犬No.」「猫No.」→ 無ければ写真の alt「犬の写真です」→ 無ければ項目「動物種別」（0 頭の日の雛形にある項目名）の順に取る。どれも無い子は種別なしで載る。
+# 0 頭の日は見出しが「【迷い犬猫情報】　収容数：0頭」になる（Wayback 2021-10-19・10-26・2026-08 の保存版）。動物がいる日は「収容数：1頭」のように数字が入るので、
+# 「収容数：0頭」を 0 頭の印にする（「収容数：10頭」には当たらない）。0 頭の日は見出しの下に「管理番号」の雛形（空の dl。収容年月日は「令和　年　月　日」）が残るが動物にならない。
+rows: "h2:-soup-contains('管理番号'), h3:-soup-contains('管理番号')"
+row_until: "h2, h3"
+image: {selector: "p.imagecenter img@src"}
+fields:
+  species:
+    join:
+      - {selector: "h2, h3", regex: "(犬|猫)\\s*No"}
+      - {selector: "p.imagecenter img", attr: "alt", regex: "(犬|猫)の写真"}
+      - {label: "動物種別", regex: "(犬|猫)"}
+  management_no: {selector: "h2, h3", regex: "No[.．]?\\s*([0-9０-９][0-9０-９\\-－]*)"}
+  shelter_date: {label: "収容年月日"}
+  location: {label: "収容場所"}
+  breed: {label: "種類"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  size: {label: "体格"}
+  age: {label: "年齢"}
+  note: {label: "その他"}
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+empty_text: ["収容数：0頭", "収容数：０頭"]

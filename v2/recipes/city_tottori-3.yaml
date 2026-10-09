@@ -1,0 +1,19 @@
+# 鳥取市（収容犬猫の譲渡情報のうち「その他の動物」の表3） https://www.city.tottori.lg.jp/page/5042.html（2026-10-05 T519 で追加）
+# city_tottori-2 と同じページ。【犬】表1・【猫】表2 は 1 頭 = 2〜3 列の縦長セルで -2 が読む。
+# 【その他の動物】表3 だけ列が別（種類・毛色・性別・推定年齢・体格・その他特徴・写真の 7 列）なので別 slug にする。
+# 2026-10-05 は表3 に空白だけの行が 1 つ（0 頭）。ウサギ・鳥などが載った日の読み方は未確認（列見出しから推定）。
+# 犬猫ではないので allow_other で other（犬猫以外）にする。0 頭の日は空白行が残るので、性別に語がある行だけを数える（捨てた数 = 行数なら「0 頭」と確定）。
+rows: "div.detail_free table:has(caption:-soup-contains('表3')) tr:has(td)"
+row_filter:
+  field_has_any: {sex: ["オス", "メス", "雄", "雌", "不明"]}   # 空白だけの行を「捨てた」に数える（性別の語が無い行は載らない。未確認）
+image: "img@src"
+fields:
+  breed: "td:nth-of-type(1)"
+  color: "td:nth-of-type(2)"
+  sex: "td:nth-of-type(3)"
+  age: "td:nth-of-type(4)"
+  size: "td:nth-of-type(5)"
+  note: "td:nth-of-type(6)"
+species:
+  from: field
+  allow_other: true

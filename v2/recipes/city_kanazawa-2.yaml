@@ -1,0 +1,27 @@
+# 金沢市動物愛護管理センター（収容された猫） — www4.city.kanazawa.lg.jp/soshikikarasagasu/dobutsuaigokanricenter/gyomuannai/1/3/5387.html
+# 2026-10-05 T519 新規作成（環境省リンク集のリンク先 .../1/3/index.html の「収容された猫のお知らせ」）。
+# 確認済み（2026-10-05・0 頭）: 「現在収容されている猫はいません」の 1 行だけ（表の雛形も無い）。
+# 未確認: 猫が載った日の作り。同じ金沢市の譲渡ページ（city_kanazawa-6）や収容犬（city_kanazawa-1）と同じ「figure.img-item（写真）→ div.wysiwyg > table」の並びと仮定している。
+#   項目名（毛色・性別・保護月日 等）は label と li/p の「項目：値」の両方を試す。外れた日は行が取れず、empty_text の文言も消えるので「読めなかった」で通知に出る（0 頭に見せない）。
+# 写真（2026-10-07 T519 v-g3）: 表の前の figure.img-item の img（か、2025-01 の猫の譲渡ページのように直前の div.wysiwyg の p > img）から読む。本文冒頭の飾りのイラスト
+#   （ファイル名 pet_inu.jpg・pet_doubutu_*.jpg、alt「…のイラスト」）は除く。以前の「前の兄弟の最初の 1 枚」は、前の行が無い 1 頭目で本文冒頭のイラストまで遡り、
+#   1 頭目に別の写真（イラスト）を付けた（猫の収容 2024-08 の 1 頭目、犬の譲渡 2024-04 の 1 頭目（city_kanazawa-5））。0 頭の日の空の雛形の表にもこのイラストだけが写真になり、
+#   中身が空の「動物 1 頭」が載った（犬の譲渡 2024-08・2024-11。偽の動物）。写真が無い子は写真なしで載る。
+# 0 頭の日の文言（2026-10-07 T519 v-g3）: 今日は「現在収容されている猫はいません」、Wayback は「現在、収容している猫はいません。」（2025-10・2026-03）。読点の有無と「収容されて／して」の違いで 0 頭の日が failed になっていた。
+#   どれも 0 頭の日だけの文言（動物がいる日は「現在収容中の猫は、こちらです。」）なので、言い換えを全部 empty_text に入れた。
+# 2026-10-08 T519 v2-g3: 0 頭の日の文言に「収容中の猫は、いません」（2025-02）も足した。
+rows: "div.wysiwyg:has(> table)"
+row_filter:
+  text_has_any: ["保護月日", "保護場所", "毛色"]
+image: {selector: "figure.img-item img:not([alt*='イラスト']), div.wysiwyg > p > img:not([alt*='イラスト'])@src", exclude: ["/pet_"], scope: prev_siblings, stop_at: row}
+fields:
+  management_no: {from: heading, selector: "h2, h3", regex: "([A-Z]\\d{7,10})"}
+  breed: {selector: "td li:-soup-contains('種類'), td p:-soup-contains('種類')", regex: '種類[:：]\s*(\S.*)'}
+  color: {selector: "td li:-soup-contains('毛色'), td p:-soup-contains('毛色')", regex: '毛色[:：]\s*(\S.*)'}
+  sex: {selector: "td li:-soup-contains('性別'), td p:-soup-contains('性別')", regex: '性別[:：]\s*(\S.*)'}
+  age: {selector: "td li:-soup-contains('年齢'), td p:-soup-contains('年齢')", regex: '年齢[:：]\s*(\S.*)'}
+  size: {selector: "td li:-soup-contains('体格'), td p:-soup-contains('体格')", regex: '体格[:：]\s*(\S.*)'}
+  shelter_date: {label: "保護月日"}
+  location: {label: "保護場所"}
+  note: {label: "その他"}
+empty_text: ["収容している猫はいません", "収容している猫は、いません", "収容されている猫はいません", "収容中の猫は、いません", "収容中の猫はいません"]

@@ -1,0 +1,30 @@
+# 函館市 収容（行方不明）犬・猫情報 — city.hakodate.hokkaido.jp（2026-10-05 T519 環境省リンク集から追加。2026-10-08 T519v で Wayback の旧版に当てて直した）
+# 構造（2026-10-05〜07 の実ページ。0 頭の日）: div.text-beginning の本文に h2「【犬】」「【猫】」があり、その下に
+#   「現在，該当する犬はおりません。」（読点は全角コンマ「，」）の p と、写真置き場の空の <div class="temp1 clearfix"><div class="thumb"> </div></div>。
+# 動物が載った日の新しい作り（2025-12 以降の CMS）は Wayback に保存が無く、実物では確認できていない（未確認）。2 通りを想定して読む:
+#   (1) 旧い作り（2015〜2023 の保存で確認。2022-03 の犬 1 頭・2022-10 の犬 1 頭）: 1 頭 = 表の 1 行
+#       [管理番号 | 写真 | 収容年月日 | 収容場所 | 種類（犬種） | 毛色 | 性別 | 首輪等]（見出し行は写真が無いので行にならない）。
+#       新しい CMS でも表のまま載るなら読める（テストは旧い版の表を div.text-beginning で包んで当てる）。
+#   (2) div.temp1 の div.thumb に写真が入る作り（今日の空の雛形からの推測）。写真と種別だけ読む。
+#   どちらでもない作りだった日は rows が 0 になり、0 頭の文言（犬・猫の両方）も消えるので「読めなかった」で通知に載る。
+rows: "div.text-beginning table tr:has(img), div.text-beginning div.temp1:has(.thumb img)"
+image: "img@src"
+fields:
+  management_no: {selector: "td:nth-of-type(1)"}
+  shelter_date: {selector: "td:nth-of-type(3)"}
+  location: {selector: "td:nth-of-type(4)"}
+  breed: {selector: "td:nth-of-type(5)"}
+  color: {selector: "td:nth-of-type(6)"}
+  sex: {selector: "td:nth-of-type(7)"}
+  note: {selector: "td:nth-of-type(8)"}
+species:
+  from: heading
+  selector: "h2"
+  map: {"【犬】": dog, "【猫】": cat}
+  infer: true
+# 0 頭の日は犬・猫の両方の節に文言が出る。猫の節の文言だけにすると、犬が載っていて読み取りが外れた日（猫は 0 頭）を 0 頭と
+# 誤判定するので、犬の節から猫の節までをつなげて照合する。
+# 旧い CMS（〜2023）は h2 が無く、犬の表と猫の表がそれぞれ見出し行（管理番号 写真 … 首輪 等）付きで並び、各表の下に文言が出る。
+empty_text:
+  - "【犬】 現在，該当する犬はおりません。 【猫】 現在，該当する猫はおりません"
+  - "現在，該当する犬はおりません。 管理番号 写真 収容年月日 収容場所 種類 毛色 性別 首輪 等 現在，該当する猫はおりません"

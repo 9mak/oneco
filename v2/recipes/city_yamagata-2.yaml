@@ -1,0 +1,27 @@
+# 山形市動物愛護センター（譲渡対象の犬猫）。
+# h3「譲渡対象【犬】情報」「譲渡対象【猫】情報」の下に div.img3lows（2024-11 まで div.img2lows。写真が 2 列／3 列）> ul > li.imglows（写真・span.imgtitle「こはく(♂）」・詳細情報の PDF リンク）が並ぶ。
+# 同じクラスが下の「近況報告」（譲渡済みの子）にもあるので、詳細情報の PDF リンクを持つ li（リンク文言に「詳細情報」）だけを動物とする。
+# 種別は直前の h3（犬／猫）から決める。個体ごとの詳細は PDF なので、名前と性別と写真と PDF（元ページのリンク）だけを取る。
+# 名前の前に「【トライアル中】」が付く子（Wayback 2026-05 に 3 頭）は、トライアル中の子も載せる方針なので載せ、印は note に「トライアル中」と出す。
+# 「不妊済」「去勢済」も note に出す。
+# 2026-10-07 時点: 犬 0 頭（「譲渡対象の犬はいません。」）・猫 13 頭を実ページで確認。Wayback 2021-11〜2026-07 の 14 版を当てて、猫の頭数が子の数と合うことを確認（犬が載った版は無い）。
+rows: "li.imglows"
+row_filter:
+  text_has_any: ["詳細情報"]
+species:
+  from: heading
+  selector: "h3"
+  map: {"犬": dog, "猫": cat}
+fields:
+  name: {selector: "span.imgtitle", regex: "^(?:【[^】]*】)?([^(（]+)"}
+  sex: {selector: "span.imgtitle", regex: "([♂♀])"}
+  note:
+    join:
+      - {selector: "span.imgtitle", regex: "【(トライアル[^】]*)】"}
+      - {selector: "span.imgtitle", regex: "(不妊済|去勢済)"}
+    sep: "。"
+  detail: {selector: "li.pdf a", attr: "href"}
+# 0 頭の日の文言: 犬の「譲渡対象の犬はいません」は猫がいる日にも出ているので empty_text にしない（猫の読み取りが壊れた日も 0 頭に見える）。
+# 猫の 0 頭の日の文言は未確認で、犬と同じ書き方の推測（外れても「読めなかった」通知になるだけで安全側）。
+empty_text:
+  - "譲渡対象の猫はいません"

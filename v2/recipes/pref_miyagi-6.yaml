@@ -1,0 +1,28 @@
+# 気仙沼保健所 保護動物の情報（ks-health/juekihogo.html）。
+# 「保護されている犬の情報」「保護されている猫の情報」の 2 つの表（caption が節名）。列: 収容日・収容場所・犬種(種類)/毛色/性別/特徴（スラッシュ区切り 1 つのセル）・画像（複数）。
+# 返還手数料の表（caption「返還に伴う手数料一覧」）は犬猫の語が無いので外れる。
+# 3 つ目のセルは「柴/茶/オス/６歳以上、茶色い革首輪…」「雑種/キジトラ白/メス/推定３歳以上/マイクロチップ反応なし…」。区切りは / と 、。
+# 収容日は「9月2日」のほか「9/26」の書き方の日もある（Wayback 2022-10・2023-06）。行は th・td どちらでも読み、見出し行（「収容場所」を含む）と死亡した子の行は落とす。
+# 2026-10-07 時点: 犬 1 頭・猫 2 頭を実ページで確認。猫の行は Wayback 2022-10〜2023-06 で確認（犬が載った版は無い）。
+rows: "table:has(> caption:-soup-contains('犬')) tr:has(> :nth-child(4)), table:has(> caption:-soup-contains('猫')) tr:has(> :nth-child(4))"
+row_filter:
+  text_lacks: ["収容場所", "死亡"]
+species:
+  from: heading
+  selector: "caption"
+  map: {"犬": dog, "猫": cat}
+fields:
+  shelter_date: {selector: ":scope > :nth-child(1)", regex: "([0-9０-９]+月[0-9０-９]+日|[0-9０-９]+[/／][0-9０-９]+)"}
+  location: {selector: ":scope > :nth-child(2)"}
+  breed: {selector: ":scope > :nth-child(3)", regex: "^([^/]+)/"}
+  color: {selector: ":scope > :nth-child(3)", regex: "^[^/]+/([^/]+)/"}
+  sex: {selector: ":scope > :nth-child(3)", regex: "^[^/]+/[^/]+/([^/、]+)"}
+  age: {selector: ":scope > :nth-child(3)", regex: "^[^/]+/[^/]+/[^/]+/([^/、]+)"}
+  note: {selector: ":scope > :nth-child(3)", regex: "^[^/]+/[^/]+/[^/]+/(?:[^/、]+)[/、](.+)$"}
+image: {selector: ":scope > :nth-child(4) img@src"}
+# 0 頭の日の文言は表の 3 列目に入る（Wayback 2022-05: 「現在，保護犬の情報はありません。」「現在，保護猫の情報はありません。」。読点が「，」）。
+# 犬の文言は猫がいる日にも出るので入れない（猫の表が読めなくなった日を 0 頭にしない）。猫の文言だけを 0 頭の印にする。
+empty_text:
+  - "現在，保護猫の情報はありません"
+  - "現在、保護猫の情報はありません"
+  - "保護している猫はいません"

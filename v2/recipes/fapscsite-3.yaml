@@ -1,0 +1,30 @@
+# 福井県動物愛護センター（一般の方から寄せられた飼い主募集 — ふくい動物愛護管理支援センター協会） — fapscsite.com/information_animal/
+# 2026-10-07 T519 v-g3 新規作成（link_only をやめて読む）。最初の T519 は「個人の投稿で、令和 6・7 年の古い投稿が残っていて今も募集中か分からない」として link_only にしたが、
+#   実物（2026-10-07 の 4 ページ 43 件）は次のとおり読んでよいと判断した:
+#   ・センター協会が自分のサイトに載せている一覧で、全件に札「新しい飼い主を募集中」が付く。個人の氏名・電話番号は載らず、問い合わせ先は「本所」「支所」（robots.txt も Disallow なし）。
+#   ・管理番号の「No.8T-10-4」の 8 は令和 8 年で、43 件の大半は令和 8 年（2026-01〜10）の投稿。令和 7・6 年のものも残るが、自治体（協会）の掲載どおりなので載せる
+#     （掲載漏れがないことを優先。今も募集中かどうかは協会の掲載が根拠）。
+# 構造は譲渡の一覧（fapscsite-2）と同じ WordPress の一覧: 1 ページ 12 件、paginate の a.next.page-numbers で次ページ。1 件 = article.animal-item（class に info_animal_kind-cat / -dog。ウサギ等は
+#   info_animal_kind-adoptable だけ）。写真は ul.uk-slideshow-items の img、h2「管理番号：No.8T-10-4」、dl.spec の dt/dd: 品種・性別・年齢・体格・毛種／毛色・その他・収容場所（保護主宅 等）。
+#   1 件に複数頭（「オス2　メス3」「4匹います」）が入ることがあるので、1 件 = 1 行（性別は文のまま）。
+# 犬猫の別は class から。cat / dog でない件（ウサギ等）は犬猫以外（other）で載る。
+# 未確認: 0 件の日の文言（empty_text は置かない＝0 件の日は「読めなかった」で通知に出る）。
+steps:
+  - paginate: "a.next.page-numbers@href"
+rows: "article.animal-item"
+image: "ul.uk-slideshow-items img@src"
+species:
+  from: field
+  map: {"cat": cat, "dog": dog}
+  allow_other: true
+fields:
+  species: {selector: ".", attr: class, regex: 'info_animal_kind-(cat|dog)'}
+  management_no: {selector: "h2.entry-title", regex: '管理番号[:：]\s*([^（(\s]+)'}
+  detail: {selector: "a[href*='/information_animal/']", attr: href}
+  breed: {label: "品種"}
+  sex: {label: "性別"}
+  age: {label: "年齢"}
+  size: {label: "体格"}
+  color: {label: "毛種／毛色"}
+  location: {label: "収容場所"}
+  note: {label: "その他"}

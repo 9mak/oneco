@@ -1,0 +1,21 @@
+# 新潟市動物ふれあいセンター（いくとぴあ食花 ネコ譲渡情報） — ikutopia.com/facilities/doubutsu/foster/cat/
+# 2026-10-05 T519 新規作成（新潟市の譲渡猫ページ city_niigata-4 の「動物ふれあいセンター」の節が、このサイトのブログへのリンクだけだったため）。
+# 構造: 一覧は div.p-foster-archive の ul > li > a（/fosterinfo/<番号>/）。2026-10-05 は 2 ページ（1 ページ 12 頭）で、div.c-pagination の a.next で次へ。
+# 一覧には写真・登録番号・名前と「(子猫・推定8月生まれ)」しか無いので、個体ページ（div.p-foster-detail: 登録情報・毛色・性別・年齢・猫エイズ・猫白血病・本文）を辿って読む。
+# 個体ページに「【新潟市動物愛護センターで飼育しています】」とある子（ドン・ちーとい）は、新潟市の譲渡猫ページ（city_niigata-4）に同じ子が載るので、二重にならないよう捨てる。
+# 犬のページ（/foster/dog/）は「犬の譲渡については新潟市のページをご覧ください」で、載る子（ポン太）も city_niigata-3 と同じなので slug を作らない。
+# 未確認: 0 頭の日の文言（一覧が空になるだけのはず。empty_selector は一覧の器 ul が空になるか分からないので置かない。0 頭の日は「読めなかった」で通知に出る＝安全側）。
+steps:
+  - paginate: "div.c-pagination a.next@href"
+  - follow_all: "div.p-foster-archive li a@href"
+rows: "div.p-foster-detail"
+row_filter:
+  text_lacks: ["新潟市動物愛護センターで飼育しています"]
+image: "div.img1 img@src"
+fields:
+  name: "div.c-title4 h2"
+  management_no: {label: "登録情報"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  age: {label: "年齢"}
+  note: {selector: "div.note", default: null}
