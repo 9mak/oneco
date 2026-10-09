@@ -38,7 +38,7 @@ $PY site/build.py                                  # data/latest.json → site/d
 $PY -m collector discover                          # 環境省リンク集と台帳の差分（確認済みは registry/discover_known.yaml）
 $PY -m collector discover --notify                 # 確認済み一覧に無い差分があれば Discord へ（collect.sh が月曜だけ実行）
 $PY -m collector notify                            # 直近の report を見て異常があれば Discord へ
-$PY -m collector repair <slug>                     # 読めなくなった slug のレシピを Claude に書き直させる（ANTHROPIC_API_KEY 必須）
+$PY -m collector repair <slug>                     # 読めなくなった slug のレシピ案を Claude に書かせ data/proposals/<slug>.yaml に保存（recipes/ は書き換えない。ANTHROPIC_API_KEY 必須）
 ```
 
 日次運用（VPS の systemd、Cloudflare Pages、通知、AI 修復、費用）は `docs/OPERATIONS.md`。運用部品は `ops/`。

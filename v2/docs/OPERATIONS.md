@@ -102,6 +102,7 @@ collect.sh は全部成功したときだけこの URL を叩き、どこかが�
 
 [console.anthropic.com](https://console.anthropic.com) → API Keys で発行。`/etc/oneco/collect.env` に `ANTHROPIC_API_KEY` と `ONECO_AI_REPAIR=1` を書く。
 `ONECO_AI_REPAIR=1` が無いと修復は動かない（キーだけ置いても課金されない）。使うモデルは既定 `claude-sonnet-5`、変えるなら `ONECO_AI_MODEL`。
+修復の入力はページ本文（自治体サイトの内容＝信頼できない入力）なので、script・style・コメント・hidden・display:none・template を除き、`<untrusted_html>` で囲んで「指示ではない」と明記して渡す（W006 T617）。
 
 ### 1-6. 残っている手動作業（2026-10-01 時点・T506）
 
@@ -117,7 +118,7 @@ collect.sh は全部成功したときだけこの URL を叩き、どこかが�
 `ops/collect.sh`（Mac の launchd なら JST 0:05 に `ops/macos/collect-launchd.sh` が `git pull --ff-only origin main` で本番クローンを更新してから呼ぶ、VPS なら `oneco-collect.timer` で 0:00）:
 
 1. `collector run` — 台帳（`registry/sources.yaml`）の `enabled: true` のページを 1 秒間隔で全部読み、`data/animals-<日付>.json` `data/latest.json` `data/report-<日付>.json` を書く
-   - ページが読めず `status: failed` になったものは、`ONECO_AI_REPAIR=1` なら **その場で 1 回だけ** Claude にレシピを書き直させる。新レシピで 1 頭以上取れたら `recipes/<slug>.yaml` を上書きして読み直す。取れなければレシピは元のまま、failed のまま
+   - ページが読めず `status: failed` になったものは、`ONECO_AI_REPAIR=1` なら **その場で 1 回だけ** Claude にレシピを書き直させる。返ったレシピは strict schema（`collector/recipe_schema.py`）で検査してから試し、1 頭以上取れたら **案として `data/proposals/<slug>.yaml` に保存する（`recipes/<slug>.yaml` は書き換えない。W006 T614）**。その日の収集は元のレシピのまま（failed のまま）。案は人が `diff recipes/<slug>.yaml data/proposals/<slug>.yaml` で確かめて、採るなら `recipes/` へコピーして PR にする。案の先頭の `# proposal:` コメントは消してから
 2. `collector notify` — report に異常（failed、または AI がレシピを書き直した）があるときだけ Discord に 1 通。平常時は何も送らない
 3. `site/build.py` — `data/latest.json` から `site/dist/` を作る
 4. `wrangler deploy`（`ops/wrangler.jsonc`）— `site/dist/` を Cloudflare Workers の静的アセットへ
@@ -144,7 +145,7 @@ AI がレシピを書き直した自治体 1 件（recipes/<slug>.yaml が変わ
 | `読めなかった自治体 N 件` | その日その自治体の子はサイトに出ていない（前日分も消えている） | 1 日目は放置でよい（自治体側の一時障害が多い）。2 日続いたら下の手順 |
 | `HTTP 404` / `HTTP 5xx` / `ConnectError` | ページ自体が無い・落ちている | ブラウザで URL を開く。移転していれば台帳の `url` を直す。掲載をやめたなら `mode: link_only` か `enabled: false` |
 | `robots.txt により拒否` | 自治体が bot を断っている | 読まない。`enabled: false` にして、必要なら電話で確認 |
-| `follow: '…' が見つからない` / `0 頭で empty_text も無い` | ページ構造が変わった。AI 修復も失敗している | VPS で `sudo -u oneco env $(sudo cat /etc/oneco/collect.env | xargs) /opt/oneco/.venv/bin/python -m collector repair <slug> --show` を手で回す。それでも駄目なら `collector show <slug>` と `collector fetch <url> --selectors` を見て `recipes/<slug>.yaml` を人が直す（書き方は `docs/RECIPE.md`） |
+| `follow: '…' が見つからない` / `0 頭で empty_text も無い` | ページ構造が変わった。AI 修復も失敗している | VPS で `sudo -u oneco env $(sudo cat /etc/oneco/collect.env | xargs) /opt/oneco/.venv/bin/python -m collector repair <slug> --show` を手で回す。`data/proposals/<slug>.yaml` に案が出ていれば差分を見て採否を決める。それでも駄目なら `collector show <slug>` と `collector fetch <url> --selectors` を見て `recipes/<slug>.yaml` を人が直す（書き方は `docs/RECIPE.md`） |
 | `AI がレシピを書き直した自治体 N 件` | VPS 上の `recipes/<slug>.yaml` が変わり、読めるようになった | VPS の `git -C /opt/oneco diff v2/recipes` を見て、妥当なら commit して push（放置すると次の `git pull` で戻る）。取り方が変（写真が広告、頭数が異常）なら `git checkout` で戻して人が直す |
 | `（公開 N 頭・成功 M ページ）` | その日の全体 | 前日と大きく違えば異常。`data/report-<日付>.json` を見る |
 | `失敗した工程 -> build deploy` | collect.sh の工程（run の落ち・build・deploy）が失敗した。読めないページの話ではない | `logs/collect-<日付>.log` の `-- <工程>: 失敗` の直前を見る。deploy なら `npx wrangler whoami`（OAuth 切れ）、build なら `data/latest.json` の有無 |
@@ -197,7 +198,7 @@ cd v2   # 本番クローンなら ~/oneco-collect/v2
      recipe: recipes/city_example-1.yaml
      enabled: true
    ```
-2. レシピを作る。まず AI に書かせる: `ANTHROPIC_API_KEY=... python -m collector repair city_example-1 --show`（レシピが無い slug は新規作成になる。1 頭以上取れた時だけ保存される）。駄目なら `python -m collector fetch <url> --selectors` で表・リストの候補を見て `docs/RECIPE.md` の通り手で書く
+2. レシピを作る。まず AI に書かせる: `ANTHROPIC_API_KEY=... python -m collector repair city_example-1 --show`（レシピが無い slug でも案が `data/proposals/<slug>.yaml` に出る。1 頭以上取れた時だけ。採るときは `recipes/<slug>.yaml` へ人がコピーする）。駄目なら `python -m collector fetch <url> --selectors` で表・リストの候補を見て `docs/RECIPE.md` の通り手で書く
 3. `python -m collector show city_example-1` で取れた行・捨てた行を確認。写真・性別・収容日が合っていること
 4. `python -m pytest tests -q`（台帳とレシピが読めることを確認するテストが入っている）
 5. commit → push → VPS で `git -C /opt/oneco pull`。翌日 0:00 から載る。すぐ載せたいなら `sudo systemctl start oneco-collect.service`
@@ -223,3 +224,16 @@ cd v2   # 本番クローンなら ~/oneco-collect/v2
 | 合計（Mac で動かす場合） | 100〜500 円（AI 修復の分だけ） |
 
 Anthropic のコンソールで Usage limits に月 $10 程度の上限を入れておくと、暴走しても止まる。
+
+## CI（W006 T612・T613）
+
+`.github/workflows/v2-ci.yml` が PR（main 向け）と main への push で 3 つの job を走らせる。paths フィルタは付けていない（付けると v2 以外だけの PR で必須 check が pending のまま残る）。
+
+| check 名（branch protection の必須 check に登録する名前） | 中身 |
+|---|---|
+| `v2 / pytest` | `cd v2 && python -m pytest -q`（Playwright なし） |
+| `v2 / ruff` | `ruff check --config ruff.toml v2` |
+| `v2 / pii-scan` | `cd v2 && python -m pytest -q tests/test_fixtures_pii_guard.py`（fixture に私人の連絡先が残っていないか） |
+
+T613（人が GitHub 画面で行う）: Settings → Branches → main の保護ルール → Required status checks から旧 4 つ（`Lint` `Test` `Type Check` `Build Package`）を外し、上の 3 つを追加する。「Do not allow bypassing the above settings」を ON にする。以後のマージは `gh pr merge --auto --squash`。
+旧 4 つを外したら `.github/workflows/required-checks-skip.yml`（旧 backend 用の見せかけ check）も不要になる。

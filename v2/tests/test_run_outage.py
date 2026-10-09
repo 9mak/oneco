@@ -16,7 +16,7 @@ def _sources(n: int) -> list[Source]:
 
 
 def _fake_collect(failed: set[str]):
-    def collect_one(s, fetcher):  # noqa: ANN001, ANN202
+    def collect_one(s, fetcher):
         if s.slug in failed:
             return "failed", None, "ConnectError: [Errno 8] nodename nor servname provided, or not known", []
         res = Result(docs=1)

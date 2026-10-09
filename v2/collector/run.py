@@ -12,8 +12,8 @@ from typing import Any
 
 from .errors import ErrorInfo, error_to_dict
 from .extract import Result, build
-from .fetch import FetchError, Fetcher
-from .recipe import Recipe, RecipeError, Executor
+from .fetch import Fetcher, FetchError
+from .recipe import Executor, Recipe, RecipeError
 from .registry import ROOT, Source
 
 log = logging.getLogger("collector")
@@ -41,7 +41,7 @@ class Collected:
     trace: list[str] = field(default_factory=list)
     error_info: dict[str, Any] | None = None
 
-    def __iter__(self):  # noqa: ANN204 — 旧来の (status, result, error, trace) の unpack を保つ
+    def __iter__(self):
         return iter((self.status, self.result, self.error, self.trace))
 
 
@@ -67,7 +67,7 @@ def collect_one(source: Source, fetcher: Fetcher) -> Collected:
         res = build(source, recipe, docs, getattr(ex, "visited", None))
     except (FetchError, RecipeError) as e:
         return Collected("failed", error=str(e), error_info=error_to_dict(e))
-    except Exception as e:  # noqa: BLE001 — 1 ページの失敗で全体を止めない
+    except Exception as e:
         log.exception("%s", source.slug)
         return Collected("failed", error=f"{type(e).__name__}: {e}", error_info=ErrorInfo("other", phase="parse").to_dict())
     if res.animals:

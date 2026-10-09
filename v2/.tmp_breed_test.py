@@ -1,5 +1,8 @@
-import re, sys, os
+import os
+import re
+
 from bs4 import BeautifulSoup
+
 pat = re.compile(r"^\S+\s+[○〇]?([^\s(（A-Za-z0-9\-○〇]+)")
 for t in ["9/28　雑種(沖縄市)　C-1", "9/25　シェパード(沖縄市)　M-1", "9/18 　プードル系(名護市)　K-1", "9/28　雑種(沖縄市）　M-2", "9/4　O-11", "9/4　雑種　O-11", "9/20　○雑種(那覇市)　K-1", "9/7　ミニチュアダックスフンド(那覇市)　S-1"]:
     m = pat.search(t)

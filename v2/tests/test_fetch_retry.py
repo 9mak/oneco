@@ -9,9 +9,8 @@ ConnectError（DNS 不達・回線断）とタイムアウトは再試行しな�
 
 import httpx
 import pytest
-
 from collector import fetch as fetch_mod
-from collector.fetch import FetchError, Fetcher
+from collector.fetch import Fetcher, FetchError
 
 URL = "https://www.kumamoto-doubutuaigo.jp/animals/index/type_id:2/animal_id:2"
 HTML = "<html><body><ul class='list-4col'><li>猫</li></ul></body></html>"

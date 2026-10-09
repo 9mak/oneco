@@ -1,7 +1,6 @@
 """T508 で足したエンジン機能のテスト: 転置表（1 列 = 1 頭）と PDF の 2 段組み。ネットワークなし。"""
 
 from bs4 import BeautifulSoup
-
 from collector.extract import build
 from collector.recipe import Doc, Recipe, _make_pdf_doc, extract_rows, field_value
 from collector.registry import Source

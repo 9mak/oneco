@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-
 import re
 import time
 import urllib.robotparser
@@ -170,11 +169,11 @@ class Fetcher:
             try:
                 page = browser.new_page(user_agent=USER_AGENT)
                 if capture:
-                    def _on_response(r):  # noqa: ANN001
+                    def _on_response(r):
                         if capture in r.url:
                             try:
                                 captured.append(r.json())
-                            except Exception:  # noqa: BLE001 — JSON でない応答は無視
+                            except Exception:
                                 pass
 
                     page.on("response", _on_response)
@@ -182,7 +181,7 @@ class Fetcher:
                 if wait_for:
                     try:
                         page.wait_for_selector(wait_for, timeout=WAIT_FOR_MS)
-                    except Exception:  # noqa: BLE001 — PlaywrightTimeoutError。現れない日はそのまま続ける
+                    except Exception:
                         log.info("render: wait_for '%s' が %d ms 待っても現れない: %s", wait_for, WAIT_FOR_MS, url)
                 page.wait_for_timeout(wait_ms)
                 html = page.content()

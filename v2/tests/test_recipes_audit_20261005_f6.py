@@ -6,7 +6,6 @@ HTML は 10/5 の実ページから 1〜2 頭分だけ抜いたもの。レシ�
 from pathlib import Path
 
 from bs4 import BeautifulSoup
-
 from collector.extract import build
 from collector.recipe import Doc, Recipe
 from collector.registry import Source, load_sources

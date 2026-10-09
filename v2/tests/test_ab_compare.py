@@ -11,7 +11,6 @@ import importlib.util
 from pathlib import Path
 
 import pytest
-
 from collector.fetch import FakeFetcher, FetchError, Page
 
 AB_PY = Path(__file__).resolve().parent.parent / "ops" / "ab_compare.py"

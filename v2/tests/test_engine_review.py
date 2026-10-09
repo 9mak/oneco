@@ -1,7 +1,6 @@
 """公開前レビュー（2026-09-30）の指摘に対するエンジンのテスト: PDF の source_url、プレースホルダ画像、detail リンクを持つ行。"""
 
 from bs4 import BeautifulSoup
-
 from collector.extract import build, make_id
 from collector.recipe import Doc, Recipe
 from collector.registry import Source

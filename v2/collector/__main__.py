@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from .ai_repair import DEFAULT_MODEL
-from .fetch import FetchError, Fetcher
+from .fetch import Fetcher, FetchError
 from .registry import load_sources, select
 
 JST = timezone(timedelta(hours=9))

@@ -8,7 +8,6 @@ fixture は実ページ（2026-10-06 の取得）の本文 div#tmp_contents。0 
 from pathlib import Path
 
 from bs4 import BeautifulSoup
-
 from collector.extract import build
 from collector.recipe import Doc, Recipe
 from collector.registry import load_sources
