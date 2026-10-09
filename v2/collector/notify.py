@@ -59,8 +59,8 @@ def _line(e: dict[str, Any]) -> str:
     if e["type"] == "recovered":
         return f"- {r['name']}: 復旧（{r['count']} 頭）"
     if r["status"] == "ambiguous_empty":
-        stale = st.get("first_failed") or "不明"
-        text = (f"0 頭に見えるが確定できないので前日分 {st.get('last_ok_count', 0)} 頭を保持（stale_since {stale}）。"
+        stale = r.get("stale_since") or st.get("last_ok") or "不明"
+        text = (f"0 頭に見えるが確定できないので前日分 {r.get('count', 0)} 頭を保持（stale_since {stale}）。"
                 f"{r['error']}")
     else:
         text = r["error"]

@@ -44,8 +44,10 @@ def test_message_has_elapsed_and_last_success(tmp_path):
 def test_ambiguous_empty_wording():
     state = {"sources": {}, "breaker": {}}
     _day(state, "2026-10-01", [_row("ok", count=12)])
-    msg, _ = _day(state, "2026-10-02", [_row("ambiguous_empty", kind="ambiguous_empty", err="根拠なし")])
-    assert "0 頭に見えるが確定できないので前日分 12 頭を保持（stale_since 2026-10-02）" in msg
+    # run.py が前日分を保持して count と stale_since（最後に成功した日）を report に書く
+    row = {**_row("ambiguous_empty", kind="ambiguous_empty", err="根拠なし"), "count": 12, "stale_since": "2026-10-01"}
+    msg, _ = _day(state, "2026-10-02", [row])
+    assert "0 頭に見えるが確定できないので前日分 12 頭を保持（stale_since 2026-10-01）" in msg
 
 
 def test_fingerprint_change_notifies_again():
