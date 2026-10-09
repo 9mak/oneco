@@ -67,8 +67,8 @@ def test_creates_draft_pr_and_moves_proposal(env, monkeypatch):
     assert pr.propose(proposals_dir=pdir, today="20261010") == 0
     cmds = [" ".join(c) for c in rec.calls]
     assert any(c.startswith("git clone --quiet https://example.test/repo.git") for c in cmds)
-    assert any("checkout -B repair/city_a-20261010 origin/main" in c for c in cmds)
-    assert any("push -u origin repair/city_a-20261010" in c for c in cmds)
+    assert any("checkout -B repair/city_a origin/main" in c for c in cmds)
+    assert any("push --force-with-lease -u origin repair/city_a" in c for c in cmds)
     assert not any(c[:3] == ["gh", "pr", "merge"] for c in rec.calls)
     create = next(c for c in rec.calls if c[:3] == ["gh", "pr", "create"])
     assert "--draft" in create
@@ -79,6 +79,18 @@ def test_creates_draft_pr_and_moves_proposal(env, monkeypatch):
     assert copied.startswith("# proposal:")   # 手がかりのコメントを消さない
     assert not (pdir / "city_a.yaml").exists() and (pdir / "done" / "city_a-20261010.yaml").exists()
     assert sent == [{"content": "レシピ案 PR: https://github.test/pr/9（city_a）"}]
+
+
+def test_branch_has_no_date_so_open_pr_check_matches_next_day(env, monkeypatch):
+    """ブランチ名に日付が無いので、翌日も同じ名前で open PR を探す（日付違いで毎日 PR が増えない。reviewer F-01）。"""
+    pdir, clone, sent = env
+    _add(pdir, "s1")
+    rec = Recorder()
+    monkeypatch.setattr(pr.subprocess, "run", rec)
+    pr.propose(proposals_dir=pdir, today="20261011")
+    heads = [c[c.index("--head") + 1] for c in rec.calls if c[:3] == ["gh", "pr", "list"]]
+    assert heads == ["repair/s1"]
+    assert any("--force-with-lease" in c for c in rec.calls if c[:1] == ["git"] and "push" in c)
 
 
 def test_skips_open_pr_and_same_content(env, monkeypatch):
@@ -105,7 +117,7 @@ def test_max_five_and_failure_does_not_stop(env, monkeypatch):
     pdir, _, _ = env
     for i in range(8):
         _add(pdir, f"city_{i}")
-    rec = Recorder(fail_on="repair/city_0-20261010")   # 最初の 1 件の checkout が失敗
+    rec = Recorder(fail_on="repair/city_0")   # 最初の 1 件の checkout が失敗
     monkeypatch.setattr(pr.subprocess, "run", rec)
     assert pr.propose(proposals_dir=pdir, today="20261010") == 1
     creates = [c for c in rec.calls if c[:3] == ["gh", "pr", "create"]]

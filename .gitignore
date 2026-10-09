@@ -99,3 +99,6 @@ oneco_local.db
 # node_modules: frontend/ 配下は frontend/.gitignore で除外済みだが、root で
 # `npm install` した場合に root/node_modules ができる (Vercel build や誤実行)。
 node_modules/
+
+# AI 修復の作業用 clone（collector propose）
+.repair-clone/

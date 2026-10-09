@@ -1,7 +1,7 @@
 """data/proposals/*.yaml（AI が書いたレシピ案）を draft PR にする（W006 T619）。
 
 本番 clone には書かない。作業用 clone（ONECO_REPAIR_CLONE、既定 <v2>/../.repair-clone）で
-origin/main から repair/<slug>-<日付> を切り、案を v2/recipes/<slug>.yaml に置いて push → gh pr create --draft。
+origin/main から repair/<slug>（日付なし。同じ slug は常に同じブランチ）を切り、案を v2/recipes/<slug>.yaml に置いて push → gh pr create --draft。
 PR の merge はしない（オーナーが差分を見て merge したときだけ翌日の収集から本番に入る。採らないなら close）。
 """
 
@@ -103,7 +103,7 @@ def propose(dry_run: bool = False, proposals_dir: Path | None = None, today: str
         if made >= MAX_PR_PER_RUN:
             print(f"{slug}: 1 回の PR は最大 {MAX_PR_PER_RUN} 件。残りは次回")
             continue
-        branch = f"repair/{slug}-{day}"
+        branch = f"repair/{slug}"   # 日付を付けない: 同じ slug の open PR は 1 つだけ（reviewer F-01）。close 済みなら同名ブランチを上書きして作り直す
         name = names.get(slug, slug)
         text = f.read_text(encoding="utf-8")
         why, count, note = _header_info(text)
@@ -124,7 +124,7 @@ def propose(dry_run: bool = False, proposals_dir: Path | None = None, today: str
             shutil.copyfile(f, dest)
             _run(["git", "-C", c, "add", f"v2/recipes/{slug}.yaml"])
             _run(["git", "-C", c, "commit", "-m", f"v2 repair: {slug} のレシピ案（agy・{count} 頭）"])
-            _run(["git", "-C", c, "push", "-u", "origin", branch])
+            _run(["git", "-C", c, "push", "--force-with-lease", "-u", "origin", branch])   # 前回（close 済み）の同名ブランチを上書き
             out = _run(["gh", "pr", "create", "--draft", "--title", f"v2 repair: {name}（{slug}）のレシピ案",
                         "--body", _pr_body(slug, name, why, count, note)], cwd=clone)
         except (StepError, OSError, subprocess.TimeoutExpired) as e:

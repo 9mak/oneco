@@ -121,7 +121,7 @@ AI は案を書くだけ。案は `collector propose` が draft PR にし、**�
    - 二重起動は `state/collect.lock`（flock）で防ぐ。取れなければ run は exit 3 で何もせず終わる
    - ページが読めず `status: failed` になったもの（接続系エラー・遮断中を除く）は、`ONECO_AI_REPAIR=1` なら **その場で 1 回だけ** agy にレシピ案を書かせる。返った YAML は strict schema（`collector/recipe_schema.py`）で検査してから試し、1 頭以上取れたら **案として `data/proposals/<slug>.yaml` に保存する（`recipes/<slug>.yaml` は書き換えない。W006 T614）**。status は failed のまま。新レシピで同じ id が 2 回以上出るものは案にしない（重複）
 2. `collector notify` — report に異常（failed、または AI がレシピを書き直した）があるときだけ Discord に 1 通。平常時は何も送らない
-   - `collector propose`（`ONECO_AI_REPAIR=1` のときだけ）— `data/proposals/*.yaml` のうち `recipes/` と中身が違うものを、作業用 clone から `repair/<slug>-<日付>` ブランチの **draft PR** にする（最大 5 件）。同じ slug の open な PR があれば飛ばす。PR にした案は `data/proposals/done/` へ移す。PR の中身は `diff` を見て、採るなら **merge**（翌日の収集から本番に入る）、採らないなら close。merge は Claude も cron もしない
+   - `collector propose`（`ONECO_AI_REPAIR=1` のときだけ）— `data/proposals/*.yaml` のうち `recipes/` と中身が違うものを、作業用 clone から `repair/<slug>` ブランチ（日付なし）の **draft PR** にする（最大 5 件）。同じ slug の open な PR があれば飛ばす。close した PR は、翌日も failed のままなら同名ブランチを上書きしてまた draft PR が出る（止めたいなら `enabled: false` か `link_only` にする）。PR にした案は `data/proposals/done/` へ移す。PR の中身は `diff` を見て、採るなら **merge**（翌日の収集から本番に入る）、採らないなら close。merge は Claude も cron もしない
 3. `site/build.py` — `data/latest.json` から `site/dist/` を作る
 4. `wrangler deploy`（`ops/wrangler.jsonc`）— `site/dist/` を Cloudflare Workers の静的アセットへ
 5. **月曜（JST）だけ** `collector discover --notify` — 環境省リンク集と台帳の差分のうち、確認済み一覧（`registry/discover_known.yaml`）に無いもの（新しく増えた・消えた自治体）があるときだけ Discord に 1 通（4 節）。成否は「全部成功」に数えない（失敗しても rc・healthcheck・「失敗した工程」通知に影響しない）
