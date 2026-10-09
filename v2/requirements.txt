@@ -3,5 +3,4 @@ beautifulsoup4
 lxml
 pyyaml
 pdfplumber
-anthropic
 playwright

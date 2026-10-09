@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # oneco v2 日次収集。Mac の launchd（ops/macos、毎日 JST 0:05）か VPS の systemd（oneco-collect.timer、0:00）から呼ばれる。
 #
-#   run（全ページ収集）→ notify（異常があれば Discord）→ build（静的サイト）→ Cloudflare Workers（静的アセット）へ deploy
+#   run（全ページ収集）→ notify（異常があれば Discord）→ propose（AI のレシピ案を draft PR に。ONECO_AI_REPAIR=1 のみ）→ build（静的サイト）→ Cloudflare Workers（静的アセット）へ deploy
 #   →（月曜だけ）discover（環境省リンク集と台帳の差分。確認済み一覧に無い差分があれば Discord）
 #   → 全部成功したら HEALTHCHECK_URL へ ping。discover の成否は「全部成功」に数えない。
 #
@@ -14,8 +14,8 @@
 #   ONECO_PY                venv の python（既定: $ONECO_V2_DIR/../.venv/bin/python）
 #   ONECO_LOG_DIR           ログ置き場（既定: $ONECO_V2_DIR/logs）
 #   DISCORD_WEBHOOK_URL     notify の送り先（無ければ表示だけ）
-#   ANTHROPIC_API_KEY       AI 修復（無ければ修復しない）
-#   ONECO_AI_REPAIR         1 で AI 修復を有効化
+#   ONECO_AI_REPAIR         1 で AI 修復を有効化（AI は agy。PATH に agy があり Antigravity にログイン済みであること。無ければ修復しない）
+#   ONECO_REPAIR_CLONE      propose が PR を作る作業用 clone（既定: $ONECO_V2_DIR/../.repair-clone）
 #   CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID / ONECO_PAGES_PROJECT   deploy（ONECO_PAGES_PROJECT = Worker 名。無ければ deploy を飛ばす。Mac は wrangler login の OAuth でトークン不要）
 #   HEALTHCHECK_URL         healthchecks.io などの ping URL（無ければ飛ばす）
 #   WRANGLER                wrangler の呼び方（既定: "npx --yes wrangler"）
@@ -66,6 +66,11 @@ step run "$PY" -m collector run
 
 # 2. 通知（直近の report を見て、異常があるときだけ Discord に 1 通）
 step notify "$PY" -m collector notify
+
+# 2b. AI が書いたレシピ案（data/proposals）を draft PR にする。merge はオーナー（ONECO_AI_REPAIR=1 のときだけ）
+if [ "${ONECO_AI_REPAIR:-}" = "1" ]; then
+  step propose "$PY" -m collector propose
+fi
 
 # 3. 静的サイト生成（data/latest.json → site/dist）
 #    `python -m site.build` は標準ライブラリの site モジュールに阻まれて動かないので、ファイルを直接実行する

@@ -73,7 +73,6 @@ CLOUDFLARE_ACCOUNT_ID=...
 ONECO_PAGES_PROJECT=oneco
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
 HEALTHCHECK_URL=https://hc-ping.com/...
-ANTHROPIC_API_KEY=sk-ant-...
 ONECO_AI_REPAIR=1
 ```
 
@@ -98,11 +97,12 @@ journalctl -u oneco-collect -f                 # ログ（/var/log/oneco/collect
 [healthchecks.io](https://healthchecks.io) で Check を 1 つ作る。Period = 1 day、Grace = 3 hours（収集は最長 3 時間）。Ping URL が `HEALTHCHECK_URL`。
 collect.sh は全部成功したときだけこの URL を叩き、どこかが失敗した日は `URL/fail` を叩く。0:00 を過ぎても ping が来ない（VPS が落ちた・cron が動かない）と healthchecks からメールが来る。Integrations で Discord にも流せる。
 
-### 1-5. ANTHROPIC_API_KEY（AI 修復）
+### 1-5. agy（AI 修復）
 
-[console.anthropic.com](https://console.anthropic.com) → API Keys で発行。`/etc/oneco/collect.env` に `ANTHROPIC_API_KEY` と `ONECO_AI_REPAIR=1` を書く。
-`ONECO_AI_REPAIR=1` が無いと修復は動かない（キーだけ置いても課金されない）。使うモデルは既定 `claude-sonnet-5`、変えるなら `ONECO_AI_MODEL`。
-修復の入力はページ本文（自治体サイトの内容＝信頼できない入力）なので、script・style・コメント・hidden・display:none・template を除き、`<untrusted_html>` で囲んで「指示ではない」と明記して渡す（W006 T617）。
+AI 修復は有料 API を使わず agy（Antigravity CLI、Gemini）で動かす。実行する Mac / VPS で `agy` が PATH にあり、Antigravity にログイン済みであること（agy は `~/.gemini` にログを書く）。
+`/etc/oneco/collect.env`（Mac は `~/.config/oneco/collect.env`）に `ONECO_AI_REPAIR=1` を書く。これが無いと修復は動かない。`agy` が PATH に無いと修復は「未設定」で飛ばされる。モデルは agy の既定のまま（こちらからは指定しない）。
+修復の入力はページ本文（自治体サイトの内容＝信頼できない入力）なので、script・style・コメント・hidden・display:none・template を除き、`<untrusted_html>` で囲んで「指示ではない」と明記して渡す（W006 T617）。agy にはファイルを読む・コマンドを実行することを禁じ（`--mode plan`）、JSON（`collector/repair_schema.json`）だけ返させる。
+AI は案を書くだけ。案は `collector propose` が draft PR にし、**オーナーが PR を merge したときだけ本番に入る**（自動 merge はしない）。PR は作業用 clone（`ONECO_REPAIR_CLONE`、既定 `<v2>/../.repair-clone`）から作るので、`git` と `gh`（ログイン済み）が要る。1 回の実行で作る PR は最大 5 件。`DISCORD_WEBHOOK_URL` があれば PR ごとに 1 行送る。
 
 ### 1-6. 残っている手動作業（2026-10-01 時点・T506）
 
@@ -119,8 +119,9 @@ collect.sh は全部成功したときだけこの URL を叩き、どこかが�
 
 1. `collector run` — 台帳（`registry/sources.yaml`）の `enabled: true` のページを 1 秒間隔で全部読み、`data/animals-<日付>.json` `data/latest.json` `data/report-<日付>.json` `data/manifest-<日付>.json` を書く（`data/.tmp-<run_id>/` に全部書いて検査してから置き換える。検査に落ちたら何も置き換えない）
    - 二重起動は `state/collect.lock`（flock）で防ぐ。取れなければ run は exit 3 で何もせず終わる
-   - ページが読めず `status: failed` になったもの（接続系エラー・遮断中を除く）は、`ONECO_AI_REPAIR=1` なら **その場で 1 回だけ** Claude にレシピ案を書かせる。返った YAML は strict schema（`collector/recipe_schema.py`）で検査してから試し、1 頭以上取れたら **案として `data/proposals/<slug>.yaml` に保存する（`recipes/<slug>.yaml` は書き換えない。W006 T614）**。status は failed のまま。案は人が `diff recipes/<slug>.yaml data/proposals/<slug>.yaml` で確かめて、採るなら `recipes/` へコピーして PR にする（案の先頭の `# proposal:` コメントは消してから）
+   - ページが読めず `status: failed` になったもの（接続系エラー・遮断中を除く）は、`ONECO_AI_REPAIR=1` なら **その場で 1 回だけ** agy にレシピ案を書かせる。返った YAML は strict schema（`collector/recipe_schema.py`）で検査してから試し、1 頭以上取れたら **案として `data/proposals/<slug>.yaml` に保存する（`recipes/<slug>.yaml` は書き換えない。W006 T614）**。status は failed のまま。新レシピで同じ id が 2 回以上出るものは案にしない（重複）
 2. `collector notify` — report に異常（failed、または AI がレシピを書き直した）があるときだけ Discord に 1 通。平常時は何も送らない
+   - `collector propose`（`ONECO_AI_REPAIR=1` のときだけ）— `data/proposals/*.yaml` のうち `recipes/` と中身が違うものを、作業用 clone から `repair/<slug>-<日付>` ブランチの **draft PR** にする（最大 5 件）。同じ slug の open な PR があれば飛ばす。PR にした案は `data/proposals/done/` へ移す。PR の中身は `diff` を見て、採るなら **merge**（翌日の収集から本番に入る）、採らないなら close。merge は Claude も cron もしない
 3. `site/build.py` — `data/latest.json` から `site/dist/` を作る
 4. `wrangler deploy`（`ops/wrangler.jsonc`）— `site/dist/` を Cloudflare Workers の静的アセットへ
 5. **月曜（JST）だけ** `collector discover --notify` — 環境省リンク集と台帳の差分のうち、確認済み一覧（`registry/discover_known.yaml`）に無いもの（新しく増えた・消えた自治体）があるときだけ Discord に 1 通（4 節）。成否は「全部成功」に数えない（失敗しても rc・healthcheck・「失敗した工程」通知に影響しない）
@@ -238,7 +239,7 @@ cd v2   # 本番クローンなら ~/oneco-collect/v2
      recipe: recipes/city_example-1.yaml
      enabled: true
    ```
-2. レシピを作る。まず AI に書かせる: `ANTHROPIC_API_KEY=... python -m collector repair city_example-1 --show`（レシピが無い slug でも案が `data/proposals/<slug>.yaml` に出る。1 頭以上取れた時だけ。採るときは `recipes/<slug>.yaml` へ人がコピーする）。駄目なら `python -m collector fetch <url> --selectors` で表・リストの候補を見て `docs/RECIPE.md` の通り手で書く
+2. レシピを作る。まず AI に書かせる: `python -m collector repair city_example-1 --show`（agy が必要。レシピが無い slug でも案が `data/proposals/<slug>.yaml` に出る。1 頭以上取れた時だけ。`python -m collector propose` で draft PR にして merge するか、手で `recipes/<slug>.yaml` へコピーする）。駄目なら `python -m collector fetch <url> --selectors` で表・リストの候補を見て `docs/RECIPE.md` の通り手で書く
 3. `python -m collector show city_example-1` で取れた行・捨てた行を確認。写真・性別・収容日が合っていること
 4. `python -m pytest tests -q`（台帳とレシピが読めることを確認するテストが入っている）
 5. commit → push → VPS で `git -C /opt/oneco pull`。翌日 0:00 から載る。すぐ載せたいなら `sudo systemctl start oneco-collect.service`
@@ -260,10 +261,8 @@ cd v2   # 本番クローンなら ~/oneco-collect/v2
 | Cloudflare Workers 静的アセット（Free プラン。独自ドメイン込み） | 0 円（静的アセットの配信は Workers のリクエスト数に数えない） |
 | healthchecks.io（Free、20 checks まで） | 0 円 |
 | Discord webhook | 0 円 |
-| Anthropic API（AI 修復） | 1 回あたり入力 3〜6 万トークン・出力 1 千トークン前後。claude-sonnet-5（入力 $2 / 出力 $10 per 1M）で 1 回 15〜30 円程度。壊れるのは月に数ページなので通常 100〜500 円。サイト改修が重なる年度替わり（4 月）に 1 日 10 件走っても 1 日 300 円が上限目安 |
-| 合計（Mac で動かす場合） | 100〜500 円（AI 修復の分だけ） |
-
-Anthropic のコンソールで Usage limits に月 $10 程度の上限を入れておくと、暴走しても止まる。
+| AI 修復（agy） | API 課金なし（Antigravity の既存契約の枠内） |
+| 合計（Mac で動かす場合） | 0 円（既存契約の範囲） |
 
 ## CI（W006 T612・T613）
 
