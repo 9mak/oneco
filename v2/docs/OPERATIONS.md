@@ -154,6 +154,32 @@ AI がレシピを書き直した自治体 1 件（recipes/<slug>.yaml が変わ
 
 通知が来ない日 = 全ページ読めた日（ただし収集サーバー自体が動かなかった日も通知は来ない。サイトの日付が 2 日以上古ければ疑う）。healthchecks から「ping が来ない」メールが来たら収集サーバー自体を見る。Mac なら `launchctl print gui/$(id -u)/com.oneco.collect` の last exit code と `~/oneco-collect/v2/logs/launchd.log`、VPS なら `systemctl status oneco-collect.timer`、`journalctl -u oneco-collect --since yesterday`。
 
+### 3-1. 再試行の表（`collector/fetch.py`・GET のみ・W006 T602）
+
+| 起きたこと | 再試行 |
+| --- | --- |
+| HTTP 429 / 500 / 502 / 503 / 504 / 408 | する |
+| ConnectError（接続拒否など）・ConnectTimeout・ReadTimeout・WriteTimeout・PoolTimeout・RemoteProtocolError・ReadError・WriteError | する |
+| HTTP 404 / 410 / 401 / 403 / 451 などその他の 4xx | しない |
+| DNS 解決の失敗・TLS（証明書）の失敗 | しない（直らない。回線断の日に全体が長引くだけ） |
+
+- 待ちは Full Jitter の指数 backoff（`random.uniform(0, min(20, 2 * 2^n))` 秒）。`Retry-After`（秒数・HTTP-date）があればそちらを優先し、60 秒を超える指定なら待たずに失敗する（`retry_after` が report に残る）。
+- 1 URL あたり最大 4 回（初回 + 再試行 3）、再試行待ちの合計は 45 秒まで。超えたらそこで失敗にする。report の `attempt` が試行回数。
+- timeout は connect 10 秒・read 30 秒・write 10 秒・pool 10 秒。
+
+### 3-2. 「取得不能」（kind が content / redirect）の判定（W006 T604）
+
+HTTP 200 で返ってきても、次のページは 0 頭にせず失敗（`取得不能: <理由>: <URL>`）として扱う。前日のデータは残る。JS 描画（render）の結果にも同じ判定をかける。
+
+| kind | 条件 |
+| --- | --- |
+| `redirect` | 最終 URL のホストが要求と違う（`www.` の有無・同じ登録ドメイン配下のサブドメイン違いは許容） |
+| `content` | Content-Type が html / xhtml / pdf / text/plain / json のどれでもない（URL が .pdf の octet-stream は許容） |
+| `content` | HTML が 512 バイト未満（空殻）。PDF が `%PDF-` で始まらない |
+| `content` | `<title>`・h1・h2 に「メンテナンス中」「サービス停止中」「システムメンテナンス」「Service Unavailable」「Access Denied」「アクセスが拒否」「CAPTCHA」「Just a moment...」「ただいまアクセスが集中」「Checking your browser」。または本文先頭 2,000 文字に `cf-browser-verification`・`Incapsula` |
+
+本文の途中に語があるだけでは判定しない（通常の記述の誤検知を避けるため）。誤って止まる自治体が出たら、`collector/fetch.py` の `ERROR_PAGE_WORDS` を見直す。
+
 ## 4. 週 1 回の自動通知: `collector discover`（新しい自治体を拾う）
 
 環境省の「収容動物の情報を掲載している自治体リンク先一覧」（`collector/discover.py` の `ENV_URL`）と台帳をドメイン単位で突き合わせる。`ops/collect.sh` が毎週月曜（JST）に `collector discover --notify` を走らせる（2 節）。
