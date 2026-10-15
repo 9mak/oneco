@@ -270,3 +270,31 @@ def test_write_back_skips_non_match(tmp_path):
     res = vr.run(load_sources(p), make_fetch({}), workers=1, today="2026-10-15")
     assert vr.write_back(p, res, "2026-10-15") == 0
     assert p.read_text(encoding="utf-8") == YAML_TEXT
+
+
+# --- 番号がフッターにしか出ないもの（代表番号の疑い） ---
+
+def test_phone_only_in_footer_tag():
+    html = page("<p>本文だけ。担当課 011-111-1111</p>").replace("</body>", "<footer>代表 059-352-0613</footer></body>")
+    assert vr.phone_only_in_footer(html, "0593520613") is True
+
+
+def test_phone_in_body_and_footer_is_not_footer_only():
+    html = page("<p>電話 059-352-0613</p>").replace("</body>", "<footer>代表 059-352-0613</footer></body>")
+    assert vr.phone_only_in_footer(html, "0593520613") is False
+
+
+def test_phone_only_in_last_1500_chars_without_footer_tag():
+    html = page("<p>" + "あ" * 2000 + "</p><div>代表 059-352-0613</div>")
+    assert vr.phone_only_in_footer(html, "0593520613") is True
+
+
+def test_phone_early_in_page_without_footer_tag_is_not_footer_only():
+    html = page("<p>電話 059-352-0613</p><p>" + "あ" * 2000 + "</p>")
+    assert vr.phone_only_in_footer(html, "0593520613") is False
+
+
+def test_verify_group_records_phone_footer_only():
+    html = page("<p>" + "い" * 2000 + "</p>").replace("</body>", "<footer>代表 059-352-0613</footer></body>")
+    r = vr.verify_group(make_fetch({"http://x/": html}), "http://x/", "059-352-0613", None)
+    assert r.phone_found is True and r.phone_footer_only is True

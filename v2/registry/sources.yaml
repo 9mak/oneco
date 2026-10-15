@@ -26,12 +26,16 @@ sources:
     list_link_pattern: null
     pdf_link_pattern: a[href$='.pdf']
 - slug: mie_dakc
-  name: 三重県動物愛護管理センター（迷い犬情報）
+  name: 三重県動物愛護管理センター（迷い犬情報）（収容先は掲載元で確認）
   municipality: 三重県動物愛護管理センター
   prefecture: 三重県
-  phone: null
-  address: null
+  phone: 059-256-4168
+  address: 〒514-1254 三重県津市森町字中大谷2438番地2（公益財団法人三重県動物管理事務所）
   url: http://mie-dakc.server-shared.com/maigoinujyouhou.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "http://mie-dakc.server-shared.com/maigoinujyouhou.html"
+  verified_address_url: "http://mie-dakc.server-shared.com/maigoinujyouhou.html"
+  note: "県のまとめページ。個体の収容先（保健所）は別のことがある"
   kind: stray
   species: dog
   mode: recipe
@@ -1653,12 +1657,16 @@ sources:
     pdf_link_pattern: null
   note: 本文は Instagram へのリンクのみ
 - slug: pref_toyama
-  name: 富山県（迷い犬猫情報）
+  name: 富山県（迷い犬猫情報）（収容先は掲載元で確認）
   municipality: 富山県
   prefecture: 富山県
-  phone: null
-  address: null
+  phone: 076-462-3467
+  address: 〒930-0275 富山県中新川郡立山町利田（富山県動物管理センター）
   url: https://www.pref.toyama.jp/1207/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.toyama.jp/1207/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/index.html"
+  verified_address_url: "https://www.pref.toyama.jp/1207/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/index.html"
+  note: "県のまとめページ。個体の収容先（保健所）は別のことがある"
   kind: stray
   species: mixed
   mode: recipe
@@ -1839,12 +1847,16 @@ sources:
     list_link_pattern: null
     pdf_link_pattern: null
 - slug: spec_pref_gifu
-  name: 岐阜県（迷い犬情報）
+  name: 岐阜県（迷い犬情報）（収容先は掲載元で確認）
   municipality: 岐阜県
   prefecture: 岐阜県
-  phone: null
-  address: null
+  phone: 058-272-1986
+  address: 〒500-8570 岐阜県岐阜市薮田南2丁目1番1号（岐阜県庁 生活衛生課 動物愛護係）
   url: https://www.pref.gifu.lg.jp/page/1638.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.gifu.lg.jp/page/1638.html"
+  verified_address_url: "https://www.pref.gifu.lg.jp/page/1638.html"
+  note: "県のまとめページ。個体の収容先（保健所）は別のことがある"
   kind: stray
   species: dog
   mode: recipe
@@ -1916,12 +1928,15 @@ sources:
     list_link_pattern: null
     pdf_link_pattern: null
 - slug: pref_iwate
-  name: 岩手県（保護動物情報・ハブ）
+  name: 岩手県（保護動物情報・ハブ）（収容先は掲載元で確認）
   municipality: 岩手県
   prefecture: 岩手県
-  phone: null
-  address: null
+  phone: 019-629-5385
+  address: 〒020-8570 岩手県盛岡市内丸10-1（環境生活部 県民くらしの安全課 食の安全安心担当）
   url: https://www.pref.iwate.jp/kurashikankyou/anzenanshin/pet/1004615.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.iwate.jp/kurashikankyou/anzenanshin/pet/1004615.html"
+  verified_address_url: "https://www.pref.iwate.jp/kurashikankyou/anzenanshin/pet/1004615.html"
   kind: sheltered
   species: mixed
   mode: link_only
@@ -1933,7 +1948,7 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
-  note: 9 保健所へのリンク集。2026-09-29 に保健所ごとに台帳へ分割した（pref_iwate_*）。盛岡市保健所は個体一覧ページが無いので対象外
+  note: 9 保健所へのリンク集。2026-09-29 に保健所ごとに台帳へ分割した（pref_iwate_*）。盛岡市保健所は個体一覧ページが無いので対象外 県のまとめページ。個体の収容先（保健所）は別のことがある
 - slug: pref_shimane
   name: 島根県 松江保健所（収容動物）
   municipality: 島根県 松江保健所
@@ -2505,12 +2520,16 @@ sources:
     list_link_pattern: null
     pdf_link_pattern: null
 - slug: shuyojoho_tokyo-1
-  name: 東京都収容動物情報（犬）
+  name: 東京都収容動物情報（犬）（収容先は掲載元で確認）
   municipality: 東京都収容動物情報
   prefecture: 東京都
-  phone: null
-  address: null
+  phone: 03-3302-3507
+  address: 〒156-0056 東京都世田谷区八幡山二丁目9番地11号（東京都動物愛護相談センター）
   url: https://shuyojoho.metro.tokyo.lg.jp/
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://shuyojoho.metro.tokyo.lg.jp/"
+  verified_address_url: "https://shuyojoho.metro.tokyo.lg.jp/"
+  note: "県のまとめページ。個体の収容先（保健所）は別のことがある"
   kind: sheltered
   species: dog
   mode: recipe
@@ -2523,12 +2542,16 @@ sources:
     list_link_pattern: null
     pdf_link_pattern: null
 - slug: shuyojoho_tokyo-2
-  name: 東京都収容動物情報（猫等）
+  name: 東京都収容動物情報（猫等）（収容先は掲載元で確認）
   municipality: 東京都収容動物情報
   prefecture: 東京都
-  phone: null
-  address: null
+  phone: 03-3302-3507
+  address: 〒156-0056 東京都世田谷区八幡山二丁目9番地11号（東京都動物愛護相談センター）
   url: https://shuyojoho.metro.tokyo.lg.jp/cat
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://shuyojoho.metro.tokyo.lg.jp/cat"
+  verified_address_url: "https://shuyojoho.metro.tokyo.lg.jp/cat"
+  note: "県のまとめページ。個体の収容先（保健所）は別のことがある"
   kind: sheltered
   species: mixed    # 2026-10-05: 「猫・その他」タブ。種別はレシピで動物名から決める
   mode: recipe
@@ -3027,12 +3050,16 @@ sources:
     list_link_pattern: a[href*='/animals/detail/']
     pdf_link_pattern: null
 - slug: pref_ishikawa
-  name: 石川県（保護犬・猫情報）
+  name: 石川県（保護犬・猫情報）（収容先は掲載元で確認）
   municipality: 石川県
   prefecture: 石川県
-  phone: null
-  address: null
+  phone: 076-204-8622
+  address: 〒929-0323 石川県河北郡津幡町字津幡エ9（いしかわ動物愛護センター）
   url: https://aigo-ishikawa.jp/lostpet_list/   # 県ページ（pref.ishikawa.lg.jp/yakuji/doubutsu/hogoinuneko.html）は案内だけで、実データは委託先のこのページ
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://aigo-ishikawa.jp/lostpet_list/"
+  verified_address_url: "https://aigo-ishikawa.jp/lostpet_list/"
+  note: "県のまとめページ。個体の収容先（保健所）は別のことがある"
   kind: stray
   species: mixed
   mode: recipe
@@ -3712,12 +3739,16 @@ sources:
     list_link_pattern: null
     pdf_link_pattern: null
 - slug: pref_fukushima-1
-  name: 福島県（中通り 迷子犬）
+  name: 福島県（中通り 迷子犬）（収容先は掲載元で確認）
   municipality: 福島県
   prefecture: 福島県
-  phone: null
-  address: null
+  phone: 024-953-6400
+  address: 〒963-7732 福島県田村郡三春町大字上舞木字向田17番（福島県動物愛護センター）
   url: https://www.pref.fukushima.lg.jp/sec/21620a/maigo-dog-miharu.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.fukushima.lg.jp/sec/21620a/maigo-dog-miharu.html"
+  verified_address_url: "https://www.pref.fukushima.lg.jp/sec/21620a/maigo-dog-miharu.html"
+  note: "県のまとめページ。個体の収容先（保健所）は別のことがある"
   kind: stray
   species: dog
   mode: recipe
@@ -3730,12 +3761,16 @@ sources:
     list_link_pattern: null
     pdf_link_pattern: null
 - slug: pref_fukushima-2
-  name: 福島県（中通り 迷子猫）
+  name: 福島県（中通り 迷子猫）（収容先は掲載元で確認）
   municipality: 福島県
   prefecture: 福島県
-  phone: null
-  address: null
+  phone: 024-953-6400
+  address: 〒963-7732 福島県田村郡三春町大字上舞木字向田17番（福島県動物愛護センター）
   url: https://www.pref.fukushima.lg.jp/sec/21620a/maigo-cat-miharu.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.fukushima.lg.jp/sec/21620a/maigo-cat-miharu.html"
+  verified_address_url: "https://www.pref.fukushima.lg.jp/sec/21620a/maigo-cat-miharu.html"
+  note: "県のまとめページ。個体の収容先（保健所）は別のことがある"
   kind: stray
   species: cat
   mode: recipe
@@ -4027,12 +4062,16 @@ sources:
   enabled: true
   note: 2026-10-04 追加。成犬・成猫の PDF（pdf-1）に入っていない子犬・子猫が収容日ごとの koinu*.pdf にだけ載る（当日 9 頭）
 - slug: animal_net_nagasaki-1
-  name: 長崎犬猫ネット（保健所収容）
+  name: 長崎犬猫ネット（保健所収容）（収容先は掲載元で確認）
   municipality: 長崎犬猫ネット
   prefecture: 長崎県
-  phone: null
-  address: null
+  phone: 095-895-2364
+  address: 〒850-8570 長崎県長崎市尾上町3-1（長崎県 県民生活環境部 生活衛生課）
   url: https://animal-net.pref.nagasaki.jp/syuuyou
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://animal-net.pref.nagasaki.jp/syuuyou"
+  verified_address_url: "https://animal-net.pref.nagasaki.jp/syuuyou"
+  note: "県のまとめページ。個体の収容先（保健所）は別のことがある"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -4045,12 +4084,16 @@ sources:
     list_link_pattern: a[href*='/animal/no-']
     pdf_link_pattern: null
 - slug: animal_net_nagasaki-2
-  name: 長崎犬猫ネット（一般譲渡・個人やボランティアの掲示）
+  name: 長崎犬猫ネット（一般譲渡・個人やボランティアの掲示）（収容先は掲載元で確認）
   municipality: 長崎犬猫ネット
   prefecture: 長崎県
-  phone: null
-  address: null
+  phone: 095-895-2364
+  address: 〒850-8570 長崎県長崎市尾上町3-1（長崎県 県民生活環境部 生活衛生課）
   url: https://animal-net.pref.nagasaki.jp/jyouto
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://animal-net.pref.nagasaki.jp/jyouto"
+  verified_address_url: "https://animal-net.pref.nagasaki.jp/jyouto"
+  note: "県のまとめページ。個体の収容先（保健所）は別のことがある"
   kind: adoption
   species: mixed
   mode: recipe
@@ -4063,12 +4106,16 @@ sources:
     list_link_pattern: a[href*='/animal/no-']
     pdf_link_pattern: null
 - slug: animal_net_nagasaki-3
-  name: 長崎犬猫ネット（迷子）
+  name: 長崎犬猫ネット（迷子）（収容先は掲載元で確認）
   municipality: 長崎犬猫ネット
   prefecture: 長崎県
-  phone: null
-  address: null
+  phone: 095-895-2364
+  address: 〒850-8570 長崎県長崎市尾上町3-1（長崎県 県民生活環境部 生活衛生課）
   url: https://animal-net.pref.nagasaki.jp/maigo
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://animal-net.pref.nagasaki.jp/maigo"
+  verified_address_url: "https://animal-net.pref.nagasaki.jp/maigo"
+  note: "県のまとめページ。個体の収容先（保健所）は別のことがある"
   kind: lost   # 飼い主が自分の迷子を探している告知（2026-10-02 監査で区分を追加）
   species: mixed
   mode: recipe
@@ -4081,12 +4128,16 @@ sources:
     list_link_pattern: a[href*='/animal/no-']
     pdf_link_pattern: null
 - slug: animal_net_nagasaki-4
-  name: 長崎犬猫ネット（保護）
+  name: 長崎犬猫ネット（保護）（収容先は掲載元で確認）
   municipality: 長崎犬猫ネット
   prefecture: 長崎県
-  phone: null
-  address: null
+  phone: 095-895-2364
+  address: 〒850-8570 長崎県長崎市尾上町3-1（長崎県 県民生活環境部 生活衛生課）
   url: https://animal-net.pref.nagasaki.jp/hogo
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://animal-net.pref.nagasaki.jp/hogo"
+  verified_address_url: "https://animal-net.pref.nagasaki.jp/hogo"
+  note: "県のまとめページ。個体の収容先（保健所）は別のことがある"
   kind: stray       # 2026-10-04: 市民が保護している動物の掲示（自治体の保護ではない）。神奈川センター外と同じ扱い
   species: mixed
   mode: recipe
@@ -4142,11 +4193,11 @@ sources:
   name: 長崎市動物愛護管理センター（犬里親募集）
   municipality: 長崎市動物愛護管理センター
   prefecture: 長崎県
-  phone: 095-822-8888
+  phone: 095-844-2961
   address: 〒852-8104 長崎県長崎市茂里町2番34号
   url: https://www.city.nagasaki.lg.jp/site/doubutsuaigo/list7-19.html
   verified_at: '2026-10-15'
-  verified_phone_url: "https://www.city.nagasaki.lg.jp/site/doubutsuaigo/list7-19.html"
+  verified_phone_url: "https://www.city.nagasaki.lg.jp/site/doubutsuaigo/"
   verified_address_url: "https://www.city.nagasaki.lg.jp/site/doubutsuaigo/"
   kind: adoption
   species: dog
@@ -4163,11 +4214,11 @@ sources:
   name: 長崎市動物愛護管理センター（猫里親募集）
   municipality: 長崎市動物愛護管理センター
   prefecture: 長崎県
-  phone: 095-822-8888
+  phone: 095-844-2961
   address: 〒852-8104 長崎県長崎市茂里町2番34号
   url: https://www.city.nagasaki.lg.jp/site/doubutsuaigo/list7-18.html
   verified_at: '2026-10-15'
-  verified_phone_url: "https://www.city.nagasaki.lg.jp/site/doubutsuaigo/list7-19.html"
+  verified_phone_url: "https://www.city.nagasaki.lg.jp/site/doubutsuaigo/"
   verified_address_url: "https://www.city.nagasaki.lg.jp/site/doubutsuaigo/"
   kind: adoption
   species: cat
@@ -4265,12 +4316,16 @@ sources:
     list_link_pattern: null
     pdf_link_pattern: null
 - slug: pref_shizuoka
-  name: 静岡県（迷い犬情報）
+  name: 静岡県（迷い犬情報）（収容先は掲載元で確認）
   municipality: 静岡県
   prefecture: 静岡県
-  phone: null
-  address: null
+  phone: 0545-30-6875
+  address: 〒417-0801 静岡県富士市大淵2158（静岡県動物愛護センター）
   url: https://www.pref.shizuoka.jp/kenkofukushi/eiseiyakuji/dobutsuaigo/1066835/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.shizuoka.jp/kenkofukushi/eiseiyakuji/dobutsuaigo/1081689/index.html"
+  verified_address_url: "https://www.pref.shizuoka.jp/kenkofukushi/eiseiyakuji/dobutsuaigo/1081689/index.html"
+  note: "県のまとめページ。個体の収容先（保健所）は別のことがある"
   kind: stray
   species: dog
   mode: recipe
@@ -4425,12 +4480,16 @@ sources:
     list_link_pattern: null
     pdf_link_pattern: a[href*='/documents/6103/'][href$='.pdf']
 - slug: kochi_apc
-  name: 高知県中央・中村小動物管理センター（譲渡）    # 2026-10-05: サイトの表記に合わせた（旧: 高知県動物愛護センター）
+  name: 高知県中央・中村小動物管理センター（譲渡）（収容先は掲載元で確認）    # 2026-10-05: サイトの表記に合わせた（旧: 高知県動物愛護センター）
   municipality: 高知県中央・中村小動物管理センター
   prefecture: 高知県
-  phone: null
-  address: null
+  phone: 088-831-7939
+  address: 〒780-8021 高知県高知市孕東町56-2（高知県中央小動物管理センター。中村小動物管理センターは別所在地）
   url: https://kochi-apc.com/jouto/
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://kochi-apc.com/jouto/"
+  verified_address_url: "https://kochi-apc.com/jouto/"
+  note: "県のまとめページ。個体の収容先（保健所）は別のことがある"
   kind: adoption
   species: mixed
   mode: recipe
@@ -4443,12 +4502,16 @@ sources:
     list_link_pattern: a[href*='kochi-apc.com/center-data/']
     pdf_link_pattern: null
 - slug: pref_tottori
-  name: 鳥取県（迷子動物情報）
+  name: 鳥取県（迷子動物情報）（収容先は掲載元で確認）
   municipality: 鳥取県
   prefecture: 鳥取県
-  phone: null
-  address: null
+  phone: 0857-26-7593
+  address: 〒680-8570 鳥取県鳥取市東町1丁目220（生活環境部 くらしの安心推進課）
   url: https://www.pref.tottori.lg.jp/221001.htm
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.tottori.lg.jp/221001.htm"
+  verified_address_url: "https://www.pref.tottori.lg.jp/221001.htm"
+  note: "県のまとめページ。個体の収容先（保健所）は別のことがある"
   kind: stray
   species: mixed
   mode: recipe
