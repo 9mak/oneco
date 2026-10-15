@@ -192,7 +192,7 @@ HTTP 200 で返ってきても、次のページは 0 頭にせず失敗（`取�
 | --- | --- |
 | `redirect` | 最終 URL のホストが要求と違う（`www.` の有無・同じ登録ドメイン配下のサブドメイン違いは許容） |
 | `content` | Content-Type が html / xhtml / pdf / text/plain / json のどれでもない（URL が .pdf の octet-stream は許容） |
-| `content` | HTML が 512 バイト未満（空殻）。PDF が `%PDF-` で始まらない |
+| `content` | HTML が 512 バイト未満で、かつ本文テキストもリンクも無い（空殻）。見出しやリンクがある短いページは実ページとして通す（堺の入口・栃木の 0 頭ページ）。PDF が `%PDF-` で始まらない |
 | `content` | `<title>`・h1・h2 に「メンテナンス中」「サービス停止中」「システムメンテナンス」「Service Unavailable」「Access Denied」「アクセスが拒否」「CAPTCHA」「Just a moment...」「ただいまアクセスが集中」「Checking your browser」。または本文先頭 2,000 文字に `cf-browser-verification`・`Incapsula` |
 
 本文の途中に語があるだけでは判定しない（通常の記述の誤検知を避けるため）。誤って止まる自治体が出たら、`collector/fetch.py` の `ERROR_PAGE_WORDS` を見直す。

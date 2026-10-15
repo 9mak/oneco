@@ -139,6 +139,19 @@ def _hostname(url: str) -> str:
     return (urlsplit(url).hostname or "").lower()
 
 
+_HEAD_PART = re.compile(r"<head\b.*?</head>", re.I | re.S)
+_NOISE = re.compile(r"<(script|style|template)\b.*?</\1>", re.I | re.S)
+_HREF = re.compile(r"<a\b[^>]*\bhref\s*=", re.I)
+
+
+def _has_substance(text: str) -> bool:
+    """body に見える文字（タグ・script・style を除いて 1 文字以上）かリンクがあるか。"""
+    body = _NOISE.sub("", _HEAD_PART.sub("", text))
+    if _HREF.search(body):
+        return True
+    return bool(_TAG.sub("", body).strip())
+
+
 def _check(page: Page, phase: str = "fetch") -> tuple[ErrorInfo, str] | None:
     """問題があれば (ErrorInfo, 理由)。無ければ None。"""
     def bad(kind: str, reason: str) -> tuple[ErrorInfo, str]:
@@ -156,9 +169,11 @@ def _check(page: Page, phase: str = "fetch") -> tuple[ErrorInfo, str] | None:
             return bad("content", "PDF の中身ではない")
         return None
     if ctype in ("text/html", "application/xhtml+xml") or rendered:
-        if len(page.content) < MIN_HTML_BYTES:
-            return bad("content", f"本文が短すぎる（{len(page.content)} バイト）")
         text = page.html if page.html is not None else page.content.decode("utf-8", errors="replace")
+        # 下限は「本文テキストもリンクも無い殻」にだけ効かせる。堺の 449 バイトの入口（h1 と a だけ。動物がいる日の形）や
+        # 栃木の 151 バイトの h1 だけのページ（0 頭の日）は実ページなので通し、0 頭かどうかはレシピ側で決める（2026-10-15）
+        if len(page.content) < MIN_HTML_BYTES and not _has_substance(text):
+            return bad("content", f"本文が短すぎる（{len(page.content)} バイト）")
         heads = [m.group(1) for m in _TITLE.finditer(text)] + [m.group(1) for m in _HEADING.finditer(text)]
         for h in heads:
             low = _TAG.sub("", h).lower()
