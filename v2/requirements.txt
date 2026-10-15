@@ -1,5 +1,6 @@
 httpx
 beautifulsoup4
+soupsieve<3   # 3.0 は :has() 内の複合セレクタと :has() の入れ子を既定で禁止（函館・堺・福島2・奈良3・松本のレシピが該当。2026-10-15 CI で検出）
 lxml
 pyyaml
 pdfplumber

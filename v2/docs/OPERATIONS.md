@@ -100,7 +100,7 @@ collect.sh は全部成功したときだけこの URL を叩き、どこかが�
 ### 1-5. agy（AI 修復）
 
 AI 修復は有料 API を使わず agy（Antigravity CLI、Gemini）で動かす。実行する Mac / VPS で `agy` が PATH にあり、Antigravity にログイン済みであること（agy は `~/.gemini` にログを書く）。
-`/etc/oneco/collect.env`（Mac は `~/.config/oneco/collect.env`）に `ONECO_AI_REPAIR=1` を書く。これが無いと修復は動かない。`agy` が PATH に無いと修復は「未設定」で飛ばされる。モデルは agy の既定のまま（こちらからは指定しない）。
+`/etc/oneco/collect.env`（Mac は `~/.config/oneco/collect.env`）に `ONECO_AI_REPAIR=1` を書く。これが無いと修復は動かない。`agy` が PATH に無いと修復は「未設定」で飛ばされる（Mac の launchd は PATH を継承しないので、plist の PATH に `~/.local/bin` を入れてある。`ops/macos/install.sh` を入れ直せば反映される）。モデルは agy の既定のまま（こちらからは指定しない）。
 修復の入力はページ本文（自治体サイトの内容＝信頼できない入力）なので、script・style・コメント・hidden・display:none・template を除き、`<untrusted_html>` で囲んで「指示ではない」と明記して渡す（W006 T617）。agy にはファイルを読む・コマンドを実行することを禁じ（`--mode plan`）、JSON（`collector/repair_schema.json`）だけ返させる。
 AI は案を書くだけ。案は `collector propose` が draft PR にし、**オーナーが PR を merge したときだけ本番に入る**（自動 merge はしない）。PR は作業用 clone（`ONECO_REPAIR_CLONE`、既定 `<v2>/../.repair-clone`）から作るので、`git` と `gh`（ログイン済み）が要る。1 回の実行で作る PR は最大 5 件。`DISCORD_WEBHOOK_URL` があれば PR ごとに 1 行送る。
 
