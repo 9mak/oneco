@@ -273,12 +273,23 @@ def test_c_rows_match_and_template_rows():
     assert len(v) == 1 and "半分" in v[0]
 
 
-@pytest.mark.parametrize("n,ok", [(1, False), (2, False), (4, False), (5, True), (10, True), (15, True), (16, False), (0, False)])
-def test_d_regression_boundary(n, ok):
-    v = check_adoption(_res([_animal("1")]), regression_count=n, last_ok_count=10)
+@pytest.mark.parametrize("last,n,ok", [
+    (10, 1, False), (10, 4, False), (10, 5, True), (10, 10, True), (10, 15, True), (10, 16, False),
+    (2, 1, True), (2, 4, True), (2, 5, False),     # 小さい slug は ±2 頭の幅
+    (1, 3, True), (1, 4, False),
+    (3, 5, True), (3, 6, False),                    # 3 × 50% = 1.5 は切り上げて 2、幅は max(2, 2)
+    (30, 14, False), (30, 15, True), (30, 45, True), (30, 46, False),
+])
+def test_d_regression_boundary(last, n, ok):
+    v = check_adoption(_res([_animal("1")]), regression_count=n, last_ok_count=last)
     assert (v == []) is ok
     if not ok:
-        assert "前回" in v[0] and "10" in v[0]
+        assert "前回" in v[0] and str(last) in v[0]
+
+
+def test_d_zero_in_saved_html_is_warning_not_rejection():
+    rep = ai_repair.evaluate_adoption(_res([_animal("1")]), regression_count=0, last_ok_count=10)
+    assert rep.violations == [] and "回帰 NG（旧構造の可能性" in rep.line() and "回帰未確認" not in rep.line()
 
 
 def test_d_skipped_without_baseline():
@@ -322,11 +333,14 @@ def test_repair_regression_uses_saved_html_not_today(tmp_path, api_key, proposal
     assert r.status == "failed" and "前回" in (r.error or "") and not r.saved
 
 
-def test_repair_regression_replay_failure_is_rejected(tmp_path, api_key, proposals):
+def test_repair_regression_zero_keeps_proposal_with_ng_note(tmp_path, api_key, proposals):
     src = _source(tmp_path)
     lo = _saved_last_ok(tmp_path, "<html><body><p>全然別の構造</p></body></html>")
     r = repair(src, fetcher=FakeFetcher({URL: PAGE}), ask=lambda p, sc, t: ans(NEW_RECIPE), last_ok_dir=lo, last_ok_count=2)
-    assert r.status == "failed" and "前回" in (r.error or "")
+    assert r.status == "ok" and r.saved
+    assert "回帰 NG（旧構造の可能性" in r.proposal_path.read_text(encoding="utf-8").splitlines()[1]
+    from collector.propose import _adoption_line, _pr_body
+    assert "回帰 NG（旧構造の可能性" in _pr_body("x", "n", "w", "2", "", _adoption_line(r.proposal_path.read_text(encoding="utf-8")))
 
 
 def test_repair_without_saved_html_is_marked_unverified(tmp_path, api_key, proposals):

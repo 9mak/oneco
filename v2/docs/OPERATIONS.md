@@ -109,10 +109,10 @@ AI の案は **採用条件**（`collector/ai_repair.py` の `check_adoption`、
 | a 必須項目 | 最終レコード全件が `species`（dog/cat）と、写真・管理番号・収容日のどれかを持つ。1 件でも欠けたら不合格 |
 | b 重複 | 同じ id が出ない |
 | c 行数の一致 | レシピが拾った行数 = 動物 + 捨てた行。かつ「写真も管理番号も収容日も個体ページも無い」「種別が決まらず…中身の無い行」で捨てた行が拾った行の半分を超えない（雛形・広告・無関係な行を拾っている兆候） |
-| d 直近正常日での回帰 | run の ok 経路が `data/last_ok/<slug>/` に入口 HTML（と辿った文書。PDF はバイト列のまま。1 文書 2MB 超・render 使用は保存しない）を 1 世代だけ上書き保存する。新レシピをこの保存 HTML に当て、頭数が `state/sources.json` の `last_ok_count` の 50%〜150%（両端を含む）に入ること。保存か `last_ok_count` が無い slug は飛ばし、案のヘッダに「回帰未確認」と書く |
+| d 直近正常日での回帰 | run の ok 経路が `data/last_ok/<slug>/` に入口 HTML（と辿った文書。PDF はバイト列のまま。1 文書 2MB 超・render 使用は保存しない）を 1 世代だけ上書き保存する。新レシピをこの保存 HTML に当て、頭数が `state/sources.json` の `last_ok_count` ± max(2 頭、50%)（両端を含む・下限は 0）に入ること。ただし保存 HTML で 0 頭のときは不合格にせず、ヘッダと PR 本文に「回帰 NG（旧構造の可能性）」と書いて案を残す（サイト改修直後は保存 HTML が旧構造のため）。保存か `last_ok_count` が無い slug は飛ばし、案のヘッダに「回帰未確認」と書く |
 | e 今日の HTML | `data/proposals/<slug>.today.html` に案と並べて保存する（期待値は assert しない。人が差分を見る） |
 
-d はサイトを作り直した直後（保存 HTML が旧構造）だと新レシピが当たらず不合格になる。その場合は `collector repair <slug> --force --show` で返答を見て人が直す。合否は案の 2 行目 `# 採用条件:` と PR 本文に載る。
+合否と警告は案の 2 行目 `# 採用条件:` と PR 本文に載る。
 AI は案を書くだけ。案は `collector propose` が draft PR にし、**オーナーが PR を merge したときだけ本番に入る**（自動 merge はしない）。PR は作業用 clone（`ONECO_REPAIR_CLONE`、既定 `<v2>/../.repair-clone`）から作るので、`git` と `gh`（ログイン済み）が要る。1 回の実行で作る PR は最大 5 件。`DISCORD_WEBHOOK_URL` があれば PR ごとに 1 行送る。
 
 ### 1-6. 残っている手動作業（2026-10-01 時点・T506）

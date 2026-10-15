@@ -18,7 +18,7 @@ import re
 import shutil
 import subprocess
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -163,7 +163,7 @@ def ask_agy(prompt: str, schema_path: Path, timeout_s: int) -> dict:
 # extract.build が「必須項目なし」で捨てた行の理由（雛形・広告・案内文の行を拾っている兆候）
 MISSING_KEY_REASONS = ("写真も管理番号も収容日も個体ページも無い", "種別が決まらず、掲載が終わった行か中身の無い行")
 DUP_REASON = "同じ ID の行が既にある"
-REGRESSION_MIN_PCT, REGRESSION_MAX_PCT = 50, 150   # 前回 ok の頭数に対する割合（両端を含む）
+REGRESSION_PCT, REGRESSION_MIN_SLACK = 50, 2   # 許容幅 = max(前回 ok の頭数 × 50%、2 頭)。両端を含む。下限は 0 未満にしない
 
 
 @dataclass
@@ -171,12 +171,15 @@ class Adoption:
     violations: list[str]
     passed: list[str]
     skipped: list[str]
+    warned: list[str] = field(default_factory=list)   # 不合格にはしないが人に見せる（回帰 NG）
 
     def line(self) -> str:
         """案のヘッダ・PR 本文に載せる 1 行。"""
         parts = ["合格 " + "・".join(self.passed) if self.passed else "合格なし"]
         if self.skipped:
             parts.append("飛ばした " + "・".join(self.skipped))
+        if self.warned:
+            parts.append("警告 " + "・".join(self.warned))
         text = " / ".join(parts)
         return text + (" / 回帰未確認" if any(x.startswith("d 回帰") for x in self.skipped) else "")
 
@@ -188,6 +191,7 @@ def evaluate_adoption(res: Result, regression_count: int | None = None, last_ok_
     bad: list[str] = []
     ok: list[str] = []
     skip: list[str] = []
+    warn: list[str] = []
 
     def verdict(label: str, problem: str | None) -> None:
         if problem:
@@ -219,14 +223,17 @@ def evaluate_adoption(res: Result, regression_count: int | None = None, last_ok_
     if regression_count is None or not last_ok_count:
         why = skip_reason or ("前回 ok の頭数が不明" if regression_count is not None else "保存 HTML なし")
         skip.append(f"d 回帰（{why}）")
+    elif regression_count == 0:
+        # 保存 HTML が旧構造で、新レシピが今日の構造向けに書かれただけの可能性がある。案は残し、人に見せる
+        warn.append(f"回帰 NG（旧構造の可能性。保存 HTML で 0 頭・前回 {last_ok_count} 頭）")
     else:
-        lo, hi = last_ok_count * REGRESSION_MIN_PCT, last_ok_count * REGRESSION_MAX_PCT
-        if lo <= regression_count * 100 <= hi:
+        slack = max(last_ok_count * REGRESSION_PCT // 100 + (last_ok_count * REGRESSION_PCT % 100 > 0), REGRESSION_MIN_SLACK)
+        lo, hi = max(0, last_ok_count - slack), last_ok_count + slack
+        if lo <= regression_count <= hi:
             ok.append(f"d 回帰（保存 HTML で {regression_count} 頭・前回 {last_ok_count} 頭）")
         else:
-            bad.append(f"保存 HTML に当てた頭数 {regression_count} が前回 ok の {last_ok_count} 頭の "
-                       f"{REGRESSION_MIN_PCT}%〜{REGRESSION_MAX_PCT}% に入らない")
-    return Adoption(bad, ok, skip)
+            bad.append(f"保存 HTML に当てた頭数 {regression_count} が前回 ok の {last_ok_count} 頭の許容範囲 {lo}〜{hi} 頭に入らない")
+    return Adoption(bad, ok, skip, warn)
 
 
 def check_adoption(res: Result, regression_count: int | None = None, last_ok_count: int | None = None,
@@ -236,7 +243,7 @@ def check_adoption(res: Result, regression_count: int | None = None, last_ok_cou
 
 
 def _regress(recipe: Recipe, source: Source, last_ok_dir: Path, last_ok_count: int | None) -> tuple[int | None, str | None]:
-    """新レシピを last_ok の保存 HTML に当てた頭数。(頭数, 飛ばす理由)。当てられなかったら 0 頭として扱う（不合格にする）。"""
+    """新レシピを last_ok の保存 HTML に当てた頭数。(頭数, 飛ばす理由)。当てられなかったら 0 頭として扱う（警告のみ）。"""
     if not last_ok_count:
         return None, "前回 ok の頭数が不明"
     replay = load_replay(last_ok_dir, source.slug)
