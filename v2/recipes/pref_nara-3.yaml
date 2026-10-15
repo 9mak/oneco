@@ -7,9 +7,9 @@
 # 注意: ページ上部の案内文に「現在1次募集中の猫はいません」とあるのに 1次募集中の見出しの下に 2 頭いる（2026-10-05。案内文が古いと見て、見出しと表を信じる）。
 # 注意: 奈良県のサイトは 2026-09-13 に SSL 証明書が失効していて、収集器は取得できない（台帳は link_only）。2026-10-05 の保存 HTML で確かめた。
 rows: >-
-  #tmp_contents :is(p:has(img[alt="1次募集中"]), p:has(img[alt="2次募集中"])) + table td:has(a[href] img),
-  #tmp_contents :is(p:has(img[alt="1次募集中"]), p:has(img[alt="2次募集中"])) + table + table td:has(a[href] img),
-  #tmp_contents :is(p:has(img[alt="1次募集中"]), p:has(img[alt="2次募集中"])) + table + table + table td:has(a[href] img)
+  #tmp_contents :is(p:has(img[alt="1次募集中"]), p:has(img[alt="2次募集中"])) + table td:has(:is(a[href] img)),
+  #tmp_contents :is(p:has(img[alt="1次募集中"]), p:has(img[alt="2次募集中"])) + table + table td:has(:is(a[href] img)),
+  #tmp_contents :is(p:has(img[alt="1次募集中"]), p:has(img[alt="2次募集中"])) + table + table + table td:has(:is(a[href] img))
 image: {selector: "a img@src"}
 fields:
   name: {regex: "^\\s*(\\S+?)\\s*[♀♂]"}

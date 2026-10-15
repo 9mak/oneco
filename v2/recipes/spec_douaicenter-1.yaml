@@ -15,5 +15,5 @@ fields:
   sex: {label: "性別"}
   age: {label: "年齢"}
   size: {label: "体格"}
-  note: {selector: ".elementor-widget-wrap:has(> .elementor-widget-heading .elementor-heading-title:-soup-contains('コメント欄')) > .elementor-widget-text-editor"}   # 個体ページの「コメント欄」（表の外。性格・健康状態・飼育条件が書かれる）
+  note: {selector: ".elementor-widget-wrap:has(> .elementor-widget-heading):has(:is(.elementor-widget-heading .elementor-heading-title:-soup-contains('コメント欄'))) > .elementor-widget-text-editor"}   # 個体ページの「コメント欄」（表の外。性格・健康状態・飼育条件が書かれる）
 empty_text: ["現在、登録がございません"]

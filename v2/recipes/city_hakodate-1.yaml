@@ -7,7 +7,7 @@
 #       新しい CMS でも表のまま載るなら読める（テストは旧い版の表を div.text-beginning で包んで当てる）。
 #   (2) div.temp1 の div.thumb に写真が入る作り（今日の空の雛形からの推測）。写真と種別だけ読む。
 #   どちらでもない作りだった日は rows が 0 になり、0 頭の文言（犬・猫の両方）も消えるので「読めなかった」で通知に載る。
-rows: "div.text-beginning table tr:has(img), div.text-beginning div.temp1:has(.thumb img)"
+rows: "div.text-beginning table tr:has(img), div.text-beginning div.temp1:has(:is(.thumb img))"
 image: "img@src"
 fields:
   management_no: {selector: "td:nth-of-type(1)"}
