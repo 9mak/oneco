@@ -271,6 +271,26 @@ cd v2   # 本番クローンなら ~/oneco-collect/v2
 | AI 修復（agy） | API 課金なし（Antigravity の既存契約の枠内） |
 | 合計（Mac で動かす場合） | 0 円（既存契約の範囲） |
 
+## 台帳の電話・所在地の突合: `ops/verify_registry.py`（W006 T616）
+
+何を: `registry/sources.yaml` の `phone` / `address` が、その entry の `url` のページ（無ければ同一ホストの「お問い合わせ・連絡先・アクセス・施設案内・センター」系リンクを最大 3 件）に本当に載っているかを全件確認する。電話は数字だけに直して本文の数字列に含まれるか、所在地は「番地の先頭（丁目・番まで）」を全角半角・漢数字・丁目/番/号の書き方の違いをならして探す。`(municipality, phone, address)` が同じ組は 1 回だけ取得して結果を共有する。
+
+いつ: 年 1 回と、台帳の `phone` / `address` / `url` を触った時。
+
+```
+python ops/verify_registry.py --dry-run --out data/verify-registry-YYYY-MM-DD.json   # 全件。約 10 分、書き戻さない
+python ops/verify_registry.py --only city_yokkaichi --dry-run                        # 触った entry だけ
+python ops/verify_registry.py --write                                               # 確認できた entry に verified_at / verified_url を書く
+```
+
+見方（標準出力の要約と `--out` の JSON）:
+- 全項目一致: 台帳に値がある項目すべてが元ページにあった。`--write` が `verified_at`（日付）・`verified_phone_url`（電話が載っていたページ）・`verified_address_url`（所在地が載っていたページ）を url 行の直後に足す（コメント・並びは触らない）。台帳に address が無い entry は電話だけ検証して `verified_address_url` は書かない。
+- `verified_at` の意味は「その番号・住所がそのページに載っている」まで。載っている番号がその施設のものか（別部署・代表番号でないか）までは見ていない。電話は電話番号の形に切り出した集合との完全一致（前後に数字が続くものは別の番号扱い。内線を `-` でつないだ `0742-93-8395-1` のような表記は拾えず「無い」側に倒れる）。2026-10-15 の初回実行で不一致 14 件を一次ソースで確認した結果、台帳の誤りは函館の所在地 1 件だけで、残りは「ページに載っていない・PDF・別ページ掲載」だった。
+- 市名を省いた町名＋番地だけの一致（明細の `address_match` が `town`）は、一致として数えるが `--write` の対象にしない。
+- 片方のみ・不一致: ページ内に無かった。まず人がその URL を開く。ページ側の表記が違うだけ（「2番2号」でなく「2-2」は吸収済みだが、略記・画像化・別ページ掲載は拾えない）か、台帳が古いかを判断して台帳を直す。JSON の `nearby_phones` / `nearby_addresses` に、ページで見つかった近い値が出る。
+- 取得不能: 入口ページが開けない（404・タイムアウト・PDF）。URL 自体の死活なので `ops/check_links.py` と同じ扱いで直す。
+- 自治体サーバーへの配慮: 同時 4・同一ホスト 1 秒間隔・タイムアウト 20 秒・1 URL 1 回。不一致があっても exit 0（監査ツールなので CI には入れない）。
+
 ## CI（W006 T612・T613）
 
 `.github/workflows/v2-ci.yml` が PR（main 向け）と main への push で 3 つの job を走らせる。paths フィルタは付けていない（付けると v2 以外だけの PR で必須 check が pending のまま残る）。
