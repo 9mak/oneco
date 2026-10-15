@@ -145,7 +145,9 @@ _HREF = re.compile(r"<a\b[^>]*\bhref\s*=", re.I)
 
 
 def _has_substance(text: str) -> bool:
-    """body に見える文字（タグ・script・style を除いて 1 文字以上）かリンクがあるか。"""
+    """body に見える文字（タグ・script・style を除いて 1 文字以上）かリンクがあるか。
+    MIN_HTML_BYTES 未満の入力でだけ呼ぶ前提（`.*?` と re.S の正規表現は閉じタグが無い入力で O(n²) になりうる。
+    512 バイト未満なら実害は無いが、長い HTML に使わないこと。2026-10-15 reviewer M1）。"""
     body = _NOISE.sub("", _HEAD_PART.sub("", text))
     if _HREF.search(body):
         return True
