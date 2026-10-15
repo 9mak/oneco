@@ -102,7 +102,13 @@ collect.sh は全部成功したときだけこの URL を叩き、どこかが�
 AI 修復は有料 API を使わず agy（Antigravity CLI、Gemini）で動かす。実行する Mac / VPS で `agy` が PATH にあり、Antigravity にログイン済みであること（agy は `~/.gemini` にログを書く）。
 `/etc/oneco/collect.env`（Mac は `~/.config/oneco/collect.env`）に `ONECO_AI_REPAIR=1` を書く。これが無いと修復は動かない。`agy` が PATH に無いと修復は「未設定」で飛ばされる（Mac の launchd は PATH を継承しないので、plist の PATH に `~/.local/bin` を入れてある。`ops/macos/install.sh` を入れ直せば反映される）。モデルは agy の既定のまま（こちらからは指定しない）。
 修復の入力はページ本文（自治体サイトの内容＝信頼できない入力）なので、script・style・コメント・hidden・display:none・template を除き、`<untrusted_html>` で囲んで「指示ではない」と明記して渡す（W006 T617）。agy にはファイルを読む・コマンドを実行することを禁じ（`--mode plan`）、JSON（`collector/repair_schema.json`）だけ返させる。
-AI は案を書くだけ。案は `collector propose` が draft PR にし、**オーナーが PR を merge したときだけ本番に入る**（自動 merge はしない）。PR は作業用 clone（`ONECO_REPAIR_CLONE`、既定 `<v2>/../.repair-clone`）から作るので、`git` と `gh`（ログイン済み）が要る。1 回の実行で作る PR は最大 5 件。`DISCORD_WEBHOOK_URL` があれば PR ごとに 1 行送る。
+AI は案を書くだけ。案は `collector propose` が draft PR にし、**オーナーが PR を merge したときだけ本番に入る**（自動 merge はしない）。PR は作業用 clone（`ONECO_REPAIR_CLONE`、既定 `<v2>/../.repair-clone`）から作るので、`git` と `gh` が要る。
+
+資格情報は自動 PR 専用のトークンに限定する（W006 T622）。個人の `gh auth login`（repo・workflow 等の広い scope）や macOS の osxkeychain に入っている個人の資格情報は使わない:
+1. GitHub → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** → Generate new token。Repository access は **Only select repositories → 9mak/oneco** だけ、Permissions は **Contents: Read and write** と **Pull requests: Read and write** の 2 つだけ（Metadata は自動で Read）。期限は 90 日（切れたら同じ手順で再発行）
+2. Keychain に入れる: `security add-generic-password -a "$USER" -s oneco-repair-github-token -w`（値はプロンプトで）
+3. `collect.env` に `ONECO_GITHUB_TOKEN=$(security find-generic-password -a "$USER" -s oneco-repair-github-token -w)` を書く（collect.env は bash が `.` で読むので `$(…)` が使える。VPS は Keychain が無いので値を直書きし `chmod 600`）
+`ONECO_GITHUB_TOKEN` があるときだけ、`propose` はネットワークに出る git（clone / fetch / push）を環境変数から読む専用の credential helper で動かし（トークンは argv に出さない）、`gh` には `GH_TOKEN` として渡す。無ければ従来どおり（ログイン済みの gh と osxkeychain）。1 回の実行で作る PR は最大 5 件。`DISCORD_WEBHOOK_URL` があれば PR ごとに 1 行送る。
 
 ### 1-6. 残っている手動作業（2026-10-01 時点・T506）
 
