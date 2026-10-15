@@ -23,6 +23,8 @@ class Source:
     species: str = "mixed"     # dog | cat | mixed
     phone: str | None = None
     address: str | None = None
+    verified_at: str | None = None   # 電話・所在地を元ページで確認した日（YYYY-MM-DD。ops/verify_registry.py が書く）
+    verified_url: str | None = None  # その根拠にしたページ
     mode: str = "recipe"       # recipe | link_only
     recipe: str | None = None
     enabled: bool = True
@@ -38,6 +40,8 @@ def load_sources(path: Path = REGISTRY_PATH) -> list[Source]:
     out = []
     for raw in data["sources"]:
         known = {k: v for k, v in raw.items() if k in Source.__dataclass_fields__}
+        if known.get("verified_at") is not None:
+            known["verified_at"] = str(known["verified_at"])  # 引用なしの日付は YAML が date にする
         out.append(Source(**known))
     return out
 
