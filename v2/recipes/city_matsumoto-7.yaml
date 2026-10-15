@@ -18,7 +18,7 @@ row_filter:
   field_has_any: {sex: ["オス", "メス", "不明"]}
   field_lacks: {breed: ["譲渡されました", "譲渡済"], note: ["譲渡されました", "譲渡済", "新しい飼い主が見つかりました"]}
 image:
-  selector: ":scope:has(tr:-soup-contains('種類'):has(> td:nth-of-type(4):last-child)) p:has(> img[src*='/uploaded/']:nth-child(3 of img[src*='/uploaded/'])):not(:has(> img[src*='/uploaded/']:nth-child(4 of img[src*='/uploaded/']))) > img[src*='/uploaded/']:nth-child(3 of img[src*='/uploaded/']), :scope:has(tr:-soup-contains('種類'):has(> td:nth-of-type(5):last-child)) p:has(> img[src*='/uploaded/']:nth-child(4 of img[src*='/uploaded/'])):not(:has(> img[src*='/uploaded/']:nth-child(5 of img[src*='/uploaded/']))) > img[src*='/uploaded/']:nth-child(3 of img[src*='/uploaded/'])@src"
+  selector: ":scope:has(:is(tr:-soup-contains('種類') > td:nth-of-type(4):last-child)) p:has(> img[src*='/uploaded/']:nth-child(3 of img[src*='/uploaded/'])):not(:has(> img[src*='/uploaded/']:nth-child(4 of img[src*='/uploaded/']))) > img[src*='/uploaded/']:nth-child(3 of img[src*='/uploaded/']), :scope:has(:is(tr:-soup-contains('種類') > td:nth-of-type(5):last-child)) p:has(> img[src*='/uploaded/']:nth-child(4 of img[src*='/uploaded/'])):not(:has(> img[src*='/uploaded/']:nth-child(5 of img[src*='/uploaded/']))) > img[src*='/uploaded/']:nth-child(3 of img[src*='/uploaded/'])@src"
   exclude: ["5-28-2"]
 fields:
   detail: {selector: "span.__none__", default: "https://www.city.matsumoto.nagano.jp/soshiki/231/1534.html"}

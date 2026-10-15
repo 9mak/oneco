@@ -3,7 +3,7 @@
 # テンプレート（<div class="h3bg"><h3>見出し</h3></div> + 直後 <div class="img-area-r">）。
 # 2026-10-04: 写真なしの 2 頭は <div class="wysiwyg_wp"><ul>...</ul></div> だけで img-area-r が無く行ごと落ちていたため rows に追加（失踪場所を含む行だけ通す）。
 # 2026-10-04: 日時のコロン無し表記に備えコロンを省略可に。色のラベルゆれ（毛色/色）を 1 つの regex で拾い、名前も取る。
-rows: "div.img-area-r, div.wysiwyg_wp:has(> ul > li)"
+rows: "div.img-area-r, div.wysiwyg_wp:has(> ul):has(:is(div.wysiwyg_wp > ul > li))"
 image: "img@src"
 row_filter:
   text_has_any: ["失踪場所", "逸走場所"]

@@ -7,7 +7,7 @@
 # 0 頭の日（今日 2026-10-07）は表が 1 つも無く、「現在、保護している迷子犬／猫はおりません。」の 1 文だけ（末尾に中身の空の h5 が 2 つ残る）。
 # 0 頭の印は文言でなく「迷子の節の見出しがあり、表・中身のある h5・写真のどれも無い」ことにする（犬の文は猫がいる日にも出る常時の文なので文言にしない。
 # 構造が変わって表が無くなった日や、h5 に名前が入った日は「読めなかった」の通知になる）。
-rows: "table:has(caption h5), table:has(th:-soup-contains('月日'))"
+rows: "table:has(:is(caption h5)), table:has(th:-soup-contains('月日'))"
 row_filter:
   text_lacks: ["死亡"]
 species:

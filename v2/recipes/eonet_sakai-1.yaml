@@ -12,7 +12,7 @@ steps:
   - follow: "a[href*='menu.html']@href"
   - follow_all: "a[href*='stray/menu2.html']@href"
   - follow_all: "a[href$='list.html']@href"
-rows: "table tr:has(td a[href])"
+rows: "table tr:has(:is(td a[href]))"
 fields:
   management_no: {selector: ":scope > :nth-child(1)"}
   location: {selector: ":scope > :nth-child(3)"}
