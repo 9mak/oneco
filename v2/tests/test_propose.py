@@ -132,3 +132,46 @@ def test_dry_run_runs_nothing(env, monkeypatch):
     monkeypatch.setattr(pr.subprocess, "run", lambda *a, **k: pytest.fail("dry-run は何も呼ばない"))
     assert pr.propose(dry_run=True, proposals_dir=pdir, today="20261010") == 0
     assert (pdir / "city_a.yaml").exists()
+
+
+# --- T622: 自動 PR 用の資格情報を ONECO_GITHUB_TOKEN に限定する（個人の gh ログインや osxkeychain を使わない） ---
+class EnvRecorder(Recorder):
+    """subprocess.run に渡った env も記録する。"""
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k)
+        self.envs: list[dict | None] = []
+
+    def __call__(self, cmd, **kw):
+        self.envs.append(kw.get("env"))
+        return super().__call__(cmd, **kw)
+
+
+def test_token_is_used_for_git_and_gh_without_appearing_in_argv(env, monkeypatch):
+    pdir, clone, _ = env
+    _add(pdir, "city_a")
+    rec = EnvRecorder()
+    monkeypatch.setattr(pr.subprocess, "run", rec)
+    monkeypatch.setenv("ONECO_GITHUB_TOKEN", "ghp_secret_token")
+    monkeypatch.delenv("GH_TOKEN", raising=False)
+    assert pr.propose(proposals_dir=pdir, today="20261010") == 0
+    for cmd, e in zip(rec.calls, rec.envs, strict=True):
+        joined = " ".join(cmd)
+        assert "ghp_secret_token" not in joined, cmd          # トークンは argv に出さない（ps で見える）
+        if cmd[0] == "git" and any(w in cmd for w in ("clone", "fetch", "push")):
+            assert "credential.helper=" in joined, cmd       # ネットワークに出る git は独自 helper 経由
+            assert "ONECO_GITHUB_TOKEN" in joined, cmd        # helper は環境変数から読む
+            assert e is not None and e.get("ONECO_GITHUB_TOKEN") == "ghp_secret_token"
+            assert e.get("GIT_TERMINAL_PROMPT") == "0"
+        if cmd[0] == "gh":
+            assert e is not None and e.get("GH_TOKEN") == "ghp_secret_token", cmd
+
+
+def test_without_token_commands_are_unchanged(env, monkeypatch):
+    pdir, clone, _ = env
+    _add(pdir, "city_a")
+    rec = EnvRecorder()
+    monkeypatch.setattr(pr.subprocess, "run", rec)
+    monkeypatch.delenv("ONECO_GITHUB_TOKEN", raising=False)
+    assert pr.propose(proposals_dir=pdir, today="20261010") == 0
+    assert not any("credential.helper" in " ".join(c) for c in rec.calls)
+    assert all(e is None or "GH_TOKEN" not in e for e in rec.envs)

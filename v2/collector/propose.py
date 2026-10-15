@@ -28,8 +28,33 @@ class StepError(Exception):
     pass
 
 
+TOKEN_ENV = "ONECO_GITHUB_TOKEN"   # W006 T622: 自動 PR 専用の fine-grained PAT（oneco だけ・Contents と Pull requests の RW）
+# git の credential helper。トークンは argv に出さず（ps で見える）、helper が環境変数から読む
+_GIT_HELPER = f"!f() {{ printf 'username=x-access-token\\npassword=%s\\n' \"${TOKEN_ENV}\"; }}; f"
+_NETWORK_GIT = frozenset({"clone", "fetch", "push", "pull", "ls-remote"})
+
+
+def _token() -> str | None:
+    return os.environ.get(TOKEN_ENV) or None
+
+
+def _git(*args: str) -> list[str]:
+    """git コマンド。トークンがあればネットワークに出る操作だけ専用 helper を使う（個人の osxkeychain・gh のログインは使わない）。"""
+    cmd = ["git", *args]
+    if _token() and any(a in _NETWORK_GIT for a in args):
+        i = 1 + (2 if args[:1] == ("-C",) else 0)   # `git -C <dir>` の直後に -c を置く
+        cmd[i:i] = ["-c", "credential.helper=", "-c", f"credential.helper={_GIT_HELPER}"]
+    return cmd
+
+
 def _run(cmd: list[str], cwd: Path | None = None) -> str:
-    p = subprocess.run(cmd, check=False, cwd=cwd, capture_output=True, text=True, timeout=300)
+    env = None
+    tok = _token()
+    if tok and cmd[:1] in (["git"], ["gh"]):
+        env = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
+        if cmd[0] == "gh":
+            env["GH_TOKEN"] = tok   # gh は GH_TOKEN があればログイン情報より優先する
+    p = subprocess.run(cmd, check=False, cwd=cwd, capture_output=True, text=True, timeout=300, env=env)
     if p.returncode != 0:
         raise StepError(f"{' '.join(cmd[:3])} が失敗 (exit {p.returncode}): {(p.stderr or p.stdout).strip()[:300]}")
     return p.stdout
@@ -43,7 +68,7 @@ def _ensure_clone(clone: Path) -> None:
     if (clone / ".git").exists():
         return
     origin = _run(["git", "-C", str(ROOT), "remote", "get-url", "origin"]).strip()
-    _run(["git", "clone", "--quiet", origin, str(clone)])
+    _run(_git("clone", "--quiet", origin, str(clone)))
 
 
 def _differs(proposal: Path, recipe: Path) -> bool:
@@ -117,14 +142,14 @@ def propose(dry_run: bool = False, proposals_dir: Path | None = None, today: str
                 print(f"{slug}: open な PR が既にある。飛ばす")
                 continue
             c = str(clone)
-            _run(["git", "-C", c, "fetch", "origin"])
+            _run(_git("-C", c, "fetch", "origin"))
             _run(["git", "-C", c, "checkout", "-B", branch, "origin/main"])
             dest = clone / "v2" / "recipes" / f"{slug}.yaml"
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(f, dest)
             _run(["git", "-C", c, "add", f"v2/recipes/{slug}.yaml"])
             _run(["git", "-C", c, "commit", "-m", f"v2 repair: {slug} のレシピ案（agy・{count} 頭）"])
-            _run(["git", "-C", c, "push", "--force-with-lease", "-u", "origin", branch])   # 前回（close 済み）の同名ブランチを上書き
+            _run(_git("-C", c, "push", "--force-with-lease", "-u", "origin", branch))   # 前回（close 済み）の同名ブランチを上書き
             out = _run(["gh", "pr", "create", "--draft", "--title", f"v2 repair: {name}（{slug}）のレシピ案",
                         "--body", _pr_body(slug, name, why, count, note)], cwd=clone)
         except (StepError, OSError, subprocess.TimeoutExpired) as e:
