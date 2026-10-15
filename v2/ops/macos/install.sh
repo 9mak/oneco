@@ -12,7 +12,7 @@
 #      毎日の実行時に collect-launchd.sh が main を pull するので、main に merge すれば翌日の収集から反映される。
 #   2. 本番クローンに .venv を作り、v2/requirements.txt と Playwright の Chromium を入れる（入っていれば何もしない）
 #   3. ~/.config/oneco/collect.env が無ければ example を置く
-#   4. plist の __REPO_DIR__ / __V2_DIR__ / __PY__ を埋めて ~/Library/LaunchAgents へ置き、launchctl で読み込む
+#   4. plist の __REPO_DIR__ / __V2_DIR__ / __PY__ / __HOME__ を埋めて ~/Library/LaunchAgents へ置き、launchctl で読み込む
 set -euo pipefail
 # 変数の直後に全角文字を続けるときは必ず ${VAR} と書く。$VAR（ だと bash（ロケールによる）が全角の先頭バイトを
 # 変数名の一部と読み、set -u で「unbound variable」になって止まる（2026-10-04 に 81 行目で発生）
@@ -73,7 +73,7 @@ if [ ! -f "$ENV_FILE" ]; then
 fi
 
 # 4. plist
-sed -e "s|__REPO_DIR__|$RUN_DIR|g" -e "s|__V2_DIR__|$V2_DIR|g" -e "s|__PY__|$PY|g" "$SCRIPT_DIR/$LABEL.plist" > "$PLIST_DST"
+sed -e "s|__REPO_DIR__|$RUN_DIR|g" -e "s|__V2_DIR__|$V2_DIR|g" -e "s|__PY__|$PY|g" -e "s|__HOME__|$HOME|g" "$SCRIPT_DIR/$LABEL.plist" > "$PLIST_DST"
 plutil -lint "$PLIST_DST" >/dev/null
 
 launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
