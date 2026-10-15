@@ -14,7 +14,7 @@ from typing import Any
 from .errors import TRANSPORT_KINDS, ErrorInfo, error_to_dict, host_of
 from .extract import Result, build
 from .fetch import Fetcher, FetchError
-from .last_ok import RecordingFetcher, save_last_ok
+from .last_ok import RecordingFetcher, cleanup_last_ok, save_last_ok
 from .publish import build_manifest, publish
 from .recipe import Executor, Recipe, RecipeError
 from .registry import ROOT, Source
@@ -139,6 +139,7 @@ def _run_locked(sources: list[Source], date: str, out_dir: Path, fetcher: Fetche
         enabled = ai_repair_enabled()
     fetcher = fetcher or Fetcher()
     run_id = f"{date}T{now.strftime('%H%M%S')}"
+    cleanup_last_ok(out_dir / "last_ok")
     state = load_state(state_dir)
     breaker: dict[str, Any] = state["breaker"]
     probing = set(breaker)        # 前日までに開いていて、今日まだ試していないホスト
@@ -197,7 +198,7 @@ def _run_locked(sources: list[Source], date: str, out_dir: Path, fetcher: Fetche
                 repair_note = f"AI 修復に失敗: {r.error}"
             log.info("%-28s %s", s.slug, repair_note)
         if status == "ok" and c.recorder is not None:
-            save_last_ok(out_dir / "last_ok", s.slug, date, c.recorder)
+            save_last_ok(out_dir / "last_ok", s.slug, date, c.recorder, count=len(res.animals) if res else None)
         n = len(res.animals) if (res and status != "ambiguous_empty") else 0
         secs = round(time.monotonic() - t, 1)
         row = {"slug": s.slug, "name": s.name, "status": status, "count": n, "error": err,

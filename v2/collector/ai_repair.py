@@ -27,7 +27,7 @@ from bs4 import BeautifulSoup, Comment
 
 from .extract import Result, build
 from .fetch import Fetcher, FetchError
-from .last_ok import LAST_OK_DIR, load_replay
+from .last_ok import LAST_OK_DIR, load_count, load_replay
 from .recipe import Executor, Recipe, RecipeError
 from .recipe_schema import validate_recipe_dict
 from .registry import ROOT, Source
@@ -184,10 +184,19 @@ class Adoption:
         return text + (" / 回帰未確認" if any(x.startswith("d 回帰") for x in self.skipped) else "")
 
 
+def tolerance_range(base: int) -> tuple[int, int]:
+    """前回 ok の頭数 base に対する許容範囲 base ± max(2, base の 50%（端数切り上げ）)。下限は 0。"""
+    slack = max(-(-base * REGRESSION_PCT // 100), REGRESSION_MIN_SLACK)
+    return max(0, base - slack), base + slack
+
+
 def evaluate_adoption(res: Result, regression_count: int | None = None, last_ok_count: int | None = None,
-                      skip_reason: str | None = None) -> Adoption:
+                      skip_reason: str | None = None, allow_other: bool = False,
+                      regression_note: str | None = None) -> Adoption:
     """a 必須項目 b 重複 c 行数の一致 d 直近 fixture での回帰。regression_count は新レシピを保存 HTML に当てた頭数
-    （None なら d を飛ばす。理由は skip_reason）。last_ok_count は state の前回 ok の頭数。"""
+    （None なら d を飛ばす。理由は skip_reason）。last_ok_count は d の基準（保存時の頭数、無ければ state の値）。
+    a は extract.build が載せる値に揃える: species は dog/cat、None（警告）、allow_other なら other。
+    根拠は写真・管理番号・収容日、または個体ページ URL（res.detail_ids）のどれか。"""
     bad: list[str] = []
     ok: list[str] = []
     skip: list[str] = []
@@ -200,11 +209,15 @@ def evaluate_adoption(res: Result, regression_count: int | None = None, last_ok_
             ok.append(label)
 
     # a
-    lacking = [a for a in res.animals
-               if a.get("species") not in ("dog", "cat")
-               or not (a.get("image_url") or a.get("management_no") or a.get("shelter_date"))]
-    verdict("a 必須項目", f"必須項目（species=dog/cat と、写真・管理番号・収容日のどれか）を欠く動物が {len(lacking)} 件"
+    allowed = ("dog", "cat", None, "other") if allow_other else ("dog", "cat", None)
+    lacking = [x for x in res.animals
+               if x.get("species") not in allowed
+               or not (x.get("image_url") or x.get("management_no") or x.get("shelter_date") or x.get("id") in res.detail_ids)]
+    verdict("a 必須項目", f"必須項目（species と、写真・管理番号・収容日・個体ページのどれか）を欠く動物が {len(lacking)} 件"
             f"（最初の id={lacking[0].get('id')}）" if lacking else None)
+    unknown = sum(1 for x in res.animals if x.get("species") is None)
+    if unknown:
+        warn.append(f"species 未確定 {unknown} 件（build の仕様で載せる。台帳が mixed のときに起きる）")
     # b
     ids = [a["id"] for a in res.animals]
     dups = sum(1 for d in res.dropped if d.reason == DUP_REASON)
@@ -224,11 +237,15 @@ def evaluate_adoption(res: Result, regression_count: int | None = None, last_ok_
         why = skip_reason or ("前回 ok の頭数が不明" if regression_count is not None else "保存 HTML なし")
         skip.append(f"d 回帰（{why}）")
     elif regression_count == 0:
-        # 保存 HTML が旧構造で、新レシピが今日の構造向けに書かれただけの可能性がある。案は残し、人に見せる
-        warn.append(f"回帰 NG（旧構造の可能性。保存 HTML で 0 頭・前回 {last_ok_count} 頭）")
+        # 保存 HTML が旧構造で、新レシピが今日の構造向けに書かれただけの可能性がある。案は残し、人に見せる。
+        # ただし d は誤採用を止めない（止めるのは人の目）。今日の頭数が前回から外れるなら一段強く書く
+        today = len(res.animals)
+        lo, hi = tolerance_range(last_ok_count)
+        strong = not lo <= today <= hi
+        what = regression_note or "保存 HTML で 0 頭"
+        warn.append(f"回帰 NG（{'強。' if strong else ''}旧構造の可能性。{what}。今日の HTML の頭数 {today}・前回 ok {last_ok_count} 頭）")
     else:
-        slack = max(last_ok_count * REGRESSION_PCT // 100 + (last_ok_count * REGRESSION_PCT % 100 > 0), REGRESSION_MIN_SLACK)
-        lo, hi = max(0, last_ok_count - slack), last_ok_count + slack
+        lo, hi = tolerance_range(last_ok_count)
         if lo <= regression_count <= hi:
             ok.append(f"d 回帰（保存 HTML で {regression_count} 頭・前回 {last_ok_count} 頭）")
         else:
@@ -237,23 +254,30 @@ def evaluate_adoption(res: Result, regression_count: int | None = None, last_ok_
 
 
 def check_adoption(res: Result, regression_count: int | None = None, last_ok_count: int | None = None,
-                   skip_reason: str | None = None) -> list[str]:
+                   skip_reason: str | None = None, allow_other: bool = False) -> list[str]:
     """採用条件の違反理由の一覧（空なら合格）。"""
-    return evaluate_adoption(res, regression_count, last_ok_count, skip_reason).violations
+    return evaluate_adoption(res, regression_count, last_ok_count, skip_reason, allow_other).violations
 
 
-def _regress(recipe: Recipe, source: Source, last_ok_dir: Path, last_ok_count: int | None) -> tuple[int | None, str | None]:
-    """新レシピを last_ok の保存 HTML に当てた頭数。(頭数, 飛ばす理由)。当てられなかったら 0 頭として扱う（警告のみ）。"""
-    if not last_ok_count:
-        return None, "前回 ok の頭数が不明"
+def _regress(recipe: Recipe, source: Source, last_ok_dir: Path,
+             state_count: int | None) -> tuple[int | None, str | None, str | None, int | None]:
+    """新レシピを last_ok の保存 HTML に当てる。(頭数, 飛ばす理由, 0 頭の内訳, d の基準の頭数)。
+    基準は保存 HTML と一緒に残した頭数を優先し、無ければ state の last_ok_count。
+    当てられなかったら 0 頭として扱う（保存に無い URL を辿る新レシピもここ。警告のみ）。"""
     replay = load_replay(last_ok_dir, source.slug)
     if replay is None:
-        return None, "保存 HTML なし"
+        return None, "保存 HTML なし", None, state_count
+    base = load_count(last_ok_dir, source.slug) or state_count
+    if not base:
+        return None, "前回 ok の頭数が不明", None, None
     try:
-        return len(_try_recipe(source, recipe, replay).animals), None
+        return len(_try_recipe(source, recipe, replay).animals), None, None, base
+    except FetchError as e:   # 新レシピが保存に無い URL を辿った
+        log.info("%s: 保存 HTML に無い URL を辿った: %s", source.slug, e)
+        return 0, None, "保存に無い URL を辿って失敗", base
     except Exception as e:   # 保存 HTML に新レシピが当たらない（構造が違う）= 0 頭
         log.info("%s: 保存 HTML に新レシピを当てられない: %s: %s", source.slug, type(e).__name__, e)
-        return 0, None
+        return 0, None, None, base
 
 
 # --- 実行 -------------------------------------------------------------------
@@ -333,8 +357,8 @@ def repair(
         why = f"新レシピでも 0 頭（行 {res.rows}・捨てた {len(res.dropped)}" + ("・empty_text あり" if res.empty_confirmed else "") + "）"
         return RepairResult(slug, "failed", error=why, recipe_text=recipe_text, note=note)
     # 採用条件（a 必須項目 b 重複 c 行数 d 直近 fixture での回帰）。d は新レシピを保存済みの正常日 HTML に当てる
-    reg_count, reg_skip = _regress(recipe, source, last_ok_dir or LAST_OK_DIR, last_ok_count)
-    adoption = evaluate_adoption(res, reg_count, last_ok_count, reg_skip)
+    reg_count, reg_skip, reg_note, baseline = _regress(recipe, source, last_ok_dir or LAST_OK_DIR, last_ok_count)
+    adoption = evaluate_adoption(res, reg_count, baseline, reg_skip, bool(recipe.species.get("allow_other")), reg_note)
     if adoption.violations:
         return RepairResult(slug, "failed", error="採用条件を満たさない: " + " / ".join(adoption.violations),
                             recipe_text=recipe_text, note=note)

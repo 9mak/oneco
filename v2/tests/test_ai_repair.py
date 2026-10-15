@@ -1,11 +1,14 @@
 """AI 修復のテスト（ネットワークなし。agy の呼び出しは差し替える。本物の agy は ~/.gemini に書くので呼ばない）。"""
 
+import os
 from pathlib import Path
 
 import pytest
 from collector import ai_repair
 from collector.ai_repair import extract_yaml, repair, strip_html
+from collector.extract import build
 from collector.fetch import FakeFetcher
+from collector.recipe import Recipe
 from collector.registry import Source
 from collector.run import run
 
@@ -233,7 +236,15 @@ def test_ask_agy_parses_structured_output(monkeypatch):
 # --- 採用条件（W006 T618） -------------------------------------------------------------
 from collector.ai_repair import check_adoption  # noqa: E402
 from collector.extract import Dropped, Result  # noqa: E402
-from collector.last_ok import MAX_DOC_BYTES, RecordingFetcher, save_last_ok  # noqa: E402
+from collector.last_ok import (  # noqa: E402
+    MAX_DOC_BYTES,
+    MAX_DOCS,
+    MAX_GENERATION_BYTES,
+    RecordingFetcher,
+    cleanup_last_ok,
+    load_count,
+    save_last_ok,
+)
 
 
 def _animal(i: str, species: str | None = "dog", image: str | None = "https://x.test/p.jpg",
@@ -241,9 +252,11 @@ def _animal(i: str, species: str | None = "dog", image: str | None = "https://x.
     return {"id": i, "species": species, "image_url": image, "management_no": mgmt, "shelter_date": date}
 
 
-def _res(animals: list[dict], dropped: list[str] | None = None, rows: int | None = None) -> Result:
+def _res(animals: list[dict], dropped: list[str] | None = None, rows: int | None = None,
+         detail_ids: set[str] | None = None) -> Result:
     d = [Dropped(r, "x") for r in (dropped or [])]
-    return Result(animals=animals, dropped=d, rows=len(animals) + len(d) if rows is None else rows)
+    return Result(animals=animals, dropped=d, rows=len(animals) + len(d) if rows is None else rows,
+                  detail_ids=detail_ids or set())
 
 
 NO_KEY = "写真も管理番号も収容日も個体ページも無い"
@@ -251,10 +264,23 @@ NO_KEY = "写真も管理番号も収容日も個体ページも無い"
 
 def test_a_required_fields():
     assert check_adoption(_res([_animal("1"), _animal("2", image=None, mgmt="A-1"), _animal("3", image=None, date="2026-10-01")])) == []
-    v = check_adoption(_res([_animal("1"), _animal("2", species=None), _animal("3", species="other")]))
+    v = check_adoption(_res([_animal("1"), _animal("2", species="bird"), _animal("3", species="other")]))
     assert len(v) == 1 and "必須項目" in v[0] and "2 件" in v[0] and "id=2" in v[0]
     v = check_adoption(_res([_animal("1"), _animal("9", image=None)]))
     assert len(v) == 1 and "1 件" in v[0] and "id=9" in v[0]
+
+
+def test_a_follows_what_build_accepts():
+    # species=None は build が載せる値。不合格にせず警告（種別未確定の件数）
+    rep = ai_repair.evaluate_adoption(_res([_animal("1"), _animal("2", species=None)]))
+    assert rep.violations == [] and any("species 未確定 1 件" in w for w in rep.warned) and "species 未確定" in rep.line()
+    # other は allow_other のレシピだけ
+    assert check_adoption(_res([_animal("1", species="other")]), allow_other=True) == []
+    assert check_adoption(_res([_animal("1", species="other")]), allow_other=False) != []
+    # 個体ページ URL だけでも動物（build の has_key）
+    only_detail = _animal("5", image=None)
+    assert check_adoption(_res([only_detail], detail_ids={"5"})) == []
+    assert check_adoption(_res([only_detail])) != []
 
 
 def test_b_duplicates():
@@ -288,8 +314,12 @@ def test_d_regression_boundary(last, n, ok):
 
 
 def test_d_zero_in_saved_html_is_warning_not_rejection():
-    rep = ai_repair.evaluate_adoption(_res([_animal("1")]), regression_count=0, last_ok_count=10)
+    rep = ai_repair.evaluate_adoption(_res([_animal("1"), _animal("2")]), regression_count=0, last_ok_count=2)
     assert rep.violations == [] and "回帰 NG（旧構造の可能性" in rep.line() and "回帰未確認" not in rep.line()
+    assert "今日の HTML の頭数 2・前回 ok 2 頭" in rep.line() and "強" not in rep.line()
+    # 今日の頭数が前回 ok の ± max(2, 50%) から外れるなら一段強く
+    rep = ai_repair.evaluate_adoption(_res([_animal("1"), _animal("2")]), regression_count=0, last_ok_count=10)
+    assert rep.violations == [] and "回帰 NG（強" in rep.line() and "今日の HTML の頭数 2・前回 ok 10 頭" in rep.line()
 
 
 def test_d_skipped_without_baseline():
@@ -301,23 +331,33 @@ def test_d_skipped_without_baseline():
     assert "回帰未確認" not in rep.line() and any("回帰" in x for x in rep.passed)
 
 
-def test_repair_rejects_when_species_unknown(tmp_path, api_key, proposals):
+def test_repair_species_unknown_is_kept_with_warning(tmp_path, api_key, proposals):
     src = _source(tmp_path)
-    src.species = "mixed"   # レシピに species が無いので種別が決まらないまま載る
+    src.species = "mixed"   # レシピに species が無いので種別が決まらないまま載る（build の仕様）
     r = repair(src, fetcher=FakeFetcher({URL: PAGE}), ask=lambda p, sc, t: ans(NEW_RECIPE))
-    assert r.status == "failed" and "必須項目" in (r.error or "") and not r.saved
-    assert not proposals.exists() or not list(proposals.iterdir())
+    assert r.status == "ok" and r.saved
+    assert "species 未確定" in r.proposal_path.read_text(encoding="utf-8").splitlines()[1]
+
+
+def test_build_records_detail_ids():
+    recipe = Recipe.from_dict({"rows": "ul li", "fields": {"detail": {"selector": "a", "attr": "href"}}})
+    src = Source(slug="d", name="n", municipality="m", prefecture="p", url=URL, kind="sheltered", species="dog")
+    from bs4 import BeautifulSoup
+    from collector.recipe import Doc
+    html = '<ul><li><a href="/animals/1">x</a></li></ul>'
+    res = build(src, recipe, [Doc(url=URL, html=html, soup=BeautifulSoup(html, "lxml"))])
+    assert len(res.animals) == 1 and res.detail_ids == {res.animals[0]["id"]}
 
 
 OLD_PAGE = PAGE.replace("</table>", '<tr><td><img src="photo/d3.jpg"></td><td>オス</td><td>令和8年9月22日</td></tr>'
                         '<tr><td><img src="photo/d4.jpg"></td><td>メス</td><td>令和8年9月23日</td></tr></table>')
 
 
-def _saved_last_ok(tmp_path: Path, html: str) -> Path:
+def _saved_last_ok(tmp_path: Path, html: str, count: int | None = None) -> Path:
     d = tmp_path / "last_ok"
     rec = RecordingFetcher(FakeFetcher({URL: html}))
     rec.get(URL)
-    assert save_last_ok(d, "x_test", "2026-10-01", rec)
+    assert save_last_ok(d, "x_test", "2026-10-01", rec, count=count)
     return d
 
 
@@ -338,9 +378,36 @@ def test_repair_regression_zero_keeps_proposal_with_ng_note(tmp_path, api_key, p
     lo = _saved_last_ok(tmp_path, "<html><body><p>全然別の構造</p></body></html>")
     r = repair(src, fetcher=FakeFetcher({URL: PAGE}), ask=lambda p, sc, t: ans(NEW_RECIPE), last_ok_dir=lo, last_ok_count=2)
     assert r.status == "ok" and r.saved
-    assert "回帰 NG（旧構造の可能性" in r.proposal_path.read_text(encoding="utf-8").splitlines()[1]
+    head = r.proposal_path.read_text(encoding="utf-8").splitlines()[1]
+    assert "回帰 NG（旧構造の可能性" in head and "今日の HTML の頭数 2・前回 ok 2 頭" in head
     from collector.propose import _adoption_line, _pr_body
-    assert "回帰 NG（旧構造の可能性" in _pr_body("x", "n", "w", "2", "", _adoption_line(r.proposal_path.read_text(encoding="utf-8")))
+    body = _pr_body("x", "n", "w", "2", "", _adoption_line(r.proposal_path.read_text(encoding="utf-8")))
+    assert "回帰 NG（旧構造の可能性" in body and "今日の HTML の頭数 2・前回 ok 2 頭" in body
+
+
+FOLLOW_RECIPE = "steps:\n  - follow: \"a.next@href\"\n" + NEW_RECIPE
+ENTRY_WITH_LINK = '<html><body><a class="next" href="/animals/list">一覧</a></body></html>'
+
+
+def test_repair_following_url_missing_in_saved_html_is_ng_not_rejected(tmp_path, api_key, proposals):
+    src = _source(tmp_path)
+    lo = _saved_last_ok(tmp_path, ENTRY_WITH_LINK)   # 保存は入口だけ。新レシピが辿る /animals/list は保存に無い
+    fetcher = FakeFetcher({URL: ENTRY_WITH_LINK, "https://x.test/animals/list": PAGE})
+    r = repair(src, fetcher=fetcher, ask=lambda p, sc, t: ans(FOLLOW_RECIPE), last_ok_dir=lo, last_ok_count=10)
+    assert r.status == "ok" and r.count == 2
+    head = r.proposal_path.read_text(encoding="utf-8").splitlines()[1]
+    assert "回帰 NG（強" in head and "今日の HTML の頭数 2・前回 ok 10 頭" in head and "保存に無い" in head
+
+
+def test_repair_baseline_prefers_count_saved_with_html(tmp_path, api_key, proposals):
+    src = _source(tmp_path)
+    lo = _saved_last_ok(tmp_path, OLD_PAGE, count=4)
+    # state の last_ok_count は 10 だが、保存 HTML と一緒に残した 4 頭を優先するので保存 HTML の 4 頭は合格
+    r = repair(src, fetcher=FakeFetcher({URL: PAGE}), ask=lambda p, sc, t: ans(NEW_RECIPE), last_ok_dir=lo, last_ok_count=10)
+    assert r.status == "ok"
+    # state が空でも保存側の頭数が基準になる
+    r = repair(src, fetcher=FakeFetcher({URL: PAGE}), ask=lambda p, sc, t: ans(NEW_RECIPE), last_ok_dir=lo, last_ok_count=None)
+    assert r.status == "ok" and "回帰未確認" not in r.proposal_path.read_text(encoding="utf-8").splitlines()[1]
 
 
 def test_repair_without_saved_html_is_marked_unverified(tmp_path, api_key, proposals):
@@ -419,3 +486,74 @@ def test_last_ok_pdf_bytes_followed_docs_and_size_limit(tmp_path):
     r2.render(URL)
     assert not save_last_ok(d, "s2", "2026-10-02", r2) and not (d / "s2").exists()
     assert not save_last_ok(d, "../evil", "2026-10-02", rec)
+
+
+def test_last_ok_generation_limits_keep_previous(tmp_path):
+    from collector.last_ok import load_replay
+    d = tmp_path / "lo"
+    ok = RecordingFetcher(FakeFetcher({URL: PAGE}))
+    ok.get(URL)
+    assert save_last_ok(d, "s", "2026-10-01", ok)
+    chunk = "a" * (MAX_DOC_BYTES - 10)   # 1 文書は上限内だが、合計が世代の上限を超える
+    n = MAX_GENERATION_BYTES // len(chunk) + 1
+    urls = {f"https://x.test/{i}": chunk for i in range(n)}
+    heavy = RecordingFetcher(FakeFetcher(urls))
+    for u in urls:
+        heavy.get(u)
+    assert not save_last_ok(d, "s", "2026-10-02", heavy)
+    many = {f"https://x.test/m{i}": "x" for i in range(MAX_DOCS + 1)}
+    mr = RecordingFetcher(FakeFetcher(many))
+    for u in many:
+        mr.get(u)
+    assert not save_last_ok(d, "s", "2026-10-02", mr)
+    assert load_replay(d, "s").get(URL).html == PAGE   # 前世代が残る
+    # 上限ちょうどの文書数は保存できる
+    few = {f"https://x.test/f{i}": "x" for i in range(MAX_DOCS)}
+    fr = RecordingFetcher(FakeFetcher(few))
+    for u in few:
+        fr.get(u)
+    assert save_last_ok(d, "s", "2026-10-03", fr)
+
+
+def test_last_ok_replace_failure_keeps_previous_generation(tmp_path, monkeypatch):
+    from collector import last_ok
+    from collector.last_ok import load_replay
+    d = tmp_path / "lo"
+    a = RecordingFetcher(FakeFetcher({URL: PAGE}))
+    a.get(URL)
+    assert save_last_ok(d, "s", "2026-10-01", a, count=2)
+    b = RecordingFetcher(FakeFetcher({URL: OLD_PAGE}))
+    b.get(URL)
+    real, calls = os.replace, []
+
+    def flaky(src, dst):
+        calls.append(1)
+        if len(calls) == 2:   # dest→.old は通り、tmp→dest で落ちる
+            raise OSError("disk")
+        return real(src, dst)
+
+    monkeypatch.setattr(last_ok.os, "replace", flaky)
+    assert not save_last_ok(d, "s", "2026-10-02", b, count=4)
+    monkeypatch.undo()
+    assert load_replay(d, "s").get(URL).html == PAGE and load_count(d, "s") == 2
+    assert sorted(p.name for p in d.iterdir()) == ["s"]   # .tmp-*・.old-* が残らない
+
+
+def test_cleanup_last_ok_restores_or_removes_leftovers(tmp_path):
+    d = tmp_path / "lo"
+    d.mkdir()
+    (d / ".tmp-a-1").mkdir()
+    (d / ".old-b").mkdir()                       # dest(b) が無い = 置換の途中で落ちた。戻す
+    (d / ".old-b" / "index.json").write_text("{}")
+    (d / ".old-c").mkdir()                       # dest(c) がある = 置換は済んでいた。捨てる
+    (d / "c").mkdir()
+    cleanup_last_ok(d)
+    assert sorted(p.name for p in d.iterdir()) == ["b", "c"] and (d / "b" / "index.json").exists()
+    cleanup_last_ok(tmp_path / "nothing")        # 無くても落ちない
+
+
+def test_run_stores_count_with_saved_html(tmp_path):
+    src = _ok_source(tmp_path)
+    out = tmp_path / "data"
+    run([src], "2026-10-01", out_dir=out, fetcher=FakeFetcher({URL: PAGE}), enabled=False)
+    assert load_count(out / "last_ok", "x_test") == 2

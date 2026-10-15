@@ -66,6 +66,7 @@ class Result:
     empty_evidence: str | None = None    # 0 頭を確定した根拠: empty_selector / empty_absent / empty_text / all_excluded+headings / all_excluded+container
     ambiguous_empty: bool = False        # 全行除外だが肯定的な証拠が無く、0 頭とも読み取り失敗とも言い切れない（W006 T605）
     ambiguous_reason: str | None = None
+    detail_ids: set[str] = field(default_factory=set)   # 個体ページ URL（detail）だけを根拠に動物とみなした行も含め、detail を持つ動物の id（採用条件 a が参照）
 
 
 def resolve_species(source: Source, recipe: Recipe, row: Row, fields: dict[str, str | None]) -> str | None:
@@ -340,6 +341,8 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
                 res.dropped.append(Dropped("同じ ID の行が既にある", row.text()[:80]))
                 continue
             seen_ids.add(aid)
+            if dv:
+                res.detail_ids.add(aid)
             animal = {
                 "id": aid,
                 "source": source.slug,

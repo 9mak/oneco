@@ -23,6 +23,8 @@ from .registry import ROOT
 log = logging.getLogger("collector")
 LAST_OK_DIR = ROOT / "data" / "last_ok"
 MAX_DOC_BYTES = 2 * 1024 * 1024   # 1 文書あたり。超えたら世代ごと保存しない
+MAX_GENERATION_BYTES = 10 * 1024 * 1024   # 1 世代（1 slug）の合計。follow_all の slug が数百文書を抱えないように
+MAX_DOCS = 60                              # 1 世代の文書数
 _SAFE_SLUG = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*")
 
 
@@ -47,16 +49,41 @@ class RecordingFetcher:
         return getattr(self.inner, name)
 
 
-def save_last_ok(root: Path, slug: str, date: str, rec: RecordingFetcher) -> bool:
-    """保存したら True。保存しない場合（render・文書なし・サイズ超過・保存失敗）は前回の世代を残して False。"""
+def cleanup_last_ok(root: Path) -> None:
+    """前回の保存が途中で落ちた残骸を片付ける（run の開始時）。.tmp-* は捨てる。
+    .old-<slug> は <slug> が無ければ（dest を退避した直後に落ちた）戻し、あれば（置換は済んでいた）捨てる。"""
+    try:
+        entries = list(root.iterdir()) if root.is_dir() else []
+    except OSError:
+        return
+    for p in entries:
+        try:
+            if p.name.startswith(".tmp-"):
+                shutil.rmtree(p, ignore_errors=True)
+            elif p.name.startswith(".old-"):
+                dest = root / p.name.removeprefix(".old-")
+                if dest.exists():
+                    shutil.rmtree(p, ignore_errors=True)
+                else:
+                    os.replace(p, dest)
+        except OSError as e:
+            log.warning("last_ok の残骸を片付けられない %s: %s", p, e)
+
+
+def save_last_ok(root: Path, slug: str, date: str, rec: RecordingFetcher, count: int | None = None) -> bool:
+    """保存したら True。保存しない場合（render・文書なし・サイズ/文書数超過・保存失敗）は前回の世代を残して False。
+    count はその日の頭数（d の基準。state の last_ok_count より優先する）。"""
     if not _SAFE_SLUG.fullmatch(slug) or rec.rendered or not rec.pages:
         return False
     pages = list(rec.pages.values())
-    if any(len(getattr(p, "content", b"") or b"") > MAX_DOC_BYTES for p in pages):
-        log.info("%s: 文書が %d バイトを超えるので last_ok を保存しない", slug, MAX_DOC_BYTES)
+    sizes = [len(getattr(p, "content", b"") or b"") for p in pages]
+    if len(pages) > MAX_DOCS or any(n > MAX_DOC_BYTES for n in sizes) or sum(sizes) > MAX_GENERATION_BYTES:
+        log.info("%s: 文書が多すぎる・大きすぎるので last_ok を保存しない（%d 文書・%d バイト）", slug, len(pages), sum(sizes))
         return False
     tmp = root / f".tmp-{slug}-{os.getpid()}"
+    old = root / f".old-{slug}"
     dest = root / slug
+    moved = False
     try:
         shutil.rmtree(tmp, ignore_errors=True)
         tmp.mkdir(parents=True)
@@ -64,14 +91,36 @@ def save_last_ok(root: Path, slug: str, date: str, rec: RecordingFetcher) -> boo
         for i, p in enumerate(pages):
             (tmp / f"{i}.bin").write_bytes(p.content)
             docs.append({"url": p.url, "final_url": p.final_url, "file": f"{i}.bin"})
-        (tmp / "index.json").write_text(json.dumps({"date": date, "docs": docs}, ensure_ascii=False), encoding="utf-8")
-        shutil.rmtree(dest, ignore_errors=True)
+        (tmp / "index.json").write_text(json.dumps({"date": date, "count": count, "docs": docs}, ensure_ascii=False),
+                                        encoding="utf-8")
+        # 原子的な置換: 前世代を .old へ退避 → 新世代を置く → .old を消す。途中で落ちたら前世代を戻す
+        shutil.rmtree(old, ignore_errors=True)
+        if dest.exists():
+            os.replace(dest, old)
+            moved = True
         os.replace(tmp, dest)
     except (OSError, AttributeError, TypeError) as e:
         log.warning("%s: last_ok を保存できない: %s", slug, e)
+        if moved and not dest.exists():
+            try:
+                os.replace(old, dest)
+            except OSError as e2:
+                log.warning("%s: 前世代を戻せない（次の run の開始時に戻す）: %s", slug, e2)
         shutil.rmtree(tmp, ignore_errors=True)
         return False
+    shutil.rmtree(old, ignore_errors=True)
     return True
+
+
+def load_count(root: Path, slug: str) -> int | None:
+    """保存した日の頭数（無ければ None）。"""
+    if not _SAFE_SLUG.fullmatch(slug):
+        return None
+    try:
+        n = json.loads((root / slug / "index.json").read_text(encoding="utf-8")).get("count")
+    except (OSError, ValueError, AttributeError):
+        return None
+    return n if isinstance(n, int) and not isinstance(n, bool) else None
 
 
 def load_replay(root: Path, slug: str) -> FakeFetcher | None:
