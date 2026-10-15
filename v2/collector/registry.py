@@ -23,8 +23,9 @@ class Source:
     species: str = "mixed"     # dog | cat | mixed
     phone: str | None = None
     address: str | None = None
-    verified_at: str | None = None   # 電話・所在地を元ページで確認した日（YYYY-MM-DD。ops/verify_registry.py が書く）
-    verified_url: str | None = None  # その根拠にしたページ
+    verified_at: str | None = None   # 電話・所在地が元ページに載っていると確認した日（YYYY-MM-DD。ops/verify_registry.py が書く。施設との対応までは見ていない）
+    verified_phone_url: str | None = None    # 電話が載っていたページ
+    verified_address_url: str | None = None  # 所在地が載っていたページ（台帳に address が無い entry は None）
     mode: str = "recipe"       # recipe | link_only
     recipe: str | None = None
     enabled: bool = True

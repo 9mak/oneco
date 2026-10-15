@@ -206,8 +206,11 @@ def test_write_back_keeps_comments_and_order(tmp_path):
     assert "# 台帳のコメント" in new and "  # 途中のコメント" in new
     assert new.index("slug: a_1") < new.index("slug: b_1")
     data = yaml.safe_load(new)["sources"]
-    assert data[0]["verified_at"] == "2026-10-15" and data[0]["verified_url"] == "http://x/1"
-    assert data[1]["verified_at"] == "2026-10-15" and data[1]["verified_url"] == "http://x/3"
+    assert data[0]["verified_at"] == "2026-10-15"
+    assert data[0]["verified_phone_url"] == "http://x/1" and data[0]["verified_address_url"] == "http://x/1"
+    # address が null の entry は電話だけ検証（address 側の根拠は書かない）
+    assert data[1]["verified_at"] == "2026-10-15" and data[1]["verified_phone_url"] == "http://x/3"
+    assert "verified_address_url" not in data[1] and "verified_url" not in data[1]
     assert new.count("verified_at") == 2  # 既存行は置換で重複しない
     old = yaml.safe_load(YAML_TEXT)["sources"]
     for o, nw in zip(old, data, strict=True):
@@ -216,6 +219,49 @@ def test_write_back_keeps_comments_and_order(tmp_path):
                 assert nw[k] == v
     # 読み込みも通る（日付は文字列）
     assert load_sources(p)[0].verified_at == "2026-10-15"
+
+
+def test_phone_requires_boundaries():
+    want = "059-352-0613"
+    for body, expect in [
+        ("TEL059-352-0613", True), ("(059)352-0613", True), ("０５９ ３５２ ０６１３", True), ("0593520613", True),
+        ("1059-352-0613", False),      # 左に数字が続く
+        ("059-352-06130", False),      # 右に数字が続く
+        ("0059-352-0613", False),
+        ("059-352-0613-5", False),     # 続きがある別番号
+        ("日付2026059352 0613", False),  # 数字列の途中に偶然含まれるだけ
+    ]:
+        r = vr.verify_group(make_fetch({"http://x/": page(f"<p>{body}</p>")}), "http://x/", want, None)
+        assert r.phone_found is expect, body
+
+
+def test_town_match_needs_left_boundary_and_is_not_writable():
+    addr = "千葉県柏市風早二丁目4番地3"
+    ok = vr.verify_group(make_fetch({"http://x/": page("<p>所在地 風早2-4-3</p>")}), "http://x/", None, addr)
+    assert ok.address_match == "town" and ok.address_found is True
+    ok = vr.verify_group(make_fetch({"http://x/": page("<p>〒277-0924 風早2-4-3</p>")}), "http://x/", None, addr)
+    assert ok.address_found is True
+    for body in ("12風早2-4-3", "東風早2-4-3"):
+        bad = vr.verify_group(make_fetch({"http://x/": page(f"<p>{body}</p>")}), "http://x/", None, addr)
+        assert bad.address_found is False, body
+    assert vr.verified_urls(ok) is None  # town は書き戻さない
+
+
+def test_write_back_skips_town_only(tmp_path):
+    p = tmp_path / "sources.yaml"
+    p.write_text(YAML_TEXT.replace("諏訪町2番2号", "諏訪町2番2号"), encoding="utf-8")
+    res = vr.run(load_sources(p), make_fetch({"http://x/1": page("<p>059-352-0613 諏訪町2-2</p>")}), workers=1, today="2026-10-15")
+    assert res["a_1"].address_match == "town"
+    assert vr.write_back(p, res, "2026-10-15") == 0
+
+
+def test_parse_failure_is_unfetchable(monkeypatch):
+    def boom(html, base):
+        raise ValueError("broken")
+
+    monkeypatch.setattr(vr, "parse_html", boom)
+    r = vr.verify_group(make_fetch({"http://x/": "<html></html>"}), "http://x/", "059-352-0613", None)
+    assert vr.classify(r) == "unfetchable" and "broken" in r.reason
 
 
 def test_write_back_skips_non_match(tmp_path):

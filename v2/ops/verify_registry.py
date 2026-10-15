@@ -75,11 +75,11 @@ def digits(s: str) -> str:
     return re.sub(r"\D", "", unicodedata.normalize("NFKC", s))
 
 
-def normalize_text(s: str) -> str:
-    """所在地照合用: NFKC・漢数字→算用数字・丁目/番/号→ハイフン区切り・空白除去。"""
+def normalize_text(s: str, sep: str = "") -> str:
+    """所在地照合用: NFKC・漢数字→算用数字・丁目/番/号→ハイフン区切り・空白除去（sep を渡すと空白をその文字に置き換える）。"""
     s = unicodedata.normalize("NFKC", s)
     s = _KANJI_RUN.sub(lambda m: str(_kanji_to_int(m.group())), s)
-    s = re.sub(r"\s+", "", s)
+    s = re.sub(r"\s+", sep, s)
     s = _DIGIT_JOINER.sub("-", s)
     s = re.sub(r"(\d+)丁目", r"\1-", s)
     s = re.sub(r"(\d+)番地?(?!町)", r"\1-", s)
@@ -100,8 +100,15 @@ def address_head(address: str) -> str:
 
 def town_key(head: str) -> str | None:
     """head から先頭の「○○市／町／村／郡」を外した町名＋番地。短すぎる・番地が無いものは使わない。"""
-    t = re.sub(r"^.+?[市町村郡]", "", head, count=1)
+    t = re.sub(r"^.+?[市町村郡]+", "", head, count=1)
     return t if len(t) >= 4 and re.search(r"\d", t) else None
+
+
+def contains_town(text: str, town: str) -> bool:
+    """市名なしの町名＋番地が、別の町名・数字の途中でなく単独で現れるか（郵便番号の直後は許す）。"""
+    t = normalize_text(text, sep="|")
+    t = re.sub(r"〒?(?<!\d)\d{3}-\d{4}(?!\d)", "|", t)
+    return re.search(r"(?<!\w)" + re.escape(town) + r"(?!\d)", t) is not None
 
 
 def contains_address(text_norm: str, head: str) -> bool:
@@ -137,16 +144,21 @@ def pick_links(links: list[tuple[str, str]], base_url: str) -> list[str]:
     return out
 
 
-_PHONE_RE = re.compile(r"0\d{1,4}[-)\s]\d{1,4}[-)\s]?\d{3,4}")
+# 電話番号の形に切り出す。左右に数字（や「-数字」の続き）があるものは別の数字列の一部なので拾わない
+_PHONE_RE = re.compile(r"(?<![\d-])0\d{1,4}[-(（)）\s]*\d{1,4}[-)）\s]*\d{3,4}(?!\d)(?!-\d)")
+
+
+def phone_candidates(text: str) -> list[str]:
+    t = unicodedata.normalize("NFKC", text)
+    t = re.sub(f"[{_HYPHENS}]", "-", t)
+    return [m.group() for m in _PHONE_RE.finditer(t)]
 
 
 def nearby_phones(text: str, want: str, limit: int = 3) -> list[str]:
-    t = unicodedata.normalize("NFKC", text)
-    t = re.sub(f"[{_HYPHENS}]", "-", t)
     want_d = digits(want)
     found: list[str] = []
-    for m in _PHONE_RE.finditer(t):
-        v = m.group().replace(")", "-").replace(" ", "-")
+    for raw in phone_candidates(text):
+        v = re.sub(r"[()\s]+", "-", raw).strip("-")
         if digits(v) != want_d and v not in found:
             found.append(v)
     found.sort(key=lambda v: (digits(v)[:3] != want_d[:3], digits(v)[-4:] != want_d[-4:]))
@@ -202,16 +214,20 @@ def verify_group(fetch: Fetch, url: str, phone: str | None, address: str | None)
         if f.html is None:
             errors.append(f"{u}: {f.error}")
             return None
+        try:
+            text, links = parse_html(f.html, u)
+        except Exception as e:
+            errors.append(f"{u}: 解析失敗 {type(e).__name__}: {str(e)[:100]}")
+            return None
         r.pages.append(u)
-        text, links = parse_html(f.html, u)
         texts.append(text)
-        if want_phone and not r.phone_found and want_phone in digits(text):
+        if want_phone and not r.phone_found and want_phone in {digits(c) for c in phone_candidates(text)}:
             r.phone_found, r.phone_url = True, u
         if head and not r.address_found:
             tn = normalize_text(text)
             if contains_address(tn, head):
                 r.address_found, r.address_url, r.address_match = True, u, "full"
-            elif town and contains_address(tn, town):
+            elif town and contains_town(text, town):
                 # ページが市名を省いて「風早2-4-3」とだけ書く場合。町名＋番地で一致扱いにし、明細に "town" と残す
                 r.address_found, r.address_url, r.address_match = True, u, "town"
         return links
@@ -241,6 +257,17 @@ def verify_group(fetch: Fetch, url: str, phone: str | None, address: str | None)
     if errors and r.pages:
         r.reason += "（辿り先の取得失敗: " + "; ".join(errors) + "）"
     return r
+
+
+def verified_urls(r: GroupResult) -> tuple[str | None, str | None] | None:
+    """書き戻せる根拠 (電話のページ, 所在地のページ)。台帳にある項目がすべて確認でき、所在地は市名つきの full 一致だけ。台帳に無い項目は None。"""
+    if r.phone_found is None and r.address_found is None:
+        return None
+    if r.phone_found is False or r.address_found is False:
+        return None
+    if r.address_found and r.address_match != "full":
+        return None
+    return r.phone_url, r.address_url
 
 
 def classify(r: GroupResult) -> str:
@@ -337,7 +364,7 @@ def make_http_fetch() -> Fetch:
 # --- 書き戻し ---
 
 def write_back(path: Path, results: dict[str, GroupResult], today: str) -> int:
-    """全項目が確認できた entry の url 行の直後に verified_at / verified_url を置く（既存行は置換）。コメント・並びは触らない。"""
+    """verified_urls が返す entry の url 行の直後に verified_at / verified_phone_url / verified_address_url を置く（既存行は置換）。コメント・並びは触らない。"""
     lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
     out: list[str] = []
     n = 0
@@ -353,11 +380,17 @@ def write_back(path: Path, results: dict[str, GroupResult], today: str) -> int:
             j += 1
         block = lines[i:j]
         res = results.get(m.group(1))
-        if res is not None and classify(res) == "match" and res.evidence_url:
-            block = [ln for ln in block if not re.match(r"^  verified_(at|url):", ln)]
+        urls = verified_urls(res) if res is not None else None
+        if urls is not None:
+            block = [ln for ln in block if not re.match(r"^  verified_(at|url|phone_url|address_url):", ln)]
             k = next((x for x, ln in enumerate(block) if ln.startswith("  url:")), None)
             if k is not None:
-                block[k + 1:k + 1] = [f"  verified_at: '{today}'\n", f"  verified_url: {json.dumps(res.evidence_url)}\n"]
+                new = [f"  verified_at: '{today}'\n"]
+                if urls[0]:
+                    new.append(f"  verified_phone_url: {json.dumps(urls[0])}\n")
+                if urls[1]:
+                    new.append(f"  verified_address_url: {json.dumps(urls[1])}\n")
+                block[k + 1:k + 1] = new
                 n += 1
         out.extend(block)
         i = j
@@ -394,7 +427,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"所要 {secs:.0f} 秒 / 全 {summ['total']} 件: 全項目一致 {summ['match']}・片方のみ {summ['partial']}・"
           f"不一致 {summ['mismatch']}・取得不能 {summ['unfetchable']}・台帳に値なし {summ['no_data']}")
     town_only = sum(1 for r in results.values() if r.address_match == "town")
-    print(f"（所在地が市名なしの町名＋番地で一致したもの {town_only} 件を含む）")
+    writable = sum(1 for r in results.values() if verified_urls(r) is not None)
+    print(f"（所在地が市名なしの町名＋番地で一致したもの {town_only} 件を含む。--write の対象は {writable} 件）")
     by_slug = {s.slug: s for s in srcs}
     for title, kinds in (("不一致・片方のみ", ("mismatch", "partial")), ("取得不能", ("unfetchable",))):
         rows = [(sl, r) for sl, r in results.items() if classify(r) in kinds]
