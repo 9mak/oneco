@@ -167,7 +167,7 @@ Discord の文面はこの形:
 - 翌日の probe で遮断を閉じる条件は「接続系エラーか 5xx でない」こと。parser 失敗や 404 はサイトが生きている証拠なので閉じて残りを通常どおり読む（同一ホストに複数レシピがある自治体で 1 本の崩れが全部を止めない）
 - 404・5xx・保守ページ・parser 失敗の日も同じで、その slug の子は載らない（サイトを前日のまま据え置くのは回線断の日だけ）
 - 据え置かれた日を手で公開する: `data/animals-<日付>.json` と `report-<日付>.json` を見て妥当なら
-  `python -m collector promote --date YYYY-MM-DD`（`latest.json` と `manifest-latest.json` をその日に戻す。`held` は false になる）。その後 `site/build.py` と deploy を手で回す
+  `bash v2/ops/rollback.sh YYYY-MM-DD`（`collector promote --date` で `latest.json` と `manifest-latest.json` をその日に戻し〔`held` は false になる〕、`site/build.py` と deploy を回し、公開 `data.json` の `date` がその日になったことを確かめる）。壊れたデータを公開してしまった日に前日へ戻すのも同じ。2026-10-15 に本番で試験済み〔10/14 へ戻して 10 秒で反映、10/15 へ戻し戻しも同様〕
 - `data/manifest-<日付>.json`: `run_id`・`date`・`code_sha`・`recipe_sha`・`registry_sha`・`animals_count`・`sources_ok`・`sources_failed`・`held`。「この日のデータはどのコード・レシピで作ったか」の記録
 - `logs/events-<日付>.jsonl`: slug ごと 1 行（`run_id`・`host`・`status`・`kind`・`http_status`・`seconds`・`attempt`・`count`・`dropped`・`rows`・`breaker`）。`collect-*.log` と合わせて 30 日より古いものは collect.sh が消す
 
