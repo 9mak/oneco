@@ -14,6 +14,7 @@ from typing import Any
 from .errors import TRANSPORT_KINDS, ErrorInfo, error_to_dict, host_of
 from .extract import Result, build
 from .fetch import Fetcher, FetchError
+from .last_ok import RecordingFetcher, cleanup_last_ok, save_last_ok
 from .publish import build_manifest, publish
 from .recipe import Executor, Recipe, RecipeError
 from .registry import ROOT, Source
@@ -51,6 +52,7 @@ class Collected:
     error: str | None = None
     trace: list[str] = field(default_factory=list)
     error_info: dict[str, Any] | None = None
+    recorder: RecordingFetcher | None = None   # ok のとき、取得した文書（last_ok に保存する素材。T618）
 
     def __iter__(self):
         return iter((self.status, self.result, self.error, self.trace))
@@ -73,7 +75,8 @@ def collect_one(source: Source, fetcher: Fetcher) -> Collected:
         return Collected("failed", error=f"レシピが無い: {source.recipe_path.name}", error_info=ErrorInfo("recipe", phase="parse").to_dict())
     try:
         recipe = Recipe.load(source.recipe_path)
-        ex = Executor(fetcher, recipe)
+        rec = RecordingFetcher(fetcher)
+        ex = Executor(rec, recipe)
         docs = ex.resolve(source.url)
         res = build(source, recipe, docs, getattr(ex, "visited", None))
     except (FetchError, RecipeError) as e:
@@ -82,7 +85,7 @@ def collect_one(source: Source, fetcher: Fetcher) -> Collected:
         log.exception("%s", source.slug)
         return Collected("failed", error=f"{type(e).__name__}: {e}", error_info=ErrorInfo("other", phase="parse").to_dict())
     if res.animals:
-        return Collected("ok", res, trace=ex.trace)
+        return Collected("ok", res, trace=ex.trace, recorder=rec)
     if res.empty_confirmed:
         return Collected("empty", res, trace=ex.trace)
     host = host_of(source.url)
@@ -136,6 +139,7 @@ def _run_locked(sources: list[Source], date: str, out_dir: Path, fetcher: Fetche
         enabled = ai_repair_enabled()
     fetcher = fetcher or Fetcher()
     run_id = f"{date}T{now.strftime('%H%M%S')}"
+    cleanup_last_ok(out_dir / "last_ok")
     state = load_state(state_dir)
     breaker: dict[str, Any] = state["breaker"]
     probing = set(breaker)        # 前日までに開いていて、今日まだ試していないホスト
@@ -183,7 +187,8 @@ def _run_locked(sources: list[Source], date: str, out_dir: Path, fetcher: Fetche
                 and not skipped_by_breaker and (info or {}).get("kind") != "content":
             from .ai_repair import repair
 
-            r = repair(s, fetcher=fetcher, error=err)
+            r = repair(s, fetcher=fetcher, error=err, last_ok_dir=out_dir / "last_ok",
+                       last_ok_count=state["sources"].get(s.slug, {}).get("last_ok_count"))
             if r.status == "ok":
                 repair_note = f"AI がレシピ案を書いた（{r.count} 頭・{getattr(r, 'proposal_path', None)}）"
             elif r.status == "no_key":
@@ -192,6 +197,8 @@ def _run_locked(sources: list[Source], date: str, out_dir: Path, fetcher: Fetche
             else:
                 repair_note = f"AI 修復に失敗: {r.error}"
             log.info("%-28s %s", s.slug, repair_note)
+        if status == "ok" and c.recorder is not None:
+            save_last_ok(out_dir / "last_ok", s.slug, date, c.recorder, count=len(res.animals) if res else None)
         n = len(res.animals) if (res and status != "ambiguous_empty") else 0
         secs = round(time.monotonic() - t, 1)
         row = {"slug": s.slug, "name": s.name, "status": status, "count": n, "error": err,

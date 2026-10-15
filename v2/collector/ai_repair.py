@@ -1,8 +1,8 @@
 """読めなくなったページのレシピを AI（agy）に書き直させ、「案」として保存する（W006 T614・T617）。
 
 流れ: ページを取る → 現行レシピ・docs/RECIPE.md・ページ本文（script/style/hidden 等を除いた HTML、60,000 文字まで）を
-agy に渡す → 返った YAML を strict schema で検査（recipe_schema）→ その場で実行 → 1 頭以上取れたときだけ
-data/proposals/<slug>.yaml に案として書く。**recipes/<slug>.yaml は絶対に書かない**（本番レシピの採用は人が差分を見て行う）。
+agy に渡す → 返った YAML を strict schema で検査（recipe_schema）→ その場で実行 → 1 頭以上取れて採用条件（check_adoption）を
+通ったときだけ data/proposals/<slug>.yaml に案として書く。**recipes/<slug>.yaml は絶対に書かない**（本番レシピの採用は人が差分を見て行う）。
 
 ページ本文は自治体サイトの内容で、信頼できない入力。<untrusted_html> で囲み、中の指示には従わせない。
 
@@ -18,7 +18,7 @@ import re
 import shutil
 import subprocess
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -27,6 +27,7 @@ from bs4 import BeautifulSoup, Comment
 
 from .extract import Result, build
 from .fetch import Fetcher, FetchError
+from .last_ok import LAST_OK_DIR, load_count, load_replay
 from .recipe import Executor, Recipe, RecipeError
 from .recipe_schema import validate_recipe_dict
 from .registry import ROOT, Source
@@ -158,6 +159,127 @@ def ask_agy(prompt: str, schema_path: Path, timeout_s: int) -> dict:
     return so
 
 
+# --- 採用条件（T618。設計監査 B1・B2） ----------------------------------------------------
+# extract.build が「必須項目なし」で捨てた行の理由（雛形・広告・案内文の行を拾っている兆候）
+MISSING_KEY_REASONS = ("写真も管理番号も収容日も個体ページも無い", "種別が決まらず、掲載が終わった行か中身の無い行")
+DUP_REASON = "同じ ID の行が既にある"
+REGRESSION_PCT, REGRESSION_MIN_SLACK = 50, 2   # 許容幅 = max(前回 ok の頭数 × 50%、2 頭)。両端を含む。下限は 0 未満にしない
+
+
+@dataclass
+class Adoption:
+    violations: list[str]
+    passed: list[str]
+    skipped: list[str]
+    warned: list[str] = field(default_factory=list)   # 不合格にはしないが人に見せる（回帰 NG）
+
+    def line(self) -> str:
+        """案のヘッダ・PR 本文に載せる 1 行。"""
+        parts = ["合格 " + "・".join(self.passed) if self.passed else "合格なし"]
+        if self.skipped:
+            parts.append("飛ばした " + "・".join(self.skipped))
+        if self.warned:
+            parts.append("警告 " + "・".join(self.warned))
+        text = " / ".join(parts)
+        return text + (" / 回帰未確認" if any(x.startswith("d 回帰") for x in self.skipped) else "")
+
+
+def tolerance_range(base: int) -> tuple[int, int]:
+    """前回 ok の頭数 base に対する許容範囲 base ± max(2, base の 50%（端数切り上げ）)。下限は 0。"""
+    slack = max(-(-base * REGRESSION_PCT // 100), REGRESSION_MIN_SLACK)
+    return max(0, base - slack), base + slack
+
+
+def evaluate_adoption(res: Result, regression_count: int | None = None, last_ok_count: int | None = None,
+                      skip_reason: str | None = None, allow_other: bool = False,
+                      regression_note: str | None = None) -> Adoption:
+    """a 必須項目 b 重複 c 行数の一致 d 直近 fixture での回帰。regression_count は新レシピを保存 HTML に当てた頭数
+    （None なら d を飛ばす。理由は skip_reason）。last_ok_count は d の基準（保存時の頭数、無ければ state の値）。
+    a は extract.build が載せる値に揃える: species は dog/cat、None（警告）、allow_other なら other。
+    根拠は写真・管理番号・収容日、または個体ページ URL（res.detail_ids）のどれか。"""
+    bad: list[str] = []
+    ok: list[str] = []
+    skip: list[str] = []
+    warn: list[str] = []
+
+    def verdict(label: str, problem: str | None) -> None:
+        if problem:
+            bad.append(problem)
+        else:
+            ok.append(label)
+
+    # a
+    allowed = ("dog", "cat", None, "other") if allow_other else ("dog", "cat", None)
+    lacking = [x for x in res.animals
+               if x.get("species") not in allowed
+               or not (x.get("image_url") or x.get("management_no") or x.get("shelter_date") or x.get("id") in res.detail_ids)]
+    verdict("a 必須項目", f"必須項目（species と、写真・管理番号・収容日・個体ページのどれか）を欠く動物が {len(lacking)} 件"
+            f"（最初の id={lacking[0].get('id')}）" if lacking else None)
+    unknown = sum(1 for x in res.animals if x.get("species") is None)
+    if unknown:
+        warn.append(f"species 未確定 {unknown} 件（build の仕様で載せる。台帳が mixed のときに起きる）")
+    # b
+    ids = [a["id"] for a in res.animals]
+    dups = sum(1 for d in res.dropped if d.reason == DUP_REASON)
+    verdict("b 重複", f"同じ id が複数回出る（重複 {dups} 行）" if dups or len(ids) != len(set(ids)) else None)
+    # c
+    total = len(res.animals) + len(res.dropped)
+    missing = sum(1 for d in res.dropped if d.reason in MISSING_KEY_REASONS)
+    if total != res.rows:
+        c_problem: str | None = f"行数が合わない（レシピが拾った行 {res.rows}・動物 {len(res.animals)}＋捨てた {len(res.dropped)}）"
+    elif res.rows and missing * 2 > res.rows:
+        c_problem = f"拾った行 {res.rows} のうち必須項目なしで捨てた行が {missing} 件で半分を超える（雛形・無関係な行を拾っている兆候）"
+    else:
+        c_problem = None
+    verdict("c 行数", c_problem)
+    # d
+    if regression_count is None or not last_ok_count:
+        why = skip_reason or ("前回 ok の頭数が不明" if regression_count is not None else "保存 HTML なし")
+        skip.append(f"d 回帰（{why}）")
+    elif regression_count == 0:
+        # 保存 HTML が旧構造で、新レシピが今日の構造向けに書かれただけの可能性がある。案は残し、人に見せる。
+        # ただし d は誤採用を止めない（止めるのは人の目）。今日の頭数が前回から外れるなら一段強く書く
+        today = len(res.animals)
+        lo, hi = tolerance_range(last_ok_count)
+        strong = not lo <= today <= hi
+        what = regression_note or "保存 HTML で 0 頭"
+        warn.append(f"回帰 NG（{'強。' if strong else ''}旧構造の可能性。{what}。今日の HTML の頭数 {today}・前回 ok {last_ok_count} 頭）")
+    else:
+        lo, hi = tolerance_range(last_ok_count)
+        if lo <= regression_count <= hi:
+            ok.append(f"d 回帰（保存 HTML で {regression_count} 頭・前回 {last_ok_count} 頭）")
+        else:
+            bad.append(f"保存 HTML に当てた頭数 {regression_count} が前回 ok の {last_ok_count} 頭の許容範囲 {lo}〜{hi} 頭に入らない")
+    return Adoption(bad, ok, skip, warn)
+
+
+def check_adoption(res: Result, regression_count: int | None = None, last_ok_count: int | None = None,
+                   skip_reason: str | None = None, allow_other: bool = False) -> list[str]:
+    """採用条件の違反理由の一覧（空なら合格）。"""
+    return evaluate_adoption(res, regression_count, last_ok_count, skip_reason, allow_other).violations
+
+
+def _regress(recipe: Recipe, source: Source, last_ok_dir: Path,
+             state_count: int | None) -> tuple[int | None, str | None, str | None, int | None]:
+    """新レシピを last_ok の保存 HTML に当てる。(頭数, 飛ばす理由, 0 頭の内訳, d の基準の頭数)。
+    基準は保存 HTML と一緒に残した頭数を優先し、無ければ state の last_ok_count。
+    当てられなかったら 0 頭として扱う（保存に無い URL を辿る新レシピもここ。警告のみ）。"""
+    replay = load_replay(last_ok_dir, source.slug)
+    if replay is None:
+        return None, "保存 HTML なし", None, state_count
+    base = load_count(last_ok_dir, source.slug) or state_count
+    if not base:
+        return None, "前回 ok の頭数が不明", None, None
+    try:
+        return len(_try_recipe(source, recipe, replay).animals), None, None, base
+    except FetchError as e:   # 新レシピが保存に無い URL を辿った
+        log.info("%s: 保存 HTML に無い URL を辿った: %s", source.slug, e)
+        return 0, None, "保存に無い URL を辿って失敗", base
+    except Exception as e:   # 保存 HTML に新レシピが当たらない（構造が違う）= 0 頭
+        log.info("%s: 保存 HTML に新レシピを当てられない: %s: %s", source.slug, type(e).__name__, e)
+        return 0, None, None, base
+
+
 # --- 実行 -------------------------------------------------------------------
 def _try_recipe(source: Source, recipe: Recipe, fetcher: Fetcher) -> Result:
     ex = Executor(fetcher, recipe)
@@ -173,6 +295,8 @@ def repair(
     save: bool = True,
     run_date: str | None = None,
     proposals_dir: Path | None = None,
+    last_ok_dir: Path | None = None,
+    last_ok_count: int | None = None,
 ) -> RepairResult:
     """1 回だけ agy にレシピを書かせ、検査と試行を通った案を data/proposals/<slug>.yaml に保存する。
     recipes/<slug>.yaml は書かない。save=False なら案も書かない（試すだけ）。"""
@@ -232,29 +356,34 @@ def repair(
     if not res.animals:
         why = f"新レシピでも 0 頭（行 {res.rows}・捨てた {len(res.dropped)}" + ("・empty_text あり" if res.empty_confirmed else "") + "）"
         return RepairResult(slug, "failed", error=why, recipe_text=recipe_text, note=note)
-    ids = [a["id"] for a in res.animals]
-    dup_rows = [d for d in res.dropped if d.reason == "同じ ID の行が既にある"]
-    if dup_rows or len(ids) != len(set(ids)):
-        return RepairResult(slug, "failed", error=f"新レシピで同じ id が複数回出る（重複 {len(dup_rows)} 行）",
+    # 採用条件（a 必須項目 b 重複 c 行数 d 直近 fixture での回帰）。d は新レシピを保存済みの正常日 HTML に当てる
+    reg_count, reg_skip, reg_note, baseline = _regress(recipe, source, last_ok_dir or LAST_OK_DIR, last_ok_count)
+    adoption = evaluate_adoption(res, reg_count, baseline, reg_skip, bool(recipe.species.get("allow_other")), reg_note)
+    if adoption.violations:
+        return RepairResult(slug, "failed", error="採用条件を満たさない: " + " / ".join(adoption.violations),
                             recipe_text=recipe_text, note=note)
 
-    # 5. 1 頭以上取れたときだけ「案」を書く。本番レシピ（recipes/）には触らない
+    # 5. 採用条件を通ったときだけ「案」を書く。本番レシピ（recipes/）には触らない
     proposal: Path | None = None
     if save:
         proposal = (proposals_dir or PROPOSALS_DIR) / f"{slug}.yaml"
         try:
             proposal.parent.mkdir(parents=True, exist_ok=True)
-            proposal.write_text(_proposal_header(error, run_date, note, len(res.animals)) + recipe_text, encoding="utf-8")
+            proposal.write_text(_proposal_header(error, run_date, note, len(res.animals), adoption.line()) + recipe_text, encoding="utf-8")
+            if page.html is not None:   # 今日の HTML。期待値は assert しない（人が差分を見る。B2）
+                proposal.with_name(f"{slug}.today.html").write_text(page.html, encoding="utf-8")
             Recipe.load(proposal)   # 書いたものが読み直せることを確認
         except Exception as e:
             proposal.unlink(missing_ok=True)
+            proposal.with_name(f"{slug}.today.html").unlink(missing_ok=True)
             return RepairResult(slug, "failed", error=f"案の保存に失敗した: {e}", recipe_text=recipe_text)
     return RepairResult(slug, "ok", count=len(res.animals), recipe_text=recipe_text, saved=save, proposal_path=proposal, note=note)
 
 
-def _proposal_header(error: str | None, run_date: str | None, note: str = "", count: int = 0) -> str:
+def _proposal_header(error: str | None, run_date: str | None, note: str = "", count: int = 0, adoption: str = "") -> str:
     day = run_date or datetime.now(UTC).date().isoformat()
     why = re.sub(r"\s+", " ", error or "不明").strip()[:200]
-    head = f"# proposal: run の日付 {day}・元の失敗理由 {why}・取れた頭数 {count}・採用条件はまだ通していない（人が差分を見て recipes/ へ反映する）\n"
+    head = f"# proposal: run の日付 {day}・元の失敗理由 {why}・取れた頭数 {count}・採用条件は次の行（人が差分を見て recipes/ へ反映する。今日の HTML は <slug>.today.html）\n"
+    head += f"# 採用条件: {adoption or '(未評価)'}\n"
     n = re.sub(r"\s+", " ", note).strip()[:300]
     return head + (f"# agy note: {n}\n" if n else "")

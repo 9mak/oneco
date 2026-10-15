@@ -168,7 +168,10 @@ def cmd_repair(args: argparse.Namespace) -> int:
             print(f"{s.slug}: 今は読めている（{status}・{len(res.animals) if res else 0} 頭）。--force で強制的に書き直す")
             return 0
         print(f"{s.slug}: {status} {error or ''}")
-    r = repair(s, fetcher=fetcher, error=error, save=not args.dry_run)
+    from .state import load_state
+
+    r = repair(s, fetcher=fetcher, error=error, save=not args.dry_run,
+               last_ok_count=load_state()["sources"].get(s.slug, {}).get("last_ok_count"))
     if r.recipe_text and (args.show or r.status != "ok"):
         print("---- agy が返したレシピ ----")
         print(r.recipe_text.rstrip())

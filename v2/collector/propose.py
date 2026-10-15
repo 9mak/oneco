@@ -88,9 +88,15 @@ def _header_info(text: str) -> tuple[str, str, str]:
     return (why.group(1) if why else "不明", why.group(2) if why else "?", note.group(1) if note else "")
 
 
-def _pr_body(slug: str, name: str, why: str, count: str, note: str) -> str:
+def _adoption_line(text: str) -> str:
+    m = re.search(r"^# 採用条件: (.*)$", text, re.M)
+    return m.group(1) if m else ""
+
+
+def _pr_body(slug: str, name: str, why: str, count: str, note: str, adoption: str = "") -> str:
     return (
-        f"slug: {slug}\n自治体: {name}\n元の失敗理由: {why}\n新レシピで取れた頭数: {count}\n\n"
+        f"slug: {slug}\n自治体: {name}\n元の失敗理由: {why}\n新レシピで取れた頭数: {count}\n"
+        f"採用条件: {adoption or '(不明)'}\n\n"
         "merge すれば翌日の収集から本番に入る。採らないなら close。\n"
         "（案の先頭の `# proposal:` コメントは手がかり。差分を見て判断する）\n\n"
         f"agy の note: {note or '(なし)'}\n"
@@ -151,7 +157,7 @@ def propose(dry_run: bool = False, proposals_dir: Path | None = None, today: str
             _run(["git", "-C", c, "commit", "-m", f"v2 repair: {slug} のレシピ案（agy・{count} 頭）"])
             _run(_git("-C", c, "push", "--force-with-lease", "-u", "origin", branch))   # 前回（close 済み）の同名ブランチを上書き
             out = _run(["gh", "pr", "create", "--draft", "--title", f"v2 repair: {name}（{slug}）のレシピ案",
-                        "--body", _pr_body(slug, name, why, count, note)], cwd=clone)
+                        "--body", _pr_body(slug, name, why, count, note, _adoption_line(text))], cwd=clone)
         except (StepError, OSError, subprocess.TimeoutExpired) as e:
             print(f"{slug}: PR を作れなかった。飛ばす: {e}")
             failed += 1
