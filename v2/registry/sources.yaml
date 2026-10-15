@@ -11,6 +11,9 @@ sources:
   phone: 059-352-0613
   address: 三重県四日市市諏訪町2番2号（総合会館4F）
   url: https://www.city.yokkaichi.lg.jp/www/contents/1001000000924/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.yokkaichi.lg.jp/www/contents/1001000000924/index.html"
+  verified_address_url: "https://www.city.yokkaichi.lg.jp/www/contents/1001000000924/index.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -44,9 +47,12 @@ sources:
   name: 京都市ペットラブ（迷子犬）
   municipality: 京都市ペットラブ
   prefecture: 京都府
-  phone: null
-  address: null
+  phone: 075-671-0336
+  address: 〒601-8103 京都市南区上鳥羽仏現寺町11番地（京都動物愛護センター）
   url: https://kyoto-ani-love.com/lost-animal/dog/
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://kyoto-ani-love.com/"
+  verified_address_url: "https://kyoto-ani-love.com/"
   kind: stray
   species: dog
   mode: recipe
@@ -62,9 +68,12 @@ sources:
   name: 京都市ペットラブ（迷子猫）
   municipality: 京都市ペットラブ
   prefecture: 京都府
-  phone: null
-  address: null
+  phone: 075-671-0336
+  address: 〒601-8103 京都市南区上鳥羽仏現寺町11番地（京都動物愛護センター）
   url: https://kyoto-ani-love.com/lost-animal/cat/
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://kyoto-ani-love.com/"
+  verified_address_url: "https://kyoto-ani-love.com/"
   kind: stray
   species: cat
   mode: recipe
@@ -83,6 +92,9 @@ sources:
   phone: 0774-21-2191
   address: 宇治市宇治若森7-6
   url: https://www.pref.kyoto.jp/yamashiro/ho-kita/121852245466.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.kyoto.jp/yamashiro/ho-kita/121852245466.html"
+  verified_address_url: "https://www.pref.kyoto.jp/yamashiro/ho-kita/121852245466.html"
   kind: stray
   species: dog
   mode: recipe
@@ -101,6 +113,9 @@ sources:
   phone: 0774-21-2912
   address: 宇治市宇治若森7-6
   url: https://www.pref.kyoto.jp/yamashiro/ho-kita/1305161925645.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.kyoto.jp/yamashiro/ho-kita/1305161925645.html"
+  verified_address_url: "https://www.pref.kyoto.jp/yamashiro/ho-kita/1305161925645.html"
   kind: stray
   species: cat
   mode: recipe
@@ -119,6 +134,9 @@ sources:
   phone: 0774-72-4302
   address: 木津川市木津上戸18-1
   url: https://www.pref.kyoto.jp/yamashiro/ho-minami/fumei.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.kyoto.jp/yamashiro/ho-minami/fumei.html"
+  verified_address_url: "https://www.pref.kyoto.jp/yamashiro/ho-minami/fumei.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -137,6 +155,9 @@ sources:
   phone: 0771-62-4751
   address: 南丹市園部町小山東町藤ノ木21
   url: https://www.pref.kyoto.jp/nantan/ho-kikaku/280418missingdog.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.kyoto.jp/nantan/ho-kikaku/280418missingdog.html"
+  verified_address_url: "https://www.pref.kyoto.jp/nantan/ho-kikaku/280418missingdog.html"
   kind: stray
   species: dog
   mode: recipe
@@ -155,6 +176,9 @@ sources:
   phone: 0771-62-4751
   address: 南丹市園部町小山東町藤ノ木21
   url: https://www.pref.kyoto.jp/nantan/ho-kikaku/280418missingcat.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.kyoto.jp/nantan/ho-kikaku/280418missingdog.html"
+  verified_address_url: "https://www.pref.kyoto.jp/nantan/ho-kikaku/280418missingdog.html"
   kind: stray
   species: cat
   mode: recipe
@@ -173,6 +197,8 @@ sources:
   phone: 0952-30-1350
   address: null
   url: https://www.pref.saga.lg.jp/kiji00349237/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saga.lg.jp/kiji00349237/index.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -191,6 +217,8 @@ sources:
   phone: 0942-83-2162
   address: null
   url: https://www.pref.saga.lg.jp/kiji00334357/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saga.lg.jp/kiji00334357/index.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -209,6 +237,8 @@ sources:
   phone: 0955-73-1131
   address: null
   url: https://www.pref.saga.lg.jp/kiji00365042/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saga.lg.jp/kiji00365042/index.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -227,6 +257,8 @@ sources:
   phone: 0955-23-2103
   address: null
   url: https://www.pref.saga.lg.jp/kiji00334505/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saga.lg.jp/kiji00334505/index.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -245,6 +277,8 @@ sources:
   phone: 0954-23-3501
   address: null
   url: https://www.pref.saga.lg.jp/kiji00334341/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saga.lg.jp/kiji00334341/index.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -263,6 +297,8 @@ sources:
   phone: 0954-23-0532
   address: null
   url: https://www.pref.saga.lg.jp/kiji00314888/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saga.lg.jp/kiji00314888/index.html"
   kind: adoption
   species: mixed
   mode: link_only
@@ -361,6 +397,8 @@ sources:
   phone: 078-771-7497
   address: null
   url: https://www.city.kobe.lg.jp/a84140/kenko/health/hygiene/animal/zmenu/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.kobe.lg.jp/a84140/kenko/health/hygiene/animal/zmenu/index.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -379,6 +417,8 @@ sources:
   phone: 06-6432-4599
   address: null
   url: https://hyogo-douai.sakura.ne.jp/hogo1.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://hyogo-douai.sakura.ne.jp/hogo1.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -398,6 +438,8 @@ sources:
   phone: 0794-84-3050
   address: null
   url: https://hyogo-douai.sakura.ne.jp/hogo2.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://hyogo-douai.sakura.ne.jp/hogo2.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -411,6 +453,8 @@ sources:
   phone: 0791-63-5146
   address: null
   url: https://hyogo-douai.sakura.ne.jp/hogo3.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://hyogo-douai.sakura.ne.jp/hogo3.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -424,6 +468,8 @@ sources:
   phone: 079-666-8071
   address: null
   url: https://hyogo-douai.sakura.ne.jp/hogo4.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://hyogo-douai.sakura.ne.jp/hogo4.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -437,6 +483,8 @@ sources:
   phone: 0799-62-5811
   address: null
   url: https://hyogo-douai.sakura.ne.jp/hogo5.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://hyogo-douai.sakura.ne.jp/hogo5.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -450,6 +498,9 @@ sources:
   phone: 011-736-6134
   address: 〒060-0022 札幌市中央区北22条西15丁目3-6
   url: https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/maigoinu.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/maigoinu.html"
+  verified_address_url: "https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/maigoinu.html"
   kind: stray
   species: dog
   mode: recipe
@@ -468,6 +519,9 @@ sources:
   phone: 011-736-6134
   address: 〒060-0022 札幌市中央区北22条西15丁目3-6
   url: https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/maigoneko2.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/maigoinu.html"
+  verified_address_url: "https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/maigoinu.html"
   kind: stray
   species: cat
   mode: recipe
@@ -486,6 +540,8 @@ sources:
   phone: null
   address: 函館市吉川町6-22
   url: https://nyantomo.jp/donanhakodate/
+  verified_at: '2026-10-15'
+  verified_address_url: "https://nyantomo.jp/donanhakodate/"
   kind: adoption
   species: cat
   mode: recipe
@@ -504,6 +560,8 @@ sources:
   phone: 0157-57-3612
   address: null
   url: https://aniwel.jp/afa/
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://aniwel.jp/afa/"
   kind: adoption
   species: cat
   mode: recipe
@@ -522,6 +580,8 @@ sources:
   phone: 0166-25-5271
   address: null
   url: https://www.douaicenter.jp/animal/list/transfer/dog
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.douaicenter.jp/about"
   kind: adoption
   species: dog
   mode: recipe
@@ -540,6 +600,8 @@ sources:
   phone: 0166-25-5271
   address: null
   url: https://www.douaicenter.jp/animal/list/transfer/cat
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.douaicenter.jp/about"
   kind: adoption
   species: cat
   mode: recipe
@@ -558,6 +620,8 @@ sources:
   phone: 0166-25-5271
   address: null
   url: https://www.douaicenter.jp/animal/list/transfer/other
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.douaicenter.jp/about"
   kind: adoption
   species: mixed
   mode: recipe
@@ -576,6 +640,8 @@ sources:
   phone: 0166-25-5271
   address: null
   url: https://www.douaicenter.jp/animal/list/sheltered/dog
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.douaicenter.jp/about"
   kind: sheltered
   species: dog
   mode: recipe
@@ -594,6 +660,8 @@ sources:
   phone: 0166-25-5271
   address: null
   url: https://www.douaicenter.jp/animal/list/sheltered/cat
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.douaicenter.jp/about"
   kind: sheltered
   species: cat
   mode: recipe
@@ -612,6 +680,8 @@ sources:
   phone: 0166-25-5271
   address: null
   url: https://www.douaicenter.jp/animal/list/sheltered/other
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.douaicenter.jp/about"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -630,6 +700,8 @@ sources:
   phone: 0166-25-5271
   address: null
   url: https://www.douaicenter.jp/other-animal/list/dog
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.douaicenter.jp/about"
   kind: sheltered
   species: dog
   mode: recipe
@@ -648,6 +720,8 @@ sources:
   phone: 0166-25-5271
   address: null
   url: https://www.douaicenter.jp/other-animal/list/cat
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.douaicenter.jp/about"
   kind: sheltered
   species: cat
   mode: recipe
@@ -666,6 +740,8 @@ sources:
   phone: 0166-25-5271
   address: null
   url: https://www.douaicenter.jp/other-animal/list/dog
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.douaicenter.jp/about"
   kind: lost
   species: dog
   mode: recipe
@@ -679,6 +755,8 @@ sources:
   phone: 0166-25-5271
   address: null
   url: https://www.douaicenter.jp/other-animal/list/cat
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.douaicenter.jp/about"
   kind: lost
   species: cat
   mode: recipe
@@ -692,6 +770,8 @@ sources:
   phone: 0166-25-5271
   address: null
   url: https://www.douaicenter.jp/other-animal/list/other
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.douaicenter.jp/about"
   kind: lost
   species: mixed
   mode: recipe
@@ -705,6 +785,8 @@ sources:
   phone: 0166-25-5271
   address: null
   url: https://www.douaicenter.jp/other-animal/list/other
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.douaicenter.jp/about"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -718,6 +800,9 @@ sources:
   phone: 043-258-7817
   address: 千葉市稲毛区宮野木町445番地1
   url: https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/lost_dog.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/lost_dog.html"
+  verified_address_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/lost_dog.html"
   kind: stray
   species: dog
   mode: recipe
@@ -736,6 +821,9 @@ sources:
   phone: 043-258-7817
   address: 千葉市稲毛区宮野木町445番地1
   url: https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/lost_cat.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/lost_dog.html"
+  verified_address_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/lost_dog.html"
   kind: stray
   species: cat
   mode: recipe
@@ -754,6 +842,9 @@ sources:
   phone: 043-258-7817
   address: 千葉市稲毛区宮野木町445番地1
   url: https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/lost_another_animal.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/lost_dog.html"
+  verified_address_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/lost_dog.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -772,6 +863,9 @@ sources:
   phone: 043-258-7817
   address: 千葉市稲毛区宮野木町445番地1
   url: https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/hogo_dog.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/lost_dog.html"
+  verified_address_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/lost_dog.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -790,6 +884,9 @@ sources:
   phone: 043-258-7817
   address: 千葉市稲毛区宮野木町445番地1
   url: https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/hogo_cat.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/lost_dog.html"
+  verified_address_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/lost_dog.html"
   kind: sheltered
   species: cat
   mode: recipe
@@ -808,6 +905,9 @@ sources:
   phone: 043-258-7817
   address: 千葉市稲毛区宮野木町445番地1
   url: https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/lost_others.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/lost_dog.html"
+  verified_address_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/lost_dog.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -826,6 +926,9 @@ sources:
   phone: 047-435-3916
   address: 〒273-0016 千葉県船橋市潮見町32-2
   url: https://www.city.funabashi.lg.jp/kurashi/doubutsu/003/p013242.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.funabashi.lg.jp/kurashi/doubutsu/003/p013242.html"
+  verified_address_url: "https://www.city.funabashi.lg.jp/kurashi/doubutsu/003/p013242.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -844,6 +947,9 @@ sources:
   phone: 047-435-3916
   address: 〒273-0016 千葉県船橋市潮見町32-2
   url: https://www.city.funabashi.lg.jp/kurashi/doubutsu/003/joutoindex.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.funabashi.lg.jp/kurashi/doubutsu/003/p013242.html"
+  verified_address_url: "https://www.city.funabashi.lg.jp/kurashi/doubutsu/003/p013242.html"
   kind: adoption
   species: mixed
   mode: recipe
@@ -898,6 +1004,8 @@ sources:
   phone: 0476-93-5711
   address: null
   url: https://www.pref.chiba.lg.jp/aigo/pet/inu-neko/shuuyou/shuu-inu.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.chiba.lg.jp/aigo/pet/inu-neko/shuuyou/shuu-inu.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -916,6 +1024,8 @@ sources:
   phone: 0476-93-5711
   address: null
   url: https://www.pref.chiba.lg.jp/aigo/pet/inu-neko/shuuyou/shuu-neko.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.chiba.lg.jp/aigo/pet/inu-neko/shuuyou/shuu-inu.html"
   kind: sheltered
   species: cat
   mode: recipe
@@ -934,6 +1044,8 @@ sources:
   phone: 0476-93-5711
   address: null
   url: https://www.pref.chiba.lg.jp/aigo/pet/sonohoka/inu-nekoigai/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.chiba.lg.jp/aigo/pet/inu-neko/shuuyou/shuu-inu.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -952,6 +1064,8 @@ sources:
   phone: 04-7191-0050
   address: null
   url: https://www.pref.chiba.lg.jp/aigo/pet/inu-neko/shuuyou/shuu-inu-tou.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.chiba.lg.jp/aigo/pet/inu-neko/shuuyou/shuu-inu-tou.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -970,6 +1084,8 @@ sources:
   phone: 04-7191-0050
   address: null
   url: https://www.pref.chiba.lg.jp/aigo/pet/inu-neko/shuuyou/shuu-neko-tou.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.chiba.lg.jp/aigo/pet/inu-neko/shuuyou/shuu-inu-tou.html"
   kind: sheltered
   species: cat
   mode: recipe
@@ -988,6 +1104,9 @@ sources:
   phone: 073-488-2032
   address: 〒640-8422 和歌山市松江東3丁目2番63号（和歌山市動物愛護管理センター）
   url: https://www.city.wakayama.wakayama.jp/kurashi/kenko_iryo/1009125/1035775/1002096.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.wakayama.wakayama.jp/kurashi/kenko_iryo/1009125/1035775/1002096.html"
+  verified_address_url: "https://www.city.wakayama.wakayama.jp/kurashi/kenko_iryo/1009125/1035775/1002096.html"
   kind: adoption
   species: mixed
   mode: recipe
@@ -1004,9 +1123,12 @@ sources:
   name: 和歌山県（保護犬猫情報）
   municipality: 和歌山県
   prefecture: 和歌山県
-  phone: null
-  address: null
+  phone: 073-489-6500
+  address: 〒640-1251 海草郡紀美野町国木原372（和歌山県動物愛護センター）
   url: https://www.pref.wakayama.lg.jp/prefg/031601/d00156970.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.wakayama.lg.jp/prefg/031601/d00156970.html"
+  verified_address_url: "https://www.pref.wakayama.lg.jp/prefg/031601/d00156970.html"
   kind: sheltered
   species: mixed
   mode: link_only
@@ -1026,6 +1148,8 @@ sources:
   phone: 048-969-8511
   address: null
   url: https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/hogo/koshigaya_contents_dog.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/hogo/koshigaya_contents_dog.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -1044,6 +1168,8 @@ sources:
   phone: 048-969-8511
   address: null
   url: https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/hogo/koshigaya_contents_cat.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/hogo/koshigaya_contents_dog.html"
   kind: sheltered
   species: cat
   mode: recipe
@@ -1062,6 +1188,8 @@ sources:
   phone: 048-969-8511
   address: null
   url: https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/hogo/hogo_kojin.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/hogo/koshigaya_contents_dog.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -1080,6 +1208,8 @@ sources:
   phone: 048-840-4150
   address: null
   url: https://www.city.saitama.lg.jp/008/004/003/004/p003138.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.saitama.lg.jp/008/004/003/004/p003138.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -1098,6 +1228,8 @@ sources:
   phone: 048-840-4150
   address: null
   url: https://www.city.saitama.lg.jp/008/004/003/004/p019971.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.saitama.lg.jp/008/004/003/004/p003138.html"
   kind: sheltered
   species: cat
   mode: recipe
@@ -1134,6 +1266,9 @@ sources:
   phone: 097-588-1122
   address: 〒870-1201 大分市大字廻栖野3231番地47
   url: https://oita-aigo.com/lostchild/
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://oita-aigo.com/lostchild/"
+  verified_address_url: "https://oita-aigo.com/lostchild/"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -1152,6 +1287,9 @@ sources:
   phone: 097-588-1122
   address: 〒870-1201 大分市大字廻栖野3231番地47
   url: https://oita-aigo.com/information_doglist/anytimedog/
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://oita-aigo.com/lostchild/"
+  verified_address_url: "https://oita-aigo.com/lostchild/"
   kind: adoption
   species: dog
   mode: recipe
@@ -1170,6 +1308,9 @@ sources:
   phone: 097-588-1122
   address: 〒870-1201 大分市大字廻栖野3231番地47
   url: https://oita-aigo.com/information_catlist/anytimecat/
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://oita-aigo.com/lostchild/"
+  verified_address_url: "https://oita-aigo.com/lostchild/"
   kind: adoption
   species: cat
   mode: recipe
@@ -1188,6 +1329,8 @@ sources:
   phone: 072-963-6211
   address: null
   url: https://www.city.higashiosaka.lg.jp/0000005910.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.higashiosaka.lg.jp/0000005910.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -1206,6 +1349,8 @@ sources:
   phone: 072-807-7624
   address: null
   url: https://www.city.hirakata.osaka.jp/0000001430.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.hirakata.osaka.jp/0000001430.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -1224,6 +1369,9 @@ sources:
   phone: 06-6685-3700
   address: 〒559-0021 大阪市住之江区柴谷2丁目5番74号（おおさかワンニャンセンター）
   url: https://www.city.osaka.lg.jp/kenko/page/0000110901.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.osaka.lg.jp/kenko/page/0000110901.html"
+  verified_address_url: "https://www.city.osaka.lg.jp/kenko/page/0000110901.html"
   kind: stray
   species: dog
   mode: recipe
@@ -1242,6 +1390,9 @@ sources:
   phone: 06-6685-3700
   address: 〒559-0021 大阪市住之江区柴谷2丁目5番74号（おおさかワンニャンセンター）
   url: https://www.city.osaka.lg.jp/kenko/page/0000117147.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.osaka.lg.jp/kenko/page/0000110901.html"
+  verified_address_url: "https://www.city.osaka.lg.jp/kenko/page/0000110901.html"
   kind: stray
   species: cat
   mode: recipe
@@ -1260,6 +1411,9 @@ sources:
   phone: 06-6685-3700
   address: 〒559-0021 大阪市住之江区柴谷2丁目5番74号（おおさかワンニャンセンター）
   url: https://www.city.osaka.lg.jp/kenko/page/0000206024.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.osaka.lg.jp/kenko/page/0000110901.html"
+  verified_address_url: "https://www.city.osaka.lg.jp/kenko/page/0000110901.html"
   kind: adoption
   species: dog
   mode: recipe
@@ -1278,6 +1432,9 @@ sources:
   phone: 06-6685-3700
   address: 〒559-0021 大阪市住之江区柴谷2丁目5番74号（おおさかワンニャンセンター）
   url: https://www.city.osaka.lg.jp/kenko/page/0000206027.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.osaka.lg.jp/kenko/page/0000110901.html"
+  verified_address_url: "https://www.city.osaka.lg.jp/kenko/page/0000110901.html"
   kind: adoption
   species: cat
   mode: recipe
@@ -1296,6 +1453,9 @@ sources:
   phone: 072-661-9331
   address: 大阪府高槻市城東町5-7
   url: https://www.city.takatsuki.osaka.jp/soshiki/39/2752.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.takatsuki.osaka.jp/soshiki/39/2752.html"
+  verified_address_url: "https://www.city.takatsuki.osaka.jp/soshiki/39/2752.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -1314,6 +1474,9 @@ sources:
   phone: 072-958-8212
   address: 〒583-0862 羽曳野市尺度53-4
   url: https://www.pref.osaka.lg.jp/o120200/doaicenter/doaicenter/maigoken.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.osaka.lg.jp/o120200/doaicenter/doaicenter/maigoken.html"
+  verified_address_url: "https://www.pref.osaka.lg.jp/o120200/doaicenter/doaicenter/maigoken.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -1332,6 +1495,9 @@ sources:
   phone: 06-6152-7321
   address: 〒561-0881 豊中市中桜塚4丁目11番1号 豊中市保健所
   url: https://www.city.toyonaka.osaka.jp/kurashi/pettp-inuneko/maigo.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.toyonaka.osaka.jp/kurashi/pettp-inuneko/maigo.html"
+  verified_address_url: "https://www.city.toyonaka.osaka.jp/kurashi/pettp-inuneko/maigo.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -1368,6 +1534,9 @@ sources:
   phone: 022-258-1626
   address: 仙台市宮城野区扇町6-3-3
   url: https://www.city.sendai.jp/dobutsu/kurashi/shizen/petto/hogodobutsu/joho/inu.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.sendai.jp/dobutsu/kurashi/shizen/petto/hogodobutsu/joho/inu.html"
+  verified_address_url: "https://www.city.sendai.jp/dobutsu/kurashi/shizen/petto/hogodobutsu/joho/inu.html"
   kind: adoption
   species: dog
   mode: recipe
@@ -1386,6 +1555,9 @@ sources:
   phone: 022-258-1626
   address: 仙台市宮城野区扇町6-3-3
   url: https://www.city.sendai.jp/dobutsu/kurashi/shizen/petto/hogodobutsu/joho/neko.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.sendai.jp/dobutsu/kurashi/shizen/petto/hogodobutsu/joho/inu.html"
+  verified_address_url: "https://www.city.sendai.jp/dobutsu/kurashi/shizen/petto/hogodobutsu/joho/inu.html"
   kind: adoption
   species: cat
   mode: recipe
@@ -1404,6 +1576,9 @@ sources:
   phone: 022-258-1626
   address: 仙台市宮城野区扇町6-3-3
   url: https://www.city.sendai.jp/dobutsu/kurashi/shizen/petto/hogodobutsu/joho/koneko.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.sendai.jp/dobutsu/kurashi/shizen/petto/hogodobutsu/joho/inu.html"
+  verified_address_url: "https://www.city.sendai.jp/dobutsu/kurashi/shizen/petto/hogodobutsu/joho/inu.html"
   kind: adoption
   species: cat
   mode: recipe
@@ -1422,6 +1597,8 @@ sources:
   phone: 0985-85-6011
   address: null
   url: https://www.city.miyazaki.miyazaki.jp/life/pet/protection/
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.miyazaki.miyazaki.jp/life/pet/protection/109676.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -1440,6 +1617,8 @@ sources:
   phone: 0985-85-6011
   address: null
   url: https://www.city.miyazaki.miyazaki.jp/life/pet/protection/109676.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.miyazaki.miyazaki.jp/life/pet/protection/109676.html"
   kind: adoption
   species: dog
   mode: link_only
@@ -1459,6 +1638,8 @@ sources:
   phone: 0985-85-6011
   address: null
   url: https://www.city.miyazaki.miyazaki.jp/life/pet/protection/339718.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.miyazaki.miyazaki.jp/life/pet/protection/109676.html"
   kind: adoption
   species: cat
   mode: link_only
@@ -1493,9 +1674,12 @@ sources:
   name: 山口県動物愛護センター（収容動物）
   municipality: 山口県動物愛護センター
   prefecture: 山口県
-  phone: null
-  address: null
+  phone: 083-973-8315
+  address: 〒754-0891 山口市陶10943-12（山口県動物愛護センター）
   url: https://www.pref.yamaguchi.lg.jp/site/doubutuaigo/list25-151.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.yamaguchi.lg.jp/site/doubutuaigo/10035.html"
+  verified_address_url: "https://www.pref.yamaguchi.lg.jp/site/doubutuaigo/10035.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -1514,6 +1698,9 @@ sources:
   phone: 023-630-2621
   address: 山形市松波二丁目8番1号
   url: https://www.pref.yamagata.jp/020071/kenfuku/doubutsuaigo/aigo/kainushisagashi/keijiban.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.yamagata.jp/020071/kenfuku/doubutsuaigo/aigo/kainushisagashi/keijiban.html"
+  verified_address_url: "https://www.pref.yamagata.jp/020071/kenfuku/doubutsuaigo/aigo/kainushisagashi/keijiban.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -1532,6 +1719,9 @@ sources:
   phone: 055-273-5034
   address: 〒409-3812 山梨県中央市乙黒1083(山梨県動物愛護指導センター)
   url: https://www.pref.yamanashi.jp/doubutsu/p_dog/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.yamanashi.jp/doubutsu/p_dog/index.html"
+  verified_address_url: "https://www.pref.yamanashi.jp/doubutsu/p_dog/index.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -1550,6 +1740,9 @@ sources:
   phone: 055-273-5034
   address: 〒409-3812 山梨県中央市乙黒1083(山梨県動物愛護指導センター)
   url: https://www.pref.yamanashi.jp/doubutsu/p_other/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.yamanashi.jp/doubutsu/p_dog/index.html"
+  verified_address_url: "https://www.pref.yamanashi.jp/doubutsu/p_dog/index.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -1568,6 +1761,9 @@ sources:
   phone: 055-273-5034
   address: 〒409-3812 山梨県中央市乙黒1083(山梨県動物愛護指導センター)
   url: https://www.pref.yamanashi.jp/doubutsu/m_other/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.yamanashi.jp/doubutsu/p_dog/index.html"
+  verified_address_url: "https://www.pref.yamanashi.jp/doubutsu/p_dog/index.html"
   kind: lost   # 飼い主が自分の迷子を探している告知（2026-10-02 監査で区分を追加）
   species: mixed
   mode: recipe
@@ -1586,6 +1782,9 @@ sources:
   phone: 055-273-5034
   address: 〒409-3812 山梨県中央市乙黒1083(山梨県動物愛護指導センター)
   url: https://www.pref.yamanashi.jp/doubutsu/p_cat/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.yamanashi.jp/doubutsu/p_dog/index.html"
+  verified_address_url: "https://www.pref.yamanashi.jp/doubutsu/p_dog/index.html"
   kind: sheltered
   species: cat
   mode: recipe
@@ -1604,6 +1803,9 @@ sources:
   phone: 055-273-5034
   address: 〒409-3812 山梨県中央市乙黒1083(山梨県動物愛護指導センター)
   url: https://www.pref.yamanashi.jp/doubutsu/m_dog/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.yamanashi.jp/doubutsu/p_dog/index.html"
+  verified_address_url: "https://www.pref.yamanashi.jp/doubutsu/p_dog/index.html"
   kind: lost   # 飼い主が自分の迷子を探している告知（2026-10-02 監査で区分を追加）
   species: dog
   mode: recipe
@@ -1622,6 +1824,9 @@ sources:
   phone: 055-273-5034
   address: 〒409-3812 山梨県中央市乙黒1083(山梨県動物愛護指導センター)
   url: https://www.pref.yamanashi.jp/doubutsu/m_cat/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.yamanashi.jp/doubutsu/p_dog/index.html"
+  verified_address_url: "https://www.pref.yamanashi.jp/doubutsu/p_dog/index.html"
   kind: lost   # 飼い主が自分の迷子を探している告知（2026-10-02 監査で区分を追加）
   species: cat
   mode: recipe
@@ -1658,6 +1863,9 @@ sources:
   phone: 086-434-9829
   address: 〒710-0834 倉敷市笹沖170番地
   url: https://www.city.kurashiki.okayama.jp/kurashi/pet/1013042/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.kurashiki.okayama.jp/kurashi/pet/1013042/index.html"
+  verified_address_url: "https://www.city.kurashiki.okayama.jp/kurashi/pet/1013042/index.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -1694,6 +1902,8 @@ sources:
   phone: 086-724-9512
   address: null
   url: https://www.pref.okayama.jp/page/859555.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.okayama.jp/page/859555.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -1728,9 +1938,12 @@ sources:
   name: 島根県 松江保健所（収容動物）
   municipality: 島根県 松江保健所
   prefecture: 島根県
-  phone: null
-  address: null
+  phone: 0852-61-8875
+  address: 〒690-0011 島根県松江市東津田町1741-3（松江保健所。いきいきプラザ島根3階。電話は動物愛護推進課）
   url: https://www.pref.shimane.lg.jp/infra/nature/animal/matsue_hoken/doubutu/
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.shimane.lg.jp/matsue_hoken/"
+  verified_address_url: "https://www.pref.shimane.lg.jp/matsue_hoken/"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -1746,9 +1959,12 @@ sources:
   name: 島根県 松江保健所（収容動物の表）
   municipality: 島根県 松江保健所
   prefecture: 島根県
-  phone: null
-  address: null
+  phone: 0852-61-8875
+  address: 〒690-0011 島根県松江市東津田町1741-3（松江保健所。いきいきプラザ島根3階。電話は動物愛護推進課）
   url: https://www.pref.shimane.lg.jp/infra/nature/animal/matsue_hoken/doubutu/hogozyouhou_kakobunn/syuyouari.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.shimane.lg.jp/matsue_hoken/"
+  verified_address_url: "https://www.pref.shimane.lg.jp/matsue_hoken/"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -1762,6 +1978,9 @@ sources:
   phone: 084-970-1201
   address: 〒720-1143 福山市駅家町下山守546番地14
   url: https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/237722.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/237722.html"
+  verified_address_url: "https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/237722.html"
   kind: stray
   species: dog
   mode: recipe
@@ -1780,6 +1999,9 @@ sources:
   phone: 084-970-1201
   address: 〒720-1143 福山市駅家町下山守546番地14
   url: https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/60970.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/237722.html"
+  verified_address_url: "https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/237722.html"
   kind: sheltered
   species: cat
   mode: recipe
@@ -1798,6 +2020,9 @@ sources:
   phone: 082-243-6058
   address: 〒730-0043 広島県広島市中区富士見町11番27号（広島市動物愛護センター）
   url: https://www.city.hiroshima.lg.jp/living/pet-doubutsu/1021301/1026245/1037461.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.hiroshima.lg.jp/living/pet-doubutsu/1021301/1026245/1037461.html"
+  verified_address_url: "https://www.city.hiroshima.lg.jp/living/pet-doubutsu/1021301/1026245/1037461.html"
   kind: stray
   species: dog
   mode: recipe
@@ -1816,6 +2041,9 @@ sources:
   phone: 082-243-6058
   address: 〒730-0043 広島県広島市中区富士見町11番27号（広島市動物愛護センター）
   url: https://www.city.hiroshima.lg.jp/living/pet-doubutsu/1021301/1026245/1039097.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.hiroshima.lg.jp/living/pet-doubutsu/1021301/1026245/1037461.html"
+  verified_address_url: "https://www.city.hiroshima.lg.jp/living/pet-doubutsu/1021301/1026245/1037461.html"
   kind: stray
   species: cat
   mode: recipe
@@ -1834,6 +2062,9 @@ sources:
   phone: 0848-60-8511
   address: 〒729-0415 広島県三原市本郷町上北方字用倉山11352番
   url: https://www.pref.hiroshima.lg.jp/site/apc/jouto-stray-dog-list.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.hiroshima.lg.jp/site/apc/jouto-stray-dog-list.html"
+  verified_address_url: "https://www.pref.hiroshima.lg.jp/site/apc/jouto-stray-dog-list.html"
   kind: stray
   species: dog
   mode: recipe
@@ -1853,6 +2084,9 @@ sources:
   phone: 0848-60-8511
   address: 〒729-0415 広島県三原市本郷町上北方字用倉山11352番
   url: https://www.pref.hiroshima.lg.jp/site/apc/jouto-stray-cat-list.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.hiroshima.lg.jp/site/apc/jouto-stray-dog-list.html"
+  verified_address_url: "https://www.pref.hiroshima.lg.jp/site/apc/jouto-stray-dog-list.html"
   kind: stray
   species: cat
   mode: recipe
@@ -1872,6 +2106,9 @@ sources:
   phone: 088-636-6122
   address: 〒771-3201 徳島県名西郡神山町阿野字長谷333
   url: https://douai-tokushima.com/stray/
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://douai-tokushima.com/stray/"
+  verified_address_url: "https://douai-tokushima.com/stray/"
   kind: stray
   species: mixed
   mode: recipe
@@ -1890,6 +2127,9 @@ sources:
   phone: 088-636-6122
   address: 〒771-3201 徳島県名西郡神山町阿野字長谷333
   url: https://douai-tokushima.com/transfer/doglist
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://douai-tokushima.com/stray/"
+  verified_address_url: "https://douai-tokushima.com/stray/"
   kind: adoption
   species: dog
   mode: recipe
@@ -1908,6 +2148,9 @@ sources:
   phone: 088-636-6122
   address: 〒771-3201 徳島県名西郡神山町阿野字長谷333
   url: https://douai-tokushima.com/transfer/catlist
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://douai-tokushima.com/stray/"
+  verified_address_url: "https://douai-tokushima.com/stray/"
   kind: adoption
   species: cat
   mode: recipe
@@ -1926,6 +2169,9 @@ sources:
   phone: 089-923-9435
   address: 〒791-8024 愛媛県松山市朝日ヶ丘1丁目 松山総合公園内
   url: https://www.city.matsuyama.ehime.jp/kurashi/kurashi/aigo/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.matsuyama.ehime.jp/kurashi/kurashi/aigo/index.html"
+  verified_address_url: "https://www.city.matsuyama.ehime.jp/kurashi/kurashi/aigo/index.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -1944,6 +2190,9 @@ sources:
   phone: 089-977-9200
   address: 〒791-0133 愛媛県松山市東川町乙44-7
   url: https://www.pref.ehime.jp/page/16976.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.ehime.jp/page/16976.html"
+  verified_address_url: "https://www.pref.ehime.jp/page/16976.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -1962,6 +2211,9 @@ sources:
   phone: 089-977-9200
   address: 〒791-0133 愛媛県松山市東川町乙44-7
   url: https://www.pref.ehime.jp/page/17125.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.ehime.jp/page/16976.html"
+  verified_address_url: "https://www.pref.ehime.jp/page/16976.html"
   kind: adoption
   species: mixed
   mode: recipe
@@ -1980,6 +2232,9 @@ sources:
   phone: 089-977-9200
   address: 〒791-0133 愛媛県松山市東川町乙44-7
   url: https://www.pref.ehime.jp/page/145257.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.ehime.jp/page/16976.html"
+  verified_address_url: "https://www.pref.ehime.jp/page/16976.html"
   kind: adoption
   species: dog
   mode: recipe
@@ -1993,6 +2248,8 @@ sources:
   phone: 052-762-0380
   address: null
   url: https://www.city.nagoya.jp/kurashi/pet/1015473/1015489/1015494.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.nagoya.jp/kurashi/pet/1015473/1015489/1015494.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -2011,6 +2268,8 @@ sources:
   phone: 052-762-0380
   address: null
   url: https://www.city.nagoya.jp/kurashi/pet/1015473/1015483/1015484.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.nagoya.jp/kurashi/pet/1015473/1015489/1015494.html"
   kind: adoption
   species: dog
   mode: link_only
@@ -2029,6 +2288,8 @@ sources:
   phone: 052-762-1515
   address: null
   url: https://www.city.nagoya.jp/kurashi/pet/1015473/1015483/1015488.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.nagoya.jp/kurashi/pet/1015473/1015483/1015488.html"
   kind: adoption
   species: cat
   mode: recipe
@@ -2047,6 +2308,8 @@ sources:
   phone: 0564-27-0402
   address: null
   url: https://www.city.okazaki.lg.jp/1100/1107/1149/p008181.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.okazaki.lg.jp/1100/1107/1149/p008181.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -2065,6 +2328,9 @@ sources:
   phone: 0565-42-2533
   address: 〒471-0002 愛知県豊田市矢並町法沢715-4 鞍ケ池公園内(旧くつろぎ館(休憩所))
   url: https://www.city.toyota.aichi.jp/kurashi/sumai/pet/1003696.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.toyota.aichi.jp/kurashi/sumai/pet/1003696.html"
+  verified_address_url: "https://www.city.toyota.aichi.jp/kurashi/sumai/pet/1003696.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -2083,6 +2349,9 @@ sources:
   phone: 0532-39-9127
   address: 〒441-8149 愛知県豊橋市中野町字中原145番地
   url: https://toyohashi-aikuru.jp/animal_category/lost-found?animal_type=dog
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://toyohashi-aikuru.jp/animal_category/lost-found?animal_type=dog"
+  verified_address_url: "https://toyohashi-aikuru.jp/animal_category/lost-found?animal_type=dog"
   kind: stray
   species: dog
   mode: recipe
@@ -2101,6 +2370,9 @@ sources:
   phone: 0532-39-9127
   address: 〒441-8149 愛知県豊橋市中野町字中原145番地
   url: https://toyohashi-aikuru.jp/animal_category/lost-found?animal_type=cat
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://toyohashi-aikuru.jp/animal_category/lost-found?animal_type=dog"
+  verified_address_url: "https://toyohashi-aikuru.jp/animal_category/lost-found?animal_type=dog"
   kind: stray
   species: cat
   mode: recipe
@@ -2138,6 +2410,9 @@ sources:
   phone: 0258-21-5501
   address: 〒940-2035 長岡市関原町1丁目2663-6（新潟県動物愛護センター）
   url: https://www.pref.niigata.lg.jp/sec/seikatueisei/1333314133188.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.niigata.lg.jp/sec/seikatueisei/1333314133188.html"
+  verified_address_url: "https://www.pref.niigata.lg.jp/sec/seikatueisei/1333314133188.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -2156,6 +2431,8 @@ sources:
   phone: 042-722-6727
   address: null
   url: https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/hogo.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/hogo.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -2174,6 +2451,8 @@ sources:
   phone: 042-722-6727
   address: null
   url: https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/pet_fumei/search_dog.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/hogo.html"
   kind: lost   # 飼い主が自分の迷子を探している告知（2026-10-02 監査で区分を追加）
   species: dog
   mode: recipe
@@ -2192,6 +2471,8 @@ sources:
   phone: 042-722-6727
   address: null
   url: https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/pet_fumei/search_cat.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/hogo.html"
   kind: lost   # 飼い主が自分の迷子を探している告知（2026-10-02 監査で区分を追加）
   species: cat
   mode: recipe
@@ -2210,6 +2491,8 @@ sources:
   phone: 042-722-6727
   address: null
   url: https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/pet_fumei/search_sonota.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/hogo.html"
   kind: lost   # 飼い主が自分の迷子を探している告知（2026-10-02 監査で区分を追加）
   species: mixed
   mode: recipe
@@ -2264,6 +2547,9 @@ sources:
   phone: 028-626-1108
   address: 〒321-0974 宇都宮市竹林町972
   url: https://www.city.utsunomiya.lg.jp/kurashi/pet/pet/1005584.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.utsunomiya.lg.jp/kurashi/pet/pet/1005584.html"
+  verified_address_url: "https://www.city.utsunomiya.lg.jp/kurashi/pet/pet/1005584.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -2373,6 +2659,9 @@ sources:
   phone: 098-945-3043
   address: 〒901-1202 沖縄県南城市大里字大里2000番地
   url: https://www.aniwel-pref.okinawa/animals/accommodate/dogs
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.aniwel-pref.okinawa/animals/accommodate/dogs"
+  verified_address_url: "https://www.aniwel-pref.okinawa/animals/accommodate/dogs"
   kind: sheltered
   species: dog
   mode: recipe
@@ -2391,6 +2680,9 @@ sources:
   phone: 098-945-3043
   address: 〒901-1202 沖縄県南城市大里字大里2000番地
   url: https://www.aniwel-pref.okinawa/animals/accommodate/cats
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.aniwel-pref.okinawa/animals/accommodate/dogs"
+  verified_address_url: "https://www.aniwel-pref.okinawa/animals/accommodate/dogs"
   kind: sheltered
   species: cat
   mode: recipe
@@ -2409,6 +2701,9 @@ sources:
   phone: 098-945-3043
   address: 〒901-1202 沖縄県南城市大里字大里2000番地
   url: https://www.aniwel-pref.okinawa/animals/missing/dogs
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.aniwel-pref.okinawa/animals/accommodate/dogs"
+  verified_address_url: "https://www.aniwel-pref.okinawa/animals/accommodate/dogs"
   kind: lost   # 飼い主が自分の迷子を探している告知（2026-10-02 監査で区分を追加）
   species: dog
   mode: recipe
@@ -2427,6 +2722,9 @@ sources:
   phone: 098-945-3043
   address: 〒901-1202 沖縄県南城市大里字大里2000番地
   url: https://www.aniwel-pref.okinawa/animals/missing/cats
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.aniwel-pref.okinawa/animals/accommodate/dogs"
+  verified_address_url: "https://www.aniwel-pref.okinawa/animals/accommodate/dogs"
   kind: lost   # 飼い主が自分の迷子を探している告知（2026-10-02 監査で区分を追加）
   species: cat
   mode: recipe
@@ -2445,6 +2743,9 @@ sources:
   phone: 098-945-3043
   address: 〒901-1202 沖縄県南城市大里字大里2000番地
   url: https://www.aniwel-pref.okinawa/animals/protection/dogs
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.aniwel-pref.okinawa/animals/accommodate/dogs"
+  verified_address_url: "https://www.aniwel-pref.okinawa/animals/accommodate/dogs"
   kind: sheltered
   species: dog
   mode: recipe
@@ -2463,6 +2764,9 @@ sources:
   phone: 098-945-3043
   address: 〒901-1202 沖縄県南城市大里字大里2000番地
   url: https://www.aniwel-pref.okinawa/animals/protection/cats
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.aniwel-pref.okinawa/animals/accommodate/dogs"
+  verified_address_url: "https://www.aniwel-pref.okinawa/animals/accommodate/dogs"
   kind: sheltered
   species: cat
   mode: recipe
@@ -2481,6 +2785,9 @@ sources:
   phone: 098-951-1530
   address: 〒901-1105 沖縄県島尻郡南風原町字新川641（エコマール那覇プラザ棟4階） 環境部 環境衛生課 総務企画グループ
   url: https://www.city.naha.okinawa.jp/kurasitetuduki/animal/1002271/1002278.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.naha.okinawa.jp/kurasitetuduki/animal/1002271/1002278.html"
+  verified_address_url: "https://www.city.naha.okinawa.jp/kurasitetuduki/animal/1002271/1002278.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -2499,6 +2806,9 @@ sources:
   phone: 077-574-4601
   address: 〒520-0246 滋賀県大津市仰木の里一丁目24-2
   url: https://www.city.otsu.lg.jp/soshiki/021/1442/g/pet/mayoi/1387775941679.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.otsu.lg.jp/soshiki/021/1442/g/pet/mayoi/1387775941679.html"
+  verified_address_url: "https://www.city.otsu.lg.jp/soshiki/021/1442/g/pet/mayoi/1387775941679.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -2517,6 +2827,8 @@ sources:
   phone: 0748-75-1911
   address: null
   url: https://www.sapca.jp/lost
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.sapca.jp/lost"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -2535,6 +2847,9 @@ sources:
   phone: 096-380-2153
   address: 〒861-8045 熊本市東区小山2丁目11-1
   url: https://www.city.kumamoto.jp/doubutuaigo/list03612.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.kumamoto.jp/doubutuaigo/list03612.html"
+  verified_address_url: "https://www.city.kumamoto.jp/doubutuaigo/list03612.html"
   kind: stray
   species: dog
   mode: recipe
@@ -2553,6 +2868,9 @@ sources:
   phone: 096-380-2153
   address: 〒861-8045 熊本市東区小山2丁目11-1
   url: https://www.city.kumamoto.jp/doubutuaigo/list03615.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.kumamoto.jp/doubutuaigo/list03612.html"
+  verified_address_url: "https://www.city.kumamoto.jp/doubutuaigo/list03612.html"
   kind: stray
   species: cat
   mode: recipe
@@ -2733,6 +3051,8 @@ sources:
   phone: 044-589-7137
   address: null
   url: https://www.city.kawasaki.jp/350/page/0000077270.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.kawasaki.jp/350/page/0000077270.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -2751,6 +3071,8 @@ sources:
   phone: 044-589-7137
   address: null
   url: https://www.city.kawasaki.jp/350/page/0000109367.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.kawasaki.jp/350/page/0000077270.html"
   kind: sheltered
   species: cat
   mode: recipe
@@ -2769,6 +3091,8 @@ sources:
   phone: 044-589-7137
   address: null
   url: https://www.city.kawasaki.jp/350/page/0000074729.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.kawasaki.jp/350/page/0000077270.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -2787,6 +3111,8 @@ sources:
   phone: 045-471-2111
   address: null
   url: https://www.city.yokohama.lg.jp/kurashi/sumai-kurashi/pet-dobutsu/aigo/maigo/shuyoinfo.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.yokohama.lg.jp/kurashi/sumai-kurashi/pet-dobutsu/aigo/maigo/shuyoinfo.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -2805,6 +3131,8 @@ sources:
   phone: 045-471-2111
   address: null
   url: https://www.city.yokohama.lg.jp/kurashi/sumai-kurashi/pet-dobutsu/aigo/maigo/20121004094818.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.yokohama.lg.jp/kurashi/sumai-kurashi/pet-dobutsu/aigo/maigo/shuyoinfo.html"
   kind: sheltered
   species: cat
   mode: recipe
@@ -2823,6 +3151,8 @@ sources:
   phone: 045-471-2111
   address: null
   url: https://www.city.yokohama.lg.jp/kurashi/sumai-kurashi/pet-dobutsu/aigo/maigo/20121004110429.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.yokohama.lg.jp/kurashi/sumai-kurashi/pet-dobutsu/aigo/maigo/shuyoinfo.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -2841,6 +3171,9 @@ sources:
   phone: 0463-58-3411
   address: 〒259-1205 神奈川県平塚市土屋401
   url: https://www.pref.kanagawa.jp/osirase/1594/awc/lost/dog.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.kanagawa.jp/osirase/1594/awc/lost/dog.html"
+  verified_address_url: "https://www.pref.kanagawa.jp/osirase/1594/awc/lost/dog.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -2859,6 +3192,9 @@ sources:
   phone: 0463-58-3411
   address: 〒259-1205 神奈川県平塚市土屋401
   url: https://www.pref.kanagawa.jp/osirase/1594/awc/lost/cat.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.kanagawa.jp/osirase/1594/awc/lost/dog.html"
+  verified_address_url: "https://www.pref.kanagawa.jp/osirase/1594/awc/lost/dog.html"
   kind: sheltered
   species: cat
   mode: recipe
@@ -2877,6 +3213,9 @@ sources:
   phone: 0463-58-3411
   address: 〒259-1205 神奈川県平塚市土屋401
   url: https://www.pref.kanagawa.jp/osirase/1594/awc/lost/other.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.kanagawa.jp/osirase/1594/awc/lost/dog.html"
+  verified_address_url: "https://www.pref.kanagawa.jp/osirase/1594/awc/lost/dog.html"
   kind: sheltered
   species: mixed
   mode: link_only
@@ -2896,6 +3235,9 @@ sources:
   phone: 0463-58-3411
   address: 〒259-1205 神奈川県平塚市土屋401
   url: https://www.pref.kanagawa.jp/osirase/1594/awc/lost/outside.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.kanagawa.jp/osirase/1594/awc/lost/dog.html"
+  verified_address_url: "https://www.pref.kanagawa.jp/osirase/1594/awc/lost/dog.html"
   kind: stray       # 2026-10-04: 県民の方のもとで保護されている動物（センター外）。自治体が保護している「保護中」ではない
   species: dog
   mode: recipe
@@ -2914,6 +3256,9 @@ sources:
   phone: 0463-58-3411
   address: 〒259-1205 神奈川県平塚市土屋401
   url: https://www.pref.kanagawa.jp/osirase/1594/awc/lost/outside.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.kanagawa.jp/osirase/1594/awc/lost/dog.html"
+  verified_address_url: "https://www.pref.kanagawa.jp/osirase/1594/awc/lost/dog.html"
   kind: stray       # 2026-10-04: -4 と同じ理由
   species: cat
   mode: recipe
@@ -2932,6 +3277,9 @@ sources:
   phone: 046-869-0040
   address: 〒237-0062 神奈川県横須賀市浦郷町5-2931
   url: https://www.yokosuka-doubutu.com/protected-animals-dog/
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.yokosuka-doubutu.com/protected-animals-dog/"
+  verified_address_url: "https://www.yokosuka-doubutu.com/protected-animals-dog/"
   kind: sheltered
   species: dog
   mode: recipe
@@ -2950,6 +3298,9 @@ sources:
   phone: 046-869-0040
   address: 〒237-0062 神奈川県横須賀市浦郷町5-2931
   url: https://www.yokosuka-doubutu.com/protected-animals-cat/
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.yokosuka-doubutu.com/protected-animals-dog/"
+  verified_address_url: "https://www.yokosuka-doubutu.com/protected-animals-dog/"
   kind: sheltered
   species: cat
   mode: recipe
@@ -2968,6 +3319,9 @@ sources:
   phone: 046-869-0040
   address: 〒237-0062 神奈川県横須賀市浦郷町5-2931
   url: https://www.yokosuka-doubutu.com/protected-animals-other/
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.yokosuka-doubutu.com/protected-animals-dog/"
+  verified_address_url: "https://www.yokosuka-doubutu.com/protected-animals-dog/"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -2986,6 +3340,9 @@ sources:
   phone: 046-869-0040
   address: 〒237-0062 神奈川県横須賀市浦郷町5-2931
   url: https://www.yokosuka-doubutu.com/adopted-animals-dog/
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.yokosuka-doubutu.com/protected-animals-dog/"
+  verified_address_url: "https://www.yokosuka-doubutu.com/protected-animals-dog/"
   kind: adoption
   species: dog
   mode: recipe
@@ -3004,6 +3361,9 @@ sources:
   phone: 046-869-0040
   address: 〒237-0062 神奈川県横須賀市浦郷町5-2931
   url: https://www.yokosuka-doubutu.com/adopted-animals-cat/
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.yokosuka-doubutu.com/protected-animals-dog/"
+  verified_address_url: "https://www.yokosuka-doubutu.com/protected-animals-dog/"
   kind: adoption
   species: cat
   mode: recipe
@@ -3022,6 +3382,9 @@ sources:
   phone: 046-869-0040
   address: 〒237-0062 神奈川県横須賀市浦郷町5-2931
   url: https://www.yokosuka-doubutu.com/adopted-animals-other/
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.yokosuka-doubutu.com/protected-animals-dog/"
+  verified_address_url: "https://www.yokosuka-doubutu.com/protected-animals-dog/"
   kind: adoption
   species: mixed
   mode: recipe
@@ -3040,6 +3403,9 @@ sources:
   phone: 0776-38-2212
   address: 〒918-8165 福井市徳尾町18-1-1
   url: https://www.pref.fukui.lg.jp/doc/doukansi/doubutukanrisidou/doukansi-c-4.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.fukui.lg.jp/doc/doukansi/doubutukanrisidou/doukansi-c-4.html"
+  verified_address_url: "https://www.pref.fukui.lg.jp/doc/doukansi/doubutukanrisidou/doukansi-c-4.html"
   kind: adoption
   species: mixed
   mode: link_only
@@ -3058,6 +3424,9 @@ sources:
   phone: 093-581-1800
   address: 〒803-0801 北九州市小倉北区西港町24番地7
   url: https://www.city.kitakyushu.lg.jp/contents/924_11831.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.kitakyushu.lg.jp/contents/924_11831.html"
+  verified_address_url: "https://www.city.kitakyushu.lg.jp/contents/924_11831.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -3076,6 +3445,9 @@ sources:
   phone: 093-581-1800
   address: 〒803-0801 北九州市小倉北区西港町24番地7
   url: https://www.city.kitakyushu.lg.jp/contents/924_11834.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.kitakyushu.lg.jp/contents/924_11831.html"
+  verified_address_url: "https://www.city.kitakyushu.lg.jp/contents/924_11831.html"
   kind: adoption
   species: dog
   mode: recipe
@@ -3091,9 +3463,12 @@ sources:
   name: 福岡市わんにゃん（犬保護中）
   municipality: 福岡市わんにゃん
   prefecture: 福岡県
-  phone: null
-  address: null
+  phone: 092-691-0131
+  address: 〒813-0023 福岡市東区蒲田5丁目10番1号（福岡市東部動物愛護管理センター）
   url: https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/index?type_id=1&sorting_id=4
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.wannyan.city.fukuoka.lg.jp/yokanet/about"
+  verified_address_url: "https://www.wannyan.city.fukuoka.lg.jp/yokanet/about"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -3109,9 +3484,12 @@ sources:
   name: 福岡市わんにゃん（猫保護中）
   municipality: 福岡市わんにゃん
   prefecture: 福岡県
-  phone: null
-  address: null
+  phone: 092-691-0131
+  address: 〒813-0023 福岡市東区蒲田5丁目10番1号（福岡市東部動物愛護管理センター）
   url: https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/index?type_id=2&sorting_id=4
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.wannyan.city.fukuoka.lg.jp/yokanet/about"
+  verified_address_url: "https://www.wannyan.city.fukuoka.lg.jp/yokanet/about"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -3130,6 +3508,9 @@ sources:
   phone: 092-944-1281
   address: 〒811-3135 福岡県古賀市小竹131-2
   url: https://www.zaidan-fukuoka-douai.or.jp/animals/protections/dog
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.zaidan-fukuoka-douai.or.jp/animals/protections/dog"
+  verified_address_url: "https://www.zaidan-fukuoka-douai.or.jp/animals/protections/dog"
   kind: stray
   species: dog
   mode: recipe
@@ -3148,6 +3529,9 @@ sources:
   phone: 092-944-1281
   address: 〒811-3135 福岡県古賀市小竹131-2
   url: https://www.zaidan-fukuoka-douai.or.jp/animals/protections/cat
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.zaidan-fukuoka-douai.or.jp/animals/protections/dog"
+  verified_address_url: "https://www.zaidan-fukuoka-douai.or.jp/animals/protections/dog"
   kind: stray
   species: cat
   mode: recipe
@@ -3166,6 +3550,9 @@ sources:
   phone: 092-944-1281
   address: 〒811-3135 福岡県古賀市小竹131-2
   url: https://www.zaidan-fukuoka-douai.or.jp/personal-animals/hogo/dog
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.zaidan-fukuoka-douai.or.jp/animals/protections/dog"
+  verified_address_url: "https://www.zaidan-fukuoka-douai.or.jp/animals/protections/dog"
   kind: sheltered
   species: dog
   mode: recipe
@@ -3184,6 +3571,9 @@ sources:
   phone: 092-944-1281
   address: 〒811-3135 福岡県古賀市小竹131-2
   url: https://www.zaidan-fukuoka-douai.or.jp/personal-animals/hogo/cat
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.zaidan-fukuoka-douai.or.jp/animals/protections/dog"
+  verified_address_url: "https://www.zaidan-fukuoka-douai.or.jp/animals/protections/dog"
   kind: sheltered
   species: cat
   mode: recipe
@@ -3202,6 +3592,9 @@ sources:
   phone: 092-944-1281
   address: 〒811-3135 福岡県古賀市小竹131-2
   url: https://www.zaidan-fukuoka-douai.or.jp/animals/centers/dog
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.zaidan-fukuoka-douai.or.jp/animals/protections/dog"
+  verified_address_url: "https://www.zaidan-fukuoka-douai.or.jp/animals/protections/dog"
   kind: adoption
   species: dog
   mode: recipe
@@ -3220,6 +3613,9 @@ sources:
   phone: 092-944-1281
   address: 〒811-3135 福岡県古賀市小竹131-2
   url: https://www.zaidan-fukuoka-douai.or.jp/animals/centers/cat
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.zaidan-fukuoka-douai.or.jp/animals/protections/dog"
+  verified_address_url: "https://www.zaidan-fukuoka-douai.or.jp/animals/protections/dog"
   kind: adoption
   species: cat
   mode: recipe
@@ -3238,6 +3634,9 @@ sources:
   phone: 092-944-1281
   address: 〒811-3135 福岡県古賀市小竹131-2
   url: https://www.zaidan-fukuoka-douai.or.jp/animals/groups/dog
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.zaidan-fukuoka-douai.or.jp/animals/protections/dog"
+  verified_address_url: "https://www.zaidan-fukuoka-douai.or.jp/animals/protections/dog"
   kind: adoption
   species: dog
   mode: recipe
@@ -3256,6 +3655,9 @@ sources:
   phone: 092-944-1281
   address: 〒811-3135 福岡県古賀市小竹131-2
   url: https://www.zaidan-fukuoka-douai.or.jp/animals/groups/cat
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.zaidan-fukuoka-douai.or.jp/animals/protections/dog"
+  verified_address_url: "https://www.zaidan-fukuoka-douai.or.jp/animals/protections/dog"
   kind: adoption
   species: cat
   mode: recipe
@@ -3271,9 +3673,12 @@ sources:
   name: 福岡市わんにゃん（犬譲渡）
   municipality: 福岡市わんにゃん
   prefecture: 福岡県
-  phone: null
-  address: null
+  phone: 092-691-0131
+  address: 〒813-0023 福岡市東区蒲田5丁目10番1号（福岡市東部動物愛護管理センター）
   url: https://zuttoissho.com/omukae/animal/dog/
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.wannyan.city.fukuoka.lg.jp/yokanet/about"
+  verified_address_url: "https://www.wannyan.city.fukuoka.lg.jp/yokanet/about"
   kind: adoption
   species: dog
   mode: recipe
@@ -3289,9 +3694,12 @@ sources:
   name: 福岡市わんにゃん（猫譲渡）
   municipality: 福岡市わんにゃん
   prefecture: 福岡県
-  phone: null
-  address: null
+  phone: 092-691-0131
+  address: 〒813-0023 福岡市東区蒲田5丁目10番1号（福岡市東部動物愛護管理センター）
   url: https://zuttoissho.com/omukae/animal/cat/
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.wannyan.city.fukuoka.lg.jp/yokanet/about"
+  verified_address_url: "https://www.wannyan.city.fukuoka.lg.jp/yokanet/about"
   kind: adoption
   species: cat
   mode: recipe
@@ -3346,6 +3754,9 @@ sources:
   phone: 0242-29-5517
   address: 〒965-0807 会津若松市城東町5番12号（会津保健福祉事務所内）
   url: https://www.pref.fukushima.lg.jp/sec/21621a/maigo-dog-aizu.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.fukushima.lg.jp/sec/21621a/maigo-dog-aizu.html"
+  verified_address_url: "https://www.pref.fukushima.lg.jp/sec/21621a/maigo-dog-aizu.html"
   kind: stray
   species: dog
   mode: recipe
@@ -3364,6 +3775,9 @@ sources:
   phone: 0244-26-1351
   address: 〒975-0031 南相馬市原町区錦町1丁目30番地（相双保健福祉事務所内）
   url: https://www.pref.fukushima.lg.jp/sec/21622a/maigo-dog-soso.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.fukushima.lg.jp/sec/21622a/maigo-dog-soso.html"
+  verified_address_url: "https://www.pref.fukushima.lg.jp/sec/21622a/maigo-dog-soso.html"
   kind: stray
   species: dog
   mode: recipe
@@ -3382,6 +3796,9 @@ sources:
   phone: 0244-26-1351
   address: 〒975-0031 南相馬市原町区錦町1丁目30番地（相双保健福祉事務所内）
   url: https://www.pref.fukushima.lg.jp/sec/21622a/maigo-cat-soso.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.fukushima.lg.jp/sec/21622a/maigo-dog-soso.html"
+  verified_address_url: "https://www.pref.fukushima.lg.jp/sec/21622a/maigo-dog-soso.html"
   kind: stray
   species: cat
   mode: recipe
@@ -3400,6 +3817,9 @@ sources:
   phone: 018-827-5051
   address: 〒010-1211 秋田県秋田市雄和椿川字奥椿岱1番地
   url: https://wannyapia.akita.jp/pages/protective-dogs
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://wannyapia.akita.jp/pages/protective-dogs"
+  verified_address_url: "https://wannyapia.akita.jp/pages/protective-dogs"
   kind: adoption
   species: dog
   mode: recipe
@@ -3418,6 +3838,9 @@ sources:
   phone: 018-827-5051
   address: 〒010-1211 秋田県秋田市雄和椿川字奥椿岱1番地
   url: https://wannyapia.akita.jp/pages/protective-cats
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://wannyapia.akita.jp/pages/protective-dogs"
+  verified_address_url: "https://wannyapia.akita.jp/pages/protective-dogs"
   kind: adoption
   species: mixed
   mode: recipe
@@ -3436,6 +3859,8 @@ sources:
   phone: 027-220-5777
   address: null
   url: https://www.city.maebashi.gunma.jp/soshiki/kenko/eiseikensa/gyomu/1/1/1/9484.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.maebashi.gunma.jp/soshiki/kenko/eiseikensa/gyomu/1/1/1/9484.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -3454,6 +3879,9 @@ sources:
   phone: 0270-75-1718
   address: 群馬県佐波郡玉村町樋越305-7
   url: https://www.pref.gunma.jp/page/167499.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.gunma.jp/page/167499.html"
+  verified_address_url: "https://www.pref.gunma.jp/page/167499.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -3472,6 +3900,9 @@ sources:
   phone: 0276-55-0731
   address: 群馬県太田市西本町41-34（太田保健福祉事務所内1階）
   url: https://www.pref.gunma.jp/page/179441.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.gunma.jp/page/179441.html"
+  verified_address_url: "https://www.pref.gunma.jp/page/179441.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -3490,6 +3921,9 @@ sources:
   phone: 0270-75-1718
   address: 群馬県佐波郡玉村町樋越305-7
   url: https://www.pref.gunma.jp/page/167523.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.gunma.jp/page/167499.html"
+  verified_address_url: "https://www.pref.gunma.jp/page/167499.html"
   kind: sheltered
   species: cat
   mode: recipe
@@ -3508,6 +3942,9 @@ sources:
   phone: 029-350-3800
   address: 水戸市河和田町999番地（動物愛護センター「あにまるっとみと」）
   url: https://www.city.mito.lg.jp/site/doubutsuaigo/list358.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.mito.lg.jp/site/doubutsuaigo/"
+  verified_address_url: "https://www.city.mito.lg.jp/site/doubutsuaigo/"
   kind: stray
   species: mixed
   mode: recipe
@@ -3526,6 +3963,9 @@ sources:
   phone: 029-350-3800
   address: 水戸市河和田町999番地（動物愛護センター「あにまるっとみと」）
   url: https://www.city.mito.lg.jp/site/doubutsuaigo/2043.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.mito.lg.jp/site/doubutsuaigo/"
+  verified_address_url: "https://www.city.mito.lg.jp/site/doubutsuaigo/"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -3665,6 +4105,8 @@ sources:
   phone: 0956-42-3300
   address: null
   url: https://www.city.sasebo.lg.jp/hokenhukusi/seikat/hogodoubutsu.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.sasebo.lg.jp/hokenhukusi/seikat/hogodoubutsu.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -3683,6 +4125,8 @@ sources:
   phone: 0956-42-3300
   address: null
   url: https://www.city.sasebo.lg.jp/hokenhukusi/seikat/mayoinekohogo.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.sasebo.lg.jp/hokenhukusi/seikat/hogodoubutsu.html"
   kind: sheltered
   species: cat
   mode: recipe
@@ -3701,6 +4145,9 @@ sources:
   phone: 095-822-8888
   address: 〒852-8104 長崎県長崎市茂里町2番34号
   url: https://www.city.nagasaki.lg.jp/site/doubutsuaigo/list7-19.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.nagasaki.lg.jp/site/doubutsuaigo/list7-19.html"
+  verified_address_url: "https://www.city.nagasaki.lg.jp/site/doubutsuaigo/"
   kind: adoption
   species: dog
   mode: link_only
@@ -3719,6 +4166,9 @@ sources:
   phone: 095-822-8888
   address: 〒852-8104 長崎県長崎市茂里町2番34号
   url: https://www.city.nagasaki.lg.jp/site/doubutsuaigo/list7-18.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.nagasaki.lg.jp/site/doubutsuaigo/list7-19.html"
+  verified_address_url: "https://www.city.nagasaki.lg.jp/site/doubutsuaigo/"
   kind: adoption
   species: cat
   mode: link_only
@@ -3737,6 +4187,9 @@ sources:
   phone: 0267-24-5071
   address: 長野県小諸市大字菱平字前新田2725
   url: https://www.pref.nagano.lg.jp/dobutsuaigo/joto/inu-neko/inu.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.nagano.lg.jp/dobutsuaigo/joto/inu-neko/inu.html"
+  verified_address_url: "https://www.pref.nagano.lg.jp/dobutsuaigo/joto/inu-neko/inu.html"
   kind: adoption
   species: dog
   mode: recipe
@@ -3755,6 +4208,9 @@ sources:
   phone: 0267-24-5071
   address: 長野県小諸市大字菱平字前新田2725
   url: https://www.pref.nagano.lg.jp/dobutsuaigo/joto/inu-neko/neko.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.nagano.lg.jp/dobutsuaigo/joto/inu-neko/inu.html"
+  verified_address_url: "https://www.pref.nagano.lg.jp/dobutsuaigo/joto/inu-neko/inu.html"
   kind: adoption
   species: cat
   mode: recipe
@@ -3770,9 +4226,12 @@ sources:
   name: 青森県動物愛護センター（収容情報）
   municipality: 青森県動物愛護センター
   prefecture: 青森県
-  phone: null
-  address: null
+  phone: 017-726-6100
+  address: 青森市大字宮田字玉水119-1（青森県動物愛護センター）
   url: http://www.aomori-animal.jp/01_MAIGO/Shuyo.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.aomori-animal.jp/"
+  verified_address_url: "https://www.aomori-animal.jp/"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -3791,6 +4250,9 @@ sources:
   phone: 053-487-1616
   address: 〒431-1209 静岡県浜松市中央区舘山寺町199番地
   url: https://www.hama-aikyou.jp/hogoinu/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.hama-aikyou.jp/hogoinu/index.html"
+  verified_address_url: "https://www.hama-aikyou.jp/hogoinu/index.html"
   kind: stray
   species: dog
   mode: recipe
@@ -3827,6 +4289,9 @@ sources:
   phone: 087-839-2865
   address: 〒760-0074 高松市桜町一丁目10番27号 高松市保健所1階
   url: https://www.city.takamatsu.kagawa.jp/udanimo/ani_infolist1.html?infotype=1&animaltype=1
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.takamatsu.kagawa.jp/udanimo/ani_infolist1.html?infotype=1&animaltype=1"
+  verified_address_url: "https://www.city.takamatsu.kagawa.jp/udanimo/ani_infolist1.html?infotype=1&animaltype=1"
   kind: stray
   species: dog
   mode: recipe
@@ -3845,6 +4310,9 @@ sources:
   phone: 087-839-2865
   address: 〒760-0074 高松市桜町一丁目10番27号 高松市保健所1階
   url: https://www.city.takamatsu.kagawa.jp/udanimo/ani_infolist1.html?infotype=1&animaltype=2
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.takamatsu.kagawa.jp/udanimo/ani_infolist1.html?infotype=1&animaltype=1"
+  verified_address_url: "https://www.city.takamatsu.kagawa.jp/udanimo/ani_infolist1.html?infotype=1&animaltype=1"
   kind: stray
   species: cat
   mode: recipe
@@ -3863,6 +4331,8 @@ sources:
   phone: 0879-29-8272
   address: null
   url: https://www.pref.kagawa.lg.jp/tosanhoken/tosanhoken/animal/sjiaen191105113550.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.kagawa.lg.jp/tosanhoken/tosanhoken/animal/sjiaen191105113550.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -3881,6 +4351,8 @@ sources:
   phone: 0877-24-9964
   address: null
   url: https://www.pref.kagawa.lg.jp/chusanhoken/chusanhoken/inu-neko/s058kw191105221746.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.kagawa.lg.jp/chusanhoken/chusanhoken/inu-neko/s058kw191105221746.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -3899,6 +4371,8 @@ sources:
   phone: 0875-25-4383
   address: null
   url: https://www.pref.kagawa.lg.jp/seisanhoken/seisanhoken/doubutuaigo/sqvuo1191030100247.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.kagawa.lg.jp/seisanhoken/seisanhoken/doubutuaigo/sqvuo1191030100247.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -3917,6 +4391,8 @@ sources:
   phone: 0879-62-1374
   address: null
   url: https://www.pref.kagawa.lg.jp/shozu/hoken/syuuyou_info.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.kagawa.lg.jp/shozu/hoken/syuuyou_info.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -3935,6 +4411,8 @@ sources:
   phone: 087-849-1011
   address: null
   url: https://www.pref.kagawa.lg.jp/s-doubutuaigo/sanukidouaicenter/jyouto/s04u6e190311095146.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.kagawa.lg.jp/s-doubutuaigo/sanukidouaicenter/jyouto/s04u6e190311095146.html"
   kind: adoption
   species: mixed
   mode: recipe
@@ -3989,6 +4467,9 @@ sources:
   phone: 099-803-6905
   address: 〒892-8677 鹿児島市山下町11-1
   url: https://www.city.kagoshima.lg.jp/kenkofukushi/hokenjo/seiei-jueki/kurashi/dobutsu/kainushi/joho/inu.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.kagoshima.lg.jp/kenkofukushi/hokenjo/seiei-jueki/kurashi/dobutsu/kainushi/joho/inu.html"
+  verified_address_url: "https://www.city.kagoshima.lg.jp/kenkofukushi/hokenjo/seiei-jueki/kurashi/dobutsu/kainushi/joho/inu.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -4007,6 +4488,9 @@ sources:
   phone: 099-803-6905
   address: 〒892-8677 鹿児島市山下町11-1
   url: https://www.city.kagoshima.lg.jp/kenkofukushi/hokenjo/seiei-jueki/kurashi/dobutsu/kainushi/joho/neko.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.kagoshima.lg.jp/kenkofukushi/hokenjo/seiei-jueki/kurashi/dobutsu/kainushi/joho/inu.html"
+  verified_address_url: "https://www.city.kagoshima.lg.jp/kenkofukushi/hokenjo/seiei-jueki/kurashi/dobutsu/kainushi/joho/inu.html"
   kind: sheltered
   species: cat
   mode: recipe
@@ -4025,6 +4509,9 @@ sources:
   phone: "019-629-6588"
   address: 岩手県盛岡市三ツ割5丁目17-59（県央保健所犬猫保護センター）
   url: https://www.pref.iwate.jp/morioka/hoken/1012494.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.iwate.jp/morioka/hoken/1012494.html"
+  verified_address_url: "https://www.pref.iwate.jp/morioka/hoken/1012494.html"
   kind: adoption    # 2026-10-05: 取れる行は全部【譲渡】新しい飼い主さんを募集しています の節（迷子が載った日は混ざる。T517）
   species: mixed
   mode: recipe
@@ -4060,6 +4547,9 @@ sources:
   phone: "0197-48-2423"
   address: 岩手県奥州市水沢大手町5-5
   url: https://www.pref.iwate.jp/kennan/hoken/1065388/doubutsu/1013511.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.iwate.jp/kennan/hoken/1065388/doubutsu/1013511.html"
+  verified_address_url: "https://www.pref.iwate.jp/kennan/hoken/1065388/doubutsu/1013511.html"
   kind: adoption    # 2026-10-05: 取れる行は全部【譲渡】新しい飼い主さんを募集しています の節（迷子が載った日は混ざる。T517）
   species: cat
   mode: recipe
@@ -4077,6 +4567,9 @@ sources:
   phone: "0191-34-4691"
   address: 岩手県一関市竹山町7-5
   url: https://www.pref.iwate.jp/kennan/ichi_hoken/doubutsu/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.iwate.jp/kennan/ichi_hoken/doubutsu/index.html"
+  verified_address_url: "https://www.pref.iwate.jp/kennan/ichi_hoken/doubutsu/index.html"
   kind: stray       # 2026-10-05 T517: 迷子ページ「保護動物情報」だけ（譲渡ページは -2 に分けた）
   species: mixed
   mode: recipe
@@ -4094,6 +4587,9 @@ sources:
   phone: "0191-34-4691"
   address: 岩手県一関市竹山町7-5
   url: https://www.pref.iwate.jp/kennan/ichi_hoken/doubutsu/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.iwate.jp/kennan/ichi_hoken/doubutsu/index.html"
+  verified_address_url: "https://www.pref.iwate.jp/kennan/ichi_hoken/doubutsu/index.html"
   kind: adoption
   species: mixed
   mode: recipe
@@ -4107,6 +4603,9 @@ sources:
   phone: "0192-27-9923"
   address: 岩手県大船渡市猪川町字前田6-1
   url: https://www.pref.iwate.jp/engan/ofuna_hoken/1014212/1014213.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.iwate.jp/engan/ofuna_hoken/1014212/1014213.html"
+  verified_address_url: "https://www.pref.iwate.jp/engan/ofuna_hoken/1014212/1014213.html"
   kind: adoption    # 2026-10-05 T517: 【譲渡】の節だけ（迷子の節「元の飼い主を探しています」は -2 に分けた）
   species: mixed    # 2026-10-07 T520: 猫固定をやめる（Wayback 2024-04 の譲渡に柴犬 231203 がいて、猫として載っていた）。種別はレシピの動物種の欄と品種・毛色から決める
   mode: recipe
@@ -4124,6 +4623,9 @@ sources:
   phone: "0192-27-9923"
   address: 岩手県大船渡市猪川町字前田6-1
   url: https://www.pref.iwate.jp/engan/ofuna_hoken/1014212/1014213.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.iwate.jp/engan/ofuna_hoken/1014212/1014213.html"
+  verified_address_url: "https://www.pref.iwate.jp/engan/ofuna_hoken/1014212/1014213.html"
   kind: stray
   species: cat
   mode: recipe
@@ -4137,6 +4639,8 @@ sources:
   phone: "0193-27-5523"
   address: null
   url: https://www.pref.iwate.jp/engan/hoken/1014120/1014123.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.iwate.jp/engan/hoken/1014120/1014123.html"
   kind: adoption    # 2026-10-05: 取れる行は全部【譲渡】新しい飼い主さんを募集しています の節（迷子が載った日は混ざる。T517）
   species: mixed
   mode: recipe
@@ -4154,6 +4658,9 @@ sources:
   phone: "0193-64-2218"
   address: 岩手県宮古市五月町1-20
   url: https://www.pref.iwate.jp/engan/miya_hoken/hogodoubutsu/1014161.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.iwate.jp/engan/miya_hoken/hogodoubutsu/1014161.html"
+  verified_address_url: "https://www.pref.iwate.jp/engan/miya_hoken/hogodoubutsu/1014161.html"
   kind: adoption    # 2026-10-05: 取れる行は全部【譲渡】新しい飼い主さんを募集しています の節（迷子が載った日は混ざる。T517）
   species: cat
   mode: recipe
@@ -4171,6 +4678,8 @@ sources:
   phone: "0194-66-9681"
   address: null
   url: https://www.pref.iwate.jp/kenpoku/hoken/1014738.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.iwate.jp/kenpoku/hoken/1014738.html"
   kind: adoption    # 2026-10-05: 取れる行は全部【譲渡】新しい飼い主さんを募集しています の節（迷子が載った日は混ざる。T517）
   species: cat
   mode: recipe
@@ -4188,6 +4697,9 @@ sources:
   phone: "0195-23-9219"
   address: 岩手県二戸市石切所字荷渡6-3
   url: https://www.pref.iwate.jp/kenpoku/nino_hoken/1085646/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.iwate.jp/kenpoku/nino_hoken/1085646/index.html"
+  verified_address_url: "https://www.pref.iwate.jp/kenpoku/nino_hoken/1085646/index.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -4205,6 +4717,9 @@ sources:
   phone: "0736-42-3210"
   address: 和歌山県橋本市高野口町名古曽927
   url: https://www.pref.wakayama.lg.jp/prefg/130300/hukushi/eisei/d00156889.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.wakayama.lg.jp/prefg/130300/hukushi/eisei/d00156889.html"
+  verified_address_url: "https://www.pref.wakayama.lg.jp/prefg/130300/hukushi/eisei/d00156889.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -4222,6 +4737,9 @@ sources:
   phone: "0736-61-0022"
   address: 和歌山県岩出市高塚209
   url: https://www.pref.wakayama.lg.jp/prefg/130200/hukushi/eisei/d00156916.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.wakayama.lg.jp/prefg/130200/hukushi/eisei/d00156916.html"
+  verified_address_url: "https://www.pref.wakayama.lg.jp/prefg/130200/hukushi/eisei/d00156916.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -4239,6 +4757,9 @@ sources:
   phone: "073-482-0600"
   address: 和歌山県海南市大野中939
   url: https://www.pref.wakayama.lg.jp/prefg/130100/kenkou/d00207280.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.wakayama.lg.jp/prefg/130100/kenkou/d00207280.html"
+  verified_address_url: "https://www.pref.wakayama.lg.jp/prefg/130100/kenkou/d00207280.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -4256,6 +4777,9 @@ sources:
   phone: "0737-63-4111"
   address: 〒643-0004 和歌山県有田郡湯浅町湯浅2355-1
   url: https://www.pref.wakayama.lg.jp/prefg/130400/kenkou/d00208267.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.wakayama.lg.jp/prefg/130400/kenkou/d00208267.html"
+  verified_address_url: "https://www.pref.wakayama.lg.jp/prefg/130400/kenkou/d00208267.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -4273,6 +4797,9 @@ sources:
   phone: "0738-22-3481"
   address: 〒644-0011 和歌山県御坊市湯川町財部859-2
   url: https://www.pref.wakayama.lg.jp/prefg/130500/kenkou/kenkou/eisei/sheltered.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.wakayama.lg.jp/prefg/130500/kenkou/kenkou/eisei/sheltered.html"
+  verified_address_url: "https://www.pref.wakayama.lg.jp/prefg/130500/kenkou/kenkou/eisei/sheltered.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -4290,6 +4817,9 @@ sources:
   phone: "0739-26-7934"
   address: 和歌山県田辺市朝日ヶ丘23-1
   url: https://www.pref.wakayama.lg.jp/prefg/130600/hukushi/eisei/syuuyoudoubutu.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.wakayama.lg.jp/prefg/130600/hukushi/eisei/syuuyoudoubutu.html"
+  verified_address_url: "https://www.pref.wakayama.lg.jp/prefg/130600/hukushi/eisei/syuuyoudoubutu.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -4307,6 +4837,9 @@ sources:
   phone: "0735-21-9610"
   address: 〒647-8551 和歌山県新宮市緑ヶ丘2-4-8
   url: https://www.pref.wakayama.lg.jp/prefg/130700/kenkou/hukushi/eisei/d00000000.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.wakayama.lg.jp/prefg/130700/kenkou/hukushi/eisei/d00000000.html"
+  verified_address_url: "https://www.pref.wakayama.lg.jp/prefg/130700/kenkou/hukushi/eisei/d00000000.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -4324,6 +4857,9 @@ sources:
   phone: "0735-72-0525"
   address: 〒649-4122 和歌山県東牟婁郡串本町西向193
   url: https://www.pref.wakayama.lg.jp/prefg/130700/kenkou/hukushi/eisei/d00156928.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.wakayama.lg.jp/prefg/130700/kenkou/hukushi/eisei/d00156928.html"
+  verified_address_url: "https://www.pref.wakayama.lg.jp/prefg/130700/kenkou/hukushi/eisei/d00156928.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -4341,6 +4877,9 @@ sources:
   phone: 017-737-3551
   address: 〒039-3505 青森県青森市大字宮田字玉水119-1（青森市保健所生活衛生課分室。青森県動物愛護センター内）
   url: https://www.city.aomori.aomori.jp/kurashi_kankyo/kankyo/1002067/1009227.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.aomori.aomori.jp/kurashi_kankyo/kankyo/1002067/1009227.html"
+  verified_address_url: "https://www.city.aomori.aomori.jp/kurashi_kankyo/kankyo/1002067/1009227.html"
   kind: adoption
   species: mixed
   mode: recipe
@@ -4354,6 +4893,9 @@ sources:
   phone: 017-737-3551
   address: 〒039-3505 青森県青森市大字宮田字玉水119-1（青森市保健所生活衛生課分室。青森県動物愛護センター内）
   url: https://www.city.aomori.aomori.jp/kurashi_kankyo/kankyo/1002067/1009080/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.aomori.aomori.jp/kurashi_kankyo/kankyo/1002067/1009227.html"
+  verified_address_url: "https://www.city.aomori.aomori.jp/kurashi_kankyo/kankyo/1002067/1009227.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -4367,6 +4909,9 @@ sources:
   phone: 0178-38-0721
   address: 青森県八戸市大字尻内町字鴨田7（八戸市保健所分室。青森県三戸保健所内。問い合わせは八戸市保健所衛生課 八戸市田向三丁目6番1号 3階）
   url: https://www.city.hachinohe.aomori.jp/kurashi_tetsuzuki/gomi_kankyo_pet/dobutsu_pet/7863.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.hachinohe.aomori.jp/kurashi_tetsuzuki/gomi_kankyo_pet/dobutsu_pet/7863.html"
+  verified_address_url: "https://www.city.hachinohe.aomori.jp/kurashi_tetsuzuki/gomi_kankyo_pet/dobutsu_pet/7863.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -4380,6 +4925,9 @@ sources:
   phone: 0178-38-0721
   address: 青森県八戸市田向三丁目6番1号 3階（八戸市保健所衛生課）
   url: https://www.city.hachinohe.aomori.jp/soshikikarasagasu/eiseika/1/23139.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.hachinohe.aomori.jp/soshikikarasagasu/eiseika/1/23139.html"
+  verified_address_url: "https://www.city.hachinohe.aomori.jp/soshikikarasagasu/eiseika/1/23139.html"
   kind: adoption
   species: mixed
   mode: recipe
@@ -4393,6 +4941,9 @@ sources:
   phone: 019-603-8312
   address: 〒020-0884 岩手県盛岡市神明町3-29 盛岡市保健所庁舎5階（生活衛生課 動物愛護担当）
   url: https://www.city.morioka.iwate.jp/kurashi/pet/pet_kurashi/1001657.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.morioka.iwate.jp/kurashi/pet/pet_kurashi/1001657.html"
+  verified_address_url: "https://www.city.morioka.iwate.jp/kurashi/pet/pet_kurashi/1001657.html"
   kind: adoption
   species: mixed
   mode: recipe
@@ -4406,6 +4957,9 @@ sources:
   phone: 019-603-8312
   address: 〒020-0884 岩手県盛岡市神明町3-29 盛岡市保健所庁舎5階（生活衛生課 動物愛護担当）
   url: https://www.city.morioka.iwate.jp/kurashi/pet/pet_kurashi/1001656.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.morioka.iwate.jp/kurashi/pet/pet_kurashi/1001657.html"
+  verified_address_url: "https://www.city.morioka.iwate.jp/kurashi/pet/pet_kurashi/1001657.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -4417,8 +4971,11 @@ sources:
   municipality: 函館市保健所
   prefecture: 北海道
   phone: 0138-32-1524
-  address: 北海道函館市見晴町36番地4（函館市犬猫管理所。問い合わせは市立函館保健所生活衛生課環境衛生担当）
+  address: 〒040-0077 北海道函館市吉川町6番22号（函館市動物愛護管理センター。問い合わせは市立函館保健所生活衛生課環境衛生担当）
   url: https://www.city.hakodate.hokkaido.jp/docs/2014070200084/
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.hakodate.hokkaido.jp/docs/2024101600035/"
+  verified_address_url: "https://www.city.hakodate.hokkaido.jp/docs/2024101600035/"
   kind: stray
   species: mixed
   mode: recipe
@@ -4432,6 +4989,9 @@ sources:
   phone: 0134-22-3118
   address: 〒047-0008 北海道小樽市築港11番1号 ウイングベイ小樽1番街 4階（生活衛生課。収容は小樽市犬管理所）
   url: https://www.city.otaru.lg.jp/docs/2020101001193
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.otaru.lg.jp/docs/2020101001193"
+  verified_address_url: "https://www.city.otaru.lg.jp/docs/2020101001193"
   kind: stray
   species: dog
   mode: recipe
@@ -4445,6 +5005,9 @@ sources:
   phone: 024-924-2157
   address: 〒963-8601 福島県郡山市朝日一丁目23-7（郡山市役所。保健所生活衛生課の所在地は未記載のためページ記載の市役所住所）
   url: https://www.city.koriyama.lg.jp/soshiki/74/32563.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.koriyama.lg.jp/soshiki/74/32563.html"
+  verified_address_url: "https://www.city.koriyama.lg.jp/soshiki/74/32563.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -4458,6 +5021,9 @@ sources:
   phone: 024-924-2157
   address: 〒963-8601 福島県郡山市朝日一丁目23-7（郡山市役所。保健所生活衛生課の所在地は未記載のためページ記載の市役所住所）
   url: https://www.city.koriyama.lg.jp/soshiki/74/7185.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.koriyama.lg.jp/soshiki/74/32563.html"
+  verified_address_url: "https://www.city.koriyama.lg.jp/soshiki/74/32563.html"
   kind: adoption
   species: mixed
   mode: recipe
@@ -4510,6 +5076,9 @@ sources:
   phone: 025-288-0017
   address: 〒950-0933 新潟県新潟市中央区清五郎343番地2（新潟市動物愛護センター）
   url: https://www.city.niigata.lg.jp/kurashi/animal/animal_aigo/hogoshuyo/inu_hogoken.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.niigata.lg.jp/kurashi/animal/animal_aigo/hogoshuyo/inu_hogoken.html"
+  verified_address_url: "https://www.city.niigata.lg.jp/kurashi/animal/animal_aigo/hogoshuyo/inu_hogoken.html"
   kind: stray
   species: dog
   mode: recipe
@@ -4523,6 +5092,9 @@ sources:
   phone: 025-288-0017
   address: 〒950-0933 新潟県新潟市中央区清五郎343番地2（新潟市動物愛護センター）
   url: https://www.city.niigata.lg.jp/kurashi/animal/animal_aigo/hogoshuyo/maigoneko.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.niigata.lg.jp/kurashi/animal/animal_aigo/hogoshuyo/inu_hogoken.html"
+  verified_address_url: "https://www.city.niigata.lg.jp/kurashi/animal/animal_aigo/hogoshuyo/inu_hogoken.html"
   kind: stray
   species: cat
   mode: recipe
@@ -4536,6 +5108,9 @@ sources:
   phone: 025-288-0017
   address: 〒950-0933 新潟県新潟市中央区清五郎343番地2（新潟市動物愛護センター）
   url: https://www.city.niigata.lg.jp/kurashi/animal/animal_aigo/jyouto/dobutsuaigo2021i.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.niigata.lg.jp/kurashi/animal/animal_aigo/hogoshuyo/inu_hogoken.html"
+  verified_address_url: "https://www.city.niigata.lg.jp/kurashi/animal/animal_aigo/hogoshuyo/inu_hogoken.html"
   kind: adoption
   species: dog
   mode: recipe
@@ -4549,6 +5124,9 @@ sources:
   phone: "025-288-0017"
   address: 〒950-0933 新潟県新潟市中央区清五郎343番地2（新潟市動物愛護センター）
   url: https://www.city.niigata.lg.jp/kurashi/animal/animal_aigo/jyouto/dobutsuaigo2021n.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.niigata.lg.jp/kurashi/animal/animal_aigo/hogoshuyo/inu_hogoken.html"
+  verified_address_url: "https://www.city.niigata.lg.jp/kurashi/animal/animal_aigo/hogoshuyo/inu_hogoken.html"
   kind: adoption
   species: cat
   mode: recipe
@@ -4575,6 +5153,9 @@ sources:
   phone: 076-428-1154
   address: 富山県富山市蜷川459番地1（富山市保健所。猫の譲渡会ページの開催場所の記載）
   url: https://www.city.toyama.lg.jp/kurashi/seikatsu/1010313/1015825/1015834.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.toyama.lg.jp/kurashi/seikatsu/1010313/1015825/1015834.html"
+  verified_address_url: "https://www.city.toyama.lg.jp/kurashi/seikatsu/1010313/1015825/1015834.html"
   kind: adoption
   species: cat
   mode: recipe
@@ -4588,6 +5169,9 @@ sources:
   phone: 076-428-1154
   address: 富山県富山市蜷川459番地1（富山市保健所。猫の譲渡会ページの開催場所の記載）
   url: https://www.city.toyama.lg.jp/kurashi/seikatsu/1010313/1015825/1004187.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.toyama.lg.jp/kurashi/seikatsu/1010313/1015825/1015834.html"
+  verified_address_url: "https://www.city.toyama.lg.jp/kurashi/seikatsu/1010313/1015825/1015834.html"
   kind: adoption
   species: cat
   mode: link_only
@@ -4600,6 +5184,9 @@ sources:
   phone: 076-258-9070
   address: 〒920-3101 石川県金沢市才田町戊370番地2（金沢市動物愛護管理センター）
   url: https://www4.city.kanazawa.lg.jp/soshikikarasagasu/dobutsuaigokanricenter/gyomuannai/1/3/3499.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www4.city.kanazawa.lg.jp/soshikikarasagasu/dobutsuaigokanricenter/gyomuannai/1/3/3499.html"
+  verified_address_url: "https://www4.city.kanazawa.lg.jp/soshikikarasagasu/dobutsuaigokanricenter/gyomuannai/1/3/3499.html"
   kind: stray
   species: dog
   mode: recipe
@@ -4613,6 +5200,9 @@ sources:
   phone: 076-258-9070
   address: 〒920-3101 石川県金沢市才田町戊370番地2（金沢市動物愛護管理センター）
   url: https://www4.city.kanazawa.lg.jp/soshikikarasagasu/dobutsuaigokanricenter/gyomuannai/1/3/5387.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www4.city.kanazawa.lg.jp/soshikikarasagasu/dobutsuaigokanricenter/gyomuannai/1/3/3499.html"
+  verified_address_url: "https://www4.city.kanazawa.lg.jp/soshikikarasagasu/dobutsuaigokanricenter/gyomuannai/1/3/3499.html"
   kind: stray
   species: cat
   mode: recipe
@@ -4626,6 +5216,9 @@ sources:
   phone: "076-258-9070"
   address: 〒920-3101 石川県金沢市才田町戊370番地2（金沢市動物愛護管理センター）
   url: https://www4.city.kanazawa.lg.jp/soshikikarasagasu/dobutsuaigokanricenter/gyomuannai/1/3/3489.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www4.city.kanazawa.lg.jp/soshikikarasagasu/dobutsuaigokanricenter/gyomuannai/1/3/3499.html"
+  verified_address_url: "https://www4.city.kanazawa.lg.jp/soshikikarasagasu/dobutsuaigokanricenter/gyomuannai/1/3/3499.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -4639,6 +5232,9 @@ sources:
   phone: 076-258-9070
   address: 〒920-3101 石川県金沢市才田町戊370番地2（金沢市動物愛護管理センター）
   url: https://www4.city.kanazawa.lg.jp/soshikikarasagasu/dobutsuaigokanricenter/gyomuannai/1/3/5382.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www4.city.kanazawa.lg.jp/soshikikarasagasu/dobutsuaigokanricenter/gyomuannai/1/3/3499.html"
+  verified_address_url: "https://www4.city.kanazawa.lg.jp/soshikikarasagasu/dobutsuaigokanricenter/gyomuannai/1/3/3499.html"
   kind: lost
   species: mixed
   mode: recipe
@@ -4652,6 +5248,9 @@ sources:
   phone: "076-258-9070"
   address: 〒920-3101 石川県金沢市才田町戊370番地2（金沢市動物愛護管理センター）
   url: https://www4.city.kanazawa.lg.jp/soshikikarasagasu/dobutsuaigokanricenter/gyomuannai/1/jouto_info/5380.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www4.city.kanazawa.lg.jp/soshikikarasagasu/dobutsuaigokanricenter/gyomuannai/1/3/3499.html"
+  verified_address_url: "https://www4.city.kanazawa.lg.jp/soshikikarasagasu/dobutsuaigokanricenter/gyomuannai/1/3/3499.html"
   kind: adoption
   species: dog
   mode: recipe
@@ -4665,6 +5264,9 @@ sources:
   phone: "076-258-9070"
   address: 〒920-3101 石川県金沢市才田町戊370番地2（金沢市動物愛護管理センター）
   url: https://www4.city.kanazawa.lg.jp/soshikikarasagasu/dobutsuaigokanricenter/gyomuannai/1/jouto_info/7301.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www4.city.kanazawa.lg.jp/soshikikarasagasu/dobutsuaigokanricenter/gyomuannai/1/3/3499.html"
+  verified_address_url: "https://www4.city.kanazawa.lg.jp/soshikikarasagasu/dobutsuaigokanricenter/gyomuannai/1/3/3499.html"
   kind: adoption
   species: cat
   mode: recipe
@@ -4678,6 +5280,9 @@ sources:
   phone: 0776-38-2212
   address: 〒918-8165 福井県福井市徳尾町18-1-1（福井県動物愛護センター本所。嶺南支所は敦賀市開町6-5、0770-22-3747）
   url: https://www.fapscsite.com/lost_animal/
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.fapscsite.com/lost_animal/"
+  verified_address_url: "https://www.fapscsite.com/lost_animal/"
   kind: stray
   species: mixed
   mode: recipe
@@ -4691,6 +5296,9 @@ sources:
   phone: "0776-38-2212"
   address: 〒918-8165 福井県福井市徳尾町18-1-1（福井県動物愛護センター本所。嶺南支所は敦賀市開町6-5、0770-22-3747）
   url: https://www.fapscsite.com/adoptable_animal/
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.fapscsite.com/lost_animal/"
+  verified_address_url: "https://www.fapscsite.com/lost_animal/"
   kind: adoption
   species: mixed
   mode: recipe
@@ -4704,6 +5312,9 @@ sources:
   phone: 0776-38-2212
   address: 〒918-8165 福井県福井市徳尾町18-1-1（福井県動物愛護センター本所。嶺南支所は敦賀市開町6-5、0770-22-3747）
   url: https://www.fapscsite.com/information_animal/
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.fapscsite.com/lost_animal/"
+  verified_address_url: "https://www.fapscsite.com/lost_animal/"
   kind: adoption
   species: mixed
   mode: recipe
@@ -4717,6 +5328,9 @@ sources:
   phone: "049-227-5103"
   address: 〒350-1104 埼玉県川越市小ケ谷817番地1
   url: https://www.city.kawagoe.saitama.jp/kurashi/s-kankyo/1002982/1002989/1002992.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.kawagoe.saitama.jp/kurashi/s-kankyo/1002982/1002989/1002992.html"
+  verified_address_url: "https://www.city.kawagoe.saitama.jp/kurashi/s-kankyo/1002982/1002989/1002992.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -4730,6 +5344,9 @@ sources:
   phone: "049-227-5103"
   address: 〒350-1104 埼玉県川越市小ケ谷817番地1
   url: https://www.city.kawagoe.saitama.jp/kurashi/s-kankyo/1002982/1002989/1002992.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.kawagoe.saitama.jp/kurashi/s-kankyo/1002982/1002989/1002992.html"
+  verified_address_url: "https://www.city.kawagoe.saitama.jp/kurashi/s-kankyo/1002982/1002989/1002992.html"
   kind: sheltered
   species: cat
   mode: recipe
@@ -4743,6 +5360,9 @@ sources:
   phone: 049-227-5103
   address: 〒350-1104 埼玉県川越市小ケ谷817番地1
   url: https://www.city.kawagoe.saitama.jp/kurashi/s-kankyo/1002982/1002989/1002993.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.kawagoe.saitama.jp/kurashi/s-kankyo/1002982/1002989/1002992.html"
+  verified_address_url: "https://www.city.kawagoe.saitama.jp/kurashi/s-kankyo/1002982/1002989/1002992.html"
   kind: adoption
   species: mixed
   mode: recipe
@@ -4756,6 +5376,9 @@ sources:
   phone: 048-229-3979
   address: 〒334-0011 埼玉県川口市三ツ和1-14-3（鳩ヶ谷庁舎4階）
   url: https://www.city.kawaguchi.lg.jp/soshiki/01090/seikatueiseika/doubutsu/lost/index.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.kawaguchi.lg.jp/soshiki/01090/seikatueiseika/doubutsu/lost/index.html"
+  verified_address_url: "https://www.city.kawaguchi.lg.jp/soshiki/01090/seikatueiseika/doubutsu/lost/index.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -4769,6 +5392,9 @@ sources:
   phone: 048-229-3979
   address: 〒334-0011 埼玉県川口市三ツ和1-14-3（鳩ヶ谷庁舎4階）
   url: https://www.city.kawaguchi.lg.jp/soshiki/01090/seikatueiseika/doubutsu/give/21012.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.kawaguchi.lg.jp/soshiki/01090/seikatueiseika/doubutsu/lost/index.html"
+  verified_address_url: "https://www.city.kawaguchi.lg.jp/soshiki/01090/seikatueiseika/doubutsu/lost/index.html"
   kind: adoption
   species: mixed
   mode: recipe
@@ -4782,6 +5408,9 @@ sources:
   phone: "048-262-6111"
   address: 埼玉県川口市前川1-11-1
   url: https://www.pref.saitama.lg.jp/b0701/syuuyoujyouhou/nanbu.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0701/syuuyoujyouhou/nanbu.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0701/syuuyoujyouhou/nanbu.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -4795,6 +5424,9 @@ sources:
   phone: "048-461-0468"
   address: 埼玉県朝霞市青葉台1-10-5
   url: https://www.pref.saitama.lg.jp/b0702/syuuyoujyouhou/asaka.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0702/syuuyoujyouhou/asaka.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0702/syuuyoujyouhou/asaka.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -4808,6 +5440,9 @@ sources:
   phone: "048-737-2133"
   address: 埼玉県春日部市大沼1-76
   url: https://www.pref.saitama.lg.jp/b0703/syuuyoujyouhou/kasukabe.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0703/syuuyoujyouhou/kasukabe.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0703/syuuyoujyouhou/kasukabe.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -4821,6 +5456,9 @@ sources:
   phone: "048-999-5515"
   address: 埼玉県草加市西町425-2
   url: https://www.pref.saitama.lg.jp/b0704/syuuyoujyouhou/souka.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0704/syuuyoujyouhou/souka.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0704/syuuyoujyouhou/souka.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -4834,6 +5472,9 @@ sources:
   phone: "048-541-0249"
   address: 埼玉県鴻巣市東4-5-10
   url: https://www.pref.saitama.lg.jp/b0705/syuuyoujyouhou/konosu.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0705/syuuyoujyouhou/konosu.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0705/syuuyoujyouhou/konosu.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -4847,6 +5488,9 @@ sources:
   phone: "0493-22-0280"
   address: 埼玉県東松山市若松町2-6-45
   url: https://www.pref.saitama.lg.jp/b0706/syuuyoujyouhou/higashimatuyama.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0706/syuuyoujyouhou/higashimatuyama.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0706/syuuyoujyouhou/higashimatuyama.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -4860,6 +5504,9 @@ sources:
   phone: "049-283-7815"
   address: 埼玉県坂戸市石井2327-1
   url: https://www.pref.saitama.lg.jp/b0707/syuuyoujyouhou/sakado.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0707/syuuyoujyouhou/sakado.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0707/syuuyoujyouhou/sakado.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -4873,6 +5520,9 @@ sources:
   phone: "04-2941-6535"
   address: 埼玉県狭山市稲荷山2-16-1
   url: https://www.pref.saitama.lg.jp/b0708/syuuyoujyouhou/sayama.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0708/syuuyoujyouhou/sayama.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0708/syuuyoujyouhou/sayama.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -4886,6 +5536,9 @@ sources:
   phone: "0480-61-1216"
   address: 埼玉県加須市南町5-15
   url: https://www.pref.saitama.lg.jp/b0709/syuuyoujyouhou/kazo.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0709/syuuyoujyouhou/kazo.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0709/syuuyoujyouhou/kazo.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -4899,6 +5552,9 @@ sources:
   phone: 0480-42-1101
   address: 埼玉県幸手市中1-16-4
   url: https://www.pref.saitama.lg.jp/b0710/syuuyoujyouhou/satte.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0710/syuuyoujyouhou/satte.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0710/syuuyoujyouhou/satte.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -4912,6 +5568,9 @@ sources:
   phone: 048-578-4562
   address: 埼玉県熊谷市末広3-9-1
   url: https://www.pref.saitama.lg.jp/b0711/kumagaya.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0711/kumagaya.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0711/kumagaya.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -4925,6 +5584,9 @@ sources:
   phone: 0495-22-6481
   address: 埼玉県本庄市前原1-8-12
   url: https://www.pref.saitama.lg.jp/b0712/syuuyoujyouhou/honjou.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0712/syuuyoujyouhou/honjou.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0712/syuuyoujyouhou/honjou.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -4938,6 +5600,9 @@ sources:
   phone: "0494-22-3824"
   address: 埼玉県秩父市桜木町8-18
   url: https://www.pref.saitama.lg.jp/b0713/syuuyoujyouhou/chichibu.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0713/syuuyoujyouhou/chichibu.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0713/syuuyoujyouhou/chichibu.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -4951,6 +5616,9 @@ sources:
   phone: 048-536-2465
   address: 埼玉県熊谷市板井123
   url: https://www.pref.saitama.lg.jp/b0716/shuuyou-jyouhou-pocg.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0716/shuuyou-jyouhou-pocg.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0716/shuuyou-jyouhou-pocg.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -4964,6 +5632,9 @@ sources:
   phone: 048-855-0484
   address: 埼玉県さいたま市桜区在家473
   url: https://www.pref.saitama.lg.jp/b0716/shuuyou-jyouhou-pocg-minami.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0716/shuuyou-jyouhou-pocg-minami.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0716/shuuyou-jyouhou-pocg-minami.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -4977,6 +5648,9 @@ sources:
   phone: "048-262-6111"
   address: 埼玉県川口市前川1-11-1
   url: https://www.pref.saitama.lg.jp/b0701/syuuyoujyouhou/nanbu-kojin.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0701/syuuyoujyouhou/nanbu.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0701/syuuyoujyouhou/nanbu.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -4990,6 +5664,9 @@ sources:
   phone: "048-461-0468"
   address: 埼玉県朝霞市青葉台1-10-5
   url: https://www.pref.saitama.lg.jp/b0702/syuuyoujyouhou/asaka2.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0702/syuuyoujyouhou/asaka.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0702/syuuyoujyouhou/asaka.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -5003,6 +5680,9 @@ sources:
   phone: "0494-22-3824"
   address: 埼玉県秩父市桜木町8-18
   url: https://www.pref.saitama.lg.jp/b0713/syuuyoujyouhou/chichibu1.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0713/syuuyoujyouhou/chichibu.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0713/syuuyoujyouhou/chichibu.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -5016,6 +5696,9 @@ sources:
   phone: "0480-61-1216"
   address: 埼玉県加須市南町5-15
   url: https://www.pref.saitama.lg.jp/b0709/syuuyoujyouhou/kazo_kojin.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0709/syuuyoujyouhou/kazo.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0709/syuuyoujyouhou/kazo.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -5029,6 +5712,9 @@ sources:
   phone: "048-523-2811"
   address: 埼玉県熊谷市末広3-9-1
   url: https://www.pref.saitama.lg.jp/b0711/syuuyoujyouhou/kumagayakojinnhogo.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0711/syuuyoujyouhou/kumagayakojinnhogo.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0711/syuuyoujyouhou/kumagayakojinnhogo.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -5042,6 +5728,9 @@ sources:
   phone: "049-283-7815"
   address: 埼玉県坂戸市石井2327-1
   url: https://www.pref.saitama.lg.jp/b0707/syuuyoujyouhou/sakado2.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0707/syuuyoujyouhou/sakado.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0707/syuuyoujyouhou/sakado.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -5055,6 +5744,9 @@ sources:
   phone: "048-536-2465"
   address: 埼玉県熊谷市板井123
   url: https://www.pref.saitama.lg.jp/b0716/kojinhogo-pocg-honsho.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0716/shuuyou-jyouhou-pocg.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0716/shuuyou-jyouhou-pocg.html"
   kind: sheltered
   species: cat
   mode: recipe
@@ -5068,6 +5760,9 @@ sources:
   phone: "048-855-0484"
   address: 埼玉県さいたま市桜区在家473
   url: https://www.pref.saitama.lg.jp/b0716/kojinhogo-pocg-minami.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0716/shuuyou-jyouhou-pocg-minami.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0716/shuuyou-jyouhou-pocg-minami.html"
   kind: sheltered
   species: cat
   mode: recipe
@@ -5081,6 +5776,9 @@ sources:
   phone: "048-536-2465"
   address: 埼玉県熊谷市板井123
   url: https://www.pref.saitama.lg.jp/b0716/seikenjouto-n.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0716/seikenjouto-n.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0716/seikenjouto-n.html"
   kind: adoption
   species: dog
   mode: recipe
@@ -5094,6 +5792,9 @@ sources:
   phone: "048-536-2465"
   address: 埼玉県熊谷市板井123
   url: https://www.pref.saitama.lg.jp/b0716/joutoseineko-n.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0716/shuuyou-jyouhou-pocg.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0716/shuuyou-jyouhou-pocg.html"
   kind: adoption
   species: cat
   mode: recipe
@@ -5107,6 +5808,9 @@ sources:
   phone: "048-855-0484"
   address: 埼玉県さいたま市桜区在家473
   url: https://www.pref.saitama.lg.jp/b0716/joutoseineko-s.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.saitama.lg.jp/b0716/shuuyou-jyouhou-pocg-minami.html"
+  verified_address_url: "https://www.pref.saitama.lg.jp/b0716/shuuyou-jyouhou-pocg-minami.html"
   kind: adoption
   species: cat
   mode: recipe
@@ -5120,6 +5824,9 @@ sources:
   phone: "027-330-2323"
   address: 〒370-0867 群馬県高崎市乗附町2747
   url: https://www.city.takasaki.gunma.jp/page/5652.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.takasaki.gunma.jp/page/5652.html"
+  verified_address_url: "https://www.city.takasaki.gunma.jp/page/5652.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -5133,6 +5840,9 @@ sources:
   phone: "027-330-2323"
   address: 〒370-0867 群馬県高崎市乗附町2747
   url: https://www.city.takasaki.gunma.jp/page/5653.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.takasaki.gunma.jp/page/5652.html"
+  verified_address_url: "https://www.city.takasaki.gunma.jp/page/5652.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -5146,6 +5856,9 @@ sources:
   phone: "027-330-2323"
   address: 〒370-0867 群馬県高崎市乗附町2747
   url: https://www.city.takasaki.gunma.jp/page/3987.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.takasaki.gunma.jp/page/5652.html"
+  verified_address_url: "https://www.city.takasaki.gunma.jp/page/5652.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -5159,6 +5872,9 @@ sources:
   phone: "027-330-2323"
   address: 〒370-0867 群馬県高崎市乗附町2747
   url: https://www.city.takasaki.gunma.jp/page/3988.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.takasaki.gunma.jp/page/5652.html"
+  verified_address_url: "https://www.city.takasaki.gunma.jp/page/5652.html"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -5172,6 +5888,9 @@ sources:
   phone: "027-330-2323"
   address: 〒370-0867 群馬県高崎市乗附町2747
   url: https://www.city.takasaki.gunma.jp/page/4081.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.takasaki.gunma.jp/page/5652.html"
+  verified_address_url: "https://www.city.takasaki.gunma.jp/page/5652.html"
   kind: lost
   species: dog
   mode: recipe
@@ -5185,6 +5904,9 @@ sources:
   phone: "027-330-2323"
   address: 〒370-0867 群馬県高崎市乗附町2747
   url: https://www.city.takasaki.gunma.jp/page/47964.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.takasaki.gunma.jp/page/5652.html"
+  verified_address_url: "https://www.city.takasaki.gunma.jp/page/5652.html"
   kind: lost
   species: mixed
   mode: recipe
@@ -5198,6 +5920,9 @@ sources:
   phone: "027-330-2323"
   address: 〒370-0867 群馬県高崎市乗附町2747
   url: https://www.city.takasaki.gunma.jp/page/4510.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.takasaki.gunma.jp/page/5652.html"
+  verified_address_url: "https://www.city.takasaki.gunma.jp/page/5652.html"
   kind: adoption
   species: dog
   mode: recipe
@@ -5211,6 +5936,9 @@ sources:
   phone: "027-330-2323"
   address: 〒370-0867 群馬県高崎市乗附町2747
   url: https://www.city.takasaki.gunma.jp/page/4511.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.takasaki.gunma.jp/page/5652.html"
+  verified_address_url: "https://www.city.takasaki.gunma.jp/page/5652.html"
   kind: adoption
   species: cat
   mode: recipe
@@ -5224,6 +5952,9 @@ sources:
   phone: "0466-50-3594"
   address: 〒251-0022 神奈川県藤沢市鵠沼2131番地の1 藤沢市保健所4階
   url: https://www.city.fujisawa.kanagawa.jp/seiei/kurashi/dobutsu/syuyoken.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.fujisawa.kanagawa.jp/seiei/kurashi/dobutsu/syuyoken.html"
+  verified_address_url: "https://www.city.fujisawa.kanagawa.jp/seiei/kurashi/dobutsu/syuyoken.html"
   kind: sheltered
   species: dog
   mode: recipe
@@ -5237,6 +5968,9 @@ sources:
   phone: 072-228-0168
   address: 〒590-0013 堺市堺区東雲西町1-8-17（堺市保健所 動物指導センター）
   url: https://www.eonet.ne.jp/~sakai-doshi/
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.eonet.ne.jp/~sakai-doshi/"
+  verified_address_url: "https://www.eonet.ne.jp/~sakai-doshi/"
   kind: stray
   species: mixed
   mode: recipe
@@ -5250,6 +5984,9 @@ sources:
   phone: 06-6339-2226
   address: 〒564-0072 大阪府吹田市出口町19番3号（吹田市保健所内 健康医療部衛生管理課）
   url: https://www.city.suita.osaka.jp/kurashi/1018501/1018506/1022049.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.suita.osaka.jp/kurashi/1018501/1018506/1022049.html"
+  verified_address_url: "https://www.city.suita.osaka.jp/kurashi/1018501/1018506/1022049.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -5263,6 +6000,9 @@ sources:
   phone: 072-829-7721
   address: 〒572-8533 大阪府寝屋川市池田西町28番22号（保健福祉センター2階 保健衛生課）
   url: https://www.city.neyagawa.osaka.jp/kurashi/eisei_doubutsu/inuneko_kankei/13558.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.neyagawa.osaka.jp/kurashi/eisei_doubutsu/inuneko_kankei/13558.html"
+  verified_address_url: "https://www.city.neyagawa.osaka.jp/kurashi/eisei_doubutsu/inuneko_kankei/13558.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -5276,6 +6016,9 @@ sources:
   phone: 072-994-6643
   address: 〒581-0006 大阪府八尾市清水町1-2-5（健康福祉部 保健衛生課）
   url: https://www.city.yao.osaka.jp/kurashi_tetsuzuki/sumai_kurashi_seikatsu/1012763/1003039/1003051.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.yao.osaka.jp/kurashi_tetsuzuki/sumai_kurashi_seikatsu/1012763/1003039/1003051.html"
+  verified_address_url: "https://www.city.yao.osaka.jp/kurashi_tetsuzuki/sumai_kurashi_seikatsu/1012763/1003039/1003051.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -5289,6 +6032,9 @@ sources:
   phone: 0798-81-1220
   address: 兵庫県西宮市鳴尾浜2丁目1-4（西宮市動物管理センター）
   url: https://www.nishi.or.jp/kenko/hokenjojoho/pet/kainushinokata/pet-maigo.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.nishi.or.jp/kenko/hokenjojoho/pet/kainushinokata/pet-maigo.html"
+  verified_address_url: "https://www.nishi.or.jp/kenko/hokenjojoho/pet/kainushinokata/pet-maigo.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -5302,6 +6048,9 @@ sources:
   phone: 0798-81-1220
   address: 兵庫県西宮市鳴尾浜2丁目1-4（西宮市動物管理センター）
   url: https://www.nishi.or.jp/kenko/hokenjojoho/pet/dobutsujodo.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.nishi.or.jp/kenko/hokenjojoho/pet/kainushinokata/pet-maigo.html"
+  verified_address_url: "https://www.nishi.or.jp/kenko/hokenjojoho/pet/kainushinokata/pet-maigo.html"
   kind: adoption
   species: mixed
   mode: recipe
@@ -5319,6 +6068,9 @@ sources:
   phone: 0857-30-8551
   address: 〒680-0845 鳥取県鳥取市富安2丁目138番地4 市役所駅南庁舎1階（鳥取市保健所 生活安全課 動物愛護係）
   url: https://www.city.tottori.lg.jp/page/5071.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.tottori.lg.jp/page/5071.html"
+  verified_address_url: "https://www.city.tottori.lg.jp/page/5071.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -5332,6 +6084,9 @@ sources:
   phone: 0857-30-8551
   address: 〒680-0845 鳥取県鳥取市富安2丁目138番地4 市役所駅南庁舎1階（鳥取市保健所 生活安全課 動物愛護係）
   url: https://www.city.tottori.lg.jp/page/5042.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.tottori.lg.jp/page/5071.html"
+  verified_address_url: "https://www.city.tottori.lg.jp/page/5071.html"
   kind: adoption
   species: mixed
   mode: recipe
@@ -5345,6 +6100,9 @@ sources:
   phone: 0857-30-8551
   address: 〒680-0845 鳥取県鳥取市富安2丁目138番地4 市役所駅南庁舎1階（鳥取市保健所 生活安全課 動物愛護係）
   url: https://www.city.tottori.lg.jp/page/5042.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.tottori.lg.jp/page/5071.html"
+  verified_address_url: "https://www.city.tottori.lg.jp/page/5071.html"
   kind: adoption
   species: mixed
   mode: recipe
@@ -5358,6 +6116,9 @@ sources:
   phone: 0823-70-3711
   address: 〒737-0161 広島県呉市郷原町2380番地319 呉市動物愛護センター
   url: https://www.city.kure.lg.jp/soshiki/127/jouto.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.kure.lg.jp/soshiki/127/jouto.html"
+  verified_address_url: "https://www.city.kure.lg.jp/soshiki/127/jouto.html"
   kind: adoption
   species: mixed
   mode: recipe
@@ -5371,6 +6132,9 @@ sources:
   phone: 0823-70-3711
   address: 〒737-0161 広島県呉市郷原町2380番地319 呉市動物愛護センター
   url: https://www.city.kure.lg.jp/soshiki/127/hogo.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.kure.lg.jp/soshiki/127/jouto.html"
+  verified_address_url: "https://www.city.kure.lg.jp/soshiki/127/jouto.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -5423,6 +6187,9 @@ sources:
   phone: 0973-23-3133
   address: 〒877-0025 大分県日田市田島２－２－５ 西部保健所（日田市・九重町・玖珠町）
   url: https://www.pref.oita.jp/site/doubutuaigo/hogo-seibu.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.oita.jp/site/doubutuaigo/hogo-seibu.html"
+  verified_address_url: "https://www.pref.oita.jp/site/doubutuaigo/hogo-seibu.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -5436,6 +6203,9 @@ sources:
   phone: 0979-22-2210
   address: 〒871-0024 大分県中津市中央町１丁目１０番４２号 北部保健所（中津市・宇佐市）
   url: https://www.pref.oita.jp/site/doubutuaigo/hogo-hokubu.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.oita.jp/site/doubutuaigo/hogo-hokubu.html"
+  verified_address_url: "https://www.pref.oita.jp/site/doubutuaigo/hogo-hokubu.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -5449,6 +6219,9 @@ sources:
   phone: 0978-22-3165
   address: 〒879-0621 大分県豊後高田市是永町39番地 北部保健所豊後高田保健部（豊後高田市）
   url: https://www.pref.oita.jp/site/doubutuaigo/hogo-bungotakada.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.oita.jp/site/doubutuaigo/hogo-bungotakada.html"
+  verified_address_url: "https://www.pref.oita.jp/site/doubutuaigo/hogo-bungotakada.html"
   kind: stray
   species: dog
   mode: recipe
@@ -5534,6 +6307,9 @@ sources:
   phone: 0995-44-6301
   address: 〒899-5105 鹿児島県霧島市隼人町小田1493-1 鹿児島県動物愛護センター
   url: http://dogcat.pref.kagoshima.jp/Search/Lost_index
+  verified_at: '2026-10-15'
+  verified_phone_url: "http://dogcat.pref.kagoshima.jp/Search/Lost_index"
+  verified_address_url: "http://dogcat.pref.kagoshima.jp/Search/Lost_index"
   kind: stray
   species: mixed
   mode: link_only
@@ -5546,6 +6322,9 @@ sources:
   phone: 0995-44-6301
   address: 〒899-5105 鹿児島県霧島市隼人町小田1493-1 鹿児島県動物愛護センター
   url: http://dogcat.pref.kagoshima.jp/Search/Jouto_index
+  verified_at: '2026-10-15'
+  verified_phone_url: "http://dogcat.pref.kagoshima.jp/Search/Lost_index"
+  verified_address_url: "http://dogcat.pref.kagoshima.jp/Search/Lost_index"
   kind: adoption
   species: mixed
   mode: link_only
@@ -5558,6 +6337,9 @@ sources:
   phone: 018-883-1182
   address: 〒010-0976 秋田県秋田市八橋南一丁目8-3
   url: https://www.city.akita.lg.jp/kurashi/pet/1005364/1015484.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.akita.lg.jp/kurashi/pet/1005364/1015484.html"
+  verified_address_url: "https://www.city.akita.lg.jp/kurashi/pet/1005364/1015484.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -5571,6 +6353,9 @@ sources:
   phone: 018-883-1182
   address: 〒010-0976 秋田県秋田市八橋南一丁目8-3
   url: https://www.city.akita.lg.jp/kurashi/pet/1005364/1005509.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.akita.lg.jp/kurashi/pet/1005364/1015484.html"
+  verified_address_url: "https://www.city.akita.lg.jp/kurashi/pet/1005364/1015484.html"
   kind: lost
   species: mixed
   mode: recipe
@@ -5584,6 +6369,9 @@ sources:
   phone: 018-883-1182
   address: 〒010-0976 秋田県秋田市八橋南一丁目8-3
   url: https://www.city.akita.lg.jp/kurashi/pet/1005364/1005510.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.akita.lg.jp/kurashi/pet/1005364/1015484.html"
+  verified_address_url: "https://www.city.akita.lg.jp/kurashi/pet/1005364/1015484.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -5609,6 +6397,9 @@ sources:
   phone: 023-681-1210
   address: 〒990-0894 山形県山形市大字船町1030-1
   url: https://www.city.yamagata-yamagata.lg.jp/kurashi/pet/1006550/1005142.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.yamagata-yamagata.lg.jp/kurashi/pet/1006550/1005142.html"
+  verified_address_url: "https://www.city.yamagata-yamagata.lg.jp/kurashi/pet/1006550/1005142.html"
   kind: stray
   species: mixed
   mode: link_only
@@ -5621,6 +6412,9 @@ sources:
   phone: 023-681-1210
   address: 〒990-0894 山形県山形市大字船町1030-1
   url: https://www.city.yamagata-yamagata.lg.jp/kurashi/pet/1006550/1005143.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.yamagata-yamagata.lg.jp/kurashi/pet/1006550/1005142.html"
+  verified_address_url: "https://www.city.yamagata-yamagata.lg.jp/kurashi/pet/1006550/1005142.html"
   kind: adoption
   species: mixed
   mode: recipe
@@ -5634,6 +6428,9 @@ sources:
   phone: 023-681-1210
   address: 〒990-0894 山形県山形市大字船町1030-1
   url: https://www.city.yamagata-yamagata.lg.jp/kurashi/pet/1006550/1005145.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.yamagata-yamagata.lg.jp/kurashi/pet/1006550/1005142.html"
+  verified_address_url: "https://www.city.yamagata-yamagata.lg.jp/kurashi/pet/1006550/1005142.html"
   kind: lost
   species: mixed
   mode: link_only
@@ -5646,6 +6443,9 @@ sources:
   phone: 022-358-7888
   address: 宮城県富谷市明石下向田69-4
   url: https://www.pref.miyagi.jp/soshiki/doubutuaigo/hogoaigo.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.miyagi.jp/soshiki/doubutuaigo/index.html"
+  verified_address_url: "https://www.pref.miyagi.jp/soshiki/doubutuaigo/hogoaigo.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -5659,6 +6459,9 @@ sources:
   phone: 0224-53-3119
   address: 宮城県柴田郡大河原町字南129-1
   url: https://www.pref.miyagi.jp/soshiki/sn-hohuku/hogodoubutu.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.miyagi.jp/soshiki/sn-hohuku/hogodoubutu.html"
+  verified_address_url: "https://www.pref.miyagi.jp/soshiki/sn-hohuku/hogodoubutu.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -5672,6 +6475,9 @@ sources:
   phone: 0223-22-6294
   address: 宮城県岩沼市中央三丁目1番18号
   url: https://www.pref.miyagi.jp/soshiki/sh-helth-i/hogokeniwanuma.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.miyagi.jp/soshiki/sh-helth-i/hogokeniwanuma.html"
+  verified_address_url: "https://www.pref.miyagi.jp/soshiki/sh-helth-i/hogokeniwanuma.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -5685,6 +6491,9 @@ sources:
   phone: 0229-87-8001
   address: 宮城県大崎市古川旭四丁目1-1
   url: https://www.pref.miyagi.jp/soshiki/nh-hwfz/oosakihogoken.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.miyagi.jp/soshiki/nh-hwfz/oosakihogoken.html"
+  verified_address_url: "https://www.pref.miyagi.jp/soshiki/nh-hwfz/oosakihogoken.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -5698,6 +6507,9 @@ sources:
   phone: 0225-95-1475
   address: 宮城県石巻市あゆみ野五丁目7番地
   url: https://www.pref.miyagi.jp/soshiki/et-hc/jueki-hogoken.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.miyagi.jp/soshiki/et-hc/jueki-hogoken.html"
+  verified_address_url: "https://www.pref.miyagi.jp/soshiki/et-hc/jueki-hogoken.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -5711,6 +6523,8 @@ sources:
   phone: 022-774-6920
   address: null
   url: https://www.pref.miyagi.jp/soshiki/ks-health/juekihogo.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.miyagi.jp/soshiki/ks-health/juekihogo.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -5724,6 +6538,9 @@ sources:
   phone: 022-358-7888
   address: 宮城県富谷市明石下向田69-4
   url: https://www.pref.miyagi.jp/soshiki/doubutuaigo/zyoutoneko.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.miyagi.jp/soshiki/doubutuaigo/index.html"
+  verified_address_url: "https://www.pref.miyagi.jp/soshiki/doubutuaigo/hogoaigo.html"
   kind: adoption
   species: cat
   mode: recipe
@@ -5737,6 +6554,9 @@ sources:
   phone: 022-358-7888
   address: 宮城県富谷市明石下向田69-4
   url: https://www.pref.miyagi.jp/soshiki/doubutuaigo/jyoto-inu-syokai.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.miyagi.jp/soshiki/doubutuaigo/index.html"
+  verified_address_url: "https://www.pref.miyagi.jp/soshiki/doubutuaigo/hogoaigo.html"
   kind: adoption
   species: dog
   mode: recipe
@@ -5750,6 +6570,9 @@ sources:
   phone: 0224-53-3119
   address: 宮城県柴田郡大河原町字南129-1
   url: https://www.pref.miyagi.jp/soshiki/sn-hohuku/joutoken.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.miyagi.jp/soshiki/sn-hohuku/hogodoubutu.html"
+  verified_address_url: "https://www.pref.miyagi.jp/soshiki/sn-hohuku/hogodoubutu.html"
   kind: adoption
   species: mixed
   mode: link_only
@@ -5759,9 +6582,11 @@ sources:
   name: みやぎわんにゃん家族むすび（県の譲渡猫）
   municipality: 宮城県（保健所・動物愛護センター）
   prefecture: 宮城県
-  phone: null
+  phone: 022-358-7888
   address: null
   url: https://wannyan-musubi.pref.miyagi.jp/animal?category=0&has_management_no=1
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://wannyan-musubi.pref.miyagi.jp/event"
   kind: adoption
   species: cat
   mode: recipe
@@ -5772,9 +6597,11 @@ sources:
   name: みやぎわんにゃん家族むすび（県の譲渡犬）
   municipality: 宮城県（保健所・動物愛護センター）
   prefecture: 宮城県
-  phone: null
+  phone: 022-358-7888
   address: null
   url: https://wannyan-musubi.pref.miyagi.jp/animal?category=1&has_management_no=1
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://wannyan-musubi.pref.miyagi.jp/event"
   kind: adoption
   species: dog
   mode: recipe
@@ -5788,6 +6615,9 @@ sources:
   phone: 024-597-6409
   address: 福島県福島市森合町10番1号 保健福祉センター
   url: https://www.city.fukushima.fukushima.jp/soshiki/9/1046/3/5964.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.fukushima.fukushima.jp/soshiki/9/1046/3/5964.html"
+  verified_address_url: "https://www.city.fukushima.fukushima.jp/soshiki/9/1046/3/5964.html"
   kind: adoption
   species: mixed
   mode: recipe
@@ -5801,6 +6631,9 @@ sources:
   phone: 024-597-6409
   address: 福島県福島市森合町10番1号 保健福祉センター
   url: https://www.city.fukushima.fukushima.jp/soshiki/9/1046/3/1933.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.fukushima.fukushima.jp/soshiki/9/1046/3/5964.html"
+  verified_address_url: "https://www.city.fukushima.fukushima.jp/soshiki/9/1046/3/5964.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -5814,6 +6647,9 @@ sources:
   phone: 055-237-2550
   address: 〒400-0858 山梨県甲府市相生2丁目17番1号（健康支援センター2号館2階）
   url: https://www.city.kofu.yamanashi.jp/hokenjo/2019mayoiinuneko.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.kofu.yamanashi.jp/hokenjo/2019mayoiinuneko.html"
+  verified_address_url: "https://www.city.kofu.yamanashi.jp/hokenjo/2019mayoiinuneko.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -5827,6 +6663,9 @@ sources:
   phone: 055-237-2550
   address: 〒400-0858 山梨県甲府市相生2丁目17番1号（健康支援センター2号館2階）
   url: https://www.city.kofu.yamanashi.jp/hokenjo/2019mayoiinuneko.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.kofu.yamanashi.jp/hokenjo/2019mayoiinuneko.html"
+  verified_address_url: "https://www.city.kofu.yamanashi.jp/hokenjo/2019mayoiinuneko.html"
   kind: lost
   species: mixed
   mode: recipe
@@ -5840,6 +6679,9 @@ sources:
   phone: 026-262-1212
   address: 長野県長野市若里6丁目6番1号（長野市保健所食品生活衛生課動物愛護センター）
   url: https://www.city.nagano.nagano.jp/n107000/contents/p001118.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.nagano.nagano.jp/n107000/contents/p001118.html"
+  verified_address_url: "https://www.city.nagano.nagano.jp/n107000/contents/p001118.html"
   kind: adoption
   species: mixed
   mode: recipe
@@ -5853,6 +6695,9 @@ sources:
   phone: 026-262-1212
   address: 長野県長野市若里6丁目6番1号（長野市保健所食品生活衛生課動物愛護センター）
   url: https://www.city.nagano.nagano.jp/n107000/contents/p001088.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.nagano.nagano.jp/n107000/contents/p001118.html"
+  verified_address_url: "https://www.city.nagano.nagano.jp/n107000/contents/p001118.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -5866,6 +6711,9 @@ sources:
   phone: 026-262-1212
   address: 長野県長野市若里6丁目6番1号（長野市保健所食品生活衛生課動物愛護センター）
   url: https://www.city.nagano.nagano.jp/n107000/contents/p001086.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.nagano.nagano.jp/n107000/contents/p001118.html"
+  verified_address_url: "https://www.city.nagano.nagano.jp/n107000/contents/p001118.html"
   kind: lost
   species: mixed
   mode: recipe
@@ -5879,6 +6727,9 @@ sources:
   phone: 026-262-1212
   address: 長野県長野市若里6丁目6番1号（長野市保健所食品生活衛生課動物愛護センター）
   url: https://www.city.nagano.nagano.jp/n107000/contents/p001089.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.nagano.nagano.jp/n107000/contents/p001118.html"
+  verified_address_url: "https://www.city.nagano.nagano.jp/n107000/contents/p001118.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -5892,6 +6743,9 @@ sources:
   phone: 026-262-1212
   address: 長野県長野市若里6丁目6番1号（長野市保健所食品生活衛生課動物愛護センター）
   url: https://www.city.nagano.nagano.jp/n107000/contents/p001119.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.nagano.nagano.jp/n107000/contents/p001118.html"
+  verified_address_url: "https://www.city.nagano.nagano.jp/n107000/contents/p001118.html"
   kind: adoption
   species: dog
   mode: recipe
@@ -5905,6 +6759,9 @@ sources:
   phone: 026-262-1212
   address: 長野県長野市若里6丁目6番1号（長野市保健所食品生活衛生課動物愛護センター）
   url: https://www.city.nagano.nagano.jp/n107000/contents/p001120.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.nagano.nagano.jp/n107000/contents/p001118.html"
+  verified_address_url: "https://www.city.nagano.nagano.jp/n107000/contents/p001118.html"
   kind: adoption
   species: cat
   mode: recipe
@@ -5918,6 +6775,9 @@ sources:
   phone: 026-262-1212
   address: 長野県長野市若里6丁目6番1号（長野市保健所食品生活衛生課動物愛護センター）
   url: https://www.city.nagano.nagano.jp/n107000/contents/p001121.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.nagano.nagano.jp/n107000/contents/p001118.html"
+  verified_address_url: "https://www.city.nagano.nagano.jp/n107000/contents/p001118.html"
   kind: adoption
   species: mixed
   mode: recipe
@@ -5931,6 +6791,9 @@ sources:
   phone: 0263-40-0706
   address: 〒390-8765 長野県松本市大字島立1020番地 長野県松本合同庁舎1階（食品・生活衛生課 乳肉・動物衛生担当）
   url: https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html"
+  verified_address_url: "https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -5944,6 +6807,9 @@ sources:
   phone: 0263-40-0706
   address: 〒390-8765 長野県松本市大字島立1020番地 長野県松本合同庁舎1階（食品・生活衛生課 乳肉・動物衛生担当）
   url: https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html"
+  verified_address_url: "https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -5957,6 +6823,9 @@ sources:
   phone: 0263-40-0706
   address: 〒390-8765 長野県松本市大字島立1020番地 長野県松本合同庁舎1階（食品・生活衛生課 乳肉・動物衛生担当）
   url: https://www.city.matsumoto.nagano.jp/soshiki/231/1524.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html"
+  verified_address_url: "https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html"
   kind: lost
   species: mixed
   mode: recipe
@@ -5970,6 +6839,9 @@ sources:
   phone: 0263-40-0706
   address: 〒390-8765 長野県松本市大字島立1020番地 長野県松本合同庁舎1階（食品・生活衛生課 乳肉・動物衛生担当）
   url: https://www.city.matsumoto.nagano.jp/soshiki/231/1529.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html"
+  verified_address_url: "https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html"
   kind: adoption
   species: dog
   mode: recipe
@@ -5983,6 +6855,9 @@ sources:
   phone: 0263-40-0706
   address: 〒390-8765 長野県松本市大字島立1020番地 長野県松本合同庁舎1階（食品・生活衛生課 乳肉・動物衛生担当）
   url: https://www.city.matsumoto.nagano.jp/soshiki/231/1534.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html"
+  verified_address_url: "https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html"
   kind: adoption
   species: cat
   mode: recipe
@@ -5996,6 +6871,9 @@ sources:
   phone: 058-252-7195
   address: 〒500-8309 岐阜県岐阜市都通2丁目19番地 1階（生活衛生課。収容は岐阜市畜犬管理センター）
   url: https://www.city.gifu.lg.jp/kurashi/seikatukankyo/1002857/1002872.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.gifu.lg.jp/kurashi/seikatukankyo/1002857/1002872.html"
+  verified_address_url: "https://www.city.gifu.lg.jp/kurashi/seikatukankyo/1002857/1002872.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -6009,6 +6887,9 @@ sources:
   phone: 058-252-7195
   address: 〒500-8309 岐阜県岐阜市都通2丁目19番地 1階（生活衛生課。犬は岐阜市畜犬管理センター）
   url: https://www.city.gifu.lg.jp/kurashi/seikatukankyo/1002857/1025360/1025374/1025432.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.gifu.lg.jp/kurashi/seikatukankyo/1002857/1025360/1025374/1025432.html"
+  verified_address_url: "https://www.city.gifu.lg.jp/kurashi/seikatukankyo/1002857/1025360/1025374/1025432.html"
   kind: adoption
   species: dog
   mode: recipe
@@ -6022,6 +6903,9 @@ sources:
   phone: 058-252-7195
   address: 〒500-8309 岐阜県岐阜市都通2丁目19番地 1階（生活衛生課。猫は主に岐阜市畜犬管理センター）
   url: https://www.city.gifu.lg.jp/kurashi/seikatukankyo/1002857/1025360/1025374/1025434.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.gifu.lg.jp/kurashi/seikatukankyo/1002857/1025360/1025374/1025434.html"
+  verified_address_url: "https://www.city.gifu.lg.jp/kurashi/seikatukankyo/1002857/1025360/1025374/1025434.html"
   kind: adoption
   species: cat
   mode: recipe
@@ -6048,6 +6932,9 @@ sources:
   phone: 0586-72-1122
   address: 〒491-0026 愛知県一宮市和光2丁目1番36号 一宮市保健所1階（保健衛生課 動物愛護グループ。返還場所は愛知県動物愛護センター尾張支所）
   url: https://www.city.ichinomiya.aichi.jp/hokenjo/hoken-eisei/1044007/1000182/1036506.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.ichinomiya.aichi.jp/hokenjo/hoken-eisei/1044007/1000182/1036506.html"
+  verified_address_url: "https://www.city.ichinomiya.aichi.jp/hokenjo/hoken-eisei/1044007/1000182/1036506.html"
   kind: stray
   species: mixed
   mode: recipe
@@ -6061,6 +6948,9 @@ sources:
   phone: 0745-83-2631
   address: 〒633-2112 奈良県宇陀市大宇陀小附89
   url: https://www.pref.nara.lg.jp/n070/8439.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.nara.lg.jp/n070/8439.html"
+  verified_address_url: "https://www.pref.nara.lg.jp/n070/8439.html"
   kind: stray
   species: dog
   mode: recipe
@@ -6074,6 +6964,9 @@ sources:
   phone: 0745-83-2631
   address: 〒633-2112 奈良県宇陀市大宇陀小附89
   url: https://www.pref.nara.lg.jp/n070/4132.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.nara.lg.jp/n070/8439.html"
+  verified_address_url: "https://www.pref.nara.lg.jp/n070/8439.html"
   kind: adoption
   species: dog
   mode: recipe
@@ -6087,6 +6980,9 @@ sources:
   phone: 0745-83-2631
   address: 〒633-2112 奈良県宇陀市大宇陀小附89
   url: https://www.pref.nara.lg.jp/n070/4133.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.nara.lg.jp/n070/8439.html"
+  verified_address_url: "https://www.pref.nara.lg.jp/n070/8439.html"
   kind: adoption
   species: cat
   mode: recipe
@@ -6100,6 +6996,9 @@ sources:
   phone: 079-281-9741
   address: 〒670-0821 兵庫県姫路市東郷町1451-3 市川美化センター内
   url: https://www.city.himeji.lg.jp/kurashi/0000031472.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.himeji.lg.jp/kurashi/0000031472.html"
+  verified_address_url: "https://www.city.himeji.lg.jp/kurashi/0000031472.html"
   kind: lost
   species: mixed
   mode: recipe
@@ -6114,6 +7013,9 @@ sources:
   phone: 0263-40-0706
   address: 〒390-8765 長野県松本市大字島立1020番地 長野県松本合同庁舎1階（食品・生活衛生課 乳肉・動物衛生担当）
   url: https://www.city.matsumoto.nagano.jp/soshiki/231/1534.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html"
+  verified_address_url: "https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html"
   kind: adoption
   species: cat
   mode: recipe
@@ -6127,6 +7029,9 @@ sources:
   phone: 0263-40-0706
   address: 〒390-8765 長野県松本市大字島立1020番地 長野県松本合同庁舎1階（食品・生活衛生課 乳肉・動物衛生担当）
   url: https://www.city.matsumoto.nagano.jp/soshiki/231/1534.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html"
+  verified_address_url: "https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html"
   kind: adoption
   species: cat
   mode: recipe
@@ -6140,6 +7045,9 @@ sources:
   phone: 0263-40-0706
   address: 〒390-8765 長野県松本市大字島立1020番地 長野県松本合同庁舎1階（食品・生活衛生課 乳肉・動物衛生担当）
   url: https://www.city.matsumoto.nagano.jp/soshiki/231/1534.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html"
+  verified_address_url: "https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html"
   kind: adoption
   species: cat
   mode: recipe
@@ -6153,6 +7061,9 @@ sources:
   phone: 0263-40-0706
   address: 〒390-8765 長野県松本市大字島立1020番地 長野県松本合同庁舎1階（食品・生活衛生課 乳肉・動物衛生担当）
   url: https://www.city.matsumoto.nagano.jp/soshiki/231/1529.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html"
+  verified_address_url: "https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html"
   kind: adoption
   species: dog
   mode: recipe
