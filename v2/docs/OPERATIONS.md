@@ -114,7 +114,13 @@ AI の案は **採用条件**（`collector/ai_repair.py` の `check_adoption`、
 
 **d は誤採用を止めない。止めるのは人の目（PR の差分）。** 保存 HTML で 0 頭（旧構造に当たらない・保存に無い URL を辿った）のときは不合格にせず、「回帰 NG（旧構造の可能性）」に「今日の HTML の頭数 N・前回 ok M 頭」を添える。N が M の ± max(2, 50%) から外れるなら「回帰 NG（強）」と一段強く書く。保存 HTML で 1 頭以上取れて範囲外のときだけ不合格。
 合否と警告は案の 2 行目 `# 採用条件:` と PR 本文に載る。
-AI は案を書くだけ。案は `collector propose` が draft PR にし、**オーナーが PR を merge したときだけ本番に入る**（自動 merge はしない）。PR は作業用 clone（`ONECO_REPAIR_CLONE`、既定 `<v2>/../.repair-clone`）から作るので、`git` と `gh`（ログイン済み）が要る。1 回の実行で作る PR は最大 5 件。`DISCORD_WEBHOOK_URL` があれば PR ごとに 1 行送る。
+AI は案を書くだけ。案は `collector propose` が draft PR にし、**オーナーが PR を merge したときだけ本番に入る**（自動 merge はしない）。PR は作業用 clone（`ONECO_REPAIR_CLONE`、既定 `<v2>/../.repair-clone`）から作るので、`git` と `gh` が要る。
+
+資格情報は自動 PR 専用のトークンに限定する（W006 T622）。個人の `gh auth login`（repo・workflow 等の広い scope）や macOS の osxkeychain に入っている個人の資格情報は使わない:
+1. GitHub → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** → Generate new token。Repository access は **Only select repositories → 9mak/oneco** だけ、Permissions は **Contents: Read and write** と **Pull requests: Read and write** の 2 つだけ（Metadata は自動で Read）。期限は 90 日（切れたら同じ手順で再発行）
+2. Keychain に入れる: `security add-generic-password -a "$USER" -s oneco-repair-github-token -w`（値はプロンプトで）
+3. `collect.env` に `ONECO_GITHUB_TOKEN=$(security find-generic-password -a "$USER" -s oneco-repair-github-token -w)` を書く（collect.env は bash が `.` で読むので `$(…)` が使える。VPS は Keychain が無いので値を直書きし `chmod 600`）
+`ONECO_GITHUB_TOKEN` があるときだけ、`propose` はネットワークに出る git（clone / fetch / push）を環境変数から読む専用の credential helper で動かし（トークンは argv に出さない）、`gh` には `GH_TOKEN` として渡す。無ければ従来どおり（ログイン済みの gh と osxkeychain）。1 回の実行で作る PR は最大 5 件。`DISCORD_WEBHOOK_URL` があれば PR ごとに 1 行送る。
 
 ### 1-6. 残っている手動作業（2026-10-01 時点・T506）
 
@@ -179,7 +185,7 @@ Discord の文面はこの形:
 - 翌日の probe で遮断を閉じる条件は「接続系エラーか 5xx でない」こと。parser 失敗や 404 はサイトが生きている証拠なので閉じて残りを通常どおり読む（同一ホストに複数レシピがある自治体で 1 本の崩れが全部を止めない）
 - 404・5xx・保守ページ・parser 失敗の日も同じで、その slug の子は載らない（サイトを前日のまま据え置くのは回線断の日だけ）
 - 据え置かれた日を手で公開する: `data/animals-<日付>.json` と `report-<日付>.json` を見て妥当なら
-  `python -m collector promote --date YYYY-MM-DD`（`latest.json` と `manifest-latest.json` をその日に戻す。`held` は false になる）。その後 `site/build.py` と deploy を手で回す
+  `bash v2/ops/rollback.sh YYYY-MM-DD`（`collector promote --date` で `latest.json` と `manifest-latest.json` をその日に戻し〔`held` は false になる〕、`site/build.py` と deploy を回し、公開 `data.json` の `date` がその日になったことを確かめる）。壊れたデータを公開してしまった日に前日へ戻すのも同じ。2026-10-15 に本番で試験済み〔10/14 へ戻して 10 秒で反映、10/15 へ戻し戻しも同様〕
 - `data/manifest-<日付>.json`: `run_id`・`date`・`code_sha`・`recipe_sha`・`registry_sha`・`animals_count`・`sources_ok`・`sources_failed`・`held`。「この日のデータはどのコード・レシピで作ったか」の記録
 - `logs/events-<日付>.jsonl`: slug ごと 1 行（`run_id`・`host`・`status`・`kind`・`http_status`・`seconds`・`attempt`・`count`・`dropped`・`rows`・`breaker`）。`collect-*.log` と合わせて 30 日より古いものは collect.sh が消す
 
@@ -276,6 +282,26 @@ cd v2   # 本番クローンなら ~/oneco-collect/v2
 | Discord webhook | 0 円 |
 | AI 修復（agy） | API 課金なし（Antigravity の既存契約の枠内） |
 | 合計（Mac で動かす場合） | 0 円（既存契約の範囲） |
+
+## 台帳の電話・所在地の突合: `ops/verify_registry.py`（W006 T616）
+
+何を: `registry/sources.yaml` の `phone` / `address` が、その entry の `url` のページ（無ければ同一ホストの「お問い合わせ・連絡先・アクセス・施設案内・センター」系リンクを最大 3 件）に本当に載っているかを全件確認する。電話は数字だけに直して本文の数字列に含まれるか、所在地は「番地の先頭（丁目・番まで）」を全角半角・漢数字・丁目/番/号の書き方の違いをならして探す。`(municipality, phone, address)` が同じ組は 1 回だけ取得して結果を共有する。
+
+いつ: 年 1 回と、台帳の `phone` / `address` / `url` を触った時。
+
+```
+python ops/verify_registry.py --dry-run --out data/verify-registry-YYYY-MM-DD.json   # 全件。約 10 分、書き戻さない
+python ops/verify_registry.py --only city_yokkaichi --dry-run                        # 触った entry だけ
+python ops/verify_registry.py --write                                               # 確認できた entry に verified_at / verified_url を書く
+```
+
+見方（標準出力の要約と `--out` の JSON）:
+- 全項目一致: 台帳に値がある項目すべてが元ページにあった。`--write` が `verified_at`（日付）・`verified_phone_url`（電話が載っていたページ）・`verified_address_url`（所在地が載っていたページ）を url 行の直後に足す（コメント・並びは触らない）。台帳に address が無い entry は電話だけ検証して `verified_address_url` は書かない。
+- `verified_at` の意味は「その番号・住所がそのページに載っている」まで。載っている番号がその施設のものか（別部署・代表番号でないか）までは見ていない。電話は電話番号の形に切り出した集合との完全一致（前後に数字が続くものは別の番号扱い。内線を `-` でつないだ `0742-93-8395-1` のような表記は拾えず「無い」側に倒れる）。2026-10-15 の初回実行で不一致 14 件を一次ソースで確認した結果、台帳の誤りは函館の所在地 1 件だけで、残りは「ページに載っていない・PDF・別ページ掲載」だった。
+- 市名を省いた町名＋番地だけの一致（明細の `address_match` が `town`）は、一致として数えるが `--write` の対象にしない。
+- 片方のみ・不一致: ページ内に無かった。まず人がその URL を開く。ページ側の表記が違うだけ（「2番2号」でなく「2-2」は吸収済みだが、略記・画像化・別ページ掲載は拾えない）か、台帳が古いかを判断して台帳を直す。JSON の `nearby_phones` / `nearby_addresses` に、ページで見つかった近い値が出る。
+- 取得不能: 入口ページが開けない（404・タイムアウト・PDF）。URL 自体の死活なので `ops/check_links.py` と同じ扱いで直す。
+- 自治体サーバーへの配慮: 同時 4・同一ホスト 1 秒間隔・タイムアウト 20 秒・1 URL 1 回。不一致があっても exit 0（監査ツールなので CI には入れない）。
 
 ## CI（W006 T612・T613）
 
