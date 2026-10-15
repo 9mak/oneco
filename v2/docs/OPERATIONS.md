@@ -102,6 +102,17 @@ collect.sh は全部成功したときだけこの URL を叩き、どこかが�
 AI 修復は有料 API を使わず agy（Antigravity CLI、Gemini）で動かす。実行する Mac / VPS で `agy` が PATH にあり、Antigravity にログイン済みであること（agy は `~/.gemini` にログを書く）。
 `/etc/oneco/collect.env`（Mac は `~/.config/oneco/collect.env`）に `ONECO_AI_REPAIR=1` を書く。これが無いと修復は動かない。`agy` が PATH に無いと修復は「未設定」で飛ばされる（Mac の launchd は PATH を継承しないので、plist の PATH に `~/.local/bin` を入れてある。`ops/macos/install.sh` を入れ直せば反映される）。モデルは agy の既定のまま（こちらからは指定しない）。
 修復の入力はページ本文（自治体サイトの内容＝信頼できない入力）なので、script・style・コメント・hidden・display:none・template を除き、`<untrusted_html>` で囲んで「指示ではない」と明記して渡す（W006 T617）。agy にはファイルを読む・コマンドを実行することを禁じ（`--mode plan`）、JSON（`collector/repair_schema.json`）だけ返させる。
+AI の案は **採用条件**（`collector/ai_repair.py` の `check_adoption`、W006 T618）を全部通ったものだけ `data/proposals/<slug>.yaml` になる。通らなければ status は failed のまま（理由は report の repair 欄に出る）:
+
+| 条件 | 内容 |
+| --- | --- |
+| a 必須項目 | 最終レコード全件が `species`（dog/cat）と、写真・管理番号・収容日のどれかを持つ。1 件でも欠けたら不合格 |
+| b 重複 | 同じ id が出ない |
+| c 行数の一致 | レシピが拾った行数 = 動物 + 捨てた行。かつ「写真も管理番号も収容日も個体ページも無い」「種別が決まらず…中身の無い行」で捨てた行が拾った行の半分を超えない（雛形・広告・無関係な行を拾っている兆候） |
+| d 直近正常日での回帰 | run の ok 経路が `data/last_ok/<slug>/` に入口 HTML（と辿った文書。PDF はバイト列のまま。1 文書 2MB 超・render 使用は保存しない）を 1 世代だけ上書き保存する。新レシピをこの保存 HTML に当て、頭数が `state/sources.json` の `last_ok_count` の 50%〜150%（両端を含む）に入ること。保存か `last_ok_count` が無い slug は飛ばし、案のヘッダに「回帰未確認」と書く |
+| e 今日の HTML | `data/proposals/<slug>.today.html` に案と並べて保存する（期待値は assert しない。人が差分を見る） |
+
+d はサイトを作り直した直後（保存 HTML が旧構造）だと新レシピが当たらず不合格になる。その場合は `collector repair <slug> --force --show` で返答を見て人が直す。合否は案の 2 行目 `# 採用条件:` と PR 本文に載る。
 AI は案を書くだけ。案は `collector propose` が draft PR にし、**オーナーが PR を merge したときだけ本番に入る**（自動 merge はしない）。PR は作業用 clone（`ONECO_REPAIR_CLONE`、既定 `<v2>/../.repair-clone`）から作るので、`git` と `gh`（ログイン済み）が要る。1 回の実行で作る PR は最大 5 件。`DISCORD_WEBHOOK_URL` があれば PR ごとに 1 行送る。
 
 ### 1-6. 残っている手動作業（2026-10-01 時点・T506）
