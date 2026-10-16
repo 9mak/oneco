@@ -26,6 +26,7 @@ class Source:
     verified_at: str | None = None   # 電話・所在地が元ページに載っていると確認した日（YYYY-MM-DD。ops/verify_registry.py が書く。施設との対応までは見ていない）
     verified_phone_url: str | None = None    # 電話が載っていたページ
     verified_address_url: str | None = None  # 所在地が載っていたページ（台帳に address が無い entry は None）
+    contact_scope: str = "facility"  # facility（phone / address は収容先そのもの）| operator（県のまとめページ等。掲載元の運営元の連絡先で、収容先は別のことがある。個体ページでは「問い合わせ先」と出す）
     mode: str = "recipe"       # recipe | link_only
     recipe: str | None = None
     enabled: bool = True

@@ -350,6 +350,7 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
                 "prefecture": source.prefecture,
                 "phone": source.phone,
                 "address": source.address,
+                "contact_scope": source.contact_scope,
                 "kind": source.kind,
                 "species": species,
                 "image_url": img_abs,

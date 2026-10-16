@@ -154,6 +154,34 @@ def phone_candidates(text: str) -> list[str]:
     return [m.group() for m in _PHONE_RE.finditer(t)]
 
 
+FOOTER_CHARS = 1500
+
+
+def phone_only_in_footer(html: str, want_digits: str) -> bool:
+    """番号がページ末尾（<footer> 内、無ければ最後の 1,500 文字）にしか出ないか。県庁・市役所の代表番号を拾った疑いの目印。"""
+    from bs4 import BeautifulSoup
+
+    def has(t: str) -> bool:
+        return want_digits in {digits(c) for c in phone_candidates(t)}
+
+    soup = BeautifulSoup(html, "lxml")
+    for t in soup(["script", "style", "noscript"]):
+        t.decompose()
+    footers = soup.find_all("footer")
+    if footers:
+        foot = " ".join(f.get_text(" ") for f in footers)
+        for f in footers:
+            f.decompose()
+        rest = soup.get_text(" ")
+        if has(foot) and not has(rest):
+            return True
+        if has(rest):
+            return False
+    text = soup.get_text(" ") if not footers else foot + " " + rest
+    text = re.sub(r"\s+", " ", text)
+    return has(text[-FOOTER_CHARS:]) and not has(text[:-FOOTER_CHARS])
+
+
 def nearby_phones(text: str, want: str, limit: int = 3) -> list[str]:
     want_d = digits(want)
     found: list[str] = []
@@ -187,6 +215,7 @@ class GroupResult:
     address_url: str | None
     fetched_at: str
     reason: str
+    phone_footer_only: bool | None = None  # 番号が見つかったページで、フッターにしか出ないか
     address_match: str | None = None  # "full"=市区町村名＋番地 / "town"=市名を省いた町名＋番地
     pages: list[str] = field(default_factory=list)
     nearby_phones: list[str] = field(default_factory=list)
@@ -223,6 +252,7 @@ def verify_group(fetch: Fetch, url: str, phone: str | None, address: str | None)
         texts.append(text)
         if want_phone and not r.phone_found and want_phone in {digits(c) for c in phone_candidates(text)}:
             r.phone_found, r.phone_url = True, u
+            r.phone_footer_only = phone_only_in_footer(f.html, want_phone)
         if head and not r.address_found:
             tn = normalize_text(text)
             if contains_address(tn, head):
@@ -407,6 +437,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry-run", action="store_true", help="台帳に書き戻さない（--write が無ければ元から書かない）")
     ap.add_argument("--out", help="結果の明細 JSON")
     ap.add_argument("--write", action="store_true", help="確認できた entry に verified_at / verified_url を書き戻す")
+    ap.add_argument("--footer-only", action="store_true", help="電話番号がページ末尾（フッター）にしか出ない entry の一覧も出す")
     ap.add_argument("--workers", type=int, default=4)
     a = ap.parse_args(argv)
     import warnings
@@ -439,6 +470,11 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"- {sl} ({classify(r)}) 電話={s.phone} 所在地={s.address}\n    {r.reason}"
                       + (f"\n    近い電話: {r.nearby_phones}" if r.nearby_phones else "")
                       + (f"\n    近い所在地: {r.nearby_addresses}" if r.nearby_addresses else ""))
+    if a.footer_only:
+        rows = [(sl, r) for sl, r in results.items() if r.phone_footer_only]
+        print(f"\n[電話がフッターにしか出ない] {len(rows)} 件")
+        for sl, r in rows:
+            print(f"- {sl} 電話={by_slug[sl].phone} {r.phone_url}")
     if a.out:
         detail: dict = {"generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
                         "elapsed_sec": round(secs), "summary": summ, "results": {}}

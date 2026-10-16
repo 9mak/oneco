@@ -451,12 +451,15 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
     phone = str(a.get("phone") or "").strip()
     addr = str(a.get("address") or "").strip()
     contact = [f"<div><dt>自治体</dt><dd>{esc(muni)}</dd></div>"]
+    # contact_scope=operator（県のまとめページ等）は掲載元の運営元の連絡先で、子がいる収容先そのものではない → 「問い合わせ先」と出す（T616）
+    operator = str(a.get("contact_scope") or "facility") == "operator"
+    phone_label, addr_label = ("問い合わせ先", "問い合わせ先の所在地") if operator else ("電話", "所在地")
     if phone:
         href = tel_href(phone)
-        contact.append(f'<div><dt>電話</dt><dd><a href="{esc(href)}">{esc(phone)}</a></dd></div>' if href
-                       else f"<div><dt>電話</dt><dd>{esc(phone)}</dd></div>")
+        contact.append(f'<div><dt>{phone_label}</dt><dd><a href="{esc(href)}">{esc(phone)}</a></dd></div>' if href
+                       else f"<div><dt>{phone_label}</dt><dd>{esc(phone)}</dd></div>")
     if addr:
-        contact.append(f"<div><dt>所在地</dt><dd>{esc(addr)}</dd></div>")
+        contact.append(f"<div><dt>{addr_label}</dt><dd>{esc(addr)}</dd></div>")
     if not phone:
         contact.append("<div><dt>連絡先</dt><dd>電話番号は自治体のページでご確認ください。</dd></div>")
     cta = (f'<a class="cta" href="{esc(src)}" rel="noopener" target="_blank">自治体のページで詳細を見る<small>{esc(muni)}</small></a>'
