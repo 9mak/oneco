@@ -1948,7 +1948,7 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
-  note: 9 保健所へのリンク集。2026-09-29 に保健所ごとに台帳へ分割した（pref_iwate_*）。盛岡市保健所は個体一覧ページが無いので対象外 県のまとめページ。個体の収容先（保健所）は別のことがある
+  note: 9 保健所へのリンク集。2026-09-29 に保健所ごとに台帳へ分割した（pref_iwate_*）。盛岡市保健所は個体一覧ページが無いので対象外。県のまとめページ。個体の収容先（保健所）は別のことがある
 - slug: pref_shimane
   name: 島根県 松江保健所（収容動物）
   municipality: 島根県 松江保健所
