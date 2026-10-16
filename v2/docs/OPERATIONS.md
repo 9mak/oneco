@@ -92,10 +92,10 @@ journalctl -u oneco-collect -f                 # ログ（/var/log/oneco/collect
 通知用チャンネル → チャンネル設定 → 連携サービス → ウェブフック → 新しいウェブフック → URL をコピー。`DISCORD_WEBHOOK_URL`。
 試す: `DISCORD_WEBHOOK_URL=... /opt/oneco/.venv/bin/python -m collector notify`（直近の report に異常があれば送る。無ければ「異常なし。送らない」）。
 
-### 1-4. healthchecks（死活監視）
+### 1-4. 死活監視（走らなかった日の検知）
 
-[healthchecks.io](https://healthchecks.io) で Check を 1 つ作る。Period = 1 day、Grace = 3 hours（収集は最長 3 時間）。Ping URL が `HEALTHCHECK_URL`。
-collect.sh は全部成功したときだけこの URL を叩き、どこかが失敗した日は `URL/fail` を叩く。0:00 を過ぎても ping が来ない（VPS が落ちた・cron が動かない）と healthchecks からメールが来る。Integrations で Discord にも流せる。
+外部サービスは使わない（2026-10-17 決定: アカウントを増やさない）。GitHub Actions の `.github/workflows/v2-deadman.yml` が毎日 02:00 JST に公開サイトの `data.json` の `date` を見て、今日の日付でなければ repo secret `DISCORD_WEBHOOK_URL` へ 1 通送り、run を失敗にする。設定は不要（secret は既にある）。手で試すときは Actions → v2 deadman → Run workflow。
+`HEALTHCHECK_URL` は healthchecks.io 等を使いたい場合の予備で、空のままでよい（collect.sh は全部成功した日に本体 URL、失敗した日に `URL/fail` を叩く）。
 
 ### 1-5. agy（AI 修復）
 
@@ -128,7 +128,7 @@ AI は案を書くだけ。案は `collector propose` が draft PR にし、**�
 | --- | --- | --- |
 | 独自ドメイン | ドメインを取り、Cloudflare にゾーンを作って Workers & Pages → oneco → Settings → Domains & Routes → Custom domain で付ける | `site/config.json` の `base_url` を新ドメインに変える（canonical・OG・sitemap が変わる） |
 | アフィリエイト | Amazon アソシエイト等に申し込み、承認後にリンクを作る | `site/config.json` の `affiliate` に `{"title","url","note"}` を入れる。空のあいだは「迎える準備」枠ごと出ない |
-| healthchecks | healthchecks.io で Check（Period 1 day・Grace 3 hours）を作る | `~/.config/oneco/collect.env` の `HEALTHCHECK_URL` に ping URL を入れる |
+| 死活監視 | 不要（GitHub Actions の `v2-deadman.yml` が公開サイトの日付を毎朝見る。1-4） | Actions で v2 deadman が緑であること |
 | 本番クローンの登録 | ターミナルで `bash v2/ops/macos/install.sh`（1-2a。`~/oneco-collect` を作って launchd の登録を入れ替える）→ `launchctl kickstart -k gui/$(id -u)/com.oneco.collect` で 1 回動かす | `~/oneco-collect/v2/logs/collect-<日付>.log` が毎日できること、サイトの日付が更新されること |
 
 ## 2. 毎日自動で起きること
@@ -173,7 +173,7 @@ Discord の文面はこの形:
 | `環境省リンク集に新しい自治体 N 件` / `リンク集から消えた N 件`（月曜だけ） | 環境省リンク集と台帳の差分が、確認済み一覧に無い形で増減した | セッションで「差分を台帳に足して」と依頼する（4 節） |
 | `環境省リンク集を読めなかった`（月曜だけ） | リンク集が取れない、またはリンクが極端に少ない（ページの形が変わった）。日次収集とは無関係でサイトはふだんどおり | 1 回なら放置でよい。翌週も来たら `collector discover` を手で回し、URL の移転なら `collector/discover.py` の `ENV_URL`、形の変化なら読み方を直す |
 
-通知が来ない日 = 全ページ読めた日か、読めない顔ぶれが前日と同じ日（次節）（ただし収集サーバー自体が動かなかった日も通知は来ない。サイトの日付が 2 日以上古ければ疑う）。healthchecks から「ping が来ない」メールが来たら収集サーバー自体を見る。Mac なら `launchctl print gui/$(id -u)/com.oneco.collect` の last exit code と `~/oneco-collect/v2/logs/launchd.log`、VPS なら `systemctl status oneco-collect.timer`、`journalctl -u oneco-collect --since yesterday`。
+通知が来ない日 = 全ページ読めた日か、読めない顔ぶれが前日と同じ日（次節）（ただし収集サーバー自体が動かなかった日も通知は来ない。サイトの日付が 2 日以上古ければ疑う）。Discord に「oneco 夜間収集が今日は走っていません」（Actions の v2 deadman）が来たら収集サーバー自体を見る。Mac なら `launchctl print gui/$(id -u)/com.oneco.collect` の last exit code と `~/oneco-collect/v2/logs/launchd.log`、VPS なら `systemctl status oneco-collect.timer`、`journalctl -u oneco-collect --since yesterday`。
 
 ### 3-1. 状態・通知の dedup・ホスト遮断・据え置き（W006）
 
@@ -278,7 +278,7 @@ cd v2   # 本番クローンなら ~/oneco-collect/v2
 | 控え: VPS 2GB（さくらのVPS / ConoHa / Vultr など） | 1,000〜1,500 円 |
 | 控え: GCP Cloud Run Jobs（1 日 10 分・2GB。無料枠 vCPU 18 万秒/月の内側） | 0〜100 円（billing の再有効化が要る） |
 | Cloudflare Workers 静的アセット（Free プラン。独自ドメイン込み） | 0 円（静的アセットの配信は Workers のリクエスト数に数えない） |
-| healthchecks.io（Free、20 checks まで） | 0 円 |
+| GitHub Actions（死活監視 1 日 1 回・1 分未満。Public repo は無料） | 0 円 |
 | Discord webhook | 0 円 |
 | AI 修復（agy） | API 課金なし（Antigravity の既存契約の枠内） |
 | 合計（Mac で動かす場合） | 0 円（既存契約の範囲） |

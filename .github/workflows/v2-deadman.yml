@@ -1,0 +1,61 @@
+name: v2 deadman
+
+# v2 の夜間収集（Mac の launchd、毎日 00:05 JST）が「そもそも走らなかった日」を見つける（W006 T611）。
+# 失敗した日は collect.sh 自身が Discord に知らせるので、ここで見るのは「公開サイトの data.json の date が今日になっていない」ことだけ。
+# healthchecks.io のような外部サービスは使わない（アカウントを増やさない。2026-10-17 おまえさん決定）。
+# 02:00 JST（= 17:00 UTC 前日）に 1 回。収集〜deploy は 30 分弱なので 00:05 開始なら余裕で終わっている。
+# GitHub Actions の cron は数分〜数十分遅れることがあるが、日付の比較なので影響しない。
+
+on:
+  schedule:
+    - cron: "0 17 * * *"   # 02:00 JST
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: v2 / deadman
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SITE: https://oneco.9mak-0x13.workers.dev
+    steps:
+      - name: 公開サイトの data.json の日付を見る
+        id: probe
+        run: |
+          set -u
+          today=$(TZ=Asia/Tokyo date +%F)
+          if ! curl -fsS -m 60 --retry 3 -o data.json "$SITE/data.json"; then
+            echo "reason=data.json を取得できない（$SITE）" >> "$GITHUB_OUTPUT"
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          site_date=$(python3 -c 'import json,sys; print(json.load(open("data.json")).get("date") or "")')
+          echo "today=$today site_date=$site_date"
+          if [ "$site_date" = "$today" ]; then
+            echo "stale=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+            echo "reason=公開サイトの日付が $site_date のまま（今日は $today）。Mac の launchd が動いていないか deploy で止まっている" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 走っていなければ Discord に知らせる
+        if: steps.probe.outputs.stale == 'true'
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          REASON: ${{ steps.probe.outputs.reason }}
+        run: |
+          set -u
+          if [ -z "$WEBHOOK" ]; then
+            echo "DISCORD_WEBHOOK_URL が無いので表示だけ: $REASON"
+            exit 1
+          fi
+          python3 - <<'EOF'
+          import json, os, urllib.request
+          body = {"content": f"⚠️ oneco 夜間収集が今日は走っていません。{os.environ['REASON']}\n確認: `~/oneco-collect/v2/logs/launchd.log` と `collect-<日付>.log`"}
+          req = urllib.request.Request(os.environ["WEBHOOK"], data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
+          urllib.request.urlopen(req, timeout=20).read()
+          EOF
+          exit 1   # 走っていない日は run を失敗にして Actions の画面でも赤く見えるようにする
