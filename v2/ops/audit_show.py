@@ -60,7 +60,7 @@ def main() -> int:
         print(f"… 他 {len(docs) - a.docs} 文書（--docs で増やせる）")
     print("-" * 40 + f" animals ({len(e.get('animals') or [])})")
     for an in e.get("animals") or []:
-        shown = {k: v for k, v in an.items() if v not in (None, "") and k not in ("municipality", "prefecture", "phone", "address", "kind", "source")}
+        shown = {k: v for k, v in an.items() if v not in (None, "") and k not in ("municipality", "prefecture", "phone", "address", "contact_scope", "kind", "source")}
         print("  " + json.dumps(shown, ensure_ascii=False))
     print("-" * 40 + f" dropped ({len(e.get('dropped') or [])})")
     for dr in (e.get("dropped") or [])[:200]:
