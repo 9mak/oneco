@@ -54,7 +54,7 @@ def cmd_show(args: argparse.Namespace) -> int:
         print(f"   文書 {res.docs}・行 {res.rows}・動物 {len(res.animals)}・捨てた {len(res.dropped)}"
               + ("・empty_text あり" if res.empty_confirmed else ""))
         for a in res.animals[: args.limit]:
-            shown = {k: v for k, v in a.items() if v and k not in ("municipality", "prefecture", "phone", "address", "kind")}
+            shown = {k: v for k, v in a.items() if v and k not in ("municipality", "prefecture", "phone", "address", "contact_scope", "kind")}
             print("   ", json.dumps(shown, ensure_ascii=False))
         if len(res.animals) > args.limit:
             print(f"    … 他 {len(res.animals) - args.limit} 頭")
