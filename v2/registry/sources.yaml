@@ -1250,8 +1250,9 @@ sources:
   name: 大分市（保護犬）
   municipality: 大分市
   prefecture: 大分県
-  phone: 097-588-2200
+  phone: null
   address: null
+  note: "2026-10-18 掲載元ページに電話が無いので外した（T628。別資料の値は載せない）"
   url: https://www.city.oita.oita.jp/kurashi/pet/inunohogo/index.html
   kind: sheltered
   species: dog
@@ -1518,8 +1519,9 @@ sources:
   name: 奈良市（保護動物情報）
   municipality: 奈良市
   prefecture: 奈良県
-  phone: 0742-93-8395
-  address: 〒630-8122 奈良市三条本町13番1号 はぐくみセンター（奈良市保健所・教育総合センター）保健衛生課
+  phone: null
+  address: null
+  note: "2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
   url: https://www.city.nara.lg.jp/life/4/34/134/
   kind: sheltered
   species: mixed
@@ -1896,8 +1898,9 @@ sources:
   name: 岡山市（保護動物情報）
   municipality: 岡山市
   prefecture: 岡山県
-  phone: 086-803-1259
-  address: 〒700-8546 岡山市北区鹿田町一丁目1番1号（保健福祉局保健所衛生課 動物衛生係）
+  phone: null
+  address: null
+  note: "2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
   url: https://www.city.okayama.jp/kurashi/category/1-15-1-0-0-0-0-0-0-0.html
   kind: sheltered
   species: mixed
@@ -1957,11 +1960,11 @@ sources:
   name: 島根県 松江保健所（収容動物）
   municipality: 島根県 松江保健所
   prefecture: 島根県
-  phone: 0852-61-8875
+  phone: null
   address: 〒690-0011 島根県松江市東津田町1741-3（松江保健所。いきいきプラザ島根3階。電話は動物愛護推進課）
+  note: "2026-10-18 掲載元ページに電話が無いので外した（T628。別資料の値は載せない）"
   url: https://www.pref.shimane.lg.jp/infra/nature/animal/matsue_hoken/doubutu/
   verified_at: '2026-10-15'
-  verified_phone_url: "https://www.pref.shimane.lg.jp/matsue_hoken/"
   verified_address_url: "https://www.pref.shimane.lg.jp/matsue_hoken/"
   kind: sheltered
   species: mixed
@@ -1978,18 +1981,17 @@ sources:
   name: 島根県 松江保健所（収容動物の表）
   municipality: 島根県 松江保健所
   prefecture: 島根県
-  phone: 0852-61-8875
+  phone: null
   address: 〒690-0011 島根県松江市東津田町1741-3（松江保健所。いきいきプラザ島根3階。電話は動物愛護推進課）
   url: https://www.pref.shimane.lg.jp/infra/nature/animal/matsue_hoken/doubutu/hogozyouhou_kakobunn/syuyouari.html
   verified_at: '2026-10-15'
-  verified_phone_url: "https://www.pref.shimane.lg.jp/matsue_hoken/"
   verified_address_url: "https://www.pref.shimane.lg.jp/matsue_hoken/"
   kind: sheltered
   species: mixed
   mode: recipe
   recipe: recipes/pref_shimane-2.yaml
   enabled: true
-  note: 2026-10-07 T521 ゲート（judgeB2 F-01）。2023〜2026-02 は収容した子をこの表のページに載せていた。pref_shimane（現行一覧から 1 頭 1 ページ）と別に、表の作りに戻る日に備えて読む
+  note: "2026-10-07 T521 ゲート（judgeB2 F-01）。2023〜2026-02 は収容した子をこの表のページに載せていた。pref_shimane（現行一覧から 1 頭 1 ページ）と別に、表の作りに戻る日に備えて読む。2026-10-18 掲載元ページに電話が無いので外した（T628。別資料の値は載せない）"
 - slug: city_fukuyama-1
   name: 福山市（迷い犬）
   municipality: 福山市
@@ -2407,8 +2409,8 @@ sources:
   name: 愛知県わんにゃんナビ
   municipality: 愛知県動物愛護センター（わんにゃんナビ）
   prefecture: 愛知県
-  phone: 0565-58-2323
-  address: 愛知県豊田市穂積町新屋73−3（愛知県動物愛護センター 本所。子は尾張・知多・東三河の各支所にもいる。所在は各個体の収容場所欄）
+  phone: null
+  address: null
   url: https://wannyan-navi.pref.aichi.jp/?page=list_dc
   kind: adoption
   species: mixed
@@ -2421,7 +2423,7 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
-  note: Bubble 製 SPA。一覧の <a href> が無いので、エンジンの render_json（描画中の POST /elasticsearch/search の応答から _id を抜き ?page=list_dc_m&no=<_id> を辿る）で読む。2026-09-30 T509 で対応。個体ページごとに Playwright 描画するため 1 頭 5 秒ほどかかる
+  note: "Bubble 製 SPA。一覧の <a href> が無いので、エンジンの render_json（描画中の POST /elasticsearch/search の応答から _id を抜き ?page=list_dc_m&no=<_id> を辿る）で読む。2026-09-30 T509 で対応。個体ページごとに Playwright 描画するため 1 頭 5 秒ほどかかる。2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: pref_niigata
   name: 新潟県動物愛護センター（保護動物）
   municipality: 新潟県動物愛護センター
@@ -2594,7 +2596,7 @@ sources:
   name: 栃木県動物愛護指導センター（子犬譲渡）
   municipality: 栃木県動物愛護指導センター
   prefecture: 栃木県
-  phone: 028-684-5458
+  phone: null
   address: null
   url: https://www.douai.pref.tochigi.lg.jp/work/puppy/
   kind: adoption
@@ -2608,13 +2610,14 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
-  note: 1 列 = 1 頭の転置表。2026-09-29 にエンジンへ transpose を足してレシピ化
+  note: "1 列 = 1 頭の転置表。2026-09-29 にエンジンへ transpose を足してレシピ化。2026-10-18 掲載元ページに電話が無いので外した（T628。別資料の値は載せない）"
 - slug: douai_pref_tochigi_puppy-2
   name: 栃木県動物愛護指導センター（子猫譲渡）
   municipality: 栃木県動物愛護指導センター
   prefecture: 栃木県
-  phone: 028-684-5458
+  phone: null
   address: null
+  note: "2026-10-18 掲載元ページに電話が無いので外した（T628。別資料の値は載せない）"
   url: https://www.douai.pref.tochigi.lg.jp/work/kitten/
   kind: adoption
   species: cat
@@ -2631,8 +2634,9 @@ sources:
   name: 栃木県動物愛護指導センター（保護動物）
   municipality: 栃木県動物愛護指導センター
   prefecture: 栃木県
-  phone: 028-684-5458
+  phone: null
   address: null
+  note: "2026-10-18 掲載元ページに電話が無いので外した（T628。別資料の値は載せない）"
   url: https://www.douai.pref.tochigi.lg.jp/work_category/custody/
   kind: sheltered
   species: mixed
@@ -2649,8 +2653,9 @@ sources:
   name: 栃木県動物愛護指導センター（迷子動物・犬）
   municipality: 栃木県動物愛護指導センター
   prefecture: 栃木県
-  phone: 028-684-5458
+  phone: null
   address: null
+  note: "2026-10-18 掲載元ページに電話が無いので外した（T628。別資料の値は載せない）"
   url: https://douai.sakura.ne.jp/wp/maigo/html/stray/dog/list.html
   kind: stray
   species: dog
@@ -2667,8 +2672,9 @@ sources:
   name: 栃木県動物愛護指導センター（迷子動物・猫）
   municipality: 栃木県動物愛護指導センター
   prefecture: 栃木県
-  phone: 028-684-5458
+  phone: null
   address: null
+  note: "2026-10-18 掲載元ページに電話が無いので外した（T628。別資料の値は載せない）"
   url: https://douai.sakura.ne.jp/wp/maigo/html/stray/cat/list.html
   kind: stray
   species: cat
@@ -4025,8 +4031,9 @@ sources:
   name: 茨城県（収容中の動物たち）
   municipality: 茨城県
   prefecture: 茨城県
-  phone: 0296-72-1200
-  address: 〒309-1606 茨城県笠間市日沢47
+  phone: null
+  address: null
+  note: "2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
   url: https://www.pref.ibaraki.jp/hokenfukushi/doshise/hogo/syuuyou.html
   kind: sheltered
   species: mixed
@@ -4043,8 +4050,9 @@ sources:
   name: 茨城県（迷い犬・猫情報）
   municipality: 茨城県
   prefecture: 茨城県
-  phone: 0296-72-1200
-  address: 〒309-1606 茨城県笠間市日沢47
+  phone: null
+  address: null
+  note: "2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
   url: https://www.pref.ibaraki.jp/hokenfukushi/doshise/hogo/kouji.html
   kind: stray
   species: mixed
@@ -4061,15 +4069,15 @@ sources:
   name: 茨城県（収容中の子犬・子猫たち）
   municipality: 茨城県
   prefecture: 茨城県
-  phone: 0296-72-1200
-  address: 〒309-1606 茨城県笠間市日沢47
+  phone: null
+  address: null
   url: https://www.pref.ibaraki.jp/hokenfukushi/doshise/kanri/20190418.html
   kind: sheltered
   species: mixed
   mode: recipe
   recipe: recipes/pref_ibaraki_pdf-3.yaml
   enabled: true
-  note: 2026-10-04 追加。成犬・成猫の PDF（pdf-1）に入っていない子犬・子猫が収容日ごとの koinu*.pdf にだけ載る（当日 9 頭）
+  note: "2026-10-04 追加。成犬・成猫の PDF（pdf-1）に入っていない子犬・子猫が収容日ごとの koinu*.pdf にだけ載る（当日 9 頭）。2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: animal_net_nagasaki-1
   name: 長崎犬猫ネット（保健所収容）
   municipality: 長崎犬猫ネット
@@ -4290,12 +4298,11 @@ sources:
   name: 青森県動物愛護センター（収容情報）
   municipality: 青森県動物愛護センター
   prefecture: 青森県
-  phone: 017-726-6100
-  address: 青森市大字宮田字玉水119-1（青森県動物愛護センター）
+  phone: null
+  address: null
+  note: "2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
   url: http://www.aomori-animal.jp/01_MAIGO/Shuyo.html
   verified_at: '2026-10-15'
-  verified_phone_url: "https://www.aomori-animal.jp/"
-  verified_address_url: "https://www.aomori-animal.jp/"
   kind: sheltered
   species: mixed
   mode: recipe
@@ -4605,8 +4612,8 @@ sources:
   name: 岩手県（中部保健所 譲渡犬猫）
   municipality: 中部保健所
   prefecture: 岩手県
-  phone: "0198-41-3276"
-  address: 岩手県花巻市花城町1-41（花巻保健福祉環境センター・中部保健所）
+  phone: null
+  address: null
   url: https://www.pref.iwate.jp/kennan/hana_hoken/1013542/index.html
   kind: adoption    # 2026-10-04: レシピは【譲渡】の節だけを拾う（10/2 の T512 対応）ので里親募集
 
@@ -4614,7 +4621,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_iwate_chubu.yaml
   enabled: true
-  note: ハブ pref_iwate から分割（2026-09-29）
+  note: "ハブ pref_iwate から分割（2026-09-29）。2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_iwate.py
     requires_js: false
@@ -5050,17 +5057,16 @@ sources:
   municipality: 函館市保健所
   prefecture: 北海道
   phone: 0138-32-1524
-  address: 〒040-0077 北海道函館市吉川町6番22号（函館市動物愛護管理センター。問い合わせは市立函館保健所生活衛生課環境衛生担当）
+  address: null
   url: https://www.city.hakodate.hokkaido.jp/docs/2014070200084/
   verified_at: '2026-10-15'
   verified_phone_url: "https://www.city.hakodate.hokkaido.jp/docs/2024101600035/"
-  verified_address_url: "https://www.city.hakodate.hokkaido.jp/docs/2024101600035/"
   kind: stray
   species: mixed
   mode: recipe
   recipe: recipes/city_hakodate-1.yaml
   enabled: true
-  note: "環境省リンク集から追加（2026-10-05 T519）。リンク集のリンク先そのもの。2026-10-05〜07 は犬・猫とも「現在，該当する…はおりません」で 0 頭（empty_text で確認）。動物が載った日の作りは、現在の CMS（2025-12 以降）では Wayback に保存が無く未確認。旧 CMS（2015〜2023）の表（管理番号・写真・収容年月日・収容場所・種類・毛色・性別・首輪等）と、空の雛形の div.temp1 に写真が入る作りを想定して読む（T519v）。0 頭の文言は犬の節と猫の節の両方がそろうことを条件にする。譲渡の犬猫は別ドメインの nyantomo（函館どうなん動物愛護センター）で載せている。"
+  note: "環境省リンク集から追加（2026-10-05 T519）。リンク集のリンク先そのもの。2026-10-05〜07 は犬・猫とも「現在，該当する…はおりません」で 0 頭（empty_text で確認）。動物が載った日の作りは、現在の CMS（2025-12 以降）では Wayback に保存が無く未確認。旧 CMS（2015〜2023）の表（管理番号・写真・収容年月日・収容場所・種類・毛色・性別・首輪等）と、空の雛形の div.temp1 に写真が入る作りを想定して読む（T519v）。0 頭の文言は犬の節と猫の節の両方がそろうことを条件にする。譲渡の犬猫は別ドメインの nyantomo（函館どうなん動物愛護センター）で載せている。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: city_otaru-1
   name: 小樽市保健所（収容犬情報）
   municipality: 小樽市保健所
@@ -5217,14 +5223,14 @@ sources:
   municipality: 新潟市
   prefecture: 新潟県
   phone: "025-283-1192"
-  address: 〒950-0933 新潟県新潟市中央区清五郎401（いくとぴあ食花 動物ふれあいセンター）
+  address: null
   url: https://www.ikutopia.com/facilities/doubutsu/foster/cat/
   kind: adoption
   species: cat
   mode: recipe
   recipe: recipes/ikutopia-1.yaml
   enabled: true
-  note: 環境省リンク集から追加（2026-10-05 T519）。新潟市の譲渡猫ページ（city_niigata-4）の「動物ふれあいセンター」の節からリンクされた、いくとぴあ食花の ネコ譲渡情報（2026-10-05 時点 2 ページ 15 頭）。個体ページを辿って読む。「新潟市動物愛護センターで飼育しています」の子は city_niigata-4 と重なるので捨てる。犬のページは新潟市の譲渡犬ページ（city_niigata-3）と同じ子だけなので作らない。0 頭の日の文言は未確認。
+  note: "環境省リンク集から追加（2026-10-05 T519）。新潟市の譲渡猫ページ（city_niigata-4）の「動物ふれあいセンター」の節からリンクされた、いくとぴあ食花の ネコ譲渡情報（2026-10-05 時点 2 ページ 15 頭）。個体ページを辿って読む。「新潟市動物愛護センターで飼育しています」の子は city_niigata-4 と重なるので捨てる。犬のページは新潟市の譲渡犬ページ（city_niigata-3）と同じ子だけなので作らない。0 頭の日の文言は未確認。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: city_toyama-1
   name: 富山市保健所（猫の飼い主募集）
   municipality: 富山市
@@ -6225,40 +6231,40 @@ sources:
   municipality: 下関市
   prefecture: 山口県
   phone: 083-263-1125
-  address: 〒751-0881 山口県下関市大字井田 下関市動物愛護管理センター（動物ふれ愛ランド下関）
+  address: null
   url: https://www.city.shimonoseki.lg.jp/soshiki/52/69116.html
   kind: adoption
   species: dog
   mode: recipe
   recipe: recipes/city_shimonoseki-1.yaml
   enabled: true
-  note: "環境省リンク集から追加（2026-10-05 T519）。リンク集の URL（1799.html 迷い犬を保護しています。）は city_shimonoseki-3。センターの犬の飼い主募集一覧で、個体ページを follow_all で読む。2026-10-05・10-07 は「現在、譲渡対象の犬はいません」で 0 頭。犬が載った日の個体ページの読み方は Wayback 2022-04〜2026-04 の 12 版で確かめた（1〜8 頭）。個体ページの見出しが「飼い主が決まりました」に変わった子は一覧に残るので捨てる（捨てた数 = 行数の日は 0 頭と確定）。0 頭の文言「現在、譲渡対象の犬はいません」が犬のいる日に消えるかは Wayback に 0 頭の版が無く未確認（犬がいる日は読めるので影響しない）。同じセンターの「犬・猫等の譲渡先募集ページ」（63095・市民が飼っている動物の譲渡先探し）は個人の掲載で、保健所の収容動物ではないため台帳に入れていない。"
+  note: "環境省リンク集から追加（2026-10-05 T519）。リンク集の URL（1799.html 迷い犬を保護しています。）は city_shimonoseki-3。センターの犬の飼い主募集一覧で、個体ページを follow_all で読む。2026-10-05・10-07 は「現在、譲渡対象の犬はいません」で 0 頭。犬が載った日の個体ページの読み方は Wayback 2022-04〜2026-04 の 12 版で確かめた（1〜8 頭）。個体ページの見出しが「飼い主が決まりました」に変わった子は一覧に残るので捨てる（捨てた数 = 行数の日は 0 頭と確定）。0 頭の文言「現在、譲渡対象の犬はいません」が犬のいる日に消えるかは Wayback に 0 頭の版が無く未確認（犬がいる日は読めるので影響しない）。同じセンターの「犬・猫等の譲渡先募集ページ」（63095・市民が飼っている動物の譲渡先探し）は個人の掲載で、保健所の収容動物ではないため台帳に入れていない。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: city_shimonoseki-2
   name: 下関市動物愛護管理センター（猫の飼い主募集）
   municipality: 下関市
   prefecture: 山口県
   phone: 083-263-1125
-  address: 〒751-0881 山口県下関市大字井田 下関市動物愛護管理センター（動物ふれ愛ランド下関）
+  address: null
   url: https://www.city.shimonoseki.lg.jp/soshiki/52/59422.html
   kind: adoption
   species: cat
   mode: recipe
   recipe: recipes/city_shimonoseki-2.yaml
   enabled: true
-  note: "環境省リンク集から追加（2026-10-05 T519）。センターの猫の飼い主募集一覧。譲渡番号・写真・特徴の各 p が個体ページ（猫の飼い主を募集しています（No.R08-xxxx））へのリンクなので、個体ページを follow_all で読む（種類・毛色・性別・推定年齢・体格・収容日・仮の名前・検査結果・写真）。一覧に残る 404 の古いリンクは skip_errors で捨てる。2026-10-05・10-07 は 5 頭。「飼い主が決まりました」に変わった子は捨てる。Wayback 2022-03〜2026-05 の 10 版は全部 1 頭以上で、0 頭の日の文言（現在、譲渡対象の猫はいません）は犬の一覧から推したもの。"
+  note: "環境省リンク集から追加（2026-10-05 T519）。センターの猫の飼い主募集一覧。譲渡番号・写真・特徴の各 p が個体ページ（猫の飼い主を募集しています（No.R08-xxxx））へのリンクなので、個体ページを follow_all で読む（種類・毛色・性別・推定年齢・体格・収容日・仮の名前・検査結果・写真）。一覧に残る 404 の古いリンクは skip_errors で捨てる。2026-10-05・10-07 は 5 頭。「飼い主が決まりました」に変わった子は捨てる。Wayback 2022-03〜2026-05 の 10 版は全部 1 頭以上で、0 頭の日の文言（現在、譲渡対象の猫はいません）は犬の一覧から推したもの。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: city_shimonoseki-3
   name: 下関市動物愛護管理センター（迷い犬の保護）
   municipality: 下関市
   prefecture: 山口県
   phone: 083-263-1125
-  address: 〒751-0881 山口県下関市大字井田 下関市動物愛護管理センター（動物ふれ愛ランド下関）
+  address: null
   url: https://www.city.shimonoseki.lg.jp/soshiki/52/1799.html
   kind: stray
   species: dog
   mode: recipe
   recipe: recipes/city_shimonoseki-3.yaml
   enabled: true
-  note: "環境省リンク集から追加（2026-10-05 T519）。センターが保護している迷い犬の案内ページ。個体情報は「関連情報」の見出しの下に足されるリンク先にあり、2026-10-05・10-07 は見出しの下が空で 0 頭（empty_selector で判定。Wayback 2025-10・2026-04・2026-06 も同じ）。保護犬が載った日（Wayback 2022-03・2025-08）の個体ページは、項目が「種類　秋田犬系」のようにコロン無しで並ぶ作りで、コロンを省いても読めるようにした。個体ページが消えた版（Wayback 2022-06）は読めなかったとして通知に載る。迷い猫の保護ページは無い。"
+  note: "環境省リンク集から追加（2026-10-05 T519）。センターが保護している迷い犬の案内ページ。個体情報は「関連情報」の見出しの下に足されるリンク先にあり、2026-10-05・10-07 は見出しの下が空で 0 頭（empty_selector で判定。Wayback 2025-10・2026-04・2026-06 も同じ）。保護犬が載った日（Wayback 2022-03・2025-08）の個体ページは、項目が「種類　秋田犬系」のようにコロン無しで並ぶ作りで、コロンを省いても読めるようにした。個体ページが消えた版（Wayback 2022-06）は読めなかったとして通知に載る。迷い猫の保護ページは無い。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: pref_oita-1
   name: 大分県西部保健所（犬・猫の保護情報）
   municipality: 大分県西部保健所
@@ -6312,73 +6318,73 @@ sources:
   municipality: 宮崎県
   prefecture: 宮崎県
   phone: 0985-84-2600
-  address: 〒889-1601 宮崎県宮崎市清武町木原4543番地8 みやざき動物愛護センター
+  address: null
   url: https://dog.pref.miyazaki.lg.jp/modules/addon_module/?a=doglove&p=search_list&id1=1&id2=3
   kind: sheltered
   species: dog
   mode: link_only
   enabled: true
-  note: "環境省リンク集から追加（2026-10-05 T519）。宮崎県動物愛護情報ネットワーク「みやざきドッグ愛ランド」（県の保健所・動物愛護センターが収容した犬猫の情報）の保護犬の一覧。robots.txt が /modules/addon_module/（一覧と個体ページ）を Disallow としているため、収集器は読まない（リンクのみ。mode: link_only）。一覧の名前（保護 / 譲渡 / 迷子）から区分を付けた。中身は未確認。pref_miyazaki-1〜6 が同じサイトの 6 一覧（犬・猫 × 保護・譲渡・迷子）。宮崎市の保護犬猫は city_miyazaki-1〜3。"
+  note: "環境省リンク集から追加（2026-10-05 T519）。宮崎県動物愛護情報ネットワーク「みやざきドッグ愛ランド」（県の保健所・動物愛護センターが収容した犬猫の情報）の保護犬の一覧。robots.txt が /modules/addon_module/（一覧と個体ページ）を Disallow としているため、収集器は読まない（リンクのみ。mode: link_only）。一覧の名前（保護 / 譲渡 / 迷子）から区分を付けた。中身は未確認。pref_miyazaki-1〜6 が同じサイトの 6 一覧（犬・猫 × 保護・譲渡・迷子）。宮崎市の保護犬猫は city_miyazaki-1〜3。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: pref_miyazaki-2
   name: みやざきドッグ愛ランド（譲渡犬）
   municipality: 宮崎県
   prefecture: 宮崎県
   phone: 0985-84-2600
-  address: 〒889-1601 宮崎県宮崎市清武町木原4543番地8 みやざき動物愛護センター
+  address: null
   url: https://dog.pref.miyazaki.lg.jp/modules/addon_module/?a=doglove&p=search_list&id1=1&id2=1
   kind: adoption
   species: dog
   mode: link_only
   enabled: true
-  note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの譲渡犬の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ（pref_miyazaki-1 と同じ）。中身は未確認。"
+  note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの譲渡犬の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ（pref_miyazaki-1 と同じ）。中身は未確認。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: pref_miyazaki-3
   name: みやざきドッグ愛ランド（迷子犬）
   municipality: 宮崎県
   prefecture: 宮崎県
   phone: 0985-84-2600
-  address: 〒889-1601 宮崎県宮崎市清武町木原4543番地8 みやざき動物愛護センター
+  address: null
   url: https://dog.pref.miyazaki.lg.jp/modules/addon_module/?a=doglove&p=search_list&id1=1&id2=2
   kind: lost
   species: dog
   mode: link_only
   enabled: true
-  note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの迷子犬の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ。「迷子」は飼い主が探している迷子と推定して kind: lost（中身は未確認。保護犬の一覧が収容した犬と思われる）。"
+  note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの迷子犬の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ。「迷子」は飼い主が探している迷子と推定して kind: lost（中身は未確認。保護犬の一覧が収容した犬と思われる）。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: pref_miyazaki-4
   name: みやざきドッグ愛ランド（保護猫）
   municipality: 宮崎県
   prefecture: 宮崎県
   phone: 0985-84-2600
-  address: 〒889-1601 宮崎県宮崎市清武町木原4543番地8 みやざき動物愛護センター
+  address: null
   url: https://dog.pref.miyazaki.lg.jp/modules/addon_module/?a=doglove&p=search_list&id1=2&id2=3
   kind: sheltered
   species: cat
   mode: link_only
   enabled: true
-  note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの保護猫の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ（pref_miyazaki-1 と同じ）。中身は未確認。"
+  note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの保護猫の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ（pref_miyazaki-1 と同じ）。中身は未確認。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: pref_miyazaki-5
   name: みやざきドッグ愛ランド（譲渡猫）
   municipality: 宮崎県
   prefecture: 宮崎県
   phone: 0985-84-2600
-  address: 〒889-1601 宮崎県宮崎市清武町木原4543番地8 みやざき動物愛護センター
+  address: null
   url: https://dog.pref.miyazaki.lg.jp/modules/addon_module/?a=doglove&p=search_list&id1=2&id2=1
   kind: adoption
   species: cat
   mode: link_only
   enabled: true
-  note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの譲渡猫の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ（pref_miyazaki-1 と同じ）。中身は未確認。"
+  note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの譲渡猫の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ（pref_miyazaki-1 と同じ）。中身は未確認。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: pref_miyazaki-6
   name: みやざきドッグ愛ランド（迷子猫）
   municipality: 宮崎県
   prefecture: 宮崎県
   phone: 0985-84-2600
-  address: 〒889-1601 宮崎県宮崎市清武町木原4543番地8 みやざき動物愛護センター
+  address: null
   url: https://dog.pref.miyazaki.lg.jp/modules/addon_module/?a=doglove&p=search_list&id1=2&id2=2
   kind: lost
   species: cat
   mode: link_only
   enabled: true
-  note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの迷子猫の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ。「迷子」は飼い主が探している迷子と推定して kind: lost（中身は未確認）。"
+  note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの迷子猫の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ。「迷子」は飼い主が探している迷子と推定して kind: lost（中身は未確認）。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: pref_kagoshima-1
   name: 鹿児島県動物愛護ホームページ（迷子犬猫情報）
   municipality: 鹿児島県
@@ -6461,14 +6467,14 @@ sources:
   name: 秋田県（収容犬情報・動物愛護センターと各保健所）
   municipality: 秋田県動物愛護センター
   prefecture: 秋田県
-  phone: 018-827-5051
-  address: 〒010-1211 秋田県秋田市雄和椿川字奥椿岱1番地
+  phone: null
+  address: null
   url: https://www.pref.akita.lg.jp/pages/genre/18507
   kind: sheltered
   species: dog
   mode: link_only
   enabled: true
-  note: 環境省リンク集から追加（2026-10-05 T519）。県の「収容犬情報」は動物愛護センターと県内各保健所（秋田市保健所を除く）で収容している犬を載せるページで、2026-10-05 時点は 0 頭（見出しと「掲載がない場合は、収容している犬はおりません」の説明文だけ。説明文は常に出ているので 0 頭の判定には使えない）。Wayback の 6 版（2021-05・2023-02・2023-10・2025-02・2026-04・2026-07）と今日の版はどれも見出しと説明文だけで、犬が載った日の保存は見つからなかったため、載った日の構造を確かめられず link_only のまま。載った日の構造が分かったらレシピ化する。譲渡犬猫は ワンニャピアあきた（spec_wannyapia_akita-1・2）、秋田市保健所の収容・迷子・保護は city_akita-1・2・3
+  note: "環境省リンク集から追加（2026-10-05 T519）。県の「収容犬情報」は動物愛護センターと県内各保健所（秋田市保健所を除く）で収容している犬を載せるページで、2026-10-05 時点は 0 頭（見出しと「掲載がない場合は、収容している犬はおりません」の説明文だけ。説明文は常に出ているので 0 頭の判定には使えない）。Wayback の 6 版（2021-05・2023-02・2023-10・2025-02・2026-04・2026-07）と今日の版はどれも見出しと説明文だけで、犬が載った日の保存は見つからなかったため、載った日の構造を確かめられず link_only のまま。載った日の構造が分かったらレシピ化する。譲渡犬猫は ワンニャピアあきた（spec_wannyapia_akita-1・2）、秋田市保健所の収容・迷子・保護は city_akita-1・2・3。2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: city_yamagata-1
   name: 山形市動物愛護センター（保護・収容の犬猫）
   municipality: 山形市動物愛護センター（わんにゃんポート）
@@ -6661,32 +6667,30 @@ sources:
   name: みやぎわんにゃん家族むすび（県の譲渡猫）
   municipality: 宮城県（保健所・動物愛護センター）
   prefecture: 宮城県
-  phone: 022-358-7888
+  phone: null
   address: null
   url: https://wannyan-musubi.pref.miyagi.jp/animal?category=0&has_management_no=1
   verified_at: '2026-10-15'
-  verified_phone_url: "https://wannyan-musubi.pref.miyagi.jp/event"
   kind: adoption
   species: cat
   mode: recipe
   recipe: recipes/wannyan_musubi_miyagi-1.yaml
   enabled: true
-  note: 環境省リンク集から追加（2026-10-05 T519）。宮城県が 2026-04 に始めた譲渡情報の共有サイト。県の各保健所（石巻・大崎・岩沼・気仙沼・仙南）と動物愛護センターの譲渡猫は、各保健所のページには表が無く「今後は本サイトに掲載」とされている（石巻・大崎・岩沼・気仙沼の譲渡ページは案内だけ）。入口は「県の収容犬猫のみ表示」（has_management_no=1）で、民間の保護団体・個人の投稿は載せない。センターの猫は pref_miyagi-7 と二重にならないよう除く。一覧は写真・性別・年齢・毛色と、保健所名（名前欄の【…】。20 字で切れて「塩釜保健所岩沼」のように途中までになる）だけで、名前・管理番号・詳細は個体ページ。2026-10-07 時点は県の猫 27 頭（一覧 2 ページ）のうちセンターの 9 頭を除く 18 頭。Wayback には絞り込み付きの一覧が無く、絞り込み前の一覧（2026-05・06）で同じカードの作りを読めることだけ確認した（猫 0 頭の日の文言は未確認）
+  note: "環境省リンク集から追加（2026-10-05 T519）。宮城県が 2026-04 に始めた譲渡情報の共有サイト。県の各保健所（石巻・大崎・岩沼・気仙沼・仙南）と動物愛護センターの譲渡猫は、各保健所のページには表が無く「今後は本サイトに掲載」とされている（石巻・大崎・岩沼・気仙沼の譲渡ページは案内だけ）。入口は「県の収容犬猫のみ表示」（has_management_no=1）で、民間の保護団体・個人の投稿は載せない。センターの猫は pref_miyagi-7 と二重にならないよう除く。一覧は写真・性別・年齢・毛色と、保健所名（名前欄の【…】。20 字で切れて「塩釜保健所岩沼」のように途中までになる）だけで、名前・管理番号・詳細は個体ページ。2026-10-07 時点は県の猫 27 頭（一覧 2 ページ）のうちセンターの 9 頭を除く 18 頭。Wayback には絞り込み付きの一覧が無く、絞り込み前の一覧（2026-05・06）で同じカードの作りを読めることだけ確認した（猫 0 頭の日の文言は未確認）。2026-10-18 掲載元ページに電話が無いので外した（T628。別資料の値は載せない）"
 - slug: wannyan_musubi_miyagi-2
   name: みやぎわんにゃん家族むすび（県の譲渡犬）
   municipality: 宮城県（保健所・動物愛護センター）
   prefecture: 宮城県
-  phone: 022-358-7888
+  phone: null
   address: null
   url: https://wannyan-musubi.pref.miyagi.jp/animal?category=1&has_management_no=1
   verified_at: '2026-10-15'
-  verified_phone_url: "https://wannyan-musubi.pref.miyagi.jp/event"
   kind: adoption
   species: dog
   mode: recipe
   recipe: recipes/wannyan_musubi_miyagi-2.yaml
   enabled: true
-  note: 環境省リンク集から追加（2026-10-05 T519）。みやぎわんにゃん家族むすびの県の譲渡犬（作りは猫 wannyan_musubi_miyagi-1 と同じ）。2026-10-07 時点は県の犬 2 頭がどちらもセンターの犬（pref_miyagi-8 で載せている）で、全部除外の「該当なし」（0 頭）。保健所の犬が載った日は保存に無く、カードの作りはセンターの犬（絞り込み前の一覧 2026-06、「オス / 11歳 / 中型」）で確認した範囲
+  note: "環境省リンク集から追加（2026-10-05 T519）。みやぎわんにゃん家族むすびの県の譲渡犬（作りは猫 wannyan_musubi_miyagi-1 と同じ）。2026-10-07 時点は県の犬 2 頭がどちらもセンターの犬（pref_miyagi-8 で載せている）で、全部除外の「該当なし」（0 頭）。保健所の犬が載った日は保存に無く、カードの作りはセンターの犬（絞り込み前の一覧 2026-06、「オス / 11歳 / 中型」）で確認した範囲。2026-10-18 掲載元ページに電話が無いので外した（T628。別資料の値は載せない）"
 - slug: city_fukushima-1
   name: 福島市保健所（里親募集中の犬猫）
   municipality: 福島市保健所
