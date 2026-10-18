@@ -27,7 +27,8 @@ def test_miyazaki_six_lists_are_link_only_with_matching_kind_and_species():
         s = SOURCES[slug]
         assert (s.mode, s.kind, s.species, s.enabled) == ("link_only", kind, species, True), slug
         assert s.url.startswith("https://dog.pref.miyazaki.lg.jp/modules/addon_module/?a=doglove&p=search_list&") and s.url.endswith(query), slug
-        assert s.phone == "0985-84-2600" and "宮崎市清武町木原4543番地8" in (s.address or ""), slug
+        # 電話は一覧ページのフッターにある。所在地は掲載元ページに無いので載せない（2026-10-18 T628「推測で足さない」）
+        assert s.phone == "0985-84-2600" and s.address is None, slug
         assert s.recipe is None, slug   # 読まないのでレシピは無い
 
 
