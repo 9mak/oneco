@@ -312,3 +312,12 @@ def test_lost_kind_is_labelled_and_filterable(tmp_path: Path):
     assert "いなくなった日" in d and "いなくなった場所" in d and "収容日" not in d
     idx = _read(out / "index.html")
     assert "探してます＝" in idx                              # 区分の意味のヒント
+
+
+def test_photos_are_not_cropped(built):
+    """写真は切り抜かず全体を出す（2026-10-18 T625 おまえさん決定。改変・著作者名消失の論点を消す）。"""
+    _data, _path, out = built
+    css = _read(out / "style.css")
+    assert "object-fit:cover" not in css
+    assert ".media img{" in css and "object-fit:contain" in css.split(".media img{", 1)[1].split("}", 1)[0]
+    assert ".photos img{" in css and "object-fit:contain" in css.split(".photos img{", 1)[1].split("}", 1)[0]
