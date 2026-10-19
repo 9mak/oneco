@@ -42,6 +42,7 @@ sources:
   mode: recipe
   recipe: recipes/mie_dakc.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/mie_dakc.py
     requires_js: false
@@ -63,6 +64,7 @@ sources:
   mode: recipe
   recipe: recipes/kyoto_ani_love-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/kyoto_ani_love.py
     requires_js: false
@@ -84,6 +86,7 @@ sources:
   mode: recipe
   recipe: recipes/kyoto_ani_love-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/kyoto_ani_love.py
     requires_js: false
@@ -327,6 +330,7 @@ sources:
   mode: recipe
   recipe: recipes/city_akashi-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_akashi.py
     requires_js: false
@@ -345,6 +349,7 @@ sources:
   mode: recipe
   recipe: recipes/city_akashi-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_akashi.py
     requires_js: false
@@ -363,6 +368,7 @@ sources:
   mode: recipe
   recipe: recipes/city_akashi-3.yaml
   enabled: true
+  photo: pending
   note: 2026-10-04 追加（台帳に里親募集ページが無く、子猫 1・成猫 10 頭が載っていなかった）
 - slug: city_akashi-4
   name: あかし動物センター（飼い主募集の犬）
@@ -376,6 +382,7 @@ sources:
   mode: recipe
   recipe: recipes/city_akashi-4.yaml
   enabled: true
+  photo: pending
   note: 2026-10-04 追加（当日 0 頭。掲載時の書式は猫ページと同じ想定）
 - slug: city_amagasaki
   name: 尼崎市動物愛護センター（収容動物）
@@ -552,6 +559,7 @@ sources:
   mode: recipe
   recipe: recipes/nyantomo.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/nyantomo.py
     requires_js: false
@@ -572,6 +580,7 @@ sources:
   mode: recipe
   recipe: recipes/spec_aniwel.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/aniwel.yaml
     requires_js: false
@@ -592,6 +601,7 @@ sources:
   mode: recipe
   recipe: recipes/spec_douaicenter-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/douaicenter.yaml
     requires_js: false
@@ -612,6 +622,7 @@ sources:
   mode: recipe
   recipe: recipes/spec_douaicenter-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/douaicenter.yaml
     requires_js: false
@@ -632,6 +643,7 @@ sources:
   mode: recipe
   recipe: recipes/spec_douaicenter-3.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/douaicenter.yaml
     requires_js: false
@@ -652,6 +664,7 @@ sources:
   mode: recipe
   recipe: recipes/spec_douaicenter-4.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/douaicenter.yaml
     requires_js: false
@@ -672,6 +685,7 @@ sources:
   mode: recipe
   recipe: recipes/spec_douaicenter-5.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/douaicenter.yaml
     requires_js: false
@@ -692,6 +706,7 @@ sources:
   mode: recipe
   recipe: recipes/spec_douaicenter-6.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/douaicenter.yaml
     requires_js: false
@@ -712,6 +727,7 @@ sources:
   mode: recipe
   recipe: recipes/spec_douaicenter-7.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/douaicenter.yaml
     requires_js: false
@@ -732,6 +748,7 @@ sources:
   mode: recipe
   recipe: recipes/spec_douaicenter-8.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/douaicenter.yaml
     requires_js: false
@@ -752,6 +769,7 @@ sources:
   mode: recipe
   recipe: recipes/spec_douaicenter-9.yaml
   enabled: true
+  photo: pending
   note: -7 と同じ一覧の「探しています」（飼い主が迷子を探している告知）だけを拾う（2026-10-04、10/2 の 4 区分目 lost 決定に合わせて分割）
 - slug: spec_douaicenter-10
   name: 旭川市あにまある（飼い主が探している猫）
@@ -767,6 +785,7 @@ sources:
   mode: recipe
   recipe: recipes/spec_douaicenter-10.yaml
   enabled: true
+  photo: pending
   note: -8 と同じ一覧の「探しています」だけを拾う（2026-10-04）
 - slug: spec_douaicenter-11
   name: 旭川市あにまある（飼い主が探している その他の動物）
@@ -782,6 +801,7 @@ sources:
   mode: recipe
   recipe: recipes/spec_douaicenter-11.yaml
   enabled: true
+  photo: pending
   note: -9（犬）・-10（猫）の兄弟。「その他の動物」の一覧の「探しています」（インコなど）だけを拾う（2026-10-05 T517 ⑨）。犬猫以外は species other で載る
 - slug: spec_douaicenter-12
   name: 旭川市あにまある（市民保護その他の動物）
@@ -797,6 +817,7 @@ sources:
   mode: recipe
   recipe: recipes/spec_douaicenter-12.yaml
   enabled: true
+  photo: pending
   note: -7（犬）・-8（猫）の兄弟。「その他の動物」の一覧の「保護しています」だけを拾う（「探しています」は -11 が拾う。2026-10-05 T517 ⑨）。今日は 3 件とも探しています＝0 頭
 - slug: city_chiba-1
   name: 千葉市（迷子犬）
@@ -1117,6 +1138,7 @@ sources:
   mode: recipe
   recipe: recipes/city_wakayama.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_wakayama.py
     requires_js: false
@@ -1160,6 +1182,7 @@ sources:
   mode: recipe
   recipe: recipes/city_koshigaya-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_koshigaya.py
     requires_js: false
@@ -1180,6 +1203,7 @@ sources:
   mode: recipe
   recipe: recipes/city_koshigaya-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_koshigaya.py
     requires_js: false
@@ -1200,6 +1224,7 @@ sources:
   mode: recipe
   recipe: recipes/city_koshigaya_kojin.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_koshigaya_kojin.py
     requires_js: false
@@ -1676,6 +1701,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_toyama.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_toyama.py
     requires_js: false
@@ -1697,6 +1723,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_yamaguchi.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_yamaguchi.py
     requires_js: false
@@ -1971,6 +1998,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_shimane.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_shimane.py
     requires_js: false
@@ -1991,6 +2019,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_shimane-2.yaml
   enabled: true
+  photo: pending
   note: "2026-10-07 T521 ゲート（judgeB2 F-01）。2023〜2026-02 は収容した子をこの表のページに載せていた。pref_shimane（現行一覧から 1 頭 1 ページ）と別に、表の作りに戻る日に備えて読む。2026-10-18 掲載元ページに電話が無いので外した（T628。別資料の値は載せない）"
 - slug: city_fukuyama-1
   name: 福山市（迷い犬）
@@ -2198,6 +2227,7 @@ sources:
   mode: recipe
   recipe: recipes/city_matsuyama.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_matsuyama.py
     requires_js: false
@@ -2276,6 +2306,7 @@ sources:
   mode: recipe
   recipe: recipes/city_nagoya-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_nagoya.py
     requires_js: false
@@ -2296,6 +2327,7 @@ sources:
   mode: link_only
   recipe: recipes/city_nagoya-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_nagoya.py
     requires_js: false
@@ -2316,6 +2348,7 @@ sources:
   mode: recipe
   recipe: recipes/city_nagoya-3.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_nagoya.py
     requires_js: false
@@ -2336,6 +2369,7 @@ sources:
   mode: recipe
   recipe: recipes/city_okazaki_pdf.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_okazaki_pdf.py
     requires_js: false
@@ -2357,6 +2391,7 @@ sources:
   mode: recipe
   recipe: recipes/city_toyota_pdf.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_toyota_pdf.py
     requires_js: false
@@ -2378,6 +2413,7 @@ sources:
   mode: recipe
   recipe: recipes/spec_toyohashi_aikuru-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/toyohashi_aikuru.yaml
     requires_js: false
@@ -2399,6 +2435,7 @@ sources:
   mode: recipe
   recipe: recipes/spec_toyohashi_aikuru-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/toyohashi_aikuru.yaml
     requires_js: false
@@ -2417,6 +2454,7 @@ sources:
   mode: recipe
   recipe: recipes/wannyan_navi_aichi.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/wannyan_navi_aichi.py
     requires_js: true
@@ -2604,6 +2642,7 @@ sources:
   mode: recipe
   recipe: recipes/douai_pref_tochigi_puppy-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/douai_pref_tochigi_puppy.py
     requires_js: false
@@ -2624,6 +2663,7 @@ sources:
   mode: recipe
   recipe: recipes/douai_pref_tochigi_puppy-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/douai_pref_tochigi_puppy.py
     requires_js: false
@@ -2643,6 +2683,7 @@ sources:
   mode: recipe
   recipe: recipes/spec_douai_pref_tochigi.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/douai_pref_tochigi.yaml
     requires_js: false
@@ -2662,6 +2703,7 @@ sources:
   mode: recipe
   recipe: recipes/spec_douai_pref_tochigi_stray-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/douai_pref_tochigi_stray.yaml
     requires_js: false
@@ -2681,6 +2723,7 @@ sources:
   mode: recipe
   recipe: recipes/spec_douai_pref_tochigi_stray-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/douai_pref_tochigi_stray.yaml
     requires_js: false
@@ -2702,6 +2745,7 @@ sources:
   mode: recipe
   recipe: recipes/aniwel_okinawa-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/aniwel_okinawa.py
     requires_js: false
@@ -2723,6 +2767,7 @@ sources:
   mode: recipe
   recipe: recipes/aniwel_okinawa-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/aniwel_okinawa.py
     requires_js: false
@@ -2744,6 +2789,7 @@ sources:
   mode: recipe
   recipe: recipes/aniwel_okinawa-3.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/aniwel_okinawa.py
     requires_js: false
@@ -2765,6 +2811,7 @@ sources:
   mode: recipe
   recipe: recipes/aniwel_okinawa-4.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/aniwel_okinawa.py
     requires_js: false
@@ -2786,6 +2833,7 @@ sources:
   mode: recipe
   recipe: recipes/aniwel_okinawa-5.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/aniwel_okinawa.py
     requires_js: false
@@ -2807,6 +2855,7 @@ sources:
   mode: recipe
   recipe: recipes/aniwel_okinawa-6.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/aniwel_okinawa.py
     requires_js: false
@@ -2869,6 +2918,7 @@ sources:
   mode: recipe
   recipe: recipes/spec_sapca.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/sapca.yaml
     requires_js: false
@@ -2890,6 +2940,7 @@ sources:
   mode: recipe
   recipe: recipes/city_kumamoto-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_kumamoto.py
     requires_js: false
@@ -2911,6 +2962,7 @@ sources:
   mode: recipe
   recipe: recipes/city_kumamoto-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_kumamoto.py
     requires_js: false
@@ -2929,6 +2981,7 @@ sources:
   mode: recipe
   recipe: recipes/kumamoto_doubutuaigo-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/kumamoto_doubutuaigo.py
     requires_js: false
@@ -2947,6 +3000,7 @@ sources:
   mode: recipe
   recipe: recipes/kumamoto_doubutuaigo-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/kumamoto_doubutuaigo.py
     requires_js: false
@@ -2965,6 +3019,7 @@ sources:
   mode: recipe
   recipe: recipes/kumamoto_doubutuaigo-3.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/kumamoto_doubutuaigo.py
     requires_js: false
@@ -2983,6 +3038,7 @@ sources:
   mode: recipe
   recipe: recipes/kumamoto_doubutuaigo-4.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/kumamoto_doubutuaigo.py
     requires_js: false
@@ -3001,6 +3057,7 @@ sources:
   mode: recipe
   recipe: recipes/kumamoto_doubutuaigo-5.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/kumamoto_doubutuaigo.py
     requires_js: false
@@ -3019,6 +3076,7 @@ sources:
   mode: recipe
   recipe: recipes/kumamoto_doubutuaigo-6.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/kumamoto_doubutuaigo.py
     requires_js: false
@@ -3037,6 +3095,7 @@ sources:
   mode: recipe
   recipe: recipes/kumamoto_doubutuaigo-7.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/kumamoto_doubutuaigo.py
     requires_js: false
@@ -3055,6 +3114,7 @@ sources:
   mode: recipe
   recipe: recipes/kumamoto_doubutuaigo-8.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/kumamoto_doubutuaigo.py
     requires_js: false
@@ -3098,6 +3158,7 @@ sources:
   mode: recipe
   recipe: recipes/city_kawasaki-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_kawasaki.py
     requires_js: false
@@ -3118,6 +3179,7 @@ sources:
   mode: recipe
   recipe: recipes/city_kawasaki-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_kawasaki.py
     requires_js: false
@@ -3138,6 +3200,7 @@ sources:
   mode: recipe
   recipe: recipes/city_kawasaki-3.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_kawasaki.py
     requires_js: false
@@ -3158,6 +3221,7 @@ sources:
   mode: recipe
   recipe: recipes/city_yokohama-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_yokohama.py
     requires_js: false
@@ -3178,6 +3242,7 @@ sources:
   mode: recipe
   recipe: recipes/city_yokohama-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_yokohama.py
     requires_js: false
@@ -3198,6 +3263,7 @@ sources:
   mode: recipe
   recipe: recipes/city_yokohama-3.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_yokohama.py
     requires_js: false
@@ -3325,6 +3391,7 @@ sources:
   mode: recipe
   recipe: recipes/yokosuka_doubutu-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/yokosuka_doubutu.py
     requires_js: false
@@ -3346,6 +3413,7 @@ sources:
   mode: recipe
   recipe: recipes/yokosuka_doubutu-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/yokosuka_doubutu.py
     requires_js: false
@@ -3367,6 +3435,7 @@ sources:
   mode: recipe
   recipe: recipes/yokosuka_doubutu-3.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/yokosuka_doubutu.py
     requires_js: false
@@ -3388,6 +3457,7 @@ sources:
   mode: recipe
   recipe: recipes/yokosuka_doubutu-4.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/yokosuka_doubutu.py
     requires_js: false
@@ -3409,6 +3479,7 @@ sources:
   mode: recipe
   recipe: recipes/yokosuka_doubutu-5.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/yokosuka_doubutu.py
     requires_js: false
@@ -3430,6 +3501,7 @@ sources:
   mode: recipe
   recipe: recipes/yokosuka_doubutu-6.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/yokosuka_doubutu.py
     requires_js: false
@@ -3556,6 +3628,7 @@ sources:
   mode: recipe
   recipe: recipes/zaidan_fukuoka_douai-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/zaidan_fukuoka_douai.py
     requires_js: false
@@ -3577,6 +3650,7 @@ sources:
   mode: recipe
   recipe: recipes/zaidan_fukuoka_douai-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/zaidan_fukuoka_douai.py
     requires_js: false
@@ -3598,6 +3672,7 @@ sources:
   mode: recipe
   recipe: recipes/zaidan_fukuoka_douai-3.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/zaidan_fukuoka_douai.py
     requires_js: false
@@ -3619,6 +3694,7 @@ sources:
   mode: recipe
   recipe: recipes/zaidan_fukuoka_douai-4.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/zaidan_fukuoka_douai.py
     requires_js: false
@@ -3640,6 +3716,7 @@ sources:
   mode: recipe
   recipe: recipes/zaidan_fukuoka_douai-5.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/zaidan_fukuoka_douai.py
     requires_js: false
@@ -3661,6 +3738,7 @@ sources:
   mode: recipe
   recipe: recipes/zaidan_fukuoka_douai-6.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/zaidan_fukuoka_douai.py
     requires_js: false
@@ -3682,6 +3760,7 @@ sources:
   mode: recipe
   recipe: recipes/zaidan_fukuoka_douai-7.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/zaidan_fukuoka_douai.py
     requires_js: false
@@ -3703,6 +3782,7 @@ sources:
   mode: recipe
   recipe: recipes/zaidan_fukuoka_douai-8.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/zaidan_fukuoka_douai.py
     requires_js: false
@@ -3875,6 +3955,7 @@ sources:
   mode: recipe
   recipe: recipes/spec_wannyapia_akita-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/wannyapia_akita.yaml
     requires_js: false
@@ -3896,6 +3977,7 @@ sources:
   mode: recipe
   recipe: recipes/spec_wannyapia_akita-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/wannyapia_akita.yaml
     requires_js: false
@@ -3916,6 +3998,7 @@ sources:
   mode: recipe
   recipe: recipes/city_maebashi.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_maebashi.py
     requires_js: false
@@ -3937,6 +4020,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_gunma-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_gunma.py
     requires_js: false
@@ -3958,6 +4042,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_gunma-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_gunma.py
     requires_js: false
@@ -3979,6 +4064,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_gunma-3.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_gunma.py
     requires_js: false
@@ -4040,6 +4126,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_ibaraki_pdf-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_ibaraki_pdf.py
     requires_js: false
@@ -4059,6 +4146,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_ibaraki_pdf-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_ibaraki_pdf.py
     requires_js: false
@@ -4077,6 +4165,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_ibaraki_pdf-3.yaml
   enabled: true
+  photo: pending
   note: "2026-10-04 追加。成犬・成猫の PDF（pdf-1）に入っていない子犬・子猫が収容日ごとの koinu*.pdf にだけ載る（当日 9 頭）。2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: animal_net_nagasaki-1
   name: 長崎犬猫ネット（保健所収容）
@@ -4095,6 +4184,7 @@ sources:
   mode: recipe
   recipe: recipes/animal_net_nagasaki-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/animal_net_nagasaki.py
     requires_js: false
@@ -4118,6 +4208,7 @@ sources:
   mode: recipe
   recipe: recipes/animal_net_nagasaki-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/animal_net_nagasaki.py
     requires_js: false
@@ -4141,6 +4232,7 @@ sources:
   mode: recipe
   recipe: recipes/animal_net_nagasaki-3.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/animal_net_nagasaki.py
     requires_js: false
@@ -4164,6 +4256,7 @@ sources:
   mode: recipe
   recipe: recipes/animal_net_nagasaki-4.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/animal_net_nagasaki.py
     requires_js: false
@@ -4184,6 +4277,7 @@ sources:
   mode: recipe
   recipe: recipes/city_sasebo-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_sasebo.py
     requires_js: false
@@ -4204,6 +4298,7 @@ sources:
   mode: recipe
   recipe: recipes/city_sasebo-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_sasebo.py
     requires_js: false
@@ -4225,6 +4320,7 @@ sources:
   mode: link_only
   recipe: recipes/spec_city_nagasaki_lg-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/city_nagasaki_lg.yaml
     requires_js: false
@@ -4246,6 +4342,7 @@ sources:
   mode: link_only
   recipe: recipes/spec_city_nagasaki_lg-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/city_nagasaki_lg.yaml
     requires_js: false
@@ -4308,6 +4405,7 @@ sources:
   mode: recipe
   recipe: recipes/aomori_animal.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/aomori_animal.py
     requires_js: false
@@ -4329,6 +4427,7 @@ sources:
   mode: recipe
   recipe: recipes/hama_aikyou.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/hama_aikyou.py
     requires_js: false
@@ -4373,6 +4472,7 @@ sources:
   mode: recipe
   recipe: recipes/city_takamatsu_kagawa-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_takamatsu_kagawa.py
     requires_js: false
@@ -4394,6 +4494,7 @@ sources:
   mode: recipe
   recipe: recipes/city_takamatsu_kagawa-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_takamatsu_kagawa.py
     requires_js: false
@@ -4517,6 +4618,7 @@ sources:
   mode: recipe
   recipe: recipes/kochi_apc.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/kochi_apc.py
     requires_js: false
@@ -4540,6 +4642,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_tottori.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_tottori.py
     requires_js: false
@@ -5035,6 +5138,7 @@ sources:
   mode: recipe
   recipe: recipes/city_morioka-1.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。リンク集のリンク先（迷子情報 1001656）は city_morioka-2。盛岡市の保護施設等で新しい飼い主を待つ動物のページ（預かりボランティアさんの猫が中心）。県央保健所の犬猫保護センター（pref_iwate_kennan）とは別の掲載。Wayback 2017〜2026 の 30 版で動物の読み取りを確認（T519v。1 つの見出しの下に 2 頭が続く版も読む）。0 頭の日の保存は見つからず、0 頭の文言は未確認のまま（empty_text は推測。違う文言なら 0 頭の日は「読めなかった」で通知に出る）。"
 - slug: city_morioka-2
   name: 盛岡市保健所（迷子情報・元の飼い主を探している犬猫）
@@ -5051,6 +5155,7 @@ sources:
   mode: recipe
   recipe: recipes/city_morioka-2.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。リンク集のリンク先そのもの。2026-10-07 は「現在、盛岡市保健所で、元の飼い主を待っている動物はいません。」で 0 頭（empty_text で確認）。動物が載った日の作りは Wayback 2016〜2026 の版で確認済み（T519v。2016・2019・2020・2021 以降の 4 通りの作りに対応。譲渡情報ページ city_morioka-1 とは作りが違う）。"
 - slug: city_hakodate-1
   name: 函館市保健所（収容・行方不明犬猫）
@@ -5066,6 +5171,7 @@ sources:
   mode: recipe
   recipe: recipes/city_hakodate-1.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。リンク集のリンク先そのもの。2026-10-05〜07 は犬・猫とも「現在，該当する…はおりません」で 0 頭（empty_text で確認）。動物が載った日の作りは、現在の CMS（2025-12 以降）では Wayback に保存が無く未確認。旧 CMS（2015〜2023）の表（管理番号・写真・収容年月日・収容場所・種類・毛色・性別・首輪等）と、空の雛形の div.temp1 に写真が入る作りを想定して読む（T519v）。0 頭の文言は犬の節と猫の節の両方がそろうことを条件にする。譲渡の犬猫は別ドメインの nyantomo（函館どうなん動物愛護センター）で載せている。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: city_otaru-1
   name: 小樽市保健所（収容犬情報）
@@ -5169,6 +5275,7 @@ sources:
   mode: recipe
   recipe: recipes/city_niigata-1.yaml
   enabled: true
+  photo: pending
   note: 環境省リンク集から追加（2026-10-05 T519）。リンク集のリンク先（迷子犬・猫保護収容情報）から辿った「迷子で動物愛護センターに保護されている犬」。0 頭の日は「…保護している犬はいません。」。動物が載った日の作りは 4 つあり Wayback（2023-06・2024-06〜12・2025-11）で確認して読む（2026-10-07 T519 v-g3 で最初の「譲渡ページと同じ作り」の仮定を直し、2026-10-08 T519 v2-g3 で 2025-11 の h3bg「犬ID R7-54」の作りも読めるようにした）。
 - slug: city_niigata-2
   name: 新潟市動物愛護センター（迷子で保護している猫）
@@ -5185,6 +5292,7 @@ sources:
   mode: recipe
   recipe: recipes/city_niigata-2.yaml
   enabled: true
+  photo: pending
   note: 環境省リンク集から追加（2026-10-05 T519）。リンク集のリンク先から辿った「迷子で動物愛護センターに保護されている猫」。0 頭の日は「…保護している猫がいません。」「…保護している猫はいません。」。動物が載った日の作りは 4 つあり Wayback（2024-06・2025-05 の 4 頭・2026-08 の R8-140）で確認して読む（2026-10-07 T519 v-g3・2026-10-08 T519 v2-g3 で直した）。「猫ID」の新しい作りの猫は未確認。
 - slug: city_niigata-3
   name: 新潟市動物愛護センター（譲渡犬）
@@ -5201,6 +5309,7 @@ sources:
   mode: recipe
   recipe: recipes/city_niigata-3.yaml
   enabled: true
+  photo: pending
   note: 環境省リンク集から追加（2026-10-05 T519）。リンク集のリンク先の左メニュー「犬・猫 譲渡情報」から辿った譲渡犬ページ（2026-10-07 時点 4 頭）。0 頭の日は「現在、譲渡対象の犬はいません。」「只今、新しい飼い主さんを待っている犬はおりません。」（Wayback 2023-02・2024-11・2026-06 で確認）。
 - slug: city_niigata-4
   name: 新潟市動物愛護センター（譲渡猫）
@@ -5217,6 +5326,7 @@ sources:
   mode: recipe
   recipe: recipes/city_niigata-4.yaml
   enabled: true
+  photo: pending
   note: 環境省リンク集から追加（2026-10-05 T519）。譲渡猫ページ（2026-10-05 時点 2 頭）。このページに載るのは動物愛護センターで飼育している猫だけ。動物ふれあいセンター（いくとぴあ食花）で飼育展示している猫は別サイトにあり、slug ikutopia-1 で扱う。0 頭の日の文言は未確認。
 - slug: ikutopia-1
   name: 新潟市動物ふれあいセンター（いくとぴあ食花 譲渡猫）
@@ -5230,6 +5340,7 @@ sources:
   mode: recipe
   recipe: recipes/ikutopia-1.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。新潟市の譲渡猫ページ（city_niigata-4）の「動物ふれあいセンター」の節からリンクされた、いくとぴあ食花の ネコ譲渡情報（2026-10-05 時点 2 ページ 15 頭）。個体ページを辿って読む。「新潟市動物愛護センターで飼育しています」の子は city_niigata-4 と重なるので捨てる。犬のページは新潟市の譲渡犬ページ（city_niigata-3）と同じ子だけなので作らない。0 頭の日の文言は未確認。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: city_toyama-1
   name: 富山市保健所（猫の飼い主募集）
@@ -5373,6 +5484,7 @@ sources:
   mode: recipe
   recipe: recipes/fapscsite-1.yaml
   enabled: true
+  photo: pending
   note: 環境省リンク集から追加（2026-10-05 T519）。福井市は動物の愛護管理を福井県動物愛護センターに委託していて、福井市のリンク先ページの「犬・猫の情報」がこのサイト（ふくい動物愛護管理支援センター協会）の保護した動物（公示情報）に繋がる。福井市分も県内の他の市町分も同じ一覧。センターの公示（sender-centre、2026-10-07 時点 13 件）に加え、同じページの「一般の方から寄せられた保護情報」（sender-user、16 件。令和 5〜7 年の古い投稿も残るが、協会の掲載どおり載せる。2026-10-08 T519 v2-g3 で読むことにした）。1 件に複数頭が入る（子猫の兄弟等）ので 1 件 = 1 行。0 件の日の文言は未確認。
 - slug: fapscsite-2
   name: 福井県動物愛護センター（譲渡できる動物たち）
@@ -5389,6 +5501,7 @@ sources:
   mode: recipe
   recipe: recipes/fapscsite-2.yaml
   enabled: true
+  photo: pending
   note: 環境省リンク集から追加（2026-10-05 T519）。福井市のリンク先ページの「犬・猫の情報」から辿れる譲渡の一覧（センターに収容された動物の譲渡候補。「譲渡準備中」の札の子も含む）。3 ページ（2026-10-05 時点）。1 件に複数頭が入る（子猫の兄弟等）ので 1 件 = 1 行。0 件の日の文言は未確認。
 - slug: fapscsite-3
   name: 福井県動物愛護センター（一般の方から寄せられた飼い主募集）
@@ -5404,6 +5517,7 @@ sources:
   species: mixed
   mode: recipe
   enabled: true
+  photo: pending
   note: 環境省リンク集から追加（2026-10-05 T519）。「一般の方から寄せられた動物情報」（個人が飼い主を探している猫・犬等の掲載を、協会が自分のサイトに載せている一覧。4 ページ 43 件、2026-10-07 時点）。2026-10-08 T519 v2-g3 で link_only をやめて読む。全件に札「新しい飼い主を募集中」が付き、個人の氏名・電話番号は載らず問い合わせ先は本所・支所、robots.txt も Disallow なし。管理番号の No.8（令和 8 年）が大半。令和 6・7 年の投稿も残るが協会の掲載どおり載せる。1 件に複数頭が入ることがあるので 1 件 = 1 行。ウサギ等は犬猫以外（other）。0 件の日の文言は未確認。
   recipe: recipes/fapscsite-3.yaml
 - slug: city_kawagoe-1
@@ -5469,6 +5583,7 @@ sources:
   mode: recipe
   recipe: recipes/city_kawaguchi-1.yaml
   enabled: true
+  photo: pending
   note: 環境省リンク集から追加（2026-10-05 T519）。入口の「市が保護している動物の情報」は、保護中の動物 1 頭ごとに子ページへのリンク（文字は「令和4年8月19日収容【 犬・雑種】」）が ul.level1col2 に並ぶ作り（Wayback 2021-05〜2023-02 の動物がいた 6 版で確認。子ページは div.cmstag に収容日・収容場所・種類・性別・毛色・備考、種別は h1 の犬・猫）。動物がいない日はリンクが「注意事項」だけで、見出しと常に出ている説明文しか出ない（2026-10-07 の実ページと Wayback 2023-03〜2025-06 の 5 版）。0 頭の判定は empty_absent（見出しがあり、動物の枠も注意事項以外の子ページへのリンクも無い日だけ 0 頭）。動物が別の作りで載った日は 0 頭にならず「読めなかった」通知が出る。link_only から recipe に切り替え（2026-10-08 T519 検証 g4a）
 - slug: city_kawaguchi-2
   name: 川口市保健所（譲渡犬猫）
@@ -5485,6 +5600,7 @@ sources:
   mode: recipe
   recipe: recipes/city_kawaguchi-2.yaml
   enabled: true
+  photo: pending
   note: 環境省リンク集から追加（2026-10-05 T519）。「市からの動物の譲渡」ページの「飼い主募集中の動物たち」節（犬の節・猫の節。1 頭 = div.cmstag）。2026-10-07 は犬 0 頭（「現在、譲渡対象の犬はおりません。」）・猫 6 頭。猫が 0 頭の日の文言は 2022〜2024 年は「現在、譲渡できる猫はいません。（令和6年7月5日時点）」（Wayback で確認）。2025 年以降の猫の文言は未確認（「譲渡対象の猫はおりません」「譲渡可能な猫はいません」を推測で入れてある。外れれば「読めなかった」通知）。2 頭を 1 ブロックにまとめた日（2025-04〜05 の R6-0020・R6-0021）は 2 頭目が 1 頭目の備考に入る（エンジンが 1 ブロック 1 行のため）。同サイトの「川口市犬猫譲渡情報提供制度」は市が管理する動物ではなく個人の登録カードなので載せない
 - slug: pref_saitama_nanbu
   name: 埼玉県（南部保健所 収容犬）
@@ -6061,6 +6177,7 @@ sources:
   mode: recipe
   recipe: recipes/eonet_sakai-1.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。リンク先は堺市保健所動物指導センターの案内ページで、収容動物の一覧はその中の html/menu.html（「堺市の保護動物収容情報はこちら」）から辿る。0 頭の日（2026-10-05〜07）は menu.html に直接「現在、保護・収容動物情報は ありません」と出る。動物がいる日は menu.html が入口だけ（「迷子情報」のリンク）になり、stray/menu2.html → stray/dog/list.html・stray/cat/list.html の表の行（管理番号・写真・収容場所・動物種別・種類・性別）を動物とする（T519v。Wayback 2022・2024 の入口と 2008〜2019 の一覧で確認。2024 年以降に動物がいた日の一覧の保存は無く未確認。作りが違えば 0 行→「読めなかった」で通知に出る）。譲渡は堺市の公式ページ（city.sakai.lg.jp .../joto.html）で、一覧は無く登録制の案内のみなので載せない。"
 - slug: city_suita-1
   name: 吹田市保健所（動物保護情報・迷い犬猫）
@@ -6109,6 +6226,7 @@ sources:
   mode: recipe
   recipe: recipes/city_yao-1.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。リンク先は「迷い犬・猫 もし犬や猫が逃げ出してしまったら？」ページで、h2「保健所に収容されている犬・猫などについて」の下に保健所で保護・収容している動物を載せる。2026-10-07 は 0 頭（「※現在、保健所では、保護されている動物はいません。」）。Wayback の保存は 2025-04〜2026-06 の 4 版でどれも 0 頭、動物が載った日の作りは未確認（T519v でも確認できず。作りが違えば 0 行→「読めなかった」で通知に出る。偽の 1 頭は載せない）。八尾市に譲渡の一覧ページは見当たらない。"
 - slug: nishi_nishinomiya-1
   name: 西宮市動物管理センター（迷い犬猫）
@@ -6324,6 +6442,7 @@ sources:
   species: dog
   mode: link_only
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。宮崎県動物愛護情報ネットワーク「みやざきドッグ愛ランド」（県の保健所・動物愛護センターが収容した犬猫の情報）の保護犬の一覧。robots.txt が /modules/addon_module/（一覧と個体ページ）を Disallow としているため、収集器は読まない（リンクのみ。mode: link_only）。一覧の名前（保護 / 譲渡 / 迷子）から区分を付けた。中身は未確認。pref_miyazaki-1〜6 が同じサイトの 6 一覧（犬・猫 × 保護・譲渡・迷子）。宮崎市の保護犬猫は city_miyazaki-1〜3。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: pref_miyazaki-2
   name: みやざきドッグ愛ランド（譲渡犬）
@@ -6336,6 +6455,7 @@ sources:
   species: dog
   mode: link_only
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの譲渡犬の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ（pref_miyazaki-1 と同じ）。中身は未確認。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: pref_miyazaki-3
   name: みやざきドッグ愛ランド（迷子犬）
@@ -6348,6 +6468,7 @@ sources:
   species: dog
   mode: link_only
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの迷子犬の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ。「迷子」は飼い主が探している迷子と推定して kind: lost（中身は未確認。保護犬の一覧が収容した犬と思われる）。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: pref_miyazaki-4
   name: みやざきドッグ愛ランド（保護猫）
@@ -6360,6 +6481,7 @@ sources:
   species: cat
   mode: link_only
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの保護猫の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ（pref_miyazaki-1 と同じ）。中身は未確認。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: pref_miyazaki-5
   name: みやざきドッグ愛ランド（譲渡猫）
@@ -6372,6 +6494,7 @@ sources:
   species: cat
   mode: link_only
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの譲渡猫の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ（pref_miyazaki-1 と同じ）。中身は未確認。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: pref_miyazaki-6
   name: みやざきドッグ愛ランド（迷子猫）
@@ -6384,6 +6507,7 @@ sources:
   species: cat
   mode: link_only
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの迷子猫の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ。「迷子」は飼い主が探している迷子と推定して kind: lost（中身は未確認）。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: pref_kagoshima-1
   name: 鹿児島県動物愛護ホームページ（迷子犬猫情報）
@@ -6399,6 +6523,7 @@ sources:
   species: mixed
   mode: link_only
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。迷子犬猫情報の入口。県内の保健所等が保護した犬猫・一般の方が保護している犬猫・迷子の犬猫を探している方の情報の 3 区分 × 犬猫の 6 一覧があるが、どれも画像ボタンの JavaScript（search_submit）が anti-forgery トークン付きの form を POST して表示する作り。GET では 302 でエラーページになり（/Search/Search_lost?… を実測）、収集器は POST を持たないので読めない（リンクのみ。mode: link_only）。鹿児島市保健所管内は city_kagoshima-1・-2 が載せている。"
 - slug: pref_kagoshima-2
   name: 鹿児島県動物愛護ホームページ（譲渡犬猫情報）
@@ -6414,6 +6539,7 @@ sources:
   species: mixed
   mode: link_only
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。譲渡犬猫情報の入口（動物愛護センターと保健所・動物管理所の譲渡対象犬猫、里親を探す掲載依頼の犬猫）。一覧は迷子犬猫情報（pref_kagoshima-1）と同じ POST form で読めないためリンクのみ（mode: link_only）。里親を探す掲載依頼の犬猫（県の施設にいない個人の掲載）が混ざる。"
 - slug: city_akita-1
   name: 秋田市保健所（収容中の犬猫・公示）
@@ -6706,6 +6832,7 @@ sources:
   mode: recipe
   recipe: recipes/city_fukushima-1.yaml
   enabled: true
+  photo: pending
   note: 環境省リンク集から追加（2026-10-05 T519）。福島市保健所衛生課動物愛護係の「里親募集中(譲渡)動物情報」。犬と猫の節（h3）に分かれ、1 頭ごとに h5 の見出しと表（種類・推定年齢・毛色・性別・体格・特徴）と写真。2026-10-07 時点は猫 10 頭を実ページで確認、犬は 0 頭（「現在、新しい飼い主さんを募集している犬はおりません。」）。Wayback 2025-07-13・07-15 の 2 版（猫 11 頭・10 頭）も同じレシピで見出しの数と合った。犬が載った日の読み方と猫の 0 頭の日の文言は未確認（犬の文言は 2025-07 に「…犬は現在おりません。」と今日と少し違った）。福島県（中通り・会津・相双）の迷子は pref_fukushima-1〜5 で別
 - slug: city_fukushima-2
   name: 福島市保健所（迷子（保護）の犬猫）
@@ -6721,6 +6848,7 @@ sources:
   species: mixed
   mode: recipe
   enabled: true
+  photo: pending
   note: 環境省リンク集から追加（2026-10-05 T519）。福島市保健所が保護している迷子の犬・猫（掲載はおおむね 3 週間）。h2「迷子（保護）犬情報について」「迷子（保護）猫情報について」の下に、動物 1 頭ごとの表（caption に h5「保護犬R7いー3」と写真、捕獲月日・捕獲場所・種類・推定年齢・毛の色・毛の長さ・性別・体格・特徴）が付く。Wayback 2025-07-30 の犬 1 頭の日の構造で recipe にした。0 頭の日（今日 2026-10-07）は表が無く「現在、保護している迷子犬／猫はおりません。」の 1 文だけ（末尾に中身の空の h5 が 2 つ残る）で、0 頭の判定は文言でなく「表・中身のある h5・写真が無い」こと。猫の表は保存に無く未確認（犬と同じ作りの推測）。保護した犬猫は犬猫保護施設に収容され、返還手続きは保健所に連絡
   recipe: recipes/city_fukushima-2.yaml
 - slug: city_kofu-1
@@ -7006,6 +7134,7 @@ sources:
   species: dog
   mode: recipe
   enabled: true
+  photo: pending
   note: 環境省リンク集から追加（2026-10-05 T519）。静岡市動物愛護センターの「迷い犬情報」（迷子の犬の飼い主を探すページ。一定期間で削除される）。T519 は 0 頭の日の文言が無く犬が載った日の形も分からず link_only にしたが、Wayback の保存版（2024-06-25・2025-02-19 に犬が 1 頭ずつ、2024-07・2024-11・2026-07 は 0 頭）で形が分かり recipe にした（T519v G5）。犬は h2「迷い犬情報1」+ 写真 + 保護年月日・保護場所・犬種・性別・毛色・首輪。0 頭の日の文言は日によって違う（文言なしの日もある）ので、犬の見出しが 1 つも無いことで 0 頭と確定する。静岡市は譲渡の個体一覧を載せていない（子猫は動物愛護館へ問い合わせ、「ポッチとニャンチの愛の伝言板」は館内掲示）。県の保護犬猫は pref_shizuoka（別の窓口）。2026-10-07 は 0 頭。
   recipe: recipes/city_shizuoka-1.yaml
 - slug: city_ichinomiya-1

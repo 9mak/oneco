@@ -524,6 +524,10 @@ def build_sources(cfg: dict[str, Any], data: dict[str, Any]) -> str:
             sp = SPECIES.get(str(s.get("species")), "犬・猫")
             if status == "ok":
                 res = f'<b>{int(s.get("count") or 0)} 頭</b>'
+                if str(s.get("photo") or "ok") == "pending":
+                    res += "（写真は許諾の返事待ちのため出していません）"
+                elif str(s.get("photo") or "ok") == "no":
+                    res += "（写真は自治体の意向で出していません）"
             elif status == "link_only":
                 res = "このページは一覧を読み取らず、リンクだけ載せています"
             else:
@@ -823,10 +827,30 @@ def write(out: Path, rel: str, text: str) -> None:
     p.write_text(text, encoding="utf-8")
 
 
+def no_photo_sources(data: dict[str, Any]) -> set[str]:
+    """写真を出さない掲載元の slug（台帳 photo が ok 以外。T630: 許諾の返事待ち・不可）。"""
+    return {str(s.get("slug")) for s in data.get("sources", [])
+            if isinstance(s, dict) and str(s.get("photo") or "ok") != "ok"}
+
+
+def strip_photos(data: dict[str, Any]) -> dict[str, Any]:
+    """photo が ok 以外の掲載元の子から image_url を落とした data を返す（該当が無ければ同じ dict をそのまま返す）。"""
+    hidden = no_photo_sources(data)
+    if not hidden:
+        return data
+    animals = [({**a, "image_url": None} if a.get("source") in hidden else a) if isinstance(a, dict) else a
+               for a in data.get("animals", [])]
+    return {**data, "animals": animals}
+
+
 def build_site(data: dict[str, Any], cfg: dict[str, Any], out: Path, data_path: Path | None = None) -> dict[str, int]:
-    """data（animals JSON の中身）から out/ を生成。data_path があれば data.json はそのファイルのコピー。"""
+    """data（animals JSON の中身）から out/ を生成。data_path があれば data.json はそのファイルのコピー。
+    写真を出さない掲載元（台帳 photo が ok 以外）があるときは image_url を落とした data を書く。"""
     cfg = {**DEFAULT_CFG, **cfg}
     prepare_out(out)
+    stripped = strip_photos(data)
+    if stripped is not data:
+        data, data_path = stripped, None
     raw_animals = [a for a in data.get("animals", []) if isinstance(a, dict)]
     seen: set[str] = set()
     animals: list[dict[str, Any]] = []
@@ -866,8 +890,24 @@ def build_site(data: dict[str, Any], cfg: dict[str, Any], out: Path, data_path: 
     return {"animals": len(animals), "prefectures": len(prefs), "sources": len(data.get("sources", [])), "skipped": skipped}
 
 
-def build(data_path: Path, out: Path, cfg: dict[str, Any] | Path | None = None) -> dict[str, int]:
-    """ファイルから読んで build_site。cfg は dict か config.json のパス（None なら既定）。"""
+def merge_registry_photo(data: dict[str, Any], registry: Path) -> dict[str, Any]:
+    """台帳（sources.yaml）の photo を slug ごとに data["sources"] へ合流させる。
+    収集時の台帳に photo が無かった日のデータでも、今の台帳の判断で写真を止められるようにする（T630）。"""
+    import yaml  # 収集側の依存。build 単体では使わないのでここで読む
+
+    reg = yaml.safe_load(registry.read_text(encoding="utf-8")) or {}
+    photo = {str(s.get("slug")): str(s.get("photo") or "ok") for s in reg.get("sources", []) if isinstance(s, dict)}
+    if not photo:
+        return data
+    sources = [({**s, "photo": photo[str(s.get("slug"))]} if isinstance(s, dict) and str(s.get("slug")) in photo else s)
+               for s in data.get("sources", [])]
+    return {**data, "sources": sources}
+
+
+def build(data_path: Path, out: Path, cfg: dict[str, Any] | Path | None = None,
+          registry: Path | None = None) -> dict[str, int]:
+    """ファイルから読んで build_site。cfg は dict か config.json のパス（None なら既定）。
+    registry を渡すと台帳の photo を合流させてから生成する（写真を止めた掲載元は data.json も書き直す）。"""
     if not isinstance(cfg, dict):
         cfg = load_config(cfg if isinstance(cfg, Path) else DEFAULT_CONFIG)
     try:
@@ -876,6 +916,10 @@ def build(data_path: Path, out: Path, cfg: dict[str, Any] | Path | None = None) 
         sys.exit(f"データが無い: {data_path}（先に `python -m collector run` を実行）")
     if not isinstance(data, dict) or not isinstance(data.get("animals"), list):
         sys.exit(f"データ形式が違う（animals 配列が無い）: {data_path}")
+    if registry is not None:
+        merged = merge_registry_photo(data, registry)
+        if merged is not data and no_photo_sources(merged):
+            return build_site(merged, cfg, out, data_path=None)
     return build_site(data, cfg, out, data_path=data_path)
 
 
@@ -884,8 +928,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--data", type=Path, default=DEFAULT_DATA, help="animals JSON（既定: data/latest.json）")
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT, help="出力先（既定: site/dist）")
     ap.add_argument("--config", type=Path, default=DEFAULT_CONFIG, help="設定（既定: site/config.json）")
+    ap.add_argument("--registry", type=Path, default=None,
+                    help="台帳 sources.yaml。渡すと photo（ok | pending | no）を合流させ、ok 以外の掲載元の写真を出さない")
     args = ap.parse_args(argv)
-    n = build(args.data, args.out, args.config)
+    n = build(args.data, args.out, args.config, registry=args.registry)
     print(f"{args.out}: {n['animals']} 頭・{n['prefectures']} 都道府県・情報源 {n['sources']} 件"
           + (f"（id 不正・重複で {n['skipped']} 件を除外）" if n["skipped"] else ""))
     return 0
