@@ -30,6 +30,7 @@ class Source:
     mode: str = "recipe"       # recipe | link_only
     recipe: str | None = None
     enabled: bool = True
+    photo: str = "ok"          # ok | pending（写真表示の許諾を自治体に申請中。返事が来るまで写真を出さない）| no（不可の返事）。T630
     legacy: dict[str, Any] = field(default_factory=dict)
 
     @property

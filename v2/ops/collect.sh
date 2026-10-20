@@ -74,7 +74,7 @@ fi
 
 # 3. 静的サイト生成（data/latest.json → site/dist）
 #    `python -m site.build` は標準ライブラリの site モジュールに阻まれて動かないので、ファイルを直接実行する
-step build "$PY" "$V2_DIR/site/build.py" --data "$V2_DIR/data/latest.json" --out "$V2_DIR/site/dist"
+step build "$PY" "$V2_DIR/site/build.py" --data "$V2_DIR/data/latest.json" --out "$V2_DIR/site/dist" --registry "$V2_DIR/registry/sources.yaml"
 
 # 4. Cloudflare Workers（静的アセット）へ deploy
 #    認証は CLOUDFLARE_API_TOKEN（VPS 向け）か、`wrangler login` で保存した OAuth（手元の Mac 向け）のどちらか。

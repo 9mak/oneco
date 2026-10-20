@@ -60,7 +60,7 @@ jobs:
       # `python -m site.build` は標準ライブラリの site モジュールに阻まれて動かないので、ファイルを直接実行する
       - name: Build site
         if: steps.run.outcome == 'success'
-        run: python site/build.py --data data/latest.json --out site/dist
+        run: python site/build.py --data data/latest.json --out site/dist --registry registry/sources.yaml
 
       - name: Deploy to Cloudflare Pages
         if: steps.run.outcome == 'success'

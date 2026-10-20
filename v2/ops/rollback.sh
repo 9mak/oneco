@@ -21,7 +21,7 @@ export PYTHONPATH="$V2"
 
 echo "#### rollback → $DATE  $(date '+%F %T')"
 "$PY" -m collector promote --date "$DATE" || exit 1
-"$PY" "$V2/site/build.py" --data "$V2/data/latest.json" --out "$V2/site/dist" || exit 1
+"$PY" "$V2/site/build.py" --data "$V2/data/latest.json" --out "$V2/site/dist" --registry "$V2/registry/sources.yaml" || exit 1
 # shellcheck disable=SC2086
 $WRANGLER deploy --config "$V2/ops/wrangler.jsonc" --name "$ONECO_PAGES_PROJECT" || exit 1
 
