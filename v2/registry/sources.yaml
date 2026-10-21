@@ -42,7 +42,7 @@ sources:
   mode: recipe
   recipe: recipes/mie_dakc.yaml
   enabled: true
-  photo: pending
+  photo: no
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/mie_dakc.py
     requires_js: false
@@ -2413,7 +2413,7 @@ sources:
   mode: recipe
   recipe: recipes/spec_toyohashi_aikuru-1.yaml
   enabled: true
-  photo: pending
+  photo: no
   legacy:
     adapter_file: src/data_collector/config/site_specs/toyohashi_aikuru.yaml
     requires_js: false
@@ -2435,7 +2435,7 @@ sources:
   mode: recipe
   recipe: recipes/spec_toyohashi_aikuru-2.yaml
   enabled: true
-  photo: pending
+  photo: no
   legacy:
     adapter_file: src/data_collector/config/site_specs/toyohashi_aikuru.yaml
     requires_js: false
