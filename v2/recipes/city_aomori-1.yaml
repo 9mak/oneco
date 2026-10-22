@@ -7,10 +7,12 @@
 #   - 「R07-62「ツナ」 ※体調不良のため、譲渡お見合い中止 MIX、…」のように名前と品種の間に ※ の注記が入る子がいる（note に取る）
 #   - 犬・猫の節が丸ごと空の日は h3 が付かず「犬 現在、募集中の動物はいません。」（2026-05 の犬）
 # 種別は直近の h2（h3 は見ない）。「犬猫以外の動物」は犬・猫の語を両方含むので map の先頭に置く。
-# 「🐾新しい飼い主さんが決まりました。」の子は掲載が終わっているので text_lacks で落とす（2026-10-05 は 5 頭中 4 頭がこれ）。
+# 「🐾新しい飼い主さんが決まりました。」の子は掲載が終わっているので落とす（2026-10-05 は 5 頭中 4 頭がこれ）。
+# 2026-10-22 は載っている 3 頭がすべてこれで、text_lacks だと行 0 になり 0 頭を確定できず failed になった。
+# status 項目の field_lacks で落とし、全行除外＋一覧の器（div.img3lows）ありで 0 頭と確定する（spec_sapca と同じ書き方）。
 rows: "div.img3lows li.imglows"
 row_filter:
-  text_lacks: ["決まりました"]
+  field_lacks: {status: ["決まりました"]}
 image: "img@src"
 fields:
   management_no: {selector: "span.imgtitle", regex: "^([^\\s「]+)"}
@@ -20,6 +22,7 @@ fields:
   sex: {regex: "[^、\\s]+、[^、\\s]+、(オス|メス|不明)"}
   age: {regex: "(\\S*生まれ)"}
   note: {regex: "(※\\S+)"}
+  status: {regex: "(決まりました)"}   # 除外判定用（animals には出ない）
 species:
   from: heading
   selector: "h2"

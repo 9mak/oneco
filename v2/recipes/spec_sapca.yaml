@@ -22,3 +22,5 @@ fields:
 species:
   from: field
   map: {"猫": cat, "ねこ": cat, "犬": dog, "いぬ": dog}
+# 2026-10-22: 迷い犬猫がいない日は一覧（ul.list）が無く「只今、迷い犬・猫はいません。」だけになる（follow_all が 0 件）。
+empty_text: ["只今、迷い犬・猫はいません"]
