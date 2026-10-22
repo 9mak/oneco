@@ -1,6 +1,6 @@
 """エンジン・レシピを変えたときの回帰確認: 同じ取得結果に 2 つの v2 を当て、slug ごとに結果を比べる。
 
-  PY=/Users/k/Desktop/oneco/.venv/bin/python
+  PY=/Users/k/oneco/.venv/bin/python
   # 1) 基準の v2（例: origin/main を書き出したもの）で読む。取得結果は --cache に 1 URL 1 ファイルで残る
   $PY ops/ab_compare.py run --engine /path/to/base/v2 --cache $TMPDIR/ab-cache --out $TMPDIR/a.json
   # 2) 変更後の v2 で同じキャッシュを読む（キャッシュに無い URL だけ取りに行き、それも残す。--offline なら取りに行かない）
