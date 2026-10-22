@@ -1,24 +1,16 @@
-# 福山市動物愛護センター（迷い犬情報）
-# 2026-10-04: 一覧表（番号/保護日/保護場所/種類/毛色/性別/掲載期間）には写真が無く、表の下の「迷い犬個別情報番号…」
-# リンク先の個別ページ（/soshiki/dobutsuaigo/<id>.html）に写真・体格・推定年齢・備考がある。
-# 以前は一覧表だけを読んで写真なしだったので、個別ページを follow_all で辿って 1 ページ = 1 頭（rows: body）にした。
-# 個別ページは <h1>迷い犬個別情報ふ９－１</h1> + th/td の表（保護日・保護場所・種類・性別・毛色・体格・推定年齢・首輪・備考・掲載期限）。
-# 0 頭のときは個別ページへのリンクが無く（follow_all が 0 件）、一覧表には全セル &nbsp; のプレースホルダ行だけが残る。
-# empty_text は辿る前の入口ページ（visited）に対して照合される。
-# 2026-10-05 監査: ページは「元の飼い主さんに犬をお返しするための情報提供」（迷い犬）なので、台帳の区分を保護中から迷子（stray）に直した（名前も「福山市（迷い犬）」）。レシピは変更なし。
-steps:
-  - follow_all: "a[href$='.html'][href*='/soshiki/dobutsuaigo/']@href"
-    skip_errors: true   # 2026-10-06 0:05 の収集で、一覧に残った個別ページ 1 本（ふ９－１、413553.html）の 404 で slug 全体が failed になった（T520）
-rows: "body"
-image: {selector: "img[src*='/uploaded/']@src"}
+# proposal: run の日付 2026-10-21・元の失敗理由 follow_all: 辿った 1 本がすべて取得に失敗（https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/415044.html: HTTP 404: https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/415044.html）・取れた頭数 1・採用条件は次の行（人が差分を見て recipes/ へ反映する。今日の HTML は <slug>.today.html）
+# 採用条件: 合格 a 必須項目・b 重複・c 行数・d 回帰（保存 HTML で 1 頭・前回 1 頭）
+# agy note: 個別ページへの follow_all で 404 エラーになっていたため steps を廃止し、入口ページの一覧表を直接読む構造に変更しました。表の各見出しから header_row で項目を取得し、0頭時の空行は row_filter で除外するようにしています。
+# 迷い犬一覧の表（table[summary='迷い犬の情報'] tbody tr）の各行を1頭とみなす。
+# 0頭のときの全セルが空白（&nbsp;）のプレースホルダ行は row_filter で除外する。
+rows: "table[summary='迷い犬の情報'] tbody tr"
+row_filter:
+  min_text_length: 5
 fields:
-  management_no: {selector: "h1", regex: "個別情報(.+)$"}
-  shelter_date: {label: "保護日", regex: "(\\d+年\\d+月\\d+日)"}
-  location: {label: "保護場所"}
-  breed: {label: "種類"}
-  sex: {label: "性別"}
-  color: {label: "毛色"}
-  size: {label: "体格"}
-  age: {label: "推定年齢"}
-  note: {label: "備考", default: null}
+  management_no: {label: "番号", header_row: true}
+  shelter_date: {label: "保護日", header_row: true, regex: "(\\d+年\\d+月\\d+日)"}
+  location: {label: "保護場所", header_row: true}
+  breed: {label: "種類", header_row: true}
+  color: {label: "毛色", header_row: true}
+  sex: {label: "性別", header_row: true}
 empty_text: ["現在、迷い犬の情報はありません", "現在、迷い犬情報はありません", "現在迷い犬の情報はありません"]
