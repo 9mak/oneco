@@ -3391,7 +3391,7 @@ sources:
   mode: recipe
   recipe: recipes/yokosuka_doubutu-1.yaml
   enabled: true
-  photo: pending
+  photo: ok
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/yokosuka_doubutu.py
     requires_js: false
@@ -3413,7 +3413,7 @@ sources:
   mode: recipe
   recipe: recipes/yokosuka_doubutu-2.yaml
   enabled: true
-  photo: pending
+  photo: ok
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/yokosuka_doubutu.py
     requires_js: false
@@ -3435,7 +3435,7 @@ sources:
   mode: recipe
   recipe: recipes/yokosuka_doubutu-3.yaml
   enabled: true
-  photo: pending
+  photo: ok
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/yokosuka_doubutu.py
     requires_js: false
@@ -3457,7 +3457,7 @@ sources:
   mode: recipe
   recipe: recipes/yokosuka_doubutu-4.yaml
   enabled: true
-  photo: pending
+  photo: ok
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/yokosuka_doubutu.py
     requires_js: false
@@ -3479,7 +3479,7 @@ sources:
   mode: recipe
   recipe: recipes/yokosuka_doubutu-5.yaml
   enabled: true
-  photo: pending
+  photo: ok
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/yokosuka_doubutu.py
     requires_js: false
@@ -3501,7 +3501,7 @@ sources:
   mode: recipe
   recipe: recipes/yokosuka_doubutu-6.yaml
   enabled: true
-  photo: pending
+  photo: ok
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/yokosuka_doubutu.py
     requires_js: false
