@@ -22,7 +22,7 @@
 
 ### 1-2a. Mac の launchd（本命）
 
-動かすのは開発用の checkout（`~/Desktop/oneco`）ではなく、`install.sh` が `~/oneco-collect` に作る **main の本番クローン**。launchd から起動した `/bin/bash` には `~/Desktop`・`~/Documents`・`~/Downloads`（macOS が保護するフォルダ、TCC）を読む権限が無く `Operation not permitted` で止まるため（2026-10-01・02 の 2 日分がこれで飛んだ）。保護フォルダの外なら権限は要らない。
+動かすのは開発用の checkout（`~/oneco`）ではなく、`install.sh` が `~/oneco-collect` に作る **main の本番クローン**。launchd から起動した `/bin/bash` には `~/Desktop`・`~/Documents`・`~/Downloads`（macOS が保護するフォルダ、TCC）を読む権限が無く `Operation not permitted` で止まるため（2026-10-01・02 の 2 日分がこれで飛んだ）。保護フォルダの外なら権限は要らない。
 
 前提: Node.js（`brew install node`。wrangler を `npx` で呼ぶ）、Python 3.11（`brew install python@3.11`）、git。
 

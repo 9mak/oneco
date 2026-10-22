@@ -7,7 +7,7 @@
 #
 # やること:
 #   1. 本番クローン（既定 ~/oneco-collect）を作る（無ければ `git clone --branch main`、あれば `git pull --ff-only`）。
-#      開発用の checkout（この Mac では ~/Desktop/oneco）から直接は動かさない。launchd から起動した bash は
+#      開発用の checkout（この Mac では ~/oneco）から直接は動かさない。launchd から起動した bash は
 #      ~/Desktop ・ ~/Documents ・ ~/Downloads（macOS の保護フォルダ、TCC）を読めず `Operation not permitted` で止まるため。
 #      毎日の実行時に collect-launchd.sh が main を pull するので、main に merge すれば翌日の収集から反映される。
 #   2. 本番クローンに .venv を作り、v2/requirements.txt と Playwright の Chromium を入れる（入っていれば何もしない）

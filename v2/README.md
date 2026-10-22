@@ -28,7 +28,7 @@ v2/
 
 ```bash
 # 依存: python 3.11、httpx、beautifulsoup4、lxml、pyyaml、pdfplumber（PDF）、playwright（JS 描画）
-PY=/Users/k/Desktop/oneco/.venv/bin/python
+PY=/Users/k/oneco/.venv/bin/python
 cd v2
 $PY -m collector show douai_tokushima-2          # 1 ページを読んで結果を表示（デバッグ）
 $PY -m collector fetch https://example.jp/ --text  # ページを取って本文を表示
