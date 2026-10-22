@@ -291,6 +291,16 @@ def test_kawaguchi_1_cat_child_page_without_a_photo_is_still_listed_with_species
         "species": "cat", "shelter_date": "令和4年3月2日", "location": "川口市芝", "breed": "雑種", "sex": "オス", "color": "茶白", "image_url": None}
 
 
+def test_kawaguchi_1_2026_10_child_page_in_wysiwyg_blocks_is_one_cat_and_the_notice_block_is_skipped():
+    # 2026-10 から子ページは div.cmstag でなく div.wysiwyg が 2 つ（1 つ目は注意事項の説明文、2 つ目が「収容日：…」の項目）。写真は無い
+    res = _run_k1(_fx("kawaguchi-1_20261021_entry"), _fx("kawaguchi-1_20261021_child"))
+    assert len(res.animals) == 1
+    a = res.animals[0]
+    assert _pick(a, "species", "shelter_date", "location", "size", "breed", "sex", "color", "image_url") == {
+        "species": "cat", "shelter_date": "令和8年10月20日", "location": "川口市西立野", "size": "成猫", "breed": "雑種",
+        "sex": "メス(耳カット有り)", "color": "白黒", "image_url": None}
+
+
 def test_sakado_2022_old_layout_with_plain_number_row_is_read_as_an_animal():
     # 2022-08〜10 の旧い作り: h1「収容犬No.6」・表の見出しが「番号 | 6」（「管理番号」でない）
     res = _run("pref_saitama_sakado", _fx("sakado_20220808_old_layout"))
