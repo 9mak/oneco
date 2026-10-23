@@ -194,7 +194,11 @@ class TestCLIWithDatabase:
         with pytest.raises(SystemExit):
             main()
 
-        mock_db_connection_class.assert_called_once()
+        # main() 冒頭の初期化に加え、T428 の卒業個体アーカイブ (run_archive_job) が
+        # asyncio.run ごとの使い捨て接続をもう 1 つ作る (collector_service の
+        # サイト毎保存と同じ理由)。回数ではなく「初期化されたこと」を見る。
+        assert mock_db_connection_class.called
+        assert mock_db_connection_class.call_args_list[0].kwargs["settings"] is not None
 
     @patch("src.data_collector.__main__.SnapshotStore")
     @patch("src.data_collector.__main__.DiffDetector")
