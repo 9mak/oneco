@@ -24,10 +24,16 @@ main() {
   repo="$(dirname "$v2")"
   echo "#### [$(date '+%F %T')] launchd 起動 (repo=$repo)"
   if [ "${ONECO_GIT_PULL:-1}" = "1" ] && [ -d "$repo/.git" ]; then
-    if git -C "$repo" pull --ff-only -q origin main; then
+    local pull_out
+    if pull_out="$(git -C "$repo" pull --ff-only -q origin main 2>&1)"; then
       echo "git pull: main @ $(git -C "$repo" rev-parse --short HEAD)"
     else
-      echo "git pull に失敗（ネットワークか競合）。前回のコード @ $(git -C "$repo" rev-parse --short HEAD) で続行"
+      # 2026-10-20〜23: 本番クローンの手元の変更で pull が止まり続け、ログにしか出ず 3 日気づかなかった。Discord にも送る
+      [ -n "$pull_out" ] && echo "$pull_out"
+      local head
+      head="$(git -C "$repo" rev-parse --short HEAD)"
+      echo "git pull に失敗（ネットワークか競合）。前回のコード @ $head で続行"
+      discord "oneco v2: 本番クローンの git pull に失敗。前回のコード @ $head のまま収集する（main の修正が入らない）。$(printf '%s' "$pull_out" | head -n 1) / 手元の変更なら git -C $repo status で確認"
     fi
   fi
   "$v2/ops/collect.sh"
