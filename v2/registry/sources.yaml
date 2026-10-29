@@ -2000,7 +2000,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_shimane.yaml
   enabled: true
-  photo: pending
+  photo: ok
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_shimane.py
     requires_js: false
@@ -2021,7 +2021,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_shimane-2.yaml
   enabled: true
-  photo: pending
+  photo: ok
   note: "2026-10-07 T521 ゲート（judgeB2 F-01）。2023〜2026-02 は収容した子をこの表のページに載せていた。pref_shimane（現行一覧から 1 頭 1 ページ）と別に、表の作りに戻る日に備えて読む。2026-10-18 掲載元ページに電話が無いので外した（T628。別資料の値は載せない）"
 - slug: city_fukuyama-1
   name: 福山市（迷い犬）
@@ -5342,7 +5342,7 @@ sources:
   mode: recipe
   recipe: recipes/ikutopia-1.yaml
   enabled: true
-  photo: pending
+  photo: ok
   note: "環境省リンク集から追加（2026-10-05 T519）。新潟市の譲渡猫ページ（city_niigata-4）の「動物ふれあいセンター」の節からリンクされた、いくとぴあ食花の ネコ譲渡情報（2026-10-05 時点 2 ページ 15 頭）。個体ページを辿って読む。「新潟市動物愛護センターで飼育しています」の子は city_niigata-4 と重なるので捨てる。犬のページは新潟市の譲渡犬ページ（city_niigata-3）と同じ子だけなので作らない。0 頭の日の文言は未確認。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: city_toyama-1
   name: 富山市保健所（猫の飼い主募集）
