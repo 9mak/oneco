@@ -19,8 +19,9 @@ from collector.registry import load_sources
 ROOT = Path(__file__).resolve().parent.parent
 FIX = Path(__file__).resolve().parent / "fixtures"
 
+# 富山県（pref_toyama）は 2026-10-29 に厚生センター・支所の 8 ページへ分けたので外れた（T630・test_registry_t630_toyama_centers.py）
 OPERATOR_SLUGS = sorted([
-    "mie_dakc", "pref_toyama", "spec_pref_gifu", "pref_iwate", "shuyojoho_tokyo-1", "shuyojoho_tokyo-2",
+    "mie_dakc", "spec_pref_gifu", "pref_iwate", "shuyojoho_tokyo-1", "shuyojoho_tokyo-2",
     "pref_ishikawa", "pref_fukushima-1", "pref_fukushima-2", "animal_net_nagasaki-1", "animal_net_nagasaki-2",
     "animal_net_nagasaki-3", "animal_net_nagasaki-4", "pref_shizuoka", "kochi_apc", "pref_tottori",
 ])
@@ -39,7 +40,7 @@ def _animals() -> dict[str, Any]:
     return {"date": "2026-09-28", "animals": a["animals"], "sources": a["sources"]}
 
 
-def test_registry_contact_scope_defaults_to_facility_and_operator_is_the_16_hubs():
+def test_registry_contact_scope_defaults_to_facility_and_operator_is_the_15_hubs():
     srcs = load_sources()
     scopes = {s.contact_scope for s in srcs}
     assert scopes <= {"facility", "operator"}
