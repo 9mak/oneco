@@ -1,6 +1,9 @@
-# 富山県（迷い犬・ねこ情報）— 窓口インデックスページ（各厚生センター・支所への案内のみ）から
-# 8 つの子ページ（新川/魚津支所/中部/高岡/射水支所/氷見支所/砺波/小矢部支所）へ follow_all。
-# 各子ページは <h2>迷い犬情報</h2><div class="col2"><div class="col2L">写真</div><div class="col2R">
+# 富山県（迷い犬・ねこ情報）— 厚生センター・支所 8 ページ（新川/魚津支所/中部/高岡/射水支所/氷見支所/砺波/小矢部支所）の
+# どれか 1 ページを読む。台帳の pref_toyama_<所> 8 件がこのレシピを共用する。
+# 2026-10-29 変更（T630）: 以前は県のまとめページ（窓口インデックス）から 8 ページへ follow_all する 1 件（pref_toyama）で、
+#   連絡先に動物管理センターを出していた。富山県の返事（連絡先は犬・猫を収容している厚生センター・支所のものに）を受けて、
+#   台帳を 8 件に分け、各ページ本文の「連絡先」の電話・住所を出すようにした。follow_all はやめた。
+# 各ページは <h2>迷い犬情報</h2><div class="col2"><div class="col2L">写真</div><div class="col2R">
 # <table class="datatable">（th=ラベル/td=値の縦並び）</div></div> という構造が犬用・猫用で 1 組ずつ
 # 並ぶ（= 1 頭最大 1 組）。犬猫の別は直前の h2 見出しで決める。
 # 動物がいない組は値セルが空（&nbsp;）で管理番号も収容日も無く、写真も汎用プレースホルダ
@@ -17,8 +20,6 @@
 #      まで丸ごと飲み込む。猫だけいる日に犬の行が猫の写真・収容日を拾って幻の「犬」を作るため、
 #      写真は行の直下の col2L（または射水の写真 td）に限り、収容日・備考は行内の最初の table.datatable
 #      の文字だけから取る。
-steps:
-  - follow_all: "table.datatable a[href*='/doubutsuaigo/syuyou/']@href"
 rows: "div.col2, table:has(table.datatable)"
 image:
   selector: ":scope > div.col2L img, td:not(:has(table)) img@src"

@@ -396,6 +396,7 @@ sources:
   mode: recipe
   recipe: recipes/city_amagasaki.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_amagasaki.py
     requires_js: false
@@ -1410,6 +1411,7 @@ sources:
   mode: recipe
   recipe: recipes/city_osaka-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_osaka.py
     requires_js: false
@@ -1431,6 +1433,7 @@ sources:
   mode: recipe
   recipe: recipes/city_osaka-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_osaka.py
     requires_js: false
@@ -1452,6 +1455,7 @@ sources:
   mode: recipe
   recipe: recipes/city_osaka-3.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_osaka.py
     requires_js: false
@@ -1473,6 +1477,7 @@ sources:
   mode: recipe
   recipe: recipes/city_osaka-4.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_osaka.py
     requires_js: false
@@ -1686,30 +1691,142 @@ sources:
     list_link_pattern: null
     pdf_link_pattern: null
   note: 本文は Instagram へのリンクのみ
-- slug: pref_toyama
-  name: 富山県（迷い犬猫情報）
-  municipality: 富山県
+- slug: pref_toyama_niikawa
+  name: 富山県（新川厚生センター 迷い犬・ねこ）
+  municipality: 新川厚生センター
   prefecture: 富山県
-  phone: 076-462-3467
-  address: 〒930-0275 富山県中新川郡立山町利田（富山県動物管理センター）
-  contact_scope: operator
-  url: https://www.pref.toyama.jp/1207/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/index.html
-  verified_at: '2026-10-15'
-  verified_phone_url: "https://www.pref.toyama.jp/1207/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/index.html"
-  verified_address_url: "https://www.pref.toyama.jp/1207/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/index.html"
-  note: "県のまとめページ。個体の収容先（保健所）は別のことがある"
+  phone: "0765-52-1225"
+  address: 富山県黒部市堀切新343
+  url: https://www.pref.toyama.jp/1268/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/niikawa.html
+  verified_at: '2026-10-29'
+  verified_phone_url: "https://www.pref.toyama.jp/1268/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/niikawa.html"
+  verified_address_url: "https://www.pref.toyama.jp/1268/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/niikawa.html"
+  note: "2026-10-29 T630: 富山県の返事（連絡先は収容している厚生センター・支所のものに）を受けて、県のまとめページ 1 件（pref_toyama）を厚生センター・支所の 8 ページに分けた。電話・住所はページ本文の「連絡先」（ページ下の「お問い合わせ」欄ではない）"
   kind: stray
   species: mixed
   mode: recipe
-  recipe: recipes/pref_toyama.yaml
+  recipe: recipes/pref_toyama_center.yaml
   enabled: true
-  photo: pending
-  legacy:
-    adapter_file: src/data_collector/adapters/rule_based/sites/pref_toyama.py
-    requires_js: false
-    pdf: false
-    list_link_pattern: null
-    pdf_link_pattern: null
+  photo: ok
+- slug: pref_toyama_uozu
+  name: 富山県（新川厚生センター魚津支所 迷い犬・ねこ）
+  municipality: 新川厚生センター魚津支所
+  prefecture: 富山県
+  phone: "0765-24-0359"
+  address: 富山県魚津市本江1397
+  url: https://www.pref.toyama.jp/2200/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/uozu.html
+  verified_at: '2026-10-29'
+  verified_phone_url: "https://www.pref.toyama.jp/2200/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/uozu.html"
+  verified_address_url: "https://www.pref.toyama.jp/2200/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/uozu.html"
+  note: "2026-10-29 T630: pref_toyama を 8 ページに分けた 1 件（pref_toyama_niikawa の note 参照）。本文の連絡先は 0765-24-0359（ページ下の「お問い合わせ」欄は 0765-24-0357）"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_toyama_center.yaml
+  enabled: true
+  photo: ok
+- slug: pref_toyama_chubu
+  name: 富山県（中部厚生センター 迷い犬・ねこ）
+  municipality: 中部厚生センター
+  prefecture: 富山県
+  phone: "076-472-4094"
+  address: 富山県中新川郡上市町横法音寺40
+  url: https://www.pref.toyama.jp/1267/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/tyubu.html
+  verified_at: '2026-10-29'
+  verified_phone_url: "https://www.pref.toyama.jp/1267/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/tyubu.html"
+  verified_address_url: "https://www.pref.toyama.jp/1267/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/tyubu.html"
+  note: "2026-10-29 T630: pref_toyama を 8 ページに分けた 1 件（pref_toyama_niikawa の note 参照）。ページ下の「お問い合わせ」欄は 076-444-3229 で本文の連絡先と違う"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_toyama_center.yaml
+  enabled: true
+  photo: ok
+- slug: pref_toyama_takaoka
+  name: 富山県（高岡厚生センター 迷い犬・ねこ）
+  municipality: 高岡厚生センター
+  prefecture: 富山県
+  phone: "0766-26-8417"
+  address: 富山県高岡市赤祖父211番地
+  url: https://www.pref.toyama.jp/1266/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/takaoka.html
+  verified_at: '2026-10-29'
+  verified_phone_url: "https://www.pref.toyama.jp/1266/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/takaoka.html"
+  verified_address_url: "https://www.pref.toyama.jp/1266/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/takaoka.html"
+  note: "2026-10-29 T630: pref_toyama を 8 ページに分けた 1 件（pref_toyama_niikawa の note 参照）。ページ下の「お問い合わせ」欄は 076-444-3229 で本文の連絡先と違う"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_toyama_center.yaml
+  enabled: true
+  photo: ok
+- slug: pref_toyama_imizu
+  name: 富山県（高岡厚生センター射水支所 迷い犬・ねこ）
+  municipality: 高岡厚生センター射水支所
+  prefecture: 富山県
+  phone: "0766-56-2666"
+  address: 富山県射水市戸破1875-1
+  url: https://www.pref.toyama.jp/2202/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/imizu.html
+  verified_at: '2026-10-29'
+  verified_phone_url: "https://www.pref.toyama.jp/2202/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/imizu.html"
+  verified_address_url: "https://www.pref.toyama.jp/2202/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/imizu.html"
+  note: "2026-10-29 T630: pref_toyama を 8 ページに分けた 1 件（pref_toyama_niikawa の note 参照）"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_toyama_center.yaml
+  enabled: true
+  photo: ok
+- slug: pref_toyama_himi
+  name: 富山県（高岡厚生センター氷見支所 迷い犬・ねこ）
+  municipality: 高岡厚生センター氷見支所
+  prefecture: 富山県
+  phone: "0766-74-1780"
+  address: 富山県氷見幸町34-9
+  url: https://www.pref.toyama.jp/2203/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/himi.html
+  verified_at: '2026-10-29'
+  verified_phone_url: "https://www.pref.toyama.jp/2203/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/himi.html"
+  verified_address_url: "https://www.pref.toyama.jp/2203/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/himi.html"
+  note: "2026-10-29 T630: pref_toyama を 8 ページに分けた 1 件（pref_toyama_niikawa の note 参照）。住所は本文の連絡先のとおり（「氷見市」ではなく「氷見幸町」と書かれている）。ページ下の「お問い合わせ」欄は県庁 生活衛生課（076-444-3229）"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_toyama_center.yaml
+  enabled: true
+  photo: ok
+- slug: pref_toyama_tonami
+  name: 富山県（砺波厚生センター 迷い犬・ねこ）
+  municipality: 砺波厚生センター
+  prefecture: 富山県
+  phone: "0763-22-4507"
+  address: 富山県南砺市高儀147
+  url: https://www.pref.toyama.jp/1273/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/tonami.html
+  verified_at: '2026-10-29'
+  verified_phone_url: "https://www.pref.toyama.jp/1273/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/tonami.html"
+  verified_address_url: "https://www.pref.toyama.jp/1273/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/tonami.html"
+  note: "2026-10-29 T630: pref_toyama を 8 ページに分けた 1 件（pref_toyama_niikawa の note 参照）。本文の連絡先は 0763-22-4507（ページ下の「お問い合わせ」欄は 0763-22-3511）"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_toyama_center.yaml
+  enabled: true
+  photo: ok
+- slug: pref_toyama_oyabe
+  name: 富山県（砺波厚生センター小矢部支所 迷い犬・ねこ）
+  municipality: 砺波厚生センター小矢部支所
+  prefecture: 富山県
+  phone: "0766-67-1070"
+  address: 富山県小矢部市綾子5532
+  url: https://www.pref.toyama.jp/2204/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/oyabe.html
+  verified_at: '2026-10-29'
+  verified_phone_url: "https://www.pref.toyama.jp/2204/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/oyabe.html"
+  verified_address_url: "https://www.pref.toyama.jp/2204/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/oyabe.html"
+  note: "2026-10-29 T630: pref_toyama を 8 ページに分けた 1 件（pref_toyama_niikawa の note 参照）。本文の住所は「富山県小矢部市綾子5532（旧住所：小矢部市綾子260ー1）」"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_toyama_center.yaml
+  enabled: true
+  photo: ok
 - slug: pref_yamaguchi
   name: 山口県動物愛護センター（収容動物）
   municipality: 山口県動物愛護センター
@@ -1768,6 +1885,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_yamanashi-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_yamanashi.py
     requires_js: false
@@ -1789,6 +1907,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_yamanashi-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_yamanashi.py
     requires_js: false
@@ -1810,6 +1929,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_yamanashi-3.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_yamanashi.py
     requires_js: false
@@ -1831,6 +1951,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_yamanashi-4.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_yamanashi.py
     requires_js: false
@@ -1852,6 +1973,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_yamanashi-5.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_yamanashi.py
     requires_js: false
@@ -1873,6 +1995,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_yamanashi-6.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_yamanashi.py
     requires_js: false
@@ -1917,6 +2040,7 @@ sources:
   mode: recipe
   recipe: recipes/city_kurashiki.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_kurashiki.py
     requires_js: false
@@ -1936,6 +2060,7 @@ sources:
   mode: recipe
   recipe: recipes/city_okayama.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_okayama.py
     requires_js: false
@@ -2080,6 +2205,7 @@ sources:
   mode: recipe
   recipe: recipes/city_hiroshima-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_hiroshima.py
     requires_js: false
@@ -2101,6 +2227,7 @@ sources:
   mode: recipe
   recipe: recipes/city_hiroshima-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_hiroshima.py
     requires_js: false
@@ -2499,6 +2626,7 @@ sources:
   mode: recipe
   recipe: recipes/city_machida-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_machida.py
     requires_js: false
@@ -2519,6 +2647,7 @@ sources:
   mode: recipe
   recipe: recipes/city_machida-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_machida.py
     requires_js: false
@@ -2539,6 +2668,7 @@ sources:
   mode: recipe
   recipe: recipes/city_machida-3.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_machida.py
     requires_js: false
@@ -2559,6 +2689,7 @@ sources:
   mode: recipe
   recipe: recipes/city_machida-4.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_machida.py
     requires_js: false
@@ -3287,6 +3418,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_kanagawa-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_kanagawa.py
     requires_js: false
@@ -3308,6 +3440,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_kanagawa-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_kanagawa.py
     requires_js: false
@@ -3329,6 +3462,7 @@ sources:
   mode: link_only
   recipe: recipes/pref_kanagawa-3.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_kanagawa.py
     requires_js: false
@@ -3351,6 +3485,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_kanagawa-4.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_kanagawa.py
     requires_js: false
@@ -3372,6 +3507,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_kanagawa-5.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_kanagawa.py
     requires_js: false
@@ -3546,6 +3682,7 @@ sources:
   mode: recipe
   recipe: recipes/city_kitakyushu-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_kitakyushu.py
     requires_js: false
@@ -3567,6 +3704,7 @@ sources:
   mode: recipe
   recipe: recipes/city_kitakyushu-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_kitakyushu.py
     requires_js: false
@@ -3806,6 +3944,7 @@ sources:
   mode: recipe
   recipe: recipes/zuttoissho_fukuoka-1.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/zuttoissho_fukuoka.py
     requires_js: false
@@ -3827,6 +3966,7 @@ sources:
   mode: recipe
   recipe: recipes/zuttoissho_fukuoka-2.yaml
   enabled: true
+  photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/zuttoissho_fukuoka.py
     requires_js: false
@@ -5390,6 +5530,7 @@ sources:
   mode: recipe
   recipe: recipes/city_kanazawa-1.yaml
   enabled: true
+  photo: pending
   note: 環境省リンク集から追加（2026-10-05 T519）。リンク先（迷い犬・迷い猫情報）の「収容された犬のお知らせ」。2026-10-07 は「現在収容している犬はいません。」の 0 頭（項目が空の雛形の表が残る）。0 頭の日の言い換え（「現在、収容している犬は、いません。」「現在収容中の犬は、いません」等）は Wayback で確認。犬が載った日の作りも Wayback 2024-10 で確認（caption「収容中の犬の詳細」の表が本文の直下）。
 - slug: city_kanazawa-2
   name: 金沢市動物愛護管理センター（収容された猫）
@@ -5406,6 +5547,7 @@ sources:
   mode: recipe
   recipe: recipes/city_kanazawa-2.yaml
   enabled: true
+  photo: pending
   note: 環境省リンク集から追加（2026-10-05 T519）。リンク先（迷い犬・迷い猫情報）の「収容された猫のお知らせ」。2026-10-07 は「現在収容されている猫はいません」の 0 頭。0 頭の日の言い換え（「現在、収容している猫はいません。」「現在収容中の猫は、いません。」）と猫が載った日（2024-08、2 頭）の作りは Wayback で確認。
 - slug: city_kanazawa-3
   name: 金沢市動物愛護管理センター（一般の方に保護されている動物）
@@ -5422,6 +5564,7 @@ sources:
   mode: recipe
   recipe: recipes/city_kanazawa-3.yaml
   enabled: true
+  photo: pending
   note: 環境省リンク集から追加（2026-10-05 T519）。リンク先の「一般の方に保護されている動物の情報」（センターでなく市民が預かっている子。掲載は原則 3 か月）。2026-10-05 は「現在保護されている動物はいません」の 0 頭で、動物が載った日の作りは未確認（他のページと同じ figure → 表の並びと仮定。外れた日は「読めなかった」で通知に出る）。犬猫の別は「動物種類：」欄があれば拾い、無ければ種別なしで載る。
 - slug: city_kanazawa-4
   name: 金沢市動物愛護管理センター（迷子の犬・猫等の情報）
@@ -5438,6 +5581,7 @@ sources:
   mode: recipe
   recipe: recipes/city_kanazawa-4.yaml
   enabled: true
+  photo: pending
   note: 環境省リンク集から追加（2026-10-05 T519）。リンク先の「迷子の犬・猫等の情報」（飼い主が届け出た迷子の掲示板。掲載期間 3 か月。2026-10-05 時点 猫 4 頭）。飼い主の連絡先は載らず、問い合わせはセンター。0 頭の日の文言は未確認。 項目名の入力ミス「いなくなっ？た場所」（2026-06 の 3 頭）でも場所を読む（2026-10-08 T519 v2-g3）。
 - slug: city_kanazawa-5
   name: 金沢市動物愛護管理センター（譲渡犬）
@@ -5454,6 +5598,7 @@ sources:
   mode: recipe
   recipe: recipes/city_kanazawa-5.yaml
   enabled: true
+  photo: pending
   note: 環境省リンク集から追加（2026-10-05 T519）。リンク先の同じ「迷い犬・迷い猫情報」の親ページ「ペットについて」から辿った「新しい飼い主さん大募集」→「犬の譲渡情報」（2026-10-05 時点 3 頭）。0 頭の日の文言は未確認。
 - slug: city_kanazawa-6
   name: 金沢市動物愛護管理センター（譲渡猫）
@@ -5470,6 +5615,7 @@ sources:
   mode: recipe
   recipe: recipes/city_kanazawa-6.yaml
   enabled: true
+  photo: pending
   note: 環境省リンク集から追加（2026-10-05 T519）。「新しい飼い主さん大募集」→「猫の譲渡情報」（2026-10-05 時点 4 頭）。0 頭の日の文言は未確認。
 - slug: fapscsite-1
   name: 福井県動物愛護センター（保護した動物 公示情報）
@@ -5537,6 +5683,7 @@ sources:
   mode: recipe
   recipe: recipes/city_kawagoe-1.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。保護収容動物情報ページの「保護犬情報」節（1 頭 = li 1 行「No005 7月21日収容（小仙波） ビーグル 黒白茶 成犬」。写真は各頭の PDF の中だけで HTML には無いので写真なしで載る）。同じページの「保護猫情報」は city_kawagoe-2。0 頭の日の文言「現在、情報はございません。」は 2025 年のアーカイブで確認（2026-10-05 の実ページは犬猫とも 1 頭ずつ）。問い合わせ先は食品・環境衛生課 環境衛生担当"
 - slug: city_kawagoe-2
   name: 川越市保健所（保護収容猫）
@@ -5553,6 +5700,7 @@ sources:
   mode: recipe
   recipe: recipes/city_kawagoe-2.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。city_kawagoe-1 と同じページの「保護猫情報」節。犬と猫で管理番号（No005）が重なるので slug を分けた。写真は各頭の PDF の中だけ（負傷時は写真なし）。0 頭の日の文言は 2025 年のアーカイブで確認"
 - slug: city_kawagoe-3
   name: 川越市保健所（譲渡犬猫）
@@ -5569,6 +5717,7 @@ sources:
   mode: recipe
   recipe: recipes/city_kawagoe-3.yaml
   enabled: true
+  photo: pending
   note: 環境省リンク集から追加（2026-10-05 T519）。リンク先ページの導線「動物（犬・猫）の譲渡情報」。2026-10-07 時点は 4 頭とも「譲渡が決まりました」の表示で、ページの更新日は 2024-11-22（Wayback の 2025-01・2025-10・2026-03 も同じ 4 頭）。「譲渡が決まりました」の子は載せず、行が全部これで捨てられた日はエンジンが 0 頭と確認する（empty_text は使わない。新しい子が別の作りで載った日にも決定済みの文言が残っているため）。h4 が 1 つも無い日は「読めなかった」通知。新しい子が載った日の読み方は未確認（見出しが R5-犬No.8 の形のまま同じ作りで増える想定。「譲渡が決まりました」の p だけ外した保存ページで 1 頭として写真つきで読めることはテストで確認）
 - slug: city_kawaguchi-1
   name: 川口市保健所（迷子・保護動物）
@@ -5619,6 +5768,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_nanbu.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。埼玉県「保健所・動物指導センターの収容動物情報」（pref.saitama.lg.jp/b0716/doubutu-kaikata-shuuyou-top.html）から辿る南部保健所の収容犬ページ（管轄: 蕨市・戸田市）。職員が手で更新する作りで、0 頭の日は空欄の雛形 table が残る。0 頭の文言: 現在収容情報はありません。（2026-10-05 は 2026-01-21 更新のまま）。保健所では猫を収容しない（猫は動物指導センター）。個人が保護している犬・猫・譲渡は別 slug"
 - slug: pref_saitama_asaka
   name: 埼玉県（朝霞保健所 収容犬）
@@ -5635,6 +5785,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_asaka.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。埼玉県「保健所・動物指導センターの収容動物情報」（pref.saitama.lg.jp/b0716/doubutu-kaikata-shuuyou-top.html）から辿る朝霞保健所の収容犬ページ（管轄: 朝霞市・志木市・和光市・新座市・富士見市・ふじみ野市・三芳町）。職員が手で更新する作りで、0 頭の日は空欄の雛形 table が残る。0 頭の文言: 現在収容犬情報はありません。。保健所では猫を収容しない（猫は動物指導センター）。個人が保護している犬・猫・譲渡は別 slug"
 - slug: pref_saitama_kasukabe
   name: 埼玉県（春日部保健所 収容犬）
@@ -5651,6 +5802,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_kasukabe.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。埼玉県「保健所・動物指導センターの収容動物情報」（pref.saitama.lg.jp/b0716/doubutu-kaikata-shuuyou-top.html）から辿る春日部保健所の収容犬ページ（管轄: 春日部市・松伏町）。職員が手で更新する作りで、0 頭の日は空欄の雛形 table が残る。0 頭の文言: 収容犬情報はありません。。保健所では猫を収容しない（猫は動物指導センター）。個人が保護している犬・猫・譲渡は別 slug"
 - slug: pref_saitama_souka
   name: 埼玉県（草加保健所 収容犬）
@@ -5667,6 +5819,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_souka.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。埼玉県「保健所・動物指導センターの収容動物情報」（pref.saitama.lg.jp/b0716/doubutu-kaikata-shuuyou-top.html）から辿る草加保健所の収容犬ページ（管轄: 草加市・八潮市・三郷市・吉川市）。職員が手で更新する作りで、0 頭の日は空欄の雛形 table が残る。0 頭の文言: 現在収容犬情報はありません。。保健所では猫を収容しない（猫は動物指導センター）。個人が保護している犬・猫・譲渡は別 slug"
 - slug: pref_saitama_konosu
   name: 埼玉県（鴻巣保健所 収容犬）
@@ -5683,6 +5836,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_konosu.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。埼玉県「保健所・動物指導センターの収容動物情報」（pref.saitama.lg.jp/b0716/doubutu-kaikata-shuuyou-top.html）から辿る鴻巣保健所の収容犬ページ（管轄: 鴻巣市・上尾市・桶川市・北本市・伊奈町）。職員が手で更新する作りで、0 頭の日は空欄の雛形 table が残る。0 頭の文言: 現在、収容犬情報はありません。。保健所では猫を収容しない（猫は動物指導センター）。個人が保護している犬・猫・譲渡は別 slug"
 - slug: pref_saitama_higashimatsuyama
   name: 埼玉県（東松山保健所 収容犬）
@@ -5699,6 +5853,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_higashimatsuyama.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。埼玉県「保健所・動物指導センターの収容動物情報」（pref.saitama.lg.jp/b0716/doubutu-kaikata-shuuyou-top.html）から辿る東松山保健所の収容犬ページ（管轄: 東松山市・滑川町・嵐山町・小川町・川島町・吉見町・ときがわ町・東秩父村）。職員が手で更新する作りで、0 頭の日は空欄の雛形 table が残る。0 頭の文言: 現在収容犬情報はありません。。保健所では猫を収容しない（猫は動物指導センター）。個人が保護している犬・猫・譲渡は別 slug"
 - slug: pref_saitama_sakado
   name: 埼玉県（坂戸保健所 収容犬）
@@ -5715,6 +5870,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_sakado.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。埼玉県「保健所・動物指導センターの収容動物情報」（pref.saitama.lg.jp/b0716/doubutu-kaikata-shuuyou-top.html）から辿る坂戸保健所の収容犬ページ（管轄: 坂戸市・鶴ヶ島市・毛呂山町・越生町・鳩山町）。職員が手で更新する作りで、0 頭の日は空欄の雛形 table が残る。0 頭の文言: 「現在収容情報はありません」。保健所では猫を収容しない（猫は動物指導センター）。個人が保護している犬・猫・譲渡は別 slug"
 - slug: pref_saitama_sayama
   name: 埼玉県（狭山保健所 収容犬）
@@ -5731,6 +5887,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_sayama.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。埼玉県「保健所・動物指導センターの収容動物情報」（pref.saitama.lg.jp/b0716/doubutu-kaikata-shuuyou-top.html）から辿る狭山保健所の収容犬ページ（管轄: 所沢市・飯能市・狭山市・入間市・日高市）。職員が手で更新する作りで、0 頭の日は空欄の雛形 table が残る。0 頭の文言: 収容犬情報はありません。。保健所では猫を収容しない（猫は動物指導センター）。個人が保護している犬・猫・譲渡は別 slug"
 - slug: pref_saitama_kazo
   name: 埼玉県（加須保健所 収容犬）
@@ -5747,6 +5904,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_kazo.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。埼玉県「保健所・動物指導センターの収容動物情報」（pref.saitama.lg.jp/b0716/doubutu-kaikata-shuuyou-top.html）から辿る加須保健所の収容犬ページ（管轄: 行田市・加須市・羽生市）。職員が手で更新する作りで、0 頭の日は空欄の雛形 table が残る。0 頭の文言: 現在、収容犬情報はありません。。保健所では猫を収容しない（猫は動物指導センター）。個人が保護している犬・猫・譲渡は別 slug"
 - slug: pref_saitama_satte
   name: 埼玉県（幸手保健所 収容犬）
@@ -5763,6 +5921,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_satte.yaml
   enabled: true
+  photo: pending
   note: '環境省リンク集から追加（2026-10-05 T519）。埼玉県「保健所・動物指導センターの収容動物情報」（pref.saitama.lg.jp/b0716/doubutu-kaikata-shuuyou-top.html）から辿る幸手保健所の収容犬ページ（管轄: 久喜市・蓮田市・幸手市・白岡市・宮代町・杉戸町）。職員が手で更新する作りで、0 頭の日は空欄の雛形 table が残る。0 頭の日の文言: 「現在、収容犬情報はありません。」「現在収容情報はありません。」「収容犬情報はありません。」「現在、収容犬はいません。」「現在、収容犬の情報は有りません。」（Wayback 2021〜2026 で確認。時期でぶれる）。保健所では猫を収容しない（猫は動物指導センター）。個人が保護している犬・猫・譲渡は別 slug'
 - slug: pref_saitama_kumagaya
   name: 埼玉県（熊谷保健所 収容犬）
@@ -5779,6 +5938,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_kumagaya.yaml
   enabled: true
+  photo: pending
   note: '環境省リンク集から追加（2026-10-05 T519）。埼玉県「保健所・動物指導センターの収容動物情報」（pref.saitama.lg.jp/b0716/doubutu-kaikata-shuuyou-top.html）から辿る熊谷保健所の収容犬ページ（管轄: 熊谷市・深谷市・寄居町）。職員が手で更新する作りで、0 頭の日は空欄の雛形 table が残る。0 頭の日の文言: 「現在、収容犬情報はありません。」「現在収容情報はありません。」「収容犬情報はありません。」「現在、収容犬はいません。」「現在、収容犬の情報は有りません。」（Wayback 2021〜2026 で確認。時期でぶれる）。保健所では猫を収容しない（猫は動物指導センター）。個人が保護している犬・猫・譲渡は別 slug。電話番号は収容犬ページの連絡先（直通）に合わせた'
 - slug: pref_saitama_honjo
   name: 埼玉県（本庄保健所 収容犬）
@@ -5795,6 +5955,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_honjo.yaml
   enabled: true
+  photo: pending
   note: '環境省リンク集から追加（2026-10-05 T519）。埼玉県「保健所・動物指導センターの収容動物情報」（pref.saitama.lg.jp/b0716/doubutu-kaikata-shuuyou-top.html）から辿る本庄保健所の収容犬ページ（管轄: 本庄市・美里町・神川町・上里町）。職員が手で更新する作りで、0 頭の日は空欄の雛形 table が残る。0 頭の日の文言: 「現在、収容犬情報はありません。」「現在収容情報はありません。」「収容犬情報はありません。」「現在、収容犬はいません。」「現在、収容犬の情報は有りません。」（Wayback 2021〜2026 で確認。時期でぶれる）。保健所では猫を収容しない（猫は動物指導センター）。個人が保護している犬・猫・譲渡は別 slug'
 - slug: pref_saitama_chichibu
   name: 埼玉県（秩父保健所 収容犬）
@@ -5811,6 +5972,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_chichibu.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。埼玉県「保健所・動物指導センターの収容動物情報」（pref.saitama.lg.jp/b0716/doubutu-kaikata-shuuyou-top.html）から辿る秩父保健所の収容犬ページ（管轄: 秩父市・皆野町・横瀬町・長瀞町・小鹿野町）。職員が手で更新する作りで、0 頭の日は空欄の雛形 table が残る。0 頭の文言: 収容犬情報はありません。。保健所では猫を収容しない（猫は動物指導センター）。個人が保護している犬・猫・譲渡は別 slug"
 - slug: pref_saitama_center_honsho
   name: 埼玉県（動物指導センター 本所 収容猫等）
@@ -5827,6 +5989,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_center_honsho.yaml
   enabled: true
+  photo: pending
   note: '環境省リンク集から追加（2026-10-05 T519）。埼玉県「保健所・動物指導センターの収容動物情報」（pref.saitama.lg.jp/b0716/doubutu-kaikata-shuuyou-top.html）から辿る動物指導センター 本所の収容猫等のページ（管轄: 秩父・本庄・熊谷・行田・加須・羽生・東松山・比企・坂戸・鶴ヶ島・飯能・日高 等（県北部・県西部））。職員が手で更新する作りで、0 頭の日は空欄の雛形 table が残る。0 頭の文言: 現在、収容情報はありません。（2026-09-04 更新）。写真は行（table）の中。写真を載せない子は備考に「写真の掲載はありません」と書く（2026-10-05 の 1 頭がそうで、写真なしで載る）。管理番号だけ入って収容日が「2025年月日」のままの雛形（2025-03「2025-3-005」）は動物でないので載せない。備考に「収容後死亡」「死亡しました」の子は載せない'
 - slug: pref_saitama_center_minami
   name: 埼玉県（動物指導センター 南支所 収容猫等）
@@ -5843,6 +6006,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_center_minami.yaml
   enabled: true
+  photo: pending
   note: '環境省リンク集から追加（2026-10-05 T519）。埼玉県「保健所・動物指導センターの収容動物情報」（pref.saitama.lg.jp/b0716/doubutu-kaikata-shuuyou-top.html）から辿る動物指導センター 南支所の収容猫等のページ（管轄: さいたま・川口以外の県南部・県東部（鴻巣・上尾・蕨・戸田・朝霞・春日部・草加・久喜 等））。職員が手で更新する作りで、0 頭の日は空欄の雛形 table が残る。0 頭の文言: 現在、収容情報はありません。（Wayback 2025-07 で確認。2021 は「現在、収容猫情報はありません。」）。備考に「収容後死亡」「死亡しました」の子は載せない（2026-09 に実在: 全頭がこれで落ちた日は 0 頭と確認される）。写真は行（table）の中。写真を載せない子は備考に「写真の掲載はありません」と書く（2026-10-05 の 1 頭がそうで、写真なしで載る）'
 - slug: pref_saitama_nanbu-2
   name: 埼玉県（南部保健所管内 個人保護犬）
@@ -5859,6 +6023,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_nanbu-2.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。埼玉県「保健所・動物指導センターの収容動物情報」（pref.saitama.lg.jp/b0716/doubutu-kaikata-shuuyou-top.html）から辿る南部保健所管内の「個人による犬の保護情報」（住民が迷子犬を保護して飼い主を探している情報。管轄: 蕨市・戸田市）。職員が手で更新する作りで、0 頭の日は空欄の雛形 table が残る。0 頭の文言: 現在、保護情報はありません。。保健所が収容している犬は pref_saitama_nanbu。越谷市の個人保護と同じく sheltered にした。動物が載った日の作りは Wayback 2022-08-19（2 頭。番号 2022-01・2022-02、写真は表の中）で確認。0 頭の日の文言は 2020〜2026 の保存で「現在（、）保護情報はありません。」。連絡先は保健所のもので、保護した個人の連絡先は載らない（2026-10-08 に Wayback の保存を CDX の全版〔8 版〕まで当てて確認: 動物が載った日 1 版は全頭読めて写真・項目が元の表と合い、残りの日は 0 頭と読み、読めなかった日は無い）"
 - slug: pref_saitama_asaka-2
   name: 埼玉県（朝霞保健所管内 個人保護犬）
@@ -5875,6 +6040,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_asaka-2.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。埼玉県「保健所・動物指導センターの収容動物情報」（pref.saitama.lg.jp/b0716/doubutu-kaikata-shuuyou-top.html）から辿る朝霞保健所管内の「個人による犬の保護情報」（住民が迷子犬を保護して飼い主を探している情報。管轄: 朝霞市・志木市・和光市・新座市・富士見市・ふじみ野市・三芳町）。職員が手で更新する作りで、0 頭の日は空欄の雛形 table が残る。0 頭の文言: 現在現在保護情報はありません。。（原文のまま。2024-03-19 更新のまま）。保健所が収容している犬は pref_saitama_asaka。越谷市の個人保護と同じく sheltered にした。動物が載った日の作りは Wayback 2019-10-02（1 頭 2019-58、写真は表の直前の p）で確認。0 頭の日の文言は 2019〜2026 の保存で「現在保護情報はありません」の変形。連絡先は保健所のもので、保護した個人の連絡先は載らない（2026-10-08 に Wayback の保存を CDX の全版〔17 版〕まで当てて確認: 動物が載った日 1 版は全頭読めて写真・項目が元の表と合い、残りの日は 0 頭と読み、読めなかった日は無い）"
 - slug: pref_saitama_chichibu-2
   name: 埼玉県（秩父保健所管内 個人保護犬）
@@ -5891,6 +6057,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_chichibu-2.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。埼玉県「保健所・動物指導センターの収容動物情報」（pref.saitama.lg.jp/b0716/doubutu-kaikata-shuuyou-top.html）から辿る秩父保健所管内の「個人による犬の保護情報」（住民が迷子犬を保護して飼い主を探している情報。管轄: 秩父市・皆野町・横瀬町・長瀞町・小鹿野町）。職員が手で更新する作りで、0 頭の日は空欄の雛形 table が残る。0 頭の文言: 現在、個人による犬の保護情報はありません。。保健所が収容している犬は pref_saitama_chichibu。越谷市の個人保護と同じく sheltered にした。動物が載った日の作りは Wayback 2020-08-05（1 頭 2020-3）で確認。0 頭の日の文言は「現在、個人による犬の保護情報はありません。」のほか、2019 年は「現在、保護犬情報はありません。」（empty_text に追加）。連絡先は保健所のもので、保護した個人の連絡先は載らない（2026-10-08 に Wayback の保存を CDX の全版〔13 版〕まで当てて確認: 動物が載った日 1 版は全頭読めて写真・項目が元の表と合い、残りの日は 0 頭と読み、読めなかった日は無い）。写真は表の直前の p に複数枚あり、先頭の 1 枚を使う"
 - slug: pref_saitama_kazo-2
   name: 埼玉県（加須保健所管内 個人保護犬）
@@ -5907,6 +6074,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_kazo-2.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。埼玉県「保健所・動物指導センターの収容動物情報」（pref.saitama.lg.jp/b0716/doubutu-kaikata-shuuyou-top.html）から辿る加須保健所管内の「個人による犬の保護情報」（住民が迷子犬を保護して飼い主を探している情報。管轄: 行田市・加須市・羽生市）。職員が手で更新する作りで、0 頭の日は空欄の雛形 table が残る。0 頭の文言: 現在個人による犬の保護情報はありません。。保健所が収容している犬は pref_saitama_kazo。越谷市の個人保護と同じく sheltered にした。動物が載った日の作りは Wayback 2020-04-23・2020-12-03（各 1 頭）で確認。0 頭の日の文言は 2019 年は「現在保護犬情報はありません。」（表が無い日もある。empty_text に追加）。連絡先は保健所のもので、保護した個人の連絡先は載らない（2026-10-08 に Wayback の保存を CDX の全版〔15 版〕まで当てて確認: 動物が載った日 5 版は全頭読めて写真・項目が元の表と合い、残りの日は 0 頭と読み、読めなかった日は無い）。写真は表の直前の p に複数枚あり、先頭の 1 枚を使う"
 - slug: pref_saitama_kumagaya-2
   name: 埼玉県（熊谷保健所管内 個人保護犬）
@@ -5923,6 +6091,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_kumagaya-2.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。埼玉県「保健所・動物指導センターの収容動物情報」（pref.saitama.lg.jp/b0716/doubutu-kaikata-shuuyou-top.html）から辿る熊谷保健所管内の「個人による犬の保護情報」（住民が迷子犬を保護して飼い主を探している情報。管轄: 熊谷市・深谷市・寄居町）。職員が手で更新する作りで、0 頭の日は空欄の雛形 table が残る。0 頭の文言: 現在保護情報はありません。。保健所が収容している犬は pref_saitama_kumagaya。越谷市の個人保護と同じく sheltered にした。動物が載った日の作りは Wayback 2020-10-20（3 頭。写真の無い子あり）・2020-11-04（2 頭）で確認。0 頭の日の文言は「現在保護情報はありません」。連絡先は保健所のもので、保護した個人の連絡先は載らない（2026-10-08 に Wayback の保存を CDX の全版〔11 版〕まで当てて確認: 動物が載った日 4 版は全頭読めて写真・項目が元の表と合い、残りの日は 0 頭と読み、読めなかった日は無い）"
 - slug: pref_saitama_sakado-2
   name: 埼玉県（坂戸保健所管内 個人保護犬）
@@ -5939,6 +6108,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_sakado-2.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。埼玉県「保健所・動物指導センターの収容動物情報」（pref.saitama.lg.jp/b0716/doubutu-kaikata-shuuyou-top.html）から辿る坂戸保健所管内の「個人による犬の保護情報」（住民が迷子犬を保護して飼い主を探している情報。管轄: 坂戸市・鶴ヶ島市・毛呂山町・越生町・鳩山町）。職員が手で更新する作りで、0 頭の日は空欄の雛形 table が残る。0 頭の文言: 現在保護情報はありません。（2025-06-24 更新のまま）。保健所が収容している犬は pref_saitama_sakado。越谷市の個人保護と同じく sheltered にした。動物が載った日の作りは Wayback 2022-06-20（1 頭 2022-01）で確認。0 頭の日の文言は「現在保護情報はありません。」。連絡先は保健所のもので、保護した個人の連絡先は載らない（2026-10-08 に Wayback の保存を CDX の全版〔10 版〕まで当てて確認: 動物が載った日 1 版は全頭読めて写真・項目が元の表と合い、残りの日は 0 頭と読み、読めなかった日は無い）。写真は表の直前の p に複数枚あり、先頭の 1 枚を使う"
 - slug: pref_saitama_center_honsho-2
   name: 埼玉県（動物指導センター 本所 管内 個人保護猫）
@@ -5955,6 +6125,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_center_honsho-2.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。埼玉県「保健所・動物指導センターの収容動物情報」（pref.saitama.lg.jp/b0716/doubutu-kaikata-shuuyou-top.html）から辿る動物指導センター 本所管内の「個人による迷子猫の保護情報」（住民が迷子猫を保護して飼い主を探している情報）。職員が手で更新する作りで、0 頭の日は空欄の雛形 table が残る。写真は行（table）の中か直前の p。番号の欄の見出しは 2019 年は「管理番号」・2021 年以降は「受付番号」で、どちらの表も読む。番号は「H30-91」「H2021-05-001」「2026-1061」の形。0 頭の日の文言は 2020〜2026 の保存で「現在、情報はありません」「現在情報はありません」「現在、掲載情報はありません」「現在、掲載を希望する迷子猫の保護情報はありません」「新着情報はありません」「現在、掲載している情報はありません」と変わる（empty_text に全部入れた。今日は「【2026年4月10日更新】現在、掲載している情報はありません。」）。（2026-10-08 に Wayback の保存を CDX の全版〔23 版〕まで当てて確認: 動物が載った日 15 版は全頭読めて写真・項目が元の表と合い、残りの日は 0 頭と読み、読めなかった日は無い）。収容猫は pref_saitama_center_honsho。越谷市の個人保護と同じく sheltered にした。保護した個人の連絡先は載らない（問合せ先はセンター）"
 - slug: pref_saitama_center_minami-2
   name: 埼玉県（動物指導センター 南支所 管内 個人保護猫）
@@ -5971,6 +6142,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_center_minami-2.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。埼玉県「保健所・動物指導センターの収容動物情報」（pref.saitama.lg.jp/b0716/doubutu-kaikata-shuuyou-top.html）から辿る動物指導センター 南支所管内の「個人による迷子猫の保護情報」（住民が迷子猫を保護して飼い主を探している情報）。職員が手で更新する作りで、0 頭の日は空欄の雛形 table が残る。写真は行（table）の中。番号の欄の見出しは「管理番号」（2019 年の本所は同じ作りで見出しが違ったので、本所の -2 と同じ書き方にしてある）。0 頭の日の文言は「現在保護情報はありません。」「現在情報はありません」「現在、掲載情報はありません」など。今日は 1 頭（2026-1061。更新 2026-10-02）。（2026-10-08 に Wayback の保存を CDX の全版〔23 版〕まで当てて確認: 動物が載った日 14 版は全頭読めて写真・項目が元の表と合い、残りの日は 0 頭と読み、読めなかった日は無い）。収容猫は pref_saitama_center_minami。越谷市の個人保護と同じく sheltered にした。保護した個人の連絡先は載らない（問合せ先はセンター）"
 - slug: pref_saitama_joto_inu
   name: 埼玉県（動物指導センター 譲渡用成犬）
@@ -5987,6 +6159,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_joto_inu.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。埼玉県「犬・猫の譲渡」（pref.saitama.lg.jp/b0716/doubutu-jouto-1.html）から辿る譲渡用成犬の募集ページ。本所（県北部・県西部）と南支所（県南部・県東部）の譲渡用成犬が 1 ページに節で並ぶ。1 頭 = h3「ロッキー 飼い主さん募集中です！」→ 写真 p → 管理番号の table。決まった子の印は時期で変わり（Wayback 2019〜2026）、「飼い主さんが決まりました!」「飼主さんが 決まりました！」「（新しい飼い主さんが決まりました）」「新しい飼い主さんへ譲渡となりました」「譲渡されました！」「譲渡になりました！」の語が見出し（犬は h3）か管理番号の欄にある子は載せない（全部そうなら 0 頭。以前の「譲渡されました」だけの除外では、決まった子が募集中として載る日があった）。「お見合い中です」「マッチング中です！」「申込多数のため募集を一時停止」「お声がかかりました！（現在募集を停止しています）」の子は決まっていないので載せる（トライアル中と同じ扱い）。管理番号の無い雛形の表（「譲渡対象犬は現在しつけ中です」「譲渡対象犬情報はありません」と書いた日）と、2016〜2019 の旧い作り（表の見出しが「管理 番号」で「現在、譲渡できる犬の情報はありません」と書く）は 0 頭。台帳の電話は本所のものだが、南支所の犬もこの slug に入るので、各犬の備考の末尾に表の「問合せ先」（本所 048-536-2465・南支所 048-855-0484）を付けた。2026-10-07 は本所 4 頭・南支所 1 頭（全頭募集中）。Wayback は CDX の全 19 版を当て、動物が載った日 12 版で決まった子が載らず募集中の子だけが読めることを確認、残りの日は 0 頭と読み、読めなかった日は無い"
 - slug: pref_saitama_joto_neko_honsho
   name: 埼玉県（動物指導センター本所 譲渡用猫）
@@ -6003,6 +6176,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_joto_neko_honsho.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。埼玉県「犬・猫の譲渡」（pref.saitama.lg.jp/b0716/doubutu-jouto-1.html）から辿る譲渡用猫（本所）の募集ページ。1 頭 = 管理番号の table（管理番号の欄に「2026-C-008 （センター名：ハッチ） 募集中です」と書かれ、写真は行の中）。決まった子の印は時期で変わり（Wayback 2019〜2026）、「飼い主さんが決まりました!」「飼主さんが 決まりました！」「（新しい飼い主さんが決まりました）」「新しい飼い主さんへ譲渡となりました」「譲渡されました！」「譲渡になりました！」の語が見出し（犬は h3）か管理番号の欄にある子は載せない（全部そうなら 0 頭。以前の「譲渡されました」だけの除外では、決まった子が募集中として載る日があった）。「お見合い中です」「マッチング中です！」「申込多数のため募集を一時停止」「お声がかかりました！（現在募集を停止しています）」の子は決まっていないので載せる（トライアル中と同じ扱い）。印は管理番号の欄だけでなく、節の見出し（h2「譲渡用猫情報（センター本所） 新しい飼い主さんが決まりました！」。2026-06 の保存）に付く日もあるので、見出しも見る。管理番号が読めない雛形の表（空欄・「2026-C-」だけ）は捨てる。2026-10-07 時点: 本所は募集中 2 頭・決定済み 1 頭（「譲渡になりました！」）。以前の empty_text は常に残る文言で、表の構造が変わった日も 0 頭に見えたので外した。Wayback は CDX の全 20 版を当て、動物が載った日 18 版が読め、残りの 2 版は 0 頭（見出しに印が付いた日と、旧い作りの「現在、譲渡できる猫の情報はありません」の日）で、読めなかった日は無い"
 - slug: pref_saitama_joto_neko_minami
   name: 埼玉県（動物指導センター南支所 譲渡用猫）
@@ -6019,6 +6193,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_saitama_joto_neko_minami.yaml
   enabled: true
+  photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。埼玉県「犬・猫の譲渡」（pref.saitama.lg.jp/b0716/doubutu-jouto-1.html）から辿る譲渡用猫（南支所）の募集ページ。1 頭 = 管理番号の table（管理番号の欄に「南2026-C67 (仮名：くろまめ) 譲渡されました！」と書かれ、写真は行の中）。決まった子の印は時期で変わり（Wayback 2019〜2026）、「飼い主さんが決まりました!」「飼主さんが 決まりました！」「（新しい飼い主さんが決まりました）」「新しい飼い主さんへ譲渡となりました」「譲渡されました！」「譲渡になりました！」の語が見出し（犬は h3）か管理番号の欄にある子は載せない（全部そうなら 0 頭。以前の「譲渡されました」だけの除外では、決まった子が募集中として載る日があった）。「お見合い中です」「マッチング中です！」「申込多数のため募集を一時停止」「お声がかかりました！（現在募集を停止しています）」の子は決まっていないので載せる（トライアル中と同じ扱い）。管理番号は「南2026-C67」のように連番の前に英字が付く形も読む（前任の直しはこれを雛形と取り違えて全部捨てていた）。管理番号が読めない雛形の表は捨てる。2026-10-07 の時点: 南支所は決定済みの 1 頭（くろまめ）だけ = 0 頭。以前は決まった子が募集中として載る日があった（2025-03 は 3 頭全部が決まっていたのに 3 頭と読んだ）。Wayback は CDX の全 19 版を当て、動物が載った日 13 版で募集中の子だけが読め、決まった子だけの日 5 版と雛形だけの日 1 版は 0 頭、読めなかった日は無い"
 - slug: city_takasaki-1
   name: 高崎市動物愛護センター（保護している犬）
@@ -7092,6 +7267,7 @@ sources:
   mode: recipe
   recipe: recipes/city_gifu-1.yaml
   enabled: true
+  photo: pending
   note: 環境省リンク集から追加（2026-10-05 T519）。岐阜市保健所が収容した迷い犬猫（飼い主の連絡待ち。譲渡対象ではない）。2026-10-05 は犬 1 頭（管理番号 犬No.13-1）。猫が載る日・複数頭の日・0 頭の日の形は未確認（レシピの冒頭に書いた）。県の迷い犬情報は spec_pref_gifu（別の保健所）。
 - slug: city_gifu-2
   name: 岐阜市（譲渡犬・保健所にいる犬を飼いたい）
@@ -7108,6 +7284,7 @@ sources:
   mode: recipe
   recipe: recipes/city_gifu-2.yaml
   enabled: true
+  photo: pending
   note: 環境省リンク集から追加（2026-10-05 T519）。迷い犬猫情報（city_gifu-1）のページから辿れる譲渡犬のページ。見学は完全予約制。2026-10-05 は 1 頭（管理番号 No.17-4）。0 頭の日の文言は未確認。
 - slug: city_gifu-3
   name: 岐阜市（譲渡猫・保健所にいる猫を飼いたい）
@@ -7124,6 +7301,7 @@ sources:
   mode: recipe
   recipe: recipes/city_gifu-3.yaml
   enabled: true
+  photo: pending
   note: 環境省リンク集から追加（2026-10-05 T519）。迷い犬猫情報（city_gifu-1）のページから辿れる譲渡猫のページ。見学は完全予約制。2026-10-05 は「譲渡可能な猫は 0 頭」（空のテンプレートだけ）で、猫が載った日の読み方は未確認（レシピの冒頭に推測と注意を書いた）。
 - slug: city_shizuoka-1
   name: 静岡市（迷い犬情報）
