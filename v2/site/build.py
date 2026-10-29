@@ -477,13 +477,16 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
         aff_items.append(f'<li><a href="{esc(u)}" rel="sponsored noopener" target="_blank">{esc(t)}</a>{note}</li>')
     aff_html = (f'<aside class="prep"><h2>迎える準備</h2><p>迎えると決めたら、最初の数日に要るものをまとめました（広告リンクを含みます。運営費に充てています）。</p><ul>{"".join(aff_items)}</ul></aside>'
                 if aff_items else "")
+    # 広告を載せるページは、広告であることをファーストビュー（写真より上）に出す（T629・A8 の提携条件・ステマ規制）
+    pr_html = ('<p class="pr-note"><span>PR</span>このページはアフィリエイト広告を利用しています（ページ下の「迎える準備」枠）。</p>'
+               if aff_items else "")
     desc = f"{muni}が{fmt_date(data.get('date'))}時点で公開している{kind_label(a)}の{species_noun(a)}。"
     if subline(a):
         desc += subline(a) + "。"
     if a.get("note"):
         desc += shorten(a["note"], 80)
     body = f"""<nav class="crumbs"><a href="/">都道府県</a> › <a href="{esc(pref_path(pref))}">{esc(pref)}</a> › <span>{esc(headline(a))}</span></nav>
-<article class="detail" data-id="{esc(a['id'])}">
+{pr_html}<article class="detail" data-id="{esc(a['id'])}">
 {media(a, big=True)}
 <div class="detail-body">
 <div class="badges">{badges(a)}</div>
@@ -765,6 +768,8 @@ code{font-size:.85em;background:#eef1f4;padding:.1em .3em;border-radius:4px}
 .cta small{display:block;font-weight:400;font-size:.8rem;opacity:.85;margin-top:2px}
 .cta:hover{background:var(--accent-dark)}
 .cta-none{background:#eef1f4;color:var(--ink);font-weight:400;font-size:.95rem}
+.pr-note{margin:0 0 10px;font-size:.85rem;color:var(--mute)}
+.pr-note span{display:inline-block;font-weight:700;font-size:.75rem;color:var(--ink);border:1px solid var(--mute);border-radius:4px;padding:0 6px;margin-right:6px}
 .prep{margin-top:20px;background:#fffaf0;border:1px solid #f0e2c2;border-radius:14px;padding:12px 16px}
 .prep h2{margin-top:.2em}
 .prep ul{padding-left:1.2em;margin:.4em 0}
