@@ -1686,30 +1686,142 @@ sources:
     list_link_pattern: null
     pdf_link_pattern: null
   note: 本文は Instagram へのリンクのみ
-- slug: pref_toyama
-  name: 富山県（迷い犬猫情報）
-  municipality: 富山県
+- slug: pref_toyama_niikawa
+  name: 富山県（新川厚生センター 迷い犬・ねこ）
+  municipality: 新川厚生センター
   prefecture: 富山県
-  phone: 076-462-3467
-  address: 〒930-0275 富山県中新川郡立山町利田（富山県動物管理センター）
-  contact_scope: operator
-  url: https://www.pref.toyama.jp/1207/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/index.html
-  verified_at: '2026-10-15'
-  verified_phone_url: "https://www.pref.toyama.jp/1207/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/index.html"
-  verified_address_url: "https://www.pref.toyama.jp/1207/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/index.html"
-  note: "県のまとめページ。個体の収容先（保健所）は別のことがある"
+  phone: "0765-52-1225"
+  address: 富山県黒部市堀切新343
+  url: https://www.pref.toyama.jp/1268/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/niikawa.html
+  verified_at: '2026-10-29'
+  verified_phone_url: "https://www.pref.toyama.jp/1268/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/niikawa.html"
+  verified_address_url: "https://www.pref.toyama.jp/1268/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/niikawa.html"
+  note: "2026-10-29 T630: 富山県の返事（連絡先は収容している厚生センター・支所のものに）を受けて、県のまとめページ 1 件（pref_toyama）を厚生センター・支所の 8 ページに分けた。電話・住所はページ本文の「連絡先」（ページ下の「お問い合わせ」欄ではない）"
   kind: stray
   species: mixed
   mode: recipe
-  recipe: recipes/pref_toyama.yaml
+  recipe: recipes/pref_toyama_center.yaml
   enabled: true
-  photo: pending
-  legacy:
-    adapter_file: src/data_collector/adapters/rule_based/sites/pref_toyama.py
-    requires_js: false
-    pdf: false
-    list_link_pattern: null
-    pdf_link_pattern: null
+  photo: ok
+- slug: pref_toyama_uozu
+  name: 富山県（新川厚生センター魚津支所 迷い犬・ねこ）
+  municipality: 新川厚生センター魚津支所
+  prefecture: 富山県
+  phone: "0765-24-0359"
+  address: 富山県魚津市本江1397
+  url: https://www.pref.toyama.jp/2200/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/uozu.html
+  verified_at: '2026-10-29'
+  verified_phone_url: "https://www.pref.toyama.jp/2200/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/uozu.html"
+  verified_address_url: "https://www.pref.toyama.jp/2200/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/uozu.html"
+  note: "2026-10-29 T630: pref_toyama を 8 ページに分けた 1 件（pref_toyama_niikawa の note 参照）。本文の連絡先は 0765-24-0359（ページ下の「お問い合わせ」欄は 0765-24-0357）"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_toyama_center.yaml
+  enabled: true
+  photo: ok
+- slug: pref_toyama_chubu
+  name: 富山県（中部厚生センター 迷い犬・ねこ）
+  municipality: 中部厚生センター
+  prefecture: 富山県
+  phone: "076-472-4094"
+  address: 富山県中新川郡上市町横法音寺40
+  url: https://www.pref.toyama.jp/1267/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/tyubu.html
+  verified_at: '2026-10-29'
+  verified_phone_url: "https://www.pref.toyama.jp/1267/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/tyubu.html"
+  verified_address_url: "https://www.pref.toyama.jp/1267/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/tyubu.html"
+  note: "2026-10-29 T630: pref_toyama を 8 ページに分けた 1 件（pref_toyama_niikawa の note 参照）。ページ下の「お問い合わせ」欄は 076-444-3229 で本文の連絡先と違う"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_toyama_center.yaml
+  enabled: true
+  photo: ok
+- slug: pref_toyama_takaoka
+  name: 富山県（高岡厚生センター 迷い犬・ねこ）
+  municipality: 高岡厚生センター
+  prefecture: 富山県
+  phone: "0766-26-8417"
+  address: 富山県高岡市赤祖父211番地
+  url: https://www.pref.toyama.jp/1266/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/takaoka.html
+  verified_at: '2026-10-29'
+  verified_phone_url: "https://www.pref.toyama.jp/1266/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/takaoka.html"
+  verified_address_url: "https://www.pref.toyama.jp/1266/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/takaoka.html"
+  note: "2026-10-29 T630: pref_toyama を 8 ページに分けた 1 件（pref_toyama_niikawa の note 参照）。ページ下の「お問い合わせ」欄は 076-444-3229 で本文の連絡先と違う"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_toyama_center.yaml
+  enabled: true
+  photo: ok
+- slug: pref_toyama_imizu
+  name: 富山県（高岡厚生センター射水支所 迷い犬・ねこ）
+  municipality: 高岡厚生センター射水支所
+  prefecture: 富山県
+  phone: "0766-56-2666"
+  address: 富山県射水市戸破1875-1
+  url: https://www.pref.toyama.jp/2202/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/imizu.html
+  verified_at: '2026-10-29'
+  verified_phone_url: "https://www.pref.toyama.jp/2202/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/imizu.html"
+  verified_address_url: "https://www.pref.toyama.jp/2202/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/imizu.html"
+  note: "2026-10-29 T630: pref_toyama を 8 ページに分けた 1 件（pref_toyama_niikawa の note 参照）"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_toyama_center.yaml
+  enabled: true
+  photo: ok
+- slug: pref_toyama_himi
+  name: 富山県（高岡厚生センター氷見支所 迷い犬・ねこ）
+  municipality: 高岡厚生センター氷見支所
+  prefecture: 富山県
+  phone: "0766-74-1780"
+  address: 富山県氷見幸町34-9
+  url: https://www.pref.toyama.jp/2203/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/himi.html
+  verified_at: '2026-10-29'
+  verified_phone_url: "https://www.pref.toyama.jp/2203/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/himi.html"
+  verified_address_url: "https://www.pref.toyama.jp/2203/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/himi.html"
+  note: "2026-10-29 T630: pref_toyama を 8 ページに分けた 1 件（pref_toyama_niikawa の note 参照）。住所は本文の連絡先のとおり（「氷見市」ではなく「氷見幸町」と書かれている）。ページ下の「お問い合わせ」欄は県庁 生活衛生課（076-444-3229）"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_toyama_center.yaml
+  enabled: true
+  photo: ok
+- slug: pref_toyama_tonami
+  name: 富山県（砺波厚生センター 迷い犬・ねこ）
+  municipality: 砺波厚生センター
+  prefecture: 富山県
+  phone: "0763-22-4507"
+  address: 富山県南砺市高儀147
+  url: https://www.pref.toyama.jp/1273/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/tonami.html
+  verified_at: '2026-10-29'
+  verified_phone_url: "https://www.pref.toyama.jp/1273/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/tonami.html"
+  verified_address_url: "https://www.pref.toyama.jp/1273/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/tonami.html"
+  note: "2026-10-29 T630: pref_toyama を 8 ページに分けた 1 件（pref_toyama_niikawa の note 参照）。本文の連絡先は 0763-22-4507（ページ下の「お問い合わせ」欄は 0763-22-3511）"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_toyama_center.yaml
+  enabled: true
+  photo: ok
+- slug: pref_toyama_oyabe
+  name: 富山県（砺波厚生センター小矢部支所 迷い犬・ねこ）
+  municipality: 砺波厚生センター小矢部支所
+  prefecture: 富山県
+  phone: "0766-67-1070"
+  address: 富山県小矢部市綾子5532
+  url: https://www.pref.toyama.jp/2204/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/oyabe.html
+  verified_at: '2026-10-29'
+  verified_phone_url: "https://www.pref.toyama.jp/2204/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/oyabe.html"
+  verified_address_url: "https://www.pref.toyama.jp/2204/kurashi/seikatsu/seikatsu/doubutsuaigo/syuyou/oyabe.html"
+  note: "2026-10-29 T630: pref_toyama を 8 ページに分けた 1 件（pref_toyama_niikawa の note 参照）。本文の住所は「富山県小矢部市綾子5532（旧住所：小矢部市綾子260ー1）」"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_toyama_center.yaml
+  enabled: true
+  photo: ok
 - slug: pref_yamaguchi
   name: 山口県動物愛護センター（収容動物）
   municipality: 山口県動物愛護センター
