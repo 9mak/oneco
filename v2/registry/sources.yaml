@@ -1553,11 +1553,11 @@ sources:
   prefecture: 奈良県
   phone: null
   address: null
-  note: "2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
-  url: https://www.city.nara.lg.jp/life/4/34/134/
+  note: "2026-10-30 収容動物の記事（soshiki/97/222574.html「迷子犬・迷子猫をお探しの方へ」）が 10/16 から 404。旧入口（/life/4/34/134/「ペットの飼養・届出」一覧）からは記事へのリンク文字が消え、市の案内ページ「ペットが迷子になったときは」（soshiki/97/8478.html・2026-01-30 更新）と環境省のリンク集は 222574 を指したまま。読む先が無いので、記事が戻るまでは案内ページへのリンクだけを載せる（W006 T624 見守り運転の確認）。記事が戻ったら mode を recipe に戻す（レシピは案内ページから記事のリンクを辿る）。2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
+  url: https://www.city.nara.lg.jp/soshiki/97/8478.html
   kind: sheltered
   species: mixed
-  mode: recipe
+  mode: link_only
   recipe: recipes/city_nara.yaml
   enabled: true
   legacy:
