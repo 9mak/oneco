@@ -39,7 +39,9 @@ SAKAI_EMPTY = """<html><body><table><tr><td><p align="right">動物情報</p></t
 
 def test_sakai_entry():
     src, _ = _load("eonet_sakai-1")
-    assert (src.kind, src.species, src.mode, src.url) == ("stray", "mixed", "recipe", SAKAI_TOP)
+    # 2026-10-29 堺市の返事「リンクの掲載のみで」で link_only にした（T630・test_registry_t630_sakai_link_only.py）。
+    # レシピは残すので、下の読み取りのテストはそのまま
+    assert (src.kind, src.species, src.mode, src.url) == ("stray", "mixed", "link_only", SAKAI_TOP)
     assert src.phone == "072-228-0168" and src.prefecture == "大阪府"
 
 
