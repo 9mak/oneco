@@ -6351,11 +6351,11 @@ sources:
   verified_address_url: "https://www.eonet.ne.jp/~sakai-doshi/"
   kind: stray
   species: mixed
-  mode: recipe
+  mode: link_only
   recipe: recipes/eonet_sakai-1.yaml
   enabled: true
-  photo: pending
-  note: "環境省リンク集から追加（2026-10-05 T519）。リンク先は堺市保健所動物指導センターの案内ページで、収容動物の一覧はその中の html/menu.html（「堺市の保護動物収容情報はこちら」）から辿る。0 頭の日（2026-10-05〜07）は menu.html に直接「現在、保護・収容動物情報は ありません」と出る。動物がいる日は menu.html が入口だけ（「迷子情報」のリンク）になり、stray/menu2.html → stray/dog/list.html・stray/cat/list.html の表の行（管理番号・写真・収容場所・動物種別・種類・性別）を動物とする（T519v。Wayback 2022・2024 の入口と 2008〜2019 の一覧で確認。2024 年以降に動物がいた日の一覧の保存は無く未確認。作りが違えば 0 行→「読めなかった」で通知に出る）。譲渡は堺市の公式ページ（city.sakai.lg.jp .../joto.html）で、一覧は無く登録制の案内のみなので載せない。"
+  photo: "no"
+  note: "2026-10-29 堺市動物指導センターから、収容動物ページの情報は oneco ではリンクの掲載のみにしてほしいと返事（T630 の写真表示のお伺いへの回答）。一覧は読まず（写真も文字も転記しない）リンクだけを載せる。レシピは許諾が変わったときのために残す。以下は読んでいた時の記録。環境省リンク集から追加（2026-10-05 T519）。リンク先は堺市保健所動物指導センターの案内ページで、収容動物の一覧はその中の html/menu.html（「堺市の保護動物収容情報はこちら」）から辿る。0 頭の日（2026-10-05〜07）は menu.html に直接「現在、保護・収容動物情報は ありません」と出る。動物がいる日は menu.html が入口だけ（「迷子情報」のリンク）になり、stray/menu2.html → stray/dog/list.html・stray/cat/list.html の表の行（管理番号・写真・収容場所・動物種別・種類・性別）を動物とする（T519v。Wayback 2022・2024 の入口と 2008〜2019 の一覧で確認。2024 年以降に動物がいた日の一覧の保存は無く未確認。作りが違えば 0 行→「読めなかった」で通知に出る）。譲渡は堺市の公式ページ（city.sakai.lg.jp .../joto.html）で、一覧は無く登録制の案内のみなので載せない。"
 - slug: city_suita-1
   name: 吹田市保健所（動物保護情報・迷い犬猫）
   municipality: 吹田市
