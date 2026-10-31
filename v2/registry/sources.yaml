@@ -2353,10 +2353,11 @@ sources:
   verified_address_url: "https://www.city.matsuyama.ehime.jp/kurashi/kurashi/aigo/index.html"
   kind: stray
   species: mixed
-  mode: recipe
+  mode: link_only
   recipe: recipes/city_matsuyama.yaml
   enabled: true
-  photo: pending
+  photo: "no"
+  note: "2026-10-22 はぴまるの丘（松山市動物愛護センター）から、収容動物の情報は頻繁に更新されるので、oneco ではリンクだけの掲載にしてほしいと返事（T630 の写真表示のお伺いへの回答。記録漏れで反映は 2026-10-31）。一覧は読まず（写真も文字も転記しない）リンクだけを載せる。レシピは許諾が変わったときのために残す。"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_matsuyama.py
     requires_js: false
@@ -2583,14 +2584,14 @@ sources:
   mode: recipe
   recipe: recipes/wannyan_navi_aichi.yaml
   enabled: true
-  photo: pending
+  photo: ok
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/wannyan_navi_aichi.py
     requires_js: true
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
-  note: "Bubble 製 SPA。一覧の <a href> が無いので、エンジンの render_json（描画中の POST /elasticsearch/search の応答から _id を抜き ?page=list_dc_m&no=<_id> を辿る）で読む。2026-09-30 T509 で対応。個体ページごとに Playwright 描画するため 1 頭 5 秒ほどかかる。2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
+  note: "2026-10-23 愛知県動物愛護センターから、示した表示方法（写真は保存・加工せず元の画像を参照、出典リンク、電話・所在地は掲載元の記載のみ）で差し支えないと返事。条件は、譲渡済みで掲載をやめた犬猫の写真は速やかに外すこと。毎日の収集で掲載元に無い子は翌日の公開から消え、読めない日も前日分を保持しないので、写真を表示に戻す（T630。記録漏れで反映は 2026-10-31）。Bubble 製 SPA。一覧の <a href> が無いので、エンジンの render_json（描画中の POST /elasticsearch/search の応答から _id を抜き ?page=list_dc_m&no=<_id> を辿る）で読む。2026-09-30 T509 で対応。個体ページごとに Playwright 描画するため 1 頭 5 秒ほどかかる。2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: pref_niigata
   name: 新潟県動物愛護センター（保護動物）
   municipality: 新潟県動物愛護センター
