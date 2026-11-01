@@ -1,0 +1,27 @@
+# 福岡市動物愛護管理センターに収容されている犬・猫（市の公式サイト www.city.fukuoka.lg.jp の暫定ページ。犬 doghoused-.html・猫 cathoused.html の 2 ページで共用）
+# わんにゃんよかネット（www.wannyan.city.fukuoka.lg.jp）は 2026-10-21 からメンテナンスで一時停止（全 URL が HTTP 503・Retry-After 3600・再開時期は未定）。
+# 停止中の画面が「センターに収容されている犬／猫」として案内するのがこの 2 ページ。手で編集した CMS ページで、台帳の city_fukuoka_interim-1・-2 が読む。
+# 元の wannyan_fukuoka-1・-2 は旧 URL のまま毎晩見に行き、再開した日に通知が出る（再開の手順は台帳の note）。
+# 1 頭 = h2「収容犬一覧」「収容猫一覧」の後ろの div.f_parallel2（写真の div と、li「管理番号」> ul > li「d1877」…の入れ子の ul。猫の子には写真が無く「写真は掲載しておりません」）。
+# 犬のページは ul が div に包まれ、猫のページは包まれていない（作りが揃っていない）ので、項目は構造でなく li の項目名で引く。収容日の欄は無い。
+# 品種と毛色は 1 つの欄（「品種・毛色」→「ハスキー・灰白」「雑種・キジ」）。「・」がちょうど 1 つのときだけ分け、2 つ以上（品種に「・」を含む犬種〔シー・ズー〕や、色が「・」でつながる子）は
+#   どこで切るか決められないので、欄をそのまま品種に入れて毛色は空にする（誤って切らない）。
+# 状況: 返還・譲渡・死亡の語がある子と、備考に「死亡」とある子は載せない（わんにゃんよかネット時代の 2026-10-05 監査と同じ）。2026-10-31 は犬 d1877 が「返還済」、猫 c1937 が「死亡」の各 1 件だけで、
+#   載せる子は 0。収容中の子の状況の書き方は実例が無い（空かもしれない）ので、除外する語だけを決め、それ以外は載せる。
+# 載っている子が全部除外された日は 0 頭（全行除外＋一覧の見出し h2 が残っていること）。一覧に 1 頭もいない日の文言は未確認なので empty_text は置かない
+#   （ブロックが無いページ・見出しや項目名が変わったページ・管理番号が読めない子だけのページは、読めなかったことにして通知に出す）。
+# 管理番号も写真も収容日も無い子は動物とみなされず捨てられるが、管理番号（d1877・c1937）があれば写真が無くても載る。
+rows: "h2:-soup-contains('収容') ~ div.f_parallel2"
+row_filter:
+  text_has_any: ["管理番号"]
+  field_lacks: {status: ["返還", "譲渡", "死亡"], note: ["死亡"]}
+image: "img@src"
+fields:
+  management_no: {selector: "li:-soup-contains('管理番号') > ul > li"}
+  breed: {selector: "li:-soup-contains('品種・毛色') > ul > li", regex: "^((?=[^・]+・[^・]+$)[^・]+|.+)"}
+  color: {selector: "li:-soup-contains('品種・毛色') > ul > li", regex: "^[^・]+・([^・]+)$"}
+  age: {selector: "li:-soup-contains('推定年齢') > ul > li"}
+  sex: {selector: "li:-soup-contains('性別') > ul > li"}
+  status: {selector: "li:-soup-contains('状況') > ul"}   # 除外判定用（animals には出ない）
+  location: {selector: "li:-soup-contains('収容場所') > ul > li"}
+  note: {selector: "li:-soup-contains('備考') > ul"}
