@@ -3727,6 +3727,7 @@ sources:
   mode: recipe
   recipe: recipes/wannyan_fukuoka-1.yaml
   enabled: true
+  note: "2026-10-21 からわんにゃんよかネット（www.wannyan.city.fukuoka.lg.jp）は市のメンテナンスで一時停止中（全 URL が HTTP 503・Retry-After 3600・再開時期は未定）。この slug は旧 URL・旧レシピのまま毎晩見に行く（今は failed）。読めるようになった日に Discord へ「読めるようになった自治体」が出る。停止中の掲載は市の公式サイトの暫定ページを読む city_fukuoka_interim-1・-2。再開の手順は city_fukuoka_interim-1 の note。停止前の 10/20・10/21 にこの slug は行 0 で failed になっていて原因は未確認（再開したら先に collector show wannyan_fukuoka-1 で確かめる）"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/wannyan_fukuoka.py
     requires_js: true
@@ -3748,12 +3749,47 @@ sources:
   mode: recipe
   recipe: recipes/wannyan_fukuoka-2.yaml
   enabled: true
+  note: "2026-10-21 からわんにゃんよかネット（www.wannyan.city.fukuoka.lg.jp）は市のメンテナンスで一時停止中（全 URL が HTTP 503・再開時期は未定）。この slug は旧 URL・旧レシピのまま毎晩見に行く（今は failed）。読めるようになった日に Discord へ「読めるようになった自治体」が出る。停止中の掲載は市の公式サイトの暫定ページを読む city_fukuoka_interim-1・-2。再開の手順は city_fukuoka_interim-1 の note"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/wannyan_fukuoka.py
     requires_js: true
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+- slug: city_fukuoka_interim-1
+  name: 福岡市動物愛護管理センター（収容犬・市サイトの暫定ページ）
+  municipality: 福岡市動物愛護管理センター
+  prefecture: 福岡県
+  phone: 092-691-0131
+  address: 福岡市東区蒲田5丁目10番1号（福岡市動物愛護管理センター）
+  url: https://www.city.fukuoka.lg.jp/hofuku/dobutsukanri/life/doghoused-.html
+  verified_at: '2026-10-31'
+  verified_phone_url: "https://www.city.fukuoka.lg.jp/hofuku/dobutsukanri/life/doghoused-.html"
+  verified_address_url: "https://www.city.fukuoka.lg.jp/hofuku/dobutsukanri/life/doghoused-.html"
+  note: "2026-11-01 W006 T624: わんにゃんよかネット（wannyan_fukuoka-1・-2）が 10/21 から停止中なので、停止中の画面が案内する市の公式サイトの暫定ページ「センターに収容されている犬」（手で編集した CMS ページ）を読む一時的な 2 件の 1 つ。収容日の欄は無い。状況が返還・譲渡・死亡の子と備考に死亡とある子は載せない。載っている子が全部そうなら 0 頭（全行除外＋一覧の見出し）。一覧に 1 頭もいない日の文言と、収容中の子の状況の書き方は未確認（その日は読めなかったで通知に出る）。電話・所在地はこのページの「このページに関するお問い合わせ先」のとおり（T628。郵便番号と「東部」は載せない）。市サイトの「リンク・著作権等」に「トップページ以外の各個別のページへのリンクについては、各ページに記載の担当課までお問い合わせください」とある（反証担当が確認。この台帳で www.city.fukuoka.lg.jp を使うのはこの 2 件が初めて）。再開の手順: Discord に wannyan_fukuoka-1・-2 の「読めるようになった自治体」が出たら、collector show で読めることを確かめ、city_fukuoka_interim-1・-2 を台帳から消す（同じ子が二重に載るのを避ける）。あわせて recipes/city_fukuoka_interim.yaml、registry/discover_known.yaml の city.fukuoka.lg.jp の行、tests/test_w006_moved_20261101.py の福岡の部分とその fixture（w006_city_fukuoka_*・w006_wannyan_fukuoka_*）を消す。この PR を revert すれば一度に戻る"
+  kind: sheltered
+  species: dog
+  mode: recipe
+  recipe: recipes/city_fukuoka_interim.yaml
+  enabled: true
+  photo: ok
+- slug: city_fukuoka_interim-2
+  name: 福岡市動物愛護管理センター（収容猫・市サイトの暫定ページ）
+  municipality: 福岡市動物愛護管理センター
+  prefecture: 福岡県
+  phone: 092-691-0131
+  address: 福岡市東区蒲田5丁目10番1号（福岡市動物愛護管理センター）
+  url: https://www.city.fukuoka.lg.jp/hofuku/dobutsukanri/life/cathoused.html
+  verified_at: '2026-10-31'
+  verified_phone_url: "https://www.city.fukuoka.lg.jp/hofuku/dobutsukanri/life/cathoused.html"
+  verified_address_url: "https://www.city.fukuoka.lg.jp/hofuku/dobutsukanri/life/cathoused.html"
+  note: "2026-11-01 W006 T624: city_fukuoka_interim-1 と同じ一時的な 2 件の 1 つ（市の暫定ページ「センターに収容されている猫」）。犬のページと違い ul が div に包まれていない。写真の無い子は「写真は掲載しておりません」で、管理番号で載せる。読み方・未確認の点・再開の手順は city_fukuoka_interim-1 の note"
+  kind: sheltered
+  species: cat
+  mode: recipe
+  recipe: recipes/city_fukuoka_interim.yaml
+  enabled: true
+  photo: ok
 - slug: zaidan_fukuoka_douai-1
   name: 福岡県動物愛護協会（保健所収容犬）
   municipality: 福岡県動物愛護協会
@@ -7035,32 +7071,32 @@ sources:
   prefecture: 山梨県
   phone: 055-237-2550
   address: 〒400-0858 山梨県甲府市相生2丁目17番1号（健康支援センター2号館2階）
-  url: https://www.city.kofu.yamanashi.jp/hokenjo/2019mayoiinuneko.html
-  verified_at: '2026-10-15'
-  verified_phone_url: "https://www.city.kofu.yamanashi.jp/hokenjo/2019mayoiinuneko.html"
-  verified_address_url: "https://www.city.kofu.yamanashi.jp/hokenjo/2019mayoiinuneko.html"
+  url: https://www.city.kofu.lg.jp/k053/p001733.html
+  verified_at: '2026-10-31'
+  verified_phone_url: "https://www.city.kofu.lg.jp/k053/p001733.html"
+  verified_address_url: "https://www.city.kofu.lg.jp/k053/p001733.html"
   kind: stray
   species: mixed
   mode: recipe
   recipe: recipes/city_kofu-1.yaml
   enabled: true
-  note: 環境省リンク集から追加（2026-10-05 T519）。同じページの「保護しています」表だけを拾う（「探しています」は city_kofu-2）。保健所の保護に加え、住民が保護した情報も同じ表に載る（情報源の列。掲載期間は約 3 か月）。負傷のため写真なしの行がある。
+  note: 環境省リンク集から追加（2026-10-05 T519）。同じページの「保護しています」表だけを拾う（「探しています」は city_kofu-2）。保健所の保護に加え、住民が保護した情報も同じ表に載る（情報源の列。掲載期間は約 3 か月）。負傷のため写真なしの行がある。2026-10-28 から旧 URL（www.city.kofu.yamanashi.jp/hokenjo/2019mayoiinuneko.html）は市のサイトの移転で 301 になったので、移転先のページを url にした（電話・所在地は移転先の「お問い合わせ先」と同じ。2026-10-31 確認）。
 - slug: city_kofu-2
   name: 甲府市（迷子の犬猫・探しています）
   municipality: 甲府市
   prefecture: 山梨県
   phone: 055-237-2550
   address: 〒400-0858 山梨県甲府市相生2丁目17番1号（健康支援センター2号館2階）
-  url: https://www.city.kofu.yamanashi.jp/hokenjo/2019mayoiinuneko.html
-  verified_at: '2026-10-15'
-  verified_phone_url: "https://www.city.kofu.yamanashi.jp/hokenjo/2019mayoiinuneko.html"
-  verified_address_url: "https://www.city.kofu.yamanashi.jp/hokenjo/2019mayoiinuneko.html"
+  url: https://www.city.kofu.lg.jp/k053/p001733.html
+  verified_at: '2026-10-31'
+  verified_phone_url: "https://www.city.kofu.lg.jp/k053/p001733.html"
+  verified_address_url: "https://www.city.kofu.lg.jp/k053/p001733.html"
   kind: lost
   species: mixed
   mode: recipe
   recipe: recipes/city_kofu-2.yaml
   enabled: true
-  note: 環境省リンク集から追加（2026-10-05 T519）。city_kofu-1 と同じページの「探しています」表（飼い主が逸走した犬猫等を探している告知）だけを拾う。犬猫以外（その他の動物）が載る日は species other で載る。
+  note: 環境省リンク集から追加（2026-10-05 T519）。city_kofu-1 と同じページの「探しています」表（飼い主が逸走した犬猫等を探している告知）だけを拾う。犬猫以外（その他の動物）が載る日は species other で載る。2026-10-28 から url は移転先（city_kofu-1 と同じ）。
 - slug: city_nagano-1
   name: 長野市保健所（譲渡対象の犬猫・保健所収容）
   municipality: 長野市保健所
