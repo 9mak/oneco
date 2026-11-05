@@ -38,6 +38,8 @@ OUTAGE_MIN_RATIO = 0.10
 # 同一ホストで接続系エラーか 5xx が連続この件数に達したら、その run の残りの同ホストを取りに行かない（T603）。
 # 落ちているサイトに 1 ホスト数十件のリクエストを送り続けて遅くなる・迷惑をかけるのを避ける。
 BREAKER_TRIP = 3
+# report の行のうち、通知と state のための内部の印。公開する latest.json・animals-*.json の sources には入れない
+INTERNAL_ROW_KEYS = frozenset({"quarantine_started"})
 
 
 def outage(report: list[dict[str, Any]]) -> bool:
@@ -330,7 +332,8 @@ def _run_locked(sources: list[Source], date: str, out_dir: Path, fetcher: Fetche
     by_slug = {r["slug"]: r for r in report}
     out = {"run_id": run_id, "date": date, "generated_seconds": round(time.monotonic() - t0), "animals": animals,
            "held": held,
-           "sources": [{**{k: v for k, v in asdict(s).items() if k != "legacy"}, **by_slug[s.slug]} for s in sources]}
+           "sources": [{**{k: v for k, v in asdict(s).items() if k != "legacy"},
+                        **{k: v for k, v in by_slug[s.slug].items() if k not in INTERNAL_ROW_KEYS}} for s in sources]}
     if held:
         log.warning("接続系の失敗が複数ホストに広がったので回線断とみなし、latest.json を書き換えない（サイトは前日のまま）")
     manifest = build_manifest(run_id, date, report, len(animals), held)

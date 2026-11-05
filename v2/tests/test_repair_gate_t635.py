@@ -165,8 +165,10 @@ def test_b_third_try_with_same_fingerprint_quarantines_and_notifies_once(day):
     r2 = day.run(srcs, "2026-11-02")
     r3 = day.run(srcs, "2026-11-03")
     assert not r1["a1"].get("quarantine_started") and not r2["a1"].get("quarantine_started")
-    assert r3["a1"]["quarantine_started"] is True and "隔離" in r3["a1"]["repair"]
     report = json.loads((day.tmp / "data" / "report-2026-11-03.json").read_text(encoding="utf-8"))
+    # 隔離の印は通知のための内部の印。report には残し、公開側（run の戻り・latest.json の sources）には出さない（T632）
+    assert report[0]["quarantine_started"] is True and "quarantine_started" not in r3["a1"]
+    assert "隔離" in r3["a1"]["repair"]
     msg = build_message(report, load_state(day.tmp / "data" / "state"))
     assert msg is not None and "AI 修復を隔離" in msg and "a1市" in msg
     r4 = day.run(srcs, "2026-11-04")
