@@ -18,7 +18,7 @@ import yaml
 from . import repair_gate
 from .errors import TRANSPORT_KINDS, ErrorInfo, error_to_dict, host_of
 from .extract import Result, build
-from .fetch import Fetcher, FetchError
+from .fetch import Fetcher, FetchError, page_gone
 from .last_ok import RecordingFetcher, cleanup_last_ok, save_last_ok
 from .publish import build_manifest, publish
 from .recipe import Executor, Recipe, RecipeError
@@ -87,7 +87,7 @@ def collect_one(source: Source, fetcher: Fetcher) -> Collected:
         docs = ex.resolve(source.url)
         res = build(source, recipe, docs, getattr(ex, "visited", None))
     except (FetchError, RecipeError) as e:
-        if isinstance(e, FetchError) and ex is not None and _all_children_gone(ex.trace):
+        if isinstance(e, FetchError) and ex is not None and _all_children_gone(ex.trace, e):
             # 辿った子が全部 404（掲載期限切れで市が個別ページだけ消す日）。レシピの問題ではないと分かるよう kind=http・404 にし、
             # 印を付ける（recipe.py は子の失敗の ErrorInfo を渡さず other になっていた）。url は入れない（入口の 404 と区別する）
             info = ErrorInfo("http", status=404, host=host_of(source.url), phase="fetch").to_dict()
@@ -112,9 +112,21 @@ def collect_one(source: Source, fetcher: Fetcher) -> Collected:
 _CHILDREN = re.compile(r"(?:follow_all|pdf_links) → (\d+) 件")
 
 
-def _all_children_gone(trace: list[str]) -> bool:
+_GONE_IN_MESSAGE = re.compile(r"HTTP (?:404|410): ")
+
+
+def _is_gone(e: FetchError) -> bool:
+    """失敗の本体が HTTP 404・410 か。全部失敗の例外（recipe.py の _raise_if_all_failed）は子の ErrorInfo を持たず
+    other になるので、page_gone（info か先頭一致）に加えて、メッセージに入った子の失敗理由も見る。"""
+    return page_gone(e) or bool(_GONE_IN_MESSAGE.search(str(e)))
+
+
+def _all_children_gone(trace: list[str], error: FetchError) -> bool:
     """follow_all / pdf_links で辿ろうとした子の数と、skip_errors で捨てた（404・410）子の数が同じ = 全部無かった。
+    ただし落ちた原因そのものも 404・410 のときだけ（trace が揃っていても、503・接続失敗で落ちた日は「消えた」ではない）。
     trace は Executor が書く「follow_all → N 件」「skip URL: 理由」の行。形は test_repair_gate_t635 で固定している。"""
+    if not _is_gone(error):
+        return False
     tried = sum(int(m.group(1)) for line in trace if (m := _CHILDREN.match(line)))
     return tried > 0 and sum(1 for line in trace if line.startswith("skip ")) >= tried
 
