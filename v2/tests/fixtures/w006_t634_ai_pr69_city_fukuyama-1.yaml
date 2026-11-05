@@ -1,0 +1,16 @@
+# proposal: run の日付 2026-10-21・元の失敗理由 follow_all: 辿った 1 本がすべて取得に失敗（https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/415044.html: HTTP 404: https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/415044.html）・取れた頭数 1・採用条件は次の行（人が差分を見て recipes/ へ反映する。今日の HTML は <slug>.today.html）
+# 採用条件: 合格 a 必須項目・b 重複・c 行数・d 回帰（保存 HTML で 1 頭・前回 1 頭）
+# agy note: 個別ページへの follow_all で 404 エラーになっていたため steps を廃止し、入口ページの一覧表を直接読む構造に変更しました。表の各見出しから header_row で項目を取得し、0頭時の空行は row_filter で除外するようにしています。
+# 迷い犬一覧の表（table[summary='迷い犬の情報'] tbody tr）の各行を1頭とみなす。
+# 0頭のときの全セルが空白（&nbsp;）のプレースホルダ行は row_filter で除外する。
+rows: "table[summary='迷い犬の情報'] tbody tr"
+row_filter:
+  min_text_length: 5
+fields:
+  management_no: {label: "番号", header_row: true}
+  shelter_date: {label: "保護日", header_row: true, regex: "(\\d+年\\d+月\\d+日)"}
+  location: {label: "保護場所", header_row: true}
+  breed: {label: "種類", header_row: true}
+  color: {label: "毛色", header_row: true}
+  sex: {label: "性別", header_row: true}
+empty_text: ["現在、迷い犬の情報はありません", "現在、迷い犬情報はありません", "現在迷い犬の情報はありません"]
