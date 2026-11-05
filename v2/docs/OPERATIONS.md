@@ -190,7 +190,7 @@ Discord の文面はこの形:
 - 回線断: 接続系エラー（dns/connect/tls/timeout）の failed が、異なるホスト 3 つ以上かつ試行数の 10% 以上の日だけ。`latest.json` と `manifest-latest.json` を据え置く（`animals-<日付>.json` は書く）。parser や HTTP エラーが多くても据え置かない
 - ホスト遮断: 同一ホストで接続系エラーか 5xx が 3 件連続したら、その run の残りの同ホストは取りに行かず failed（「ホスト遮断中」）。`state/sources.json` の `breaker` に残り、翌日は同ホストの最初の 1 slug だけ試す。成功で閉じる。手で閉じるには該当ホストの項目を `breaker` から消す
 - **AI 修復を呼ばない日（W006 T635。`collector/repair_gate.py`）**: 読めなかった slug の AI 修復は、全 slug を読み終えてから、次のどれにも当たらないものにだけ呼ぶ。呼ばなかった理由は report の `repair` 欄・events の `repair_skip`・`data/repair_attempts/`（`called: false`）に残る。公開データと採用条件は変えない。
-  - ホスト障害の疑い（`host_suspect`）: 同じホストで同じ日に 2 slug 以上が新たに読めなくなった（前日は読めていた or 記録なし）。そのホストの slug は、疑いの slug のどれかが読めるようになるまで呼ばない（`state/sources.json` の `repair_hosts`）。CMS の作り替えで同じホストの 2 slug が同時に崩れた日も呼ばれないので、人が `collector repair <slug> --show` を手で回す
+  - ホスト障害の疑い（`host_suspect`）: 同じホストで同じ日に 2 slug 以上が新たに読めなくなった（前日は読めていた or 記録なし）。そのホストの slug は、疑いの slug のどれかが読めるようになるか、疑いを立てて 7 日たつまで呼ばない（後から同じホストで崩れた slug も、7 日の間は呼ばない。`state/sources.json` の `repair_hosts`）。CMS の作り替えで同じホストの 2 slug が同時に崩れた日も呼ばれないので、人が `collector repair <slug> --show` を手で回す
   - 1 日 1 回（`once_a_day`）: 同じ slug は 1 日 1 回まで（手で収集し直した日も）
   - 隔離（`quarantined`）: 失敗の指紋（error_info の kind・status と入口ページ本文の sha256）が同じまま 3 回試して直らなければ隔離し、呼ばない。隔離した日だけ Discord に「AI 修復を隔離した自治体」と出る。解除: 入口ページの本文が変わった、AI 修復に関わるコード（`ai_repair.py` `extract.py` `recipe.py` `recipe_schema.py` `fetch.py` `repair_schema.json`）か `docs/RECIPE.md` が変わった、読めるようになった。agy が答えなかった日と、案を書けた日は 3 回に数えない。slug ごとの状態は `sources[slug].repair`（手で解除するなら該当 slug の `repair` を消す）
   - 入口が 404・410（`entry_gone`）と、辿った子が全部 404（`children_gone`。掲載期限切れで市が個別ページだけ消す日）: レシピでは直せないので呼ばない。子の 1 本だけが 404 の日は `skip_errors` で直せるので呼ぶ
