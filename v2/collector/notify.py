@@ -17,6 +17,10 @@ from .run import DATA_DIR, outage
 from .state import FAILING, GOOD, STATE_DIR, load_state
 
 
+class WebhookMissingError(RuntimeError):
+    """送り先（DISCORD_WEBHOOK_URL）が設定されていない。"""
+
+
 def decide(report: list[dict[str, Any]], state: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
     """読めない顔ぶれが前日から変わった行を返す。state の prev_status が前日（update_sources が run の最後に書く）。
     new_failing: 今日読めず、前日は読めていた or 記録なし / recovered: 今日読めて、前日は読めなかった /
@@ -62,6 +66,15 @@ def build_message(report: list[dict[str, Any]], state: dict[str, Any] | None = N
     return "\n".join(lines)[:1900]
 
 
+def send_discord(msg: str) -> None:
+    """Discord に 1 通送る（送り先は環境変数 DISCORD_WEBHOOK_URL）。無ければ RuntimeError、送れなければ httpx.HTTPError。
+    notify・ops/audit_empty.py が共通で使う。"""
+    url = os.environ.get("DISCORD_WEBHOOK_URL")
+    if not url:
+        raise WebhookMissingError("DISCORD_WEBHOOK_URL が無いので送らない")
+    httpx.post(url, json={"content": msg}, timeout=15).raise_for_status()
+
+
 def notify(dry_run: bool = False, data_dir: Path = DATA_DIR, state_dir: Path = STATE_DIR) -> int:
     reports = sorted(data_dir.glob("report-20??-??-??.json"))
     if not reports:
@@ -76,9 +89,9 @@ def notify(dry_run: bool = False, data_dir: Path = DATA_DIR, state_dir: Path = S
     print(msg)
     if dry_run:
         return 0
-    url = os.environ.get("DISCORD_WEBHOOK_URL")
-    if not url:
-        print("DISCORD_WEBHOOK_URL が無いので送らない")
+    try:
+        send_discord(msg)
+    except WebhookMissingError as e:
+        print(e)
         return 1
-    httpx.post(url, json={"content": msg}, timeout=15).raise_for_status()
     return 0
