@@ -117,7 +117,7 @@ def test_state_tracks_failures_and_recovery(tmp_path, monkeypatch):
 def test_corrupt_state_starts_empty(tmp_path):
     (tmp_path / "state").mkdir()
     (tmp_path / "state" / "sources.json").write_text("{not json", encoding="utf-8")
-    assert load_state(tmp_path / "state") == {"sources": {}, "breaker": {}}
+    assert load_state(tmp_path / "state") == {"sources": {}, "breaker": {}, "repair_hosts": {}}
 
 
 def test_lock_blocks_second_run(tmp_path, monkeypatch):

@@ -119,6 +119,7 @@ def test_adopted_proposal_is_recorded_with_path(tmp_path):
 
 
 def test_second_run_same_day_does_not_overwrite(tmp_path):
+    # 同じ日の 2 回目は T635 の「1 日 1 回」で AI を呼ばないが、呼ばなかった記録は別名で残り、1 回目の記録と入口 HTML は消えない
     _run(tmp_path, ZERO_PAGE, ZERO_AI, hms="00:05:00")
     _run(tmp_path, JUNK_PAGE, JUNK_AI, hms="16:04:00")
     ymls, htmls = _records(tmp_path)
@@ -126,10 +127,32 @@ def test_second_run_same_day_does_not_overwrite(tmp_path):
         "x_test-2026-11-05T000500.yaml",
         "x_test-2026-11-05T160400.yaml",
     ]
-    assert [p.read_text(encoding="utf-8") for p in htmls] == [
-        ZERO_PAGE,
-        JUNK_PAGE,
-    ]  # today.html を上書きしない
+    first, second = (yaml.safe_load(p.read_text(encoding="utf-8")) for p in ymls)
+    assert (
+        first["called"] is True
+        and second["called"] is False
+        and second["skip_reason"] == "once_a_day"
+    )
+    assert [p.read_text(encoding="utf-8") for p in htmls] == [ZERO_PAGE]
+
+
+def test_write_attempt_keeps_every_run_of_the_same_day(tmp_path):
+    from collector.repair_attempts import write_attempt
+
+    write_attempt(
+        tmp_path, "2026-11-05", "s", "2026-11-05T000500", {"slug": "s"}, b"<html>1</html>"
+    )
+    write_attempt(
+        tmp_path, "2026-11-05", "s", "2026-11-05T160400", {"slug": "s"}, b"<html>2</html>"
+    )
+    d = tmp_path / "2026-11-05"
+    assert sorted(p.name for p in d.iterdir()) == [
+        "s-2026-11-05T000500.html",
+        "s-2026-11-05T000500.yaml",
+        "s-2026-11-05T160400.html",
+        "s-2026-11-05T160400.yaml",
+    ]
+    assert (d / "s-2026-11-05T000500.html").read_bytes() == b"<html>1</html>"
 
 
 def test_old_date_directories_are_rotated_at_run_start(tmp_path):

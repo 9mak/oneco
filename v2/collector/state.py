@@ -3,6 +3,7 @@
 slug ごと: last_ok / last_ok_count / consecutive_failures（日数）/ first_failed / last_status /
            last_error_kind / last_host / last_date / prev_status
 ホストごと: breaker[host] = {opened: 日付, failures: 件数}（T603）
+AI 修復の呼び出し制御（T635。中身は repair_gate.py）: sources[slug].repair / repair_hosts[host]
 """
 
 from __future__ import annotations
@@ -29,7 +30,7 @@ class AlreadyRunningError(RuntimeError):
 
 
 def _empty() -> dict[str, Any]:
-    return {"sources": {}, "breaker": {}}
+    return {"sources": {}, "breaker": {}, "repair_hosts": {}}
 
 
 def load_state(state_dir: Path = STATE_DIR) -> dict[str, Any]:
@@ -46,6 +47,8 @@ def load_state(state_dir: Path = STATE_DIR) -> dict[str, Any]:
     data.setdefault("sources", {})
     if not isinstance(data.get("breaker"), dict):
         data["breaker"] = {}
+    if not isinstance(data.get("repair_hosts"), dict):
+        data["repair_hosts"] = {}
     return data
 
 
@@ -98,6 +101,7 @@ def update_sources(state: dict[str, Any], report: list[dict[str, Any]], date: st
         if status in GOOD:
             st.update(last_ok=date, last_ok_count=r.get("count", 0), consecutive_failures=0, first_failed=None,
                       last_error_kind=None)
+            st.pop("repair", None)   # 読めるようになったら AI 修復の試行回数・隔離を忘れる（T635）
         else:
             info = r.get("error_info") or {}
             st["consecutive_failures"] = prev_n + 1

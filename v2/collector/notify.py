@@ -36,7 +36,9 @@ def build_message(report: list[dict[str, Any]], state: dict[str, Any] | None = N
     """通知する内容が無ければ None。state が None なら記録なしとして、読めない slug を全部新規扱いにする。"""
     ev = decide(report, state or {})
     held = outage(report)
-    if not ev["new_failing"] and not ev["recovered"] and not held:
+    # AI 修復を隔離した（同じ失敗で 3 回試して直らない。T635）日は、顔ぶれが変わらなくても 1 回だけ知らせる
+    quarantined = [r for r in report if r.get("quarantine_started")]
+    if not ev["new_failing"] and not ev["recovered"] and not held and not quarantined:
         return None
     lines = []
     if held:
@@ -50,6 +52,9 @@ def build_message(report: list[dict[str, Any]], state: dict[str, Any] | None = N
     if ev["recovered"]:
         lines.append(f"読めるようになった自治体 {len(ev['recovered'])} 件")
         lines.extend(f"- {r['name']}（{r['count']} 頭）" for r in ev["recovered"])
+    if quarantined:
+        lines.append(f"AI 修復を隔離した自治体 {len(quarantined)} 件（同じ失敗で 3 回試して直らない。人が直す）")
+        lines.extend(f"- {r['name']}: {r['error']}" for r in quarantined)
     if ev["still_failing"]:
         lines.append(f"引き続き読めない {len(ev['still_failing'])} 件")
     ok = sum(r["count"] for r in report if r["status"] == "ok")
