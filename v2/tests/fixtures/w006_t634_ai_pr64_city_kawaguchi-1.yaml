@@ -1,0 +1,21 @@
+# proposal: run の日付 2026-10-21・元の失敗理由 0 頭で empty_text も無い（行 0・捨てた 0）・取れた頭数 1・採用条件は次の行（人が差分を見て recipes/ へ反映する。今日の HTML は <slug>.today.html）
+# 採用条件: 合格 a 必須項目・b 重複・c 行数 / 飛ばした d 回帰（保存 HTML なし） / 回帰未確認
+# agy note: 子ページへ辿る steps を廃止し、入口ページの「市が保護している動物の情報」リスト（ul.level1col2 li.page）から直接保護動物を読み取るように変更しました。リンクテキストから収容日・種別・品種・毛色を取得し、注意事項のリンクは row_filter で除外します。0頭の判定は入口ページの枠とリンクの有無を照合する empty_absent で行います。
+# 川口市保健所（迷子・保護動物）: 入口ページの「市が保護している動物の情報」リスト（ul.level1col2 li.page）から
+# 「注意事項」以外の保護動物へのリンク行を 1 頭として読む。
+# リンクテキストから収容日・種別・品種・毛色を抽出し、リンク先を detail に設定する。
+rows: "#contents-in ul.level1col2 li.page"
+row_filter:
+  text_has_any: ["収容"]
+  text_lacks: ["注意事項"]
+species:
+  from: text
+  map: {"犬": dog, "猫": cat}
+fields:
+  shelter_date: {regex: "(\\S+?日)\\s*収容"}
+  breed: {regex: "【\\s*(?:犬|猫)[・\\s]+([^・（(】\\s]+)"}
+  color: {regex: "[（(]([^）)]+)[）)]"}
+  detail: {selector: "a", attr: "href"}
+empty_absent:
+  page: "#contents-in h2:-soup-contains('市が保護している動物の情報')"
+  none: "#contents-in ul.level1col2 li.page a:not([href*='25529'])"

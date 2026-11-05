@@ -1,0 +1,28 @@
+# 川口市保健所（迷子・保護動物）: 入口ページの「市が保護している動物の情報」節は、保護中の動物 1 頭ごとに子ページへのリンク
+# （ul.level1col2 の li.page。文字は「令和4年8月19日収容【 犬・雑種】」）が並ぶ。動物がいない日はリンクが「注意事項」(25529.html) だけで、
+# 見出しと「※下記に記載がない場合、該当する保護動物はいません。」（常に出ている説明文）しか出ない（2026-10-07 の実ページと Wayback 2023-03〜2025-06 の 5 版）。
+# 子ページ（Wayback 2021-05〜2023-02 の動物がいた 6 版の子ページ 8 本で確認）は 1 頭 = div.cmstag（写真 + 「収容日：…」「収容場所：…」「種類：…」の p 並び）。管理番号は無く、
+# 写真は 2 枚目が別の div.cmstag（収容日の無い写真だけのブロック）に入るので、収容日のあるブロックだけを 1 頭として読む。
+# 種別は子ページの h1「令和4年8月19日収容【 犬・雑種】」の犬・猫。
+# 0 頭の判定は empty_absent: 入口に見出しがあり、動物の枠（div.cmstag）も「注意事項」以外の子ページへのリンクも無い日だけ 0 頭。
+# 動物が別の作りで載った日は 0 頭にならず「読めなかった」通知が出るので、そこで実ページを見てレシピを直す。
+steps:
+  - follow_all: "#contents-in ul.level1col2 li.page a:not([href*='/lost/25529'])@href"
+    skip_errors: true
+rows: "#contents-in div.cmstag:-soup-contains('収容日')"
+image: "img@src"
+species:
+  from: heading
+  selector: "h1"
+  map: {"犬": dog, "猫": cat}
+fields:
+  shelter_date: {regex: "収容日[:：]\\s*(\\S+)"}
+  location: {regex: "収容場所[:：]\\s*(\\S+)"}
+  size: {regex: "(?:体格・)?大きさ[:：]\\s*(\\S+)"}
+  breed: {regex: "(?:品\\s*種|種類)[:：]\\s*(\\S+)"}
+  sex: {regex: "性別[:：]\\s*(\\S+)"}
+  color: {regex: "毛色[:：]\\s*(\\S+)"}
+  note: {regex: "備考[:：]\\s*(.+)$"}
+empty_absent:
+  page: "#contents-in h2:-soup-contains('市が保護している動物の情報')"
+  none: "#contents-in div.cmstag, #contents-in ul.level1col2 li.page a:not([href*='/lost/25529'])"

@@ -111,9 +111,15 @@ AI の案は **採用条件**（`collector/ai_repair.py` の `check_adoption`、
 | c 行数の一致 | レシピが拾った行 = 動物 + 捨てた行。かつ「写真も管理番号も収容日も個体ページも無い」「種別が決まらず…中身の無い行」で捨てた行が拾った行の半分を超えない（雛形・広告・無関係な行を拾っている兆候） |
 | d 直近正常日での回帰 | run の ok 経路が `data/last_ok/<slug>/` に入口 HTML と辿った文書（PDF はバイト列のまま）をその日の頭数（`index.json` の `count`）と一緒に 1 世代だけ保存する（1 文書 2MB・1 世代 10MB・60 文書を超える、または render を使った run は保存せず前世代を残す。置換は `.old-<slug>` へ退避してから行い、run の開始時に `.tmp-*`・`.old-*` の残骸を片付ける）。新レシピをこの保存 HTML に当て、頭数が基準（保存した `count`、無ければ `state/sources.json` の `last_ok_count`）± max(2 頭、50%)（両端を含む・下限 0）に入ること。保存か基準が無い slug は飛ばし、ヘッダに「回帰未確認」と書く |
 | e 今日の HTML | `data/proposals/<slug>.today.html` に案と並べて保存する（期待値は assert しない） |
+| v1 見出しの語が値に入る | location・breed・color・sex・size の値が、見出しの語（収容日・収容場所・種類・毛色・性別・体格・特徴・状況 など。`HEADING_WORDS`）そのもの、またはその語＋区切り（空白・コロン）で始まる。途中に出る語は当てない。note・age は自由文なので見ない（W006 T634。豊田 #76 の型） |
+| v2 収容日以外に日付が入る | 同じ 5 項目に「N月N日」や和暦・西暦の年月日が入る。住所の番地（2-15-20）は当てない（広島 #84 の型） |
+| v3 現行の指定を消す・狭める | 現行レシピの location・写真（image の selector・exclude 等）・steps（種類と skip_errors）、除外の指定（row_filter の text_lacks・field_lacks。text_has_any 等を丸ごと消すのも）、掲載期限の指定（名前か label に期限を持つ項目、row_filter の期限の語）を、新レシピが消すか減らしていたら不合格。広げる変更（語を足す）は止めない（川口 #64・福山 #69 の型） |
+| v4 旧新レシピを保存ページに当てる | `data/last_ok/<slug>/` と、`tests/fixtures` の名前に slug が入る入口 HTML（最大 12 件）に、旧レシピと新レシピを当てる。旧レシピが読めた（1 頭以上・v1・v2 に当たらない）保存ページで、旧レシピで載っていた子が載らない・ID が変わる・埋まっていた項目が空になる・値が変わるなら不合格。旧レシピが読めない保存ページは数えない。比べられたのが 0 件なら「半自動の対象外」と書く（draft のまま人が見る） |
+| AI が足した器の指定 | 採用条件の前に、旧レシピに無い（または違う）`empty_absent`・`empty_selector`・`empty_container` を無条件に取り除く。器の指定は人だけが書く。外したことは警告に出る（`empty_text` の文言は対象外） |
 
 **d は誤採用を止めない。止めるのは人の目（PR の差分）。** 保存 HTML で 0 頭（旧構造に当たらない・保存に無い URL を辿った）のときは不合格にせず、「回帰 NG（旧構造の可能性）」に「今日の HTML の頭数 N・前回 ok M 頭」を添える。N が M の ± max(2, 50%) から外れるなら「回帰 NG（強）」と一段強く書く。保存 HTML で 1 頭以上取れて範囲外のときだけ不合格。
 合否と警告は案の 2 行目 `# 採用条件:` と PR 本文に載る。
+`collector propose` は PR にする直前に、その slug の最新の status（`data/report-*.json` の最新）を見る。ok か empty に戻っていたら案は古いので PR にせず `data/proposals/stale/` へ移す（W006 T634 v8）。
 AI は案を書くだけ。案は `collector propose` が draft PR にし、**オーナーが PR を merge したときだけ本番に入る**（自動 merge はしない）。PR は作業用 clone（`ONECO_REPAIR_CLONE`、既定 `<v2>/../.repair-clone`）から作るので、`git` と `gh` が要る。
 
 資格情報は自動 PR 専用のトークンに限定する（W006 T622）。個人の `gh auth login`（repo・workflow 等の広い scope）や macOS の osxkeychain に入っている個人の資格情報は使わない:
@@ -145,6 +151,7 @@ AI は案を書くだけ。案は `collector propose` が draft PR にし、**�
 4. `wrangler deploy`（`ops/wrangler.jsonc`）— `site/dist/` を Cloudflare Workers の静的アセットへ
 5. **月曜（JST）だけ** `collector discover --notify` — 環境省リンク集と台帳の差分のうち、確認済み一覧（`registry/discover_known.yaml`）に無いもの（新しく増えた・消えた自治体）があるときだけ Discord に 1 通（4 節）。成否は「全部成功」に数えない（失敗しても rc・healthcheck・「失敗した工程」通知に影響しない）
 6. 全部成功したら `HEALTHCHECK_URL` へ ping
+7. 収集と公開が終わった後に `ops/audit_empty.py --notify`（W006 T631）。0 頭の根拠（`empty_text`・`empty_text_all`・`empty_selector`・`empty_absent`）が、**子がいた日の保存ページ**（`data/last_ok/<slug>/`。今のレシピで 1 頭以上取れるもの）にも成立する slug を探す。empty は ok と同じ扱いで通知も AI 修復も止まるので、そういう slug は行の読み方が崩れた日に通知なしで「本日は 0 頭」と出る。当たる slug の集合が前回（`data/audit_empty_state.json`）と変わった日だけ Discord に 1 通。送れなかった日は記録せず翌日また送る。失敗しても収集全体の成否・healthcheck には数えない。手で見るときは `PYTHONPATH=v2 python v2/ops/audit_empty.py --data v2/data [--slug 接頭辞] [--json]`（出力: slug・根拠の種類・当たった文言か要素・当たった文書の URL・出現回数）。render の slug は保存ページが無く、保存に無い URL を辿る slug（移転直後など）は当てられないので、どちらも対象外（件数は標準エラーに出る）。直し方は RECIPE.md「空のとき」の `empty_text_all`
 
 途中で失敗しても止まらない。収集が全滅した日でも `data/latest.json` は前日のものが残っているので、サイトは「昨日のまま」出続ける（落ちない）。
 

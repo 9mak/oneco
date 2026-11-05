@@ -6,7 +6,7 @@ import pytest
 from collector import propose as pr
 
 HEADER = "# proposal: run の日付 2026-10-09・元の失敗理由 0 頭で empty_text も無い・取れた頭数 7・採用条件はまだ通していない\n# agy note: 表の行を 1 頭とした\n"
-BODY = "rows: \"table.list tr\"\nfields:\n  sex: \"td\"\n"
+BODY = 'rows: "table.list tr"\nfields:\n  sex: "td"\n'
 
 
 class _P:
@@ -73,10 +73,15 @@ def test_creates_draft_pr_and_moves_proposal(env, monkeypatch):
     create = next(c for c in rec.calls if c[:3] == ["gh", "pr", "create"])
     assert "--draft" in create
     body = create[create.index("--body") + 1]
-    assert "city_a" in body and "0 頭で empty_text も無い" in body and "7" in body and "表の行を 1 頭とした" in body
+    assert (
+        "city_a" in body
+        and "0 頭で empty_text も無い" in body
+        and "7" in body
+        and "表の行を 1 頭とした" in body
+    )
     assert "merge すれば翌日の収集から本番に入る" in body
     copied = (clone / "v2" / "recipes" / "city_a.yaml").read_text(encoding="utf-8")
-    assert copied.startswith("# proposal:")   # 手がかりのコメントを消さない
+    assert copied.startswith("# proposal:")  # 手がかりのコメントを消さない
     assert not (pdir / "city_a.yaml").exists() and (pdir / "done" / "city_a-20261010.yaml").exists()
     assert sent == [{"content": "レシピ案 PR: https://github.test/pr/9（city_a）"}]
 
@@ -100,7 +105,7 @@ def test_skips_open_pr_and_same_content(env, monkeypatch):
     monkeypatch.setattr(pr.subprocess, "run", rec)
     assert pr.propose(proposals_dir=pdir, today="20261010") == 0
     assert not any(c[:3] == ["gh", "pr", "create"] for c in rec.calls)
-    assert (pdir / "city_a.yaml").exists()   # 作っていないので移さない
+    assert (pdir / "city_a.yaml").exists()  # 作っていないので移さない
     # 本番レシピと同じ中身（コメントだけ違う）なら飛ばす
     fake_root = pdir.parent / "v2"
     (fake_root / "recipes").mkdir(parents=True)
@@ -117,12 +122,12 @@ def test_max_five_and_failure_does_not_stop(env, monkeypatch):
     pdir, _, _ = env
     for i in range(8):
         _add(pdir, f"city_{i}")
-    rec = Recorder(fail_on="repair/city_0")   # 最初の 1 件の checkout が失敗
+    rec = Recorder(fail_on="repair/city_0")  # 最初の 1 件の checkout が失敗
     monkeypatch.setattr(pr.subprocess, "run", rec)
     assert pr.propose(proposals_dir=pdir, today="20261010") == 1
     creates = [c for c in rec.calls if c[:3] == ["gh", "pr", "create"]]
     assert len(creates) == pr.MAX_PR_PER_RUN
-    assert (pdir / "city_0.yaml").exists()   # 失敗した案は残す
+    assert (pdir / "city_0.yaml").exists()  # 失敗した案は残す
     assert len(list((pdir / "done").glob("*.yaml"))) == 5
 
 
@@ -137,6 +142,7 @@ def test_dry_run_runs_nothing(env, monkeypatch):
 # --- T622: 自動 PR 用の資格情報を ONECO_GITHUB_TOKEN に限定する（個人の gh ログインや osxkeychain を使わない） ---
 class EnvRecorder(Recorder):
     """subprocess.run に渡った env も記録する。"""
+
     def __init__(self, *a, **k):
         super().__init__(*a, **k)
         self.envs: list[dict | None] = []
@@ -156,10 +162,10 @@ def test_token_is_used_for_git_and_gh_without_appearing_in_argv(env, monkeypatch
     assert pr.propose(proposals_dir=pdir, today="20261010") == 0
     for cmd, e in zip(rec.calls, rec.envs, strict=True):
         joined = " ".join(cmd)
-        assert "ghp_secret_token" not in joined, cmd          # トークンは argv に出さない（ps で見える）
+        assert "ghp_secret_token" not in joined, cmd  # トークンは argv に出さない（ps で見える）
         if cmd[0] == "git" and any(w in cmd for w in ("clone", "fetch", "push")):
-            assert "credential.helper=" in joined, cmd       # ネットワークに出る git は独自 helper 経由
-            assert "ONECO_GITHUB_TOKEN" in joined, cmd        # helper は環境変数から読む
+            assert "credential.helper=" in joined, cmd  # ネットワークに出る git は独自 helper 経由
+            assert "ONECO_GITHUB_TOKEN" in joined, cmd  # helper は環境変数から読む
             assert e is not None and e.get("ONECO_GITHUB_TOKEN") == "ghp_secret_token"
             assert e.get("GIT_TERMINAL_PROMPT") == "0"
         if cmd[0] == "gh":
@@ -175,3 +181,82 @@ def test_without_token_commands_are_unchanged(env, monkeypatch):
     assert pr.propose(proposals_dir=pdir, today="20261010") == 0
     assert not any("credential.helper" in " ".join(c) for c in rec.calls)
     assert all(e is None or "GH_TOKEN" not in e for e in rec.envs)
+
+
+# --- W006 T634 v8: PR にする直前に、その slug の最新の status を見る -------------------------------------
+def _report(dirpath: Path, day: str, rows: dict[str, str]) -> None:
+    import json
+
+    (dirpath / f"report-{day}.json").write_text(
+        json.dumps(
+            [{"slug": s, "status": st, "count": 0, "error": None} for s, st in rows.items()]
+        ),
+        encoding="utf-8",
+    )
+
+
+def _creates(rec: Recorder) -> int:
+    return len([c for c in rec.calls if c[:3] == ["gh", "pr", "create"]])
+
+
+@pytest.mark.parametrize("status", ["ok", "empty"])
+def test_v8_recovered_slug_is_not_proposed_and_the_stale_proposal_is_set_aside(
+    env, monkeypatch, status
+):
+    pdir, _, sent = env
+    _add(pdir, "city_a")
+    _report(pdir.parent, "2026-10-30", {"city_a": "failed"})
+    _report(pdir.parent, "2026-10-31", {"city_a": status})  # 最新の report
+    rec = Recorder()
+    monkeypatch.setattr(pr.subprocess, "run", rec)
+    assert pr.propose(proposals_dir=pdir, today="20261031") == 0
+    assert _creates(rec) == 0 and not any(c[:3] == ["gh", "pr", "list"] for c in rec.calls)
+    assert (
+        not (pdir / "city_a.yaml").exists() and (pdir / "stale" / "city_a-20261031.yaml").exists()
+    )
+    assert sent == []
+
+
+@pytest.mark.parametrize("status", ["failed", "ambiguous_empty"])
+def test_v8_still_broken_slug_is_proposed(env, monkeypatch, status):
+    pdir, _, _ = env
+    _add(pdir, "city_a")
+    _report(pdir.parent, "2026-10-31", {"city_a": status, "city_b": "ok"})
+    rec = Recorder()
+    monkeypatch.setattr(pr.subprocess, "run", rec)
+    pr.propose(proposals_dir=pdir, today="20261031")
+    assert _creates(rec) == 1
+
+
+def test_v8_without_a_report_or_without_the_slug_in_it_proposes_as_before(env, monkeypatch):
+    pdir, _, _ = env
+    _add(pdir, "city_a")
+    rec = Recorder()
+    monkeypatch.setattr(pr.subprocess, "run", rec)
+    pr.propose(proposals_dir=pdir, today="20261031")  # report が無い
+    assert _creates(rec) == 1
+    _add(pdir, "city_c")
+    _report(pdir.parent, "2026-10-31", {"city_other": "ok"})  # report に slug が無い
+    rec2 = Recorder()
+    monkeypatch.setattr(pr.subprocess, "run", rec2)
+    pr.propose(proposals_dir=pdir, today="20261031")
+    assert _creates(rec2) == 1
+
+
+def test_v8_dry_run_reports_but_moves_nothing(env, monkeypatch, capsys):
+    pdir, _, _ = env
+    _add(pdir, "city_a")
+    _report(pdir.parent, "2026-10-31", {"city_a": "ok"})
+    monkeypatch.setattr(pr.subprocess, "run", lambda *a, **k: pytest.fail("dry-run は何も呼ばない"))
+    assert pr.propose(dry_run=True, proposals_dir=pdir, today="20261031") == 0
+    assert (pdir / "city_a.yaml").exists() and "PR にしない" in capsys.readouterr().out
+
+
+def test_v8_unreadable_report_does_not_block_a_proposal(env, monkeypatch):
+    pdir, _, _ = env
+    _add(pdir, "city_a")
+    (pdir.parent / "report-2026-10-31.json").write_text("{not json", encoding="utf-8")
+    rec = Recorder()
+    monkeypatch.setattr(pr.subprocess, "run", rec)
+    pr.propose(proposals_dir=pdir, today="20261031")
+    assert _creates(rec) == 1

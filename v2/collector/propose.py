@@ -7,6 +7,7 @@ PR の merge はしない（オーナーが差分を見て merge したときだ
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -28,7 +29,7 @@ class StepError(Exception):
     pass
 
 
-TOKEN_ENV = "ONECO_GITHUB_TOKEN"   # W006 T622: 自動 PR 専用の fine-grained PAT（oneco だけ・Contents と Pull requests の RW）
+TOKEN_ENV = "ONECO_GITHUB_TOKEN"  # W006 T622: 自動 PR 専用の fine-grained PAT（oneco だけ・Contents と Pull requests の RW）
 # git の credential helper。トークンは argv に出さず（ps で見える）、helper が環境変数から読む
 _GIT_HELPER = f"!f() {{ printf 'username=x-access-token\\npassword=%s\\n' \"${TOKEN_ENV}\"; }}; f"
 _NETWORK_GIT = frozenset({"clone", "fetch", "push", "pull", "ls-remote"})
@@ -42,7 +43,7 @@ def _git(*args: str) -> list[str]:
     """git コマンド。トークンがあればネットワークに出る操作だけ専用 helper を使う（個人の osxkeychain・gh のログインは使わない）。"""
     cmd = ["git", *args]
     if _token() and any(a in _NETWORK_GIT for a in args):
-        i = 1 + (2 if args[:1] == ("-C",) else 0)   # `git -C <dir>` の直後に -c を置く
+        i = 1 + (2 if args[:1] == ("-C",) else 0)  # `git -C <dir>` の直後に -c を置く
         cmd[i:i] = ["-c", "credential.helper=", "-c", f"credential.helper={_GIT_HELPER}"]
     return cmd
 
@@ -53,10 +54,14 @@ def _run(cmd: list[str], cwd: Path | None = None) -> str:
     if tok and cmd[:1] in (["git"], ["gh"]):
         env = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
         if cmd[0] == "gh":
-            env["GH_TOKEN"] = tok   # gh は GH_TOKEN があればログイン情報より優先する
-    p = subprocess.run(cmd, check=False, cwd=cwd, capture_output=True, text=True, timeout=300, env=env)
+            env["GH_TOKEN"] = tok  # gh は GH_TOKEN があればログイン情報より優先する
+    p = subprocess.run(
+        cmd, check=False, cwd=cwd, capture_output=True, text=True, timeout=300, env=env
+    )
     if p.returncode != 0:
-        raise StepError(f"{' '.join(cmd[:3])} が失敗 (exit {p.returncode}): {(p.stderr or p.stdout).strip()[:300]}")
+        raise StepError(
+            f"{' '.join(cmd[:3])} が失敗 (exit {p.returncode}): {(p.stderr or p.stdout).strip()[:300]}"
+        )
     return p.stdout
 
 
@@ -71,12 +76,36 @@ def _ensure_clone(clone: Path) -> None:
     _run(_git("clone", "--quiet", origin, str(clone)))
 
 
+RECOVERED_STATUSES = frozenset({"ok", "empty"})
+
+
+def latest_status(slug: str, report_dir: Path) -> str | None:
+    """その slug の最新の report（data/report-YYYY-MM-DD.json のうち日付が最も新しいもの）の status。
+    report が無い・読めない・slug が載っていないときは None（判断材料が無いので止めない）。"""
+    reports = sorted(report_dir.glob("report-*.json")) if report_dir.is_dir() else []
+    if not reports:
+        return None
+    try:
+        rows = json.loads(reports[-1].read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(rows, list):
+        return None
+    for row in rows:
+        if isinstance(row, dict) and row.get("slug") == slug:
+            status = row.get("status")
+            return status if isinstance(status, str) else None
+    return None
+
+
 def _differs(proposal: Path, recipe: Path) -> bool:
     """コメントを除いた YAML の中身が違うか。本番レシピが無ければ違う。"""
     if not recipe.exists():
         return True
     try:
-        return yaml.safe_load(proposal.read_text(encoding="utf-8")) != yaml.safe_load(recipe.read_text(encoding="utf-8"))
+        return yaml.safe_load(proposal.read_text(encoding="utf-8")) != yaml.safe_load(
+            recipe.read_text(encoding="utf-8")
+        )
     except yaml.YAMLError:
         return True
 
@@ -85,7 +114,11 @@ def _header_info(text: str) -> tuple[str, str, str]:
     """案の先頭コメントから (元の失敗理由, 頭数, agy の note) を取る。"""
     why = re.search(r"元の失敗理由 (.*?)・取れた頭数 (\d+)", text)
     note = re.search(r"^# agy note: (.*)$", text, re.M)
-    return (why.group(1) if why else "不明", why.group(2) if why else "?", note.group(1) if note else "")
+    return (
+        why.group(1) if why else "不明",
+        why.group(2) if why else "?",
+        note.group(1) if note else "",
+    )
 
 
 def _adoption_line(text: str) -> str:
@@ -114,9 +147,18 @@ def _notify(msg: str) -> None:
         print(f"-- Discord に送れなかった: {e}")
 
 
-def propose(dry_run: bool = False, proposals_dir: Path | None = None, today: str | None = None) -> int:
-    """案を 1 件ずつ PR にする。作った PR の数ではなく、失敗が 1 件でもあれば 1 を返す。"""
+def propose(
+    dry_run: bool = False,
+    proposals_dir: Path | None = None,
+    today: str | None = None,
+    report_dir: Path | None = None,
+) -> int:
+    """案を 1 件ずつ PR にする。作った PR の数ではなく、失敗が 1 件でもあれば 1 を返す。
+    PR にする直前に、その slug の最新の status を見る（W006 T634 v8）。ok か empty に戻っていたら、案は古いので
+    PR にせず proposals/stale/ へ移す（福山 #69: 案が出た時点で一覧が空に戻り、直す対象が無かった）。
+    report_dir は report-*.json のある所（既定は案の置き場 data/proposals の親 = data/）。"""
     pdir = proposals_dir or PROPOSALS_DIR
+    rdir = report_dir or pdir.parent
     day = today or datetime.now(JST).strftime("%Y%m%d")
     files = sorted(pdir.glob("*.yaml")) if pdir.exists() else []
     names = {s.slug: s.name for s in load_sources()}
@@ -131,10 +173,18 @@ def propose(dry_run: bool = False, proposals_dir: Path | None = None, today: str
         if not _differs(f, ROOT / "recipes" / f"{slug}.yaml"):
             print(f"{slug}: 本番レシピと同じ内容なので飛ばす")
             continue
+        status = latest_status(slug, rdir)
+        if status in RECOVERED_STATUSES:
+            print(f"{slug}: 最新の status が {status} に戻っているので PR にしない（案は古い）")
+            if not dry_run:
+                stale = pdir / "stale"
+                stale.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(f), str(stale / f"{slug}-{day}.yaml"))
+            continue
         if made >= MAX_PR_PER_RUN:
             print(f"{slug}: 1 回の PR は最大 {MAX_PR_PER_RUN} 件。残りは次回")
             continue
-        branch = f"repair/{slug}"   # 日付を付けない: 同じ slug の open PR は 1 つだけ（reviewer F-01）。close 済みなら同名ブランチを上書きして作り直す
+        branch = f"repair/{slug}"  # 日付を付けない: 同じ slug の open PR は 1 つだけ（reviewer F-01）。close 済みなら同名ブランチを上書きして作り直す
         name = names.get(slug, slug)
         text = f.read_text(encoding="utf-8")
         why, count, note = _header_info(text)
@@ -144,7 +194,22 @@ def propose(dry_run: bool = False, proposals_dir: Path | None = None, today: str
             continue
         try:
             _ensure_clone(clone)
-            if _run(["gh", "pr", "list", "--head", branch, "--state", "open", "--json", "url", "-q", ".[].url"], cwd=clone).strip():
+            if _run(
+                [
+                    "gh",
+                    "pr",
+                    "list",
+                    "--head",
+                    branch,
+                    "--state",
+                    "open",
+                    "--json",
+                    "url",
+                    "-q",
+                    ".[].url",
+                ],
+                cwd=clone,
+            ).strip():
                 print(f"{slug}: open な PR が既にある。飛ばす")
                 continue
             c = str(clone)
@@ -154,10 +219,25 @@ def propose(dry_run: bool = False, proposals_dir: Path | None = None, today: str
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(f, dest)
             _run(["git", "-C", c, "add", f"v2/recipes/{slug}.yaml"])
-            _run(["git", "-C", c, "commit", "-m", f"v2 repair: {slug} のレシピ案（agy・{count} 頭）"])
-            _run(_git("-C", c, "push", "--force-with-lease", "-u", "origin", branch))   # 前回（close 済み）の同名ブランチを上書き
-            out = _run(["gh", "pr", "create", "--draft", "--title", f"v2 repair: {name}（{slug}）のレシピ案",
-                        "--body", _pr_body(slug, name, why, count, note, _adoption_line(text))], cwd=clone)
+            _run(
+                ["git", "-C", c, "commit", "-m", f"v2 repair: {slug} のレシピ案（agy・{count} 頭）"]
+            )
+            _run(
+                _git("-C", c, "push", "--force-with-lease", "-u", "origin", branch)
+            )  # 前回（close 済み）の同名ブランチを上書き
+            out = _run(
+                [
+                    "gh",
+                    "pr",
+                    "create",
+                    "--draft",
+                    "--title",
+                    f"v2 repair: {name}（{slug}）のレシピ案",
+                    "--body",
+                    _pr_body(slug, name, why, count, note, _adoption_line(text)),
+                ],
+                cwd=clone,
+            )
         except (StepError, OSError, subprocess.TimeoutExpired) as e:
             print(f"{slug}: PR を作れなかった。飛ばす: {e}")
             failed += 1
