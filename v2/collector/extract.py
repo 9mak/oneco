@@ -155,21 +155,6 @@ def _is_blank(el: Tag) -> bool:
     return el.find(True) is None and not el.get_text(strip=True)
 
 
-def _blank_container(doc: Doc, selectors: list[str]) -> bool:
-    """empty_selector: いずれかのセレクタに合う要素がこの文書にあり、合った要素がすべて空なら True。
-
-    0 頭の日に文言が出ず、一覧の器が空になるだけのサイト用（豊橋市あいくる div.dog-cat-list、
-    福岡県動物愛護センター div.animals-list ul）。器が無い日（構造が変わった日）は False で、failed として通知される。
-    """
-    if doc.soup is None:
-        return False
-    for sel in selectors:
-        found = doc.soup.select(sel)
-        if found and all(_is_blank(el) for el in found):
-            return True
-    return False
-
-
 def _absent_list(doc: Doc, spec: dict[str, str]) -> bool:
     """empty_absent: この文書に枠（page）があり、一覧の器や個体へのリンク（none）が 1 つも無ければ True。
 
@@ -287,6 +272,53 @@ def _all_excluded_evidence(recipe: Recipe, docs: list[Doc]) -> tuple[str | None,
     return None, "。".join(reasons)
 
 
+@dataclass
+class EmptyHit:
+    """0 頭の根拠が 1 つ成立したこと。build の 0 頭判定と ops/audit_empty.py（子のいる日に成立していないかの監査）が同じ関数を通る。"""
+    kind: str            # empty_selector / empty_absent / empty_text / empty_text_all
+    detail: str          # 当たった文言（empty_text_all は " + " でつないだ全文）かセレクタ
+    urls: list[str]      # 当たった文書の URL
+    count: int           # 出現回数（要素なら該当要素の数）
+
+
+def empty_hits(recipe: Recipe, pool: list[Doc]) -> list[EmptyHit]:
+    """レシピの 0 頭の根拠のうち、pool（rows を当てる文書 + 辿った文書）で成立しているものを build が試す順に全部返す。
+    動物が 0 頭かどうかはここでは見ない（呼ぶ側の条件）。empty_container と全行除外の根拠は「行はあるが全部除外」の日の
+    判定で、子が取れている日には成立しないのでここには含めない。"""
+    hits: list[EmptyHit] = []
+    for sel in recipe.empty_selector:
+        # セレクタに合う要素がその文書にあり、合った要素がすべて空なら成立（豊橋市あいくる div.dog-cat-list、
+        # 福岡県動物愛護センター div.animals-list ul）。器が無い日（構造が変わった日）は成立せず failed として通知される
+        ok =[(d, d.soup.select(sel)) for d in pool if d.soup is not None]
+        ok = [(d, found) for d, found in ok if found and all(_is_blank(el) for el in found)]
+        if ok:
+            hits.append(EmptyHit("empty_selector", sel, [d.url for d, _ in ok], sum(len(f) for _, f in ok)))
+    if recipe.empty_absent:
+        ok_docs = [d for d in pool if _absent_list(d, recipe.empty_absent)]
+        if ok_docs:
+            n = sum(len(d.soup.select(recipe.empty_absent["page"])) for d in ok_docs)  # type: ignore[union-attr]
+            hits.append(EmptyHit("empty_absent", f"page={recipe.empty_absent['page']} none={recipe.empty_absent['none']}",
+                                 [d.url for d in ok_docs], n))
+    if recipe.empty_text or recipe.empty_text_all:
+        texts = [d.text() for d in pool]
+        # 0 頭のときだけ「現在、掲載する情報はありません」の画像を出すサイトがある（豊中市）ので img の alt も照合する
+        alts = [" ".join(str(img.get("alt") or "") for img in d.soup.find_all("img")) if getattr(d, "soup", None) is not None else ""
+                for d in pool]
+        whole = f"{' '.join(texts)} {' '.join(alts)}"
+
+        def where(phrase: str) -> list[str]:
+            return [d.url for d, t, a in zip(pool, texts, alts, strict=True) if phrase in f"{t} {a}"]
+
+        for t in recipe.empty_text:
+            if t in whole:
+                hits.append(EmptyHit("empty_text", t, where(t), whole.count(t)))
+        if recipe.empty_text_all and all(t in whole for t in recipe.empty_text_all):
+            urls = list(dict.fromkeys(u for t in recipe.empty_text_all for u in where(t)))
+            hits.append(EmptyHit("empty_text_all", " + ".join(recipe.empty_text_all), urls,
+                                 sum(whole.count(t) for t in recipe.empty_text_all)))
+    return hits
+
+
 def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | None = None) -> Result:
     """docs: rows を適用する文書。visited: 入口から辿った全文書（empty_text の照合にも使う）。"""
     res = Result(docs=len(docs))
@@ -360,22 +392,11 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
                 animal[k] = f.get(k)
             res.animals.append(animal)
     pool = list(docs) + [d for d in (visited or []) if d not in docs]
-    if not res.animals and recipe.empty_selector:
-        res.empty_confirmed = any(_blank_container(d, recipe.empty_selector) for d in pool)
-        if res.empty_confirmed:
-            res.empty_evidence = "empty_selector"
-    if not res.animals and recipe.empty_absent and not res.empty_confirmed:
-        res.empty_confirmed = any(_absent_list(d, recipe.empty_absent) for d in pool)
-        if res.empty_confirmed:
-            res.empty_evidence = "empty_absent"
-    if not res.animals and recipe.empty_text and not res.empty_confirmed:
-        alltext = " ".join(d.text() for d in pool)
-        # 0 頭のときだけ「現在、掲載する情報はありません」の画像を出すサイトがある（豊中市）ので img の alt も照合する
-        alts = " ".join(str(img.get("alt") or "") for d in pool if getattr(d, "soup", None) is not None
-                        for img in d.soup.find_all("img"))
-        res.empty_confirmed = any(t in f"{alltext} {alts}" for t in recipe.empty_text)
-        if res.empty_confirmed:
-            res.empty_evidence = "empty_text"
+    if not res.animals:
+        hits = empty_hits(recipe, pool)
+        if hits:
+            res.empty_confirmed = True
+            res.empty_evidence = hits[0].kind
     if not res.animals and res.rows and excluded == res.rows and not res.empty_confirmed:
         # 載っている子が全部「除外語」の子（飼い主が探している告知だけ等）。ただし構造が変わって全行が除外語に
         # 当たる日と区別するため、見出しの項目名一致かコンテナ存在の肯定的な証拠が要る（W006 T605）
