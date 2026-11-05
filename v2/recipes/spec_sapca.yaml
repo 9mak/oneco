@@ -6,6 +6,12 @@
 steps:
   - follow_all: "ul.list li a[href*='/lost/']@href"
 rows: "body"
+# 2026-10-31: 一覧に残った子が全部「戻りました」「亡くなりました」の日（10/31 は 22137 の 1 頭だけで「飼い主さんのところへ戻りました」）は全行除外になり、
+#   rows: body では見出しもコンテナも取れず ambiguous_empty だった。全行除外の 0 頭を確定する根拠に、済みの個体ページの項目表を置く。
+#   済みのページは項目表 table.dogcat が div.sumidetail（戻りましたは sumidetail-lost も）の直下にあり、まだいる子のページは class の無い div の直下
+#   （Wayback 2025-05〜2026-02 の個体ページ 20 枚と 10/30・10/31 の 5 枚: 済み 11 枚すべて・まだいる子 14 枚は 0 枚）。
+#   辿った個体ページに済みの枠が 1 枚も無い日（枠の名前が変わった日や、文言だけが固定の欄に出た日）は従来どおり ambiguous_empty（通知に出る）。
+empty_container: "div.sumidetail > table.dogcat"
 row_filter:
   field_lacks: {status: ["戻りました", "決まりました", "亡くなりました"]}
 image: "img[src*='/wp-content/uploads/']@src"

@@ -17,3 +17,12 @@ fields:
   location: {label: "保護場所"}
   note: {label: "その他"}   # 耳カット・特徴など（空の子もいる）
   shelter_date: {regex: "保護日(?:時)?[:：]\\s*(\\S+)"}
+# 2026-10-31: 0 頭の日は「いません」等の文言が出ず、div.kijiArea（「全N件」と記事の並び）ごと消える（10/31・11/01 の実ページで確認。
+# 10/26〜30 も follow_all が 0 件で failed。最後の 2 記事 kiji00373112・kiji00373021 は 404）。見出し「迷子猫を保護しています」は
+# サイト共通のメニューにも毎ページ出るので empty_text には使わず、本文（#cont_body）の h1.classTitle を枠にする。
+# Wayback 2026-01-22 の版は #cont_body に h1 も記事も無い崩れた版で、これは 0 頭にしない（failed）。
+# none には器（kijiArea 等）と記事へのリンクに加え、一覧の入る div.wideMenu の中のリンク全部を入れる（記事の URL の形が変わった日や、
+# 同じ見出しで下位分類へのリンクだけを並べる親分類 list03597 が返った日も 0 頭にしない）。
+empty_absent:
+  page: "#cont_body div.wideMenu h1.classTitle:-soup-contains('迷子猫を保護しています')"
+  none: "#cont_body div.kijiArea, #cont_body ul.kijilist, #cont_body li.loadbox, #cont_body a[href*='kiji'], #cont_body div.wideMenu a[href]"
