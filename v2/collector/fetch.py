@@ -333,7 +333,12 @@ class Fetcher:
                                 pass
 
                     page.on("response", _on_response)
-                page.goto(url, wait_until="networkidle", timeout=60000)
+                resp = page.goto(url, wait_until="networkidle", timeout=60000)
+                # 404・410 のページは本文があっても取得失敗にする。高松市は移転後、404 の殻を描画し続けて
+                # 「0 頭で empty_text も無い」と見分けがつかなかった（2026-11-01）。get と同じ ErrorInfo にする
+                if resp is not None and resp.status in (404, 410):
+                    raise FetchError(f"HTTP {resp.status}: {url}",
+                                     ErrorInfo("http", status=resp.status, host=host_of(url), url=url, phase="render"))
                 if wait_for:
                     try:
                         page.wait_for_selector(wait_for, timeout=WAIT_FOR_MS)

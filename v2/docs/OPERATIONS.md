@@ -144,6 +144,7 @@ AI は案を書くだけ。案は `collector propose` が draft PR にし、**�
 1. `collector run` — 台帳（`registry/sources.yaml`）の `enabled: true` のページを 1 秒間隔で全部読み、`data/animals-<日付>.json` `data/latest.json` `data/report-<日付>.json` `data/manifest-<日付>.json` を書く（`data/.tmp-<run_id>/` に全部書いて検査してから置き換える。検査に落ちたら何も置き換えない）
    - 二重起動は `state/collect.lock`（flock）で防ぐ。取れなければ run は exit 3 で何もせず終わる
    - ページが読めず `status: failed` になったもの（接続系エラー・遮断中を除く）は、`ONECO_AI_REPAIR=1` なら **その場で 1 回だけ** agy にレシピ案を書かせる。返った YAML は strict schema（`collector/recipe_schema.py`）で検査してから試し、1 頭以上取れたら **案として `data/proposals/<slug>.yaml` に保存する（`recipes/<slug>.yaml` は書き換えない。W006 T614）**。status は failed のまま。新レシピで同じ id が 2 回以上出るものは案にしない（重複）
+   - AI 修復の試行は、不採用も含めて **run ごとに** `data/repair_attempts/<日付>/<slug>-<run_id>.yaml`（W006 T633）に残る。AI が返した YAML と note、新レシピの結果（頭数・行数・捨てた行の先頭 3 行・0 頭の根拠の種類 `empty_evidence` と当たった文言 `empty_matched`）、どの段まで進んだか（`reached`: entry → answered → ran）、エラーが入る。入口の HTML（PDF なら .pdf）も同じ名前で並ぶので、同じ日に 2 回走っても上書きしない。人の直しと突き合わせて「AI の 0 頭の文言は正しかったか」を後から測る材料。`data/` は git 管理外で、日付ディレクトリは run の開始時に 30 日より前のものを消す（ログと同じ日数）。記録を書けなくても収集は続く
 2. `collector notify` — report に異常（failed、または AI がレシピを書き直した）があるときだけ Discord に 1 通。平常時は何も送らない
    - `collector propose`（`ONECO_AI_REPAIR=1` のときだけ）— `data/proposals/*.yaml` のうち `recipes/` と中身が違うものを、作業用 clone から `repair/<slug>` ブランチ（日付なし）の **draft PR** にする（最大 5 件）。同じ slug の open な PR があれば飛ばす。close した PR は、翌日も failed のままなら同名ブランチを上書きしてまた draft PR が出る（止めたいなら `enabled: false` か `link_only` にする）。PR にした案は `data/proposals/done/` へ移す。PR の中身は `diff` を見て、採るなら **merge**（翌日の収集から本番に入る）、採らないなら close。merge は Claude も cron もしない
 3. `site/build.py` — `data/latest.json` から `site/dist/` を作る
@@ -184,10 +185,16 @@ Discord の文面はこの形:
 
 ### 3-1. 状態・通知の dedup・ホスト遮断・据え置き（W006）
 
-- 状態は `v2/state/sources.json`（git 管理外）。slug ごとに `last_ok`・`last_ok_count`・`consecutive_failures`（日数）・`first_failed`・`last_status`・`prev_status`、ホストごとに `breaker`。壊れていたら警告して空から始まる（消してよい）
+- 状態は `v2/state/sources.json`（git 管理外）。slug ごとに `last_ok`・`last_ok_count`・`consecutive_failures`（日数）・`first_failed`・`last_status`・`prev_status`、ホストごとに `breaker`・`repair_hosts`、slug ごとに AI 修復の試行（`repair`）。壊れていたら警告して空から始まる（消してよい）
 - 通知は読めない自治体の顔ぶれが前日と変わった日だけ。新たに読めなくなった（今日 failed/ambiguous_empty で前日は違う・記録なし）か、読めるようになった（前日 failed/ambiguous_empty で今日 ok/empty）が 1 件でもあれば送る。同じ顔ぶれの 2 日目以降は送らず、送る日の「引き続き読めない N 件」は件数だけ。回線断の日は必ず送る。`collector notify` は state を読むだけで書かない（`--dry-run` は文面を出すだけ）
 - 回線断: 接続系エラー（dns/connect/tls/timeout）の failed が、異なるホスト 3 つ以上かつ試行数の 10% 以上の日だけ。`latest.json` と `manifest-latest.json` を据え置く（`animals-<日付>.json` は書く）。parser や HTTP エラーが多くても据え置かない
 - ホスト遮断: 同一ホストで接続系エラーか 5xx が 3 件連続したら、その run の残りの同ホストは取りに行かず failed（「ホスト遮断中」）。`state/sources.json` の `breaker` に残り、翌日は同ホストの最初の 1 slug だけ試す。成功で閉じる。手で閉じるには該当ホストの項目を `breaker` から消す
+- **AI 修復を呼ばない日（W006 T635。`collector/repair_gate.py`）**: 読めなかった slug の AI 修復は、全 slug を読み終えてから、次のどれにも当たらないものにだけ呼ぶ。呼ばなかった理由は report の `repair` 欄・events の `repair_skip`・`data/repair_attempts/`（`called: false`）に残る。公開データと採用条件は変えない。
+  - ホスト障害の疑い（`host_suspect`）: 同じホストで同じ日に 2 slug 以上が新たに読めなくなった（前日は読めていた or 記録なし）。そのホストの slug は、疑いの slug のどれかが読めるようになるまで呼ばない（`state/sources.json` の `repair_hosts`）。CMS の作り替えで同じホストの 2 slug が同時に崩れた日も呼ばれないので、人が `collector repair <slug> --show` を手で回す
+  - 1 日 1 回（`once_a_day`）: 同じ slug は 1 日 1 回まで（手で収集し直した日も）
+  - 隔離（`quarantined`）: 失敗の指紋（error_info の kind・status と入口ページ本文の sha256）が同じまま 3 回試して直らなければ隔離し、呼ばない。隔離した日だけ Discord に「AI 修復を隔離した自治体」と出る。解除: 入口ページの本文が変わった、AI 修復に関わるコード（`ai_repair.py` `extract.py` `recipe.py` `recipe_schema.py` `fetch.py` `repair_schema.json`）か `docs/RECIPE.md` が変わった、読めるようになった。agy が答えなかった日と、案を書けた日は 3 回に数えない。slug ごとの状態は `sources[slug].repair`（手で解除するなら該当 slug の `repair` を消す）
+  - 入口が 404・410（`entry_gone`）と、辿った子が全部 404（`children_gone`。掲載期限切れで市が個別ページだけ消す日）: レシピでは直せないので呼ばない。子の 1 本だけが 404 の日は `skip_errors` で直せるので呼ぶ
+  - render（Playwright）でも HTTP 404・410 を取得失敗にする（高松市は移転後も 404 の殻を描画し続け、「0 頭で empty_text も無い」に見えていた）
 - 読めない日（failed、および 0 頭に見えるが確定できない `ambiguous_empty`。全行除外なのに見出しの項目名もコンテナも合わない）は、その自治体の子は 1 頭も載らず、「情報源の一覧」に「本日は読めませんでした。自治体のページをご確認ください」と出る。前回分は保持しない（実サイトでは譲渡・返還済みかもしれないため）。`ambiguous_empty` は「取得失敗」と区別する診断用に status 名だけ report・state・events に残る
 - 翌日の probe で遮断を閉じる条件は「接続系エラーか 5xx でない」こと。parser 失敗や 404 はサイトが生きている証拠なので閉じて残りを通常どおり読む（同一ホストに複数レシピがある自治体で 1 本の崩れが全部を止めない）
 - 404・5xx・保守ページ・parser 失敗の日も同じで、その slug の子は載らない（サイトを前日のまま据え置くのは回線断の日だけ）

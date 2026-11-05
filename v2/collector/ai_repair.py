@@ -13,6 +13,7 @@ LLM は agy（Antigravity CLI、Gemini）。PATH に agy が無ければ status 
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import logging
 import re
@@ -35,6 +36,7 @@ from .last_ok import LAST_OK_DIR, load_count, load_replay
 from .recipe import Executor, Recipe, RecipeError
 from .recipe_schema import validate_recipe_dict
 from .registry import ROOT, Source
+from .repair_attempts import dropped_head
 
 log = logging.getLogger("collector.repair")
 
@@ -700,10 +702,29 @@ def _regress(
 
 
 # --- 実行 -------------------------------------------------------------------
-def _try_recipe(source: Source, recipe: Recipe, fetcher: Fetcher) -> Result:
+def _try_recipe(source: Source, recipe: Recipe, fetcher: Fetcher, attempt: dict | None = None) -> Result:
     ex = Executor(fetcher, recipe)
     docs = ex.resolve(source.url)
-    return build(source, recipe, docs, getattr(ex, "visited", None))
+    visited = getattr(ex, "visited", None)
+    res = build(source, recipe, docs, visited)
+    if attempt is not None:
+        attempt["new_recipe"] = _new_recipe_outcome(recipe, res, docs, visited)
+    return res
+
+
+def _new_recipe_outcome(recipe: Recipe, res: Result, docs: list, visited: list | None) -> dict:
+    """新レシピの結果（T633 の記録用）。0 頭の根拠の種類と、empty_text で当たった文言を残す。
+    当たった文言は build と同じ照合範囲（辿った文書の本文と img の alt）で数え直す。"""
+    matched: list[str] = []
+    if not res.animals and res.empty_evidence == "empty_text":
+        pool = list(docs) + [d for d in (visited or []) if d not in docs]
+        text = " ".join(d.text() for d in pool)
+        alts = " ".join(str(img.get("alt") or "") for d in pool if getattr(d, "soup", None) is not None
+                        for img in d.soup.find_all("img"))
+        matched = [t for t in recipe.empty_text if t in f"{text} {alts}"]
+    return {"count": len(res.animals), "rows": res.rows, "dropped": len(res.dropped), "dropped_head": dropped_head(res.dropped),
+            "empty_confirmed": res.empty_confirmed, "empty_evidence": res.empty_evidence, "empty_matched": matched,
+            "empty_text_defined": list(recipe.empty_text or []), "ambiguous_empty": res.ambiguous_empty}
 
 
 def repair(
@@ -716,9 +737,11 @@ def repair(
     proposals_dir: Path | None = None,
     last_ok_dir: Path | None = None,
     last_ok_count: int | None = None,
+    attempt: dict | None = None,
 ) -> RepairResult:
     """1 回だけ agy にレシピを書かせ、検査と試行を通った案を data/proposals/<slug>.yaml に保存する。
-    recipes/<slug>.yaml は書かない。save=False なら案も書かない（試すだけ）。"""
+    recipes/<slug>.yaml は書かない。save=False なら案も書かない（試すだけ）。
+    attempt を渡すと、試行の詳細（入口・agy の答え・新レシピの結果・どの段まで進んだか）をそこへ書く（T633。判定には使わない）。"""
     slug = source.slug
     if ask is None and not shutil.which("agy"):
         return RepairResult(slug, "no_key", error="agy が無い（PATH に agy が必要）")
@@ -734,6 +757,11 @@ def repair(
         page = fetcher.get(source.url)
     except FetchError as e:
         return RepairResult(slug, "failed", error=f"ページが取れないので修復できない: {e}")
+    if attempt is not None:
+        attempt["entry"] = {"url": source.url, "sha256": hashlib.sha256(page.content).hexdigest(), "bytes": len(page.content),
+                            "is_html": page.html is not None}
+        attempt["_entry_content"] = page.content
+        attempt["reached"] = "entry"
     if page.html is None:
         body = "(入口 URL が PDF などテキストでない文書。PDF 方式のレシピが必要)"
     else:
@@ -757,6 +785,9 @@ def repair(
         return RepairResult(slug, "failed", error=str(e))
     note = answer.get("note") if isinstance(answer.get("note"), str) else ""
     recipe_text = extract_yaml(raw_yaml)
+    if attempt is not None:
+        attempt["agy"] = {"note": note, "recipe_yaml": recipe_text}
+        attempt["reached"] = "answered"
 
     # 4. 保存前に実行して確かめる
     old_raw = _load_raw(original)
@@ -778,7 +809,7 @@ def repair(
                 recipe_text=recipe_text,
             )
         recipe = Recipe.from_dict(raw)
-        res = _try_recipe(source, recipe, fetcher)
+        res = _try_recipe(source, recipe, fetcher, attempt)
     except (yaml.YAMLError, RecipeError, FetchError, RepairError, TypeError, ValueError) as e:
         return RepairResult(
             slug,
@@ -796,6 +827,8 @@ def repair(
             recipe_text=recipe_text,
             note=note,
         )
+    if attempt is not None:
+        attempt["reached"] = "ran"
     if not res.animals:
         why = (
             f"新レシピでも 0 頭（行 {res.rows}・捨てた {len(res.dropped)}"

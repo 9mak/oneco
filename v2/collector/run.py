@@ -2,15 +2,20 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
+import re
 import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import yaml
+
+from . import repair_gate
 from .errors import TRANSPORT_KINDS, ErrorInfo, error_to_dict, host_of
 from .extract import Result, build
 from .fetch import Fetcher, FetchError
@@ -18,6 +23,7 @@ from .last_ok import RecordingFetcher, cleanup_last_ok, save_last_ok
 from .publish import build_manifest, publish
 from .recipe import Executor, Recipe, RecipeError
 from .registry import ROOT, Source
+from .repair_attempts import rotate_attempts, write_attempt
 from .state import FAILING, JST, STATE_DIR, RunLock, load_state, save_state, update_sources
 
 log = logging.getLogger("collector")
@@ -73,6 +79,7 @@ def collect_one(source: Source, fetcher: Fetcher) -> Collected:
         return Collected("link_only")
     if not source.recipe_path.exists():
         return Collected("failed", error=f"レシピが無い: {source.recipe_path.name}", error_info=ErrorInfo("recipe", phase="parse").to_dict())
+    ex: Executor | None = None
     try:
         recipe = Recipe.load(source.recipe_path)
         rec = RecordingFetcher(fetcher)
@@ -80,6 +87,11 @@ def collect_one(source: Source, fetcher: Fetcher) -> Collected:
         docs = ex.resolve(source.url)
         res = build(source, recipe, docs, getattr(ex, "visited", None))
     except (FetchError, RecipeError) as e:
+        if isinstance(e, FetchError) and ex is not None and _all_children_gone(ex.trace):
+            # 辿った子が全部 404（掲載期限切れで市が個別ページだけ消す日）。レシピの問題ではないと分かるよう kind=http・404 にし、
+            # 印を付ける（recipe.py は子の失敗の ErrorInfo を渡さず other になっていた）。url は入れない（入口の 404 と区別する）
+            info = ErrorInfo("http", status=404, host=host_of(source.url), phase="fetch").to_dict()
+            return Collected("failed", error=str(e), trace=ex.trace, error_info={**info, "children_gone": True})
         return Collected("failed", error=str(e), error_info=error_to_dict(e))
     except Exception as e:
         log.exception("%s", source.slug)
@@ -97,6 +109,16 @@ def collect_one(source: Source, fetcher: Fetcher) -> Collected:
     return Collected("failed", res, msg, ex.trace, ErrorInfo("parser", phase="parse", host=host).to_dict())
 
 
+_CHILDREN = re.compile(r"(?:follow_all|pdf_links) → (\d+) 件")
+
+
+def _all_children_gone(trace: list[str]) -> bool:
+    """follow_all / pdf_links で辿ろうとした子の数と、skip_errors で捨てた（404・410）子の数が同じ = 全部無かった。
+    trace は Executor が書く「follow_all → N 件」「skip URL: 理由」の行。形は test_repair_gate_t635 で固定している。"""
+    tried = sum(int(m.group(1)) for line in trace if (m := _CHILDREN.match(line)))
+    return tried > 0 and sum(1 for line in trace if line.startswith("skip ")) >= tried
+
+
 def ai_repair_enabled() -> bool:
     """環境変数 ONECO_AI_REPAIR=1 のときだけ、読めなかったページのレシピ案を agy に書かせる（案は data/proposals/ に置くだけ。本番は PR の merge で入る）。"""
     return os.environ.get("ONECO_AI_REPAIR", "") == "1"
@@ -107,6 +129,90 @@ def _is_trip_failure(info: dict[str, Any] | None) -> bool:
     if not info:
         return False
     return info.get("kind") in TRANSPORT_KINDS or (info.get("kind") == "http" and (info.get("status") or 0) >= 500)
+
+
+def _entry_sha(fetcher: Fetcher, url: str) -> str | None:
+    """入口ページ本文の sha256（失敗の指紋）。収集で取った分は fetcher のキャッシュから返る。取れなければ None。"""
+    try:
+        return hashlib.sha256(fetcher.get(url).content).hexdigest()
+    except FetchError:
+        return None
+
+
+def _repair_phase(sources: list[Source], report: list[dict[str, Any]], events: list[dict[str, Any]],
+                  candidates: list[tuple[int, Source, str | None, dict[str, Any] | None]], state: dict[str, Any],
+                  fetcher: Fetcher, out_dir: Path, date: str, run_id: str) -> None:
+    """読めなかった slug のうち、直す対象のある slug にだけ AI 修復を呼ぶ（T635。理由は repair_gate.py）。
+    report の repair 欄と events に結果を書き戻す。"""
+    from .ai_repair import repair
+
+    ctx = repair_gate.context_hash()
+    repair_gate.refresh_hosts(
+        state, [{"slug": s.slug, "host": host_of(s.url), "status": r["status"]} for s, r in zip(sources, report, strict=True)], date)
+    for idx, s, err, info in candidates:
+        row, ev = report[idx], events[idx]
+        kind, http_status = (info or {}).get("kind"), (info or {}).get("status")
+        host = host_of(s.url)
+
+        def reason_for(sha: str | None, s: Source = s, host: str | None = host, info: dict[str, Any] | None = info,
+                       kind: str | None = kind, http_status: int | None = http_status) -> str | None:
+            return repair_gate.skip_reason(state, s.slug, host, date, info, s.url, kind, http_status, sha, ctx)
+
+        reason = reason_for(None)
+        sha = None
+        if reason is None:   # 入口を取り直すのは、入口 404・子 404・ホスト障害の疑いのどれでもないときだけ
+            sha = _entry_sha(fetcher, s.url)
+            reason = reason_for(sha)
+        if reason:
+            row["repair"] = repair_gate.SKIP_NOTES[reason]
+            ev["repair_skip"] = reason
+            _record_skip(out_dir, date, run_id, s.slug, reason, err, sha)
+            log.info("%-28s %s", s.slug, row["repair"])
+            continue
+        attempt: dict[str, Any] = {}
+        r = repair(s, fetcher=fetcher, error=err, last_ok_dir=out_dir / "last_ok",
+                   last_ok_count=state["sources"].get(s.slug, {}).get("last_ok_count"), attempt=attempt)
+        _record_attempt(out_dir, date, run_id, s.slug, r, err, attempt)
+        ev["repair_called"] = True
+        if r.status == "ok":
+            row["repair"] = f"AI がレシピ案を書いた（{r.count} 頭・{getattr(r, 'proposal_path', None)}）"
+        elif r.status == "no_key":
+            row["repair"] = "AI 修復: 未設定"
+        else:
+            row["repair"] = f"AI 修復に失敗: {r.error}"
+        log.info("%-28s %s", s.slug, row["repair"])
+        if r.status == "no_key":
+            return   # 以降のページでも同じなので試さない
+        if sha is not None:
+            # 案を書けた日・agy が答えなかった日は「同じ失敗で直らなかった」試行に数えない
+            counted = r.status != "ok" and attempt.get("reached") in ("answered", "ran")
+            if repair_gate.record_attempt(state, s.slug, date, kind, http_status, sha, ctx, counted):
+                row["quarantine_started"] = True
+                row["repair"] = f"{row['repair']}。{repair_gate.QUARANTINE_NOTE}"
+
+
+def _record_skip(out_dir: Path, date: str, run_id: str, slug: str, reason: str, error: str | None, sha: str | None) -> None:
+    """呼ばなかった日の記録（呼んだ日と並べて、呼ぶ回数の減り方を後から測る）。"""
+    record = {"slug": slug, "run_id": run_id, "date": date, "called": False, "skip_reason": reason, "collect_error": error,
+              "entry": {"sha256": sha}}
+    try:
+        write_attempt(out_dir / "repair_attempts", date, slug, run_id, record)
+    except (OSError, yaml.YAMLError) as e:
+        log.warning("%s: 試行の記録を書けない: %s", slug, e)
+
+
+def _record_attempt(out_dir: Path, date: str, run_id: str, slug: str, r: Any, error: str | None,
+                    attempt: dict[str, Any]) -> None:
+    """AI 修復の試行を data/repair_attempts/ に残す（T633）。記録の失敗で収集は止めない。"""
+    content = attempt.pop("_entry_content", None)
+    record = {"slug": slug, "run_id": run_id, "date": date, "called": True, "status": r.status, "error": r.error,
+              "count": r.count, "collect_error": error, "proposal_path": str(r.proposal_path) if r.proposal_path else None,
+              **attempt}
+    try:
+        write_attempt(out_dir / "repair_attempts", date, slug, run_id, record, content,
+                      "html" if attempt.get("entry", {}).get("is_html", True) else "pdf")
+    except (OSError, yaml.YAMLError) as e:
+        log.warning("%s: 試行の記録を書けない: %s", slug, e)
 
 
 def _events(log_dir: Path, date: str, rows: list[dict[str, Any]]) -> None:
@@ -140,6 +246,7 @@ def _run_locked(sources: list[Source], date: str, out_dir: Path, fetcher: Fetche
     fetcher = fetcher or Fetcher()
     run_id = f"{date}T{now.strftime('%H%M%S')}"
     cleanup_last_ok(out_dir / "last_ok")
+    rotate_attempts(out_dir / "repair_attempts", date)
     state = load_state(state_dir)
     breaker: dict[str, Any] = state["breaker"]
     probing = set(breaker)        # 前日までに開いていて、今日まだ試していないホスト
@@ -148,13 +255,13 @@ def _run_locked(sources: list[Source], date: str, out_dir: Path, fetcher: Fetche
     animals: list[dict[str, Any]] = []
     report: list[dict[str, Any]] = []
     events: list[dict[str, Any]] = []
+    candidates: list[tuple[int, Source, str | None, dict[str, Any] | None]] = []
     t0 = time.monotonic()
     for s in sources:
         t = time.monotonic()
         host = host_of(s.url)
         counted = bool(host) and s.enabled and s.mode == "recipe"
         skipped_by_breaker = counted and host in tripped
-        repair_note: str | None = None
         if skipped_by_breaker:
             last = tripped[host]
             c = Collected("failed", error=f"ホスト遮断中（{host}・{streak.get(host, BREAKER_TRIP)} 件連続失敗）",
@@ -182,21 +289,11 @@ def _run_locked(sources: list[Source], date: str, out_dir: Path, fetcher: Fetche
                     breaker[host] = {"opened": breaker.get(host, {}).get("opened", date), "failures": streak[host]}
             else:
                 streak[host] = 0
-        # 接続系・遮断中・保守ページ（content）は読めない原因がサイト側なので、レシピの AI 修復はしない
-        if status == "failed" and enabled and s.enabled and s.mode == "recipe" and not _is_trip_failure(info) \
+        # 接続系・遮断中・保守ページ（content）は読めない原因がサイト側なので、レシピの AI 修復はしない。
+        # 修復は全 slug を読み終えてから（同じホストの同じ日の失敗を見てから）決める
+        if status == "failed" and s.enabled and s.mode == "recipe" and not _is_trip_failure(info) \
                 and not skipped_by_breaker and (info or {}).get("kind") != "content":
-            from .ai_repair import repair
-
-            r = repair(s, fetcher=fetcher, error=err, last_ok_dir=out_dir / "last_ok",
-                       last_ok_count=state["sources"].get(s.slug, {}).get("last_ok_count"))
-            if r.status == "ok":
-                repair_note = f"AI がレシピ案を書いた（{r.count} 頭・{getattr(r, 'proposal_path', None)}）"
-            elif r.status == "no_key":
-                repair_note = "AI 修復: 未設定"
-                enabled = False   # 以降のページでも同じなので試さない
-            else:
-                repair_note = f"AI 修復に失敗: {r.error}"
-            log.info("%-28s %s", s.slug, repair_note)
+            candidates.append((len(report), s, err, info))
         if status == "ok" and c.recorder is not None:
             save_last_ok(out_dir / "last_ok", s.slug, date, c.recorder, count=len(res.animals) if res else None)
         n = len(res.animals) if (res and status != "ambiguous_empty") else 0
@@ -204,7 +301,7 @@ def _run_locked(sources: list[Source], date: str, out_dir: Path, fetcher: Fetche
         row = {"slug": s.slug, "name": s.name, "status": status, "count": n, "error": err,
                "error_info": info, "run_id": run_id,
                "dropped": len(res.dropped) if res else 0, "seconds": secs,
-               "repair": repair_note,
+               "repair": None,
                # skip_errors で捨てた子（「URL: 理由」）。通知には出さないが、黙って頭数が減ったのを後から追える
                "skipped": [t.removeprefix("skip ") for t in trace if t.startswith("skip ")]}
         report.append(row)
@@ -215,6 +312,8 @@ def _run_locked(sources: list[Source], date: str, out_dir: Path, fetcher: Fetche
         log.info("%-28s %-9s %4d %s", s.slug, status, n, err or "")
         if res and status != "ambiguous_empty":
             animals.extend(res.animals)
+    if enabled:
+        _repair_phase(sources, report, events, candidates, state, fetcher, out_dir, date, run_id)
     held = outage(report)
     by_slug = {r["slug"]: r for r in report}
     out = {"run_id": run_id, "date": date, "generated_seconds": round(time.monotonic() - t0), "animals": animals,
