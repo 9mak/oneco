@@ -1,0 +1,28 @@
+# proposal: run の日付 2026-11-01・元の失敗理由 0 頭で empty_text も無い（行 0・捨てた 0）・取れた頭数 1・採用条件は次の行（人が差分を見て recipes/ へ反映する。今日の HTML は <slug>.today.html）
+# 採用条件: 合格 a 必須項目・b 重複・c 行数・d 回帰（保存 HTML で 1 頭・前回 1 頭）
+# agy note: 0頭時に案内文のみ残り文言が出ない構造に対応するため empty_absent を追加しました。また、収容日と保護状況の文言が『センター収容日：…で保護されました』と一体化した形式に変更されたことに合わせ、row_filter、shelter_date、location の各正規表現を更新しました。
+# 広島県動物愛護センター（迷い犬）: div.detail_free 配下の管理番号を含む h2 を 1 頭の始まりとし、
+# row_until: h2 で次の管理番号の手前までの写真 p と属性 p をまとめて 1 行とする。
+# 0 頭の日は個体の h2 や画像が無くなり案内文のみ残るため empty_absent で判定する。
+rows: "div.detail_free h2:-soup-contains('管理番号')"
+row_until: "h2"
+row_filter:
+  text_has_any: ["収容日", "収容された日"]
+  text_lacks: ["返還されました"]
+image: "p > img@src"
+fields:
+  management_no: {selector: "h2", regex: "管理番号[:：]?\\s*(\\S+)"}
+  breed: {regex: "(?:^|[、,，\\s])((?:(?!推定|雄|雌|\\d)[^、,，\\s])+)[、,，]"}
+  age: {regex: "(推定\\s*[\\d０-９]+\\s*歳|[\\d０-９]+\\s*歳|[\\d０-９]+\\s*(?:ヶ月|か月|カ月)|成犬|成猫|子犬|子猫|幼犬|幼猫)"}
+  sex: {regex: "(雄|雌)"}
+  shelter_date: {regex: "収容(?:された)?日[:：]\\s*((?:(?:令和|平成|昭和)?\\s*[\\d０-９]+\\s*年\\s*)?[\\d０-９]+\\s*月\\s*[\\d０-９]+\\s*日|\\S+?)(?:に|\\s|$)"}
+  location: {regex: "(?:保護された状況[:：]\\s*(?:(?:令和|平成|昭和)?\\s*[\\d０-９]+\\s*年\\s*[\\d０-９]+\\s*月\\s*[\\d０-９]+\\s*日[^に]*に\\s*)?|(?:令和|平成|昭和)?\\s*[\\d０-９]+\\s*年\\s*[\\d０-９]+\\s*月\\s*[\\d０-９]+\\s*日[^に]*に\\s*)(.+?)で(?:保護|発見)されました"}
+  note: {regex: "(?:保護|発見)されました。\\s*(\\S.*)$"}
+empty_absent:
+  page: "#main_header h1:-soup-contains('迷い犬一覧')"
+  none: "div.detail_free h2, div.detail_free img[src*='/uploaded/image/']"
+empty_text:
+  - "現在迷い犬はいません"
+  - "現在、迷い犬情報はありません"
+  - "現在迷い犬情報はありません"
+  - "該当する迷い犬はいません"

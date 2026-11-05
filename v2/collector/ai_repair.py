@@ -12,21 +12,25 @@ LLM は agy（Antigravity CLI、Gemini）。PATH に agy が無ければ status 
 
 from __future__ import annotations
 
+import copy
 import json
 import logging
 import re
 import shutil
 import subprocess
+import unicodedata
+from collections import Counter
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import yaml
 from bs4 import BeautifulSoup, Comment
 
 from .extract import Result, build
-from .fetch import Fetcher, FetchError
+from .fetch import FakeFetcher, Fetcher, FetchError
 from .last_ok import LAST_OK_DIR, load_count, load_replay
 from .recipe import Executor, Recipe, RecipeError
 from .recipe_schema import validate_recipe_dict
@@ -172,6 +176,7 @@ class Adoption:
     passed: list[str]
     skipped: list[str]
     warned: list[str] = field(default_factory=list)   # 不合格にはしないが人に見せる（回帰 NG）
+    manual_only: bool = False   # 旧レシピと新レシピを比べられる保存ページが無い。半自動の対象外（draft のまま人が見る）
 
     def line(self) -> str:
         """案のヘッダ・PR 本文に載せる 1 行。"""
@@ -181,7 +186,8 @@ class Adoption:
         if self.warned:
             parts.append("警告 " + "・".join(self.warned))
         text = " / ".join(parts)
-        return text + (" / 回帰未確認" if any(x.startswith("d 回帰") for x in self.skipped) else "")
+        text += " / 回帰未確認" if any(x.startswith("d 回帰") for x in self.skipped) else ""
+        return text + (" / 半自動の対象外（旧新の比較ができていない。draft のまま人が見る）" if self.manual_only else "")
 
 
 def tolerance_range(base: int) -> tuple[int, int]:
@@ -190,13 +196,275 @@ def tolerance_range(base: int) -> tuple[int, int]:
     return max(0, base - slack), base + slack
 
 
+# --- 値の検査（W006 T634・改善 4。反証 critique 1-4・1-7・2-4 で直した版） ----------------------------------
+# 件数と必須項目だけでは、値が壊れた案（豊田 #76: location が見出し行の語、広島 #84: location に日付）を止められない。
+# 見るのは location・breed・color・sex・size の 5 項目だけ。note・age は自由文で、見出しの語や日付が正しく入る
+# （2026-11-05 の公開データ 199 slug・2,212 頭で、note・age まで広げると 55 slug の正しい値に当たった）。
+VALUE_FIELDS = ("location", "breed", "color", "sex", "size")
+# 値が見出しの語そのもの、または見出しの語で始まるときだけ当てる（途中に出る語は当てない。山梨の「全体の毛色は黒で…」、
+# 長野市の「…小さいレモンほどの大きさ」、横須賀の「MIX(品種不明)」は正しい値）。長い語を先に並べる
+HEADING_WORDS = (
+    "保護された状況", "収容された日", "収容年月日", "収容場所", "保護場所", "発見場所", "収容日", "保護日", "発見日",
+    "特徴等", "大きさ", "品種", "種類", "毛色", "性別", "体格", "特徴", "状況", "備考",
+)
+_HEADING_SEP = ":：、,，/／・"
+# 年月日の形だけを日付とみなす。住所の番地（2-15-20）や体重（5.5kg）は当てない
+_DATE_PATTERNS = (
+    re.compile(r"(?:令和|平成|昭和|[RHS])?\d{1,4}年\d{1,2}月\d{1,2}日"),
+    re.compile(r"\d{1,2}月\d{1,2}日"),
+    re.compile(r"(?:令和|平成|昭和|[RHS])\d{1,2}[./\-]\d{1,2}[./\-]\d{1,2}"),
+    re.compile(r"(?<!\d)(?:19|20)\d{2}[./\-]\d{1,2}[./\-]\d{1,2}(?!\d)"),
+)
+
+
+def _squash(value: str) -> str:
+    return re.sub(r"\s+", " ", unicodedata.normalize("NFKC", value)).strip()
+
+
+def _starts_with_heading(value: str) -> bool:
+    """値が見出しの語そのもの、または見出しの語の直後が区切り（空白・コロン等）か別の見出しの語で始まる。"""
+    v = _squash(value)
+    for word in HEADING_WORDS:
+        if v.startswith(word):
+            rest = v[len(word):]
+            if rest == "" or rest[0] in _HEADING_SEP + " " or rest.startswith(HEADING_WORDS):
+                return True
+    return False
+
+
+def _value_hits(animals: list[dict], bad: Callable[[str], bool]) -> str | None:
+    hits: dict[str, list[str]] = {}
+    for a in animals:
+        for f in VALUE_FIELDS:
+            v = a.get(f)
+            if isinstance(v, str) and v.strip() and bad(v):
+                hits.setdefault(f, []).append(v)
+    if not hits:
+        return None
+    return "・".join(f"{f}（{len(vs)} 頭。例「{_squash(vs[0])[:30]}」）" for f, vs in hits.items())
+
+
+def heading_in_values(animals: list[dict]) -> list[str]:
+    """v1: location・breed・color・sex・size の値が見出しの語（収容場所・毛色 等）そのもの、または先頭にある。"""
+    hit = _value_hits(animals, _starts_with_heading)
+    return [f"v1 見出しの語が値に入っている: {hit}"] if hit else []
+
+
+def date_in_values(animals: list[dict]) -> list[str]:
+    """v2: shelter_date 以外の項目（location・breed・color・sex・size）に「N月N日」や和暦・西暦の日付が入る。"""
+    hit = _value_hits(animals, lambda v: any(p.search(_squash(v)) for p in _DATE_PATTERNS))
+    return [f"v2 収容日以外の項目に日付が入っている: {hit}"] if hit else []
+
+
+_DEFAULT_IMAGE = "img@src"
+_IMAGE_EXTRA_KEYS = ("exclude", "scope", "stop_at", "match_field", "strip_query")
+_STEP_MODIFIERS = ("skip_errors", "rendered", "max")
+_DEADLINE_WORD = re.compile(r"期限|掲載期間|公示期間|deadline", re.I)
+
+
+def _as_list(v: Any) -> list[str]:
+    if v is None:
+        return []
+    return [str(x) for x in v] if isinstance(v, list) else [str(v)]
+
+
+def _image_spec(raw: dict) -> dict[str, Any]:
+    v = raw.get("image", _DEFAULT_IMAGE)
+    spec = {"selector": v} if isinstance(v, str) else dict(v) if isinstance(v, dict) else {}
+    spec.setdefault("selector", _DEFAULT_IMAGE)
+    return spec
+
+
+def _step_kind(step: Any) -> str:
+    keys = [k for k in step if k not in _STEP_MODIFIERS] if isinstance(step, dict) else []
+    return keys[0] if keys else "?"
+
+
+def check_recipe_change(old: dict | None, new: dict) -> list[str]:
+    """v3: 現行レシピ old の location・写真・steps の指定、除外の指定（row_filter の除外語・field_lacks 等）、
+    掲載期限の指定を、新レシピ new が消すか狭めていたら、その理由（空なら問題なし）。old が無ければ（新規）検査しない。
+    項目を全部「消したら落とす」にはしない（豊田の人の直しは age を消す。critique 1-4）。
+    絞り込みを広げる変更（text_has_any に語を足す・除外語を足す）は止めない（広島の人の直しは text_has_any に「収容日」を足した）。
+    掲載期限の指定は、期限の名前を持つ項目（fields の名前か label）と、row_filter の語に期限を含むものを指す。"""
+    if not old:
+        return []
+    out: list[str] = []
+    ofields, nfields = old.get("fields") or {}, new.get("fields") or {}
+    if "location" in ofields and "location" not in nfields:
+        out.append("v3 location の指定を消している")
+    # 写真
+    oi, ni = _image_spec(old), _image_spec(new)
+    if oi["selector"] != _DEFAULT_IMAGE and ni["selector"] == _DEFAULT_IMAGE:
+        out.append(f"v3 写真の指定（{oi['selector']}）を消している")
+    for k in _IMAGE_EXTRA_KEYS:
+        if k in oi and k not in ni:
+            out.append(f"v3 写真の指定（image.{k}）を消している")
+    for word in sorted(set(_as_list(oi.get("exclude"))) - set(_as_list(ni.get("exclude")))):
+        out.append(f"v3 写真の除外（{word}）を減らしている")
+    # steps（辿る先の指定）
+    osteps, nsteps = old.get("steps") or [], new.get("steps") or []
+    lost_kinds = Counter(_step_kind(s) for s in osteps) - Counter(_step_kind(s) for s in nsteps)
+    for kind in lost_kinds:
+        out.append(f"v3 steps の {kind} を消している")
+    for kind in {_step_kind(s) for s in osteps if isinstance(s, dict) and s.get("skip_errors")}:
+        if kind not in lost_kinds and not any(_step_kind(s) == kind and isinstance(s, dict) and s.get("skip_errors") for s in nsteps):
+            out.append(f"v3 steps の {kind} の skip_errors を外している")
+    # 除外の指定・掲載期限
+    orf, nrf = old.get("row_filter") or {}, new.get("row_filter") or {}
+    for word in _as_list(orf.get("text_lacks")):
+        if word not in _as_list(nrf.get("text_lacks")):
+            out.append(f"v3 除外語（text_lacks: {word}）を減らしている")
+    for name, words in (orf.get("field_lacks") or {}).items():
+        nw = _as_list((nrf.get("field_lacks") or {}).get(name))
+        out += [f"v3 除外語（field_lacks.{name}: {w}）を減らしている" for w in _as_list(words) if w not in nw]
+    for key in ("text_has_any", "field_has_any", "min_text_length"):
+        if orf.get(key) and not nrf.get(key):
+            out.append(f"v3 行の絞り込み（row_filter.{key}）を消している")
+    for word in _as_list(orf.get("text_has_any")):
+        if _DEADLINE_WORD.search(word) and word not in _as_list(nrf.get("text_has_any")):
+            out.append(f"v3 掲載期限の指定（text_has_any: {word}）を消している")
+    for name, spec in ofields.items():
+        label = " ".join(_as_list(spec.get("label"))) if isinstance(spec, dict) else ""
+        if _DEADLINE_WORD.search(f"{name} {label}") and name not in nfields:
+            out.append(f"v3 掲載期限の指定（fields.{name}）を消している")
+    return out
+
+
+EMPTY_ROOT_KEYS = ("empty_absent", "empty_selector", "empty_container")
+
+
+def strip_added_empty_roots(old: dict | None, new: dict) -> tuple[dict, list[str]]:
+    """AI が新しく足した（旧レシピに無い、または旧レシピと違う）empty_absent・empty_selector・empty_container を取り除く。
+    器の指定は、行と同じ要素を指すだけで 0 頭が成り立つ（広島 11/01 16:11 の案は div.detail_free の h2 を h3 に変えただけで、
+    子がいるのに empty になる。critique 1-4）。器の指定は人だけが書く。empty_text（文言）は対象にしない。
+    引数は書き換えない。(外した後のレシピ, 外した指定の説明)。"""
+    out = copy.deepcopy(new)
+    removed: list[str] = []
+    old = old or {}
+    for key in EMPTY_ROOT_KEYS:
+        if key not in out:
+            continue
+        if key == "empty_selector":
+            keep = [s for s in _as_list(out[key]) if s in _as_list(old.get(key))]
+            added = [s for s in _as_list(out[key]) if s not in keep]
+            if added:
+                removed.append(f"{key}: {' / '.join(added)}")
+                if keep:
+                    out[key] = keep
+                else:
+                    del out[key]
+        elif out[key] != old.get(key):
+            removed.append(f"{key}: {out[key]}")
+            del out[key]
+    return out, removed
+
+
+_COMPARE_FIELDS = ("name", "sex", "age", "breed", "color", "size", "management_no", "shelter_date", "note", "location",
+                   "image_url", "species")
+
+
+def _diff_animals(old: list[dict], new: list[dict]) -> list[str]:
+    """旧レシピと新レシピが同じ保存ページから読んだ動物を比べる。新レシピが 0 頭の保存ページは d（回帰）の警告に任せる。"""
+    if not new:
+        return []
+    out: list[str] = []
+    by_new = {a["id"]: a for a in new}
+    gone = [a["id"] for a in old if a["id"] not in by_new]
+    if gone:
+        out.append(f"v4 旧レシピで載っていた {len(gone)} 頭が新レシピでは載らない（または ID が変わる）")
+    emptied: Counter[str] = Counter()
+    changed: dict[str, tuple[str, str]] = {}
+    for a in old:
+        b = by_new.get(a["id"])
+        if b is None:
+            continue
+        for f in _COMPARE_FIELDS:
+            ov, nv = a.get(f), b.get(f)
+            if ov in (None, ""):
+                continue
+            if nv in (None, ""):
+                emptied[f] += 1
+            elif _squash(str(ov)) != _squash(str(nv)):
+                changed.setdefault(f, (str(ov), str(nv)))
+    if emptied:
+        out.append("v4 旧レシピで埋まっていた項目が空になる: " + "・".join(f"{f}（{n} 頭）" for f, n in emptied.items()))
+    for f, (ov, nv) in changed.items():
+        out.append(f"v4 保存ページで {f} の値が変わる: 「{_squash(ov)[:30]}」→「{_squash(nv)[:30]}」")
+    return out
+
+
+def _fixture_name_pattern(slug: str) -> re.Pattern[str]:
+    """tests/fixtures の名前に slug（または city_・pref_ 等の接頭辞を除いた名前）が単語として入っているもの。"""
+    bare = slug.split("_", 1)[1] if "_" in slug else slug
+    names = "|".join(re.escape(n) for n in {slug, bare})
+    return re.compile(rf"(?<![A-Za-z0-9])(?:{names})(?![A-Za-z0-9-])")
+
+
+MAX_FIXTURE_SAMPLES = 12
+
+
+def replay_makers(source: Source, last_ok_dir: Path, fixtures_dir: Path | None = None) -> list[Callable[[], Fetcher | None]]:
+    """旧レシピと新レシピを当てる保存ページ。last_ok（正常日の入口と辿った文書）と、tests/fixtures にある同じ slug の
+    入口ページ 1 枚（辿る先が要る slug は旧レシピが読めず、基準にならないので飛ばされる）。"""
+    makers: list[Callable[[], Fetcher | None]] = []
+    if load_replay(last_ok_dir, source.slug) is not None:
+        makers.append(lambda: load_replay(last_ok_dir, source.slug))
+    fx = fixtures_dir or (ROOT / "tests" / "fixtures")
+    if fx.is_dir():
+        pat = _fixture_name_pattern(source.slug)
+        for p in sorted(fx.glob("*.html")):
+            if pat.search(p.name) and len(makers) < MAX_FIXTURE_SAMPLES:
+                makers.append(lambda p=p: FakeFetcher({source.url: p.read_text(encoding="utf-8")}))   # type: ignore[misc]
+    return makers
+
+
+def compare_with_old(source: Source, old: dict | None, new_recipe: Recipe,
+                     makers: list[Callable[[], Fetcher | None]]) -> tuple[list[str], int]:
+    """v4: 旧レシピが正しく読めている保存ページ（頭数が 1 以上・v1・v2 に当たらない）に新レシピを当て、旧レシピで埋まっていた
+    項目が空になるか値が変わる案を落とす。(違反, 比べられた保存ページの数)。旧レシピが読めない保存ページ（構造が変わった後の日）は
+    基準にならないので数えない。比べられたのが 0 なら呼び出し側が「半自動の対象外」の印を付ける。"""
+    if not old:
+        return [], 0
+    try:
+        old_recipe = Recipe.from_dict(old)
+    except (TypeError, ValueError):
+        return [], 0
+    out: list[str] = []
+    compared = 0
+    for make in makers:
+        try:
+            fetcher = make()
+            old_res = _try_recipe(source, old_recipe, fetcher) if fetcher is not None else None
+        except Exception:   # 旧レシピがこの保存ページを辿れない・読めない
+            continue
+        if old_res is None or not old_res.animals or heading_in_values(old_res.animals) or date_in_values(old_res.animals):
+            continue
+        compared += 1
+        try:
+            new_res = _try_recipe(source, new_recipe, make())   # type: ignore[arg-type]
+        except Exception as e:   # 構造が違って動かないのは d の警告の範囲。ここでは落とさない
+            log.info("%s: 保存ページに新レシピを当てられない（v4 は飛ばす）: %s: %s", source.slug, type(e).__name__, e)
+            continue
+        out += _diff_animals(old_res.animals, new_res.animals)
+    # 同じ種類の指摘は保存ページごとに繰り返さず、最初の 1 つだけ残す（「:」の前が同じものを同じ指摘とみなす）
+    first: dict[str, str] = {}
+    for msg in out:
+        first.setdefault(msg.split(":", 1)[0], msg)
+    return list(first.values()), compared
+
+
 def evaluate_adoption(res: Result, regression_count: int | None = None, last_ok_count: int | None = None,
                       skip_reason: str | None = None, allow_other: bool = False,
-                      regression_note: str | None = None) -> Adoption:
+                      regression_note: str | None = None, *,
+                      recipe_change: list[str] | None = None,
+                      replay: tuple[list[str], int] | None = None) -> Adoption:
     """a 必須項目 b 重複 c 行数の一致 d 直近 fixture での回帰。regression_count は新レシピを保存 HTML に当てた頭数
     （None なら d を飛ばす。理由は skip_reason）。last_ok_count は d の基準（保存時の頭数、無ければ state の値）。
     a は extract.build が載せる値に揃える: species は dog/cat、None（警告）、allow_other なら other。
-    根拠は写真・管理番号・収容日、または個体ページ URL（res.detail_ids）のどれか。"""
+    根拠は写真・管理番号・収容日、または個体ページ URL（res.detail_ids）のどれか。
+    W006 T634: v1 見出しの語が値に入る・v2 収容日以外に日付が入る（どちらも res だけで判定）。v3 は recipe_change
+    （check_recipe_change の結果。None なら検査しない）、v4 は replay（compare_with_old の結果。None なら検査しない）。
+    replay の比べられた数が 0 で違反も無ければ「半自動の対象外」の印（manual_only）を付ける。"""
     bad: list[str] = []
     ok: list[str] = []
     skip: list[str] = []
@@ -250,7 +518,29 @@ def evaluate_adoption(res: Result, regression_count: int | None = None, last_ok_
             ok.append(f"d 回帰（保存 HTML で {regression_count} 頭・前回 {last_ok_count} 頭）")
         else:
             bad.append(f"保存 HTML に当てた頭数 {regression_count} が前回 ok の {last_ok_count} 頭の許容範囲 {lo}〜{hi} 頭に入らない")
-    return Adoption(bad, ok, skip, warn)
+    # v1 v2（T634）
+    bad += heading_in_values(res.animals)
+    bad += date_in_values(res.animals)
+    if not any(x.startswith(("v1", "v2")) for x in bad):
+        ok.append("v1 見出し語・v2 日付")
+    # v3
+    if recipe_change is not None:
+        bad += recipe_change
+        if not recipe_change:
+            ok.append("v3 現行の指定を保つ")
+    # v4
+    manual = False
+    if replay is not None:
+        diffs, compared = replay
+        bad += diffs
+        if diffs:
+            pass
+        elif compared:
+            ok.append(f"v4 旧新比較（保存ページ {compared} 件）")
+        else:
+            skip.append("v4 旧新比較（旧レシピが読めた保存ページが無い）")
+            manual = True
+    return Adoption(bad, ok, skip, warn, manual)
 
 
 def check_adoption(res: Result, regression_count: int | None = None, last_ok_count: int | None = None,
@@ -338,10 +628,16 @@ def repair(
     recipe_text = extract_yaml(raw_yaml)
 
     # 4. 保存前に実行して確かめる
+    old_raw = _load_raw(original)
+    removed_roots: list[str] = []
     try:
         raw = yaml.safe_load(recipe_text)
         if not isinstance(raw, dict):
             raise RepairError("返答が YAML のマッピングでない")
+        # AI が足した器の指定は評価の前に無条件に外す（T634 v6。器の指定は人だけが書く）
+        raw, removed_roots = strip_added_empty_roots(old_raw, raw)
+        if removed_roots:
+            recipe_text = _redump(recipe_text, raw, removed_roots)
         violations = validate_recipe_dict(raw, source.url)
         if violations:
             return RepairResult(slug, "failed", error="新レシピが schema 検査に通らない: " + " / ".join(violations),
@@ -358,7 +654,12 @@ def repair(
         return RepairResult(slug, "failed", error=why, recipe_text=recipe_text, note=note)
     # 採用条件（a 必須項目 b 重複 c 行数 d 直近 fixture での回帰）。d は新レシピを保存済みの正常日 HTML に当てる
     reg_count, reg_skip, reg_note, baseline = _regress(recipe, source, last_ok_dir or LAST_OK_DIR, last_ok_count)
-    adoption = evaluate_adoption(res, reg_count, baseline, reg_skip, bool(recipe.species.get("allow_other")), reg_note)
+    # T634: v3 現行の指定を消していないか、v4 旧新レシピを保存ページに当てて項目が欠けないか
+    replay = compare_with_old(source, old_raw, recipe, replay_makers(source, last_ok_dir or LAST_OK_DIR))
+    adoption = evaluate_adoption(res, reg_count, baseline, reg_skip, bool(recipe.species.get("allow_other")), reg_note,
+                                 recipe_change=check_recipe_change(old_raw, raw), replay=replay)
+    if removed_roots:
+        adoption.warned.append("AI が足した器の指定を外した（" + " / ".join(removed_roots)[:200] + "）")
     if adoption.violations:
         return RepairResult(slug, "failed", error="採用条件を満たさない: " + " / ".join(adoption.violations),
                             recipe_text=recipe_text, note=note)
@@ -378,6 +679,31 @@ def repair(
             proposal.with_name(f"{slug}.today.html").unlink(missing_ok=True)
             return RepairResult(slug, "failed", error=f"案の保存に失敗した: {e}", recipe_text=recipe_text)
     return RepairResult(slug, "ok", count=len(res.animals), recipe_text=recipe_text, saved=save, proposal_path=proposal, note=note)
+
+
+def _load_raw(text: str | None) -> dict | None:
+    """現行レシピの YAML を dict に。無い・読めない・マッピングでないなら None（新規扱い）。"""
+    if not text:
+        return None
+    try:
+        raw = yaml.safe_load(text)
+    except yaml.YAMLError:
+        return None
+    return raw if isinstance(raw, dict) else None
+
+
+def _redump(original_text: str, raw: dict, removed: list[str]) -> str:
+    """器の指定を外したレシピを YAML に書き戻す。AI が先頭に書いた # コメントは残し、外したことを 1 行足す
+    （YAML の途中のコメントは失われる）。"""
+    lead = []
+    for line in original_text.splitlines():
+        if line.startswith("#"):
+            lead.append(line)
+        elif line.strip():
+            break
+    lead.append("# T634: AI が足した器の指定を採用前に外した: " + " / ".join(removed).replace("\n", " ")[:300])
+    body = yaml.safe_dump(raw, allow_unicode=True, sort_keys=False, width=10_000)
+    return "\n".join(lead) + "\n" + body
 
 
 def _proposal_header(error: str | None, run_date: str | None, note: str = "", count: int = 0, adoption: str = "") -> str:
