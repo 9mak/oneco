@@ -175,3 +175,74 @@ def test_without_token_commands_are_unchanged(env, monkeypatch):
     assert pr.propose(proposals_dir=pdir, today="20261010") == 0
     assert not any("credential.helper" in " ".join(c) for c in rec.calls)
     assert all(e is None or "GH_TOKEN" not in e for e in rec.envs)
+
+
+# --- W006 T634 v8: PR にする直前に、その slug の最新の status を見る -------------------------------------
+def _report(dirpath: Path, day: str, rows: dict[str, str]) -> None:
+    import json
+
+    (dirpath / f"report-{day}.json").write_text(
+        json.dumps([{"slug": s, "status": st, "count": 0, "error": None} for s, st in rows.items()]), encoding="utf-8")
+
+
+def _creates(rec: Recorder) -> int:
+    return len([c for c in rec.calls if c[:3] == ["gh", "pr", "create"]])
+
+
+@pytest.mark.parametrize("status", ["ok", "empty"])
+def test_v8_recovered_slug_is_not_proposed_and_the_stale_proposal_is_set_aside(env, monkeypatch, status):
+    pdir, _, sent = env
+    _add(pdir, "city_a")
+    _report(pdir.parent, "2026-10-30", {"city_a": "failed"})
+    _report(pdir.parent, "2026-10-31", {"city_a": status})   # 最新の report
+    rec = Recorder()
+    monkeypatch.setattr(pr.subprocess, "run", rec)
+    assert pr.propose(proposals_dir=pdir, today="20261031") == 0
+    assert _creates(rec) == 0 and not any(c[:3] == ["gh", "pr", "list"] for c in rec.calls)
+    assert not (pdir / "city_a.yaml").exists() and (pdir / "stale" / "city_a-20261031.yaml").exists()
+    assert sent == []
+
+
+@pytest.mark.parametrize("status", ["failed", "ambiguous_empty"])
+def test_v8_still_broken_slug_is_proposed(env, monkeypatch, status):
+    pdir, _, _ = env
+    _add(pdir, "city_a")
+    _report(pdir.parent, "2026-10-31", {"city_a": status, "city_b": "ok"})
+    rec = Recorder()
+    monkeypatch.setattr(pr.subprocess, "run", rec)
+    pr.propose(proposals_dir=pdir, today="20261031")
+    assert _creates(rec) == 1
+
+
+def test_v8_without_a_report_or_without_the_slug_in_it_proposes_as_before(env, monkeypatch):
+    pdir, _, _ = env
+    _add(pdir, "city_a")
+    rec = Recorder()
+    monkeypatch.setattr(pr.subprocess, "run", rec)
+    pr.propose(proposals_dir=pdir, today="20261031")   # report が無い
+    assert _creates(rec) == 1
+    _add(pdir, "city_c")
+    _report(pdir.parent, "2026-10-31", {"city_other": "ok"})   # report に slug が無い
+    rec2 = Recorder()
+    monkeypatch.setattr(pr.subprocess, "run", rec2)
+    pr.propose(proposals_dir=pdir, today="20261031")
+    assert _creates(rec2) == 1
+
+
+def test_v8_dry_run_reports_but_moves_nothing(env, monkeypatch, capsys):
+    pdir, _, _ = env
+    _add(pdir, "city_a")
+    _report(pdir.parent, "2026-10-31", {"city_a": "ok"})
+    monkeypatch.setattr(pr.subprocess, "run", lambda *a, **k: pytest.fail("dry-run は何も呼ばない"))
+    assert pr.propose(dry_run=True, proposals_dir=pdir, today="20261031") == 0
+    assert (pdir / "city_a.yaml").exists() and "PR にしない" in capsys.readouterr().out
+
+
+def test_v8_unreadable_report_does_not_block_a_proposal(env, monkeypatch):
+    pdir, _, _ = env
+    _add(pdir, "city_a")
+    (pdir.parent / "report-2026-10-31.json").write_text("{not json", encoding="utf-8")
+    rec = Recorder()
+    monkeypatch.setattr(pr.subprocess, "run", rec)
+    pr.propose(proposals_dir=pdir, today="20261031")
+    assert _creates(rec) == 1

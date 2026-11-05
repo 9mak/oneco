@@ -7,6 +7,7 @@ PR の merge はしない（オーナーが差分を見て merge したときだ
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -71,6 +72,28 @@ def _ensure_clone(clone: Path) -> None:
     _run(_git("clone", "--quiet", origin, str(clone)))
 
 
+RECOVERED_STATUSES = frozenset({"ok", "empty"})
+
+
+def latest_status(slug: str, report_dir: Path) -> str | None:
+    """その slug の最新の report（data/report-YYYY-MM-DD.json のうち日付が最も新しいもの）の status。
+    report が無い・読めない・slug が載っていないときは None（判断材料が無いので止めない）。"""
+    reports = sorted(report_dir.glob("report-*.json")) if report_dir.is_dir() else []
+    if not reports:
+        return None
+    try:
+        rows = json.loads(reports[-1].read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(rows, list):
+        return None
+    for row in rows:
+        if isinstance(row, dict) and row.get("slug") == slug:
+            status = row.get("status")
+            return status if isinstance(status, str) else None
+    return None
+
+
 def _differs(proposal: Path, recipe: Path) -> bool:
     """コメントを除いた YAML の中身が違うか。本番レシピが無ければ違う。"""
     if not recipe.exists():
@@ -114,9 +137,14 @@ def _notify(msg: str) -> None:
         print(f"-- Discord に送れなかった: {e}")
 
 
-def propose(dry_run: bool = False, proposals_dir: Path | None = None, today: str | None = None) -> int:
-    """案を 1 件ずつ PR にする。作った PR の数ではなく、失敗が 1 件でもあれば 1 を返す。"""
+def propose(dry_run: bool = False, proposals_dir: Path | None = None, today: str | None = None,
+            report_dir: Path | None = None) -> int:
+    """案を 1 件ずつ PR にする。作った PR の数ではなく、失敗が 1 件でもあれば 1 を返す。
+    PR にする直前に、その slug の最新の status を見る（W006 T634 v8）。ok か empty に戻っていたら、案は古いので
+    PR にせず proposals/stale/ へ移す（福山 #69: 案が出た時点で一覧が空に戻り、直す対象が無かった）。
+    report_dir は report-*.json のある所（既定は案の置き場 data/proposals の親 = data/）。"""
     pdir = proposals_dir or PROPOSALS_DIR
+    rdir = report_dir or pdir.parent
     day = today or datetime.now(JST).strftime("%Y%m%d")
     files = sorted(pdir.glob("*.yaml")) if pdir.exists() else []
     names = {s.slug: s.name for s in load_sources()}
@@ -130,6 +158,14 @@ def propose(dry_run: bool = False, proposals_dir: Path | None = None, today: str
             continue
         if not _differs(f, ROOT / "recipes" / f"{slug}.yaml"):
             print(f"{slug}: 本番レシピと同じ内容なので飛ばす")
+            continue
+        status = latest_status(slug, rdir)
+        if status in RECOVERED_STATUSES:
+            print(f"{slug}: 最新の status が {status} に戻っているので PR にしない（案は古い）")
+            if not dry_run:
+                stale = pdir / "stale"
+                stale.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(f), str(stale / f"{slug}-{day}.yaml"))
             continue
         if made >= MAX_PR_PER_RUN:
             print(f"{slug}: 1 回の PR は最大 {MAX_PR_PER_RUN} 件。残りは次回")
