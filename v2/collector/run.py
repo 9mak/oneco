@@ -11,6 +11,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 from .errors import TRANSPORT_KINDS, ErrorInfo, error_to_dict, host_of
 from .extract import Result, build
 from .fetch import Fetcher, FetchError
@@ -18,6 +20,7 @@ from .last_ok import RecordingFetcher, cleanup_last_ok, save_last_ok
 from .publish import build_manifest, publish
 from .recipe import Executor, Recipe, RecipeError
 from .registry import ROOT, Source
+from .repair_attempts import rotate_attempts, write_attempt
 from .state import FAILING, JST, STATE_DIR, RunLock, load_state, save_state, update_sources
 
 log = logging.getLogger("collector")
@@ -109,6 +112,20 @@ def _is_trip_failure(info: dict[str, Any] | None) -> bool:
     return info.get("kind") in TRANSPORT_KINDS or (info.get("kind") == "http" and (info.get("status") or 0) >= 500)
 
 
+def _record_attempt(out_dir: Path, date: str, run_id: str, slug: str, r: Any, error: str | None,
+                    attempt: dict[str, Any]) -> None:
+    """AI 修復の試行を data/repair_attempts/ に残す（T633）。記録の失敗で収集は止めない。"""
+    content = attempt.pop("_entry_content", None)
+    record = {"slug": slug, "run_id": run_id, "date": date, "called": True, "status": r.status, "error": r.error,
+              "count": r.count, "collect_error": error, "proposal_path": str(r.proposal_path) if r.proposal_path else None,
+              **attempt}
+    try:
+        write_attempt(out_dir / "repair_attempts", date, slug, run_id, record, content,
+                      "html" if attempt.get("entry", {}).get("is_html", True) else "pdf")
+    except (OSError, yaml.YAMLError) as e:
+        log.warning("%s: 試行の記録を書けない: %s", slug, e)
+
+
 def _events(log_dir: Path, date: str, rows: list[dict[str, Any]]) -> None:
     """slug ごと 1 行の構造化ログ（T615）。落ちても収集は止めない。"""
     try:
@@ -140,6 +157,7 @@ def _run_locked(sources: list[Source], date: str, out_dir: Path, fetcher: Fetche
     fetcher = fetcher or Fetcher()
     run_id = f"{date}T{now.strftime('%H%M%S')}"
     cleanup_last_ok(out_dir / "last_ok")
+    rotate_attempts(out_dir / "repair_attempts", date)
     state = load_state(state_dir)
     breaker: dict[str, Any] = state["breaker"]
     probing = set(breaker)        # 前日までに開いていて、今日まだ試していないホスト
@@ -187,8 +205,10 @@ def _run_locked(sources: list[Source], date: str, out_dir: Path, fetcher: Fetche
                 and not skipped_by_breaker and (info or {}).get("kind") != "content":
             from .ai_repair import repair
 
+            attempt: dict[str, Any] = {}
             r = repair(s, fetcher=fetcher, error=err, last_ok_dir=out_dir / "last_ok",
-                       last_ok_count=state["sources"].get(s.slug, {}).get("last_ok_count"))
+                       last_ok_count=state["sources"].get(s.slug, {}).get("last_ok_count"), attempt=attempt)
+            _record_attempt(out_dir, date, run_id, s.slug, r, err, attempt)
             if r.status == "ok":
                 repair_note = f"AI がレシピ案を書いた（{r.count} 頭・{getattr(r, 'proposal_path', None)}）"
             elif r.status == "no_key":
