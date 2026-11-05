@@ -213,7 +213,9 @@ def propose(
                 print(f"{slug}: open な PR が既にある。飛ばす")
                 continue
             c = str(clone)
-            _run(_git("-C", c, "fetch", "origin"))
+            # --prune: close した PR のブランチをリモートで消すと、手元の origin/repair/<slug> が古い情報として残り、
+            # 次の --force-with-lease が stale info で失敗する（2026-11-06 pref_hiroshima-1）。消えた参照をここで掃除する
+            _run(_git("-C", c, "fetch", "--prune", "origin"))
             _run(["git", "-C", c, "checkout", "-B", branch, "origin/main"])
             dest = clone / "v2" / "recipes" / f"{slug}.yaml"
             dest.parent.mkdir(parents=True, exist_ok=True)
