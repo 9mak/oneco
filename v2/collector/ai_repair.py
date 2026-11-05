@@ -42,7 +42,7 @@ REPAIR_SCHEMA = Path(__file__).with_name("repair_schema.json")
 AGY_TIMEOUT_S = 600
 MAX_BODY_CHARS = 60_000
 RECIPE_DOC = ROOT / "docs" / "RECIPE.md"
-PROPOSALS_DIR = ROOT / "data" / "proposals"   # data/ は .gitignore 済み。案は git に入れない
+PROPOSALS_DIR = ROOT / "data" / "proposals"  # data/ は .gitignore 済み。案は git に入れない
 _SAFE_SLUG = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*")
 
 SYSTEM_PROMPT = """あなたは日本の自治体サイトから保護犬猫の一覧を読む「レシピ」（YAML）を書く担当です。
@@ -74,13 +74,13 @@ class RepairError(Exception):
 @dataclass
 class RepairResult:
     slug: str
-    status: str                  # ok | failed | no_key
+    status: str  # ok | failed | no_key
     count: int = 0
     error: str | None = None
-    recipe_text: str | None = None   # agy が返した YAML（失敗時も残す）
-    saved: bool = False              # 案（data/proposals/<slug>.yaml）を保存した。本番レシピは書き換えない
+    recipe_text: str | None = None  # agy が返した YAML（失敗時も残す）
+    saved: bool = False  # 案（data/proposals/<slug>.yaml）を保存した。本番レシピは書き換えない
     proposal_path: Path | None = None
-    note: str = ""                   # agy の note（PR 本文に載せる）
+    note: str = ""  # agy の note（PR 本文に載せる）
 
 
 # --- 入力を作る ---------------------------------------------------------------
@@ -96,7 +96,11 @@ def strip_html(html: str, limit: int = MAX_BODY_CHARS) -> str:
         tag.decompose()
     for c in soup.find_all(string=lambda t: isinstance(t, Comment)):
         c.extract()
-    hidden = [t for t in soup.find_all(True) if t.has_attr("hidden") or _HIDDEN_STYLE.search(t.get("style") or "")]
+    hidden = [
+        t
+        for t in soup.find_all(True)
+        if t.has_attr("hidden") or _HIDDEN_STYLE.search(t.get("style") or "")
+    ]
     for tag in hidden:
         if not tag.decomposed:
             tag.decompose()
@@ -109,7 +113,9 @@ def _escape_untrusted(body: str) -> str:
     return re.sub(r"</(\s*)untrusted_html", r"&lt;/\1untrusted_html", body, flags=re.I)
 
 
-def build_user_prompt(source: Source, current: str | None, doc: str, body: str, error: str | None) -> str:
+def build_user_prompt(
+    source: Source, current: str | None, doc: str, body: str, error: str | None
+) -> str:
     parts = [
         "## 台帳のエントリ",
         f"slug: {source.slug}\nname: {source.name}\nurl: {source.url}\nkind: {source.kind}\nspecies: {source.species}",
@@ -141,22 +147,40 @@ def ask_agy(prompt: str, schema_path: Path, timeout_s: int) -> dict:
     """agy に問い合わせ、schema どおりの dict（structured_output）を返す。"""
     try:
         p = subprocess.run(
-            ["agy", "-p", prompt, "--output-format", "json", "--json-schema", str(schema_path),
-             "--mode", "plan", "--print-timeout", f"{timeout_s}s"],
-            check=False, capture_output=True, text=True, timeout=timeout_s + 60,
+            [
+                "agy",
+                "-p",
+                prompt,
+                "--output-format",
+                "json",
+                "--json-schema",
+                str(schema_path),
+                "--mode",
+                "plan",
+                "--print-timeout",
+                f"{timeout_s}s",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=timeout_s + 60,
         )
     except (OSError, subprocess.TimeoutExpired) as e:
         raise RepairError(f"agy を実行できない: {type(e).__name__}: {e}") from e
     try:
         out = json.loads(p.stdout)
     except json.JSONDecodeError as e:
-        raise RepairError(f"agy の出力が JSON でない（exit {p.returncode}）: {(p.stderr or p.stdout)[:200]}") from e
+        raise RepairError(
+            f"agy の出力が JSON でない（exit {p.returncode}）: {(p.stderr or p.stdout)[:200]}"
+        ) from e
     if not isinstance(out, dict):
         raise RepairError("agy の出力が JSON オブジェクトでない")
     if out.get("status") != "SUCCESS":
         raise RepairError(f"agy が失敗: status={out.get('status')!r}")
     if out.get("denied_actions"):
-        raise RepairError(f"agy がツール実行を試みた（拒否済み）: {str(out['denied_actions'])[:200]}")
+        raise RepairError(
+            f"agy がツール実行を試みた（拒否済み）: {str(out['denied_actions'])[:200]}"
+        )
     so = out.get("structured_output")
     if not isinstance(so, dict):
         raise RepairError("agy の返答に structured_output が無い")
@@ -165,9 +189,15 @@ def ask_agy(prompt: str, schema_path: Path, timeout_s: int) -> dict:
 
 # --- 採用条件（T618。設計監査 B1・B2） ----------------------------------------------------
 # extract.build が「必須項目なし」で捨てた行の理由（雛形・広告・案内文の行を拾っている兆候）
-MISSING_KEY_REASONS = ("写真も管理番号も収容日も個体ページも無い", "種別が決まらず、掲載が終わった行か中身の無い行")
+MISSING_KEY_REASONS = (
+    "写真も管理番号も収容日も個体ページも無い",
+    "種別が決まらず、掲載が終わった行か中身の無い行",
+)
 DUP_REASON = "同じ ID の行が既にある"
-REGRESSION_PCT, REGRESSION_MIN_SLACK = 50, 2   # 許容幅 = max(前回 ok の頭数 × 50%、2 頭)。両端を含む。下限は 0 未満にしない
+REGRESSION_PCT, REGRESSION_MIN_SLACK = (
+    50,
+    2,
+)  # 許容幅 = max(前回 ok の頭数 × 50%、2 頭)。両端を含む。下限は 0 未満にしない
 
 
 @dataclass
@@ -175,8 +205,8 @@ class Adoption:
     violations: list[str]
     passed: list[str]
     skipped: list[str]
-    warned: list[str] = field(default_factory=list)   # 不合格にはしないが人に見せる（回帰 NG）
-    manual_only: bool = False   # 旧レシピと新レシピを比べられる保存ページが無い。半自動の対象外（draft のまま人が見る）
+    warned: list[str] = field(default_factory=list)  # 不合格にはしないが人に見せる（回帰 NG）
+    manual_only: bool = False  # 旧レシピと新レシピを比べられる保存ページが無い。半自動の対象外（draft のまま人が見る）
 
     def line(self) -> str:
         """案のヘッダ・PR 本文に載せる 1 行。"""
@@ -187,7 +217,11 @@ class Adoption:
             parts.append("警告 " + "・".join(self.warned))
         text = " / ".join(parts)
         text += " / 回帰未確認" if any(x.startswith("d 回帰") for x in self.skipped) else ""
-        return text + (" / 半自動の対象外（旧新の比較ができていない。draft のまま人が見る）" if self.manual_only else "")
+        return text + (
+            " / 半自動の対象外（旧新の比較ができていない。draft のまま人が見る）"
+            if self.manual_only
+            else ""
+        )
 
 
 def tolerance_range(base: int) -> tuple[int, int]:
@@ -204,8 +238,25 @@ VALUE_FIELDS = ("location", "breed", "color", "sex", "size")
 # 値が見出しの語そのもの、または見出しの語で始まるときだけ当てる（途中に出る語は当てない。山梨の「全体の毛色は黒で…」、
 # 長野市の「…小さいレモンほどの大きさ」、横須賀の「MIX(品種不明)」は正しい値）。長い語を先に並べる
 HEADING_WORDS = (
-    "保護された状況", "収容された日", "収容年月日", "収容場所", "保護場所", "発見場所", "収容日", "保護日", "発見日",
-    "特徴等", "大きさ", "品種", "種類", "毛色", "性別", "体格", "特徴", "状況", "備考",
+    "保護された状況",
+    "収容された日",
+    "収容年月日",
+    "収容場所",
+    "保護場所",
+    "発見場所",
+    "収容日",
+    "保護日",
+    "発見日",
+    "特徴等",
+    "大きさ",
+    "品種",
+    "種類",
+    "毛色",
+    "性別",
+    "体格",
+    "特徴",
+    "状況",
+    "備考",
 )
 _HEADING_SEP = ":：、,，/／・"
 # 年月日の形だけを日付とみなす。住所の番地（2-15-20）や体重（5.5kg）は当てない
@@ -226,7 +277,7 @@ def _starts_with_heading(value: str) -> bool:
     v = _squash(value)
     for word in HEADING_WORDS:
         if v.startswith(word):
-            rest = v[len(word):]
+            rest = v[len(word) :]
             if rest == "" or rest[0] in _HEADING_SEP + " " or rest.startswith(HEADING_WORDS):
                 return True
     return False
@@ -307,7 +358,9 @@ def check_recipe_change(old: dict | None, new: dict) -> list[str]:
     for kind in lost_kinds:
         out.append(f"v3 steps の {kind} を消している")
     for kind in {_step_kind(s) for s in osteps if isinstance(s, dict) and s.get("skip_errors")}:
-        if kind not in lost_kinds and not any(_step_kind(s) == kind and isinstance(s, dict) and s.get("skip_errors") for s in nsteps):
+        if kind not in lost_kinds and not any(
+            _step_kind(s) == kind and isinstance(s, dict) and s.get("skip_errors") for s in nsteps
+        ):
             out.append(f"v3 steps の {kind} の skip_errors を外している")
     # 除外の指定・掲載期限
     orf, nrf = old.get("row_filter") or {}, new.get("row_filter") or {}
@@ -316,7 +369,11 @@ def check_recipe_change(old: dict | None, new: dict) -> list[str]:
             out.append(f"v3 除外語（text_lacks: {word}）を減らしている")
     for name, words in (orf.get("field_lacks") or {}).items():
         nw = _as_list((nrf.get("field_lacks") or {}).get(name))
-        out += [f"v3 除外語（field_lacks.{name}: {w}）を減らしている" for w in _as_list(words) if w not in nw]
+        out += [
+            f"v3 除外語（field_lacks.{name}: {w}）を減らしている"
+            for w in _as_list(words)
+            if w not in nw
+        ]
     for key in ("text_has_any", "field_has_any", "min_text_length"):
         if orf.get(key) and not nrf.get(key):
             out.append(f"v3 行の絞り込み（row_filter.{key}）を消している")
@@ -359,8 +416,20 @@ def strip_added_empty_roots(old: dict | None, new: dict) -> tuple[dict, list[str
     return out, removed
 
 
-_COMPARE_FIELDS = ("name", "sex", "age", "breed", "color", "size", "management_no", "shelter_date", "note", "location",
-                   "image_url", "species")
+_COMPARE_FIELDS = (
+    "name",
+    "sex",
+    "age",
+    "breed",
+    "color",
+    "size",
+    "management_no",
+    "shelter_date",
+    "note",
+    "location",
+    "image_url",
+    "species",
+)
 
 
 def _diff_animals(old: list[dict], new: list[dict]) -> list[str]:
@@ -371,7 +440,9 @@ def _diff_animals(old: list[dict], new: list[dict]) -> list[str]:
     by_new = {a["id"]: a for a in new}
     gone = [a["id"] for a in old if a["id"] not in by_new]
     if gone:
-        out.append(f"v4 旧レシピで載っていた {len(gone)} 頭が新レシピでは載らない（または ID が変わる）")
+        out.append(
+            f"v4 旧レシピで載っていた {len(gone)} 頭が新レシピでは載らない（または ID が変わる）"
+        )
     emptied: Counter[str] = Counter()
     changed: dict[str, tuple[str, str]] = {}
     for a in old:
@@ -387,9 +458,14 @@ def _diff_animals(old: list[dict], new: list[dict]) -> list[str]:
             elif _squash(str(ov)) != _squash(str(nv)):
                 changed.setdefault(f, (str(ov), str(nv)))
     if emptied:
-        out.append("v4 旧レシピで埋まっていた項目が空になる: " + "・".join(f"{f}（{n} 頭）" for f, n in emptied.items()))
+        out.append(
+            "v4 旧レシピで埋まっていた項目が空になる: "
+            + "・".join(f"{f}（{n} 頭）" for f, n in emptied.items())
+        )
     for f, (ov, nv) in changed.items():
-        out.append(f"v4 保存ページで {f} の値が変わる: 「{_squash(ov)[:30]}」→「{_squash(nv)[:30]}」")
+        out.append(
+            f"v4 保存ページで {f} の値が変わる: 「{_squash(ov)[:30]}」→「{_squash(nv)[:30]}」"
+        )
     return out
 
 
@@ -403,7 +479,9 @@ def _fixture_name_pattern(slug: str) -> re.Pattern[str]:
 MAX_FIXTURE_SAMPLES = 12
 
 
-def replay_makers(source: Source, last_ok_dir: Path, fixtures_dir: Path | None = None) -> list[Callable[[], Fetcher | None]]:
+def replay_makers(
+    source: Source, last_ok_dir: Path, fixtures_dir: Path | None = None
+) -> list[Callable[[], Fetcher | None]]:
     """旧レシピと新レシピを当てる保存ページ。last_ok（正常日の入口と辿った文書）と、tests/fixtures にある同じ slug の
     入口ページ 1 枚（辿る先が要る slug は旧レシピが読めず、基準にならないので飛ばされる）。"""
     makers: list[Callable[[], Fetcher | None]] = []
@@ -414,12 +492,13 @@ def replay_makers(source: Source, last_ok_dir: Path, fixtures_dir: Path | None =
         pat = _fixture_name_pattern(source.slug)
         for p in sorted(fx.glob("*.html")):
             if pat.search(p.name) and len(makers) < MAX_FIXTURE_SAMPLES:
-                makers.append(lambda p=p: FakeFetcher({source.url: p.read_text(encoding="utf-8")}))   # type: ignore[misc]
+                makers.append(lambda p=p: FakeFetcher({source.url: p.read_text(encoding="utf-8")}))  # type: ignore[misc]
     return makers
 
 
-def compare_with_old(source: Source, old: dict | None, new_recipe: Recipe,
-                     makers: list[Callable[[], Fetcher | None]]) -> tuple[list[str], int]:
+def compare_with_old(
+    source: Source, old: dict | None, new_recipe: Recipe, makers: list[Callable[[], Fetcher | None]]
+) -> tuple[list[str], int]:
     """v4: 旧レシピが正しく読めている保存ページ（頭数が 1 以上・v1・v2 に当たらない）に新レシピを当て、旧レシピで埋まっていた
     項目が空になるか値が変わる案を落とす。(違反, 比べられた保存ページの数)。旧レシピが読めない保存ページ（構造が変わった後の日）は
     基準にならないので数えない。比べられたのが 0 なら呼び出し側が「半自動の対象外」の印を付ける。"""
@@ -435,15 +514,25 @@ def compare_with_old(source: Source, old: dict | None, new_recipe: Recipe,
         try:
             fetcher = make()
             old_res = _try_recipe(source, old_recipe, fetcher) if fetcher is not None else None
-        except Exception:   # 旧レシピがこの保存ページを辿れない・読めない
+        except Exception:  # 旧レシピがこの保存ページを辿れない・読めない
             continue
-        if old_res is None or not old_res.animals or heading_in_values(old_res.animals) or date_in_values(old_res.animals):
+        if (
+            old_res is None
+            or not old_res.animals
+            or heading_in_values(old_res.animals)
+            or date_in_values(old_res.animals)
+        ):
             continue
         compared += 1
         try:
-            new_res = _try_recipe(source, new_recipe, make())   # type: ignore[arg-type]
-        except Exception as e:   # 構造が違って動かないのは d の警告の範囲。ここでは落とさない
-            log.info("%s: 保存ページに新レシピを当てられない（v4 は飛ばす）: %s: %s", source.slug, type(e).__name__, e)
+            new_res = _try_recipe(source, new_recipe, make())  # type: ignore[arg-type]
+        except Exception as e:  # 構造が違って動かないのは d の警告の範囲。ここでは落とさない
+            log.info(
+                "%s: 保存ページに新レシピを当てられない（v4 は飛ばす）: %s: %s",
+                source.slug,
+                type(e).__name__,
+                e,
+            )
             continue
         out += _diff_animals(old_res.animals, new_res.animals)
     # 同じ種類の指摘は保存ページごとに繰り返さず、最初の 1 つだけ残す（「:」の前が同じものを同じ指摘とみなす）
@@ -453,11 +542,17 @@ def compare_with_old(source: Source, old: dict | None, new_recipe: Recipe,
     return list(first.values()), compared
 
 
-def evaluate_adoption(res: Result, regression_count: int | None = None, last_ok_count: int | None = None,
-                      skip_reason: str | None = None, allow_other: bool = False,
-                      regression_note: str | None = None, *,
-                      recipe_change: list[str] | None = None,
-                      replay: tuple[list[str], int] | None = None) -> Adoption:
+def evaluate_adoption(
+    res: Result,
+    regression_count: int | None = None,
+    last_ok_count: int | None = None,
+    skip_reason: str | None = None,
+    allow_other: bool = False,
+    regression_note: str | None = None,
+    *,
+    recipe_change: list[str] | None = None,
+    replay: tuple[list[str], int] | None = None,
+) -> Adoption:
     """a 必須項目 b 重複 c 行数の一致 d 直近 fixture での回帰。regression_count は新レシピを保存 HTML に当てた頭数
     （None なら d を飛ばす。理由は skip_reason）。last_ok_count は d の基準（保存時の頭数、無ければ state の値）。
     a は extract.build が載せる値に揃える: species は dog/cat、None（警告）、allow_other なら other。
@@ -478,23 +573,43 @@ def evaluate_adoption(res: Result, regression_count: int | None = None, last_ok_
 
     # a
     allowed = ("dog", "cat", None, "other") if allow_other else ("dog", "cat", None)
-    lacking = [x for x in res.animals
-               if x.get("species") not in allowed
-               or not (x.get("image_url") or x.get("management_no") or x.get("shelter_date") or x.get("id") in res.detail_ids)]
-    verdict("a 必須項目", f"必須項目（species と、写真・管理番号・収容日・個体ページのどれか）を欠く動物が {len(lacking)} 件"
-            f"（最初の id={lacking[0].get('id')}）" if lacking else None)
+    lacking = [
+        x
+        for x in res.animals
+        if x.get("species") not in allowed
+        or not (
+            x.get("image_url")
+            or x.get("management_no")
+            or x.get("shelter_date")
+            or x.get("id") in res.detail_ids
+        )
+    ]
+    verdict(
+        "a 必須項目",
+        f"必須項目（species と、写真・管理番号・収容日・個体ページのどれか）を欠く動物が {len(lacking)} 件"
+        f"（最初の id={lacking[0].get('id')}）"
+        if lacking
+        else None,
+    )
     unknown = sum(1 for x in res.animals if x.get("species") is None)
     if unknown:
-        warn.append(f"species 未確定 {unknown} 件（build の仕様で載せる。台帳が mixed のときに起きる）")
+        warn.append(
+            f"species 未確定 {unknown} 件（build の仕様で載せる。台帳が mixed のときに起きる）"
+        )
     # b
     ids = [a["id"] for a in res.animals]
     dups = sum(1 for d in res.dropped if d.reason == DUP_REASON)
-    verdict("b 重複", f"同じ id が複数回出る（重複 {dups} 行）" if dups or len(ids) != len(set(ids)) else None)
+    verdict(
+        "b 重複",
+        f"同じ id が複数回出る（重複 {dups} 行）" if dups or len(ids) != len(set(ids)) else None,
+    )
     # c
     total = len(res.animals) + len(res.dropped)
     missing = sum(1 for d in res.dropped if d.reason in MISSING_KEY_REASONS)
     if total != res.rows:
-        c_problem: str | None = f"行数が合わない（レシピが拾った行 {res.rows}・動物 {len(res.animals)}＋捨てた {len(res.dropped)}）"
+        c_problem: str | None = (
+            f"行数が合わない（レシピが拾った行 {res.rows}・動物 {len(res.animals)}＋捨てた {len(res.dropped)}）"
+        )
     elif res.rows and missing * 2 > res.rows:
         c_problem = f"拾った行 {res.rows} のうち必須項目なしで捨てた行が {missing} 件で半分を超える（雛形・無関係な行を拾っている兆候）"
     else:
@@ -502,7 +617,9 @@ def evaluate_adoption(res: Result, regression_count: int | None = None, last_ok_
     verdict("c 行数", c_problem)
     # d
     if regression_count is None or not last_ok_count:
-        why = skip_reason or ("前回 ok の頭数が不明" if regression_count is not None else "保存 HTML なし")
+        why = skip_reason or (
+            "前回 ok の頭数が不明" if regression_count is not None else "保存 HTML なし"
+        )
         skip.append(f"d 回帰（{why}）")
     elif regression_count == 0:
         # 保存 HTML が旧構造で、新レシピが今日の構造向けに書かれただけの可能性がある。案は残し、人に見せる。
@@ -511,13 +628,17 @@ def evaluate_adoption(res: Result, regression_count: int | None = None, last_ok_
         lo, hi = tolerance_range(last_ok_count)
         strong = not lo <= today <= hi
         what = regression_note or "保存 HTML で 0 頭"
-        warn.append(f"回帰 NG（{'強。' if strong else ''}旧構造の可能性。{what}。今日の HTML の頭数 {today}・前回 ok {last_ok_count} 頭）")
+        warn.append(
+            f"回帰 NG（{'強。' if strong else ''}旧構造の可能性。{what}。今日の HTML の頭数 {today}・前回 ok {last_ok_count} 頭）"
+        )
     else:
         lo, hi = tolerance_range(last_ok_count)
         if lo <= regression_count <= hi:
             ok.append(f"d 回帰（保存 HTML で {regression_count} 頭・前回 {last_ok_count} 頭）")
         else:
-            bad.append(f"保存 HTML に当てた頭数 {regression_count} が前回 ok の {last_ok_count} 頭の許容範囲 {lo}〜{hi} 頭に入らない")
+            bad.append(
+                f"保存 HTML に当てた頭数 {regression_count} が前回 ok の {last_ok_count} 頭の許容範囲 {lo}〜{hi} 頭に入らない"
+            )
     # v1 v2（T634）
     bad += heading_in_values(res.animals)
     bad += date_in_values(res.animals)
@@ -543,14 +664,22 @@ def evaluate_adoption(res: Result, regression_count: int | None = None, last_ok_
     return Adoption(bad, ok, skip, warn, manual)
 
 
-def check_adoption(res: Result, regression_count: int | None = None, last_ok_count: int | None = None,
-                   skip_reason: str | None = None, allow_other: bool = False) -> list[str]:
+def check_adoption(
+    res: Result,
+    regression_count: int | None = None,
+    last_ok_count: int | None = None,
+    skip_reason: str | None = None,
+    allow_other: bool = False,
+) -> list[str]:
     """採用条件の違反理由の一覧（空なら合格）。"""
-    return evaluate_adoption(res, regression_count, last_ok_count, skip_reason, allow_other).violations
+    return evaluate_adoption(
+        res, regression_count, last_ok_count, skip_reason, allow_other
+    ).violations
 
 
-def _regress(recipe: Recipe, source: Source, last_ok_dir: Path,
-             state_count: int | None) -> tuple[int | None, str | None, str | None, int | None]:
+def _regress(
+    recipe: Recipe, source: Source, last_ok_dir: Path, state_count: int | None
+) -> tuple[int | None, str | None, str | None, int | None]:
     """新レシピを last_ok の保存 HTML に当てる。(頭数, 飛ばす理由, 0 頭の内訳, d の基準の頭数)。
     基準は保存 HTML と一緒に残した頭数を優先し、無ければ state の last_ok_count。
     当てられなかったら 0 頭として扱う（保存に無い URL を辿る新レシピもここ。警告のみ）。"""
@@ -562,10 +691,10 @@ def _regress(recipe: Recipe, source: Source, last_ok_dir: Path,
         return None, "前回 ok の頭数が不明", None, None
     try:
         return len(_try_recipe(source, recipe, replay).animals), None, None, base
-    except FetchError as e:   # 新レシピが保存に無い URL を辿った
+    except FetchError as e:  # 新レシピが保存に無い URL を辿った
         log.info("%s: 保存 HTML に無い URL を辿った: %s", source.slug, e)
         return 0, None, "保存に無い URL を辿って失敗", base
-    except Exception as e:   # 保存 HTML に新レシピが当たらない（構造が違う）= 0 頭
+    except Exception as e:  # 保存 HTML に新レシピが当たらない（構造が違う）= 0 頭
         log.info("%s: 保存 HTML に新レシピを当てられない: %s: %s", source.slug, type(e).__name__, e)
         return 0, None, None, base
 
@@ -613,7 +742,9 @@ def repair(
     # 2. 入力
     path = source.recipe_path
     original = path.read_text(encoding="utf-8") if path.exists() else None
-    doc = RECIPE_DOC.read_text(encoding="utf-8") if RECIPE_DOC.exists() else "(docs/RECIPE.md が無い)"
+    doc = (
+        RECIPE_DOC.read_text(encoding="utf-8") if RECIPE_DOC.exists() else "(docs/RECIPE.md が無い)"
+    )
     user = build_user_prompt(source, original, doc, body, error)
 
     # 3. agy（system 引数が無いので 1 本に結合）
@@ -640,29 +771,68 @@ def repair(
             recipe_text = _redump(recipe_text, raw, removed_roots)
         violations = validate_recipe_dict(raw, source.url)
         if violations:
-            return RepairResult(slug, "failed", error="新レシピが schema 検査に通らない: " + " / ".join(violations),
-                                recipe_text=recipe_text)
+            return RepairResult(
+                slug,
+                "failed",
+                error="新レシピが schema 検査に通らない: " + " / ".join(violations),
+                recipe_text=recipe_text,
+            )
         recipe = Recipe.from_dict(raw)
         res = _try_recipe(source, recipe, fetcher)
     except (yaml.YAMLError, RecipeError, FetchError, RepairError, TypeError, ValueError) as e:
-        return RepairResult(slug, "failed", error=f"新レシピが動かない: {type(e).__name__}: {e}", recipe_text=recipe_text, note=note)
+        return RepairResult(
+            slug,
+            "failed",
+            error=f"新レシピが動かない: {type(e).__name__}: {e}",
+            recipe_text=recipe_text,
+            note=note,
+        )
     except Exception as e:
         log.exception("%s: 新レシピの実行で例外", slug)
-        return RepairResult(slug, "failed", error=f"新レシピが動かない: {type(e).__name__}: {e}", recipe_text=recipe_text, note=note)
+        return RepairResult(
+            slug,
+            "failed",
+            error=f"新レシピが動かない: {type(e).__name__}: {e}",
+            recipe_text=recipe_text,
+            note=note,
+        )
     if not res.animals:
-        why = f"新レシピでも 0 頭（行 {res.rows}・捨てた {len(res.dropped)}" + ("・empty_text あり" if res.empty_confirmed else "") + "）"
+        why = (
+            f"新レシピでも 0 頭（行 {res.rows}・捨てた {len(res.dropped)}"
+            + ("・empty_text あり" if res.empty_confirmed else "")
+            + "）"
+        )
         return RepairResult(slug, "failed", error=why, recipe_text=recipe_text, note=note)
     # 採用条件（a 必須項目 b 重複 c 行数 d 直近 fixture での回帰）。d は新レシピを保存済みの正常日 HTML に当てる
-    reg_count, reg_skip, reg_note, baseline = _regress(recipe, source, last_ok_dir or LAST_OK_DIR, last_ok_count)
+    reg_count, reg_skip, reg_note, baseline = _regress(
+        recipe, source, last_ok_dir or LAST_OK_DIR, last_ok_count
+    )
     # T634: v3 現行の指定を消していないか、v4 旧新レシピを保存ページに当てて項目が欠けないか
-    replay = compare_with_old(source, old_raw, recipe, replay_makers(source, last_ok_dir or LAST_OK_DIR))
-    adoption = evaluate_adoption(res, reg_count, baseline, reg_skip, bool(recipe.species.get("allow_other")), reg_note,
-                                 recipe_change=check_recipe_change(old_raw, raw), replay=replay)
+    replay = compare_with_old(
+        source, old_raw, recipe, replay_makers(source, last_ok_dir or LAST_OK_DIR)
+    )
+    adoption = evaluate_adoption(
+        res,
+        reg_count,
+        baseline,
+        reg_skip,
+        bool(recipe.species.get("allow_other")),
+        reg_note,
+        recipe_change=check_recipe_change(old_raw, raw),
+        replay=replay,
+    )
     if removed_roots:
-        adoption.warned.append("AI が足した器の指定を外した（" + " / ".join(removed_roots)[:200] + "）")
+        adoption.warned.append(
+            "AI が足した器の指定を外した（" + " / ".join(removed_roots)[:200] + "）"
+        )
     if adoption.violations:
-        return RepairResult(slug, "failed", error="採用条件を満たさない: " + " / ".join(adoption.violations),
-                            recipe_text=recipe_text, note=note)
+        return RepairResult(
+            slug,
+            "failed",
+            error="採用条件を満たさない: " + " / ".join(adoption.violations),
+            recipe_text=recipe_text,
+            note=note,
+        )
 
     # 5. 採用条件を通ったときだけ「案」を書く。本番レシピ（recipes/）には触らない
     proposal: Path | None = None
@@ -670,15 +840,29 @@ def repair(
         proposal = (proposals_dir or PROPOSALS_DIR) / f"{slug}.yaml"
         try:
             proposal.parent.mkdir(parents=True, exist_ok=True)
-            proposal.write_text(_proposal_header(error, run_date, note, len(res.animals), adoption.line()) + recipe_text, encoding="utf-8")
-            if page.html is not None:   # 今日の HTML。期待値は assert しない（人が差分を見る。B2）
+            proposal.write_text(
+                _proposal_header(error, run_date, note, len(res.animals), adoption.line())
+                + recipe_text,
+                encoding="utf-8",
+            )
+            if page.html is not None:  # 今日の HTML。期待値は assert しない（人が差分を見る。B2）
                 proposal.with_name(f"{slug}.today.html").write_text(page.html, encoding="utf-8")
-            Recipe.load(proposal)   # 書いたものが読み直せることを確認
+            Recipe.load(proposal)  # 書いたものが読み直せることを確認
         except Exception as e:
             proposal.unlink(missing_ok=True)
             proposal.with_name(f"{slug}.today.html").unlink(missing_ok=True)
-            return RepairResult(slug, "failed", error=f"案の保存に失敗した: {e}", recipe_text=recipe_text)
-    return RepairResult(slug, "ok", count=len(res.animals), recipe_text=recipe_text, saved=save, proposal_path=proposal, note=note)
+            return RepairResult(
+                slug, "failed", error=f"案の保存に失敗した: {e}", recipe_text=recipe_text
+            )
+    return RepairResult(
+        slug,
+        "ok",
+        count=len(res.animals),
+        recipe_text=recipe_text,
+        saved=save,
+        proposal_path=proposal,
+        note=note,
+    )
 
 
 def _load_raw(text: str | None) -> dict | None:
@@ -701,12 +885,17 @@ def _redump(original_text: str, raw: dict, removed: list[str]) -> str:
             lead.append(line)
         elif line.strip():
             break
-    lead.append("# T634: AI が足した器の指定を採用前に外した: " + " / ".join(removed).replace("\n", " ")[:300])
+    lead.append(
+        "# T634: AI が足した器の指定を採用前に外した: "
+        + " / ".join(removed).replace("\n", " ")[:300]
+    )
     body = yaml.safe_dump(raw, allow_unicode=True, sort_keys=False, width=10_000)
     return "\n".join(lead) + "\n" + body
 
 
-def _proposal_header(error: str | None, run_date: str | None, note: str = "", count: int = 0, adoption: str = "") -> str:
+def _proposal_header(
+    error: str | None, run_date: str | None, note: str = "", count: int = 0, adoption: str = ""
+) -> str:
     day = run_date or datetime.now(UTC).date().isoformat()
     why = re.sub(r"\s+", " ", error or "不明").strip()[:200]
     head = f"# proposal: run の日付 {day}・元の失敗理由 {why}・取れた頭数 {count}・採用条件は次の行（人が差分を見て recipes/ へ反映する。今日の HTML は <slug>.today.html）\n"
