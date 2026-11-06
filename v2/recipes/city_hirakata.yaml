@@ -19,4 +19,10 @@ fields:
   location: {regex: "(?:収容場所|場所)[:：]\\s*(\\S+)"}
   size: {regex: "(?:体格|大きさ|体重)[:：]\\s*(\\S+)"}
 
-empty_text: ["掲載情報が無い場合でも"]
+# 0 頭の日は、収容犬・収容猫の見出し(h4)の下に案内文「掲載情報が無い場合でも、犬が行方不明になったら…」だけが並ぶ。
+# 2026-11-06 T631: この案内文は子のいる日にも各見出しの下に毎日出る（猫の写真+表の下にも出ていた）ので empty_text から外し、empty_absent に変えた。
+# page = 収容犬・収容猫の両方の見出しがある本文（0 頭の日も子のいる日も出る枠）、none = 表と、アンカー用の透明画像以外の写真。
+# カードのクラス名（mol_imageblock）が変わっても、表か写真が残っていれば 0 頭にならず failed で通知される。
+empty_absent:
+  page: "#mol_contents:has(h4:-soup-contains('収容犬')):has(h4:-soup-contains('収容猫'))"
+  none: "#mol_contents table, #mol_contents div.mol_imageblock, #mol_contents img:not([src*='clearspacer'])"

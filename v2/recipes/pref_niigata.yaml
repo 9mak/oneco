@@ -1,11 +1,12 @@
 # 新潟県動物愛護センター（保護動物） — 1 ページに犬/猫が div.detail_free ブロックで並ぶ single_page 形式（個別ページなし）。
 # 動物ブロックは先頭が <h3>犬</h3> または <h3>猫</h3> の div.detail_free のみ（「返還の際に必要な物」等の他ブロックは h3 テキストで除外）。
 # ブロック内は <p>画像</p><p><strong>管理番号</strong></p><p>M月D日 場所で保護/収容</p><p>属性（、区切り: 品種,性別,毛色,...,体重Kg,...）</p> の順。年は書かれないので shelter_date は "M月D日" のまま採る。
-# 0 頭のとき、犬/猫見出しの detail_free ブロックが消え、代わりに
-# <img alt="いない" src="/uploaded/image/331597.jpg"> という「いません」を示す画像 1 枚だけの
-# ブロックが入るが、alt 属性は get_text() に含まれず empty_text で拾えない。かつ「いない」は
-# 単語として短すぎ誤検出の恐れがあるため使わない。代わりにページ冒頭の恒常的な案内文（見出し）を
-# 「正しいページが読めた」確認として empty_text に使う。
+# 0 頭の日は、犬/猫の動物ブロックが消えて「保護している動物はいません」の画像 1 枚だけのブロックになる（Wayback 2026-04-10 で確認。
+# 画像の alt と URL は日によって違うので画像は見ない）。2026-11-06 T631: ページ冒頭の案内文（h2「…迷子の動物の情報を掲載しています。」）は
+# 子のいる日にも毎日出るので empty_text から外し、empty_absent に変えた。page = その案内文の h2（0 頭の日も子のいる日も出る枠）、
+# none = 「返還の際に必要な物」以外の h3、「保護した…」「…で保護」の本文、「Kg」の体重の行。
+# 11/06 の実ページは h3 が管理番号（26長FC010）で本文も「保護した日時：…」の書式に変わり、rows（h3 に犬/猫）が合わず子 2 頭を取れていない
+# （案内文があるので「0 頭」と出ていた）。none がこの書式の子を見つけるので、読めない日は failed で通知される。
 rows: >-
   div.detail_free:has(> h3:-soup-contains-own("犬")),
   div.detail_free:has(> h3:-soup-contains-own("猫"))
@@ -28,5 +29,6 @@ fields:
 species:
   from: field
   map: {"犬": dog, "猫": cat}
-empty_text:
-  - "新潟県動物愛護センターで保護している迷子の動物の情報を掲載しています。"
+empty_absent:
+  page: "div.detail_free h2:-soup-contains('新潟県動物愛護センターで保護している迷子の動物の情報を掲載しています')"
+  none: "div.detail_free h3:not(:-soup-contains('返還の際に必要な物')), div.detail_free p:-soup-contains('保護した'), div.detail_free p:-soup-contains('で保護'), div.detail_free p:-soup-contains('Kg')"
