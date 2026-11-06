@@ -58,6 +58,7 @@ class Recipe:
     fields: dict[str, Any] = field(default_factory=dict)
     species: dict[str, Any] = field(default_factory=dict)
     empty_text: list[str] = field(default_factory=list)
+    empty_text_each: list[str] = field(default_factory=list)   # rows を当てる文書の「全部」が、この文のどれかを出したときだけ 0 頭（保健所・PDF ごとに 0 頭の文を出すサイト。W006 T631）。extract.build で照合
     empty_text_all: list[str] = field(default_factory=list)   # 列挙した 0 頭の文が全部出たときだけ 0 頭（複数の節があるページ。W006 T631）。extract.build で照合
     empty_selector: list[str] = field(default_factory=list)   # 0 頭の日に空になる一覧の器（文言が出ないサイト用）。extract.build で照合
     empty_absent: dict[str, str] = field(default_factory=dict)   # {page, none}: 0 頭の日に器ごと消えるサイト用。extract.build で照合
@@ -76,7 +77,7 @@ class Recipe:
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> Recipe:
         known = {k: v for k, v in raw.items() if k in cls.__dataclass_fields__}
-        for key in ("empty_text", "empty_selector"):
+        for key in ("empty_text", "empty_text_each", "empty_selector"):
             if isinstance(known.get(key), str):
                 known[key] = [known[key]]
         return cls(**known)

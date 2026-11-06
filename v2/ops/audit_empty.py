@@ -35,7 +35,7 @@ JST = timezone(timedelta(hours=9))
 @dataclass
 class Finding:
     slug: str
-    kind: str  # empty_selector / empty_absent / empty_text / empty_text_all
+    kind: str  # empty_selector / empty_absent / empty_text / empty_text_all / empty_text_each
     detail: str  # 当たった文言かセレクタ
     url: str  # 当たった文書の URL（複数あれば最初。全部は docs 件数で示す）
     count: int  # 出現回数
@@ -71,7 +71,7 @@ def audit(data_dir: Path, items: list[tuple[Source, Recipe]]) -> AuditResult:
             continue  # 子がいた日ではない
         out.child_days += 1
         pool = list(docs) + [d for d in (visited or []) if d not in docs]
-        for h in empty_hits(recipe, pool):
+        for h in empty_hits(recipe, pool, docs):
             out.findings.append(
                 Finding(
                     source.slug, h.kind, h.detail, h.urls[0] if h.urls else "", h.count, len(h.urls)
