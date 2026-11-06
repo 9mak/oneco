@@ -6,7 +6,8 @@
 # 「返還しました」「☆」（ボランティア団体へ譲渡済）の子と「9月16日の犬の収容はありませんでした。」の告知（収容日だけ入っている）は捨てる。
 steps:
   - paginate: ".paging a[rel='next']@href"
-  - follow_all: "div.lists > a[href*='/animals/accommodate_view/']@href"
+  # 返還済みの子（一覧のタイトルと写真の alt に「返還しました」）は辿らない。辿ると、その子のタイトルの語が 0 頭の根拠に化ける
+  - follow_all: "div.lists > a[href*='/animals/accommodate_view/']:not(:has(img[alt*='返還しました'])):not(:-soup-contains('返還しました'))@href"
 rows: "div.animals_single"
 row_filter:
   text_lacks: ["返還しました", "☆", "ありませんでした"]
@@ -22,5 +23,10 @@ fields:
   size: {label: "体格"}
   location: {label: "場所"}
   note: {label: "備考"}
-# 一覧の全員が返還済み・告知だけのときは本当に 0 頭（これらの語は個体ページのタイトルにしか出ない）
-empty_text: ["返還しました", "収容はありませんでした"]
+# 0 頭 = 一覧（div.lists）はあるが、返還済みでない子へのリンクが 1 本も無い日（告知「…の収容はありませんでした」と返還済みだけ）。
+# 旧 empty_text「返還しました」「収容はありませんでした」は、子のいる日にも一覧のタイトル・告知に出ていた（W006 T631）。
+# 子のリンクが残るのに行が読めない日は 0 頭にしない。備考「死亡」の子だけが残る日は empty_container で全行除外の 0 頭（-2 と同じ）
+empty_container: "div.animals_single"
+empty_absent:
+  page: "body:not(:has(div.animals_single)) div.lists"   # 個体ページのサイドバーにも div.lists があるので、一覧ページだけに絞る
+  none: "div.lists a[href*='/animals/accommodate_view/']:not(:has(img[alt*='返還しました'])):not(:-soup-contains('返還しました'))"
