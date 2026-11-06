@@ -3,7 +3,7 @@
 fixture は実ページから script・style を落としたもの。名前は w006_<slug>_<状態>_<日付>.html（zero はその日の 0 頭、last_ok は直前まで正常に読めた日、wb は Wayback の版）。
 - 札幌市 迷子犬（city_sapporo-1）: 0 頭の日の文言が「現在迷子犬は収容されていません」で empty_text に無く failed だった
 - 広島県 迷い猫（pref_hiroshima-2）: 0 頭の日に文言が出ず、案内の p だけになって failed だった
-- 福岡市 暫定ページの犬（city_fukuoka_interim-1）は 404。直さない（市の一覧から消えているだけ）
+- 福岡市 暫定ページの犬（city_fukuoka_interim-1）: 11/06 0:05 は HTTP 404、同日中に同じ URL で復活。0 頭の日の 1 文に empty_absent で対応
 """
 
 from pathlib import Path
