@@ -275,16 +275,17 @@ def _all_excluded_evidence(recipe: Recipe, docs: list[Doc]) -> tuple[str | None,
 @dataclass
 class EmptyHit:
     """0 頭の根拠が 1 つ成立したこと。build の 0 頭判定と ops/audit_empty.py（子のいる日に成立していないかの監査）が同じ関数を通る。"""
-    kind: str            # empty_selector / empty_absent / empty_text / empty_text_all
+    kind: str            # empty_selector / empty_absent / empty_text / empty_text_all / empty_text_each
     detail: str          # 当たった文言（empty_text_all は " + " でつないだ全文）かセレクタ
     urls: list[str]      # 当たった文書の URL
     count: int           # 出現回数（要素なら該当要素の数）
 
 
-def empty_hits(recipe: Recipe, pool: list[Doc]) -> list[EmptyHit]:
+def empty_hits(recipe: Recipe, pool: list[Doc], docs: list[Doc] | None = None) -> list[EmptyHit]:
     """レシピの 0 頭の根拠のうち、pool（rows を当てる文書 + 辿った文書）で成立しているものを build が試す順に全部返す。
     動物が 0 頭かどうかはここでは見ない（呼ぶ側の条件）。empty_container と全行除外の根拠は「行はあるが全部除外」の日の
-    判定で、子が取れている日には成立しないのでここには含めない。"""
+    判定で、子が取れている日には成立しないのでここには含めない。
+    docs: rows を当てる文書。empty_text_each は「その全部が自分の 0 頭の文を出す」ので docs が要る（渡さなければ成立扱いにしない）。"""
     hits: list[EmptyHit] = []
     for sel in recipe.empty_selector:
         # セレクタに合う要素がその文書にあり、合った要素がすべて空なら成立（豊橋市あいくる div.dog-cat-list、
@@ -316,6 +317,16 @@ def empty_hits(recipe: Recipe, pool: list[Doc]) -> list[EmptyHit]:
             urls = list(dict.fromkeys(u for t in recipe.empty_text_all for u in where(t)))
             hits.append(EmptyHit("empty_text_all", " + ".join(recipe.empty_text_all), urls,
                                  sum(whole.count(t) for t in recipe.empty_text_all)))
+    if recipe.empty_text_each and docs:
+        # 文書ごとに、自分の 0 頭の文（本文か img の alt）を出しているか。1 文書でも出していなければ（子がいる・作りが変わった）成立しない
+        def own(d: Doc) -> list[str]:
+            alt = " ".join(str(i.get("alt") or "") for i in d.soup.find_all("img")) if d.soup is not None else ""
+            return [t for t in recipe.empty_text_each if t in f"{d.text()} {alt}"]
+
+        found = [own(d) for d in docs]
+        if all(found):
+            hits.append(EmptyHit("empty_text_each", " | ".join(dict.fromkeys(t for f in found for t in f)),
+                                 [d.url for d in docs], sum(len(f) for f in found)))
     return hits
 
 
@@ -393,7 +404,7 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
             res.animals.append(animal)
     pool = list(docs) + [d for d in (visited or []) if d not in docs]
     if not res.animals:
-        hits = empty_hits(recipe, pool)
+        hits = empty_hits(recipe, pool, docs)
         if hits:
             res.empty_confirmed = True
             res.empty_evidence = hits[0].kind

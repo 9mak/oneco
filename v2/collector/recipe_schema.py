@@ -328,6 +328,14 @@ def validate_recipe_dict(raw: dict[str, Any], source_url: str) -> list[str]:
                 c.err("empty_text_all: 2 個以上の文が要る（1 つなら empty_text）")
             if any(not s.strip() for s in items):
                 c.err("empty_text_all: 空の文字列がある（どの文書にも含まれるので根拠にならない）")
+    if "empty_text_each" in raw:
+        ete = raw["empty_text_each"]
+        if not isinstance(ete, list) or not ete:
+            c.err("empty_text_each: 1 個以上の文字列のリストが要る")
+        else:
+            items = c.str_list("empty_text_each", ete)
+            if any(not s.strip() for s in items):
+                c.err("empty_text_each: 空の文字列がある（どの文書にも含まれるので根拠にならない）")
     if "empty_selector" in raw:
         for i, s in enumerate(c.str_list("empty_selector", raw["empty_selector"])):
             c.selector(f"empty_selector[{i}]", s)
