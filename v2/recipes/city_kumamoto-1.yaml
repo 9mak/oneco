@@ -18,5 +18,11 @@ fields:
   size: {label: "体格"}
   location: {label: "保護場所"}
   shelter_date: {regex: "保護日時[:：]\\s*(\\S+)"}
-empty_text:
-  - "迷子犬を保護しています"
+# 2026-11-06 T631: 見出し「迷子犬を保護しています」はサイト共通のメニューと子ページにも毎日出る（一覧の 13 か所に出る）ので empty_text にはできない。
+# 猫版 city_kumamoto-2（2026-10-31）と同じく、0 頭の日は div.kijiArea（「全N件」と記事の並び）ごと消える作りを empty_absent で見る。
+# page = 本文（#cont_body）の div.wideMenu の中の h1.classTitle「迷子犬を保護しています」（0 頭の日も子のいる日も出る枠）、
+# none = 器（kijiArea 等）と記事へのリンク、一覧の入る div.wideMenu の中のリンク全部（記事の URL の形が変わった日や、下位分類へのリンクだけを並べる
+# 親分類が返った日も 0 頭にしない）。枠が無い日（ブロック画面・作り替え）は page が当たらず failed で通知される。
+empty_absent:
+  page: "#cont_body div.wideMenu h1.classTitle:-soup-contains('迷子犬を保護しています')"
+  none: "#cont_body div.kijiArea, #cont_body ul.kijilist, #cont_body li.loadbox, #cont_body a[href*='kiji'], #cont_body div.wideMenu a[href]"
