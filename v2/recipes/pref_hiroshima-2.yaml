@@ -26,3 +26,13 @@ empty_text:
   - "現在、迷い猫情報はありません"
   - "現在迷い猫情報はありません"
   - "該当する迷い猫はいません"
+  - "現在、迷い猫は収容されていません"
+  - "現在、新たな迷い猫の収容はありません"
+# 2026-11-06 変更: 0 頭の日に文が出ない形（案内の p「この情報は、迷い猫を探している飼い主さんのための情報提供です。…」だけ）が 11/06 に出て failed だった。
+#   Wayback 2025-01 も同じ形。文が出る版もある（2024-07・2025-05「※現在、新たな迷い猫の収容はありません」、2026-04「現在、迷い猫は収容されていません。」）ので 2 文を empty_text に足した。
+#   案内の p は子のいる日にも出るので 0 頭の根拠にしない。empty_absent は「案内の p があり、動物の印（見出し h2・写真・表・ul・収容日や保護の状況の行）が 1 つも無い」日だけ 0 頭。
+#   子のいる日に属性 p の書き方が変わって行が 0 になっても、見出し・写真・属性の文が残るので 0 頭にならず failed のまま（10/31 の迷い犬と同じ型）。
+#   子のいる版（2026-11-05 の保存ページ、Wayback 2025-11-08）に 2 文は出ない。
+empty_absent:
+  page: "div.detail_free p:-soup-contains('迷い猫を探している飼い主さんのための情報提供です')"
+  none: "div.detail_free h2, div.detail_free h3, div.detail_free img, div.detail_free table, div.detail_free ul, div.detail_free p:-soup-contains('収容された日'), div.detail_free p:-soup-contains('収容日'), div.detail_free p:-soup-contains('保護された状況')"
