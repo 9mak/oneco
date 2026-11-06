@@ -15,9 +15,9 @@ from typing import Any
 
 import yaml
 
-from . import repair_gate
+from . import empty_watch, repair_gate
 from .errors import TRANSPORT_KINDS, ErrorInfo, error_to_dict, host_of
-from .extract import Result, build
+from .extract import Result, build, empty_hits
 from .fetch import Fetcher, FetchError, page_gone
 from .last_ok import RecordingFetcher, cleanup_last_ok, save_last_ok
 from .publish import build_manifest, publish
@@ -39,7 +39,7 @@ OUTAGE_MIN_RATIO = 0.10
 # 落ちているサイトに 1 ホスト数十件のリクエストを送り続けて遅くなる・迷惑をかけるのを避ける。
 BREAKER_TRIP = 3
 # report の行のうち、通知と state のための内部の印。公開する latest.json・animals-*.json の sources には入れない
-INTERNAL_ROW_KEYS = frozenset({"quarantine_started"})
+INTERNAL_ROW_KEYS = frozenset({"quarantine_started", "empty_fp", "empty_changed"})
 
 
 def outage(report: list[dict[str, Any]]) -> bool:
@@ -61,6 +61,7 @@ class Collected:
     trace: list[str] = field(default_factory=list)
     error_info: dict[str, Any] | None = None
     recorder: RecordingFetcher | None = None   # ok のとき、取得した文書（last_ok に保存する素材。T618）
+    empty_fp: dict[str, Any] | None = None   # empty のとき、0 頭の根拠が成立した文書の本文の指紋（T632。empty_watch.fingerprint）
 
     def __iter__(self):
         return iter((self.status, self.result, self.error, self.trace))
@@ -101,7 +102,7 @@ def collect_one(source: Source, fetcher: Fetcher) -> Collected:
     if res.animals:
         return Collected("ok", res, trace=ex.trace, recorder=rec)
     if res.empty_confirmed:
-        return Collected("empty", res, trace=ex.trace)
+        return Collected("empty", res, trace=ex.trace, empty_fp=_empty_fp(recipe, docs, getattr(ex, "visited", None), source.slug))
     host = host_of(source.url)
     msg = f"0 頭で empty_text も無い（行 {res.rows}・捨てた {len(res.dropped)}）"
     if getattr(res, "ambiguous_empty", False):   # 0 頭に見えるが肯定的な証拠が無い（extract 側が判定）
@@ -109,6 +110,19 @@ def collect_one(source: Source, fetcher: Fetcher) -> Collected:
         return Collected("ambiguous_empty", res, f"{msg}。{reason}" if reason else msg, ex.trace,
                          ErrorInfo("ambiguous_empty", phase="parse", host=host).to_dict())
     return Collected("failed", res, msg, ex.trace, ErrorInfo("parser", phase="parse", host=host).to_dict())
+
+
+def _empty_fp(recipe: Recipe, docs: list[Any], visited: list[Any] | None, slug: str) -> dict[str, Any] | None:
+    """0 頭と確定した日の本文の指紋（empty の見張り。T632）。build と同じ照合範囲（rows を当てる文書 + 辿った文書）で
+    0 頭の根拠が成立した文書を対象にし、全行除外の根拠（成立する文書が無い）の日は rows を当てた文書を対象にする。
+    見張りの失敗で収集は止めない。"""
+    try:
+        pool = list(docs) + [d for d in (visited or []) if d not in docs]
+        urls = list(dict.fromkeys(u for h in empty_hits(recipe, pool) for u in h.urls)) or [d.url for d in docs]
+        return empty_watch.fingerprint(pool, urls)
+    except Exception:
+        log.exception("%s: empty の指紋を作れない", slug)
+        return None
 
 
 _CHILDREN = re.compile(r"(?:follow_all|pdf_links) → (\d+) 件")
@@ -203,6 +217,19 @@ def _repair_phase(sources: list[Source], report: list[dict[str, Any]], events: l
             if repair_gate.record_attempt(state, s.slug, date, kind, http_status, sha, ctx, counted):
                 row["quarantine_started"] = True
                 row["repair"] = f"{row['repair']}。{repair_gate.QUARANTINE_NOTE}"
+
+
+def _watch_empty(state: dict[str, Any], report: list[dict[str, Any]], events: list[dict[str, Any]], date: str) -> None:
+    """empty が続いているのに本文が変わった slug に印を付ける（T632）。印は report の empty_changed と events に残り、通知は
+    report を読む。state の更新（基準の書き換え）は run の最後の update_sources。見張りを入れて QUIET_DAYS 日の間は quiet=True で、
+    通知しない（誤報の率を events で測る期間）。"""
+    quiet = empty_watch.quiet(state, date)
+    for row, ev in zip(report, events, strict=True):
+        changed = empty_watch.judge(state["sources"].get(row["slug"], {}), row, date)
+        if changed:
+            row["empty_changed"] = {**changed, "quiet": quiet}
+            ev["empty_changed"] = True
+            log.info("%-28s empty のまま本文が変わった（%s）%s", row["slug"], changed, "［記録のみ］" if quiet else "")
 
 
 def _record_skip(out_dir: Path, date: str, run_id: str, slug: str, reason: str, error: str | None, sha: str | None) -> None:
@@ -318,16 +345,20 @@ def _run_locked(sources: list[Source], date: str, out_dir: Path, fetcher: Fetche
                "repair": None,
                # skip_errors で捨てた子（「URL: 理由」）。通知には出さないが、黙って頭数が減ったのを後から追える
                "skipped": [t.removeprefix("skip ") for t in trace if t.startswith("skip ")]}
+        if status == "empty" and c.empty_fp:
+            row["empty_fp"] = c.empty_fp
         report.append(row)
         events.append({"run_id": run_id, "slug": s.slug, "host": (info or {}).get("host") or host, "status": status,
                        "kind": (info or {}).get("kind"), "http_status": (info or {}).get("status"), "seconds": secs,
                        "attempt": (info or {}).get("attempt"), "count": n, "dropped": row["dropped"],
-                       "rows": res.rows if res else 0, "breaker": bool(skipped_by_breaker)})
+                       "rows": res.rows if res else 0, "breaker": bool(skipped_by_breaker),
+                       **({"empty_fp": c.empty_fp["fp"]} if status == "empty" and c.empty_fp else {})})
         log.info("%-28s %-9s %4d %s", s.slug, status, n, err or "")
         if res and status != "ambiguous_empty":
             animals.extend(res.animals)
     if enabled:
         _repair_phase(sources, report, events, candidates, state, fetcher, out_dir, date, run_id)
+    _watch_empty(state, report, events, date)
     held = outage(report)
     by_slug = {r["slug"]: r for r in report}
     out = {"run_id": run_id, "date": date, "generated_seconds": round(time.monotonic() - t0), "animals": animals,
