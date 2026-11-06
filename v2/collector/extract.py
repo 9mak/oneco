@@ -290,10 +290,10 @@ def empty_hits(recipe: Recipe, pool: list[Doc], docs: list[Doc] | None = None) -
     for sel in recipe.empty_selector:
         # セレクタに合う要素がその文書にあり、合った要素がすべて空なら成立（豊橋市あいくる div.dog-cat-list、
         # 福岡県動物愛護センター div.animals-list ul）。器が無い日（構造が変わった日）は成立せず failed として通知される
-        ok =[(d, d.soup.select(sel)) for d in pool if d.soup is not None]
-        ok = [(d, found) for d, found in ok if found and all(_is_blank(el) for el in found)]
-        if ok:
-            hits.append(EmptyHit("empty_selector", sel, [d.url for d, _ in ok], sum(len(f) for _, f in ok)))
+        found_in = [(d, d.soup.select(sel)) for d in pool if d.soup is not None]
+        blank_in = [(d, found) for d, found in found_in if found and all(_is_blank(el) for el in found)]
+        if blank_in:
+            hits.append(EmptyHit("empty_selector", sel, [d.url for d, _ in blank_in], sum(len(f) for _, f in blank_in)))
     if recipe.empty_absent:
         ok_docs = [d for d in pool if _absent_list(d, recipe.empty_absent)]
         if ok_docs:

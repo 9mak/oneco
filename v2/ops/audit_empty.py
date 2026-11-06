@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -25,6 +24,7 @@ from pathlib import Path
 import httpx
 from collector.extract import build, empty_hits
 from collector.last_ok import load_replay
+from collector.notify import send_discord
 from collector.recipe import Executor, Recipe
 from collector.registry import Source, load_sources
 
@@ -96,14 +96,6 @@ def load_items(slug_prefix: str | None = None) -> list[tuple[Source, Recipe]]:
 
 
 # --- 通知 --------------------------------------------------------------------
-def _send_discord(msg: str) -> None:
-    # notify.py には送信だけの関数が無い（notify() の中に直書き）。同じ読み方（DISCORD_WEBHOOK_URL）と送り方をここに置く
-    url = os.environ.get("DISCORD_WEBHOOK_URL")
-    if not url:
-        raise RuntimeError("DISCORD_WEBHOOK_URL が無いので送らない")
-    httpx.post(url, json={"content": msg}, timeout=15).raise_for_status()
-
-
 def _load_prev(state_path: Path) -> set[str]:
     try:
         return set(json.loads(state_path.read_text(encoding="utf-8")).get("slugs") or [])
@@ -183,7 +175,7 @@ def main(argv: list[str] | None = None) -> int:
         )
     if a.notify:
         try:
-            sent = notify_if_changed(res.findings, a.data / STATE_NAME, _send_discord)
+            sent = notify_if_changed(res.findings, a.data / STATE_NAME, send_discord)
         except (RuntimeError, httpx.HTTPError, OSError) as e:
             print(f"通知できなかった（state は更新しない）: {e}", file=sys.stderr)
             return 1

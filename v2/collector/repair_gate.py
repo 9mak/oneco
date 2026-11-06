@@ -4,7 +4,7 @@ AI 修復の試行 198 回（2026-10-16〜11-05 の実績）のうち、半分�
 （サイト停止・移転・掲載期限切れで個別ページだけ消える・同じ失敗の繰り返し）。呼ぶ回数を減らすだけで、公開データと
 採用条件は変えない。状態は state/sources.json に持つ（T607）:
 
-  repair_hosts[host] = {since, slugs}      ホスト障害の疑い。slugs のどれかが読めるようになるまで、そのホストでは呼ばない
+  repair_hosts[host] = {since, slugs}      ホスト障害の疑い。slugs のどれかが読めるようになるか、7 日たつまで、そのホストでは呼ばない
   sources[slug].repair = {date, tries, kind, status, body_sha, ctx, quarantined}
                                            最後に呼んだ日・同じ失敗の指紋で試した回数・隔離中か
 
@@ -19,6 +19,7 @@ AI 修復の試行 198 回（2026-10-16〜11-05 の実績）のうち、半分�
 from __future__ import annotations
 
 import hashlib
+from datetime import date as date_cls
 from pathlib import Path
 from typing import Any
 
@@ -31,6 +32,11 @@ RECIPE_DOC = ROOT / "docs" / "RECIPE.md"
 # 2026-10-04〜11-01 の report で 12 ホスト日に当たり、12 件ともサイト側（503・401・接続・timeout・502・臨時ページ・公開停止・移転）。
 # 本物の直す対象（長野市・いわき・群馬・前橋・熊本市・船橋・青森市・滋賀 sapca・広島県）が同じホスト日に重なった例は 0 件。
 HOST_MIN_NEW_FAILURES = 2
+# 疑いはこの日数で外す。slug の集合には限らない: 障害は日をまたいで同じホストの別 slug へ広がる（2026-10-22 は熊本・福岡・おおいたの
+# 503/502 が朝まで続いた）ので、後から崩れた slug も障害の続きとして待つほうが正しい。ただし疑いは「どれかが読めるようになる」まで
+# 外れないので、読めないまま残った slug のせいで同じホストの本物の崩れが永久に人へ回らないのを防ぐ。1 週間たっても直らない障害は
+# 改修（作り直し）とみなし、AI にも直させる。外れたあと同じ日に 2 件以上が新たに崩れれば、また疑いを立て直す。
+HOST_SUSPECT_DAYS = 7
 # 同じ失敗の指紋でこの回数試して直らなければ隔離する。1 回は偶然の失敗、2 回で同じ結果ならまだ入力の揺れもあり得る、
 # 3 回目で初めて「AI にはこの入力から直せない」と言える。
 QUARANTINE_TRIES = 3
@@ -78,15 +84,26 @@ def _prev_status(st: dict[str, Any], date: str) -> str | None:
     return st.get("prev_status") if st.get("last_date") == date else st.get("last_status")
 
 
+def _expired(since: str | None, date: str) -> bool:
+    """疑いを立てた日から HOST_SUSPECT_DAYS 日たったか。日付が読めなければ期限切れ扱い（疑いを永久に残さない側に倒す）。"""
+    try:
+        return (date_cls.fromisoformat(date) - date_cls.fromisoformat(str(since))).days >= HOST_SUSPECT_DAYS
+    except ValueError:
+        return True
+
+
 def refresh_hosts(state: dict[str, Any], rows: list[dict[str, Any]], date: str) -> None:
     """ホスト障害の疑いを更新する。rows は今日の {slug, host, status}。
-    解除: 疑いの slug のどれかが読めるようになった、または疑いの slug がもう 1 つも読めない状態でない（台帳から外れた等）。
+    解除: 疑いの slug のどれかが読めるようになった、または疑いの slug がもう 1 つも読めない状態でない（台帳から外れた等）、
+    または疑いを立てて HOST_SUSPECT_DAYS 日たった。
     新規: 今日新たに読めなくなった（前日は読めていた or 記録なし）slug が同じホストで HOST_MIN_NEW_FAILURES 以上。"""
     hosts: dict[str, Any] = state.setdefault("repair_hosts", {})
     status = {r["slug"]: r["status"] for r in rows}
     for host, h in list(hosts.items()):
-        if any(status.get(s) in GOOD for s in h["slugs"]) or not any(
-            status.get(s) in FAILING for s in h["slugs"]
+        if (
+            any(status.get(s) in GOOD for s in h["slugs"])
+            or not any(status.get(s) in FAILING for s in h["slugs"])
+            or _expired(h.get("since"), date)
         ):
             del hosts[host]
     sources = state.get("sources", {})

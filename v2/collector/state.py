@@ -1,7 +1,8 @@
 """収集の状態を日をまたいで持つ（W006 T607）。state/sources.json（git 管理外）。
 
-slug ごと: last_ok / last_ok_count / consecutive_failures（日数）/ first_failed / last_status /
+slug ごと: empty_watch（0 頭と確定した日の本文の指紋。T632。中身は empty_watch.py）/ last_ok / last_ok_count / consecutive_failures（日数）/ first_failed / last_status /
            last_error_kind / last_host / last_date / prev_status
+全体: empty_watch_since（見張りの最初の記録日。この日から 7 日は通知しない）
 ホストごと: breaker[host] = {opened: 日付, failures: 件数}（T603）
 AI 修復の呼び出し制御（T635。中身は repair_gate.py）: sources[slug].repair / repair_hosts[host]
 """
@@ -16,6 +17,7 @@ from datetime import timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from . import empty_watch
 from .registry import ROOT
 
 log = logging.getLogger("collector")
@@ -108,5 +110,8 @@ def update_sources(state: dict[str, Any], report: list[dict[str, Any]], date: st
             st["first_failed"] = st.get("first_failed") or date
             st["last_error_kind"] = info.get("kind")
             st["last_host"] = info.get("host")
+        empty_watch.update(st, r, date)   # empty の日は本文の指紋を基準にする・ok の日は忘れる（T632）
+        if r.get("empty_fp"):
+            state.setdefault("empty_watch_since", date)   # 見張りの最初の記録日。この日から QUIET_DAYS 日は通知しない
         st["last_status"] = status
         st["last_date"] = date
