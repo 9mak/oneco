@@ -231,9 +231,10 @@ def test_niigata_old_format_day_is_read_as_before():
     assert c.status == "ok" and len(c.result.animals) == 1
 
 
-def test_niigata_new_format_day_with_unread_children_is_failed_not_zero():
+def test_niigata_new_format_day_is_not_zero():
+    # 新しい書式の値は test_w006_niigata_akita_20261106.py で固定する
     c = _single("pref_niigata", _fx(NIIGATA_NEW))
-    assert c.status == "failed" and c.result.animals == []
+    assert c.status == "ok" and len(c.result.animals) == 2
 
 
 def test_niigata_no_animal_block_day_is_zero():
@@ -257,7 +258,8 @@ def test_niigata_zero_page_with_a_child_in_any_form_is_not_zero(extra):
         "<h3>返還の際に必要な物</h3>",
         f'<div class="detail_free">{extra}</div><h3>返還の際に必要な物</h3>',
     )
-    assert _single("pref_niigata", html).status == "failed"
+    # h3 の管理番号だけの子は 1 頭として読めるので ok、行にならない形は failed。どちらも 0 頭にしない
+    assert not _zero_of(_single("pref_niigata", html))
 
 
 # --- 鳥取県（pref_tottori） ---------------------------------------------------------------------------------------------
