@@ -82,6 +82,85 @@ def test_sagamihara_zero_sentence_alongside_other_content_is_not_zero():
         assert not _zero(_single("city_sagamihara-2", html)), extra
 
 
+# ---- 山形市 保護・収容の犬猫（city_yamagata-1） ----
+# 入口は h2「保護・収容【犬】情報」「保護・収容【猫】情報」の 2 節。犬のいる日は節の下に p（「1　12月2日（木曜）青田二丁目地内で収容 犬種：… 性別：…」）と
+# 写真の p.imagecenter が並ぶ（Wayback 2021-12・2022-01）。0 頭の日は「現在、保護している犬はいません。」（2024-05）か、中身の無い p だけ（2024-08・2026-11-07）。
+# 作りが日で違う（2026-10-05 は犬の節にポスター画像 1 枚だけ）ので、0 頭は「節に文・写真・表・リストが無い日」だけ。読めない日は failed。
+YM = SOURCES["city_yamagata-1"]
+YM_ZERO = ["w006_city_yamagata-1_zero_20261107.html", "w006_city_yamagata-1_zero_wb20240528.html", "w006_city_yamagata-1_zero_wb20240815.html"]
+YM_DOGS2 = "w006_city_yamagata-1_dogs2_wb20211207.html"
+YM_DOG1 = "w006_city_yamagata-1_dog1_wb20220122.html"
+
+
+def test_yamagata1_is_recipe_mode_and_photo_is_pending():
+    assert YM.mode == "recipe"
+    assert YM.photo == "pending"
+
+
+def test_yamagata1_zero_days_are_empty():
+    for name in YM_ZERO:
+        assert _zero(_single("city_yamagata-1", _fx(name))), name
+
+
+def test_yamagata1_dog_days_are_read_with_photos_and_never_zero():
+    c = _single("city_yamagata-1", _fx(YM_DOGS2))
+    assert c.status == "ok", c.error
+    assert c.result is not None and len(c.result.animals) == 2
+    a, b = c.result.animals
+    assert (a["species"], a["breed"], a["sex"], a["age"], a["shelter_date"]) == ("dog", "トイプードル系", "メス", "10歳くらい", "12月2日")
+    assert a["location"] == "青田二丁目地内"
+    assert (b["species"], b["breed"], b["sex"], b["shelter_date"]) == ("dog", "MIX(スパニエル系)", "オス", "12月6日")   # 全角かっこはエンジンが半角にそろえる
+    assert a["image_url"].endswith("21toipu1.jpg") and b["image_url"].endswith("21tiwakkusu.jpg")
+    assert a["id"] != b["id"]
+    c1 = _single("city_yamagata-1", _fx(YM_DOG1))
+    assert c1.result is not None and [(x["breed"], x["sex"], x["color"], x["shelter_date"]) for x in c1.result.animals] == [
+        ("チワワ系", "オス", "白茶", "12月10日")]
+    assert c1.result.animals[0]["location"] == "吉原西公園付近の路上"
+    for name in (YM_DOGS2, YM_DOG1):
+        assert _hits("city_yamagata-1", _fx(name)) == []
+
+
+def test_yamagata1_poster_image_only_day_is_not_zero():
+    # 2026-10-05 の作り: 犬の節にポスター画像が 1 枚だけ（文字で読めない）。0 頭にせず failed
+    html = _fx(YM_ZERO[0])
+    assert "保護・収容【犬】情報</h2>" in html
+    html = html.replace("保護・収容【犬】情報</h2>", '保護・収容【犬】情報</h2><p class="imagecenter"><img src="../../../_res/projects/default_project/_page_/001/005/142/aoyagi.jpg" alt=""></p>')
+    c = _single("city_yamagata-1", html)
+    assert not _zero(c)
+    assert c.status == "failed"
+
+
+def test_yamagata1_other_animal_section_day_is_not_zero():
+    # 2024-12 の作り: 「保護・収容【その他】情報」にインコの写真と文（性別の項目なし）。読まず、0 頭とも言わず failed
+    html = _fx(YM_ZERO[0])
+    other = ('<h2>保護・収容【その他】情報</h2><p class="imagecenter"><img src="../../../_res/projects/default_project/_page_/001/005/142/innko.jpg" alt=""></p>'
+             "<p>11月29日（金曜）千歳一丁目地内でセキセイインコを保護しました。</p>")
+    assert "<h2>その他自治体等ホームページ</h2>" in html
+    html = html.replace("<h2>その他自治体等ホームページ</h2>", other + "<h2>その他自治体等ホームページ</h2>")
+    c = _single("city_yamagata-1", html)
+    assert not _zero(c)
+    assert c.status == "failed"
+
+
+def test_yamagata1_text_in_a_section_that_cannot_be_read_is_not_zero():
+    html = _fx(YM_ZERO[0])
+    html = html.replace("保護・収容【猫】情報</h2>", "保護・収容【猫】情報</h2><p>12月2日 収容しました。</p>")
+    assert not _zero(_single("city_yamagata-1", html))
+
+
+def test_yamagata1_returned_dog_is_not_listed():
+    html = _fx(YM_DOG1)
+    assert "マイクロチップなし" in html
+    c = _single("city_yamagata-1", html.replace("マイクロチップなし", "マイクロチップなし 飼い主に返還しました"))
+    assert c.result is None or not c.result.animals     # 全行除外は 0 頭とは言わず読めなかった扱い
+    assert not _zero(c)
+
+
+def test_yamagata1_missing_headings_is_not_zero():
+    html = _fx(YM_ZERO[0]).replace("保護・収容【猫】情報", "保護・収容情報")
+    assert not _zero(_single("city_yamagata-1", html))
+
+
 # ---- 秋田県 収容犬情報（pref_akita-1） ----
 # 県の「収容犬情報」（genre/18507）は 0 頭の日は見出しと説明文だけ（説明文は常に出る）。犬がいる日は説明文の下に ul.c-list--archive が出て、
 # 「収容犬一覧（能代保健所）」のような子ページ（pages/archive/NNN）へのリンクが並ぶ（Wayback 2020-04-16）。子ページは写真と入れ子の表
