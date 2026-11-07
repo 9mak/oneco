@@ -1,0 +1,18 @@
+# 北海道 釧路総合振興局 犬・猫を飼育したい方（保健所収容中の犬猫）（/hk/kks/174752.html）。
+# h3「釧路保健所収容中の犬猫（犬：5頭、猫：0頭 R8.10.27 時点）」「標茶支所収容中の犬猫（…）」の下に、1 頭ごとに
+# h4「犬D10-2（R8.10.15 追加）◆譲渡日程調整中」の div → 写真の p の div が並ぶ（説明は写真の中。文字では番号・追加日・「譲渡日程調整中」だけ）。
+# h4（「（R」で始まる年月日つき）を含む div を始まりにして、次の h4・h3・h2 の div の手前までまとめる。
+# 0 頭の文言は支所の節に「現在募集中の犬猫はいません。」と出るが、保健所の節に子がいる日にも出るので empty_text にしない（読めなかった通知になる）。
+rows: "div.ss-alignment:has(> h4:-soup-contains('（R'))"
+row_until: "div.ss-alignment:has(> h4), div.ss-alignment:has(> h3), div.ss-alignment:has(> h2)"
+row_filter:
+  text_lacks: ["卒業"]    # h2「保健所を卒業しました！」の下の h4「犬D10-1（R8.10.27 卒業）」は譲渡済み。載せない
+fields:
+  management_no: {selector: "h4", regex: "^\\s*[犬猫]\\s*([A-Za-z]+\\s*\\d+(?:\\s*-\\s*\\d+)?)"}
+  species: {selector: "h4", regex: "^\\s*(犬|猫)"}
+  note: {selector: "h4", regex: "(◆.+)$"}
+  location: {from: heading, selector: "h3", regex: "^(.+?)収容中"}
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+image: "img@src"

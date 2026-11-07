@@ -1,0 +1,20 @@
+# 北海道 十勝総合振興局 犬猫の新しい飼い主募集・負傷動物（/hk/kks/sizen/doubutsu/kainushibosyuu.html）。保健所・支所に収容中で新しい飼い主を募集している犬猫。
+# 作りは CMS の div.ss-alignment が平らに並ぶ。1 頭ごとに h4「猫（H-6）」の div → 本文の p の div（性別・種類・年齢・毛色・名前）→ 写真の p の div。
+# h4 を含む div を 1 頭の始まりにして、次の h4・h3・h2 の div の手前までをまとめる。h3「～帯広保健所で過ごしている犬猫～」が収容場所。
+# 道東センター（あいにきた）の節以降は h2 で止まる。負傷動物・飼い主さがしノート（飼い主の自宅の犬猫）・迷子は読まない。
+# 0 頭の日の文言は支所ごとの「猫 ０ 匹 / 犬 ０ 匹」で、空白と全角半角が節ごとに揺れる。子のいる日にも 3 支所が 0 匹と出るので empty_text にしない（0 頭の日は「読めなかった」通知になる）。
+rows: "div.ss-alignment:has(> h4:-soup-contains('（'))"
+row_until: "div.ss-alignment:has(> h4), div.ss-alignment:has(> h3), div.ss-alignment:has(> h2)"
+fields:
+  management_no: {selector: "h4", regex: "[（(]\\s*([^）)]+?)\\s*[）)]"}
+  species: {selector: "h4", regex: "^\\s*(犬|猫)"}
+  name: {regex: "名前[:：]\\s*(\\S+)"}
+  sex: {regex: "性別[:：]\\s*(オス|メス|不明)"}
+  breed: {regex: "種類[:：]\\s*(\\S+)"}
+  age: {regex: "年齢[:：]\\s*(\\S+)"}
+  color: {regex: "毛色[:：]\\s*(\\S+)"}
+  location: {from: heading, selector: "h3", regex: "～\\s*(.+?)で過ごして"}
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+image: "img@src"
