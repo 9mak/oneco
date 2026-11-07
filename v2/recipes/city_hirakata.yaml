@@ -3,7 +3,11 @@
 # 各カードは <p>ラベル：値</p> の並び（種類・毛色・性別・収容日等）。detail ページは無い。
 # 調査時点(2026-09-29)は犬・猫とも0頭で、告知文「掲載情報が無い場合でも…」のみ表示。
 
+# 2026-11-07: 実ページ（2026-11-06・07）は写真のブロックの次の兄弟ブロックに表（種類・性別・毛色・体格・首輪・収容地域・その他の 7 列）がある。
+# 以前は写真のブロックだけを行にして「種類：値」の文字を探していたので、載っている猫が写真だけで項目が全部空だった。
+# row_until で次の写真・見出しの手前までを 1 頭分にまとめ、表の見出しの列から読む。
 rows: "div.mol_imageblock"
+row_until: "h2, h3, h4"
 
 species:
   from: heading
@@ -11,13 +15,14 @@ species:
   map: {"犬": dog, "猫": cat}
 
 fields:
-  breed: {regex: "(?:種類|種別|犬種|猫種)[:：]\\s*(\\S+)"}
-  color: {regex: "(?:毛色|色)[:：]\\s*(\\S+)"}
-  sex: {regex: "性別[:：]\\s*(\\S+)"}
-  age: {regex: "(?:推定年齢|年齢)[:：]\\s*(\\S+)"}
-  shelter_date: {regex: "(?:収容日|収容|保護日|発見日)[:：]\\s*(\\S+)"}
-  location: {regex: "(?:収容場所|場所)[:：]\\s*(\\S+)"}
-  size: {regex: "(?:体格|大きさ|体重)[:：]\\s*(\\S+)"}
+  breed: {label: ["種類", "犬種", "猫種"], header_row: true}
+  color: {label: "毛色", header_row: true}
+  sex: {label: "性別", header_row: true}
+  age: {label: ["推定年齢", "年齢"], header_row: true}
+  shelter_date: {label: ["収容日", "保護日"], header_row: true}
+  location: {label: ["収容地域", "収容場所"], header_row: true}
+  size: {label: ["体格", "大きさ"], header_row: true}
+  note: {label: "その他", header_row: true}
 
 # 0 頭の日は、収容犬・収容猫の見出し(h4)の下に案内文「掲載情報が無い場合でも、犬が行方不明になったら…」だけが並ぶ。
 # 2026-11-06 T631: この案内文は子のいる日にも各見出しの下に毎日出る（猫の写真+表の下にも出ていた）ので empty_text から外し、empty_absent に変えた。

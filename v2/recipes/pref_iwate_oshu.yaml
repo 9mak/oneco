@@ -5,6 +5,8 @@
 # ページ全体が <h2>保護猫</h2> の下（猫のみ。犬のセクションは無い）。
 # 構造は県央/中部と同じフラットな並び（<h2>【譲渡】…</h2><p class="imagecenter"><img></p><p>管理番号：R8-6-5<br>愛称：…</p>）。
 # 行 = 「管理番号：」を含む p（全個体に管理番号があり欠落なし）。
+# R8-9-3 は R8-9-2 と同じ写真。R8-9-2 が消えても ID が写真由来（R8-9-2 の ID）に移らないよう管理番号から ID を作る（公開ゲート F-02）
+id_by_management_no: ["R8-9-3"]
 rows: "p:-soup-contains('管理番号：')"
 image: {selector: "h2 + p.imagecenter img@src", scope: prev_siblings, stop_at: row}   # 2026-10-04: 行も写真も p なので前の行まで遡る
 fields:

@@ -340,6 +340,7 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
     """docs: rows を適用する文書。visited: 入口から辿った全文書（empty_text の照合にも使う）。"""
     res = Result(docs=len(docs))
     seen_ids: set[str] = set()
+    seen_mgmt: dict[str, str | None] = {}   # ID → その行の管理番号（ID の衝突が別の子かどうかの判定用）
     # row_filter.field_lacks: {name: ["探しています"]} — 取った項目にこの語があれば捨てる（rows: body のように
     # 行の全文にサイトのメニュー文言が混ざるとき、text_lacks の代わりに使う）。これで全部捨てた日は「該当なし」とみなす
     field_lacks: dict[str, list[str]] = (recipe.row_filter or {}).get("field_lacks") or {}
@@ -386,10 +387,19 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
             if dv:
                 source_url = urljoin(recipe.base_url or doc.url, dv)
             aid = make_id(source, img_raw, f, detail=source_url if dv else None)
+            mgmt = f.get("management_no")
+            if img_raw and mgmt and any(mgmt.startswith(p) for p in recipe.id_by_management_no):
+                aid = make_id(source, None, f, detail=source_url if dv else None)   # 写真を共有する子の ID を並び順に依らず固定する
+            if aid in seen_ids and img_raw and f.get("management_no") and seen_mgmt.get(aid) not in (None, f["management_no"]):
+                # 写真が先に ID になるので、同じ写真を使う別の子（管理番号が違う）が「同じ ID」で捨てられていた
+                # （埼玉 南支所 南2026-C77・C78、岩手 奥州 R8-9-3。2026-11-07）。載っている子の ID は変えず、
+                # 衝突した行だけ管理番号から作る。管理番号が同じ（同じ子が 2 行）・管理番号が無い行は従来どおり捨てる
+                aid = make_id(source, None, f, detail=source_url if dv else None)
             if aid in seen_ids:
                 res.dropped.append(Dropped("同じ ID の行が既にある", row.text()[:80]))
                 continue
             seen_ids.add(aid)
+            seen_mgmt[aid] = f.get("management_no")
             if dv:
                 res.detail_ids.add(aid)
             animal = {

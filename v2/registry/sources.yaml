@@ -312,6 +312,7 @@ sources:
   mode: link_only
   recipe: recipes/pref_saga-6.yaml
   enabled: true
+  note: "2026-11-07 W006 確認: このページ（県の「譲渡犬・猫情報」）に個体の一覧は無い。譲渡できる犬猫は Facebook（譲渡犬・譲渡猫の 2 ページ）・X（isshokennnesaga）・Instagram（isshokennesaga）で紹介すると本文にあり、「アカウントをお持ちでない場合は見られないこともあります」と断っている。「いっしょけんね」の紹介ページ（kiji00315040）にも一覧は無い。SNS はログイン壁と各社の規約のため取りに行かない（個別の確認はしていない）。取れないと確定。link_only のまま（県の案内ページへのリンク）"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_saga.py
     requires_js: false
@@ -1040,6 +1041,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_chiba-1.yaml
   enabled: true
+  note: "2026-11-07 確認: 公式ページが「【容場所】」「【 容場所】」と誤字で書く日があり（kt261104-01・sa261102-01）、場所・品種・毛色が空になっていた。「場所】」から読む（千葉県の 2〜5 も同じ読み方に揃えた）。"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_chiba.py
     requires_js: false
@@ -1268,6 +1270,7 @@ sources:
   mode: recipe
   recipe: recipes/city_saitama-2.yaml
   enabled: true
+  note: "2026-11-07 確認: 1 頭目だけ管理番号の p が div に包まれ、写真・属性が次の子の div の前半に入る作り（R08-58）で、管理番号だけの行になっていた。包みの外の兄弟も、次の子の始まりの手前まで 1 頭分として読む。"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_saitama.py
     requires_js: false
@@ -1390,6 +1393,7 @@ sources:
   mode: recipe
   recipe: recipes/city_hirakata.yaml
   enabled: true
+  note: "2026-11-07 確認: 写真のブロックの次の兄弟ブロックに表（種類・性別・毛色・体格・首輪・収容地域・その他）がある作りで、以前は写真だけで項目が全部空だった。表の見出しの列から読む。"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_hirakata.py
     requires_js: false
@@ -1553,7 +1557,7 @@ sources:
   prefecture: 奈良県
   phone: null
   address: null
-  note: "2026-10-30 収容動物の記事（soshiki/97/222574.html「迷子犬・迷子猫をお探しの方へ」）が 10/16 から 404。旧入口（/life/4/34/134/「ペットの飼養・届出」一覧）からは記事へのリンク文字が消え、市の案内ページ「ペットが迷子になったときは」（soshiki/97/8478.html・2026-01-30 更新）と環境省のリンク集は 222574 を指したまま。読む先が無いので、記事が戻るまでは案内ページへのリンクだけを載せる（W006 T624 見守り運転の確認）。記事が戻ったら mode を recipe に戻す（レシピは案内ページから記事のリンクを辿る）。2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
+  note: "2026-11-07 W006 再確認: 収容動物の記事（soshiki/97/222574.html）は今日も 404 で、案内ページ（soshiki/97/8478.html）のリンクは 222574 のまま。市サイトの「ペット・動物」（life/4/34/ と 134・135・136）・保健衛生課（soshiki/97/ とその 2 ページ目）・サイトマップに収容動物の新しいページは無い。別に「飼い主さん募集中！犬・猫の譲渡」（soshiki/97/10799.html・2026-10-16 更新）があるが、写真だけで名前は画像の alt、種別・性別・年齢の文字が無く、迷子ではなく譲渡の掲載なので、この slug では読まない。取れないと確定（記事が戻ったら mode を recipe に戻す。レシピは案内ページから記事のリンクを辿る）。2026-10-30 収容動物の記事（soshiki/97/222574.html「迷子犬・迷子猫をお探しの方へ」）が 10/16 から 404（W006 T624 見守り運転の確認）。読む先が無いので、記事が戻るまでは案内ページへのリンクだけを載せる。2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
   url: https://www.city.nara.lg.jp/soshiki/97/8478.html
   kind: sheltered
   species: mixed
@@ -2454,9 +2458,10 @@ sources:
   verified_phone_url: "https://www.city.nagoya.jp/kurashi/pet/1015473/1015489/1015494.html"
   kind: adoption
   species: dog
-  mode: link_only
+  mode: recipe
   recipe: recipes/city_nagoya-2.yaml
   enabled: true
+  note: "2026-11-07 W006 link_only をやめて 0 頭を読む。ページは「長期にわたり当センターで収容している犬を紹介します」と書くが、2025-12-10・2026-04-19・2026-07-10（Wayback）と 2026-11-07 の 4 版とも犬を 1 頭も載せていない（1 節は譲渡ボランティアの案内、2 節は説明文だけ。写真・表・小見出しなし）。犬は譲渡ボランティアに渡され各ボランティアのページで募集される。犬が載った日の作りは未確認。載った日は 0 頭にならず failed で通知され、そのときレシピに rows を足す（recipes/city_nagoya-2.yaml）。写真は規約の返事待ち（photo: pending）"
   photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_nagoya.py
@@ -3662,6 +3667,7 @@ sources:
   mode: link_only
   recipe: recipes/pref_fukui.yaml
   enabled: true
+  note: "2026-11-07 W006 確認: このページ（県の「新たな飼い主を募集している犬・猫について」・最終更新 2025-06-05）自体に動物は載らず、犬・猫のリンクが fapscsite.com/adoptable_animal/animal_kind/dog・cat（ふくい動物愛護管理支援センター協会のサイト）に飛ぶだけ。同じ譲渡の一覧を fapscsite-2（recipe）が読んでいて今日も読めているので、ここを読むと二重になる。対象外と確定。link_only のまま（県の案内ページへのリンク）"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_fukui.py
     requires_js: false
@@ -4499,6 +4505,7 @@ sources:
   mode: link_only
   recipe: recipes/spec_city_nagasaki_lg-1.yaml
   enabled: true
+  note: "2026-11-07 W006 確認: 一覧ページ list7-19 は個別の記事 1 本（2794.html「引き取り犬（保護犬）の見学 受付中」）へのリンクだけ。記事は見学の案内文で、いま募集中の犬の個体情報は無い（「新しい飼い主（里親）が見つかりました」に譲渡済みの 5 頭の写真と名前、「引き取り犬（飼い犬）」は「公開準備中」）。迷子保護の情報はセンターの X に載せると記事にある。follow_all で辿っても読める個体が無いので取れないと確定。link_only・写真 pending のまま"
   photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/city_nagasaki_lg.yaml
@@ -4521,6 +4528,7 @@ sources:
   mode: link_only
   recipe: recipes/spec_city_nagasaki_lg-2.yaml
   enabled: true
+  note: "2026-11-07 W006 確認: 一覧ページ list7-18 は個別の記事 1 本（4368.html「猫の里親 募集中 見学できます」）へのリンクだけ。記事は案内文で、写真 6 枚は「動物愛護管理センターの猫たち（現在収容中の猫とは異なります）」と断ってあり、募集中の個体の情報ではない。follow_all で辿っても読める個体が無いので取れないと確定。link_only・写真 pending のまま"
   photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/city_nagasaki_lg.yaml
@@ -4543,6 +4551,7 @@ sources:
   mode: recipe
   recipe: recipes/nagano_hello_animal-1.yaml
   enabled: true
+  note: "2026-11-07 確認: 0 頭の日は h3「現在、飼い主募集中の犬はいません」の雛形が 1 つ残り、以前はそれを 1 頭の犬として載せていた（11/04〜11/07 に公開されていた）。雛形の行は捨て、同じ文を 0 頭の根拠にする。子のいる日（〜11/03 のやまと）は h3 が名前になりこの文は出ない。文面が変わった日は根拠が無いので読めなかった扱い。"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/nagano_hello_animal.py
     requires_js: false
@@ -4564,6 +4573,7 @@ sources:
   mode: recipe
   recipe: recipes/nagano_hello_animal-2.yaml
   enabled: true
+  note: "2026-11-07 追加: 犬ページ（nagano_hello_animal-1）と同じ雛形が 0 頭の日に出ると推定して同じ防ぎを入れた。猫ページの 0 頭の日の実物は未確認（2026-11-07 に Wayback の 2019-08〜2025-05 の 16 版を調べたが、猫が 0 頭の日は無かった）。empty_text の文は犬の文からの類推なので、猫が 0 頭になった日に文面が違えば 0 頭と確認できず failed で通知される（誤った 0 頭は載らない）。"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/nagano_hello_animal.py
     requires_js: false
@@ -4651,6 +4661,7 @@ sources:
   mode: recipe
   recipe: recipes/city_takamatsu_kagawa-1.yaml
   enabled: true
+  note: "2026-11-07 W006 確認: 一覧 URL（/udanimo/ani_infolist1.html）は今日も 404、入口 /udanimo/ani_top.html は保守・拒否ページ（incapsula）。市の告知（kurashi/shinotorikumi/koho/oshirase/webmaintenance.html・2026-11-04 更新）が「システムの安全性への対応のため」「高松市動物情報サイト「わんにゃん高松」」の公開を一時停止中とし、再開は「対応が完了次第」とだけ書く。市サイトの「動物・ペット」（kurashi/kurashi/pet/）と「高松市動物管理ステーション」のページは一覧を持たず、リンクはすべて /udanimo/ 向き。代わりの PDF・新 URL は見つからなかった。取れないと確定（公開停止中）。再開を検知できるよう recipe のまま残す（停止中は failed が続く）"
   photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_takamatsu_kagawa.py
@@ -4673,6 +4684,7 @@ sources:
   mode: recipe
   recipe: recipes/city_takamatsu_kagawa-2.yaml
   enabled: true
+  note: "2026-11-07 W006 確認: 一覧 URL（/udanimo/ani_infolist1.html?infotype=1&animaltype=2）は今日も 404、入口は保守・拒否ページ（incapsula）。市が「システムの安全性への対応のため」わんにゃん高松の公開を一時停止中（告知 2026-11-04 更新・再開は対応完了次第）。市サイト内に代わりのページ・PDF は見つからなかった（詳細は city_takamatsu_kagawa-1）。取れないと確定（公開停止中）。再開を検知できるよう recipe のまま残す（停止中は failed が続く）"
   photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_takamatsu_kagawa.py
@@ -4885,7 +4897,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_iwate_kennan.yaml
   enabled: true
-  note: ハブ pref_iwate から分割（2026-09-29）
+  note: "ハブ pref_iwate から分割（2026-09-29）。2026-11-07 確認: 県央保健所のページで、レオン（26030）だけ公式が「雑種：雑種」（項目名が種類でない）「特徴；」（セミコロン）と書き、品種と備考が空になっていた。両方の書き方を読む"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_iwate.py
     requires_js: false
@@ -4923,7 +4935,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_iwate_oshu.yaml
   enabled: true
-  note: ハブ pref_iwate から分割（2026-09-29）。ページは保護猫のみ（犬セクション無し）。管理番号 R8-6-5 形式は 9/30 に対応済みで 4 頭とも通る（2026-10-04 確認）
+  note: "ハブ pref_iwate から分割（2026-09-29）。ページは保護猫のみ（犬セクション無し）。管理番号 R8-6-5 形式は 9/30 に対応済み（2026-10-04 確認）。2026-11-07 確認: R8-9-2 と R8-9-3 が同じ写真を使い、写真から作る ID が重なって R8-9-3（ホシちゃん）が「同じ ID の行が既にある」で載っていなかった。管理番号が違う衝突は、衝突した行だけ管理番号から ID を作る（載っている子の ID は変えない）"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_iwate.py
     requires_js: false
@@ -4999,7 +5011,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_iwate_ofunato-2.yaml
   enabled: true
-  note: pref_iwate_ofunato と同じページの「元の飼い主を探しています」の節だけ（2026-10-05 T517）。節に動物種の欄が無いので species は cat 固定（犬が載る日は未確認）
+  note: pref_iwate_ofunato と同じページの「元の飼い主を探しています」の節だけ（2026-10-05 T517）。節に動物種の欄が無いので species は cat 固定（犬が載る日は未確認。2026-11-07 W006 子のいない日は県のページから迷子の節ごと消え 0 頭の文言も出ないので、empty_absent（本文の h1 があり迷子の節の見出し・写真が無い日）で 0 頭と読む（10/20 から 19 日 failed が続いていた））
 - slug: pref_iwate_kamaishi
   name: 岩手県（釜石保健所 保護犬猫）
   municipality: 釜石保健所
@@ -6231,7 +6243,7 @@ sources:
   recipe: recipes/pref_saitama_joto_neko_minami.yaml
   enabled: true
   photo: ok
-  note: "2026-11-05 埼玉県（生活衛生課がとりまとめ）から、県内の収容動物の情報は写真を含め掲載して差し支えない（政令市・中核市を除く）と返事（T630）。 環境省リンク集から追加（2026-10-05 T519）。埼玉県「犬・猫の譲渡」（pref.saitama.lg.jp/b0716/doubutu-jouto-1.html）から辿る譲渡用猫（南支所）の募集ページ。1 頭 = 管理番号の table（管理番号の欄に「南2026-C67 (仮名：くろまめ) 譲渡されました！」と書かれ、写真は行の中）。決まった子の印は時期で変わり（Wayback 2019〜2026）、「飼い主さんが決まりました!」「飼主さんが 決まりました！」「（新しい飼い主さんが決まりました）」「新しい飼い主さんへ譲渡となりました」「譲渡されました！」「譲渡になりました！」の語が見出し（犬は h3）か管理番号の欄にある子は載せない（全部そうなら 0 頭。以前の「譲渡されました」だけの除外では、決まった子が募集中として載る日があった）。「お見合い中です」「マッチング中です！」「申込多数のため募集を一時停止」「お声がかかりました！（現在募集を停止しています）」の子は決まっていないので載せる（トライアル中と同じ扱い）。管理番号は「南2026-C67」のように連番の前に英字が付く形も読む（前任の直しはこれを雛形と取り違えて全部捨てていた）。管理番号が読めない雛形の表は捨てる。2026-10-07 の時点: 南支所は決定済みの 1 頭（くろまめ）だけ = 0 頭。以前は決まった子が募集中として載る日があった（2025-03 は 3 頭全部が決まっていたのに 3 頭と読んだ）。Wayback は CDX の全 19 版を当て、動物が載った日 13 版で募集中の子だけが読め、決まった子だけの日 5 版と雛形だけの日 1 版は 0 頭、読めなかった日は無い"
+  note: "2026-11-05 埼玉県（生活衛生課がとりまとめ）から、県内の収容動物の情報は写真を含め掲載して差し支えない（政令市・中核市を除く）と返事（T630）。 環境省リンク集から追加（2026-10-05 T519）。埼玉県「犬・猫の譲渡」（pref.saitama.lg.jp/b0716/doubutu-jouto-1.html）から辿る譲渡用猫（南支所）の募集ページ。1 頭 = 管理番号の table（管理番号の欄に「南2026-C67 (仮名：くろまめ) 譲渡されました！」と書かれ、写真は行の中）。決まった子の印は時期で変わり（Wayback 2019〜2026）、「飼い主さんが決まりました!」「飼主さんが 決まりました！」「（新しい飼い主さんが決まりました）」「新しい飼い主さんへ譲渡となりました」「譲渡されました！」「譲渡になりました！」の語が見出し（犬は h3）か管理番号の欄にある子は載せない（全部そうなら 0 頭。以前の「譲渡されました」だけの除外では、決まった子が募集中として載る日があった）。「お見合い中です」「マッチング中です！」「申込多数のため募集を一時停止」「お声がかかりました！（現在募集を停止しています）」の子は決まっていないので載せる（トライアル中と同じ扱い）。管理番号は「南2026-C67」のように連番の前に英字が付く形も読む（前任の直しはこれを雛形と取り違えて全部捨てていた）。管理番号が読めない雛形の表は捨てる。2026-10-07 の時点: 南支所は決定済みの 1 頭（くろまめ）だけ = 0 頭。以前は決まった子が募集中として載る日があった（2025-03 は 3 頭全部が決まっていたのに 3 頭と読んだ）。Wayback は CDX の全 19 版を当て、動物が載った日 13 版で募集中の子だけが読め、決まった子だけの日 5 版と雛形だけの日 1 版は 0 頭、読めなかった日は無い。2026-11-07 確認: 南2026-C76・C77・C78 が同じ写真を使い、写真から作る ID が重なって C77・C78 が「同じ ID の行が既にある」で載っていなかった（10/29〜）。管理番号が違う衝突は、衝突した行だけ管理番号から ID を作る（載っている C76 の ID は変えない）"
 - slug: city_takasaki-1
   name: 高崎市動物愛護センター（保護している犬）
   municipality: 高崎市
@@ -7137,7 +7149,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_miyagi-6.yaml
   enabled: true
-  note: 環境省リンク集から追加（2026-10-05 T519）。気仙沼保健所管内（気仙沼市・南三陸町）で保護した犬・猫。電話は同ページの問い合わせ窓口「宮城県保健所犬猫ダイヤル」（住所の記載は無い）。2026-10-07 時点は犬 1 頭・猫 2 頭を実ページで確認。Wayback 2022-05〜2026-05 の 7 版で、猫の行（収容日が「9/26」の書き方の日もある）と 0 頭の日（「現在，保護猫の情報はありません。」。読点が「，」）を確認済み。犬が載った保存は無く、犬の行は今日の 1 頭のみ。猫の文言 1 つだけで 0 頭と判定するので、猫が 0 頭のまま犬の表が読めなくなった日は 0 頭に見える
+  note: "環境省リンク集から追加（2026-10-05 T519）。気仙沼保健所管内（気仙沼市・南三陸町）で保護した犬・猫。電話は同ページの問い合わせ窓口「宮城県保健所犬猫ダイヤル」（住所の記載は無い）。2026-10-07 時点は犬 1 頭・猫 2 頭を実ページで確認。Wayback 2022-05〜2026-05 の 7 版で、猫の行（収容日が「9/26」の書き方の日もある）と 0 頭の日（「現在，保護猫の情報はありません。」。読点が「，」）を確認済み。犬が載った保存は無く、犬の行は今日の 1 頭のみ。猫の文言 1 つだけで 0 頭と判定するので、猫が 0 頭のまま犬の表が読めなくなった日は 0 頭に見える。2026-11-07 確認: 10/29〜10/30 は 3 つ目のセルの区切りが全角の「／」で、品種・毛色・性別・年齢・備考が全部空だった。「/」「／」の両方で区切る。年齢は 4 つ目が年齢らしい語のときだけ（公式の見出しは「犬種/毛色/性別/特徴」）"
 - slug: pref_miyagi-7
   name: 宮城県動物愛護センター（譲渡猫の紹介）
   municipality: 宮城県動物愛護センター
