@@ -200,15 +200,61 @@ def test_nara_adoption_page_reads_photos_only():
     s = SOURCES["city_nara-2"]
     assert s.url == NARA2 and s.kind == "adoption" and s.photo == "pending"
     animals = _animals("city_nara-2", _fx("w006c_city_nara-2_20261107.html"))
-    assert len(animals) == 13
+    assert len(animals) == 12
     urls = [a["image_url"] for a in animals]
-    assert len(set(urls)) == 13
+    assert len(set(urls)) == 12
     assert not any("284131" in u for u in urls)           # 愛護フェスティバルの告知画像は子ではない
+    assert not any("233863" in u for u in urls)           # 「猫エイズってなに？」の解説ポスター（alt「エイズ」）は動物の紹介ではない
     assert all(a.get("species") is None for a in animals)   # 種別の文字が無いので決めない
     assert not any(a.get("name") for a in animals)          # alt は「あ」「f」「エイズ」で名前とは限らない
 
 
-def test_nara_adoption_page_wayback_2026_05_has_no_id_and_17_photos():
+def test_nara_adoption_page_wayback_2026_05_has_no_id_and_16_photos():
     animals = _animals("city_nara-2", _fx("w006c_city_nara-2_wb20260511.html"))
-    assert len(animals) == 17
-    assert len({a["image_url"] for a in animals}) == 17
+    assert len(animals) == 16          # 17 枚のうち 1 枚は解説ポスター（233863）
+    assert len({a["image_url"] for a in animals}) == 16
+    assert not any("233863" in a["image_url"] for a in animals)
+
+
+def test_nara_only_images_inside_the_adoption_section_become_animals():
+    html = _fx("w006c_city_nara-2_20261107.html")
+    ad = '<p><img alt="お知らせ" src="/uploaded/image/999001.jpg"/></p>'
+    after = '<p><img alt="後の節" src="/uploaded/image/999002.jpg"/></p>'
+    # 節より前の告知画像がリンク無しに変わっても、節より後ろの画像が増えても、動物にならない
+    soup = BeautifulSoup(html, "lxml")
+    for h2 in soup.find_all("h2"):
+        if "ページの目次" in h2.get_text():
+            h2.insert_before(BeautifulSoup(ad, "lxml").p)
+        if "譲渡後の動物たち" in h2.get_text():
+            h2.insert_after(BeautifulSoup(after, "lxml").p)
+    urls = [a["image_url"] for a in _animals("city_nara-2", str(soup))]
+    assert len(urls) == 12
+    assert not any("99900" in u for u in urls)
+
+
+# --- 柏市 city_kashiwa-2: 「ワクチン接種予定」の子（FeLV/FIV の語が無い）の性格文 ----------------------------------
+
+def test_kashiwa_note_is_read_when_vaccine_line_has_no_felv_fiv():
+    animals = _animals("city_kashiwa-2", _fx("t631_city_kashiwa-2_kids_20261106.html"))
+    by = {a["name"]: a for a in animals}
+    assert len(animals) == 10
+    assert by["まいたけ"]["note"].startswith("来てしばらくは警戒していましたが、今はゴロゴロして触って")
+    assert by["まいたけ"]["note"].endswith("触られるのを嫌がるときもあります。")
+    assert "ワクチン" not in by["まいたけ"]["note"]
+    # 他の 9 頭は従来どおり（FIV の後ろの文。複数 p は 1 つにつながる）
+    assert by["ぽぽ"]["note"].startswith("まだ、シャーやウーや猫パンチ")
+    assert by["ぽんず"]["note"].endswith("おもちゃで遊ぶのは大好きです。")
+    assert by["トロワ"]["note"].startswith("人に触られることに慣れてきて")
+    assert all(a.get("note") for a in animals)
+
+
+# --- 大阪市 city_osaka-4: 体格の括弧内の空白で切らない（実ページは今日「中」だけなので、保存した実ページの 1 行を書き換えて確かめる） ---
+
+def test_osaka_cat_size_keeps_weight_with_space_and_plain_size_is_unchanged():
+    html = _fx("w006c_city_osaka-4_20261107.html")
+    plain = _animals("city_osaka-4", html)
+    assert [a["size"] for a in plain] == ["中"] * 5
+    changed = html.replace("体格／中", "体格／中（体重 約4.1kg）", 1)
+    animals = _animals("city_osaka-4", changed)
+    assert animals[0]["size"] == "中(体重 約4.1kg)"
+    assert [a["size"] for a in animals[1:]] == ["中"] * 4
