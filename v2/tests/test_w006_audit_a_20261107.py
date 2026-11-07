@@ -3,8 +3,8 @@
 fixture は 2026-11-07 に保存した実ページ（script・style を落とした。w006a_*）。沖縄県の個体ページの「保護者」（個人の姓）は 〇〇 に伏せた。
 香川の PDF は、エンジンと同じ pdfplumber にかけた表を JSON にした（w006a_sanuki_kagawa_*.json）。監査が見た版（1104dog.pdf）は
 公開が終わって取れないので、「譲渡済の重ね書きが続きの行にだけある」形は今日の版の行の形に合わせた合成行で確かめる（試験の中にそう書く）。
-- 岡山市: 保護猫情報一覧（猫の個別情報ページが無く、管理番号だけを載せる）を辿る。保護犬情報一覧は個別情報の再掲なので辿らない
-- 松本市 犬: 見出しの「募集を停止しています」は決まった子ではない（埼玉と同じ扱い）。載せて note に状態を出す
+- 岡山市: 猫の一覧（保護猫情報一覧）は個別ページより遅れて更新される恐れがあり、いない猫を載せうるので辿らない（猫は個別ページだけ。犬の ID は不変）
+- 松本市 犬: 見出しの「募集を停止しています」の子は募集していないので載せない（監査の指摘どおり）
 - 八戸市: 指摘は誤り（印は名前の前に置かれる。アサリは募集中）
 - 香川: 譲渡済の重ね書きが表の続きの行にだけある子を載せない
 - 鹿児島市: 同じ管理番号が上下に 2 度載る（上が最新）。下の古い方を載せない
@@ -55,26 +55,17 @@ def _swap(html: str, old: str, new: str) -> str:
 # --- 岡山市 -------------------------------------------------------------------------------------------------------
 OKAYAMA = SOURCES["city_okayama"]
 OKA_DOG = "https://www.city.okayama.jp/kurashi/0000060648.html"
-OKA_CAT_LIST = "https://www.city.okayama.jp/kurashi/0000085613.html"
-
-
 def _okayama() -> Collected:
     return _collect("city_okayama", {
         OKAYAMA.url: _fx("w006a_city_okayama_index_20261107.html"),
         OKA_DOG: _fx("w006a_city_okayama_dog_20261107.html"),
-        OKA_CAT_LIST: _fx("w006a_city_okayama_cat_list_20261107.html"),
-    })   # 保護犬情報一覧（0000016464）を辿ると FakeFetcher に無い URL で失敗する
+    })   # 保護猫情報一覧・保護犬情報一覧は辿らない（辿ると FakeFetcher に無い URL で失敗する）
 
 
-def test_okayama_cat_list_page_gives_the_cat_with_only_its_number():
+def test_okayama_does_not_follow_the_cat_list_and_gives_only_the_dog_page():
     c = _okayama()
     assert c.status == "ok", c.error
-    by_no = {a["management_no"]: a for a in _res(c).animals}
-    assert sorted(by_no) == ["1D2026065", "1N2026046"]
-    cat = by_no["1N2026046"]
-    assert cat["species"] == "cat" and cat["source_url"] == OKA_CAT_LIST
-    # ページに書いてあるのは番号だけ。ほかの項目は足さない
-    assert all(cat.get(k) is None for k in ("sex", "age", "breed", "color", "size", "shelter_date", "location", "image_url"))
+    assert [a["management_no"] for a in _res(c).animals] == ["1D2026065"]
 
 
 def test_okayama_dog_keeps_its_id():
@@ -83,28 +74,18 @@ def test_okayama_dog_keeps_its_id():
     assert by_no["1D2026065"]["species"] == "dog" and by_no["1D2026065"]["shelter_date"] == "令和8年11月4日"
 
 
-def test_okayama_cat_id_is_the_same_as_when_its_own_page_existed():
-    # 個別ページ（写真なし）の ID は管理番号から作る（11/03〜11/05 の 1N2026046 と同じ式）。個別ページが戻っても二重にならない
-    from collector.extract import make_id
-    cat = next(a for a in _res(_okayama()).animals if a["management_no"] == "1N2026046")
-    assert cat["id"] == make_id(OKAYAMA, None, {"management_no": "1N2026046"})
-
 
 # --- 松本市 犬 ----------------------------------------------------------------------------------------------------
-def test_matsumoto_dogs_with_stopped_recruitment_are_listed_with_the_state_in_note():
+def test_matsumoto_dogs_with_stopped_recruitment_are_not_listed():
     c = _single("city_matsumoto-4", _fx("w006a_city_matsumoto-4_20261107.html"))
-    assert c.status == "ok", c.error
-    animals = {a["management_no"]: a for a in _res(c).animals}
-    assert sorted(animals) == ["7-3", "8-1"]
-    assert animals["8-1"]["id"] == "406c53954859" and animals["7-3"]["id"] == "73f3a973ada7"
-    assert animals["8-1"]["note"].startswith("募集を停止しています。人懐っこく")
-    assert animals["7-3"]["note"].startswith("募集を停止しています。お散歩はトコトコ")
+    # 7-3・8-1 とも見出しが「募集を停止しています」。載せない
+    assert _res(c).animals == []
 
 
-def test_matsumoto_dog_without_the_stop_mark_has_the_plain_note():
+def test_matsumoto_dog_without_the_stop_mark_is_listed():
     html = _swap(_fx("w006a_city_matsumoto-4_20261107.html"), "保健所譲渡犬No.8-1　募集を停止しています", "保健所譲渡犬No.8-1")
     animals = {a["management_no"]: a for a in _res(_single("city_matsumoto-4", html)).animals}
-    assert animals["8-1"]["note"].startswith("人懐っこく") and "停止" not in animals["8-1"]["note"]
+    assert sorted(animals) == ["8-1"] and animals["8-1"]["note"].startswith("人懐っこく")
 
 
 # --- 八戸市（指摘は誤り） -----------------------------------------------------------------------------------------
