@@ -35,7 +35,7 @@ domains:
   wannyan-navi.pref.aichi.jp: {status: covered, slugs: [wannyan_navi_aichi], note: "リンク集は愛知県（pref.aichi.jp）を指し、そこから案内される専用サイト"}
   wannyapia.akita.jp: {status: covered, slugs: [spec_wannyapia_akita-1, spec_wannyapia_akita-2], note: "リンク集は秋田県（pref.akita.lg.jp）を指し、そこから案内される専用サイト"}
   zuttoissho.com: {status: covered, slugs: [zuttoissho_fukuoka-1, zuttoissho_fukuoka-2], note: "リンク集は福岡市（wannyan.city.fukuoka.lg.jp）を指し、そこから案内される専用サイト"}
-  city.fukuoka.lg.jp: {status: covered, slugs: [city_fukuoka_interim-1, city_fukuoka_interim-2], note: "リンク集は福岡市（wannyan.city.fukuoka.lg.jp）を指す。わんにゃんよかネットの停止中（2026-10-21〜）に市が案内している暫定ページ（センターに収容されている犬・猫）を載せる一時的な 2 件。wannyan.city.fukuoka.lg.jp の wannyan_fukuoka-1・-2 は旧 URL のまま毎晩見ている。再開したらこの 2 件と一緒にこの行を消す"}
+  city.fukuoka.lg.jp: {status: covered, slugs: [city_fukuoka_interim-1, city_fukuoka_interim-2], note: "リンク集は福岡市（wannyan.city.fukuoka.lg.jp）を指す。わんにゃんよかネットの停止中（2026-10-21〜）に市が案内している暫定ページ（センターに収容されている犬・猫）を載せる一時的な 2 件。wannyan.city.fukuoka.lg.jp の wannyan_fukuoka-1・-2 は旧 URL のまま毎晩見ている。再開したら、まずこの 2 件を enabled: false にして二重掲載を止め、台帳から消すときにこの行も消す（enabled: false にしただけの間は、無効でも台帳のドメインに数えるのでこの行を残す）"}
   fapscsite.com: {status: covered, slugs: [fapscsite-1, fapscsite-2, fapscsite-3], note: "リンク集は福井市（city.fukui.lg.jp）を指し、そこから案内される専用サイト（福井県動物愛護センターの公示・譲渡情報）"}
   ikutopia.com: {status: covered, slugs: [ikutopia-1], note: "リンク集は新潟市（city.niigata.lg.jp）を指し、その譲渡猫ページの「動物ふれあいセンター」の節から案内される別サイト（いくとぴあ食花）"}
   wannyan-musubi.pref.miyagi.jp: {status: covered, slugs: [wannyan_musubi_miyagi-1, wannyan_musubi_miyagi-2], note: "リンク集は宮城県（pref.miyagi.jp）を指し、その保健所の譲渡ページが「今後は本サイトに掲載」と案内する県の譲渡情報サイト（県の収容犬猫のみ）"}
