@@ -6,7 +6,7 @@
 rows: "h4:-soup-contains('新しい飼い主を募集している') ~ p:has(> strong)"
 fields:
   management_no: {selector: "strong"}
-  note: {regex: "[（(]([^）)]+)[）)]"}
+  note: {regex: "[（(](.+?)(?:、\\s*写真.*)?[）)]\\s*(?:NEW!?)?\\s*$"}
 species:
   from: heading
   selector: "h4"

@@ -1,0 +1,28 @@
+# 北海道 オホーツク総合振興局 紋別保健所・遠軽支所 犬・猫情報（/hk/mth/wanneko.html）の「迷い犬・猫」の表（飼い主募集の表は hokkaido_okhotsk-4）。
+# h4「迷子の犬（紋別保健所）」「迷子の猫（遠軽支所）」等の下に、見出し行（写真・性別・年齢・保護日/場所・特徴）と、データ行。結合セルは無い。
+# 保護日/場所の欄は p が「保護日」「住所」「場所」「状況」の順。特徴の欄は先頭が呼びかけ、末尾に問い合わせ先・保管期限（「お問い合わせ先」の手前までを note、保管期限は付ける）。
+# 子のいない表は、データ行が 1 行だけ「現在、迷い犬はいません。」「現在、迷子の猫はいません。」。その行は読まない。
+# 0 頭の日は全部の表が「いません」の行だけで、この文は子のいる日も別の表に出るので empty_text にせず、
+# 動物の表にいません以外の行が 1 つも無い日だけ 0 頭にする（empty_absent）。
+rows: "table:has(td:-soup-contains('保護日')) tr:nth-child(n+2):not(:has(td:-soup-contains('いません')))"
+fields:
+  sex: {selector: ":scope > :nth-child(2)"}
+  age: {selector: ":scope > :nth-child(3)"}
+  shelter_date: {selector: ":scope > :nth-child(4)", regex: "(令和\\s*\\d+年\\d+月\\d+日)"}
+  location:
+    join:
+      - {selector: ":scope > :nth-child(4) p:nth-child(2)"}
+      - {selector: ":scope > :nth-child(4) p:nth-child(3)"}
+  note:
+    join:
+      - {selector: ":scope > :nth-child(4) p:nth-child(4)"}
+      - {selector: ":scope > :nth-child(5)", regex: "^(.*?)(?:\\s*お問い合わせ先|$)"}
+      - {selector: ":scope > :nth-child(5)", regex: "(保管期限.*)$"}
+species:
+  from: heading
+  selector: "h4"
+  map: {"犬(": dog, "猫(": cat, "犬（": dog, "猫（": cat}
+image: "img@src"
+empty_absent:
+  page: "h2:-soup-contains('迷い犬・猫の情報')"
+  none: "table:has(td:-soup-contains('保護日')) tr:nth-child(n+2):not(:has(td:-soup-contains('いません'))), h4:-soup-contains('迷子の') + table tr:nth-child(n+2):not(:has(td:-soup-contains('いません')))"

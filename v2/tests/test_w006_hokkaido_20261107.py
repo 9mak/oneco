@@ -35,7 +35,7 @@ def _nos(c: Collected, key: str = "management_no") -> list[str | None]:
 
 
 def test_registry_all_pending_photo_and_modes():
-    assert len(HOKKAIDO) == 39
+    assert len(HOKKAIDO) == 41  # 2026-11-07 の指摘で檜山 -2 と紋別 -5 を足した（もとは 39）
     for slug, s in HOKKAIDO.items():
         assert s.prefecture == "北海道" and s.photo == "pending" and s.enabled, slug
         assert s.phone and s.address and s.url.startswith("https://www."), slug
@@ -45,7 +45,7 @@ def test_registry_all_pending_photo_and_modes():
     recipes = sorted(k for k, v in HOKKAIDO.items() if v.mode == "recipe")
     assert recipes == [
         "hokkaido_iburi-1", "hokkaido_ishikari-1", "hokkaido_ishikari-2", "hokkaido_ishikari-3", "hokkaido_kamikawa-1",
-        "hokkaido_kushiro-1", "hokkaido_nemuro-1", "hokkaido_oshima-1", "hokkaido_shiribeshi-1", "hokkaido_sorachi-1",
+        "hokkaido_kushiro-1", "hokkaido_nemuro-1", "hokkaido_okhotsk-4", "hokkaido_okhotsk-5", "hokkaido_oshima-1", "hokkaido_shiribeshi-1", "hokkaido_sorachi-1",
         "hokkaido_tokachi-1",
     ]
 
@@ -140,3 +140,14 @@ def test_structure_change_is_failed_not_zero():
     ):
         c = _run(slug, fixture, lambda h, o=old, n=new: h.replace(o, n))
         assert c.status not in ("ok", "empty"), (slug, c.status)
+
+
+def test_ishikari_adoption_note_keeps_nested_parens_and_drops_link_text():
+    # PR #104 F-05: 「中（小柄）」の括弧で切れない。写真・特集・近況のリンク文字は載せない
+    a = _run("hokkaido_ishikari-2", "w006_hokkaido_ishikari-12_20261107.html")
+    assert a.status == "ok", a.error
+    assert _nos(a, "note") == [
+        "石狩支所、雑種、オス、中、キジ白・8~9歳",
+        "江別保健所、雑種1、去勢オス1、中、キジ白1、成猫",
+        "石狩支所、雑種、メス、中(小柄)、三毛、10歳",
+    ]

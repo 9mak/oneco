@@ -7999,7 +7999,23 @@ sources:
   mode: link_only
   enabled: true
   photo: pending
-  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。江差保健所の迷い犬・猫と飼い主募集中の犬・猫（令和8年（2026年）5月21日現在で犬0頭、猫0頭）。更新日が半年前で現在の状況かは未確認。子が載った日の作りを確認できていないため link_only。檜山振興局環境生活課の旧ページ（/hk/kks/sizen/kainusisagasi/139880.html）は 2026-11-07 時点で HTTP 404（台帳に足さない）。"
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。江差保健所の迷い犬・猫と飼い主募集中の犬・猫（令和8年（2026年）5月21日現在で犬0頭、猫0頭）。更新日が半年前で現在の状況かは未確認。子が載った日の作りを確認できていないため link_only。檜山振興局環境生活課の旧ページ（/hk/kks/sizen/kainusisagasi/139880.html）は 2026-11-07 時点で HTTP 404 だが、同じ課の「犬猫の新しい飼い主さん募集中！」は /hk/kks/a0003/b0006/kainusisagasi/139924.html に移っていて HTTP 200（2026-11-07 に確認）。その移転先は hokkaido_hiyama-2 で足した。"
+- slug: hokkaido_hiyama-2
+  name: 北海道 檜山振興局 環境生活課（犬猫の新しい飼い主さん募集中）
+  municipality: 北海道 檜山振興局保健環境部環境生活課
+  prefecture: 北海道
+  phone: 0139-52-6491
+  address: 北海道檜山郡江差町字陣屋町336-3
+  url: https://www.hiyama.pref.hokkaido.lg.jp/hk/kks/a0003/b0006/kainusisagasi/139924.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.hiyama.pref.hokkaido.lg.jp/hk/kks/a0003/b0006/kainusisagasi/139924.html"
+  verified_address_url: "https://www.hiyama.pref.hokkaido.lg.jp/hk/kks/a0003/b0006/kainusisagasi/139924.html"
+  kind: adoption
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "公開ゲートの指摘（PR #104 F-01）で足した（2026-11-07 W006）。檜山振興局環境生活課の「犬猫の新しい飼い主さん募集中！」。旧 URL（/hk/kks/sizen/kainusisagasi/139880.html）は HTTP 404 だが、環境生活課の動物愛護のカテゴリから辿れるこのページに移っていた。2026-11-07 時点は募集中の犬・江差保健所の猫・八雲保健所今金支所の猫がいずれも「いません」で、動物愛護センター（道南センター）の猫と飼い主さがしノートの猫（「現在６匹」）は別機関・別ページへの案内。更新日は 2026-08-26。子が載った日の作りは未確認のため link_only（Wayback の版は 2026-04〜10 の 4 版）。電話・所在地はページ下部の問い合わせ先のとおり。"
 - slug: hokkaido_kamikawa-1
   name: 北海道 上川総合振興局 上川保健所（犬猫の保護情報）
   municipality: 北海道 上川総合振興局保健行政室（上川保健所）企画総務課
@@ -8178,7 +8194,7 @@ sources:
   photo: pending
   note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。北見保健所の迷子の犬猫。2026-11-07 時点は「令和８年９月２９日（火）時点　犬０頭　猫０匹」「現在、迷子の犬猫はいません。」で、日付が 1 か月以上前。子が載った日の作りは h4「番号：R8-9-1」に残骸があるが確認できていないため link_only。"
 - slug: hokkaido_okhotsk-4
-  name: 北海道 オホーツク総合振興局 紋別保健所（犬・猫情報）
+  name: 北海道 オホーツク総合振興局 紋別保健所・遠軽支所（飼い主募集中の犬・猫）
   municipality: 北海道 オホーツク総合振興局紋別地域保健室（紋別保健所）企画総務課
   prefecture: 北海道
   phone: 0158-23-3108
@@ -8187,9 +8203,27 @@ sources:
   verified_at: '2026-11-07'
   verified_phone_url: "https://www.okhotsk.pref.hokkaido.lg.jp/hk/mth/wanneko.html"
   verified_address_url: "https://www.okhotsk.pref.hokkaido.lg.jp/hk/mth/wanneko.html"
-  kind: sheltered
+  kind: adoption
   species: mixed
-  mode: link_only
+  mode: recipe
+  recipe: recipes/hokkaido_okhotsk-4.yaml
   enabled: true
   photo: pending
-  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。紋別保健所・遠軽支所の迷い犬・猫と飼い主募集中の犬・猫の表。2026-11-07 時点は迷子の猫 1 行（3 頭＝キジトラ 2・グレートラ 1 の子猫）と飼い主募集中の猫 2（C1・C2）が載る。表は節ごとに別の作りで、結合セルと 1 行に複数頭があり、列の読み違いで誤情報を出す恐れがあるため読まず link_only（読める余地あり）。"
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。紋別保健所・遠軽支所の犬・猫情報ページのうち、飼い主募集中の犬・猫の表（紋別・遠軽の犬と猫の 4 表。結合セルは無い単純な表で、見出し行の下にデータ行）。2026-11-07 時点は紋別保健所の募集猫 1 行（C1・C2 の 2 頭。性別・年齢の欄は 1 つで頭ごとかは未記載）が載るので 1 件。1 行に複数頭の書き方は 1 件にし、各頭の説明と募集期限は note にそのまま入れる。子のいない表は「現在、飼い主募集中の…はいません。」の行だけで、読まない。0 頭の日は全部の表がその行だけになり、動物の表にその行以外が無いときだけ 0 頭（empty_absent。この文は子のいる日も別の表に出るので empty_text にしない）。遠軽支所の募集猫の見出しだけ p で、その表の子も読む作り。迷い犬・猫の表は hokkaido_okhotsk-5（同じ URL）。写真の規約は未確認（photo: pending）。"
+- slug: hokkaido_okhotsk-5
+  name: 北海道 オホーツク総合振興局 紋別保健所・遠軽支所（迷い犬・猫）
+  municipality: 北海道 オホーツク総合振興局紋別地域保健室（紋別保健所）企画総務課
+  prefecture: 北海道
+  phone: 0158-23-3108
+  address: 北海道紋別市南が丘町1丁目6番地
+  url: https://www.okhotsk.pref.hokkaido.lg.jp/hk/mth/wanneko.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.okhotsk.pref.hokkaido.lg.jp/hk/mth/wanneko.html"
+  verified_address_url: "https://www.okhotsk.pref.hokkaido.lg.jp/hk/mth/wanneko.html"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/hokkaido_okhotsk-5.yaml
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。紋別保健所・遠軽支所の犬・猫情報ページのうち、迷い犬・猫の表（紋別・遠軽の犬と猫の 4 表。結合セルは無い単純な表）。2026-11-07 時点は紋別保健所の迷子の猫 1 行（令和8年11月5日に保健所の玄関前で保護、生後 1 ヶ月未満のキジトラ 2・グレートラ 1 の 3 頭）が載るので 1 件（頭数は note にそのまま入れる）。保管期限も note に載せる。子のいない表は「現在、迷い犬はいません。」「現在、迷子の猫はいません。」の行だけで、読まない。0 頭の日は全部の表がその行だけになり、動物の表にその行以外が無いときだけ 0 頭（empty_absent。この文は子のいる日も別の表に出るので empty_text にしない）。飼い主募集中の表は hokkaido_okhotsk-4（同じ URL）。写真の規約は未確認（photo: pending）。"
