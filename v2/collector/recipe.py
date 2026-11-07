@@ -532,18 +532,66 @@ def _grouped_rows(recipe: Recipe, doc: Doc) -> list[Row]:
     for start in starts:
         holder = BeautifulSoup("", "lxml").new_tag("div", attrs={"class": "grouped"})
         holder.append(copy.copy(start))
-        for sib in start.next_siblings:
-            if not isinstance(sib, Tag):
-                if type(sib) is NavigableString:
-                    holder.append(NavigableString(str(sib)))   # 始まりの間の裸の文字（「<h3>No.1</h3>種類：柴<br>…」）
-                continue
-            if id(sib) in start_ids or any(id(d) in start_ids for d in sib.find_all(True)):
-                break      # 次の子の始まり（さいたま市: 2 頭目だけ div に包まれている）
-            if sib.css.match(recipe.row_until or "") or sib.select_one(recipe.row_until or "") is not None:
-                break      # 区切り（大分市: 「お家がみつかりました」の h2、千葉市: 掲載日の h2）。兄弟の中にあっても止める
-            holder.append(copy.copy(sib))
+        cur: Tag = start
+        while True:
+            added = False
+            stopped = False
+            for sib in cur.next_siblings:
+                if not isinstance(sib, Tag):
+                    if type(sib) is NavigableString:
+                        holder.append(NavigableString(str(sib)))   # 始まりの間の裸の文字（「<h3>No.1</h3>種類：柴<br>…」）
+                    continue
+                if id(sib) in start_ids:
+                    stopped = True
+                    break
+                if any(id(d) in start_ids for d in sib.find_all(True)):
+                    # 次の子の始まりを中に含む要素（さいたま市: 2 頭目だけ div に包まれている）。多くは始まりが先頭で何も残らないが、
+                    # 前の子の写真・属性が同じ入れ物の手前側に入っていることがある（R08-58: 写真・ul は次の子の div の前半）。その手前までを足す
+                    part = _before_cut(sib, start_ids, recipe.row_until or "")
+                    if part is not None:
+                        holder.append(part)
+                        added = True
+                    stopped = True
+                    break
+                if sib.css.match(recipe.row_until or "") or sib.select_one(recipe.row_until or "") is not None:
+                    stopped = True
+                    break      # 区切り（大分市: 「お家がみつかりました」の h2、千葉市: 掲載日の h2）。兄弟の中にあっても止める
+                holder.append(copy.copy(sib))
+                added = True
+            parent = cur.parent
+            # 始まりが「それだけを包む div」の中にあり、後ろの兄弟が無いときは、包みの外の兄弟を続きとして読む
+            # （さいたま市 R08-58: 管理番号の p だけが div に包まれ、写真・属性は包みの次の兄弟）
+            if stopped or added or not isinstance(parent, Tag) or parent.name in ("body", "html", "[document]"):
+                break
+            if parent.get_text(strip=True) != start.get_text(strip=True) or parent.find("img") is not None:
+                break
+            cur = parent
         rows.append(Row(doc=doc, el=holder, anchor=start))
     return rows
+
+
+def _before_cut(sib: Tag, start_ids: set[int], row_until: str) -> Tag | None:
+    """sib の複製のうち、最初の「次の始まり（または row_until に当たる要素）」より前だけを返す。文字も写真も無ければ None。"""
+    import copy
+
+    originals = sib.find_all(True)
+    cut_index = next(
+        (i for i, d in enumerate(originals) if id(d) in start_ids or (row_until and d.css.match(row_until))), None)
+    if cut_index is None:
+        return None
+    clone = copy.copy(sib)
+    cut = clone.find_all(True)[cut_index]
+    node: Tag | None = cut
+    while node is not None and node is not clone:
+        for after in list(node.next_siblings):
+            after.extract()
+        parent = node.parent
+        if node is cut:
+            node.extract()
+        node = parent if isinstance(parent, Tag) else None
+    if not clone.get_text(strip=True) and clone.find("img") is None:
+        return None
+    return clone
 
 
 def _filter_rows(recipe: Recipe, rows: list[Row]) -> list[Row]:
