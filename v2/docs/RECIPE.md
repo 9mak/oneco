@@ -12,6 +12,7 @@ image: "img@src"               # 行の中の写真（省略時は img@src）
 # image: {selector: "p.imagecenter img@src", scope: prev_siblings}   # 写真が行の外（直前の兄弟要素）にあるとき。前の行（同じタグ）まで遡り文書順で先の 1 枚
 # image: {selector: "img@src", scope: self_or_prev_siblings}        # 行の中を先に探し、無ければ prev_siblings と同じ範囲（ページによって写真が表の中だったり外だったりするとき。岐阜県）
 # image: {selector: "p.imageright img@src", scope: prev_siblings, stop_at: row}   # 遡りを「同じタグ名」でなく「前の行（rows に当たる要素）」で止める（行も写真も p のとき。岩手県）
+# image: {selector: "p.imageleft img@src", scope: prev_siblings, stop_at: "row, h2"}   # stop_at に「row, セレクタ」と書くと、前の行に加えてそのセレクタに当たる兄弟（h2 等）の手前でも遡りを止める。最初の子の写真の遡りが、前の節（別の slug の迷子の節）の写真まで届くのを防ぐ（岩手県 県央。2026-11-07）
 # image: {selector: "p.imagecenter img@src", scope: next_siblings}   # 写真が行の後ろ（直後の兄弟要素）にあるとき。prev_siblings と対称（名古屋市 譲渡猫）。self_or_next_siblings もある
 # image: {selector: "img@src", match_field: management_no}   # 写真が本体と別の表にあるとき。行で取った項目（管理番号）の値を src か alt に含む画像を文書全体から探し、文書順で先の 1 枚（仙台市 譲渡猫）。前が英数字・後ろが数字の位置には当てない（C2509 を c25093.jpg に当てない）。後ろに英字 1 文字の枝番が付くもの（c22068b.jpg・alt「C22068B」）は同じ子として当て、英字 2 文字以上や英字の後ろに英数字が続くものは当てない。枝番の英字が別の子を表すサイト（本体の表に C25093A・C25093B がある）では使わない。値が無い・見つからない行は写真なし
 fields:
@@ -61,6 +62,21 @@ steps:
       render: true                       # 個体ページも描画する（既定 true）
 rows: "body"                             # 個体ページ 1 枚 = 1 頭
 ```
+
+入口を複数にする（`urls`）。`url` の代わりに全部を入口として開き、`steps` は全部の入口に適用する。サイト自身の絞り込み（GET パラメータ）で一覧を分けて種別などを決めたいとき（長崎犬猫ネット `?animal-type=dog|cat|others`）。`follow` / `follow_all` で辿った文書は元の一覧の URL（`parent_url`）を持ち、`species: {from: parent_url, map: {"animal-type=cat": cat}}` で種別の根拠にできる。台帳と同じホストの URL だけ。1 本でも取れなければその slug は failed（回線断・404 の日に一部の一覧だけで 0 頭にしない）。
+
+```yaml
+urls:
+  - https://animal-net.pref.nagasaki.jp/maigo/?animal-type=dog
+  - https://animal-net.pref.nagasaki.jp/maigo/?animal-type=cat
+  - https://animal-net.pref.nagasaki.jp/maigo/?animal-type=others
+species:
+  from: parent_url
+  map: {"animal-type=dog": dog, "animal-type=cat": cat, "animal-type=others": other}
+empty_text_entries: ["投稿がありません"]   # 入口の一覧の全部がこの文を出した日だけ 0 頭（犬の一覧だけ空の日は子がいる）
+```
+
+詳細ページに犬猫の別が書かれていないサイトで「柄が三毛なら猫、それ以外は犬」のような既定値を置くと、猫を犬と表示する（長崎で 3 頭が実際に誤っていた）。サイト自身の分類（絞り込み・見出し・URL）があるなら、それを根拠にする。
 
 ## 行の絞り込み
 
@@ -127,6 +143,7 @@ fields:
 
 - `label` の値は、見出しセル（th・td・dt）の隣の td・dd。値が label の文字を含んでも取る（「保健所」→「菊池保健所」）。隣のセルが見出しに見えるとき（th・dt で label を含む・label そのもの・中に「備考: …」とある・見出しも隣も td で隣が label で始まる）だけ捨て、次の行の同じ列 → 表の先頭行 → 「label：値」の順に探す
 - `label` は候補の並びでも書ける（`{label: ["収容日", "収容期日"]}`）。前から順に試し、最初に取れた値を使う
+- `if_header: "毛色"` / `unless_header: "毛色"` は、その行を含む表に見出しセル（th）「毛色」がある（ない）ときだけその項目を読む。列の意味が表の見出しで変わるページ（船橋市 譲渡可能犬猫: 猫の表は見出し行があり 2 列目は毛色、犬の表は見出し行が無く 2 列目が種類）。`breed: {selector: "td:nth-of-type(2)", unless_header: "毛色"}` と `color: {selector: "td:nth-of-type(2)", if_header: "毛色"}` を並べる
 - `header_row: true` は、label が表の **見出し行**（1 行に項目名が並ぶ）にあるときの読み方。見出しの語と一致するセル（記号・空白を除いて label と同じ）の列を、同じ表の次の行から読む（thead と tbody をまたぐ）。隣のセルは見ない。見出し行の書き方（th・td、thead・tbody）が日によって変わるページで使う（越谷市: 2023 年は tbody の td で見出しを書き、label だけだと隣の見出し「収容期限」を収容日に取った。2024〜2025 年は thead の th と tbody の td で値が取れなかった。列の位置で読むと、列順が違う日〔種類・性別・毛色・年齢〕に取り違える）
 - `join` は、並べた指定（上のどれでも）で取った値を `sep`（既定は空白）でつなぐ。取れなかった値と、前と同じ値は飛ばす。状態の印と本文が別のセルにあるとき（明石 飼い主募集の猫: `note: {join: [{label: "仮名", regex: "(トライアル(?:中|予定))"}, {label: "性格"}], sep: "。"}` →「トライアル中。<性格>」）
 - 「label：値」の書き方から取るときは最初の空白までの 1 語になる。文中に空白が入る項目（特徴・備考）は `note: {selector: "p:-soup-contains('特徴')", regex: "特徴[:：]\\s*(.+)"}` のように regex で行末まで取る
@@ -202,6 +219,8 @@ empty_text: ["現在いません", "現在収容している犬はいません"]
 empty_text_all: ["現在、迷子犬の保護情報はありません", "現在、迷子猫の保護情報はありません"]
 ```
 
+入口を複数にした（`urls`）サイトで、一覧の 1 本が空の文を出すのが子のいる日も同じ（種別ごとの一覧の犬の分だけ空）ときは `empty_text_entries`。**入口の文書の全部**が列挙した文のどれかを出した日だけ 0 頭で、1 本でも子の一覧（文を出さない）なら 0 頭にしない（根拠の名前は `empty_text_entries`）。empty_text にすると子がいる日にも成り立ち、audit_empty が毎日通知する。
+
 辿った**ページや PDF ごとに** 0 頭の文を出すサイト（保健所ごとのページ・犬と猫の PDF。岐阜県・那覇市）は `empty_text_each`。**rows を当てる文書の全部**が、列挙した文のどれか（書き方が保健所ごとに違うときの候補）を本文か img の alt に出した日だけ 0 頭で、1 文書でも出していなければ（子がいる・作りが変わった）0 頭にしない。入口のハブページは数えない（辿った先の文書だけ）。404 を `skip_errors` で捨てた子は文書に入らない。`empty_text` と併用でき、どちらかが当たれば 0 頭（根拠の名前は `empty_text_each`）。
 
 ```yaml
@@ -255,7 +274,7 @@ base_url: https://…       # 相対 URL の基準を変えたいとき（通常
 
 ## 1 つのページに区分が混ざるとき（slug を分ける）
 
-台帳の kind は slug に 1 つ。1 ページに迷子（stray）と譲渡（adoption）が混ざるときは、節ごとに slug を分ける（岩手県 大船渡・一関）。
+台帳の kind は slug に 1 つ。1 ページに迷子（stray）と譲渡（adoption）が混ざるときは、節ごとに slug を分ける（岩手県 大船渡・一関・県央・宮古。県央・宮古は迷子の節が名前の欄の無い作りで、譲渡の slug の行に当たらず取りこぼしていた）。
 
 - 同じ url の slug を 2 つ作り、rows を節の見出しで絞る（`h2:-soup-contains('【譲渡】') + p.imagecenter + p`）
 - 元の slug は載っている子が多い側に残す（ID は slug ごとに決まるので、新しい slug の子は ID が新しくなる）
