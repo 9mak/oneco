@@ -7631,10 +7631,11 @@ sources:
   verified_address_url: "https://www.sorachi.pref.hokkaido.lg.jp/hk/fth/inuneko_jouhou.html"
   kind: adoption
   species: mixed
-  mode: link_only
+  mode: recipe
+  recipe: recipes/hokkaido_sorachi-4.yaml
   enabled: true
   photo: pending
-  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。深川保健所の新しい飼い主さん募集のページ。2026-11-07 時点は「現在、飼い主さんは募集しておりません」。子が載った日の作りを確認できていないため link_only。"
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。深川保健所の新しい飼い主さん募集のページ。2026-11-07 時点は「現在、飼い主さんは募集しておりません」。PR #104 の公開ゲートで 0 頭だけ読む recipe にした。根拠は h2「新しい飼い主さん募集のページ」直下の「現在、飼い主さんは募集しておりません」（Wayback 2021〜2025 の 7 版は見出しも文も作りが違い、どの版にも当たらない。保護猫が載った 2021-09 版には出ない）。子が載った日の作りは未確認で子の行は読まず、文が消えれば failed で通知される。"
 - slug: hokkaido_ishikari-1
   name: 北海道 石狩振興局 江別保健所（迷い犬猫）
   municipality: 北海道 石狩振興局保健行政室(北海道江別保健所)生活衛生課
@@ -7731,10 +7732,11 @@ sources:
   verified_address_url: "https://www.shiribeshi.pref.hokkaido.lg.jp/hk/hgc/maigoinuneko.html"
   kind: stray
   species: mixed
-  mode: link_only
+  mode: recipe
+  recipe: recipes/hokkaido_shiribeshi-2.yaml
   enabled: true
   photo: pending
-  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。倶知安保健所の迷子の表。2026-11-07 時点は「保護頭数は、0匹です。現在、保護している犬・猫はいません。」。子が載った日の作りを確認できていないため link_only。"
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。倶知安保健所の迷子の表。2026-11-07 時点は「保護頭数は、0匹です。現在、保護している犬・猫はいません。」。PR #104 の公開ゲートで 0 頭だけ読む recipe にした。根拠は表の下の「現在、保護している犬・猫はいません。」（Wayback 2022-01〜2026-02 の 8 版は「保護頭数は、0匹 です」の書式でこの文は無く、子のいる版は見つからなかった）。子が載った日の作りは未確認で子の行は読まず、文が消えれば failed で通知される。"
 - slug: hokkaido_shiribeshi-3
   name: 北海道 後志総合振興局 岩内保健所（迷い犬猫情報）
   municipality: 北海道 後志総合振興局岩内地域保健室（岩内保健所）企画総務課
@@ -7796,10 +7798,11 @@ sources:
   verified_address_url: "https://www.iburi.pref.hokkaido.lg.jp/hk/tth/inuneko.html"
   kind: sheltered
   species: mixed
-  mode: link_only
+  mode: recipe
+  recipe: recipes/hokkaido_iburi-3.yaml
   enabled: true
   photo: pending
-  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。苫小牧保健所の迷子情報【犬０匹、猫０匹】と飼い主募集情報【犬０匹、猫０匹】（2026-11-07 時点）。子が載った日の作りを確認できていないため link_only。"
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。苫小牧保健所の迷子情報【犬０匹、猫０匹】と飼い主募集情報【犬０匹、猫０匹】（2026-11-07 時点）。PR #104 の公開ゲートで 0 頭だけ読む recipe にした。根拠は 2 つの見出し「迷子情報【犬０匹、猫０匹】」「飼い主募集情報【犬０匹、猫０匹】」が両方 0 の日。子が載った日の作りは未確認で子の行は読まず、どちらかの数が変われば failed で通知される。"
 - slug: hokkaido_hidaka-1
   name: 北海道 日高振興局（動物愛護管理のページ）
   municipality: 北海道 日高振興局環境生活課
@@ -7812,10 +7815,11 @@ sources:
   verified_address_url: "https://www.hidaka.pref.hokkaido.lg.jp/hk/kks/doubutuaigokannri.html"
   kind: adoption
   species: mixed
-  mode: link_only
+  mode: recipe
+  recipe: recipes/hokkaido_hidaka-1.yaml
   enabled: true
   photo: pending
-  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。浦河・静内の保健所と環境生活課の新しい飼い主募集の節。2026-11-07 時点は 3 節とも「現在、新しい飼い主を募集している犬・猫はおりません。」。3 節が同じ文のため一つに読めず、子が載った日の作りも確認できていないので link_only。"
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。浦河・静内の保健所と環境生活課の新しい飼い主募集の節。2026-11-07 時点は 3 節とも「現在、新しい飼い主を募集している犬・猫はおりません。」。PR #104 の公開ゲートで 0 頭だけ読む recipe にした。3 節（浦河・静内・環境生活課）が同じ文のため、見出し付きで 3 つとも「現在、新しい飼い主を募集している犬・猫はおりません。」が出た日だけ 0 頭にする。子のいる日は冒頭に「現在、浦河保健所にて猫3匹の新しい飼い主を募集しております。」のように頭数が文で出るだけで個体の表は載らない（Wayback 2025-08・2026-01・2026-04・2026-07 で確認。2026-01 は静内と環境生活課が「おりません」で浦河だけ猫がいたので、1 節の文を全体の 0 頭にしない）。子の行は読めないので、子が載る日は failed で通知される。"
 - slug: hokkaido_hidaka-2
   name: 北海道 日高振興局 浦河保健所（犬猫情報）
   municipality: 北海道 日高振興局保健行政室（浦河保健所）生活衛生課
@@ -7828,10 +7832,11 @@ sources:
   verified_address_url: "https://www.hidaka.pref.hokkaido.lg.jp/hk/hgc/dog.html"
   kind: sheltered
   species: mixed
-  mode: link_only
+  mode: recipe
+  recipe: recipes/hokkaido_hidaka-2.yaml
   enabled: true
   photo: pending
-  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。浦河保健所の迷い犬・猫【犬0匹、猫0匹】・新しい飼い主さん募集【犬0匹、猫0匹】（2026-11-07 時点）。子が載った日の作りを確認できていないため link_only。"
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。浦河保健所の迷い犬・猫【犬0匹、猫0匹】・新しい飼い主さん募集【犬0匹、猫0匹】（2026-11-07 時点）。PR #104 の公開ゲートで 0 頭だけ読む recipe にした。根拠は見出し「迷い犬・猫の情報【犬0匹、猫0匹】」と「新しい飼い主さん募集【犬0匹、猫0匹】」が両方 0 の日。子のいる日は見出しが「【犬0匹、猫2匹】」になり本文は書式の揃わない p（Wayback 2024-11・2025-08 で確認）。子の行は読まず、見出しが変われば failed で通知される。"
 - slug: hokkaido_tokachi-1
   name: 北海道 十勝総合振興局（犬猫の新しい飼い主募集）
   municipality: 北海道 十勝総合振興局環境生活課
@@ -7861,10 +7866,11 @@ sources:
   verified_address_url: "https://www.tokachi.pref.hokkaido.lg.jp/hk/hgc/maigonoinuneko.html"
   kind: stray
   species: mixed
-  mode: link_only
+  mode: recipe
+  recipe: recipes/hokkaido_tokachi-2.yaml
   enabled: true
   photo: pending
-  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。迷子の犬猫のページ。2026-11-07 時点は「現在、保護している犬猫はいません。」。子が載った日の作りを確認できていないため link_only。"
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。迷子の犬猫のページ。2026-11-07 時点は「現在、保護している犬猫はいません。」。PR #104 の公開ゲートで 0 頭だけ読む recipe にした。根拠は「現在、保護している犬猫はいません。」（1 節だけのページ）。子が載った日の作りは未確認で子の行は読まず、文が消えれば failed で通知される。"
 - slug: hokkaido_kushiro-1
   name: 北海道 釧路総合振興局（保健所収容中の犬猫）
   municipality: 北海道 釧路総合振興局環境生活課
@@ -7894,10 +7900,11 @@ sources:
   verified_address_url: "https://www.kushiro.pref.hokkaido.lg.jp/hk/hgc/seikatuweb/kannkyouweb/175327.html"
   kind: stray
   species: mixed
-  mode: link_only
+  mode: recipe
+  recipe: recipes/hokkaido_kushiro-2.yaml
   enabled: true
   photo: pending
-  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。迷子の犬・猫のページ。2026-11-07 時点は「犬0頭、猫0頭」。子が載った日の作りを確認できていないため link_only。"
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。迷子の犬・猫のページ。2026-11-07 時点は「犬0頭、猫0頭」。PR #104 の公開ゲートで 0 頭だけ読む recipe にした。根拠は見出し 3 つ「犬0頭、猫0頭」「犬（0頭）」「猫(今はいません）」が全部そろった日。子が載った日の作りは未確認で子の行は読まず、どれかが変われば failed で通知される。"
 - slug: hokkaido_nemuro-1
   name: 北海道 根室振興局（犬猫の情報・中標津保健所）
   municipality: 北海道 根室振興局環境生活課自然環境係
@@ -7927,10 +7934,11 @@ sources:
   verified_address_url: "https://www.nemuro.pref.hokkaido.lg.jp/hk/hgc/topmenu10.html"
   kind: sheltered
   species: mixed
-  mode: link_only
+  mode: recipe
+  recipe: recipes/hokkaido_nemuro-2.yaml
   enabled: true
   photo: pending
-  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。根室保健所の迷い犬・猫・新しい飼い主募集の案内。2026-11-07 時点は「現在、迷子の犬・猫はいません。」「現在、飼い主を募集している犬・猫はいません。」。子が載った日の作りを確認できていないため link_only。"
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。根室保健所の迷い犬・猫・新しい飼い主募集の案内。2026-11-07 時点は「現在、迷子の犬・猫はいません。」「現在、飼い主を募集している犬・猫はいません。」。PR #104 の公開ゲートで 0 頭だけ読む recipe にした。根拠は 2 節の見出し「現在、迷子の犬・猫はいません。」「現在、飼い主を募集している犬・猫はいません。」が両方出た日。子が載った日の作りは未確認で子の行は読まず、どちらかが消えれば failed で通知される。"
 - slug: hokkaido_nemuro-3
   name: 北海道 根室振興局 中標津保健所（犬猫情報）
   municipality: 北海道 根室振興局中標津地域保健室（中標津保健所）企画総務課
@@ -7976,10 +7984,11 @@ sources:
   verified_address_url: "https://www.oshima.pref.hokkaido.lg.jp/hk/hgc/210628.html"
   kind: sheltered
   species: mixed
-  mode: link_only
+  mode: recipe
+  recipe: recipes/hokkaido_oshima-2.yaml
   enabled: true
   photo: pending
-  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。渡島保健所の犬猫情報。2026-11-07 時点は「現在収容している犬猫はいません。」。子が載った日の作りを確認できていないため link_only。"
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。渡島保健所の犬猫情報。2026-11-07 時点は「現在収容している犬猫はいません。」。PR #104 の公開ゲートで 0 頭だけ読む recipe にした。根拠は h2「迷子の犬猫」直下の「現在収容している犬猫はいません。」（新しい飼い主募集の節は環境生活課のページへのリンクだけで個体は載らない）。子が載った日の作りは未確認で子の行は読まず、文が消えれば failed で通知される。"
 - slug: hokkaido_oshima-3
   name: 北海道 渡島総合振興局 八雲保健所（犬・猫の収容情報）
   municipality: 北海道 渡島総合振興局八雲地域保健室（八雲保健所）生活衛生課
@@ -7992,10 +8001,11 @@ sources:
   verified_address_url: "https://www.oshima.pref.hokkaido.lg.jp/hk/ykh/inunekojouhou.html"
   kind: sheltered
   species: mixed
-  mode: link_only
+  mode: recipe
+  recipe: recipes/hokkaido_oshima-3.yaml
   enabled: true
   photo: pending
-  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。八雲保健所の収容情報。見出しは「現在収容中の犬・猫はいません（令和8年(2025年)2月6日現在）」で、年が現在（2026）と合わず更新が止まっている疑いがある（原文のまま）。子が載った日の作りを確認できていないため link_only。"
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。八雲保健所の収容情報。見出しは「現在収容中の犬・猫はいません（令和8年(2025年)2月6日現在）」で、年が現在（2026）と合わず更新が止まっている疑いがある（原文のまま）。PR #104 の公開ゲートで 0 頭だけ読む recipe にした。根拠は見出し「現在収容中の犬・猫はいません」（日付は根拠にしない。令和8年(2025年)2月6日のまま更新が止まっている疑いがあり、現在の状況かは未確認）。子が載った日の作りは未確認で子の行は読まず、見出しが変われば failed で通知される。"
 - slug: hokkaido_hiyama-1
   name: 北海道 檜山振興局 江差保健所（保健所にいる犬・猫 情報）
   municipality: 北海道 檜山振興局保健行政室（江差保健所）企画総務課
@@ -8008,10 +8018,11 @@ sources:
   verified_address_url: "https://www.hiyama.pref.hokkaido.lg.jp/hk/hgc/eisei/dog/mayoiinuneko.html"
   kind: sheltered
   species: mixed
-  mode: link_only
+  mode: recipe
+  recipe: recipes/hokkaido_hiyama-1.yaml
   enabled: true
   photo: pending
-  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。江差保健所の迷い犬・猫と飼い主募集中の犬・猫（令和8年（2026年）5月21日現在で犬0頭、猫0頭）。更新日が半年前で現在の状況かは未確認。子が載った日の作りを確認できていないため link_only。檜山振興局環境生活課の旧ページ（/hk/kks/sizen/kainusisagasi/139880.html）は 2026-11-07 時点で HTTP 404 だが、同じ課の「犬猫の新しい飼い主さん募集中！」は /hk/kks/a0003/b0006/kainusisagasi/139924.html に移っていて HTTP 200（2026-11-07 に確認）。その移転先は hokkaido_hiyama-2 で足した。"
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。江差保健所の迷い犬・猫と飼い主募集中の犬・猫（令和8年（2026年）5月21日現在で犬0頭、猫0頭）。更新日が半年前で現在の状況かは未確認。檜山振興局環境生活課の旧ページ（/hk/kks/sizen/kainusisagasi/139880.html）は 2026-11-07 時点で HTTP 404 だが、同じ課の「犬猫の新しい飼い主さん募集中！」は /hk/kks/a0003/b0006/kainusisagasi/139924.html に移っていて HTTP 200（2026-11-07 に確認）。その移転先は hokkaido_hiyama-2 で足した。PR #104 の公開ゲートで 0 頭だけ読む recipe にした。根拠は h4「迷い犬・猫」と h4「飼い主募集中の犬・猫」の両方の直下に「犬0頭、猫0頭」が出た日。子が載った日の作りは未確認で子の行は読まず、どちらかが変われば failed で通知される。"
 - slug: hokkaido_hiyama-2
   name: 北海道 檜山振興局 環境生活課（犬猫の新しい飼い主さん募集中）
   municipality: 北海道 檜山振興局保健環境部環境生活課
@@ -8073,10 +8084,11 @@ sources:
   verified_address_url: "https://www.kamikawa.pref.hokkaido.lg.jp/hk/nth/kakupage/catdog.html"
   kind: sheltered
   species: mixed
-  mode: link_only
+  mode: recipe
+  recipe: recipes/hokkaido_kamikawa-3.yaml
   enabled: true
   photo: pending
-  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。名寄保健所の現在の収容頭数（犬：計０頭、猫：計０頭）。「現在、準備中です。公開まで今しばらくお待ちください。」の注記あり（2026-11-07 時点）。子が載った日の作りを確認できていないため link_only。"
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。名寄保健所の現在の収容頭数（犬：計０頭、猫：計０頭）。「現在、準備中です。公開まで今しばらくお待ちください。」の注記あり（2026-11-07 時点）。PR #104 の公開ゲートで 0 頭だけ読む recipe にした。根拠は h2「現在の収容頭数」直下の「犬：計０頭 猫：計０頭」。子が載った日の作りは未確認で子の行は読まず、頭数が変われば failed で通知される。"
 - slug: hokkaido_kamikawa-4
   name: 北海道 上川総合振興局 富良野保健所（迷い犬・猫、飼い主募集中の犬・猫）
   municipality: 北海道 上川総合振興局富良野地域保健室（富良野保健所）生活衛生課
@@ -8089,10 +8101,11 @@ sources:
   verified_address_url: "https://www.kamikawa.pref.hokkaido.lg.jp/hk/fth/inuneko.html"
   kind: sheltered
   species: mixed
-  mode: link_only
+  mode: recipe
+  recipe: recipes/hokkaido_kamikawa-4.yaml
   enabled: true
   photo: pending
-  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。富良野保健所の迷い犬猫・飼い主募集中の犬猫。2026-11-07 時点は迷子・募集とも「今はいません」。上川総合振興局環境生活課の表では富良野保健所の犬が 2 頭とあり食い違う（どちらが新しいかは未確認）。子が載った日の作りを確認できていないため link_only。"
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。富良野保健所の迷い犬猫・飼い主募集中の犬猫。2026-11-07 時点は迷子・募集とも「今はいません」。上川総合振興局環境生活課の表では富良野保健所の犬が 2 頭とあり食い違う（どちらが新しいかは未確認）。PR #104 の公開ゲートで 0 頭だけ読む recipe にした。根拠は h2「迷い犬猫の情報」と h2「飼い主募集中の犬猫」の両方の直下に「今はいません」が出た日。子が載った日の作りは未確認で子の行は読まず、どちらかが消えれば failed で通知される。"
 - slug: hokkaido_rumoi-1
   name: 北海道 留萌振興局（新しい家族を探している犬・猫）
   municipality: 北海道 留萌振興局環境生活課自然環境係
@@ -8105,10 +8118,11 @@ sources:
   verified_address_url: "https://www.rumoi.pref.hokkaido.lg.jp/hk/kks/atarashiikainushi/inuneko.html"
   kind: adoption
   species: mixed
-  mode: link_only
+  mode: recipe
+  recipe: recipes/hokkaido_rumoi-1.yaml
   enabled: true
   photo: pending
-  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。新しい飼い主を募集している犬・猫の情報。2026-11-07 時点は表の頭数が 0 匹（令和8年10月14日更新）。子が載った日の作りを確認できていないため link_only。"
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。新しい飼い主を募集している犬・猫の情報。2026-11-07 時点は表の頭数が 0 匹（令和8年10月14日更新）。PR #104 の公開ゲートで 0 頭だけ読む recipe にした。根拠は 2 つの表（現在新しい飼い主を待っている動物たち・現在預かり中の動物たち）の留萌・天塩の頭数が全部 0 の日。預かり中の表は令和7年11月14日更新のまま。猫の行にはアニウェル北海道へ移動した 2 頭の注記がある（載せない）。子が載った日の作りは未確認で子の行は読まず、頭数が変われば failed で通知される。"
 - slug: hokkaido_rumoi-2
   name: 北海道 留萌振興局 留萌保健所（犬・猫情報）
   municipality: 北海道 留萌振興局保健行政室（留萌保健所）生活衛生課
@@ -8137,10 +8151,11 @@ sources:
   verified_address_url: "https://www.souya.pref.hokkaido.lg.jp/hk/kks/bosyuu.html"
   kind: adoption
   species: mixed
-  mode: link_only
+  mode: recipe
+  recipe: recipes/hokkaido_souya-1.yaml
   enabled: true
   photo: pending
-  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。稚内保健所・浜頓別・利尻の各支所・道北センター（北見市）の募集頭数（2026-11-07 時点はすべて 0）と、飼い主さがしノートの案内。子が載った日の作りを確認できていないため link_only。"
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。稚内保健所・浜頓別・利尻の各支所・道北センター（北見市）の募集頭数（2026-11-07 時点はすべて 0）と、飼い主さがしノートの案内。PR #104 の公開ゲートで 0 頭だけ読む recipe にした。根拠は 4 か所（稚内保健所・浜頓別地域保健支所・利尻地域保健支所・道北センター）の募集頭数がすべて 0 の日。飼い主さがしノートの節は飼い主個人の掲載なので読まない。子が載った日の作りは未確認で子の行は読まず、頭数が変われば failed で通知される。"
 - slug: hokkaido_souya-2
   name: 北海道 宗谷総合振興局（負傷犬猫の保護情報）
   municipality: 北海道 宗谷総合振興局環境生活課
@@ -8153,10 +8168,11 @@ sources:
   verified_address_url: "https://www.souya.pref.hokkaido.lg.jp/hk/kks/bosyuu.html"
   kind: sheltered
   species: mixed
-  mode: link_only
+  mode: recipe
+  recipe: recipes/hokkaido_souya-2.yaml
   enabled: true
   photo: pending
-  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。負傷のため保護された犬猫の表（番号・種類・推定年齢・毛色・性別・写真・保護年月日・場所）。2026-11-07 時点は見出しの行だけで子の行が無い。ページの更新日は 2025-01-20。子が載った日の作りを確認できていないため link_only。"
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。負傷のため保護された犬猫の表（番号・種類・推定年齢・毛色・性別・写真・保護年月日・場所）。2026-11-07 時点は見出しの行だけで子の行が無い。ページの更新日は 2025-01-20。PR #104 の公開ゲートで 0 頭だけ読む recipe にした。根拠は表の見出しの下の欄が全部空の日（0 頭の日は空欄の行が 1 行ある雛形）。子が載った日の作りは未確認で子の行は読まず、1 つでも埋まれば failed で通知される。"
 - slug: hokkaido_okhotsk-1
   name: 北海道 オホーツク総合振興局（負傷動物の保護）
   municipality: 北海道 オホーツク総合振興局環境生活課自然環境係
@@ -8169,10 +8185,11 @@ sources:
   verified_address_url: "https://www.okhotsk.pref.hokkaido.lg.jp/hk/kks/fusyo.html"
   kind: sheltered
   species: mixed
-  mode: link_only
+  mode: recipe
+  recipe: recipes/hokkaido_okhotsk-1.yaml
   enabled: true
   photo: pending
-  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。負傷動物の保護のページ。2026-11-07 時点は「保護収容中　なし」。子が載った日の作りを確認できていないため link_only。"
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。負傷動物の保護のページ。2026-11-07 時点は「保護収容中　なし」。PR #104 の公開ゲートで 0 頭だけ読む recipe にした。根拠は h2「保護収容中　なし」。子が載った日の作りは未確認で子の行は読まず、見出しが変われば failed で通知される。"
 - slug: hokkaido_okhotsk-2
   name: 北海道 オホーツク総合振興局 網走保健所（保護犬猫情報）
   municipality: 北海道 オホーツク総合振興局保健行政室（網走保健所）生活衛生課主査（環境衛生）
@@ -8185,10 +8202,11 @@ sources:
   verified_address_url: "https://www.okhotsk.pref.hokkaido.lg.jp/hk/hgc/kankyoueisei/dog.html"
   kind: sheltered
   species: mixed
-  mode: link_only
+  mode: recipe
+  recipe: recipes/hokkaido_okhotsk-2.yaml
   enabled: true
   photo: pending
-  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。網走保健所の表（迷い犬 0・迷い猫 0・飼い主募集中の犬 0・飼い主募集中の猫 0。2026-11-07 時点）と、環境生活課・北見・紋別保健所で保護している動物のリンク。子が載った日の作りを確認できていないため link_only。"
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。網走保健所の表（迷い犬 0・迷い猫 0・飼い主募集中の犬 0・飼い主募集中の猫 0。2026-11-07 時点）と、環境生活課・北見・紋別保健所で保護している動物のリンク。PR #104 の公開ゲートで 0 頭だけ読む recipe にした。根拠は表 4 行（迷い犬・迷い猫・飼い主募集中の犬・飼い主募集中の猫）が全部 0 の日。子が載った日の作りは未確認で子の行は読まず、どれかが変われば failed で通知される。"
 - slug: hokkaido_okhotsk-3
   name: 北海道 オホーツク総合振興局 北見保健所（迷子の犬猫情報）
   municipality: 北海道 オホーツク総合振興局北見地域保健室（北見保健所）生活衛生課
@@ -8201,10 +8219,11 @@ sources:
   verified_address_url: "https://www.okhotsk.pref.hokkaido.lg.jp/hk/kth/192359.html"
   kind: stray
   species: mixed
-  mode: link_only
+  mode: recipe
+  recipe: recipes/hokkaido_okhotsk-3.yaml
   enabled: true
   photo: pending
-  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。北見保健所の迷子の犬猫。2026-11-07 時点は「令和８年９月２９日（火）時点　犬０頭　猫０匹」「現在、迷子の犬猫はいません。」で、日付が 1 か月以上前。子が載った日の作りは h4「番号：R8-9-1」に残骸があるが確認できていないため link_only。"
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。北見保健所の迷子の犬猫。2026-11-07 時点は「令和８年９月２９日（火）時点　犬０頭　猫０匹」「現在、迷子の犬猫はいません。」で、日付が 1 か月以上前。PR #104 の公開ゲートで 0 頭だけ読む recipe にした。根拠は h3「…時点 犬０頭 猫０匹」（日付は毎回変わるので根拠にしない。9/29 のまま更新が止まっている可能性があり、現在の状況かは未確認）と h4 の下の「現在、迷子の犬猫はいません。」が両方出た日。子が載った日の作りは未確認で子の行は読まず、どちらかが消えれば failed で通知される。"
 - slug: hokkaido_okhotsk-4
   name: 北海道 オホーツク総合振興局 紋別保健所・遠軽支所（飼い主募集中の犬・猫）
   municipality: 北海道 オホーツク総合振興局紋別地域保健室（紋別保健所）企画総務課

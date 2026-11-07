@@ -44,9 +44,13 @@ def test_registry_all_pending_photo_and_modes():
             assert s.recipe_path.exists(), slug
     recipes = sorted(k for k, v in HOKKAIDO.items() if v.mode == "recipe")
     assert recipes == [
-        "hokkaido_iburi-1", "hokkaido_ishikari-1", "hokkaido_ishikari-2", "hokkaido_ishikari-3", "hokkaido_kamikawa-1",
-        "hokkaido_kushiro-1", "hokkaido_nemuro-1", "hokkaido_okhotsk-4", "hokkaido_okhotsk-5", "hokkaido_oshima-1", "hokkaido_shiribeshi-1", "hokkaido_sorachi-1",
-        "hokkaido_tokachi-1",
+        "hokkaido_hidaka-1", "hokkaido_hidaka-2", "hokkaido_hiyama-1", "hokkaido_iburi-1", "hokkaido_iburi-3",
+        "hokkaido_ishikari-1", "hokkaido_ishikari-2", "hokkaido_ishikari-3", "hokkaido_kamikawa-1",
+        "hokkaido_kamikawa-3", "hokkaido_kamikawa-4", "hokkaido_kushiro-1", "hokkaido_kushiro-2", "hokkaido_nemuro-1",
+        "hokkaido_nemuro-2", "hokkaido_okhotsk-1", "hokkaido_okhotsk-2", "hokkaido_okhotsk-3", "hokkaido_okhotsk-4",
+        "hokkaido_okhotsk-5", "hokkaido_oshima-1", "hokkaido_oshima-2", "hokkaido_oshima-3", "hokkaido_rumoi-1",
+        "hokkaido_shiribeshi-1", "hokkaido_shiribeshi-2", "hokkaido_sorachi-1", "hokkaido_sorachi-4",
+        "hokkaido_souya-1", "hokkaido_souya-2", "hokkaido_tokachi-1", "hokkaido_tokachi-2",
     ]
 
 
