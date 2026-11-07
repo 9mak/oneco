@@ -312,6 +312,7 @@ sources:
   mode: link_only
   recipe: recipes/pref_saga-6.yaml
   enabled: true
+  note: "2026-11-07 W006 確認: このページ（県の「譲渡犬・猫情報」）に個体の一覧は無い。譲渡できる犬猫は Facebook（譲渡犬・譲渡猫の 2 ページ）・X（isshokennnesaga）・Instagram（isshokennesaga）で紹介すると本文にあり、「アカウントをお持ちでない場合は見られないこともあります」と断っている。「いっしょけんね」の紹介ページ（kiji00315040）にも一覧は無い。SNS はログイン壁と各社の規約のため取りに行かない（個別の確認はしていない）。取れないと確定。link_only のまま（県の案内ページへのリンク）"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_saga.py
     requires_js: false
@@ -1553,7 +1554,7 @@ sources:
   prefecture: 奈良県
   phone: null
   address: null
-  note: "2026-10-30 収容動物の記事（soshiki/97/222574.html「迷子犬・迷子猫をお探しの方へ」）が 10/16 から 404。旧入口（/life/4/34/134/「ペットの飼養・届出」一覧）からは記事へのリンク文字が消え、市の案内ページ「ペットが迷子になったときは」（soshiki/97/8478.html・2026-01-30 更新）と環境省のリンク集は 222574 を指したまま。読む先が無いので、記事が戻るまでは案内ページへのリンクだけを載せる（W006 T624 見守り運転の確認）。記事が戻ったら mode を recipe に戻す（レシピは案内ページから記事のリンクを辿る）。2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
+  note: "2026-11-07 W006 再確認: 収容動物の記事（soshiki/97/222574.html）は今日も 404 で、案内ページ（soshiki/97/8478.html）のリンクは 222574 のまま。市サイトの「ペット・動物」（life/4/34/ と 134・135・136）・保健衛生課（soshiki/97/ とその 2 ページ目）・サイトマップに収容動物の新しいページは無い。別に「飼い主さん募集中！犬・猫の譲渡」（soshiki/97/10799.html・2026-10-16 更新）があるが、写真だけで名前は画像の alt、種別・性別・年齢の文字が無く、迷子ではなく譲渡の掲載なので、この slug では読まない。取れないと確定（記事が戻ったら mode を recipe に戻す。レシピは案内ページから記事のリンクを辿る）。2026-10-30 収容動物の記事（soshiki/97/222574.html「迷子犬・迷子猫をお探しの方へ」）が 10/16 から 404（W006 T624 見守り運転の確認）。読む先が無いので、記事が戻るまでは案内ページへのリンクだけを載せる。2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
   url: https://www.city.nara.lg.jp/soshiki/97/8478.html
   kind: sheltered
   species: mixed
@@ -2454,9 +2455,10 @@ sources:
   verified_phone_url: "https://www.city.nagoya.jp/kurashi/pet/1015473/1015489/1015494.html"
   kind: adoption
   species: dog
-  mode: link_only
+  mode: recipe
   recipe: recipes/city_nagoya-2.yaml
   enabled: true
+  note: "2026-11-07 W006 link_only をやめて 0 頭を読む。ページは「長期にわたり当センターで収容している犬を紹介します」と書くが、2025-12-10・2026-04-19・2026-07-10（Wayback）と 2026-11-07 の 4 版とも犬を 1 頭も載せていない（1 節は譲渡ボランティアの案内、2 節は説明文だけ。写真・表・小見出しなし）。犬は譲渡ボランティアに渡され各ボランティアのページで募集される。犬が載った日の作りは未確認。載った日は 0 頭にならず failed で通知され、そのときレシピに rows を足す（recipes/city_nagoya-2.yaml）。写真は規約の返事待ち（photo: pending）"
   photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_nagoya.py
@@ -3662,6 +3664,7 @@ sources:
   mode: link_only
   recipe: recipes/pref_fukui.yaml
   enabled: true
+  note: "2026-11-07 W006 確認: このページ（県の「新たな飼い主を募集している犬・猫について」・最終更新 2025-06-05）自体に動物は載らず、犬・猫のリンクが fapscsite.com/adoptable_animal/animal_kind/dog・cat（ふくい動物愛護管理支援センター協会のサイト）に飛ぶだけ。同じ譲渡の一覧を fapscsite-2（recipe）が読んでいて今日も読めているので、ここを読むと二重になる。対象外と確定。link_only のまま（県の案内ページへのリンク）"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_fukui.py
     requires_js: false
@@ -4499,6 +4502,7 @@ sources:
   mode: link_only
   recipe: recipes/spec_city_nagasaki_lg-1.yaml
   enabled: true
+  note: "2026-11-07 W006 確認: 一覧ページ list7-19 は個別の記事 1 本（2794.html「引き取り犬（保護犬）の見学 受付中」）へのリンクだけ。記事は見学の案内文で、いま募集中の犬の個体情報は無い（「新しい飼い主（里親）が見つかりました」に譲渡済みの 5 頭の写真と名前、「引き取り犬（飼い犬）」は「公開準備中」）。迷子保護の情報はセンターの X に載せると記事にある。follow_all で辿っても読める個体が無いので取れないと確定。link_only・写真 pending のまま"
   photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/city_nagasaki_lg.yaml
@@ -4521,6 +4525,7 @@ sources:
   mode: link_only
   recipe: recipes/spec_city_nagasaki_lg-2.yaml
   enabled: true
+  note: "2026-11-07 W006 確認: 一覧ページ list7-18 は個別の記事 1 本（4368.html「猫の里親 募集中 見学できます」）へのリンクだけ。記事は案内文で、写真 6 枚は「動物愛護管理センターの猫たち（現在収容中の猫とは異なります）」と断ってあり、募集中の個体の情報ではない。follow_all で辿っても読める個体が無いので取れないと確定。link_only・写真 pending のまま"
   photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/city_nagasaki_lg.yaml
@@ -4651,6 +4656,7 @@ sources:
   mode: recipe
   recipe: recipes/city_takamatsu_kagawa-1.yaml
   enabled: true
+  note: "2026-11-07 W006 確認: 一覧 URL（/udanimo/ani_infolist1.html）は今日も 404、入口 /udanimo/ani_top.html は保守・拒否ページ（incapsula）。市の告知（kurashi/shinotorikumi/koho/oshirase/webmaintenance.html・2026-11-04 更新）が「システムの安全性への対応のため」「高松市動物情報サイト「わんにゃん高松」」の公開を一時停止中とし、再開は「対応が完了次第」とだけ書く。市サイトの「動物・ペット」（kurashi/kurashi/pet/）と「高松市動物管理ステーション」のページは一覧を持たず、リンクはすべて /udanimo/ 向き。代わりの PDF・新 URL は見つからなかった。取れないと確定（公開停止中）。再開を検知できるよう recipe のまま残す（停止中は failed が続く）"
   photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_takamatsu_kagawa.py
@@ -4673,6 +4679,7 @@ sources:
   mode: recipe
   recipe: recipes/city_takamatsu_kagawa-2.yaml
   enabled: true
+  note: "2026-11-07 W006 確認: 一覧 URL（/udanimo/ani_infolist1.html?infotype=1&animaltype=2）は今日も 404、入口は保守・拒否ページ（incapsula）。市が「システムの安全性への対応のため」わんにゃん高松の公開を一時停止中（告知 2026-11-04 更新・再開は対応完了次第）。市サイト内に代わりのページ・PDF は見つからなかった（詳細は city_takamatsu_kagawa-1）。取れないと確定（公開停止中）。再開を検知できるよう recipe のまま残す（停止中は failed が続く）"
   photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_takamatsu_kagawa.py
@@ -4999,7 +5006,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_iwate_ofunato-2.yaml
   enabled: true
-  note: pref_iwate_ofunato と同じページの「元の飼い主を探しています」の節だけ（2026-10-05 T517）。節に動物種の欄が無いので species は cat 固定（犬が載る日は未確認）
+  note: pref_iwate_ofunato と同じページの「元の飼い主を探しています」の節だけ（2026-10-05 T517）。節に動物種の欄が無いので species は cat 固定（犬が載る日は未確認。2026-11-07 W006 子のいない日は県のページから迷子の節ごと消え 0 頭の文言も出ないので、empty_absent（本文の h1 があり迷子の節の見出し・写真が無い日）で 0 頭と読む（10/20 から 19 日 failed が続いていた））
 - slug: pref_iwate_kamaishi
   name: 岩手県（釜石保健所 保護犬猫）
   municipality: 釜石保健所
