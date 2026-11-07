@@ -5,6 +5,10 @@
 # 動物種の欄が無い（発見場所・発見日・性別・模様・備考だけ）ので、種別は台帳の species: cat に固定（ページ名は「保護猫」。犬が載る日は未確認）。
 # 0 頭の日の文言は同じ CMS の県央保健所の実例（「現在、元の飼い主さんを探している動物は保護されていません」）から推測した。大船渡では未確認（今日は 1 頭）。
 #   外れたら「読めなかった」扱いで通知される側に倒れる。この文言は譲渡の節には出ないので、迷子だけの 0 頭を言い当てられる。
+# 2026-11-07 W006: 迷子の子がいなくなった日（10/20 から）、今の県のページは迷子の節ごと消え、0 頭の文言も出さない（実ページ 2026-11-07・
+#   last_ok 2026-10-19 の 1 頭の日と比べた）ので empty_text が当たらず 19 日 failed が続いていた。節ごと消える日を empty_absent で 0 頭にする:
+#   page = 本文の h1 がある（ブロック画面・作り替えの日は枠が無く failed）、none = 迷子の節の見出し（探して・飼い主を）と、【譲渡】以外の h2 の
+#   すぐ後ろの写真（見出しの言い回しが変わった迷子の節）が 1 つも無い。譲渡の節・最近の保護動物さん・催しの h2 は none に入れない（毎日出る）。
 #   image の h2 も迷子の節に絞った（譲渡側と対称。節の順が入れ替わっても、他の節の写真を拾わない）。
 rows: "h2:-soup-contains('を探しています') + p:has(> img) + p"
 image: {selector: "h2:-soup-contains('を探しています') + p:has(> img) img@src", scope: prev_siblings, stop_at: row, exclude: ["ireisai"]}
@@ -21,3 +25,8 @@ fields:
 empty_text:
   - "現在、元の飼い主さんを探している動物は保護されていません"
   - "現在、もとの飼主さんを待っている動物はおりません"
+empty_absent:
+  page: "div#voice h1:-soup-contains('大船渡保健所保護動物情報')"
+  none: >-
+    div#voice h2:-soup-contains('探して'), div#voice h2:-soup-contains('飼い主を'), div#voice h2:-soup-contains('飼主を'),
+    div#voice h2:not(:-soup-contains('【譲渡')) + p:has(> img), div#voice h2:not(:-soup-contains('【譲渡')) + figure
