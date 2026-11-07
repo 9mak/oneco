@@ -2,7 +2,7 @@
 
 毎日 JST 0:05 に収集サーバー（手元の Mac の launchd。控えは VPS）が全自治体のページを読み、静的サイトを作り直して Cloudflare Workers（静的アセット）に置く。人がやるのは「通知が来た日に見る」「新しい自治体の通知（週 1 回・増減があるときだけ）が来たらセッションで台帳への追加を頼む」「撤去依頼が来たら台帳を 1 行直す」の 3 つ。
 
-公開 URL は `https://oneco.9mak-0x13.workers.dev`（`site/config.json` の `base_url`。独自ドメインを付けたらここも変える）。
+公開 URL は `https://oneco.pet`（`site/config.json` の `base_url`。2026-11-08 に独自ドメインへ切り替え、W006 T073）。旧 URL `https://oneco.9mak-0x13.workers.dev` も同じ中身を配信し続ける（自治体への写真許諾の依頼メール〔T630〕に書いたので止めない・転送もしない。canonical は oneco.pet を指す）。
 
 ## 1. 初期設定（1 回だけ）
 
@@ -13,7 +13,7 @@
 1. 認証: 手元の Mac なら `npx wrangler login`（ブラウザで許可。OAuth が `~/Library/Preferences/.wrangler/config/default.toml` に保存され、以後 `CLOUDFLARE_API_TOKEN` は不要）。別マシンなら My Profile → API Tokens → Create Token → Custom token → `Account / Workers Scripts / Edit` で作り `CLOUDFLARE_API_TOKEN` に入れる（作った直後の 1 回しか表示されない）
 2. **Account ID**: `npx wrangler whoami` の表に出る 32 桁。`CLOUDFLARE_ACCOUNT_ID`
 3. 初回 deploy: `npx wrangler deploy --config v2/ops/wrangler.jsonc`。URL は `https://oneco.<サブドメイン>.workers.dev`（`oneco.pages.dev` は他人が使っていて取れない）
-4. 独自ドメインを付けるなら ダッシュボード → Workers & Pages → oneco → Settings → Domains & Routes → Add → Custom domain（ゾーンが Cloudflare にあれば DNS は自動）
+4. 独自ドメインは `ops/wrangler.jsonc` の `routes` に `{"pattern": "oneco.pet", "custom_domain": true}` で書いてあり、deploy のたびに付け直される（ゾーンが同じアカウントの Cloudflare にあり Active であることが前提。DNS と証明書は Cloudflare が自動で作る）。`"workers_dev": true` は消さない（routes があると既定値が false になり、旧 URL が止まる）。API トークンで deploy する別マシンでは、トークンに `Zone / Workers Routes / Edit` と `Zone / Zone / Read` も要る
 5. `ONECO_PAGES_PROJECT` は Worker 名（`oneco`）。collect.sh はこの名前で `wrangler deploy` する
 
 ### 1-2. 収集サーバー

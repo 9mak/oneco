@@ -36,7 +36,7 @@ body:
     id: target_url
     attributes:
       label: 対象 URL（撤去・修正してほしいページ）
-      placeholder: https://oneco.9mak-0x13.workers.dev/animals/...
+      placeholder: https://oneco.pet/animals/...
     validations:
       required: true
 
