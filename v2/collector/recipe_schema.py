@@ -47,7 +47,7 @@ SUBMIT_FORM_KEYS = {"form", "set", "require", "repeat_while", "max"}
 MAX_FORM_SET = 20
 RENDER_KEYS = {"wait_for", "wait_ms"}
 RENDER_JSON_KEYS = {"match", "path", "follow", "max", "render"}
-ROW_FILTER_KEYS = {"text_has_any", "text_lacks", "min_text_length", "field_lacks", "field_has_any"}
+ROW_FILTER_KEYS = {"text_has_any", "text_lacks", "min_text_length", "field_lacks", "field_has_any", "field_required"}
 IMAGE_KEYS = {"selector", "exclude", "scope", "stop_at", "strip_query", "match_field"}
 FIELD_SPEC_KEYS = {
     "selector", "attr", "label", "regex", "default", "index", "header", "header_row", "from", "join", "sep",
@@ -400,7 +400,7 @@ def validate_recipe_dict(raw: dict[str, Any], source_url: str) -> list[str]:
         for k in ("text_has_any", "text_lacks"):
             if k in rf:
                 c.str_list(f"row_filter.{k}", rf[k])
-        for k in ("field_lacks", "field_has_any"):
+        for k in ("field_lacks", "field_has_any", "field_required"):
             if k in rf:
                 fl = rf[k]
                 if not isinstance(fl, dict):
