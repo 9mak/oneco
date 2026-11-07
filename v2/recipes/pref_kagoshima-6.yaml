@@ -20,5 +20,5 @@ fields:
   management_no: {label: "No"}
   sex: {label: "性別"}
   age: {label: ["推定年齢", "年齢"]}
-  note: {join: [{label: "備考"}, {regex: "(掲載日\\s*\\d+年\\d+月\\d+日)"}, {regex: "(お問い合わせ先\\s*\\S+（[0-9\\-]+）)"}], sep: "　"}
+  note: {join: [{regex: "(掲載日\\s*\\d+年\\d+月\\d+日)"}, {regex: "(お問い合わせ先\\s*\\S+（[0-9\\-]+）)"}], sep: "　"}
 empty_text: ["検索条件に一致する情報が見つかりませんでした"]

@@ -16,7 +16,7 @@ steps:
 rows: "table.t-jouto"
 image: {selector: "a.popup-image img@src", scope: prev_siblings}
 row_filter:
-  text_lacks: ["帰りました", "戻りました"]
+  text_lacks: ["帰りました", "戻りました", "返還", "お返し", "飼い主が見つか", "飼主が見つか", "見つかりました", "解決"]
 fields:
   management_no: {label: "No"}
   sex: {label: "性別"}

@@ -56,7 +56,7 @@ def test_lost_posts_keep_posting_date_with_body():
     assert c.status == "ok", c.error
     first = next(a for a in c.result.animals if a["management_no"] == "26C0481")
     assert "掲載日 2026年11月05日" in first["note"]
-    assert "黒白の長毛" in first["note"]          # 迷子の特徴は探す手がかりなので残す
+    assert "黒白の長毛" not in first["note"]      # 備考は探す本人の自由記述（電話・氏名が入りうる）なので読まない（f02）
     last = next(a for a in c.result.animals if a["management_no"] == "25C0592")
     assert "掲載日 2026年02月03日" in last["note"]
 
