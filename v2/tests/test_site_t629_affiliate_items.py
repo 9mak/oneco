@@ -90,8 +90,40 @@ def test_real_config_items_are_well_formed():
     for item in items:
         assert item["title"].strip()
         assert urlsplit(item["url"]).hostname == "px.a8.net"
-        assert item.get("species") in {None, "dog", "cat"}
+        species = item.get("species")
+        assert species is None or set(species if isinstance(species, list) else [species]) <= {"dog", "cat"}
         beacon = urlsplit(item["beacon"])
         assert beacon.scheme == "https" and str(beacon.hostname).endswith(".a8.net")
         # 計測用画像は同じ広告のものだけ
         assert item["url"].split("a8mat=")[1] == item["beacon"].split("a8mat=")[1]
+
+
+def _about(tmp_path: Path, items: list[dict[str, Any]]) -> str:
+    _build(tmp_path, items)
+    return (tmp_path / "dist" / "about" / "index.html").read_text(encoding="utf-8")
+
+
+def test_species_can_be_a_list_and_other_pages_get_no_box(tmp_path: Path):
+    animals_item = {**BOTH, "species": ["dog", "cat"]}
+    pages = _build(tmp_path, [animals_item])
+    assert "用品店" in pages["dog000000001"] and "用品店" in pages["cat000000001"]
+    assert "迎える準備" not in pages["non000000001"] and PR_TEXT not in pages["non000000001"]
+
+
+def test_box_text_says_what_the_ads_are(tmp_path: Path):
+    pages = _build(tmp_path, [DOG_ONLY])
+    page = pages["dog000000001"]
+    assert "最初の数日に要るもの" not in page
+    assert "迎えたあとに使うものの広告です" in page and "収入はサイトの運営費に充てます" in page
+
+
+def test_about_does_not_claim_the_ads_already_cover_the_costs_and_names_a8(tmp_path: Path):
+    about = _about(tmp_path, [DOG_ONLY])
+    assert "まかなっています" not in about
+    assert "運営費をまかなうため" in about and "広告（アフィリエイト）リンクを載せています" in about
+    assert "A8.net" in about and "閲覧の情報が送られます" in about
+
+
+def test_about_without_ads_is_unchanged(tmp_path: Path):
+    about = _about(tmp_path, [])
+    assert "いまは広告を載せていません" in about and "A8.net" not in about

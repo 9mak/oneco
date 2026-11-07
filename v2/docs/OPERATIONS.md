@@ -133,7 +133,7 @@ AI は案を書くだけ。案は `collector propose` が draft PR にし、**�
 | 項目 | やること | 反映先 |
 | --- | --- | --- |
 | 独自ドメイン | ドメインを取り、Cloudflare にゾーンを作って Workers & Pages → oneco → Settings → Domains & Routes → Custom domain で付ける | `site/config.json` の `base_url` を新ドメインに変える（canonical・OG・sitemap が変わる） |
-| アフィリエイト | Amazon アソシエイト等に申し込み、承認後にリンクを作る | `site/config.json` の `affiliate` に `{"title","url","note","species","beacon"}` を入れる（species は dog か cat で、省略するとどの子にも出す。beacon は A8 の広告コードの計測用画像の URL で省略可）。その子に出す広告が無いページには枠も PR 表示も出ない。A8 は掲載後に管理画面の「広告掲載URL管理」から掲載 URL を提出する |
+| アフィリエイト | Amazon アソシエイト等に申し込み、承認後にリンクを作る | `site/config.json` の `affiliate` に `{"title","url","note","species","beacon"}` を入れる（species は dog か cat かその一覧で、省略するとどの子にも出す。beacon は A8 の広告コードの計測用画像の URL で省略可）。その子に出す広告が無いページには枠も PR 表示も出ない。A8 は掲載後に管理画面の「広告掲載URL管理」から掲載 URL を提出する |
 | 死活監視 | 不要（GitHub Actions の `v2-deadman.yml` が公開サイトの日付を毎朝見る。1-4） | Actions で v2 deadman が緑であること |
 | 本番クローンの登録 | ターミナルで `bash v2/ops/macos/install.sh`（1-2a。`~/oneco-collect` を作って launchd の登録を入れ替える）→ `launchctl kickstart -k gui/$(id -u)/com.oneco.collect` で 1 回動かす | `~/oneco-collect/v2/logs/collect-<日付>.log` が毎日できること、サイトの日付が更新されること |
 
