@@ -14,10 +14,11 @@ steps:
       repeat_while: "a.paging_next"
       max: 30
 rows: "table.t-jouto"
-image: {selector: "a.popup-image img@src", scope: prev_siblings}
+# 写真は読まない: 探している方個人の氏名がファイル名に入りうる（ID の元にもなるので management_no を使う）。
+# 掲載日は note に残す（取り下げの印が無いので、古い掲載かどうかを読む人が分かるように。shelter_date には入れない＝「いなくなった日」と表示されるため）。
 fields:
   management_no: {label: "No"}
   sex: {label: "性別"}
   age: {label: ["推定年齢", "年齢"]}
-  note: {join: [{label: "備考"}, {regex: "(お問い合わせ先\\s*\\S+（[0-9\\-]+）)"}], sep: "　"}
+  note: {join: [{label: "備考"}, {regex: "(掲載日\\s*\\d+年\\d+月\\d+日)"}, {regex: "(お問い合わせ先\\s*\\S+（[0-9\\-]+）)"}], sep: "　"}
 empty_text: ["検索条件に一致する情報が見つかりませんでした"]

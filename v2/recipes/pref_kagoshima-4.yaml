@@ -14,9 +14,11 @@ steps:
       repeat_while: "a.paging_next"
       max: 30
 rows: "table.t-jouto"
-image: {selector: "a.popup-image img@src", scope: prev_siblings}
+# 写真は読まない: 掲載者個人の氏名がファイル名に入りうる（ID の元にもなるので management_no を使う）。
+# 子のいる日の形は未確認なので、保護場所が読めない行は動物にしない（市町村名の語が無い行を捨て、全行が捨てられた日は 0 頭にならず ok にもならない）。
 row_filter:
   text_lacks: ["帰りました", "戻りました"]
+  field_has_any: {location: ["市", "町", "村", "郡", "島"]}
 fields:
   management_no: {label: "No"}
   sex: {label: "性別"}
