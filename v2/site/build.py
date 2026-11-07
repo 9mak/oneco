@@ -23,7 +23,7 @@ config.json:
     base_url    公開 URL（OG タグ・sitemap の絶対 URL に使う）
     issues_url  取り下げ・訂正の依頼窓口（GitHub Issues）
     contact_email  GitHub アカウントの無い人向けの連絡先メール（空なら「GitHub アカウント（無料）が必要」と書く）
-    affiliate   「迎える準備」枠。[{"title": "…", "url": "https://…", "note": "…"}]。里親募集の子のページにだけ出す。空なら枠ごと出さない（about も「いまは広告を載せていません」になる）
+    affiliate   「迎える準備」枠。[{"title": "…", "url": "https://…", "note": "…", "species": "dog か cat（省略でどの子にも）", "beacon": "A8 の計測用画像の URL（省略可）"}]。里親募集の子のページにだけ出す。空なら枠ごと出さない（about も「いまは広告を載せていません」になる）
 """
 
 from __future__ import annotations
@@ -473,8 +473,14 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
         u, t = safe_url(it.get("url")), str(it.get("title") or "").strip()
         if not u or not t:
             continue
+        # 犬用品は犬のページ、猫用品は猫のページにだけ出す（species を書かない広告はどの子にも出す）
+        if it.get("species") and it.get("species") != a.get("species"):
+            continue
         note = f'<small>{esc(it.get("note"))}</small>' if it.get("note") else ""
-        aff_items.append(f'<li><a href="{esc(u)}" rel="sponsored noopener" target="_blank">{esc(t)}</a>{note}</li>')
+        # A8 の広告コードの計測用画像（1×1）。広告リンクと一緒にだけ出す
+        beacon_url = safe_url(it.get("beacon"))
+        beacon = f'<img border="0" width="1" height="1" src="{esc(beacon_url)}" alt="">' if beacon_url else ""
+        aff_items.append(f'<li><a href="{esc(u)}" rel="sponsored nofollow noopener" target="_blank">{esc(t)}</a>{note}{beacon}</li>')
     aff_html = (f'<aside class="prep"><h2>迎える準備</h2><p>迎えると決めたら、最初の数日に要るものをまとめました（広告リンクを含みます。運営費に充てています）。</p><ul>{"".join(aff_items)}</ul></aside>'
                 if aff_items else "")
     # 広告を載せるページは、広告であることをファーストビュー（写真より上）に出す（T629・A8 の提携条件・ステマ規制）
