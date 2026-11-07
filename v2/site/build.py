@@ -23,7 +23,7 @@ config.json:
     base_url    公開 URL（OG タグ・sitemap の絶対 URL に使う）
     issues_url  取り下げ・訂正の依頼窓口（GitHub Issues）
     contact_email  GitHub アカウントの無い人向けの連絡先メール（空なら「GitHub アカウント（無料）が必要」と書く）
-    affiliate   「迎える準備」枠。[{"title": "…", "url": "https://…", "note": "…"}]。里親募集の子のページにだけ出す。空なら枠ごと出さない（about も「いまは広告を載せていません」になる）
+    affiliate   「迎える準備」枠。[{"title": "…", "url": "https://…", "note": "…", "species": "dog か cat かその一覧（省略でどの子にも）", "beacon": "A8 の計測用画像の URL（省略可）"}]。里親募集の子のページにだけ出す。空なら枠ごと出さない（about も「いまは広告を載せていません」になる）
 """
 
 from __future__ import annotations
@@ -473,9 +473,16 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
         u, t = safe_url(it.get("url")), str(it.get("title") or "").strip()
         if not u or not t:
             continue
+        # 犬用品は犬のページ、猫用品は猫のページにだけ出す（species は dog か cat かその一覧。書かない広告はどの子にも出す）
+        species = it.get("species")
+        if species and a.get("species") not in (species if isinstance(species, list) else [species]):
+            continue
         note = f'<small>{esc(it.get("note"))}</small>' if it.get("note") else ""
-        aff_items.append(f'<li><a href="{esc(u)}" rel="sponsored noopener" target="_blank">{esc(t)}</a>{note}</li>')
-    aff_html = (f'<aside class="prep"><h2>迎える準備</h2><p>迎えると決めたら、最初の数日に要るものをまとめました（広告リンクを含みます。運営費に充てています）。</p><ul>{"".join(aff_items)}</ul></aside>'
+        # A8 の広告コードの計測用画像（1×1）。広告リンクと一緒にだけ出す
+        beacon_url = safe_url(it.get("beacon"))
+        beacon = f'<img border="0" width="1" height="1" src="{esc(beacon_url)}" alt="">' if beacon_url else ""
+        aff_items.append(f'<li><a href="{esc(u)}" rel="sponsored nofollow noopener" target="_blank">{esc(t)}</a>{note}{beacon}</li>')
+    aff_html = (f'<aside class="prep"><h2>迎える準備</h2><p>迎えたあとに使うものの広告です。収入はサイトの運営費に充てます。</p><ul>{"".join(aff_items)}</ul></aside>'
                 if aff_items else "")
     # 広告を載せるページは、広告であることをファーストビュー（写真より上）に出す（T629・A8 の提携条件・ステマ規制）
     pr_html = ('<p class="pr-note"><span>PR</span>このページはアフィリエイト広告を利用しています（ページ下の「迎える準備」枠）。</p>'
@@ -589,7 +596,8 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
     contact = (f'GitHub アカウントをお持ちでない方は、メール（<a href="mailto:{esc(email)}">{esc(email)}</a>）でもお受けします。'
                if email else "窓口の利用には GitHub アカウント（無料）が必要です。")
     if cfg.get("affiliate"):
-        money = "<p>サーバー代などの運営費は、里親募集の子のページにある「迎える準備」枠の広告（アフィリエイト）リンクでまかなっています。</p>"
+        money = ("<p>サーバー代などの運営費をまかなうため、里親募集の子のページの「迎える準備」枠に広告（アフィリエイト）リンクを載せています。"
+                 "広告の効果を測るため、そのページを開くと広告配信の A8.net（株式会社ファンコミュニケーションズ）に閲覧の情報が送られます。</p>")
     else:
         money = ("<p>いまは広告を載せていません。載せるときは「迎える準備」枠に広告（アフィリエイト）リンクと明示し、"
                  "収入はサーバー代などの運営費に充てます。</p>")
@@ -775,6 +783,7 @@ code{font-size:.85em;background:#eef1f4;padding:.1em .3em;border-radius:4px}
 .prep ul{padding-left:1.2em;margin:.4em 0}
 .prep li{margin:.3em 0}
 .prep small{display:block;color:var(--mute)}
+.prep img{position:absolute}
 .src-list{list-style:none;padding:0;margin:0 0 8px;display:grid;gap:8px}
 .src{display:grid;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 @media (min-width:720px){.src{grid-template-columns:2fr 1.5fr 1.2fr auto;align-items:center;gap:12px}}
