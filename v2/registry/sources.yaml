@@ -1172,7 +1172,7 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
-  note: 県内 9 保健所へのリンク集。2026-09-29 に保健所ごとに台帳へ分割した（pref_wakayama_*。和歌山市は既存の city_wakayama）
+  note: 県内 9 保健所へのリンク集。2026-09-29 に保健所ごとに台帳へ分割した（pref_wakayama_*。和歌山市は既存の city_wakayama）。2026-11-07 W006 に今のリンク集の下のページが全部台帳にあることを確かめた（橋本・岩出・海南・湯浅・新宮・新宮串本支所は犬猫の案内ページで、そこにある収容動物ページへのリンクが pref_wakayama_hashimoto・_iwade・_kainan・_yuasa・_shingu・_shingu_kushimoto の url と一致。御坊・田辺はリンク先がそのまま _gobo・_tanabe の url。和歌山市は city_wakayama の譲渡可能動物情報）。同じ和歌山市のリンク先に「迷子保護動物情報」（kurashi/kenko_iryo/1009125/1035775/1034270.html。2026-11-07 時点で保護中の小型犬 1 頭）があるが台帳に無い（別件として報告）。このハブ自体には読む個体が無いので対象外、リンクのみ
 - slug: city_koshigaya-1
   name: 越谷市（保護犬）
   municipality: 越谷市
@@ -1673,7 +1673,7 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
-  note: 本文は Instagram/Facebook へのリンクのみ
+  note: 2026-11-07 W006 に実ページで確かめ直し。本文は「動物愛護センターで保護している犬の新しい飼主さんを募集しています」の案内・電話番号・Instagram と Facebook へのリンクだけで、個体の情報（名前・性別・写真）は載っていない（画像はイメージ画像 1 枚で「譲渡後の犬猫を含みます」と注記）。読む対象が無いので対象外、リンクのみ。
 - slug: city_miyazaki-3
   name: 宮崎市（センター保護猫・飼い主募集）
   municipality: 宮崎市
@@ -1694,7 +1694,7 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
-  note: 本文は Instagram へのリンクのみ
+  note: 2026-11-07 W006 に実ページで確かめ直し。本文は「動物愛護センターで新しい飼い主さんを探している猫の一部を掲載しています」「保護番号を控えた上で電話を」の案内と Instagram へのリンクだけで、個体の情報（保護番号・名前・写真）は載っていない（画像はイメージ画像 1 枚で「譲渡後の犬猫を含みます」と注記）。読む対象が無いので対象外、リンクのみ。
 - slug: pref_toyama_niikawa
   name: 富山県（新川厚生センター 迷い犬・ねこ）
   municipality: 新川厚生センター
@@ -2113,7 +2113,7 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
-  note: 9 保健所へのリンク集。2026-09-29 に保健所ごとに台帳へ分割した（pref_iwate_*）。盛岡市保健所は個体一覧ページが無いので対象外。県のまとめページ。個体の収容先（保健所）は別のことがある
+  note: 9 保健所へのリンク集。2026-09-29 に保健所ごとに台帳へ分割した（pref_iwate_*）。盛岡市保健所は個体一覧ページが無いので対象外。県のまとめページ。個体の収容先（保健所）は別のことがある。2026-11-07 W006 に下のページが全部台帳にあることを確かめた（ハブの 9 保健所のリンクのうち、県央は pref_iwate_kennan、リンク先の 1074560 は本体 1012494 へのリンクだけの案内ページ。中部は pref_iwate_chubu、奥州は _oshu、一関は _ichinoseki と -2、大船渡は _ofunato と -2、釜石は _kamaishi、宮古は _miyako、久慈は _kuji、二戸は _ninohe。盛岡市は外部リンクで city_morioka-1・-2）。このハブ自体には読む個体が無いので対象外、リンクのみ
 - slug: pref_shimane
   name: 島根県 松江保健所（収容動物）
   municipality: 島根県 松江保健所
@@ -3465,7 +3465,7 @@ sources:
   verified_address_url: "https://www.pref.kanagawa.jp/osirase/1594/awc/lost/dog.html"
   kind: sheltered
   species: mixed
-  mode: link_only
+  mode: recipe
   recipe: recipes/pref_kanagawa-3.yaml
   enabled: true
   photo: pending
@@ -3475,7 +3475,7 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
-  note: 犬猫以外（鳥・ハムスター等）のページ。犬猫のみ扱うためリンクだけ出す
+  note: 犬猫以外（カメ・インコ等）の収容動物のページ（PDF 1 本。表は No.・収容日・掲載期限・動物・種類・毛色等・体格・性別・収容した場所・時間・首輪等・写真）。当初は「犬猫のみ扱うためリンクだけ」としていたが、犬猫以外は species other で載せる方針（他の掲載元と同じ）に合わせ、2026-11-07 W006 に recipe にした。Wayback の PDF（2025-05・2025-06・2026-10-23 の子のいる 3 版）と 2026-11-07 の 0 頭の PDF で確認。0 頭の日は PDF に「現在、収容期間中の犬・猫以外の動物はいません」の 1 文だけが出て、子のいる版にはこの文が無い。上の 3 版の行はどれも写真が取れない（image なし）。写真の扱いは pending のまま
 - slug: pref_kanagawa-4
   name: 神奈川県動物愛護センター（センター外保護犬）
   municipality: 神奈川県動物愛護センター
@@ -3733,7 +3733,7 @@ sources:
   mode: recipe
   recipe: recipes/wannyan_fukuoka-1.yaml
   enabled: true
-  note: "2026-10-21 からわんにゃんよかネット（www.wannyan.city.fukuoka.lg.jp）は市のメンテナンスで一時停止中（全 URL が HTTP 503・Retry-After 3600・再開時期は未定）。この slug は旧 URL・旧レシピのまま毎晩見に行く（今は failed で、エラーは HTTP 503）。停止中の掲載は市の公式サイトの暫定ページを読む city_fukuoka_interim-1・-2。【再開の合図と止め方】合図は 2 つ。(1) Discord に wannyan_fukuoka-1・-2 の「読めるようになった自治体」が出る。(2) wannyan_fukuoka-1 のエラーが「HTTP 503」でなくなる（data/report-<日付>.json の error か logs/collect-<日付>.log の行で見える。旧レシピが読めずに別のエラーになる日は (1) が出ないので (2) で気づく）。再開を見つけたら、まず city_fukuoka_interim-1・-2 を enabled: false にして二重掲載を即日止める。削除はその後（手順は city_fukuoka_interim-1 の note）。暫定ページ上部の「更新日」が止まったままなら、暫定側を止める目安にする。停止前の 10/20・10/21 にこの slug は行 0 で failed になっていて原因は未確認（再開したら先に collector show wannyan_fukuoka-1 で確かめる）"
+  note: "2026-11-07 W006 に確かめ直し: 今も全 URL が HTTP 503（Retry-After 3600 秒）で、再開していない（この slug は変更なし）。2026-10-21 からわんにゃんよかネット（www.wannyan.city.fukuoka.lg.jp）は市のメンテナンスで一時停止中（全 URL が HTTP 503・Retry-After 3600・再開時期は未定）。この slug は旧 URL・旧レシピのまま毎晩見に行く（今は failed で、エラーは HTTP 503）。停止中の掲載は市の公式サイトの暫定ページを読む city_fukuoka_interim-1・-2。【再開の合図と止め方】合図は 2 つ。(1) Discord に wannyan_fukuoka-1・-2 の「読めるようになった自治体」が出る。(2) wannyan_fukuoka-1 のエラーが「HTTP 503」でなくなる（data/report-<日付>.json の error か logs/collect-<日付>.log の行で見える。旧レシピが読めずに別のエラーになる日は (1) が出ないので (2) で気づく）。再開を見つけたら、まず city_fukuoka_interim-1・-2 を enabled: false にして二重掲載を即日止める。削除はその後（手順は city_fukuoka_interim-1 の note）。暫定ページ上部の「更新日」が止まったままなら、暫定側を止める目安にする。停止前の 10/20・10/21 にこの slug は行 0 で failed になっていて原因は未確認（再開したら先に collector show wannyan_fukuoka-1 で確かめる）"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/wannyan_fukuoka.py
     requires_js: true
@@ -3755,7 +3755,7 @@ sources:
   mode: recipe
   recipe: recipes/wannyan_fukuoka-2.yaml
   enabled: true
-  note: "2026-10-21 からわんにゃんよかネット（www.wannyan.city.fukuoka.lg.jp）は市のメンテナンスで一時停止中（全 URL が HTTP 503・再開時期は未定）。この slug は旧 URL・旧レシピのまま毎晩見に行く（今は failed で、エラーは HTTP 503）。停止中の掲載は市の公式サイトの暫定ページを読む city_fukuoka_interim-1・-2。【再開の合図と止め方】合図は 2 つ。(1) Discord に wannyan_fukuoka-1・-2 の「読めるようになった自治体」が出る。(2) wannyan_fukuoka-1 のエラーが「HTTP 503」でなくなる（data/report-<日付>.json の error か logs/collect-<日付>.log の行で見える。旧レシピが読めずに別のエラーになる日は (1) が出ないので (2) で気づく）。再開を見つけたら、まず city_fukuoka_interim-1・-2 を enabled: false にして二重掲載を即日止める。削除はその後（手順は city_fukuoka_interim-1 の note）。暫定ページ上部の「更新日」が止まったままなら、暫定側を止める目安にする"
+  note: "2026-11-07 W006 に確かめ直し: 今も全 URL が HTTP 503（Retry-After 3600 秒）で、再開していない（この slug は変更なし）。2026-10-21 からわんにゃんよかネット（www.wannyan.city.fukuoka.lg.jp）は市のメンテナンスで一時停止中（全 URL が HTTP 503・再開時期は未定）。この slug は旧 URL・旧レシピのまま毎晩見に行く（今は failed で、エラーは HTTP 503）。停止中の掲載は市の公式サイトの暫定ページを読む city_fukuoka_interim-1・-2。【再開の合図と止め方】合図は 2 つ。(1) Discord に wannyan_fukuoka-1・-2 の「読めるようになった自治体」が出る。(2) wannyan_fukuoka-1 のエラーが「HTTP 503」でなくなる（data/report-<日付>.json の error か logs/collect-<日付>.log の行で見える。旧レシピが読めずに別のエラーになる日は (1) が出ないので (2) で気づく）。再開を見つけたら、まず city_fukuoka_interim-1・-2 を enabled: false にして二重掲載を即日止める。削除はその後（手順は city_fukuoka_interim-1 の note）。暫定ページ上部の「更新日」が止まったままなら、暫定側を止める目安にする"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/wannyan_fukuoka.py
     requires_js: true
@@ -3772,7 +3772,7 @@ sources:
   verified_at: '2026-10-31'
   verified_phone_url: "https://www.city.fukuoka.lg.jp/hofuku/dobutsukanri/life/doghoused-.html"
   verified_address_url: "https://www.city.fukuoka.lg.jp/hofuku/dobutsukanri/life/doghoused-.html"
-  note: "2026-11-01 W006 T624: わんにゃんよかネット（wannyan_fukuoka-1・-2）が 10/21 から停止中なので、停止中の画面が案内する市の公式サイトの暫定ページ「センターに収容されている犬」（手で編集した CMS ページ）を読む一時的な 2 件の 1 つ。収容日の欄は無い。状況の項目が無いブロックは行にしない（項目名が変わった日に返還済・死亡の子を収容中として載せないため。全部が変われば failed）。状況が返還・譲渡・死亡の子と備考に死亡とある子は載せない。載っている子が全部そうなら 0 頭（全行除外＋一覧の見出し）。一覧に 1 頭もいない日は「現在、飼い主不明の迷い犬はセンターに収容されていません。」の 1 文だけが載る（2026-11-06 に確認。その日の 00:05 の収集では URL が一時 HTTP 404 だったが同日中に同じ URL で復活。子のいる版が 1 つしか無いので、文があり li・写真・表が無い日だけ 0 頭にする empty_absent）。収容中の子の状況の書き方は未確認（読めなければ通知に出る）。市のページが 0 頭の日の文言が変わったら、その日のページを保存して empty_absent か empty_text を直す。電話・所在地はこのページの「このページに関するお問い合わせ先」のとおり（T628。郵便番号と「東部」は載せない）。市サイトの「リンク・著作権等」に「トップページ以外の各個別のページへのリンクについては、各ページに記載の担当課までお問い合わせください」とある（2026-11-01 確認（https://www.city.fukuoka.lg.jp/sub/tyosakuken.html）。この台帳で www.city.fukuoka.lg.jp を使うのはこの 2 件が初めて）。【再開の合図と止め方】合図は 2 つ。(1) Discord に wannyan_fukuoka-1・-2 の「読めるようになった自治体」が出る。(2) wannyan_fukuoka-1 のエラーが「HTTP 503」でなくなる（data/report-<日付>.json の error か logs/collect-<日付>.log の行で見える。旧レシピが読めずに別のエラーになる日は (1) が出ないので (2) で気づく）。再開を見つけたら、まず city_fukuoka_interim-1・-2 を enabled: false にして二重掲載を即日止める。削除はその後（collector show で旧 2 件が読めることを確かめ、city_fukuoka_interim-1・-2 を台帳から消す。あわせて recipes/city_fukuoka_interim.yaml、registry/discover_known.yaml の city.fukuoka.lg.jp の行、tests/test_w006_moved_20261101.py の福岡の部分とその fixture〔w006_city_fukuoka_*・w006_wannyan_fukuoka_*〕を消す。この PR を revert すれば一度に戻る）。暫定ページ上部の「更新日」が止まったままなら、暫定側を止める目安にする"
+  note: "2026-11-07 W006 に実ページで読めていることを確認（収容犬は 0 頭で、根拠は empty_absent。一覧に 1 頭もいない日の 1 文があり li・写真・表が無い）。2026-11-01 W006 T624: わんにゃんよかネット（wannyan_fukuoka-1・-2）が 10/21 から停止中なので、停止中の画面が案内する市の公式サイトの暫定ページ「センターに収容されている犬」（手で編集した CMS ページ）を読む一時的な 2 件の 1 つ。収容日の欄は無い。状況の項目が無いブロックは行にしない（項目名が変わった日に返還済・死亡の子を収容中として載せないため。全部が変われば failed）。状況が返還・譲渡・死亡の子と備考に死亡とある子は載せない。載っている子が全部そうなら 0 頭（全行除外＋一覧の見出し）。一覧に 1 頭もいない日は「現在、飼い主不明の迷い犬はセンターに収容されていません。」の 1 文だけが載る（2026-11-06 に確認。その日の 00:05 の収集では URL が一時 HTTP 404 だったが同日中に同じ URL で復活。子のいる版が 1 つしか無いので、文があり li・写真・表が無い日だけ 0 頭にする empty_absent）。収容中の子の状況の書き方は未確認（読めなければ通知に出る）。市のページが 0 頭の日の文言が変わったら、その日のページを保存して empty_absent か empty_text を直す。電話・所在地はこのページの「このページに関するお問い合わせ先」のとおり（T628。郵便番号と「東部」は載せない）。市サイトの「リンク・著作権等」に「トップページ以外の各個別のページへのリンクについては、各ページに記載の担当課までお問い合わせください」とある（2026-11-01 確認（https://www.city.fukuoka.lg.jp/sub/tyosakuken.html）。この台帳で www.city.fukuoka.lg.jp を使うのはこの 2 件が初めて）。【再開の合図と止め方】合図は 2 つ。(1) Discord に wannyan_fukuoka-1・-2 の「読めるようになった自治体」が出る。(2) wannyan_fukuoka-1 のエラーが「HTTP 503」でなくなる（data/report-<日付>.json の error か logs/collect-<日付>.log の行で見える。旧レシピが読めずに別のエラーになる日は (1) が出ないので (2) で気づく）。再開を見つけたら、まず city_fukuoka_interim-1・-2 を enabled: false にして二重掲載を即日止める。削除はその後（collector show で旧 2 件が読めることを確かめ、city_fukuoka_interim-1・-2 を台帳から消す。あわせて recipes/city_fukuoka_interim.yaml、registry/discover_known.yaml の city.fukuoka.lg.jp の行、tests/test_w006_moved_20261101.py の福岡の部分とその fixture〔w006_city_fukuoka_*・w006_wannyan_fukuoka_*〕を消す。この PR を revert すれば一度に戻る）。暫定ページ上部の「更新日」が止まったままなら、暫定側を止める目安にする"
   kind: sheltered
   species: dog
   mode: recipe
@@ -3789,7 +3789,7 @@ sources:
   verified_at: '2026-10-31'
   verified_phone_url: "https://www.city.fukuoka.lg.jp/hofuku/dobutsukanri/life/cathoused.html"
   verified_address_url: "https://www.city.fukuoka.lg.jp/hofuku/dobutsukanri/life/cathoused.html"
-  note: "2026-11-01 W006 T624: city_fukuoka_interim-1 と同じ一時的な 2 件の 1 つ（市の暫定ページ「センターに収容されている猫」）。犬のページと違い ul が div に包まれていない。写真の無い子は「写真は掲載しておりません」で、管理番号で載せる。市のページが 0 頭の日（ブロックが 1 つも無い日）の文言が出たら、その日のページを保存して empty_text を足す。読み方・未確認の点は city_fukuoka_interim-1 の note。【再開の合図と止め方】合図は 2 つ。(1) Discord に wannyan_fukuoka-1・-2 の「読めるようになった自治体」が出る。(2) wannyan_fukuoka-1 のエラーが「HTTP 503」でなくなる（data/report-<日付>.json の error か logs/collect-<日付>.log の行で見える）。再開を見つけたら、まず city_fukuoka_interim-1・-2 を enabled: false にして二重掲載を即日止める。削除はその後（手順は city_fukuoka_interim-1 の note）。暫定ページ上部の「更新日」が止まったままなら、暫定側を止める目安にする"
+  note: "2026-11-07 W006 に実ページで読めていることを確認（ブロック 2 つはどちらも状況が死亡で除外され、全行除外＋一覧の器で 0 頭）。2026-11-01 W006 T624: city_fukuoka_interim-1 と同じ一時的な 2 件の 1 つ（市の暫定ページ「センターに収容されている猫」）。犬のページと違い ul が div に包まれていない。写真の無い子は「写真は掲載しておりません」で、管理番号で載せる。市のページが 0 頭の日（ブロックが 1 つも無い日）の文言が出たら、その日のページを保存して empty_text を足す。読み方・未確認の点は city_fukuoka_interim-1 の note。【再開の合図と止め方】合図は 2 つ。(1) Discord に wannyan_fukuoka-1・-2 の「読めるようになった自治体」が出る。(2) wannyan_fukuoka-1 のエラーが「HTTP 503」でなくなる（data/report-<日付>.json の error か logs/collect-<日付>.log の行で見える）。再開を見つけたら、まず city_fukuoka_interim-1・-2 を enabled: false にして二重掲載を即日止める。削除はその後（手順は city_fukuoka_interim-1 の note）。暫定ページ上部の「更新日」が止まったままなら、暫定側を止める目安にする"
   kind: sheltered
   species: cat
   mode: recipe
@@ -5555,7 +5555,7 @@ sources:
   prefecture: 富山県
   phone: 076-428-1154
   address: 富山県富山市蜷川459番地1（富山市保健所。猫の譲渡会ページの開催場所の記載）
-  url: https://www.city.toyama.lg.jp/kurashi/seikatsu/1010313/1015825/1004187.html
+  url: https://www.city.toyama.lg.jp/kurashi/seikatsu/1010313/1015825/1004195.html
   verified_at: '2026-10-15'
   verified_phone_url: "https://www.city.toyama.lg.jp/kurashi/seikatsu/1010313/1015825/1015834.html"
   verified_address_url: "https://www.city.toyama.lg.jp/kurashi/seikatsu/1010313/1015825/1015834.html"
@@ -5563,7 +5563,7 @@ sources:
   species: cat
   mode: link_only
   enabled: true
-  note: 環境省リンク集から追加（2026-10-05 T519）。「猫の飼い主さん募集中（仲介制度）」。飼い主が自分で新しい飼い主を探している猫の情報で、ページに個人の氏名と携帯電話番号が出る（2026-10-07 の取得で確認）ため、中身は読まず自治体のページへのリンクだけにする（既定の判断。連絡先を除いて読む案もあるが、備考に飼い主の事情が書かれるので読まない）。
+  note: 環境省リンク集から追加（2026-10-05 T519）。「猫の飼い主さん募集中（仲介制度）」。飼い主が自分で新しい飼い主を探している猫の情報で、ページに個人の氏名と携帯電話番号が出る（2026-10-07 の取得で確認）ため、中身は読まず自治体のページへのリンクだけにする（既定の判断。連絡先を除いて読む案もあるが、備考に飼い主の事情が書かれるので読まない）。2026-11-07 登録 URL（…/1015825/1004187.html）が 404 になっていたので、同じホストの同じ題のページ（…/1015825/1004195.html。200・更新日 2026 年 10 月 21 日）に直した（W006）。新しいページも飼い主の氏名・携帯電話・メールアドレスが本文に出る自由文（猫 3 頭の募集）なので link_only のまま。
 - slug: city_kanazawa-1
   name: 金沢市動物愛護管理センター（収容された犬）
   municipality: 金沢市
@@ -6669,7 +6669,7 @@ sources:
   mode: link_only
   enabled: true
   photo: pending
-  note: "環境省リンク集から追加（2026-10-05 T519）。宮崎県動物愛護情報ネットワーク「みやざきドッグ愛ランド」（県の保健所・動物愛護センターが収容した犬猫の情報）の保護犬の一覧。robots.txt が /modules/addon_module/（一覧と個体ページ）を Disallow としているため、収集器は読まない（リンクのみ。mode: link_only）。一覧の名前（保護 / 譲渡 / 迷子）から区分を付けた。中身は未確認。pref_miyazaki-1〜6 が同じサイトの 6 一覧（犬・猫 × 保護・譲渡・迷子）。宮崎市の保護犬猫は city_miyazaki-1〜3。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
+  note: "環境省リンク集から追加（2026-10-05 T519）。宮崎県動物愛護情報ネットワーク「みやざきドッグ愛ランド」（県の保健所・動物愛護センターが収容した犬猫の情報）の保護犬の一覧。robots.txt が /modules/addon_module/（一覧と個体ページ）を Disallow としているため、収集器は読まない（リンクのみ。mode: link_only）。一覧の名前（保護 / 譲渡 / 迷子）から区分を付けた。中身は未確認。pref_miyazaki-1〜6 が同じサイトの 6 一覧（犬・猫 × 保護・譲渡・迷子）。宮崎市の保護犬猫は city_miyazaki-1〜3。2026-11-07 W006 に確かめ直し: みやざきドッグ愛ランド（dog.pref.miyazaki.lg.jp）は https でも http でも応答せず（https は空の応答で切れ、http は 502）、今日の robots.txt は読めなかった。Wayback の 2026-05-13 の版（web.archive.org/web/20260513230500id_/https://dog.pref.miyazaki.lg.jp/robots.txt）の robots.txt は /modules/addon_module/ を Disallow（一覧も個体ページもこの下。2019-08-18 の版も同じ）で、今日は直接確認できないので Disallow のものとして取りに行かない。県の公式サイト（www.pref.miyazaki.lg.jp）の動物愛護のページ（kurashi/aigo/ 以下と eiseikanri/kurashi/aigo/ 以下）を辿ったが、保護・譲渡・迷子の犬猫の一覧への入口もこのサイトへのリンクも無かった（猫の適正管理事業・推進員募集・虐待防止などの案内だけ）。別の入口が見つからないため、取れないと確定（リンクのみ）。許可を求める・県に別の入口を尋ねるかは人の判断。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: pref_miyazaki-2
   name: みやざきドッグ愛ランド（譲渡犬）
   municipality: 宮崎県
@@ -6682,7 +6682,7 @@ sources:
   mode: link_only
   enabled: true
   photo: pending
-  note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの譲渡犬の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ（pref_miyazaki-1 と同じ）。中身は未確認。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
+  note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの譲渡犬の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ（pref_miyazaki-1 と同じ）。中身は未確認。2026-11-07 W006 に確かめ直し: みやざきドッグ愛ランド（dog.pref.miyazaki.lg.jp）は https でも http でも応答せず（https は空の応答で切れ、http は 502）、今日の robots.txt は読めなかった。Wayback の 2026-05-13 の版（web.archive.org/web/20260513230500id_/https://dog.pref.miyazaki.lg.jp/robots.txt）の robots.txt は /modules/addon_module/ を Disallow（一覧も個体ページもこの下。2019-08-18 の版も同じ）で、今日は直接確認できないので Disallow のものとして取りに行かない。県の公式サイト（www.pref.miyazaki.lg.jp）の動物愛護のページ（kurashi/aigo/ 以下と eiseikanri/kurashi/aigo/ 以下）を辿ったが、保護・譲渡・迷子の犬猫の一覧への入口もこのサイトへのリンクも無かった（猫の適正管理事業・推進員募集・虐待防止などの案内だけ）。別の入口が見つからないため、取れないと確定（リンクのみ）。許可を求める・県に別の入口を尋ねるかは人の判断。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: pref_miyazaki-3
   name: みやざきドッグ愛ランド（迷子犬）
   municipality: 宮崎県
@@ -6695,7 +6695,7 @@ sources:
   mode: link_only
   enabled: true
   photo: pending
-  note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの迷子犬の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ。「迷子」は飼い主が探している迷子と推定して kind: lost（中身は未確認。保護犬の一覧が収容した犬と思われる）。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
+  note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの迷子犬の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ。「迷子」は飼い主が探している迷子と推定して kind: lost（中身は未確認。保護犬の一覧が収容した犬と思われる）。2026-11-07 W006 に確かめ直し: みやざきドッグ愛ランド（dog.pref.miyazaki.lg.jp）は https でも http でも応答せず（https は空の応答で切れ、http は 502）、今日の robots.txt は読めなかった。Wayback の 2026-05-13 の版（web.archive.org/web/20260513230500id_/https://dog.pref.miyazaki.lg.jp/robots.txt）の robots.txt は /modules/addon_module/ を Disallow（一覧も個体ページもこの下。2019-08-18 の版も同じ）で、今日は直接確認できないので Disallow のものとして取りに行かない。県の公式サイト（www.pref.miyazaki.lg.jp）の動物愛護のページ（kurashi/aigo/ 以下と eiseikanri/kurashi/aigo/ 以下）を辿ったが、保護・譲渡・迷子の犬猫の一覧への入口もこのサイトへのリンクも無かった（猫の適正管理事業・推進員募集・虐待防止などの案内だけ）。別の入口が見つからないため、取れないと確定（リンクのみ）。許可を求める・県に別の入口を尋ねるかは人の判断。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: pref_miyazaki-4
   name: みやざきドッグ愛ランド（保護猫）
   municipality: 宮崎県
@@ -6708,7 +6708,7 @@ sources:
   mode: link_only
   enabled: true
   photo: pending
-  note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの保護猫の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ（pref_miyazaki-1 と同じ）。中身は未確認。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
+  note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの保護猫の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ（pref_miyazaki-1 と同じ）。中身は未確認。2026-11-07 W006 に確かめ直し: みやざきドッグ愛ランド（dog.pref.miyazaki.lg.jp）は https でも http でも応答せず（https は空の応答で切れ、http は 502）、今日の robots.txt は読めなかった。Wayback の 2026-05-13 の版（web.archive.org/web/20260513230500id_/https://dog.pref.miyazaki.lg.jp/robots.txt）の robots.txt は /modules/addon_module/ を Disallow（一覧も個体ページもこの下。2019-08-18 の版も同じ）で、今日は直接確認できないので Disallow のものとして取りに行かない。県の公式サイト（www.pref.miyazaki.lg.jp）の動物愛護のページ（kurashi/aigo/ 以下と eiseikanri/kurashi/aigo/ 以下）を辿ったが、保護・譲渡・迷子の犬猫の一覧への入口もこのサイトへのリンクも無かった（猫の適正管理事業・推進員募集・虐待防止などの案内だけ）。別の入口が見つからないため、取れないと確定（リンクのみ）。許可を求める・県に別の入口を尋ねるかは人の判断。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: pref_miyazaki-5
   name: みやざきドッグ愛ランド（譲渡猫）
   municipality: 宮崎県
@@ -6721,7 +6721,7 @@ sources:
   mode: link_only
   enabled: true
   photo: pending
-  note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの譲渡猫の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ（pref_miyazaki-1 と同じ）。中身は未確認。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
+  note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの譲渡猫の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ（pref_miyazaki-1 と同じ）。中身は未確認。2026-11-07 W006 に確かめ直し: みやざきドッグ愛ランド（dog.pref.miyazaki.lg.jp）は https でも http でも応答せず（https は空の応答で切れ、http は 502）、今日の robots.txt は読めなかった。Wayback の 2026-05-13 の版（web.archive.org/web/20260513230500id_/https://dog.pref.miyazaki.lg.jp/robots.txt）の robots.txt は /modules/addon_module/ を Disallow（一覧も個体ページもこの下。2019-08-18 の版も同じ）で、今日は直接確認できないので Disallow のものとして取りに行かない。県の公式サイト（www.pref.miyazaki.lg.jp）の動物愛護のページ（kurashi/aigo/ 以下と eiseikanri/kurashi/aigo/ 以下）を辿ったが、保護・譲渡・迷子の犬猫の一覧への入口もこのサイトへのリンクも無かった（猫の適正管理事業・推進員募集・虐待防止などの案内だけ）。別の入口が見つからないため、取れないと確定（リンクのみ）。許可を求める・県に別の入口を尋ねるかは人の判断。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: pref_miyazaki-6
   name: みやざきドッグ愛ランド（迷子猫）
   municipality: 宮崎県
@@ -6734,7 +6734,7 @@ sources:
   mode: link_only
   enabled: true
   photo: pending
-  note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの迷子猫の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ。「迷子」は飼い主が探している迷子と推定して kind: lost（中身は未確認）。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
+  note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの迷子猫の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ。「迷子」は飼い主が探している迷子と推定して kind: lost（中身は未確認）。2026-11-07 W006 に確かめ直し: みやざきドッグ愛ランド（dog.pref.miyazaki.lg.jp）は https でも http でも応答せず（https は空の応答で切れ、http は 502）、今日の robots.txt は読めなかった。Wayback の 2026-05-13 の版（web.archive.org/web/20260513230500id_/https://dog.pref.miyazaki.lg.jp/robots.txt）の robots.txt は /modules/addon_module/ を Disallow（一覧も個体ページもこの下。2019-08-18 の版も同じ）で、今日は直接確認できないので Disallow のものとして取りに行かない。県の公式サイト（www.pref.miyazaki.lg.jp）の動物愛護のページ（kurashi/aigo/ 以下と eiseikanri/kurashi/aigo/ 以下）を辿ったが、保護・譲渡・迷子の犬猫の一覧への入口もこのサイトへのリンクも無かった（猫の適正管理事業・推進員募集・虐待防止などの案内だけ）。別の入口が見つからないため、取れないと確定（リンクのみ）。許可を求める・県に別の入口を尋ねるかは人の判断。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: pref_kagoshima-1
   name: 鹿児島県動物愛護ホームページ（迷子犬猫情報）
   municipality: 鹿児島県
@@ -6824,9 +6824,10 @@ sources:
   url: https://www.pref.akita.lg.jp/pages/genre/18507
   kind: sheltered
   species: dog
-  mode: link_only
+  mode: recipe
+  photo: pending
   enabled: true
-  note: "環境省リンク集から追加（2026-10-05 T519）。県の「収容犬情報」は動物愛護センターと県内各保健所（秋田市保健所を除く）で収容している犬を載せるページで、2026-10-05 時点は 0 頭（見出しと「掲載がない場合は、収容している犬はおりません」の説明文だけ。説明文は常に出ているので 0 頭の判定には使えない）。Wayback の 6 版（2021-05・2023-02・2023-10・2025-02・2026-04・2026-07）と今日の版はどれも見出しと説明文だけで、犬が載った日の保存は見つからなかったため、載った日の構造を確かめられず link_only のまま。載った日の構造が分かったらレシピ化する。譲渡犬猫は ワンニャピアあきた（spec_wannyapia_akita-1・2）、秋田市保健所の収容・迷子・保護は city_akita-1・2・3。2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
+  note: "環境省リンク集から追加（2026-10-05 T519）。県の「収容犬情報」は動物愛護センターと県内各保健所（秋田市保健所を除く）で収容している犬を載せるページで、2026-10-05 時点は 0 頭（見出しと「掲載がない場合は、収容している犬はおりません」の説明文だけ。説明文は常に出ているので 0 頭の判定には使えない）。2026-11-07 W006 に Wayback の 16 版のうち 12 版を読み（残り 4 版は取得できず。うち 3 版は 10/05 に見出しと説明文だけと確認済み）、犬が載った日が 2020-04-16（能代保健所）・2020-09-19（由利本荘保健所）・2021-03-03 と 2022-03-08（大館保健所）の 4 版あった。どれも説明文の下に ul.c-list--archive が出て「収容犬一覧（能代保健所）」のような子ページ pages/archive/NNN へのリンクが 1 本あり、子ページは写真と入れ子の表（見出しのセルは th の版と td の版がある）。それ以外の版は 0 頭でリストが無い。これで recipe にした。0 頭は「説明文の枠があり、ul.c-list--archive・archive へのリンク・表・画像が本文に無い日」だけ（説明文では判定しない）。子のリンクがあれば子ページを辿って読み、読めなければ 0 頭にならず failed。未確認: 現行の作り（2024 年の CMS 刷新後）で犬が載った日の保存は無く、子ページの作りは 2020 年の版で確かめたもの（現行の分野ページ genre/11645 が同じ ul.c-list--archive で記事を並べていることだけ確認）。子ページへのリンクは ul.c-list--archive の中の pages/archive/ を含むものだけ辿る（無関係なリンクを辿らない。リンクの形が変われば行が取れず failed）。運用: 現行の作りで初めて犬が載った日（animals が 1 頭以上になった最初の収集）は、読み結果を人が実ページと見比べて目視する。新しく読む掲載元で写真の扱いを県に確かめていないので photo: pending。譲渡犬猫は ワンニャピアあきた（spec_wannyapia_akita-1・2）、秋田市保健所の収容・迷子・保護は city_akita-1・2・3。2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: city_yamagata-1
   name: 山形市動物愛護センター（保護・収容の犬猫）
   municipality: 山形市動物愛護センター（わんにゃんポート）
@@ -6839,9 +6840,10 @@ sources:
   verified_address_url: "https://www.city.yamagata-yamagata.lg.jp/kurashi/pet/1006550/1005142.html"
   kind: stray
   species: mixed
-  mode: link_only
+  mode: recipe
+  photo: pending
   enabled: true
-  note: 環境省リンク集から追加（2026-10-05 T519）。山形市内で保護した犬・負傷動物の収容情報。2026-10-05 時点は「保護・収容【犬】情報」が 1 枚のポスター画像（aoyagi.jpg）だけで、2026-10-07 には犬・猫とも空（本文なし）。Wayback では作りが一定せず、2021-12・2022-01 は犬が文章（「1　12月2日（木曜）青田二丁目地内で収容 犬種：… 性別：…」）と写真、2024-05 は「現在、保護している犬／猫はいません。」、2024-12 は見出しだけで「保護・収容【その他】情報」にインコの写真、2025 以降は見出しだけだった。文字として読める形が続かず、今のポスター形式は読めないため link_only のまま（猫は 0 件）
+  note: 環境省リンク集から追加（2026-10-05 T519）。山形市内で保護した犬・負傷動物の収容情報。2026-10-05 時点は「保護・収容【犬】情報」が 1 枚のポスター画像（aoyagi.jpg）だけで、2026-10-07 と 2026-11-07 は犬・猫の節とも中身の無い p だけ。Wayback では作りが一定せず、2021-12（2 頭）・2022-01（1 頭）は犬が文章（「1　12月2日（木曜）青田二丁目地内で収容 犬種：… 性別：…」）と写真 p.imagecenter、2024-05 は「現在、保護している犬／猫はいません。」、2024-08 は見出しだけ、2024-12 は「保護・収容【その他】情報」にインコの写真、2025 以降は見出しだけだった。2026-11-07 W006 に recipe にした（「読めない日は failed、0 頭の日は 0 頭」の方が利用者に正しいため）。読むのは性別を含む文の p だけ（収容日・場所・犬種・性別・年齢・毛色・写真）。0 頭は「犬と猫の節の見出しがあり、その後ろに文・写真の p・表・リストが無い日」だけ（節の文は日で違うので文言は根拠にしない）。ポスター画像だけの日・文字が読めない日・「【その他】情報」の節に鳥などが載った日（2024-12 の作り。性別の項目が無く写真が文の前）は 0 頭にならず failed で通知（その他の節は読まない）。「返還」を含む行は載せない。「その他」の節でも性別を含む文の p があれば行として読み、species は other で載る（2026-11-07 公開ゲート F-02、map に「【その他】」を足した。種別なしにはならない。鳥の日の failed は性別の語が無い日の話）。未確認なのは、猫が載った日の書き方（保存に無い。犬と同じ作りと見て読む）とポスターの日の作り（今は保存が無く、合成ページで failed になることだけ確認）。新しく読む掲載元で写真の扱いを市に確かめていないので photo は pending
 - slug: city_yamagata-2
   name: 山形市動物愛護センター（譲渡対象の犬猫）
   municipality: 山形市動物愛護センター（わんにゃんポート）
@@ -6872,7 +6874,7 @@ sources:
   species: mixed
   mode: link_only
   enabled: true
-  note: 環境省リンク集から追加（2026-10-05 T519）。飼い主が探している迷子の掲示（飼い主の氏名・電話が本文に出る）。2026-10-05 時点の掲載は 1 件で、更新日が令和7年9月2日・行方不明日が 9 月 22 日と古いまま残っている。決まった項目の表ではなく自由文の 1 件掲示で、掲載期間は基本 2 か月のため、古い掲示を現在の迷子として載せないよう link_only
+  note: 環境省リンク集から追加（2026-10-05 T519）。飼い主が探している迷子の掲示（飼い主の氏名・電話が本文に出る）。2026-10-05 時点の掲載は 1 件で、更新日が令和7年9月2日・行方不明日が 9 月 22 日と古いまま残っている。決まった項目の表ではなく自由文の 1 件掲示で、掲載期間は基本 2 か月のため、古い掲示を現在の迷子として載せないよう link_only。2026-11-07 W006 に実ページで確かめ直したが、更新日は令和7年9月2日のまま（2 か月を過ぎた古い掲示 1 件）で、本文は飼い主の氏（さん付け）・電話番号と、行方不明日・場所・名前・種類・年齢・体重・性別・特徴の自由文。個人の氏名と電話が本文に出るページなので読まず、link_only のまま（対象外）
 - slug: pref_miyagi-1
   name: 宮城県動物愛護センター（保護動物情報）
   municipality: 宮城県動物愛護センター
@@ -7014,7 +7016,7 @@ sources:
   species: mixed
   mode: link_only
   enabled: true
-  note: 環境省リンク集から追加（2026-10-05 T519）。仙南保健所の譲渡犬・譲渡猫の表（2026-10-07 時点は両方「現在、譲渡犬／猫の情報はありません。」）。県の譲渡動物の掲載は みやぎわんにゃん家族むすび（wannyan-musubi.pref.miyagi.jp）に移っており、2026-05 の版には「仙南保健所の譲渡動物を検索したい場合は…わんにゃんリストから」の案内がある。Wayback 2023-12・2025-11・2026-05 の版には表に動物が載っていた（No.・「種類：雑種 毛色：… 性別：… 体格：…【ID】」・その他・写真。2026-05 は犬 1 頭）ので読み方は分かるが、同じ動物は wannyan_musubi_miyagi-1・2 で載るため、二重に載らないよう link_only のまま（この表だけに載る子が出る日は wannyan 側の取りこぼしになる）
+  note: 環境省リンク集から追加（2026-10-05 T519）。仙南保健所の譲渡犬・譲渡猫の表（2026-10-07 時点は両方「現在、譲渡犬／猫の情報はありません。」）。県の譲渡動物の掲載は みやぎわんにゃん家族むすび（wannyan-musubi.pref.miyagi.jp）に移っており、2026-05 の版には「仙南保健所の譲渡動物を検索したい場合は…わんにゃんリストから」の案内がある。Wayback 2023-12・2025-11・2026-05 の版には表に動物が載っていた（No.・「種類：雑種 毛色：… 性別：… 体格：…【ID】」・その他・写真。2026-05 は犬 1 頭）ので読み方は分かるが、同じ動物は wannyan_musubi_miyagi-1・2 で載るため、二重に載らないよう link_only のまま（この表だけに載る子が出る日は wannyan 側の取りこぼしになる）。2026-11-07 W006 に今日のページで確かめ直した。この表は犬・猫とも「現在、譲渡犬／猫の情報はありません。」で、みやぎわんにゃん家族むすびの県の収容犬猫（has_management_no=1 の一覧。猫 39 枚のうちセンターを除く 16 頭と、犬 5 頭）にも、キーワード「仙南保健所」の検索（全体）にも仙南保健所の子は 0 件で、両方とも 0 頭で食い違いは無い。ページ自身が「これまで各保健所に掲載されていた譲渡動物の情報が、今後は本サイトへ一括して掲載されます（当面の間は当ホームページにも掲載します）」「仙南保健所の譲渡動物はキーワードに仙南保健所と入れて検索」と書いており、この表の子は wannyan_musubi_miyagi-1・2 に載る前提のため、読むと二重掲載になる。この表だけに載る子がいることは今日の実物では確かめられなかった（子のいる日の表が無い）ので、二重掲載を避けて対象外（リンクのみ）。wannyan 側に仙南保健所の子が載り始めたら location に「仙南」と出る
 - slug: wannyan_musubi_miyagi-1
   name: みやぎわんにゃん家族むすび（県の譲渡猫）
   municipality: 宮城県（保健所・動物愛護センター）
@@ -7533,6 +7535,6 @@ sources:
   url: https://www.city.sagamihara.kanagawa.jp/kosodate/kenko/1026628/pet/1007470.html
   kind: stray
   species: dog
-  mode: link_only
+  mode: recipe
   enabled: true
-  note: 環境省リンク集から追加（2026-10-05 T519）。迷い犬として収容した犬の公示（公示の翌日から原則 2 週間掲載。返還済みの犬も含む）。h2「公示に基づく収容犬情報」の下に、0 頭の日は「現在、迷い犬の情報はありません。」の 1 文だけが出る（2026-10-05 時点・更新日 2026-09-15）。犬が載った日の構造を実ページで確かめられないため link_only（載った日の読み方が分かったらレシピ化する）。猫・その他の迷子は掲載なし（電話で問い合わせ）
+  note: 環境省リンク集から追加（2026-10-05 T519）。迷い犬として収容した犬の公示（公示の翌日から原則 2 週間掲載。返還済みの犬を含むかはページに書いていない）。h2「公示に基づく収容犬情報」の下に、0 頭の日は「現在、迷い犬の情報はありません。」の 1 文だけが出る（Wayback 2023-03〜2026-05・2026-09-19 の 11 版と 2026-11-07 の実ページで一致）。2026-11-07 W006 に Wayback の 2026-09-03 版で犬が載った日の作りを確認し（その文が消え、p「令和8年8月31日の公示」・p「整理番号　1」・ul の収容日時・収容期限・収容場所・犬の種類・毛色・性別・体格・備考が並ぶ）、recipe にした。整理番号は公示ごとの連番で日をまたいで重なるため、収容日時と組み合わせて管理番号にする。0 頭は「その文があり、h2 の後ろにリスト・表・画像・見出し・別の段落が無い日」だけ。犬の日の保存は 1 版だけで、写真つきの日・複数頭の日・返還済みの印の書き方は未確認（読めなければ 0 頭ではなく「読めなかった」で通知）。「返還」の語がある行は載せない（返還済みの印の書き方は保存で確かめられていない。ページの「掲載について」は『情報は公示の翌日に掲載され、掲載日から原則2週間で削除』としか書かず、返還済みの犬も載るとは書いていない。Wayback 12 版を 2026-11-07 に全部調べたが犬が載った版は 2026-09-03 の 1 版のみ）。収容期限（ul の「収容期限」）を今日より過ぎた行と期限が読めない行も載せない（row_filter.field_not_past。2026-11-07 公開ゲート F-01、期限後も掲載が最大 2 週間残るため）。期限切れだけの日は 0 頭とは言わず「読めなかった」で通知する（期限後の子の状態＝返還・処分が書かれるかは未確認）。残る人の作業（未了）は次のとおり、初めて犬が載った日（animals が 1 頭以上になった最初の収集）は、読み結果を人が実ページと見比べて、返還済みの犬が収容中として載っていないか目視し、印の書き方が分かったら row_filter を直す。猫・その他の迷子は掲載なし（電話で問い合わせ）

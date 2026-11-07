@@ -36,7 +36,7 @@ def test_registry_entries():
     cat = _src("city_sagamihara-1")
     dog = _src("city_sagamihara-2")
     assert (cat.kind, cat.species, cat.mode, cat.prefecture, cat.phone) == ("adoption", "cat", "recipe", "神奈川県", "042-769-8347")
-    assert (dog.kind, dog.species, dog.mode, dog.prefecture) == ("stray", "dog", "link_only", "神奈川県")
+    assert (dog.kind, dog.species, dog.mode, dog.prefecture) == ("stray", "dog", "recipe", "神奈川県")   # 2026-11-07 W006: 犬が載った日の作りが分かり recipe にした
 
 
 def test_ten_cats_match_the_page_text():

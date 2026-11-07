@@ -6,6 +6,7 @@
 ⑨   旭川市あにまある: 「その他の動物」の一覧（探しています = lost、保護しています = sheltered）
 """
 
+import zlib
 from pathlib import Path
 
 from bs4 import BeautifulSoup
@@ -241,7 +242,7 @@ def _dc_list(*ids: int) -> str:
 def _dc_detail(name: str, label_date: str = "不明日", label_place: str = "不明場所") -> str:
     return f"""<html><body><ul><li>犬・猫の情報</li><li>犬の登録</li></ul>
 <h2 class="elementor-heading-title elementor-size-default">{name}</h2>
-<div class="animal-image"><div class="large"><a href="/x.jpg"><img alt="" src="https://www.douaicenter.jp/wp-content/uploads/2026/06/{abs(hash(name)) % 9999}.jpg"></a></div></div>
+<div class="animal-image"><div class="large"><a href="/x.jpg"><img alt="" src="https://www.douaicenter.jp/wp-content/uploads/2026/06/{zlib.crc32(name.encode()) % 9999}.jpg"></a></div></div>
 <table class="animal-desc-table"><tr><th>{label_date}</th><td>2026/05/19</td></tr><tr><th>{label_place}</th><td>末広２条８丁目付近</td></tr>
 <tr><th>種類</th><td>オカメインコ</td></tr><tr><th>性別</th><td>不明</td></tr><tr><th>連絡先</th><td>サトウ(090-0000-0000)</td></tr></table></body></html>"""
 
@@ -266,7 +267,7 @@ def test_douaicenter_other_lost_picks_only_searching_notices_of_non_dog_cat():
         ("ウサギ 探してます(ワタナベ)", "other", "lost", "末広2条8丁目付近"),
     ]
     assert all(a["image_url"] for a in res.animals)
-    assert not any("090" in str(v) for a in res.animals for v in a.values())    # 飼い主の連絡先は載せない
+    assert not any("090-0000-0000" in str(v) for a in res.animals for v in a.values())    # 飼い主の連絡先は載せない
 
 
 def test_douaicenter_other_sheltered_picks_only_found_animals():

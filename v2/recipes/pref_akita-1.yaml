@@ -1,0 +1,25 @@
+# 秋田県 収容犬情報（pages/genre/18507。動物愛護センターと県内各保健所。秋田市保健所は除く）。
+# 0 頭の日は見出しと説明文（「掲載がない場合は、収容している犬はおりません」）だけ。説明文は常に出るので 0 頭の根拠にしない。
+# 犬がいる日は、説明文の下に ul.c-list--archive が出て、「収容犬一覧（能代保健所）」のような子ページ（pages/archive/NNN）へのリンクが並ぶ
+# （Wayback 2020-04-16 の版で確認。2020-04 より前・後の 0 頭の版には ul.c-list--archive が無い）。同じ CMS の分野ページ（genre/11645）が
+# 記事の一覧を同じ ul.c-list--archive で出しているので、現行の作りでも同じと見ている（未確認: 現行の作りで犬が載った日の保存は無い）。
+# 子ページ（2020 年の版）は写真と入れ子の表: 外側の行に写真と、捕獲場所・捕獲日・収容期限・収容場所／首輪・種類・性別・大きさ／年齢・毛の色・毛の長さ・備考の
+# 見出し行と値の行が交互に並ぶ表。1 頭 = 入れ子の表を持つ外側の行。現行の子ページの作りが違えば行が取れず、0 頭の根拠も無いので failed（通知）になる。
+steps:
+  - follow_all: ":is(.page-body, .p-page-body) ul.c-list--archive a[href*='/pages/archive/']@href"
+    skip_errors: true
+rows: ":is(.page-body, .p-page-body) tr:has(table)"
+fields:
+  location: {label: "捕獲場所", header_row: true}
+  shelter_date: {label: "捕獲日", header_row: true}
+  breed: {label: "種類", header_row: true}
+  sex: {label: "性別", header_row: true}
+  size: {label: "大きさ", header_row: true}
+  age: {label: "年齢", header_row: true}
+  color: {label: "毛の色", header_row: true}
+  note: {label: "備考", header_row: true}
+image: "img@src"
+# 子のリンク（ul.c-list--archive）が 1 本も無く、枠（説明文）がある日だけ 0 頭
+empty_absent:
+  page: ":is(.page-body, .p-page-body) p:-soup-contains('収容している犬を掲載しています')"
+  none: ":is(.page-body, .p-page-body) :is(ul.c-list--archive, a[href*='/pages/archive/'], table, img)"
