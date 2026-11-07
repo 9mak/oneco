@@ -82,6 +82,77 @@ def test_sagamihara_zero_sentence_alongside_other_content_is_not_zero():
         assert not _zero(_single("city_sagamihara-2", html)), extra
 
 
+# ---- 秋田県 収容犬情報（pref_akita-1） ----
+# 県の「収容犬情報」（genre/18507）は 0 頭の日は見出しと説明文だけ（説明文は常に出る）。犬がいる日は説明文の下に ul.c-list--archive が出て、
+# 「収容犬一覧（能代保健所）」のような子ページ（pages/archive/NNN）へのリンクが並ぶ（Wayback 2020-04-16）。子ページは写真と入れ子の表
+# （捕獲場所・捕獲日・収容期限・収容場所／首輪・種類・性別・大きさ／年齢・毛の色・毛の長さ・備考）。
+# 現行の作りで犬が載った日の保存は無いので、子ページの読み方は 2020 年の版で確かめたもの。読めなければ 0 頭にならず failed。
+AK = SOURCES["pref_akita-1"]
+AK_CHILD = "https://www.pref.akita.lg.jp/pages/archive/49089"
+AK_ZERO = "w006_pref_akita-1_zero_20261107.html"
+AK_ZERO_OLD = "w006_pref_akita-1_zero_wb20201124.html"
+AK_LIST = "w006_pref_akita-1_list_wb20200416.html"
+AK_KID = "w006_pref_akita-1_child_wb20200416.html"
+
+
+def _akita(list_html: str, child_html: str | None = None) -> Collected:
+    pages = {AK.url: list_html}
+    if child_html is not None:
+        pages[AK_CHILD] = child_html
+    return collect_one(AK, FakeFetcher(pages))
+
+
+def test_akita_is_recipe_mode_and_photo_is_pending():
+    assert AK.mode == "recipe"
+    assert AK.photo == "pending"   # 新しく読む掲載元。写真の扱いは県に未確認
+
+
+def test_akita_zero_days_are_empty():
+    # 説明文は常に出るので根拠にならない。ul.c-list--archive（子ページのリンクの並び）が無い日だけ 0 頭
+    for name in (AK_ZERO, AK_ZERO_OLD):
+        assert _zero(_akita(_fx(name))), name
+
+
+def test_akita_dog_day_follows_the_child_page_and_reads_the_dog():
+    c = _akita(_fx(AK_LIST), _fx(AK_KID))
+    assert c.status == "ok", c.error
+    assert c.result is not None and len(c.result.animals) == 1
+    a = c.result.animals[0]
+    assert a["species"] == "dog"
+    assert (a["location"], a["shelter_date"], a["breed"], a["sex"], a["size"], a["age"], a["color"]) == (
+        "能代市字沼ノ上", "2020/4/15", "雑種", "雄", "中", "不明", "黒茶")
+    assert a["image_url"] and a["image_url"].endswith("IMG_7559.JPG")
+    recipe = Recipe.load(ROOT / "recipes" / "pref_akita-1.yaml")
+    docs = [Doc(url=u, html=h, soup=BeautifulSoup(h, "lxml")) for u, h in ((AK.url, _fx(AK_LIST)), (AK_CHILD, _fx(AK_KID)))]
+    assert empty_hits(recipe, docs, docs[1:]) == []
+
+
+def test_akita_2021_dog_day_has_header_cells_as_td_and_is_read_too():
+    # 2021-03 の大館保健所の子ページ（pages/archive/8899）は見出しのセルが th でなく td の strong。同じレシピで読める
+    child = "https://www.pref.akita.lg.jp/pages/archive/8899"
+    c = collect_one(AK, FakeFetcher({AK.url: _fx("w006_pref_akita-1_list_wb20210303.html"),
+                                     child: _fx("w006_pref_akita-1_child_wb20210303.html")}))
+    assert c.status == "ok", c.error
+    assert c.result is not None and len(c.result.animals) == 1
+    a = c.result.animals[0]
+    assert (a["location"], a["breed"], a["sex"], a["size"], a["color"]) == ("大館市花岡町", "柴犬", "オス", "中型", "茶")
+    assert a["image_url"] and a["image_url"].endswith("DSCN0430.JPG")
+
+
+def test_akita_dog_day_with_unreadable_child_page_fails_instead_of_zero():
+    # 子ページの表の作りが変わって行が取れない日は 0 頭にしない
+    kid = _fx(AK_KID).replace("<table", "<div").replace("</table>", "</div>").replace("<tr", "<p").replace("</tr>", "</p>")
+    c = _akita(_fx(AK_LIST), kid)
+    assert not _zero(c)
+    assert c.status == "failed"
+
+
+def test_akita_list_with_links_but_no_page_frame_is_not_zero():
+    # 説明文（枠）が無い日（作り替え・ブロック画面）は、リンクが無くても 0 頭にしない
+    html = _fx(AK_ZERO).replace("収容している犬を掲載しています", "収容している犬を紹介しています")
+    assert not _zero(_akita(html))
+
+
 # ---- 神奈川県動物愛護センター その他動物（pref_kanagawa-3） ----
 # 犬猫以外（カメ・インコ等）は species other で載せる方針（他の掲載元と同じ）に合わせ、link_only をやめて PDF を読む。
 # 入口は PDF（acsonota.pdf）を 1 本落とすだけ。0 頭の日は PDF に「現在、収容期間中の犬・猫以外の動物はいません」の 1 文だけ、
