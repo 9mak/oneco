@@ -7524,3 +7524,37 @@ sources:
   mode: link_only
   enabled: true
   note: 環境省リンク集から追加（2026-10-05 T519）。迷い犬として収容した犬の公示（公示の翌日から原則 2 週間掲載。返還済みの犬も含む）。h2「公示に基づく収容犬情報」の下に、0 頭の日は「現在、迷い犬の情報はありません。」の 1 文だけが出る（2026-10-05 時点・更新日 2026-09-15）。犬が載った日の構造を実ページで確かめられないため link_only（載った日の読み方が分かったらレシピ化する）。猫・その他の迷子は掲載なし（電話で問い合わせ）
+- slug: city_kurume-1
+  name: 久留米市（保護犬・猫の情報）
+  municipality: 久留米市動物愛護センター
+  prefecture: 福岡県
+  phone: 0942-30-1500
+  address: 福岡県久留米市百年公園1番2号
+  url: https://www.city.kurume.fukuoka.jp/1070kenkou/2040hokeneisei/3115doubutsuaigo/2016-0406-1637-187.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.city.kurume.fukuoka.jp/1070kenkou/2040hokeneisei/3115doubutsuaigo/2016-0406-1637-187.html"
+  verified_address_url: "https://www.city.kurume.fukuoka.jp/1070kenkou/2040hokeneisei/3115doubutsuaigo/2016-0406-1637-187.html"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/city_kurume-1.yaml
+  enabled: true
+  photo: pending
+  note: 環境省リンク集から追加（2026-11-07 W006）。リンク先は市の「保護犬・猫の情報」で、飼い主のお迎えを待つ迷い犬・猫（まだ里親募集ではない）。子のいる日は h3「保護犬猫番号…・保護日…」の下に写真と基本情報が並ぶ（Wayback 2020-10・2021-07・2023-11・2024-05 の 4 版で確認）。0 頭の日は「現在お迎えを待っている犬・猫はいません。」（2026-11-07 時点・更新日 2026-10-20）で、この文は子のいる 4 版に無い。種別は動物種の欄が無い日があるため決めない。写真の規約は未確認（掲載元の利用条件を未確認のため写真は出さない）。
+- slug: city_kurume-2
+  name: 久留米市（犬・猫の譲渡）
+  municipality: 久留米市動物愛護センター
+  prefecture: 福岡県
+  phone: 0942-30-1500
+  address: 福岡県久留米市百年公園1番2号
+  url: https://www.city.kurume.fukuoka.jp/1070kenkou/2040hokeneisei/3115doubutsuaigo/2010-0707-1600-465.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.city.kurume.fukuoka.jp/1070kenkou/2040hokeneisei/3115doubutsuaigo/2010-0707-1600-465.html"
+  verified_address_url: "https://www.city.kurume.fukuoka.jp/1070kenkou/2040hokeneisei/3115doubutsuaigo/2010-0707-1600-465.html"
+  kind: adoption
+  species: mixed
+  mode: recipe
+  recipe: recipes/city_kurume-2.yaml
+  enabled: true
+  photo: pending
+  note: 環境省リンク集から追加（2026-11-07 W006）。動物愛護センターが保護して新しい飼い主を募集している犬・猫（2026-11-07 時点は猫のみ）。h3「譲渡犬猫番号…」の下に写真と基本情報。きょうだいは 1 つの h3 に番号が並ぶので 1 件として載せ、番号は載っているまま（J8014、J8015 など）。「新しい飼い主さんが決まりました」の子は載せない。J8010 は人ならし中で正式な募集前と本文にある（備考には載せていない。元ページで確認）。0 頭の日は「現在、譲渡対象の犬猫はおりません。」（Wayback 2026-03-11）。写真の規約は未確認（写真は出さない）。
