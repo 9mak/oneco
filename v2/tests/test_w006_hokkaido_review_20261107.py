@@ -98,3 +98,12 @@ def test_okhotsk_layout_change_is_failed_not_zero():
     assert c.status not in {"ok", "empty"}
     c = _run("hokkaido_okhotsk-4", OK, lambda h: h.replace("特徴など", "ようす"))
     assert c.status not in {"ok", "empty"}
+
+
+def test_kurume_pre_recruitment_remark_is_shown_on_the_row():
+    # F-07: 「人ならし中につき正式な募集前」の子（J8008〜J8010 の 1 件）は、その但し書きを note に載せる。他の件には付けない
+    c = _run("city_kurume-2", "w006_city_kurume-2_child_20261107.html")
+    assert c.status == "ok", c.error
+    by_no = {a["management_no"]: a.get("note") for a in c.result.animals}
+    assert "正式な募集前" in by_no["J8008、J8009、J8010"]
+    assert not by_no["J8013"] and not by_no["J8005"] and not by_no["J8014、J8015"]
