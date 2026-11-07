@@ -1,0 +1,23 @@
+# 鹿児島県動物愛護ホームページ（里親を探す掲載依頼のあった犬（県の施設にはいない））: 画像ボタンの JavaScript（search_submit）が、入口の form
+# （hidden の jouto_kubun・search_type と anti-forgery トークン）を POST して一覧を出す作り。
+# submit_form で入口の form に jouto_kubun=keisai・search_type=dog を足して POST し、結果のページ送り
+# （form[name=paging] の act=next）を「次ページ」のリンクがある間たどる（10 件ずつ）。W006 2026-11-07。
+# 1 頭 = 結果の table.t-jouto 1 つ（写真は直前の p.thumbs_left）。0 件の日だけ「検索条件に一致する情報が見つかりませんでした。」が出る。
+steps:
+  - submit_form:
+      form: "form[name=type]"
+      set: {search_type: dog, jouto_kubun: keisai}
+      require: ["__RequestVerificationToken"]
+  - submit_form:
+      form: "form[name=paging]"
+      set: {act: next}
+      repeat_while: "a.paging_next"
+      max: 30
+rows: "table.t-jouto"
+image: {selector: "a.popup-image img@src", scope: prev_siblings}
+fields:
+  management_no: {label: "No"}
+  sex: {label: "性別"}
+  age: {label: ["推定年齢", "年齢"]}
+  note: {join: [{label: "備考"}, {regex: "(お問い合わせ先\\s*\\S+（[0-9\\-]+）)"}], sep: "　"}
+empty_text: ["検索条件に一致する情報が見つかりませんでした"]
