@@ -3,6 +3,8 @@
 # 犬猫を区別する文言・class・体重域どれも list/detail のどちらにも無い（旧 adapter も未判定のまま空文字にしていた）。
 # → 判定不能のため allow_other で維持し、種別は "other"（不明）のまま登録する。
 rows: "div.information_box"
+# 0 頭の日は文言が出ず、一覧の器 div.information_block が空（コメントと空白だけ）になる（2026-11-07。子のいた 11/06・Wayback 2026-07-12 は器に information_box が入る）。
+empty_selector: "div.information_block"
 image: "div.information_image img@src"
 fields:
   location: {label: "保護地域"}

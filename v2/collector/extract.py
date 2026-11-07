@@ -150,9 +150,15 @@ def make_id(source: Source, image_raw: str | None, f: dict[str, str | None], det
     return hashlib.sha1(key.encode("utf-8")).hexdigest()[:12]
 
 
+_CONTENT_TAGS = ("img", "a", "picture", "video", "audio", "iframe", "object", "embed", "input", "table", "ul", "ol", "dl")
+
+
 def _is_blank(el: Tag) -> bool:
-    """子要素も文字も無い（空白・コメントだけ）。"""
-    return el.find(True) is None and not el.get_text(strip=True)
+    """文字も中身（画像・リンク・表・リスト等）も無い。空白・&nbsp;・コメント・文字の無い p/span 等の入れ物だけなら空
+    （広島市 迷子猫の 0 頭の日は dd が <p>&nbsp;</p> だけになる。W006 2026-11-07）。"""
+    if el.find(_CONTENT_TAGS) is not None:
+        return False
+    return not el.get_text().replace("\xa0", "").strip()
 
 
 def _absent_list(doc: Doc, spec: dict[str, str]) -> bool:
