@@ -6,7 +6,7 @@
 # 子ページ（2020 年の版）は写真と入れ子の表: 外側の行に写真と、捕獲場所・捕獲日・収容期限・収容場所／首輪・種類・性別・大きさ／年齢・毛の色・毛の長さ・備考の
 # 見出し行と値の行が交互に並ぶ表。1 頭 = 入れ子の表を持つ外側の行。現行の子ページの作りが違えば行が取れず、0 頭の根拠も無いので failed（通知）になる。
 steps:
-  - follow_all: ":is(.page-body, .p-page-body) ul.c-list--archive a@href"
+  - follow_all: ":is(.page-body, .p-page-body) ul.c-list--archive a[href*='/pages/archive/']@href"
     skip_errors: true
 rows: ":is(.page-body, .p-page-body) tr:has(table)"
 fields:
