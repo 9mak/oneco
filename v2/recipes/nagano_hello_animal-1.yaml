@@ -1,7 +1,10 @@
 # 長野県動物愛護センター（ハローアニマル）譲渡犬: single_page。
 # 「飼い主募集中の犬の情報」h2 の後、犬 1 頭 = <div class="section"> 1 つ（h3=名前＋種類/性別/生年月/備考の<p>）。
 # 犬ページは1頭=1 div.sectionなので div ごと拾える（猫ページは複数頭が1つのdivに同居するため別方式）。
-rows: "div.section:has(h3)"
+rows: "div.section:has(> h3)"
+# 2026-11-07: Wayback の実物（2025-12-11）は h3・写真の div と 種類〜備考の div が別々の作りで、1 つの div だけを行にすると品種が管理番号になり他が空だった。
+# 次の子の始まり（h3 を持つ div）か h2 の手前まで束ねて 1 頭分にする（1 つの div に全部ある日も同じ）。
+row_until: "h2"
 # 0 頭の日は h3 が「現在、飼い主募集中の犬はいません」の雛形（写真 dogs_are_not.jpg と空の 種類：・性別：…）が 1 つ残り、
 # 偽の犬として 11/04 から公開されていた（W006 2026-11-07）。子のいる日は h3 が名前になり、この文は出ない（11/03 までの やまと の日）。
 # 雛形の行は捨て、同じ文を 0 頭の根拠にする。文が変わった日は根拠が無いので「読めなかった」になる。
@@ -11,8 +14,8 @@ empty_text: ["現在、飼い主募集中の犬はいません"]
 image: "img@src"
 fields:
   name: {selector: "h3"}
-  breed: {label: "種類", regex: "^([^（(]+)"}
-  color: {label: "種類", regex: "[（(]([^）)]+)[）)]"}
+  breed: {selector: "p:-soup-contains('種類')", regex: "種類[：:]\\s*([^（(\\s]+)"}
+  color: {selector: "p:-soup-contains('種類')", regex: "種類[：:][^（(]*[（(]([^）)]+)[）)]"}
   sex: {label: "性別"}
   age: {label: "生年月"}
-  note: {label: "備考"}
+  note: {selector: "p:-soup-contains('備考')", regex: "備考[:：]\\s*(.+)"}

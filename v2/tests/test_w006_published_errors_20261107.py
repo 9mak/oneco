@@ -6,9 +6,9 @@
 from pathlib import Path
 
 from bs4 import BeautifulSoup
-from collector.extract import empty_hits
+from collector.extract import build, empty_hits, make_id
 from collector.fetch import FakeFetcher
-from collector.recipe import Doc, Recipe
+from collector.recipe import Doc, Recipe, extract_rows
 from collector.registry import load_sources
 from collector.run import Collected, collect_one
 
@@ -53,6 +53,22 @@ def test_nagano_dog_child_day_still_read_and_never_zero():
     assert (a["name"], a["breed"], a["color"]) == ("やまと", "ミックス", "薄茶")
     assert a["image_url"].endswith("/images/yamato.jpg")
     assert _hits("nagano_hello_animal-1", _fx(NAGANO_CHILD)) == []
+
+
+def test_nagano_dog_wayback_child_days_read_all_fields():
+    # Wayback の実物（子のいる日）。2025-12 は h3・写真の div と 種類〜備考の div が別々の作り、2024-09 は 1 つの div
+    c = _single("nagano_hello_animal-1", _fx("w006_nagano_hello_animal-1_child_wb20251211.html"))
+    assert c.status == "ok", c.error
+    assert len(c.result.animals) == 1
+    a = c.result.animals[0]
+    assert (a["name"], a["breed"], a["color"], a["sex"], a["age"]) == (
+        "2025-102", "ミックス", "白茶", "オス(去勢済み)", "2021年10月頃生まれ")
+    assert a["note"].startswith("20キロ前後の大型犬です。")
+    assert _hits("nagano_hello_animal-1", _fx("w006_nagano_hello_animal-1_child_wb20251211.html")) == []
+    c = _single("nagano_hello_animal-1", _fx("w006_nagano_hello_animal-1_child_wb20240918.html"))
+    a = c.result.animals[0]
+    assert (a["name"], a["breed"], a["sex"], a["age"]) == ("2023-107", "小型ミックス", "メス(避妊手術済み)", "2018年1月頃生まれ")
+    assert _hits("nagano_hello_animal-1", _fx("w006_nagano_hello_animal-1_child_wb20240918.html")) == []
 
 
 def test_nagano_dog_structure_change_is_not_zero():
@@ -102,13 +118,10 @@ def test_saitama_2_first_cat_keeps_photo_and_attributes():
 
 
 def test_grouped_rows_partial_sibling_stops_at_row_until():
-    from collector.recipe import Doc as D2
-    from collector.recipe import Recipe as R2
-    from collector.recipe import extract_rows
 
     html = ("<div><p>No.1</p></div><div><p>種類：犬</p><h2>終了</h2><p>種類：猫</p><p>No.2</p></div>")
-    r = R2.from_dict({"rows": "p:-soup-contains('No.')", "row_until": "h2", "fields": {"breed": {"label": "種類"}}})
-    rows = extract_rows(r, D2(url="http://x/", html=html, soup=BeautifulSoup(html, "lxml")))
+    r = Recipe.from_dict({"rows": "p:-soup-contains('No.')", "row_until": "h2", "fields": {"breed": {"label": "種類"}}})
+    rows = extract_rows(r, Doc(url="http://x/", html=html, soup=BeautifulSoup(html, "lxml")))
     assert "種類：犬" in rows[0].el.get_text() and "種類：猫" not in rows[0].el.get_text()
 
 
@@ -153,6 +166,75 @@ def test_miyagi_6_halfwidth_slash_with_age_still_reads_age_and_note():
     a = c.result.animals[0]
     assert (a["breed"], a["color"], a["sex"], a["age"], a["note"]) == (
         "雑種", "キジトラ白", "メス", "推定3歳以上", "マイクロチップ反応なし、人慣れしている")   # 全角数字は半角にそろう
+
+
+# --- ID の衝突: 同じ写真を使う別の子（管理番号が違う）を「同じ ID」で捨てない ------------------------------------
+
+SAITAMA_MINAMI = "w006_pref_saitama_joto_neko_minami_20261107.html"
+IWATE_OSHU = "w006_pref_iwate_oshu_20261107.html"
+
+
+def test_saitama_minami_cats_sharing_a_photo_are_all_kept():
+    c = _single("pref_saitama_joto_neko_minami", _fx(SAITAMA_MINAMI))
+    assert c.status == "ok", c.error
+    nos = [a["management_no"] for a in c.result.animals]
+    assert nos == ["南2026-C76", "南2026-C77", "南2026-C78"]
+    ids = [a["id"] for a in c.result.animals]
+    assert len(set(ids)) == 3
+    assert c.result.dropped == []
+
+
+def test_saitama_minami_first_cat_id_is_unchanged():
+
+    c = _single("pref_saitama_joto_neko_minami", _fx(SAITAMA_MINAMI))
+    # 公開中の C76 の ID（2026-11-07 の本番 animals の値）は変わらない
+    assert c.result.animals[0]["id"] == "42cfb147dce1"
+    # 衝突した 2 頭は、公開中の ID が無い（今まで捨てられていた）ので管理番号から作る
+    for b in c.result.animals[1:]:
+        assert b["id"] == make_id(SOURCES["pref_saitama_joto_neko_minami"], None, {"management_no": b["management_no"]})
+
+
+def test_iwate_oshu_r8_9_3_is_kept():
+    c = _single("pref_iwate_oshu", _fx(IWATE_OSHU))
+    assert c.status == "ok", c.error
+    nos = [a["management_no"].split("(")[0] for a in c.result.animals]
+    assert "R8-9-3" in nos and len(nos) == 8 and c.result.dropped == []
+    assert len({a["id"] for a in c.result.animals}) == 8
+    # 公開中の 7 頭の ID（2026-11-07 の本番 animals の値）は 1 つも変わらない
+    now = {"6079c2b07254", "b6f465c22036", "ed16499b473b", "103bedd35ff1", "a2514874bbff", "ae7e7d3594f7", "e05d9f5eb4b4"}
+    assert now <= {a["id"] for a in c.result.animals}
+
+
+def test_same_management_no_twice_is_still_dropped_as_duplicate():
+    # 同じ子が 2 行書かれた重複（水戸 公表181）は従来どおり 1 頭
+    html = ("<table><tr><td>A-1</td><td><img src='/p.jpg'></td><td>雑種</td></tr>"
+            "<tr><td>A-1</td><td><img src='/p.jpg'></td><td>雑種</td></tr></table>")
+
+    r = Recipe.from_dict({"rows": "tr", "image": "img@src", "fields": {"management_no": {"selector": ":scope > :nth-child(1)"},
+                                                                  "breed": {"selector": ":scope > :nth-child(3)"}}})
+    res = build(SOURCES["pref_iwate_oshu"], r, [Doc(url="http://x/", html=html, soup=BeautifulSoup(html, "lxml"))])
+    assert len(res.animals) == 1 and res.dropped and res.dropped[0].reason == "同じ ID の行が既にある"
+
+
+# --- 枚方市 city_hirakata: 写真の次のブロックにある表（種類・性別・毛色・体格・収容地域・その他）を読む ---------------
+
+HIRAKATA = "w006_city_hirakata_20261107.html"
+
+
+def test_hirakata_cat_reads_the_table_next_to_the_photo():
+    c = _single("city_hirakata", _fx(HIRAKATA))
+    assert c.status == "ok", c.error
+    assert len(c.result.animals) == 1
+    a = c.result.animals[0]
+    assert a["species"] == "cat" and a["image_url"].endswith("/1430/ten1.jpeg")
+    assert (a["breed"], a["sex"], a["color"], a["size"], a["location"], a["note"]) == (
+        "雑種", "メス", "灰", "小", "黄金野", "体重 約2kg")
+
+
+def test_hirakata_photo_card_id_is_unchanged():
+    # 公開中の ID（2026-11-07 の本番 animals の値）は変わらない
+    c = _single("city_hirakata", _fx(HIRAKATA))
+    assert c.result.animals[0]["id"] == "a411a796bbc0"
 
 
 # --- 千葉県 pref_chiba-1〜5: 公式の誤字「【容場所】」でも場所・品種・毛色を読む -----------------------------
