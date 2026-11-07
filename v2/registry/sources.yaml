@@ -1151,6 +1151,23 @@ sources:
     list_link_pattern: null
     pdf_link_pattern: null
   note: 1 つの枠に 2 匹（写真 1 枚を共有）が載ることがあり、その枠は 1 件として数える（エンジンは 1 行 = 1 頭。2026-09-29 反証で確認）
+- slug: city_wakayama-2
+  name: 和歌山市動物愛護管理センター（迷子保護動物）
+  municipality: 和歌山市動物愛護管理センター
+  prefecture: 和歌山県
+  phone: 073-488-2032
+  address: 〒640-8422 和歌山市松江東3丁目2番63号（和歌山市動物愛護管理センター）
+  url: https://www.city.wakayama.wakayama.jp/kurashi/kenko_iryo/1009125/1035775/1034270.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.city.wakayama.wakayama.jp/kurashi/kenko_iryo/1009125/1035775/1034270.html"
+  verified_address_url: "https://www.city.wakayama.wakayama.jp/kurashi/kenko_iryo/1009125/1035775/1034270.html"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/city_wakayama-2.yaml
+  enabled: true
+  photo: pending
+  note: "2026-11-07 W006 監査 C で追加。「迷子保護動物情報」（保護中の迷子動物。飼い主への返還が目的で譲渡ではない）。city_wakayama（譲渡候補）とは別ページ。写真の扱いは city_wakayama に合わせる"
 - slug: pref_wakayama
   name: 和歌山県（保護犬猫情報）
   municipality: 和歌山県
@@ -1570,6 +1587,23 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+- slug: city_nara-2
+  name: 奈良市（飼い主さん募集中！犬・猫の譲渡）
+  municipality: 奈良市
+  prefecture: 奈良県
+  phone: 0742-93-8395
+  address: 〒630-8122 奈良市三条本町13番1号 はぐくみセンター（奈良市保健所・教育総合センター）
+  url: https://www.city.nara.lg.jp/soshiki/97/10799.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.city.nara.lg.jp/soshiki/97/10799.html"
+  verified_address_url: "https://www.city.nara.lg.jp/soshiki/97/10799.html"
+  kind: adoption
+  species: mixed
+  mode: recipe
+  recipe: recipes/city_nara-2.yaml
+  enabled: true
+  photo: pending
+  note: "2026-11-07 W006 監査 C で追加。「現在、譲渡の準備ができた犬・猫たちのご紹介」の写真だけを載せる（名前・種別・性別・年齢は画像の中にあるだけで文字が無い。alt は「あ」「f」「エイズ」で名前とは限らないので読まない）。連絡先は掲載元ページの保健衛生課（奈良市保健所）"
 - slug: city_sendai-1
   name: 仙台市アニパル（譲渡犬）
   municipality: 仙台市アニパル

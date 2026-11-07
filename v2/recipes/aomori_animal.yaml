@@ -11,7 +11,7 @@ fields:
   color: {label: "毛色"}
   sex: {label: "性別"}
   size: {label: "体格"}
-  note: {label: "備考"}
+  note: {label: ["備考", "特徴"]}   # 見出しが 2026-11-07 に「備考」から「特徴」に変わった（10-04 は「備考」）。どちらも読む
 species:
   from: text
   map: {"犬": dog, "ねこ": cat, "猫": cat, "ネコ": cat}

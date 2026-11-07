@@ -13,11 +13,11 @@ steps:
 rows: "table"
 image: {selector: "img@src", scope: self_or_prev_siblings}
 fields:
-  management_no: {label: "管理番号", regex: "(No\\.?\\s*\\d+|^\\d+$)"}
+  management_no: {label: "管理番号", regex: "(No\\.?\\s*\\d+|^\\d+(?:-\\d+)?$)"}   # 可茂の「67-29」も（2026-11-07）
   shelter_date: {label: "収容日"}
   location: {label: "保護した場所"}
   breed: {label: "類"}
-  color: {label: "毛"}
+  color: {label: ["毛色", "毛　色", "毛 色"]}   # 「毛」だけだと「毛の長さ」を先に拾う（飛騨 13689 は毛の長さが先。2026-11-07）。「毛　色」は全角空白入りの保健所
   sex: {label: "性"}
   age: {label: "年齢"}
   size: {label: "大きさ"}
