@@ -7,6 +7,11 @@
 # 備考は文中に空白が入ることがあるので、label でなく regex で行末まで取る。
 rows: "div.section > h3"
 row_until: "h2, h3"
+# 同じサイトの犬ページは 0 頭の日に h3「現在、飼い主募集中の犬はいません」の雛形が残り、偽の犬になった（nagano_hello_animal-1・2026-11-04〜）。
+# 猫ページも同じ作りと推定して先に防ぐ（猫の 0 頭の日の実物は未確認。文が違えば何も起きず従来どおり）。子の行（※現在、譲受を検討中の方がいます 等）には当たらない文に絞る。
+row_filter:
+  text_lacks: ["飼い主募集中の猫はいません"]
+empty_text: ["現在、飼い主募集中の猫はいません"]
 image: "img@src"
 fields:
   management_no: {selector: "h3", regex: "(\\d{4}-\\d+)"}
