@@ -1,7 +1,9 @@
 # ワンニャピアあきた（譲渡犬・秋田県動物愛護センター）
 # 一覧 (protective-dogs) はカード（写真+種類+性別+名前+詳細リンク）。詳細は a.btn-brown@href の個別ページ (pages/animals/pNNNN) で 1 頭 = 1 ページ。
 # 個体ページの table.style-simple (th/td 2 組×行) から性別・年齢・体重・毛色・備考・個体管理ナンバーを取る。名前は見出し h1。
+# 2026-11-07 監査: 一覧が 2 ページ以上ある（猫は 12 頭で 2 ページ目に 2 頭）。「次のページへ」（li.pager-next）を辿る。最後のページでは li に is-disabled が付き href が # になるので除く。
 steps:
+  - paginate: "li.pager-next:not(.is-disabled) a[rel='next']@href"
   - follow_all: "a.btn-brown@href"
 rows: "body"
 image: "img[src*='/uploads/contents/animals']@src"
