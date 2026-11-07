@@ -3727,7 +3727,7 @@ sources:
   mode: recipe
   recipe: recipes/wannyan_fukuoka-1.yaml
   enabled: true
-  note: "2026-10-21 からわんにゃんよかネット（www.wannyan.city.fukuoka.lg.jp）は市のメンテナンスで一時停止中（全 URL が HTTP 503・Retry-After 3600・再開時期は未定）。この slug は旧 URL・旧レシピのまま毎晩見に行く（今は failed）。読めるようになった日に Discord へ「読めるようになった自治体」が出る。停止中の掲載は市の公式サイトの暫定ページを読む city_fukuoka_interim-1・-2。再開の手順は city_fukuoka_interim-1 の note。停止前の 10/20・10/21 にこの slug は行 0 で failed になっていて原因は未確認（再開したら先に collector show wannyan_fukuoka-1 で確かめる）"
+  note: "2026-10-21 からわんにゃんよかネット（www.wannyan.city.fukuoka.lg.jp）は市のメンテナンスで一時停止中（全 URL が HTTP 503・Retry-After 3600・再開時期は未定）。この slug は旧 URL・旧レシピのまま毎晩見に行く（今は failed で、エラーは HTTP 503）。停止中の掲載は市の公式サイトの暫定ページを読む city_fukuoka_interim-1・-2。【再開の合図と止め方】合図は 2 つ。(1) Discord に wannyan_fukuoka-1・-2 の「読めるようになった自治体」が出る。(2) wannyan_fukuoka-1 のエラーが「HTTP 503」でなくなる（data/report-<日付>.json の error か logs/collect-<日付>.log の行で見える。旧レシピが読めずに別のエラーになる日は (1) が出ないので (2) で気づく）。再開を見つけたら、まず city_fukuoka_interim-1・-2 を enabled: false にして二重掲載を即日止める。削除はその後（手順は city_fukuoka_interim-1 の note）。暫定ページ上部の「更新日」が止まったままなら、暫定側を止める目安にする。停止前の 10/20・10/21 にこの slug は行 0 で failed になっていて原因は未確認（再開したら先に collector show wannyan_fukuoka-1 で確かめる）"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/wannyan_fukuoka.py
     requires_js: true
@@ -3749,7 +3749,7 @@ sources:
   mode: recipe
   recipe: recipes/wannyan_fukuoka-2.yaml
   enabled: true
-  note: "2026-10-21 からわんにゃんよかネット（www.wannyan.city.fukuoka.lg.jp）は市のメンテナンスで一時停止中（全 URL が HTTP 503・再開時期は未定）。この slug は旧 URL・旧レシピのまま毎晩見に行く（今は failed）。読めるようになった日に Discord へ「読めるようになった自治体」が出る。停止中の掲載は市の公式サイトの暫定ページを読む city_fukuoka_interim-1・-2。再開の手順は city_fukuoka_interim-1 の note"
+  note: "2026-10-21 からわんにゃんよかネット（www.wannyan.city.fukuoka.lg.jp）は市のメンテナンスで一時停止中（全 URL が HTTP 503・再開時期は未定）。この slug は旧 URL・旧レシピのまま毎晩見に行く（今は failed で、エラーは HTTP 503）。停止中の掲載は市の公式サイトの暫定ページを読む city_fukuoka_interim-1・-2。【再開の合図と止め方】合図は 2 つ。(1) Discord に wannyan_fukuoka-1・-2 の「読めるようになった自治体」が出る。(2) wannyan_fukuoka-1 のエラーが「HTTP 503」でなくなる（data/report-<日付>.json の error か logs/collect-<日付>.log の行で見える。旧レシピが読めずに別のエラーになる日は (1) が出ないので (2) で気づく）。再開を見つけたら、まず city_fukuoka_interim-1・-2 を enabled: false にして二重掲載を即日止める。削除はその後（手順は city_fukuoka_interim-1 の note）。暫定ページ上部の「更新日」が止まったままなら、暫定側を止める目安にする"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/wannyan_fukuoka.py
     requires_js: true
@@ -3766,7 +3766,7 @@ sources:
   verified_at: '2026-10-31'
   verified_phone_url: "https://www.city.fukuoka.lg.jp/hofuku/dobutsukanri/life/doghoused-.html"
   verified_address_url: "https://www.city.fukuoka.lg.jp/hofuku/dobutsukanri/life/doghoused-.html"
-  note: "2026-11-01 W006 T624: わんにゃんよかネット（wannyan_fukuoka-1・-2）が 10/21 から停止中なので、停止中の画面が案内する市の公式サイトの暫定ページ「センターに収容されている犬」（手で編集した CMS ページ）を読む一時的な 2 件の 1 つ。収容日の欄は無い。状況が返還・譲渡・死亡の子と備考に死亡とある子は載せない。載っている子が全部そうなら 0 頭（全行除外＋一覧の見出し）。一覧に 1 頭もいない日は「現在、飼い主不明の迷い犬はセンターに収容されていません。」の 1 文だけが載る（2026-11-06 に確認。その日の 00:05 の収集では URL が一時 HTTP 404 だったが同日中に同じ URL で復活。子のいる版が 1 つしか無いので、文があり li・写真・表が無い日だけ 0 頭にする empty_absent）。収容中の子の状況の書き方は未確認（読めなければ通知に出る）。電話・所在地はこのページの「このページに関するお問い合わせ先」のとおり（T628。郵便番号と「東部」は載せない）。市サイトの「リンク・著作権等」に「トップページ以外の各個別のページへのリンクについては、各ページに記載の担当課までお問い合わせください」とある（反証担当が確認。この台帳で www.city.fukuoka.lg.jp を使うのはこの 2 件が初めて）。再開の手順: Discord に wannyan_fukuoka-1・-2 の「読めるようになった自治体」が出たら、collector show で読めることを確かめ、city_fukuoka_interim-1・-2 を台帳から消す（同じ子が二重に載るのを避ける）。あわせて recipes/city_fukuoka_interim.yaml、registry/discover_known.yaml の city.fukuoka.lg.jp の行、tests/test_w006_moved_20261101.py の福岡の部分とその fixture（w006_city_fukuoka_*・w006_wannyan_fukuoka_*）を消す。この PR を revert すれば一度に戻る"
+  note: "2026-11-01 W006 T624: わんにゃんよかネット（wannyan_fukuoka-1・-2）が 10/21 から停止中なので、停止中の画面が案内する市の公式サイトの暫定ページ「センターに収容されている犬」（手で編集した CMS ページ）を読む一時的な 2 件の 1 つ。収容日の欄は無い。状況の項目が無いブロックは行にしない（項目名が変わった日に返還済・死亡の子を収容中として載せないため。全部が変われば failed）。状況が返還・譲渡・死亡の子と備考に死亡とある子は載せない。載っている子が全部そうなら 0 頭（全行除外＋一覧の見出し）。一覧に 1 頭もいない日は「現在、飼い主不明の迷い犬はセンターに収容されていません。」の 1 文だけが載る（2026-11-06 に確認。その日の 00:05 の収集では URL が一時 HTTP 404 だったが同日中に同じ URL で復活。子のいる版が 1 つしか無いので、文があり li・写真・表が無い日だけ 0 頭にする empty_absent）。収容中の子の状況の書き方は未確認（読めなければ通知に出る）。市のページが 0 頭の日の文言が変わったら、その日のページを保存して empty_absent か empty_text を直す。電話・所在地はこのページの「このページに関するお問い合わせ先」のとおり（T628。郵便番号と「東部」は載せない）。市サイトの「リンク・著作権等」に「トップページ以外の各個別のページへのリンクについては、各ページに記載の担当課までお問い合わせください」とある（2026-11-01 確認（https://www.city.fukuoka.lg.jp/sub/tyosakuken.html）。この台帳で www.city.fukuoka.lg.jp を使うのはこの 2 件が初めて）。【再開の合図と止め方】合図は 2 つ。(1) Discord に wannyan_fukuoka-1・-2 の「読めるようになった自治体」が出る。(2) wannyan_fukuoka-1 のエラーが「HTTP 503」でなくなる（data/report-<日付>.json の error か logs/collect-<日付>.log の行で見える。旧レシピが読めずに別のエラーになる日は (1) が出ないので (2) で気づく）。再開を見つけたら、まず city_fukuoka_interim-1・-2 を enabled: false にして二重掲載を即日止める。削除はその後（collector show で旧 2 件が読めることを確かめ、city_fukuoka_interim-1・-2 を台帳から消す。あわせて recipes/city_fukuoka_interim.yaml、registry/discover_known.yaml の city.fukuoka.lg.jp の行、tests/test_w006_moved_20261101.py の福岡の部分とその fixture〔w006_city_fukuoka_*・w006_wannyan_fukuoka_*〕を消す。この PR を revert すれば一度に戻る）。暫定ページ上部の「更新日」が止まったままなら、暫定側を止める目安にする"
   kind: sheltered
   species: dog
   mode: recipe
@@ -3783,7 +3783,7 @@ sources:
   verified_at: '2026-10-31'
   verified_phone_url: "https://www.city.fukuoka.lg.jp/hofuku/dobutsukanri/life/cathoused.html"
   verified_address_url: "https://www.city.fukuoka.lg.jp/hofuku/dobutsukanri/life/cathoused.html"
-  note: "2026-11-01 W006 T624: city_fukuoka_interim-1 と同じ一時的な 2 件の 1 つ（市の暫定ページ「センターに収容されている猫」）。犬のページと違い ul が div に包まれていない。写真の無い子は「写真は掲載しておりません」で、管理番号で載せる。読み方・未確認の点・再開の手順は city_fukuoka_interim-1 の note"
+  note: "2026-11-01 W006 T624: city_fukuoka_interim-1 と同じ一時的な 2 件の 1 つ（市の暫定ページ「センターに収容されている猫」）。犬のページと違い ul が div に包まれていない。写真の無い子は「写真は掲載しておりません」で、管理番号で載せる。市のページが 0 頭の日（ブロックが 1 つも無い日）の文言が出たら、その日のページを保存して empty_text を足す。読み方・未確認の点は city_fukuoka_interim-1 の note。【再開の合図と止め方】合図は 2 つ。(1) Discord に wannyan_fukuoka-1・-2 の「読めるようになった自治体」が出る。(2) wannyan_fukuoka-1 のエラーが「HTTP 503」でなくなる（data/report-<日付>.json の error か logs/collect-<日付>.log の行で見える）。再開を見つけたら、まず city_fukuoka_interim-1・-2 を enabled: false にして二重掲載を即日止める。削除はその後（手順は city_fukuoka_interim-1 の note）。暫定ページ上部の「更新日」が止まったままなら、暫定側を止める目安にする"
   kind: sheltered
   species: cat
   mode: recipe

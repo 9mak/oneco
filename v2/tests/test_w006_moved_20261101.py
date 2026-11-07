@@ -10,6 +10,7 @@ fixture は 2026-10-27〜11-01 に保存した実ページから script・style 
 収容中の子が載った形は「状況」の欄だけを書き換えた合成ページ（テスト名に synthetic）で確かめる。
 """
 
+import dataclasses
 import re
 import sys
 from pathlib import Path
@@ -38,8 +39,12 @@ def _fx(name: str) -> str:
 
 
 def _collect(slug: str, pages: dict[str, str | bytes], status: dict[str, int] | None = None) -> Collected:
-    """台帳の url から入口を辿り、レシピで読む（本番の収集 collect_one と同じ流れ）。"""
-    return collect_one(SOURCES[slug], FakeFetcher(pages, status=status))
+    """台帳の url から入口を辿り、レシピで読む（本番の収集 collect_one と同じ流れ）。
+
+    enabled は True に固定して読む。福岡の暫定 2 件は、元のサイトが再開したら台帳で enabled: false にして止める手順なので（台帳の note）、
+    止めた後もレシピの試験が「無効」で落ちないようにする。台帳の enabled の値そのものは、旧 2 件が true のままであることだけを別の試験で見る。
+    """
+    return collect_one(dataclasses.replace(SOURCES[slug], enabled=True), FakeFetcher(pages, status=status))
 
 
 def _res(c: Collected) -> Result:
@@ -179,19 +184,52 @@ def _cat(html: str) -> Collected:
     return _collect("city_fukuoka_interim-2", {FUKUOKA_CAT: html})
 
 
+def _ledger_notes() -> dict[str, str]:
+    """台帳の note（Source 型は note を持たないので YAML を直接読む）。"""
+    entries = yaml.safe_load((ROOT / "registry" / "sources.yaml").read_text(encoding="utf-8"))["sources"]
+    return {e["slug"]: e.get("note", "") for e in entries}
+
+
 def test_fukuoka_interim_entries_are_added_and_the_wannyan_entries_stay_on_the_old_host():
     d, c = SOURCES["city_fukuoka_interim-1"], SOURCES["city_fukuoka_interim-2"]
-    assert (d.url, d.species, d.kind, d.enabled, d.mode) == (FUKUOKA_DOG, "dog", "sheltered", True, "recipe")
-    assert (c.url, c.species, c.kind, c.enabled, c.mode) == (FUKUOKA_CAT, "cat", "sheltered", True, "recipe")
+    # 暫定 2 件の enabled はここで固定しない（元のサイトが再開したら、まず enabled: false にして二重掲載を止める手順が台帳の note にある）
+    assert (d.url, d.species, d.kind, d.mode) == (FUKUOKA_DOG, "dog", "sheltered", "recipe")
+    assert (c.url, c.species, c.kind, c.mode) == (FUKUOKA_CAT, "cat", "sheltered", "recipe")
     assert d.recipe == c.recipe and d.recipe_path.exists()
-    # 元の 2 件は旧 URL・旧レシピのまま有効（毎晩旧ホストを見るので、再開した日に「読めるようになった自治体」が出る）
+    # 元の 2 件は旧 URL・旧レシピのまま有効（毎晩旧ホストを見るので、再開した日に「読めるようになった自治体」が出る）。これは止めない
     w1, w2 = SOURCES["wannyan_fukuoka-1"], SOURCES["wannyan_fukuoka-2"]
     assert (w1.url, w1.enabled, w1.mode, w1.recipe) == (WANNYAN_DOG, True, "recipe", "recipes/wannyan_fukuoka-1.yaml")
     assert (w2.url, w2.enabled, w2.mode, w2.recipe) == (WANNYAN_CAT, True, "recipe", "recipes/wannyan_fukuoka-2.yaml")
-    notes = {e["slug"]: e.get("note", "") for e in yaml.safe_load((ROOT / "registry" / "sources.yaml").read_text(encoding="utf-8"))["sources"]}
-    assert "city_fukuoka_interim" in notes["wannyan_fukuoka-1"] and "city_fukuoka_interim" in notes["wannyan_fukuoka-2"]
-    assert "読めるようになった自治体" in notes["wannyan_fukuoka-1"]                                      # 再開に気づく形
-    assert "台帳から消す" in notes["city_fukuoka_interim-1"] and "revert" in notes["city_fukuoka_interim-1"]   # 再開したときの手順
+
+
+def test_fukuoka_notes_say_how_to_notice_the_return_and_how_to_stop():
+    # reviewer F-02: 再開の合図は 2 つ（Discord の「読めるようになった」と、wannyan_fukuoka-1 のエラーが HTTP 503 でなくなること）。
+    # 再開を見つけたら、まず暫定 2 件を enabled: false にして二重掲載を即日止め、削除はその後。暫定ページ上部の「更新日」が止まったままなら暫定側を止める目安。
+    # 4 件のどの note を読んでも手順が分かるように、同じ手順を 4 件に書く
+    notes = _ledger_notes()
+    for slug in ("wannyan_fukuoka-1", "wannyan_fukuoka-2", "city_fukuoka_interim-1", "city_fukuoka_interim-2"):
+        note = notes[slug]
+        assert "読めるようになった自治体" in note, slug
+        assert "HTTP 503" in note and "wannyan_fukuoka-1" in note, slug
+        assert "enabled: false" in note and "削除はその後" in note, slug
+        assert "更新日" in note, slug
+        assert "city_fukuoka_interim-1・-2" in note, slug
+    assert "台帳から消す" in notes["city_fukuoka_interim-1"] and "revert" in notes["city_fukuoka_interim-1"]
+
+
+def test_fukuoka_notes_say_what_to_do_when_the_citys_zero_day_wording_shows_up():
+    # reviewer F-06: 市のページが 0 頭の日（ブロックが 1 つも無い日）の文言は未確認。出たらその日のページを保存して empty_text を足す
+    # 犬のページ（-1）は 2026-11-06 に文言を確認して empty_absent を置いた（#93）。猫のページ（-2）は未確認のまま
+    notes = _ledger_notes()
+    assert "ブロックが 1 つも無い日" in notes["city_fukuoka_interim-2"] and "empty_text を足す" in notes["city_fukuoka_interim-2"]
+    assert "その日のページを保存して empty_absent か empty_text を直す" in notes["city_fukuoka_interim-1"]
+
+
+def test_fukuoka_note_cites_the_date_and_url_of_the_link_clause_check():
+    # reviewer F-07: 「反証担当が確認」でなく、日付と URL で出典を示す
+    note = _ledger_notes()["city_fukuoka_interim-1"]
+    assert "2026-11-01 確認（https://www.city.fukuoka.lg.jp/sub/tyosakuken.html）" in note
+    assert "反証担当が確認" not in note
 
 
 @pytest.mark.parametrize("slug", sorted(INTERIM))
@@ -273,10 +311,16 @@ def test_fukuoka_dog_synthetic_page_with_death_in_the_remarks_is_not_listed():
     assert c.status == "empty" and _res(c).animals == []
 
 
-@pytest.mark.parametrize("cell,breed,color", [("ハスキー・灰白", "ハスキー", "灰白"), ("雑種・キジ", "雑種", "キジ"),
-                                              ("シー・ズー・白茶", "シー・ズー・白茶", None), ("柴", "柴", None)])
+@pytest.mark.parametrize("cell,breed,color", [
+    ("ハスキー・灰白", "ハスキー", "灰白"), ("雑種・キジ", "雑種", "キジ"), ("柴・白", "柴", "白"), ("柴", "柴", None),
+    ("シー・ズー・白茶", "シー・ズー・白茶", None),                        # 「・」が 2 つ以上は、欄をそのまま品種に入れて毛色は空
+    # reviewer F-04: 毛色の無い「・」入りの犬猫種（「・」が 1 つ）を「品種・毛色」と取り違えて分けない。頭の語が「トイ・」「シー・」等で始まる欄は分けない
+    ("トイ・プードル", "トイ・プードル", None), ("シー・ズー", "シー・ズー", None), ("ミニチュア・ダックスフンド", "ミニチュア・ダックスフンド", None),
+    ("ジャック・ラッセル・テリア", "ジャック・ラッセル・テリア", None), ("ゴールデン・レトリバー", "ゴールデン・レトリバー", None),
+    ("アメリカン・ショートヘア", "アメリカン・ショートヘア", None), ("トイ・プードル・白", "トイ・プードル・白", None)])
 def test_fukuoka_dog_synthetic_breed_and_color_are_split_only_when_there_is_one_separator(cell, breed, color):
-    # 品種・毛色は 1 つの欄。「・」が 1 つのときだけ分ける。品種に「・」を含む犬種（シー・ズー）や色が「・」でつながる子は、欄をそのまま品種に入れて毛色は空
+    # 品種・毛色は 1 つの欄。「・」がちょうど 1 つで、頭の語が「・」入りの犬猫種の頭（トイ・ ミニチュア・ シー・ ジャック・ ゴールデン・ アメリカン・ 等）でないときだけ分ける。
+    # 品種に「・」を含む犬種（シー・ズー）や色が「・」でつながる子は、欄をそのまま品種に入れて毛色は空（誤って切らない）
     html = _swap(_fx(DOG_PAGE), "<li>返還済</li>", "<li></li>")
     if cell != "ハスキー・灰白":
         html = _swap(html, "<li>ハスキー・灰白</li>", f"<li>{cell}</li>")
@@ -298,6 +342,19 @@ def test_fukuoka_changed_structure_is_not_zero():
                    _swap(dog, "<li>管理番号 ", "<li>番号 ")):                    # 項目名が変わった
         c = _dog(broken)
         assert c.status == "failed" and _res(c).animals == []
+
+
+def test_fukuoka_status_label_renamed_is_not_read_as_active():
+    # reviewer F-01: 項目名「状況」が変わると、返還済・死亡の子の状況を読めず収容中として載ってしまう（fail-open）。
+    # 状況の項目が無いブロックは行にせず、読めなかったことにする（failed）。状況の欄が空の収容中の子は、項目名があるので行になる
+    dog, cat = _fx(DOG_PAGE), _fx(CAT_PAGE)
+    for c in (_dog(_swap(dog, "<li>状況 ", "<li>ステータス ")), _cat(_swap(cat, "<li>状況 ", "<li>ステータス "))):
+        assert c.status == "failed" and _res(c).animals == []
+    # 今日の 2 ページは 0 頭確定のまま、状況が空欄の収容中の子は載る
+    for c in (_dog(dog), _cat(cat)):
+        assert c.status == "empty" and _res(c).empty_evidence == "all_excluded+container"
+    assert [a["management_no"] for a in _res(_dog(_swap(dog, "<li>返還済</li>", "<li></li>"))).animals] == ["d1877"]
+    assert [a["management_no"] for a in _res(_cat(_swap(cat, "<li>死亡</li>", "<li></li>"))).animals] == ["c1937"]
 
 
 def test_fukuoka_blocks_that_cannot_be_read_are_not_zero():
