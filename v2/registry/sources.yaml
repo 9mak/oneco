@@ -7549,8 +7549,8 @@ sources:
   address: 福岡県久留米市百年公園1番2号
   url: https://www.city.kurume.fukuoka.jp/1070kenkou/2040hokeneisei/3115doubutsuaigo/2010-0707-1600-465.html
   verified_at: '2026-11-07'
-  verified_phone_url: "https://www.city.kurume.fukuoka.jp/1070kenkou/2040hokeneisei/3115doubutsuaigo/2010-0707-1600-465.html"
-  verified_address_url: "https://www.city.kurume.fukuoka.jp/1070kenkou/2040hokeneisei/3115doubutsuaigo/2010-0707-1600-465.html"
+  verified_phone_url: "https://www.city.kurume.fukuoka.jp/1070kenkou/2040hokeneisei/3115doubutsuaigo/2016-0406-1637-187.html"
+  verified_address_url: "https://www.city.kurume.fukuoka.jp/1070kenkou/2040hokeneisei/3115doubutsuaigo/2016-0406-1637-187.html"
   kind: adoption
   species: mixed
   mode: recipe
@@ -7558,3 +7558,638 @@ sources:
   enabled: true
   photo: pending
   note: 環境省リンク集から追加（2026-11-07 W006）。動物愛護センターが保護して新しい飼い主を募集している犬・猫（2026-11-07 時点は猫のみ）。h3「譲渡犬猫番号…」の下に写真と基本情報。きょうだいは 1 つの h3 に番号が並ぶので 1 件として載せ、番号は載っているまま（J8014、J8015 など）。「新しい飼い主さんが決まりました」の子は載せない。J8010 は人ならし中で正式な募集前と本文にある（備考には載せていない。元ページで確認）。0 頭の日は「現在、譲渡対象の犬猫はおりません。」（Wayback 2026-03-11）。写真の規約は未確認（写真は出さない）。
+- slug: hokkaido_sorachi-1
+  name: 北海道 空知総合振興局（飼い主募集の犬・猫）
+  municipality: 北海道 空知総合振興局環境生活課
+  prefecture: 北海道
+  phone: 0126-20-0045
+  address: 北海道岩見沢市8条西5丁目
+  url: https://www.sorachi.pref.hokkaido.lg.jp/hk/kks/kainusibosyuinuneko.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.sorachi.pref.hokkaido.lg.jp/hk/kks/kainusibosyuinuneko.html"
+  verified_address_url: "https://www.sorachi.pref.hokkaido.lg.jp/hk/kks/kainusibosyuinuneko.html"
+  kind: adoption
+  species: mixed
+  mode: recipe
+  recipe: recipes/hokkaido_sorachi-1.yaml
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。岩見沢保健所・由仁支所・滝川・深川・協力動物病院等で飼い主を募集している犬・猫。1 頭ごとに「【掲載日】」の p・写真・紹介文と 仮名・種類・性別・年齢・体格。2026-11-07 時点は岩見沢の猫 2・由仁支所の犬 1（協力動物病院の猫 1 は 10/28 に引取先が決まった旨の注記があるので載せない）。あいにきたの節は spec_aniwel が載せているので読まない。0 頭の文言は節ごとの「現在いません。」で他の節に子がいる日にも出るため、0 頭の日は「読めなかった」通知になる（偽の 0 頭を出さない側）。写真の規約は未確認（写真は出さない）。"
+- slug: hokkaido_sorachi-2
+  name: 北海道 空知総合振興局 岩見沢保健所（迷い犬・猫情報）
+  municipality: 北海道 空知総合振興局保健行政室（岩見沢保健所）企画総務課
+  prefecture: 北海道
+  phone: 0126-20-0100
+  address: 北海道岩見沢市8条西5丁目
+  url: https://www.sorachi.pref.hokkaido.lg.jp/hk/hgc/seikatu/kankyou/inuneko.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.sorachi.pref.hokkaido.lg.jp/hk/hgc/seikatu/kankyou/inuneko.html"
+  verified_address_url: "https://www.sorachi.pref.hokkaido.lg.jp/hk/hgc/seikatu/kankyou/inuneko.html"
+  kind: sheltered
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。岩見沢保健所・由仁支所の迷子と、飼い主募集中／怪我で保護中の件数（2026-11-07 時点は迷子の犬猫が 0 匹・募集中の猫が 2 匹と件数だけ載る）。子の一覧は空知総合振興局環境生活課のページ（hokkaido_sorachi-1）で読んでいるので重ねて載せない。迷子が載った日の作りを確認できず link_only。"
+- slug: hokkaido_sorachi-3
+  name: 北海道 空知総合振興局 滝川保健所（犬・猫に関する情報）
+  municipality: 北海道 空知総合振興局滝川地域保健室（滝川保健所）生活衛生課
+  prefecture: 北海道
+  phone: 0125-24-6201
+  address: 北海道滝川市緑町2丁目3-31
+  url: https://www.sorachi.pref.hokkaido.lg.jp/hk/tth/03/inuneko2.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.sorachi.pref.hokkaido.lg.jp/hk/tth/03/inuneko2.html"
+  verified_address_url: "https://www.sorachi.pref.hokkaido.lg.jp/hk/tth/03/inuneko2.html"
+  kind: sheltered
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。滝川保健所の迷い犬・猫と新しい飼い主募集の案内。2026-11-07 時点は「現在、迷い犬はいません」。子が載った日の作りを Wayback で確認できていないため link_only（0 頭の文言だけでは根拠にしない）。"
+- slug: hokkaido_sorachi-4
+  name: 北海道 空知総合振興局 深川保健所（犬猫情報）
+  municipality: 北海道 空知総合振興局深川地域保健室（深川保健所）企画総務課
+  prefecture: 北海道
+  phone: 0164-22-1421
+  address: 北海道深川市2条18番6号
+  url: https://www.sorachi.pref.hokkaido.lg.jp/hk/fth/inuneko_jouhou.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.sorachi.pref.hokkaido.lg.jp/hk/fth/inuneko_jouhou.html"
+  verified_address_url: "https://www.sorachi.pref.hokkaido.lg.jp/hk/fth/inuneko_jouhou.html"
+  kind: adoption
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。深川保健所の新しい飼い主さん募集のページ。2026-11-07 時点は「現在、飼い主さんは募集しておりません」。子が載った日の作りを確認できていないため link_only。"
+- slug: hokkaido_ishikari-1
+  name: 北海道 石狩振興局 江別保健所（迷い犬猫）
+  municipality: 北海道 石狩振興局保健行政室(北海道江別保健所)生活衛生課
+  prefecture: 北海道
+  phone: 011-383-2111
+  address: 北海道江別市錦町4番1号
+  url: https://www.ishikari.pref.hokkaido.lg.jp/hk/hgc/se/inu-neko-newpage.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.ishikari.pref.hokkaido.lg.jp/hk/hgc/se/inu-neko-newpage.html"
+  verified_address_url: "https://www.ishikari.pref.hokkaido.lg.jp/hk/hgc/se/inu-neko-newpage.html"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/hokkaido_ishikari-1.yaml
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。江別保健所のページの迷子の節。1 頭ごとに p「番号（保管場所、保護年月日、保護場所、…）」。2026-11-07 時点は迷い猫 1（負傷猫）・迷い犬 0。丸括弧の中は行によって項目が抜けるのでそのまま note に載せる。写真は無い。写真の規約は未確認（写真は出さない）。"
+- slug: hokkaido_ishikari-2
+  name: 北海道 石狩振興局 江別保健所（新しい飼い主募集）
+  municipality: 北海道 石狩振興局保健行政室(北海道江別保健所)生活衛生課
+  prefecture: 北海道
+  phone: 011-383-2111
+  address: 北海道江別市錦町4番1号
+  url: https://www.ishikari.pref.hokkaido.lg.jp/hk/hgc/se/inu-neko-newpage.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.ishikari.pref.hokkaido.lg.jp/hk/hgc/se/inu-neko-newpage.html"
+  verified_address_url: "https://www.ishikari.pref.hokkaido.lg.jp/hk/hgc/se/inu-neko-newpage.html"
+  kind: adoption
+  species: mixed
+  mode: recipe
+  recipe: recipes/hokkaido_ishikari-2.yaml
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。江別保健所のページの新しい飼い主募集の節。1 頭ごとに p「番号（保管場所、種類推定、性別、体格、毛色、年齢推定、…）」。2026-11-07 時点は猫 3（石狩支所 2・江別保健所 1）・犬 0。丸括弧の中をそのまま note に載せる。写真のリンク先は PDF で img は無い。保健所以外（飼い主さがしノート＝飼い主の自宅の犬猫・あいにきた）は読まない。写真の規約は未確認（写真は出さない）。"
+- slug: hokkaido_ishikari-3
+  name: 北海道 石狩振興局 千歳保健所（新しい飼い主募集）
+  municipality: 北海道 石狩振興局千歳地域保健室（千歳保健所）生活衛生課
+  prefecture: 北海道
+  phone: 0123-23-3175
+  address: 北海道千歳市東雲4丁目2番地
+  url: https://www.ishikari.pref.hokkaido.lg.jp/hk/cth/mayoiinuneko.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.ishikari.pref.hokkaido.lg.jp/hk/cth/mayoiinuneko.html"
+  verified_address_url: "https://www.ishikari.pref.hokkaido.lg.jp/hk/cth/mayoiinuneko.html"
+  kind: adoption
+  species: mixed
+  mode: recipe
+  recipe: recipes/hokkaido_ishikari-3.yaml
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。千歳保健所のページの新しい飼い主募集の節。見出しごとの 1 頭の区切りが無く、1 匹の紹介文が節の全体になるため「1匹」の日だけ読む（2 匹以上の日は読めなかった通知）。2026-11-07 時点は猫 1。迷子の節（「現在、迷子の犬猫はいません」）は別の節で読まない。写真の規約は未確認（写真は出さない）。"
+- slug: hokkaido_ishikari-4
+  name: 北海道 石狩振興局（新しい飼い主探しネットワーク）
+  municipality: 北海道 石狩振興局環境生活課
+  prefecture: 北海道
+  phone: 011-204-5820
+  address: 北海道札幌市中央区北3条西7丁目道庁別館
+  url: https://www.ishikari.pref.hokkaido.lg.jp/hk/kks/kansei/kainusi1.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.ishikari.pref.hokkaido.lg.jp/hk/kks/kansei/kainusi1.html"
+  verified_address_url: "https://www.ishikari.pref.hokkaido.lg.jp/hk/kks/kansei/kainusi1.html"
+  kind: adoption
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。石狩振興局環境生活課の制度の案内（譲渡対象者・手続き・申込書）。動物の一覧は無く、江別・千歳の保健所のページ（hokkaido_ishikari-1〜3）へ案内する。"
+- slug: hokkaido_shiribeshi-1
+  name: 北海道 後志総合振興局（犬猫の新しい飼い主探し）
+  municipality: 北海道 後志総合振興局環境生活課
+  prefecture: 北海道
+  phone: 0136-23-1351
+  address: 北海道虻田郡倶知安町北1条東2丁目後志合同庁舎
+  url: https://www.shiribeshi.pref.hokkaido.lg.jp/hk/kks/160310.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.shiribeshi.pref.hokkaido.lg.jp/hk/kks/160310.html"
+  verified_address_url: "https://www.shiribeshi.pref.hokkaido.lg.jp/hk/kks/160310.html"
+  kind: adoption
+  species: mixed
+  mode: recipe
+  recipe: recipes/hokkaido_shiribeshi-1.yaml
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。「動物一覧」の表（写真・仮名・性別・毛色・年齢・ワクチン・詳細 PDF）。1 行 1 頭。2026-11-07 時点は 5 頭（更新日 R8.10.22）。動物種の欄は無く、毛色の語で猫と決められる子だけ猫にする。0 頭の日の作りは未確認。飼い主さがしノート（飼い主の自宅の犬猫）は読まない。写真の規約は未確認（写真は出さない）。"
+- slug: hokkaido_shiribeshi-2
+  name: 北海道 後志総合振興局 倶知安保健所（迷子の犬・猫）
+  municipality: 北海道 後志総合振興局保健行政室（倶知安保健所）企画総務課
+  prefecture: 北海道
+  phone: 0136-23-1914
+  address: 北海道虻田郡倶知安町北1条東2丁目後志合同庁舎
+  url: https://www.shiribeshi.pref.hokkaido.lg.jp/hk/hgc/maigoinuneko.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.shiribeshi.pref.hokkaido.lg.jp/hk/hgc/maigoinuneko.html"
+  verified_address_url: "https://www.shiribeshi.pref.hokkaido.lg.jp/hk/hgc/maigoinuneko.html"
+  kind: stray
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。倶知安保健所の迷子の表。2026-11-07 時点は「保護頭数は、0匹です。現在、保護している犬・猫はいません。」。子が載った日の作りを確認できていないため link_only。"
+- slug: hokkaido_shiribeshi-3
+  name: 北海道 後志総合振興局 岩内保健所（迷い犬猫情報）
+  municipality: 北海道 後志総合振興局岩内地域保健室（岩内保健所）企画総務課
+  prefecture: 北海道
+  phone: 0135-62-1537
+  address: 北海道岩内郡岩内町字清住252-1
+  url: https://www.shiribeshi.pref.hokkaido.lg.jp/hk/ith/kankyou/inuneko.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.shiribeshi.pref.hokkaido.lg.jp/hk/ith/kankyou/inuneko.html"
+  verified_address_url: "https://www.shiribeshi.pref.hokkaido.lg.jp/hk/ith/kankyou/inuneko.html"
+  kind: stray
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。岩内保健所の迷い犬猫のページ。2026-11-07 時点で 0 頭の文言は見つからなかった（案内文のみ）。子が載った日の作りを確認できていないため link_only。"
+- slug: hokkaido_iburi-1
+  name: 北海道 胆振総合振興局 室蘭保健所（新しい飼い主募集の猫）
+  municipality: 北海道 胆振総合振興局保健行政室（室蘭保健所）企画総務課
+  prefecture: 北海道
+  phone: 0143-24-9833
+  address: 北海道室蘭市海岸町1丁目4番1号むろらん広域センタービル
+  url: https://www.iburi.pref.hokkaido.lg.jp/hk/hgc/muroran-inuneko.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.iburi.pref.hokkaido.lg.jp/hk/hgc/muroran-inuneko.html"
+  verified_address_url: "https://www.iburi.pref.hokkaido.lg.jp/hk/hgc/muroran-inuneko.html"
+  kind: adoption
+  species: mixed
+  mode: recipe
+  recipe: recipes/hokkaido_iburi-1.yaml
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。室蘭保健所のページの新しい飼い主を募集している犬・猫の節。1 頭ごとに p（写真）→ p「名前・性別・年齢・毛色・性格」。2026-11-07 時点は猫 3（くろ・もうふ・くつした。環境生活課の飼い主募集ページ /hk/kks/animal/kainushibosyu.html にも同じ 3 頭が載るので重ねて載せない）。迷子の節は「保管中の迷い犬【今はいません】」「保管中の迷い猫【今はいません】」で、子が載った日の作りを確認できていないため読まない。写真の規約は未確認（写真は出さない）。"
+- slug: hokkaido_iburi-2
+  name: 北海道 胆振総合振興局（犬・猫の新しい飼い主探し）
+  municipality: 北海道 胆振総合振興局環境生活課
+  prefecture: 北海道
+  phone: 0143-24-9572
+  address: 北海道室蘭市海岸町1丁目4番1号むろらん広域センタービル
+  url: https://www.iburi.pref.hokkaido.lg.jp/hk/kks/animal/jouto.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.iburi.pref.hokkaido.lg.jp/hk/kks/animal/jouto.html"
+  verified_address_url: "https://www.iburi.pref.hokkaido.lg.jp/hk/kks/animal/jouto.html"
+  kind: adoption
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。新しい飼い主探しネットワーク事業の案内（譲り受け申込書・条件）。動物の一覧は同じ振興局の別ページ（/hk/kks/animal/kainushibosyu.html）にあり、室蘭保健所の 3 頭は hokkaido_iburi-1 で読んでいる。苫小牧保健所は hokkaido_iburi-3。"
+- slug: hokkaido_iburi-3
+  name: 北海道 胆振総合振興局 苫小牧保健所（犬・猫情報）
+  municipality: 北海道 胆振総合振興局苫小牧地域保健室（苫小牧保健所）生活衛生課
+  prefecture: 北海道
+  phone: 0144-34-4168
+  address: 北海道苫小牧市若草町2丁目2番21号
+  url: https://www.iburi.pref.hokkaido.lg.jp/hk/tth/inuneko.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.iburi.pref.hokkaido.lg.jp/hk/tth/inuneko.html"
+  verified_address_url: "https://www.iburi.pref.hokkaido.lg.jp/hk/tth/inuneko.html"
+  kind: sheltered
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。苫小牧保健所の迷子情報【犬０匹、猫０匹】と飼い主募集情報【犬０匹、猫０匹】（2026-11-07 時点）。子が載った日の作りを確認できていないため link_only。"
+- slug: hokkaido_hidaka-1
+  name: 北海道 日高振興局（動物愛護管理のページ）
+  municipality: 北海道 日高振興局環境生活課
+  prefecture: 北海道
+  phone: 0146-22-9251
+  address: 北海道浦河郡浦河町栄丘東通56号
+  url: https://www.hidaka.pref.hokkaido.lg.jp/hk/kks/doubutuaigokannri.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.hidaka.pref.hokkaido.lg.jp/hk/kks/doubutuaigokannri.html"
+  verified_address_url: "https://www.hidaka.pref.hokkaido.lg.jp/hk/kks/doubutuaigokannri.html"
+  kind: adoption
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。浦河・静内の保健所と環境生活課の新しい飼い主募集の節。2026-11-07 時点は 3 節とも「現在、新しい飼い主を募集している犬・猫はおりません。」。3 節が同じ文のため一つに読めず、子が載った日の作りも確認できていないので link_only。"
+- slug: hokkaido_hidaka-2
+  name: 北海道 日高振興局 浦河保健所（犬猫情報）
+  municipality: 北海道 日高振興局保健行政室（浦河保健所）生活衛生課
+  prefecture: 北海道
+  phone: 0146-22-3071
+  address: 北海道浦河郡浦河町東町ちのみ3丁目1番8号
+  url: https://www.hidaka.pref.hokkaido.lg.jp/hk/hgc/dog.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.hidaka.pref.hokkaido.lg.jp/hk/hgc/dog.html"
+  verified_address_url: "https://www.hidaka.pref.hokkaido.lg.jp/hk/hgc/dog.html"
+  kind: sheltered
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。浦河保健所の迷い犬・猫【犬0匹、猫0匹】・新しい飼い主さん募集【犬0匹、猫0匹】（2026-11-07 時点）。子が載った日の作りを確認できていないため link_only。"
+- slug: hokkaido_tokachi-1
+  name: 北海道 十勝総合振興局（犬猫の新しい飼い主募集）
+  municipality: 北海道 十勝総合振興局環境生活課
+  prefecture: 北海道
+  phone: 0155-27-8526
+  address: 北海道帯広市東3条南3丁目1番地
+  url: https://www.tokachi.pref.hokkaido.lg.jp/hk/kks/sizen/doubutsu/kainushibosyuu.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.tokachi.pref.hokkaido.lg.jp/hk/kks/sizen/doubutsu/kainushibosyuu.html"
+  verified_address_url: "https://www.tokachi.pref.hokkaido.lg.jp/hk/kks/sizen/doubutsu/kainushibosyuu.html"
+  kind: adoption
+  species: mixed
+  mode: recipe
+  recipe: recipes/hokkaido_tokachi-1.yaml
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。帯広保健所・各支所で飼い主を募集している犬猫。1 頭ごとに h4「猫（H-6）」・性別・種類・年齢・毛色・名前・写真。2026-11-07 時点は帯広保健所の猫 5（新得・広尾・本別の各支所は 0）。支所ごとの 0 匹の書き方が揺れるので 0 頭の日は「読めなかった」通知になる。道東センター（あいにきた）・負傷動物・飼い主さがしノートは読まない。写真の規約は未確認（写真は出さない）。"
+- slug: hokkaido_tokachi-2
+  name: 北海道 十勝総合振興局 保健行政室（迷子の犬猫たち）
+  municipality: 北海道 十勝総合振興局保健行政室生活衛生課環境衛生係
+  prefecture: 北海道
+  phone: 0155-27-8701
+  address: 北海道帯広市東3条南3丁目1番地
+  url: https://www.tokachi.pref.hokkaido.lg.jp/hk/hgc/maigonoinuneko.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.tokachi.pref.hokkaido.lg.jp/hk/hgc/maigonoinuneko.html"
+  verified_address_url: "https://www.tokachi.pref.hokkaido.lg.jp/hk/hgc/maigonoinuneko.html"
+  kind: stray
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。迷子の犬猫のページ。2026-11-07 時点は「現在、保護している犬猫はいません。」。子が載った日の作りを確認できていないため link_only。"
+- slug: hokkaido_kushiro-1
+  name: 北海道 釧路総合振興局（保健所収容中の犬猫）
+  municipality: 北海道 釧路総合振興局環境生活課
+  prefecture: 北海道
+  phone: 0154-43-9151
+  address: 北海道釧路市浦見2丁目2番54号
+  url: https://www.kushiro.pref.hokkaido.lg.jp/hk/kks/174752.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.kushiro.pref.hokkaido.lg.jp/hk/kks/174752.html"
+  verified_address_url: "https://www.kushiro.pref.hokkaido.lg.jp/hk/kks/174752.html"
+  kind: adoption
+  species: mixed
+  mode: recipe
+  recipe: recipes/hokkaido_kushiro-1.yaml
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。釧路保健所・標茶支所に収容中で飼い主を募集している犬猫。1 頭ごとに h4「犬D10-2（R8.10.15 追加）◆譲渡日程調整中」と写真（説明は写真の中）。2026-11-07 時点は釧路保健所の犬 5（標茶支所は 0）。番号・追加日・譲渡日程調整中の注記だけが文字で、性別などは写真の中のため載せない。写真の規約は未確認（写真は出さない）。"
+- slug: hokkaido_kushiro-2
+  name: 北海道 釧路総合振興局 釧路保健所（迷子の犬・猫情報）
+  municipality: 北海道 釧路総合振興局保健行政室（釧路保健所）生活衛生課
+  prefecture: 北海道
+  phone: 0154-65-5811
+  address: 北海道釧路市城山2丁目4番22号
+  url: https://www.kushiro.pref.hokkaido.lg.jp/hk/hgc/seikatuweb/kannkyouweb/175327.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.kushiro.pref.hokkaido.lg.jp/hk/hgc/seikatuweb/kannkyouweb/175327.html"
+  verified_address_url: "https://www.kushiro.pref.hokkaido.lg.jp/hk/hgc/seikatuweb/kannkyouweb/175327.html"
+  kind: stray
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。迷子の犬・猫のページ。2026-11-07 時点は「犬0頭、猫0頭」。子が載った日の作りを確認できていないため link_only。"
+- slug: hokkaido_nemuro-1
+  name: 北海道 根室振興局（犬猫の情報・中標津保健所）
+  municipality: 北海道 根室振興局環境生活課自然環境係
+  prefecture: 北海道
+  phone: 0153-23-6823
+  address: 北海道根室市常盤町3丁目28番地
+  url: https://www.nemuro.pref.hokkaido.lg.jp/hk/kks/dogcat/141770.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.nemuro.pref.hokkaido.lg.jp/hk/kks/dogcat/141770.html"
+  verified_address_url: "https://www.nemuro.pref.hokkaido.lg.jp/hk/kks/dogcat/141770.html"
+  kind: adoption
+  species: mixed
+  mode: recipe
+  recipe: recipes/hokkaido_nemuro-1.yaml
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。中標津保健所に収容中で飼い主を募集している犬猫。1 頭（1 組）ごとに h4「No.D1」「No.C7＆C8」・写真・説明。2026-11-07 時点は 3 件（犬 1・猫 2 頭〈C7＆C8 は 2 頭で 1 組〉）。道東センター（動物愛護センター）の節は収容先が別なので読まない。根室保健所の節は「現在、収容はございません。」。飼い主さがしノート（飼い主の自宅の犬猫）は読まない。写真の規約は未確認（写真は出さない）。"
+- slug: hokkaido_nemuro-2
+  name: 北海道 根室振興局 根室保健所（犬・猫等に関すること）
+  municipality: 北海道 根室振興局保健行政室（根室保健所）生活衛生課
+  prefecture: 北海道
+  phone: 0153-23-5161
+  address: 北海道根室市弥栄町2-1
+  url: https://www.nemuro.pref.hokkaido.lg.jp/hk/hgc/topmenu10.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.nemuro.pref.hokkaido.lg.jp/hk/hgc/topmenu10.html"
+  verified_address_url: "https://www.nemuro.pref.hokkaido.lg.jp/hk/hgc/topmenu10.html"
+  kind: sheltered
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。根室保健所の迷い犬・猫・新しい飼い主募集の案内。2026-11-07 時点は「現在、迷子の犬・猫はいません。」「現在、飼い主を募集している犬・猫はいません。」。子が載った日の作りを確認できていないため link_only。"
+- slug: hokkaido_nemuro-3
+  name: 北海道 根室振興局 中標津保健所（犬猫情報）
+  municipality: 北海道 根室振興局中標津地域保健室（中標津保健所）企画総務課
+  prefecture: 北海道
+  phone: 0153-72-2168
+  address: 北海道標津郡中標津町東1条南6丁目2番地1
+  url: https://www.nemuro.pref.hokkaido.lg.jp/hk/nth/kainusibosyuu.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.nemuro.pref.hokkaido.lg.jp/hk/nth/kainusibosyuu.html"
+  verified_address_url: "https://www.nemuro.pref.hokkaido.lg.jp/hk/nth/kainusibosyuu.html"
+  kind: sheltered
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。中標津保健所の迷子・飼い主募集の案内。2026-11-07 時点は「現在、迷子の犬猫はいません」「現在、飼い主募集中の犬と猫がいます」で、子の一覧は根室振興局環境生活課のページ（hokkaido_nemuro-1）。"
+- slug: hokkaido_oshima-1
+  name: 北海道 渡島総合振興局（犬猫の新しい飼い主さんの募集）
+  municipality: 北海道 渡島総合振興局環境生活課
+  prefecture: 北海道
+  phone: 0138-47-9435
+  address: 北海道函館市美原4丁目6番16号渡島合同庁舎内
+  url: https://www.oshima.pref.hokkaido.lg.jp/hk/kks/inuneko2/191026.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.oshima.pref.hokkaido.lg.jp/hk/kks/inuneko2/191026.html"
+  verified_address_url: "https://www.oshima.pref.hokkaido.lg.jp/hk/kks/inuneko2/191026.html"
+  kind: adoption
+  species: mixed
+  mode: recipe
+  recipe: recipes/hokkaido_oshima-1.yaml
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。渡島保健所に収容中の猫（負傷）。h3 の下に品種・年齢・性別・毛色・体重・収容日・状態と写真。2026-11-07 時点は猫 1（収容日 2026-05-15）。動物愛護センター（道南）の節は個別の子を載せていない（案内のみ）。0 頭の日の作りは未確認。写真の規約は未確認（写真は出さない）。"
+- slug: hokkaido_oshima-2
+  name: 北海道 渡島総合振興局 保健行政室（犬猫情報）
+  municipality: 北海道 保健行政室 生活衛生課環境衛生係
+  prefecture: 北海道
+  phone: 0138-47-9551
+  address: 北海道函館市美原4丁目6番16号
+  url: https://www.oshima.pref.hokkaido.lg.jp/hk/hgc/210628.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.oshima.pref.hokkaido.lg.jp/hk/hgc/210628.html"
+  verified_address_url: "https://www.oshima.pref.hokkaido.lg.jp/hk/hgc/210628.html"
+  kind: sheltered
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。渡島保健所の犬猫情報。2026-11-07 時点は「現在収容している犬猫はいません。」。子が載った日の作りを確認できていないため link_only。"
+- slug: hokkaido_oshima-3
+  name: 北海道 渡島総合振興局 八雲保健所（犬・猫の収容情報）
+  municipality: 北海道 渡島総合振興局八雲地域保健室（八雲保健所）生活衛生課
+  prefecture: 北海道
+  phone: 0137-63-2168
+  address: 北海道二海郡八雲町末広町120番地
+  url: https://www.oshima.pref.hokkaido.lg.jp/hk/ykh/inunekojouhou.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.oshima.pref.hokkaido.lg.jp/hk/ykh/inunekojouhou.html"
+  verified_address_url: "https://www.oshima.pref.hokkaido.lg.jp/hk/ykh/inunekojouhou.html"
+  kind: sheltered
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。八雲保健所の収容情報。見出しは「現在収容中の犬・猫はいません（令和8年(2025年)2月6日現在）」で、年が現在（2026）と合わず更新が止まっている疑いがある（原文のまま）。子が載った日の作りを確認できていないため link_only。"
+- slug: hokkaido_hiyama-1
+  name: 北海道 檜山振興局 江差保健所（保健所にいる犬・猫 情報）
+  municipality: 北海道 檜山振興局保健行政室（江差保健所）企画総務課
+  prefecture: 北海道
+  phone: 0139-52-1053
+  address: 北海道檜山郡江差町本町63番地
+  url: https://www.hiyama.pref.hokkaido.lg.jp/hk/hgc/eisei/dog/mayoiinuneko.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.hiyama.pref.hokkaido.lg.jp/hk/hgc/eisei/dog/mayoiinuneko.html"
+  verified_address_url: "https://www.hiyama.pref.hokkaido.lg.jp/hk/hgc/eisei/dog/mayoiinuneko.html"
+  kind: sheltered
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。江差保健所の迷い犬・猫と飼い主募集中の犬・猫（令和8年（2026年）5月21日現在で犬0頭、猫0頭）。更新日が半年前で現在の状況かは未確認。子が載った日の作りを確認できていないため link_only。檜山振興局環境生活課の旧ページ（/hk/kks/sizen/kainusisagasi/139880.html）は 2026-11-07 時点で HTTP 404（台帳に足さない）。"
+- slug: hokkaido_kamikawa-1
+  name: 北海道 上川総合振興局 上川保健所（犬猫の保護情報）
+  municipality: 北海道 上川総合振興局保健行政室（上川保健所）企画総務課
+  prefecture: 北海道
+  phone: 0166-46-5979
+  address: 北海道旭川市永山6条19丁目1番1号上川合同庁舎
+  url: https://www.kamikawa.pref.hokkaido.lg.jp/hk/hgc/inunekohogojouhou.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.kamikawa.pref.hokkaido.lg.jp/hk/hgc/inunekohogojouhou.html"
+  verified_address_url: "https://www.kamikawa.pref.hokkaido.lg.jp/hk/hgc/inunekohogojouhou.html"
+  kind: adoption
+  species: mixed
+  mode: recipe
+  recipe: recipes/hokkaido_kamikawa-1.yaml
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。上川保健所で新しい飼い主さんを募集している犬猫。1 頭ごとに h2「No.1」と表（種類・毛色・性別・推定年齢・その他・募集期限）・写真。2026-11-07 時点は猫 1（募集期限 令和8年11月10日）。0 頭の日の作りは未確認。写真の規約は未確認（写真は出さない）。"
+- slug: hokkaido_kamikawa-2
+  name: 北海道 上川総合振興局（新しい飼い主募集のページ）
+  municipality: 北海道 上川総合振興局環境生活課自然環境係
+  prefecture: 北海道
+  phone: 0166-46-5922
+  address: 北海道旭川市永山6条19丁目1番1号上川合同庁舎
+  url: https://www.kamikawa.pref.hokkaido.lg.jp/hk/kks/inuneko.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.kamikawa.pref.hokkaido.lg.jp/hk/kks/inuneko.html"
+  verified_address_url: "https://www.kamikawa.pref.hokkaido.lg.jp/hk/kks/inuneko.html"
+  kind: adoption
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。上川管内の保健所ごとの保護頭数の表（2026-11-07 時点は富良野保健所の犬 2、他は 0。個体の情報は無く件数だけ。富良野保健所のページ自体は「今はいません」と出ていて食い違う）。個体は各保健所のページ（hokkaido_kamikawa-1・-3・-4）。"
+- slug: hokkaido_kamikawa-3
+  name: 北海道 上川総合振興局 名寄保健所（犬・猫情報）
+  municipality: 北海道 上川総合振興局名寄地域保健室（名寄保健所）企画総務課
+  prefecture: 北海道
+  phone: 01654-3-3121
+  address: 北海道名寄市東5条南3丁目63番地38
+  url: https://www.kamikawa.pref.hokkaido.lg.jp/hk/nth/kakupage/catdog.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.kamikawa.pref.hokkaido.lg.jp/hk/nth/kakupage/catdog.html"
+  verified_address_url: "https://www.kamikawa.pref.hokkaido.lg.jp/hk/nth/kakupage/catdog.html"
+  kind: sheltered
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。名寄保健所の現在の収容頭数（犬：計０頭、猫：計０頭）。「現在、準備中です。公開まで今しばらくお待ちください。」の注記あり（2026-11-07 時点）。子が載った日の作りを確認できていないため link_only。"
+- slug: hokkaido_kamikawa-4
+  name: 北海道 上川総合振興局 富良野保健所（迷い犬・猫、飼い主募集中の犬・猫）
+  municipality: 北海道 上川総合振興局富良野地域保健室（富良野保健所）生活衛生課
+  prefecture: 北海道
+  phone: 0167-23-3161
+  address: 北海道富良野市末広町2番10号
+  url: https://www.kamikawa.pref.hokkaido.lg.jp/hk/fth/inuneko.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.kamikawa.pref.hokkaido.lg.jp/hk/fth/inuneko.html"
+  verified_address_url: "https://www.kamikawa.pref.hokkaido.lg.jp/hk/fth/inuneko.html"
+  kind: sheltered
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。富良野保健所の迷い犬猫・飼い主募集中の犬猫。2026-11-07 時点は迷子・募集とも「今はいません」。上川総合振興局環境生活課の表では富良野保健所の犬が 2 頭とあり食い違う（どちらが新しいかは未確認）。子が載った日の作りを確認できていないため link_only。"
+- slug: hokkaido_rumoi-1
+  name: 北海道 留萌振興局（新しい家族を探している犬・猫）
+  municipality: 北海道 留萌振興局環境生活課自然環境係
+  prefecture: 北海道
+  phone: 0164-42-8436
+  address: 北海道留萌市住之江町2丁目1-2
+  url: https://www.rumoi.pref.hokkaido.lg.jp/hk/kks/atarashiikainushi/inuneko.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.rumoi.pref.hokkaido.lg.jp/hk/kks/atarashiikainushi/inuneko.html"
+  verified_address_url: "https://www.rumoi.pref.hokkaido.lg.jp/hk/kks/atarashiikainushi/inuneko.html"
+  kind: adoption
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。新しい飼い主を募集している犬・猫の情報。2026-11-07 時点は表の頭数が 0 匹（令和8年10月14日更新）。子が載った日の作りを確認できていないため link_only。"
+- slug: hokkaido_rumoi-2
+  name: 北海道 留萌振興局 留萌保健所（犬・猫情報）
+  municipality: 北海道 留萌振興局保健行政室（留萌保健所）生活衛生課
+  prefecture: 北海道
+  phone: 0164-42-8310
+  address: 北海道留萌市住之江町2丁目1-2
+  url: https://www.rumoi.pref.hokkaido.lg.jp/hk/hgc/111883.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.rumoi.pref.hokkaido.lg.jp/hk/hgc/111883.html"
+  verified_address_url: "https://www.rumoi.pref.hokkaido.lg.jp/hk/hgc/111883.html"
+  kind: sheltered
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。留萌保健所の迷い犬・猫と新しい飼い主募集中の犬・猫。2026-11-07 時点は見出しのみで頭数・0 頭の文言が本文に見つからなかった。子が載った日の作りを確認できていないため link_only。"
+- slug: hokkaido_souya-1
+  name: 北海道 宗谷総合振興局（犬猫の新しい飼い主募集）
+  municipality: 北海道 宗谷総合振興局環境生活課
+  prefecture: 北海道
+  phone: 0162-33-2527
+  address: 北海道稚内市末広4丁目2-27
+  url: https://www.souya.pref.hokkaido.lg.jp/hk/kks/bosyuu.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.souya.pref.hokkaido.lg.jp/hk/kks/bosyuu.html"
+  verified_address_url: "https://www.souya.pref.hokkaido.lg.jp/hk/kks/bosyuu.html"
+  kind: adoption
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。稚内保健所・浜頓別・利尻の各支所・道北センター（北見市）の募集頭数（2026-11-07 時点はすべて 0）と、飼い主さがしノートの案内。子が載った日の作りを確認できていないため link_only。"
+- slug: hokkaido_souya-2
+  name: 北海道 宗谷総合振興局（負傷犬猫の保護情報）
+  municipality: 北海道 宗谷総合振興局環境生活課
+  prefecture: 北海道
+  phone: 0162-33-2527
+  address: 北海道稚内市末広4丁目2-27
+  url: https://www.souya.pref.hokkaido.lg.jp/hk/kks/hogojouhou.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.souya.pref.hokkaido.lg.jp/hk/kks/bosyuu.html"
+  verified_address_url: "https://www.souya.pref.hokkaido.lg.jp/hk/kks/bosyuu.html"
+  kind: sheltered
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。負傷のため保護された犬猫の表（番号・種類・推定年齢・毛色・性別・写真・保護年月日・場所）。2026-11-07 時点は見出しの行だけで子の行が無い。ページの更新日は 2025-01-20。子が載った日の作りを確認できていないため link_only。"
+- slug: hokkaido_okhotsk-1
+  name: 北海道 オホーツク総合振興局（負傷動物の保護）
+  municipality: 北海道 オホーツク総合振興局環境生活課自然環境係
+  prefecture: 北海道
+  phone: 0152-41-0630
+  address: 北海道網走市北7条西3丁目
+  url: https://www.okhotsk.pref.hokkaido.lg.jp/hk/kks/fusyo.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.okhotsk.pref.hokkaido.lg.jp/hk/kks/fusyo.html"
+  verified_address_url: "https://www.okhotsk.pref.hokkaido.lg.jp/hk/kks/fusyo.html"
+  kind: sheltered
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。負傷動物の保護のページ。2026-11-07 時点は「保護収容中　なし」。子が載った日の作りを確認できていないため link_only。"
+- slug: hokkaido_okhotsk-2
+  name: 北海道 オホーツク総合振興局 網走保健所（保護犬猫情報）
+  municipality: 北海道 オホーツク総合振興局保健行政室（網走保健所）生活衛生課主査（環境衛生）
+  prefecture: 北海道
+  phone: 0152-41-0701
+  address: 北海道網走市北7条西3丁目
+  url: https://www.okhotsk.pref.hokkaido.lg.jp/hk/hgc/kankyoueisei/dog.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.okhotsk.pref.hokkaido.lg.jp/hk/hgc/kankyoueisei/dog.html"
+  verified_address_url: "https://www.okhotsk.pref.hokkaido.lg.jp/hk/hgc/kankyoueisei/dog.html"
+  kind: sheltered
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。網走保健所の表（迷い犬 0・迷い猫 0・飼い主募集中の犬 0・飼い主募集中の猫 0。2026-11-07 時点）と、環境生活課・北見・紋別保健所で保護している動物のリンク。子が載った日の作りを確認できていないため link_only。"
+- slug: hokkaido_okhotsk-3
+  name: 北海道 オホーツク総合振興局 北見保健所（迷子の犬猫情報）
+  municipality: 北海道 オホーツク総合振興局北見地域保健室（北見保健所）生活衛生課
+  prefecture: 北海道
+  phone: 0157-24-4171
+  address: 北海道北見市青葉町6番6号
+  url: https://www.okhotsk.pref.hokkaido.lg.jp/hk/kth/192359.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.okhotsk.pref.hokkaido.lg.jp/hk/kth/192359.html"
+  verified_address_url: "https://www.okhotsk.pref.hokkaido.lg.jp/hk/kth/192359.html"
+  kind: stray
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。北見保健所の迷子の犬猫。2026-11-07 時点は「令和８年９月２９日（火）時点　犬０頭　猫０匹」「現在、迷子の犬猫はいません。」で、日付が 1 か月以上前。子が載った日の作りは h4「番号：R8-9-1」に残骸があるが確認できていないため link_only。"
+- slug: hokkaido_okhotsk-4
+  name: 北海道 オホーツク総合振興局 紋別保健所（犬・猫情報）
+  municipality: 北海道 オホーツク総合振興局紋別地域保健室（紋別保健所）企画総務課
+  prefecture: 北海道
+  phone: 0158-23-3108
+  address: 北海道紋別市南が丘町1丁目6番地
+  url: https://www.okhotsk.pref.hokkaido.lg.jp/hk/mth/wanneko.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.okhotsk.pref.hokkaido.lg.jp/hk/mth/wanneko.html"
+  verified_address_url: "https://www.okhotsk.pref.hokkaido.lg.jp/hk/mth/wanneko.html"
+  kind: sheltered
+  species: mixed
+  mode: link_only
+  enabled: true
+  photo: pending
+  note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。紋別保健所・遠軽支所の迷い犬・猫と飼い主募集中の犬・猫の表。2026-11-07 時点は迷子の猫 1 行（3 頭＝キジトラ 2・グレートラ 1 の子猫）と飼い主募集中の猫 2（C1・C2）が載る。表は節ごとに別の作りで、結合セルと 1 行に複数頭があり、列の読み違いで誤情報を出す恐れがあるため読まず link_only（読める余地あり）。"

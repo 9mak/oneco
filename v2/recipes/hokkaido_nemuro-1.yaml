@@ -1,0 +1,15 @@
+# 北海道 根室振興局 犬猫の情報（/hk/kks/dogcat/141770.html）の中標津保健所の節。
+# h3「中標津保健所収容の犬猫」の下に、1 頭（または 1 組）ごとに h4「No.D1」「No.C7＆C8」の div → 写真・【掲載日】・説明の p の div が並ぶ。
+# 「No.C7＆C8」は 2 頭を 1 つの h4 で載せているので 1 件にする（番号は載っているまま）。
+# 動物愛護センター（道東センター）の節は収容先が別で、h4 が「犬 No.D16」「猫 No.C21」と先頭に犬・猫の字が付く。それを除く（中標津の h4 は「No.」で始まる）。h3・h2 で止まる。
+# 0 頭の日は節ごとに「現在、収容はございません。」と出るが、根室保健所の節に子のいる日にも出るので empty_text にしない。
+rows: "div.ss-alignment:has(> h4:-soup-contains('No.')):not(:has(> h4:-soup-contains('犬'))):not(:has(> h4:-soup-contains('猫')))"
+row_until: "div.ss-alignment:has(> h4), div.ss-alignment:has(> h3), div.ss-alignment:has(> h2)"
+fields:
+  management_no: {selector: "h4", regex: "No\\.\\s*(\\S+)"}
+  species: {selector: "h4", regex: "No\\.\\s*([DC])"}
+  location: {from: heading, selector: "h3", regex: "^(.+?)収容の犬猫"}
+species:
+  from: field
+  map: {"D": dog, "C": cat}
+image: "img@src"

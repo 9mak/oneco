@@ -1,0 +1,16 @@
+# 北海道 後志総合振興局 犬猫の新しい飼い主探し（/hk/kks/160310.html）の「動物一覧」の表（写真・仮名・性別・毛色・年齢・ワクチン・詳細 PDF）。
+# 1 行 1 頭。動物種の欄は無いので毛色の語（キジトラ・シャム 等）で猫と決められる子だけ猫にし、決められない子は種別なし。
+# 管理番号は無い（仮名と写真で見分ける）。0 頭の日の作りは未確認。
+rows: "table tbody tr"
+row_filter:
+  min_text_length: 3
+fields:
+  name: {selector: "td:nth-child(2)"}
+  sex: {selector: "td:nth-child(3)"}
+  color: {selector: "td:nth-child(4)"}
+  age: {selector: "td:nth-child(5)"}
+species:
+  from: field
+  map: {}
+  infer: true
+image: "img@src"

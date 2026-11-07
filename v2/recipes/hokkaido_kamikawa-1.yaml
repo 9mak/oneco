@@ -1,0 +1,18 @@
+# 北海道 上川総合振興局 上川保健所 犬猫の保護情報（/hk/hgc/inunekohogojouhou.html）。新しい飼い主さんを募集している犬猫。
+# h2「犬・猫情報」の下に、1 頭ごとに h2「No.1」→ 表（種類・毛色・性別・推定年齢・その他・募集期限と写真）→ 写真の p が並ぶ。
+# 「No.」の h2 を 1 頭の始まりにして、次の h2 の手前までまとめる。種別は表の写真の alt（「猫1-1.jpg」）の頭の 1 字で決める。
+# 0 頭の日の作りは未確認（h2 の No. が無くなるだけなら 0 行で「読めなかった」通知になる）。
+rows: "h2:-soup-contains('No.')"
+row_until: "h2"
+fields:
+  management_no: {selector: "h2", regex: "No\\.\\s*(\\d+)"}
+  species: {selector: "table img", attr: "alt", regex: "^(猫|犬)"}
+  breed: {label: "種類"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  age: {label: "推定年齢"}
+  note: {label: "その他"}
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+image: "table img@src"

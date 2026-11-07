@@ -1,0 +1,15 @@
+# 北海道 石狩振興局 千歳保健所 迷い犬猫・新しい飼い主募集（/hk/cth/mayoiinuneko.html）の新しい飼い主募集の節。
+# h3「新しい飼い主募集」の div → p「・猫1匹」の div → 紹介文・写真の p の div が並ぶ。1 頭ごとの見出しは無く、1 匹の紹介文が節の全体になる。
+# 2 頭以上になると 1 つの行に混ざるので、「1匹」の日だけ読む（text_has_any）。2 匹以上の日は 0 行で「読めなかった」通知になる。
+# 迷子の節の「現在、迷子の犬猫はいません」は読まない（別の節）。次の h2（飼い主探しノート）の div で止まる。
+rows: "div.ss-alignment:has(> h3:-soup-contains('新しい飼い主募集'))"
+row_until: "div.ss-alignment:has(> h2)"
+row_filter:
+  text_has_any: ["1匹", "１匹"]
+fields:
+  species: {regex: "・\\s*(猫|犬)\\s*[1１]\\s*匹"}
+  sex: {regex: "[0-9０-９]+才以下の\\S*?(オス|メス)"}
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+image: "img@src"
