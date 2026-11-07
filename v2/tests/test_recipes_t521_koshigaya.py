@@ -91,7 +91,7 @@ def test_nagano_breed_is_never_the_management_number():
     got = {a["management_no"]: (a["breed"], a["color"]) for a in res.animals}
     assert got["2022-316"] == ("ミックス", "キジ白、白多め") and got["2022-306"] == ("ミックス", "茶トラ白")
     assert all(b != m for m, (b, _) in got.items())
-    assert got["2022-307"] == (None, None)   # 種類が別の div にある作り。誤った値は入れない（取れないのは以前からの制約）
+    assert got["2022-307"] == ("ミックス", "キジトラ")   # 種類・毛色は次の兄弟 div にある。行の束ねが兄弟へ進むようになり読める（W006 T620）
 
 
 def test_chiba_template_only_day_is_empty():
