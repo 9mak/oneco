@@ -31,6 +31,7 @@ steps:
   - follow_all: "a.detail@href"           # マッチする全リンクを辿る（個別ページ方式。各ページが 1 頭なら rows: "body"）
   - paginate: "div.next a@href"           # 「次へ」がある限り辿る（最大 max_pages、既定 20）
   - pdf_links: "a[href$='.pdf']@href"     # PDF を全部取り、文字と表にする（下記 PDF 方式）
+  - submit_form: {form: "form[name=type]", set: {search_type: dog}, require: ["__RequestVerificationToken"]}   # form を POST して結果を次に渡す（下記）
   - render: true                          # JavaScript 描画が必要なとき（Playwright）。最初に置く
   - render: {wait_for: "table.list tr", wait_ms: 3000}   # 描画後にこのセレクタが現れるまで待つ（最長 20 秒）。一覧を JS が後から組み立てるサイト用。現れない日はそのまま続ける（0 頭は empty_text で）
 ```
@@ -48,6 +49,26 @@ steps:
 - サーバーエラー・接続失敗・robots 拒否は捨てない（一時的なことが多く、黙って頭数を減らすより読めなかったと通知する方がよい）
 - 辿ろうとした子が全部失敗した日は従来どおり失敗（全部 404 の日を 0 頭にしない）。リンクが 1 本も無い日は文書 0 で続き、0 頭かどうかは empty_text / empty_selector で決まる
 - 404 の URL を `:not([href=...])` で固定除外しない（ページが戻っても読めなくなる。岐阜県の揖斐センターは 2026-10-05 に戻っていた）。動物でない導線（「一覧へ戻る」等）の除外は従来どおりセレクタで
+
+一覧が画像ボタンの JavaScript で hidden と anti-forgery トークン付きの form を POST して出るサイト（鹿児島県動物愛護ホームページ。GET だと 302 でエラーページ）は `submit_form`。ブラウザと同じに form の値（hidden・input・select・textarea。ボタン類と無効な項目・チェックの無い checkbox は除く）を集め、`set` の値で上書き・追加して、同じセッション（cookie）で POST する。結果の HTML が次の steps と `rows` に渡る。
+
+```yaml
+steps:
+  - submit_form:
+      form: "form[name=type]"                       # 入口ページの form（セレクタ）。必須
+      set: {search_type: dog, lost_kubun: lost}     # JavaScript が入れる値（名前も値も文字列）
+      require: ["__RequestVerificationToken"]       # この名前の値が form に無い・空なら送らず失敗（トークンが取れない日を 0 頭にしない）
+  - submit_form:                                    # ページ送り: repeat_while の要素が結果にある間、結果の同じ form を送る（paginate と同じ形。入口の結果も残る）
+      form: "form[name=paging]"
+      set: {act: next}
+      repeat_while: "a.paging_next"
+      max: 30                                       # この数のページを送っても続けば、黙って切らず失敗にする
+```
+
+- 送り先は form の `action` だけ（レシピに URL を書けない）。入口と別のホストの action・POST でない form は送らない。robots.txt・同一ホストの間隔は GET と同じ。取り直しも GET と同じ（検索の送信で副作用が無いことが前提。申し込み・送信の form には使わない）
+- 結果の URL の path が action と違えば失敗（token 不正・セッション切れは /Shared/Error へ転送される）。結果の文書の URL は入口のページのままにするので、個体の「元ページのリンク」は人が開ける入口になる（POST 専用の URL にならない）
+- last_ok への保存は POST の n 回目を `<action の URL>#post<n>` の名前で残し、再生（FakeFetcher）は n 回目の POST にそれを返す。0 頭の根拠（audit_empty）はその文書で確かめる
+- **AI 修復は submit_form を足せず、変えられない**（`check_recipe_change` が拒否する。自治体へ送る内容は人だけが決める）。レシピの先頭のコメントに、JavaScript が何を送っているか（実測した form と値）を書く
 
 一覧が API 応答にしか無く `<a href>` が無い SPA（愛知わんにゃんナビ = Bubble）は `render_json`。入口を描画しながら `match` を含む URL の JSON 応答を捕まえ、`path` の値を `follow` の `{value}` に差し込んで個体ページを（既定では描画して）辿る:
 
@@ -69,6 +90,7 @@ rows: "ul.news > li"
 row_filter:
   text_has_any: ["収容日", "管理番号"]   # どれかを含む行だけ
   text_lacks: ["見出し", "譲渡済"]        # 含む行は捨てる
+  field_required: {location: ["市", "町"]} # 取った項目にこの語が 1 つも無い行は動物にしない。field_has_any と違い「除外」に数えず、全行がこれで捨てられた日は 0 頭にならず failed になる（項目が読めなくなった日を 0 頭と読まない。鹿児島県の一般の方が保護している犬猫）
   min_text_length: 10
   field_lacks: {name: ["探しています"]}   # 取った項目にこの語があれば捨てる（rows: body で行の全文にメニュー文言が混ざるとき用）。全部捨てた日は「該当なし」扱い
   field_has_any: {name: ["探しています"]} # field_lacks の逆。取った項目にこの語が 1 つも無い行は捨てる（同じ一覧から一部だけを別 slug で拾う。旭川市の「探してます」）

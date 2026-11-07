@@ -347,6 +347,9 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
     # row_filter.field_has_any: {name: ["探しています"]} — field_lacks の逆。取った項目にこの語が 1 つも無い行は捨てる
     # （同じ一覧から「探しています」だけを 4 区分目 lost の別 slug で拾う。旭川市あにまある）
     field_has_any: dict[str, list[str]] = (recipe.row_filter or {}).get("field_has_any") or {}
+    # row_filter.field_required: {name: ["市", "町"]} — 取った項目にこの語が 1 つも無い行は動物にしない。field_has_any と違い
+    # 「除外」に数えない: 全行がこれで捨てられた日は 0 頭と確定せず failed になる（項目の書き方が変わって読めなくなった日を 0 頭と読まない）
+    field_required: dict[str, list[str]] = (recipe.row_filter or {}).get("field_required") or {}
     excluded = 0
     for doc in docs:
         rows = extract_rows(recipe, doc)
@@ -364,6 +367,10 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
             if miss:
                 res.dropped.append(Dropped(f"対象語なし（{miss}）", row.text()[:80]))
                 excluded += 1
+                continue
+            unread = next((k for k, ws in field_required.items() if not any(w in (f.get(k) or "") for w in ws)), None)
+            if unread:
+                res.dropped.append(Dropped(f"必須項目が読めない（{unread}）", row.text()[:80]))
                 continue
             img_abs, img_raw = image_url(recipe, row, f)   # f: image.match_field（行の管理番号を含む写真を文書全体から探す）用
             dv = f.pop("detail", None)   # 個体ページの URL（相対可）。写真の無い子でも個体ページがあれば動物とみなす
