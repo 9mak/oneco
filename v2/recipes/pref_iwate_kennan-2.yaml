@@ -1,0 +1,31 @@
+# 岩手県 県央保健所（迷子）— pref.iwate.jp
+# 2026-11-07 W006 監査: pref_iwate_kennan（譲渡）から「元の飼主さんを探しています（迷子犬猫情報）」の節だけを分けた slug（kind = stray）。
+#   この節は 1 頭ぶんが「保護日時：令和8年11月4日 15時 保護場所：… 動物種：犬 種類：柴犬 性別：… 毛色：… 大きさ：… 推定年齢：… 特徴：… 管理番号：26040」の
+#   1 つの p（名前の欄が無い）で、直前に写真の p.imageleft がある。譲渡の節の行（名前：の p）に当たらず、迷子の犬が載っていなかった。
+#   行は「保護日時」を含む p（Wayback 2024-05〜2025-03 は 保護日時・保護場所… が p ごとに割れていたので、row_until で次の写真・見出しの手前までを 1 頭分にまとめる）。
+#   見出しの言い回しは版で変わる（「飼主さんを探しています」2024 → 「元の飼主さんを探しています（迷子犬猫情報）」2025-09〜）ので見出しには頼らない。
+# 0 頭の日の実物は未観測（Wayback 2024-05・2024-10・2025-03・2025-09・2026-02 の 5 版はどれも迷子が 1 頭いる日）。迷子が 0 頭の日は節ごと消えると見て、
+#   大船渡（pref_iwate_ofunato-2。同じ CMS で 10/20 から節ごと消えた）と同じ empty_absent にした: 本文の枠（h1）があり、迷子の節（保護日時の p・見出し・見出しの直後の写真）が
+#   1 つも無い日だけ 0 頭。「現在、…いません」の文言は未確認なので置かない。枠が無い日・見出しの言い回しが変わっても写真や保護日時の p が残る日は failed。
+rows: "p:-soup-contains('保護日時')"
+row_until: "p.imageleft, p.imagecenter, h2, h3"
+image: {selector: "p.imageleft img@src", scope: prev_siblings, stop_at: "row, h2"}
+fields:
+  species: {label: "動物種"}
+  breed: {label: ["種類", "雑種"]}
+  sex: {label: "性別"}
+  color: {label: "毛色"}
+  size: {label: "大きさ"}
+  age: {label: "推定年齢"}
+  location: {label: "保護場所"}
+  shelter_date: {regex: "保護日時[:：]\\s*(.+?)(?=\\s+保護場所[:：]|$)"}
+  note: {regex: "特徴[：；:;]\\s*(?![^\\s\\d:：]{1,8}[:：])(.+?)(?=\\s+(?:その他|管理番号)[:：]|$)"}
+  management_no: {label: "管理番号"}
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+empty_absent:
+  page: "div#voice h1:-soup-contains('県央保健所保護動物情報')"
+  none: >-
+    div#voice h2:-soup-contains('飼主'), div#voice h2:-soup-contains('迷子'), div#voice p:-soup-contains('保護日時'),
+    div#voice h2:not(:-soup-contains('新しい')) + p:has(> img), div#voice h2:not(:-soup-contains('新しい')) + figure

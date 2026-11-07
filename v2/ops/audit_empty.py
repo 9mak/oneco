@@ -35,7 +35,7 @@ JST = timezone(timedelta(hours=9))
 @dataclass
 class Finding:
     slug: str
-    kind: str  # empty_selector / empty_absent / empty_text / empty_text_all / empty_text_each
+    kind: str  # empty_selector / empty_absent / empty_text / empty_text_all / empty_text_each / empty_text_entries
     detail: str  # 当たった文言かセレクタ
     url: str  # 当たった文書の URL（複数あれば最初。全部は docs 件数で示す）
     count: int  # 出現回数

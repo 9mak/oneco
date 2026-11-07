@@ -1,0 +1,30 @@
+# 岩手県 宮古保健所（迷子）— pref.iwate.jp
+# 2026-11-07 W006 監査: pref_iwate_miyako（譲渡）から h2「【保護】元の飼い主さんを捜しています。」の節だけを分けた slug（kind = stray）。
+#   節は h2 → 写真 p.imageright → 1 頭ぶんの p（管理番号・保護された場所・保護された日・動物種・種類・性別・毛色・体格・推定年齢・識別器具等・保護された時の状況）。
+#   これまで譲渡の slug に混ざり adoption（里親募集）として載っていた。場所と日付は「保護された場所」「保護された日」の欄から読む（譲渡側の欄名ではない）。
+#   動物種は「動物種：」の欄のとおり（台帳は mixed）。
+# 0 頭の日の実物は未観測。迷子が 0 頭の日は節ごと消えると見て、大船渡（pref_iwate_ofunato-2。同じ CMS で 10/20 から節ごと消えた）と同じ empty_absent にした:
+#   本文の枠（h1）があり、迷子の節（【保護】の見出し・保護された場所の p・譲渡/御報告/本文の見出し以外の h2 の直後の写真）が 1 つも無い日だけ 0 頭。
+#   枠が無い日・見出しの言い回しが変わっても写真や「保護された場所」の p が残る日は failed。
+rows: "p:-soup-contains('保護された場所')"
+image: {selector: "h2 + p.imageright img, h2 + figure img@src", scope: prev_siblings, stop_at: row}
+fields:
+  management_no: {regex: "管理番号[:：]\\s*([A-Za-z0-9\\-]+)"}
+  species: {label: "動物種"}
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  color: {label: "毛色"}
+  size: {label: "体格"}
+  age: {label: "推定年齢"}
+  location: {regex: "保護された場所[:：]\\s*(.+?)(?=\\s+保護された日[:：]|\\s+動物種[:：]|$)"}
+  shelter_date: {label: "保護された日"}
+  note: {join: [{regex: "識別器具等[:：]\\s*(.+?)(?=\\s+保護された時の状況[:：]|$)"}, {regex: "保護された時の状況[:：]\\s*(.+)"}], sep: " "}
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+empty_absent:
+  page: "div#voice h1:-soup-contains('宮古保健所保護動物情報')"
+  none: >-
+    div#voice h2:-soup-contains('【保護】'), div#voice h2:-soup-contains('捜して'), div#voice p:-soup-contains('保護された場所'),
+    div#voice h2:not(:-soup-contains('【譲渡')):not(:-soup-contains('【御報告')):not(:-soup-contains('保護動物情報')) + p:has(> img),
+    div#voice h2:not(:-soup-contains('【譲渡')):not(:-soup-contains('【御報告')):not(:-soup-contains('保護動物情報')) + figure

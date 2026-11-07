@@ -33,7 +33,7 @@ _SPECIES_DEFAULT_MAP = {"犬": "dog", "いぬ": "dog", "イヌ": "dog", "猫": "
 # 高知「茶サビ」・甲斐犬の「虎毛」）、大きさ（小・中・大、小型・中型・大型は猫にも使う。周南 8-3-99 は猫で「小」）
 _INFER_DOG = (
     "犬", "いぬ", "イヌ",
-    "柴", "秋田", "紀州", "狆", "チワワ", "チワプー", "ダックス", "プードル", "マルプー", "ポメ", "シーズー", "シー・ズー",
+    "柴", "シバ", "秋田", "紀州", "狆", "チワワ", "チワプー", "ダックス", "プードル", "マルプー", "ポメ", "シーズー", "シー・ズー",
     "マルチーズ", "ヨークシャー", "ヨーキー", "パピヨン", "ビーグル", "コーギー", "ラブラド", "レトリ", "シェパード",
     "ハスキー", "コリー", "シェルティ", "シェットランド", "ポインター", "セッター", "テリア", "ハウンド", "ブルドッグ",
     "ブルドック", "パグ", "シュナウザー", "ドーベルマン", "ペキニーズ", "キャバリア", "スピッツ", "ピンシャー",
@@ -84,6 +84,8 @@ def resolve_species(source: Source, recipe: Recipe, row: Row, fields: dict[str, 
         text = nearest_heading(row.origin, spec.get("selector", "h2, h3, h4"))   # まとめた行（row_until）は元の始まりの位置から
     elif src == "url":
         text = row.doc.url          # dog.pdf / cat.pdf のように文書の URL で決まるとき
+    elif src == "parent_url":
+        text = row.doc.parent_url   # 辿ってきた元の一覧の URL（?animal-type=cat）で決まるとき。サイト自身の絞り込みが種別の根拠（長崎犬猫ネット）
     else:
         text = row.text()
     if text:
@@ -281,7 +283,7 @@ def _all_excluded_evidence(recipe: Recipe, docs: list[Doc]) -> tuple[str | None,
 @dataclass
 class EmptyHit:
     """0 頭の根拠が 1 つ成立したこと。build の 0 頭判定と ops/audit_empty.py（子のいる日に成立していないかの監査）が同じ関数を通る。"""
-    kind: str            # empty_selector / empty_absent / empty_text / empty_text_all / empty_text_each
+    kind: str            # empty_selector / empty_absent / empty_text / empty_text_all / empty_text_each / empty_text_entries
     detail: str          # 当たった文言（empty_text_all は " + " でつないだ全文）かセレクタ
     urls: list[str]      # 当たった文書の URL
     count: int           # 出現回数（要素なら該当要素の数）
@@ -323,6 +325,11 @@ def empty_hits(recipe: Recipe, pool: list[Doc], docs: list[Doc] | None = None) -
             urls = list(dict.fromkeys(u for t in recipe.empty_text_all for u in where(t)))
             hits.append(EmptyHit("empty_text_all", " + ".join(recipe.empty_text_all), urls,
                                  sum(whole.count(t) for t in recipe.empty_text_all)))
+    if recipe.empty_text_entries:
+        # 入口の文書（辿ってきた元が無い文書）の全部が、自分の 0 頭の文を出しているか。1 本でも子の一覧（文を出さない）なら成立しない
+        entries = [d for d in pool if d.parent_url is None]
+        if entries and all(d.soup is not None and any(t in d.text() for t in recipe.empty_text_entries) for d in entries):
+            hits.append(EmptyHit("empty_text_entries", " | ".join(recipe.empty_text_entries), [d.url for d in entries], len(entries)))
     if recipe.empty_text_each and docs:
         # 文書ごとに、自分の 0 頭の文（本文か img の alt）を出しているか。1 文書でも出していなければ（子がいる・作りが変わった）成立しない
         def own(d: Doc) -> list[str]:
