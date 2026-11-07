@@ -4568,7 +4568,7 @@ sources:
   mode: recipe
   recipe: recipes/nagano_hello_animal-2.yaml
   enabled: true
-  note: "2026-11-07 追加: 犬ページ（nagano_hello_animal-1）と同じ雛形が 0 頭の日に出ると推定して同じ防ぎを入れた。猫ページの 0 頭の日の実物は未確認（文面が違えば何も起きず従来どおり）。"
+  note: "2026-11-07 追加: 犬ページ（nagano_hello_animal-1）と同じ雛形が 0 頭の日に出ると推定して同じ防ぎを入れた。猫ページの 0 頭の日の実物は未確認（2026-11-07 に Wayback の 2019-08〜2025-05 の 16 版を調べたが、猫が 0 頭の日は無かった）。empty_text の文は犬の文からの類推なので、猫が 0 頭になった日に文面が違えば 0 頭と確認できず failed で通知される（誤った 0 頭は載らない）。"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/nagano_hello_animal.py
     requires_js: false

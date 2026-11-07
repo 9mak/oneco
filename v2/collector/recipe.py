@@ -72,6 +72,7 @@ class Recipe:
     url: str | None = None          # 台帳の URL の代わりに開く入口（省略時は台帳の URL）
     transpose: str | None = None    # 転置表（1 列 = 1 頭）の table セレクタ。指定時は rows の代わりに列を行にする
     row_until: str | None = None    # 指定時は rows の要素を 1 頭の始まりとし、後ろの兄弟要素を次の始まりかこの要素の手前までまとめて 1 行にする
+    id_by_management_no: list[str] = field(default_factory=list)   # 同じ写真を共有する子のうち、この管理番号（前方一致）の行は写真でなく管理番号から ID を作る。先に載った子が消えても残った子の ID が写真由来（消えた子の ID）に移らないよう、先頭の子以外を固定する
     source_url: str | None = None   # PDF の子の元ページリンク。既定は入口ページ（日次で差し替わる PDF は翌日 404 になる）。"doc" で PDF そのもの
 
     @classmethod

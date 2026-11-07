@@ -387,6 +387,9 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
             if dv:
                 source_url = urljoin(recipe.base_url or doc.url, dv)
             aid = make_id(source, img_raw, f, detail=source_url if dv else None)
+            mgmt = f.get("management_no")
+            if img_raw and mgmt and any(mgmt.startswith(p) for p in recipe.id_by_management_no):
+                aid = make_id(source, None, f, detail=source_url if dv else None)   # 写真を共有する子の ID を並び順に依らず固定する
             if aid in seen_ids and img_raw and f.get("management_no") and seen_mgmt.get(aid) not in (None, f["management_no"]):
                 # 写真が先に ID になるので、同じ写真を使う別の子（管理番号が違う）が「同じ ID」で捨てられていた
                 # （埼玉 南支所 南2026-C77・C78、岩手 奥州 R8-9-3。2026-11-07）。載っている子の ID は変えず、

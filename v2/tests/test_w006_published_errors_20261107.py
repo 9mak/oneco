@@ -168,6 +168,29 @@ def test_miyagi_6_halfwidth_slash_with_age_still_reads_age_and_note():
         "雑種", "キジトラ白", "メス", "推定3歳以上", "マイクロチップ反応なし、人慣れしている")   # 全角数字は半角にそろう
 
 
+def _miyagi6_fourth(fourth: str):
+    html = _fx(MIYAGI6_KIDS).replace("赤い革首輪にフック付き、お座りなどしつけがされている", fourth)
+    return _single("pref_miyagi-6", html).result.animals[0]
+
+
+def test_miyagi_6_age_stops_at_the_age_word_even_without_a_separator():
+    # 公開ゲート F-05: 「／」の日に「3歳首輪なし」のように区切り無しで続けても、年齢に備考まで入らない
+    a = _miyagi6_fourth("3歳首輪なし／人懐こい")
+    assert (a["age"], a["note"]) == ("3歳", "首輪なし/人懐こい")   # 区切りの「／」は取り込みの正規化で「/」になる
+
+
+def test_miyagi_6_month_ages_are_ages_not_notes():
+    for text, age in (("1か月", "1か月"), ("3ヶ月", "3ヶ月"), ("生後2カ月くらい", "生後2カ月くらい")):
+        a = _miyagi6_fourth(text)
+        assert a.get("age") == age and a.get("note") is None, (text, a)
+    # 変更前から読めていた書き方（Wayback の保存版: 「1か月齢前後」「7週齢前後」）は年齢のまま
+    for text in ("1か月齢前後", "7週齢前後", "推定3歳以上"):
+        a = _miyagi6_fourth(text)
+        assert a.get("age") == text and a.get("note") is None, (text, a)
+    a = _miyagi6_fourth("3月に保護された")
+    assert a.get("age") is None and a["note"] == "3月に保護された"   # 「月」だけでは年齢にしない
+
+
 # --- ID の衝突: 同じ写真を使う別の子（管理番号が違う）を「同じ ID」で捨てない ------------------------------------
 
 SAITAMA_MINAMI = "w006_pref_saitama_joto_neko_minami_20261107.html"
@@ -203,6 +226,33 @@ def test_iwate_oshu_r8_9_3_is_kept():
     # 公開中の 7 頭の ID（2026-11-07 の本番 animals の値）は 1 つも変わらない
     now = {"6079c2b07254", "b6f465c22036", "ed16499b473b", "103bedd35ff1", "a2514874bbff", "ae7e7d3594f7", "e05d9f5eb4b4"}
     assert now <= {a["id"] for a in c.result.animals}
+
+
+def _without(html: str, selector: str, marker: str) -> str:
+    soup = BeautifulSoup(html, "lxml")
+    for el in soup.select(selector):
+        if marker in el.get_text():
+            el.decompose()
+    return str(soup)
+
+
+def test_saitama_minami_c77_id_stays_when_c76_is_gone():
+    # 公開ゲート F-02: 先に載った C76 が譲渡されて消えても、C77・C78 の ID が写真由来（C76 の ID）に変わらない
+    c = _single("pref_saitama_joto_neko_minami", _without(_fx(SAITAMA_MINAMI), "#tmp_contents table", "南2026-C76"))
+    got = {a["management_no"]: a["id"] for a in c.result.animals}
+    assert "南2026-C76" not in got
+    for no in ("南2026-C77", "南2026-C78"):
+        assert got[no] == make_id(SOURCES["pref_saitama_joto_neko_minami"], None, {"management_no": no})
+    assert "42cfb147dce1" not in got.values()
+
+
+def test_iwate_oshu_r8_9_3_id_stays_when_r8_9_2_is_gone():
+    html = _fx(IWATE_OSHU)
+    full = {a["management_no"].split("(")[0]: a["id"] for a in _single("pref_iwate_oshu", html).result.animals}
+    c = _single("pref_iwate_oshu", _without(html, "p", "管理番号：R8-9-2（"))
+    got = {a["management_no"].split("(")[0]: a["id"] for a in c.result.animals}
+    assert "R8-9-2" not in got
+    assert got["R8-9-3"] == full["R8-9-3"]
 
 
 def test_same_management_no_twice_is_still_dropped_as_duplicate():
