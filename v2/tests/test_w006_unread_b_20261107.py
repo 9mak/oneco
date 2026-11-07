@@ -54,7 +54,13 @@ def test_sagamihara_zero_days_are_empty():
         assert _zero(_single("city_sagamihara-2", _fx(name))), name
 
 
-def test_sagamihara_dog_day_is_read_and_never_zero():
+def test_sagamihara_dog_day_is_read_and_never_zero(monkeypatch):
+    # 保存は 2026-09-03 の版（収容期限 令和8年9月3日）。収容期限の判定は今日の日付を使うので、保存の日に固定する
+    from datetime import date
+
+    from collector import extract
+
+    monkeypatch.setattr(extract, "_today", lambda: date(2026, 9, 3))
     c = _single("city_sagamihara-2", _fx(SAGA_DOG))
     assert c.status == "ok", c.error
     assert c.result is not None and len(c.result.animals) == 1

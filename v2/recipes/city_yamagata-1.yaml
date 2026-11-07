@@ -13,7 +13,7 @@ row_filter:
 species:
   from: heading
   selector: "h2"
-  map: {"【犬】": dog, "【猫】": cat}
+  map: {"【犬】": dog, "【猫】": cat, "【その他】": other}
 fields:
   shelter_date: {regex: "(\\d+月\\s*\\d+\\s*日)"}
   location: {regex: "）\\s*(.+?)\\s*で(?:収容|保護)"}

@@ -45,7 +45,7 @@ STEP_KEYS = {
 }
 RENDER_KEYS = {"wait_for", "wait_ms"}
 RENDER_JSON_KEYS = {"match", "path", "follow", "max", "render"}
-ROW_FILTER_KEYS = {"text_has_any", "text_lacks", "min_text_length", "field_lacks", "field_has_any"}
+ROW_FILTER_KEYS = {"text_has_any", "text_lacks", "min_text_length", "field_lacks", "field_has_any", "field_not_past"}
 IMAGE_KEYS = {"selector", "exclude", "scope", "stop_at", "strip_query", "match_field"}
 FIELD_SPEC_KEYS = {
     "selector", "attr", "label", "regex", "default", "index", "header", "header_row", "from", "join", "sep",
@@ -371,7 +371,7 @@ def validate_recipe_dict(raw: dict[str, Any], source_url: str) -> list[str]:
 
     if "row_filter" in raw:
         rf = c.keys("row_filter", raw["row_filter"], ROW_FILTER_KEYS)
-        for k in ("text_has_any", "text_lacks"):
+        for k in ("text_has_any", "text_lacks", "field_not_past"):
             if k in rf:
                 c.str_list(f"row_filter.{k}", rf[k])
         for k in ("field_lacks", "field_has_any"):
