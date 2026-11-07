@@ -43,6 +43,13 @@ def _by(res, key: str) -> dict:
     return {a[key]: a for a in res.animals}
 
 
+def test_himeji_1_location_is_read_from_the_heading_sentence():
+    # F-03: 表に場所の欄は無いが、見出し文「…日<場所>で犬が逃げたので探しています」に場所がある
+    res = _run("city_himeji-1", _fx("t519_city_himeji-1.html"))
+    assert len(res.animals) == 1
+    assert res.animals[0]["location"] == "姫路市玉手3丁目付近"
+
+
 # --- 札幌市 迷子猫・迷子犬 --------------------------------------------------------------------------------------------
 
 
@@ -204,6 +211,22 @@ def test_nagasaki_3_a_failing_list_is_not_zero():
     del pages[f"{NAG}/maigo/?animal-type=others"]
     c = _nag3(pages)
     assert c.status == "failed"
+
+
+def test_nagasaki_3_a_list_with_neither_children_nor_empty_sentence_is_failed():
+    # F-01: 取得できたが作りが変わって子のリンクも「投稿がありません」も無い一覧が 1 本あれば、他の一覧に子がいても成功扱いにしない
+    pages = _nag3_pages()
+    pages[f"{NAG}/maigo/?animal-type=others"] = "<html><body><div class='list-area'><p>リニューアルしました</p></div></body></html>"
+    c = _nag3(pages)
+    assert c.status == "failed"
+
+
+def test_nagasaki_3_a_list_saying_no_posts_while_another_has_children_is_still_ok():
+    # 1 本が正しく「投稿がありません」を出しているだけなら、他の一覧の子は載せる（従来どおり）
+    pages = _nag3_pages()
+    pages[f"{NAG}/maigo/?animal-type=others"] = _fx("w006_animal_net_nagasaki-3_list_dog_20261107.html")
+    c = _nag3(pages)
+    assert c.status == "ok", c.error
 
 
 @pytest.mark.parametrize("slug", ["animal_net_nagasaki-1", "animal_net_nagasaki-2", "animal_net_nagasaki-3", "animal_net_nagasaki-4"])

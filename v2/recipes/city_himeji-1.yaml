@@ -18,6 +18,7 @@ fields:
   color: {label: "毛色"}
   size: {label: "体格"}
   note: {selector: "caption"}
+  location: {selector: "caption", regex: "日(.+?)で(?:犬|猫)が"}   # 見出し文「令和8年3月20日姫路市玉手3丁目付近で犬が逃げたので探しています」の場所。文型が違う件は空のまま（表に場所の欄は無い）
 species:
   from: field
   map: {"犬": dog, "猫": cat}

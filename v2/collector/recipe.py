@@ -377,6 +377,12 @@ class Executor:
                         doc.parent_url = d.url
                         out.append(doc)
                 self.trace.append(f"follow_all → {len(seen)} 件 ({d.url})")
+                if self.recipe.urls and d.parent_url is None and not seen:
+                    # 入口を複数にしたレシピで、子のリンクが 0 本なのに自分の 0 頭の文も出していない入口は、作りが変わったのであって
+                    # 空ではない。他の入口に子がいても成功にすると、その入口の子が黙って全部消える（W006 監査 B 班 F-01）
+                    ents = self.recipe.empty_text_entries
+                    if not (d.soup is not None and any(t in d.text() for t in ents)):
+                        raise RecipeError(f"follow_all: 入口 {d.url} に子のリンクが無く、empty_text_entries の文も無い（一覧の作りが変わった）")
             self._raise_if_all_failed("follow_all", tried, failed)
         elif "paginate" in step:
             sel, attr = parse_sel(step["paginate"])
