@@ -24,6 +24,7 @@ config.json:
     issues_url  取り下げ・訂正の依頼窓口（GitHub Issues）
     contact_email  GitHub アカウントの無い人向けの連絡先メール（空なら「GitHub アカウント（無料）が必要」と書く）
     affiliate   「迎える準備」枠。[{"title": "…", "url": "https://…", "note": "…", "species": "dog か cat かその一覧（省略でどの子にも）", "beacon": "A8 の計測用画像の URL（省略可）"}]。里親募集の子のページにだけ出す。空なら枠ごと出さない（about も「いまは広告を載せていません」になる）
+    ga4_id      GA4 の測定 ID（G-…）。あれば全ページの head に gtag.js を入れ、about に「アクセス解析」の節を出す。無い・形が違うときは何も出さない
 """
 
 from __future__ import annotations
@@ -217,6 +218,24 @@ def shorten(s: Any, n: int) -> str:
 
 # ---------------------------------------------------------------- page shell
 
+GA4_ID_RE = re.compile(r"G-[A-Z0-9]{4,20}")
+
+
+def ga4_id(cfg: dict[str, Any]) -> str:
+    """config の ga4_id が G-… の形のときだけ返す（形が違えば空。script に埋め込むので形で絞る）。"""
+    gid = str(cfg.get("ga4_id") or "").strip()
+    return gid if GA4_ID_RE.fullmatch(gid) else ""
+
+
+def ga4_head(cfg: dict[str, Any]) -> str:
+    gid = ga4_id(cfg)
+    if not gid:
+        return ""
+    return (f'\n<script async src="https://www.googletagmanager.com/gtag/js?id={gid}"></script>'
+            "\n<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}"
+            f"gtag('js', new Date());gtag('config', '{gid}');</script>")
+
+
 def page(cfg: dict[str, Any], *, title: str, desc: str, path: str, body: str,
          og_image: str = "", og_type: str = "website", extra_head: str = "", body_attrs: str = "",
          data_date: str = "") -> str:
@@ -248,7 +267,7 @@ def page(cfg: dict[str, Any], *, title: str, desc: str, path: str, body: str,
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="/style.css">{extra_head}
+<link rel="stylesheet" href="/style.css">{extra_head}{ga4_head(cfg)}
 </head>
 <body{body_attrs}>
 <header class="site-head">
@@ -601,6 +620,14 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
     else:
         money = ("<p>いまは広告を載せていません。載せるときは「迎える準備」枠に広告（アフィリエイト）リンクと明示し、"
                  "収入はサーバー代などの運営費に充てます。</p>")
+    analytics = ""
+    if ga4_id(cfg):
+        analytics = """<section>
+<h2>アクセス解析</h2>
+<p>どのページがよく見られているかを知ってサイトを良くするため、Google アナリティクスを使っています。Google アナリティクスは Cookie を使って、見たページ、おおよその地域、使っている端末などの閲覧の情報を集めます。名前や連絡先など、個人を特定する情報は集めていません。集めた情報は Google のプライバシーポリシーに沿って扱われます（<a href="https://policies.google.com/technologies/partner-sites?hl=ja" rel="noopener" target="_blank">Google のサービスを使うサイトやアプリから収集した情報の Google による使用</a>）。</p>
+<p>収集を止めたいときは、ブラウザで Cookie を無効にするか、<a href="https://tools.google.com/dlpage/gaoptout?hl=ja" rel="noopener" target="_blank">Google アナリティクス オプトアウト アドオン</a>をお使いください。</p>
+</section>
+"""
     body = f"""<article class="about">
 <h1>このサイトについて</h1>
 <section>
@@ -660,7 +687,7 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
 {money}
 <p>{site} は、自治体からも、譲渡を申し込む方からも、お金を受け取りません。譲渡の条件や費用は各自治体の定めによります。</p>
 </section>
-<section>
+{analytics}<section>
 <h2>免責</h2>
 <p>{site} は自治体の公式サイトではなく、自治体との提携や委託もない個人のサイトです。</p>
 <p>掲載内容は取得時点の自治体ページに基づきます。すでに譲渡・返還されている場合や、元ページの更新が反映されていない場合があります。ページはプログラムで自動に読み取っているため、写真や項目が別の子のものになるなどの誤りが起きることがあります。最終的な情報は必ず各自治体にご確認ください。誤りに気づいたら、上の窓口からお知らせください。</p>

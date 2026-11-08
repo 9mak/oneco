@@ -135,6 +135,7 @@ AI は案を書くだけ。案は `collector propose` が draft PR にし、**�
 | 独自ドメイン | 済み（2026-11-08）。oneco.pet を Cloudflare Registrar で取得し（9mak.0x13 のアカウント、1 年・自動更新、期限 2027-11-08）、Worker oneco の Domains に Custom Domain として付けた。登録者メールの確認リンク（ICANN）を取得から 15 日以内に踏まないとドメインが止まる | `site/config.json` の `base_url`、`ops/wrangler.jsonc` の `routes`、`v2-deadman.yml` の `SITE`（W006 T073） |
 | アフィリエイト | Amazon アソシエイト等に申し込み、承認後にリンクを作る | `site/config.json` の `affiliate` に `{"title","url","note","species","beacon"}` を入れる（species は dog か cat かその一覧で、省略するとどの子にも出す。beacon は A8 の広告コードの計測用画像の URL で省略可）。その子に出す広告が無いページには枠も PR 表示も出ない。A8 は掲載後に管理画面の「広告掲載URL管理」から掲載 URL を提出する |
 | 死活監視 | 不要（GitHub Actions の `v2-deadman.yml` が公開サイトの日付を毎朝見る。1-4） | Actions で v2 deadman が緑であること |
+| 検索と計測 | 済み（2026-11-08）。Search Console にドメインプロパティ oneco.pet（9mak.0x13。所有確認は Cloudflare DNS の TXT `google-site-verification=…`。消すと確認が外れる）を作り、`https://oneco.pet/sitemap.xml` を送信。GA4 は旧サイトのプロパティ oneco（properties/541319394、測定 ID G-KEE66C1E8B）を使い回し、ストリーム oneco-web の URL を oneco.pet に変えた | `site/config.json` の `ga4_id`（全ページの head に gtag.js、about に「アクセス解析」の節。空にすると両方消える） |
 | 本番クローンの登録 | ターミナルで `bash v2/ops/macos/install.sh`（1-2a。`~/oneco-collect` を作って launchd の登録を入れ替える）→ `launchctl kickstart -k gui/$(id -u)/com.oneco.collect` で 1 回動かす | `~/oneco-collect/v2/logs/collect-<日付>.log` が毎日できること、サイトの日付が更新されること |
 
 ## 2. 毎日自動で起きること
