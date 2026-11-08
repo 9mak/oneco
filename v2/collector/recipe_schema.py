@@ -51,6 +51,7 @@ ROW_FILTER_KEYS = {"text_has_any", "text_lacks", "min_text_length", "field_lacks
 IMAGE_KEYS = {"selector", "exclude", "scope", "stop_at", "strip_query", "match_field"}
 FIELD_SPEC_KEYS = {
     "selector", "attr", "label", "regex", "default", "index", "header", "header_row", "from", "join", "sep",
+    "if_header", "unless_header",
 }
 SPECIES_KEYS = {"from", "selector", "map", "allow_other", "infer"}
 PDF_KEYS = {"mode", "header_row", "header_has", "columns"}
@@ -238,6 +239,9 @@ class _Check:
                 self.regex(f"{where}.regex[{i}]", r)
         if "label" in d:
             self.str_list(f"{where}.label", d["label"])
+        for k in ("if_header", "unless_header"):
+            if k in d and not (isinstance(d[k], str) and 0 < len(d[k]) <= 40):
+                self.err(f"{where}.{k}: 40 文字以内の文字列でない")
         if "join" in d:
             j = d["join"]
             if not isinstance(j, list) or len(j) > MAX_LIST_ITEMS or depth >= 2:
@@ -315,6 +319,13 @@ def validate_recipe_dict(raw: dict[str, Any], source_url: str) -> list[str]:
     for key in ("url", "base_url"):
         if raw.get(key) is not None:
             c.url(key, raw[key])
+    if raw.get("urls") is not None:
+        urls = raw["urls"]
+        if not isinstance(urls, list) or not urls or len(urls) > 10:
+            c.err("urls: 1〜10 個の URL のリストでない")
+        else:
+            for i, u in enumerate(urls):
+                c.url(f"urls[{i}]", u)
     if raw.get("source_url") is not None and raw["source_url"] != "doc":
         c.url("source_url", raw["source_url"])
 
@@ -338,6 +349,14 @@ def validate_recipe_dict(raw: dict[str, Any], source_url: str) -> list[str]:
             items = c.str_list("empty_text_each", ete)
             if any(not s.strip() for s in items):
                 c.err("empty_text_each: 空の文字列がある（どの文書にも含まれるので根拠にならない）")
+    if "empty_text_entries" in raw:
+        ete2 = raw["empty_text_entries"]
+        if not isinstance(ete2, list) or not ete2:
+            c.err("empty_text_entries: 1 個以上の文字列のリストが要る")
+        else:
+            items = c.str_list("empty_text_entries", ete2)
+            if any(not s.strip() for s in items):
+                c.err("empty_text_entries: 空の文字列がある（どの文書にも含まれるので根拠にならない）")
     if "empty_selector" in raw:
         for i, s in enumerate(c.str_list("empty_selector", raw["empty_selector"])):
             c.selector(f"empty_selector[{i}]", s)

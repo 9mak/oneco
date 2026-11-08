@@ -59,6 +59,7 @@ class Recipe:
     species: dict[str, Any] = field(default_factory=dict)
     empty_text: list[str] = field(default_factory=list)
     empty_text_each: list[str] = field(default_factory=list)   # rows を当てる文書の「全部」が、この文のどれかを出したときだけ 0 頭（保健所・PDF ごとに 0 頭の文を出すサイト。W006 T631）。extract.build で照合
+    empty_text_entries: list[str] = field(default_factory=list)   # 入口の文書（steps で辿る前の ?animal-type=… 等の一覧）の「全部」が、この文のどれかを出したときだけ 0 頭（入口を複数にした一覧の 1 本が空の文を出すのは子がいる日も同じなので、empty_text にできない。W006 監査 B 班）。extract.empty_hits で照合
     empty_text_all: list[str] = field(default_factory=list)   # 列挙した 0 頭の文が全部出たときだけ 0 頭（複数の節があるページ。W006 T631）。extract.build で照合
     empty_selector: list[str] = field(default_factory=list)   # 0 頭の日に空になる一覧の器（文言が出ないサイト用）。extract.build で照合
     empty_absent: dict[str, str] = field(default_factory=dict)   # {page, none}: 0 頭の日に器ごと消えるサイト用。extract.build で照合
@@ -70,6 +71,7 @@ class Recipe:
     rows_regex: str | None = None
     notes: str | None = None
     url: str | None = None          # 台帳の URL の代わりに開く入口（省略時は台帳の URL）
+    urls: list[str] = field(default_factory=list)   # 入口を複数にする（url の代わりに全部開き、steps は全部の入口に適用）。長崎犬猫ネット: 一覧の ?animal-type=dog|cat|others
     transpose: str | None = None    # 転置表（1 列 = 1 頭）の table セレクタ。指定時は rows の代わりに列を行にする
     row_until: str | None = None    # 指定時は rows の要素を 1 頭の始まりとし、後ろの兄弟要素を次の始まりかこの要素の手前までまとめて 1 行にする
     id_by_management_no: list[str] = field(default_factory=list)   # 同じ写真を共有する子のうち、この管理番号（前方一致）の行は写真でなく管理番号から ID を作る。先に載った子が消えても残った子の ID が写真由来（消えた子の ID）に移らないよう、先頭の子以外を固定する
@@ -78,7 +80,7 @@ class Recipe:
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> Recipe:
         known = {k: v for k, v in raw.items() if k in cls.__dataclass_fields__}
-        for key in ("empty_text", "empty_text_each", "empty_selector"):
+        for key in ("empty_text", "empty_text_each", "empty_text_entries", "empty_selector"):
             if isinstance(known.get(key), str):
                 known[key] = [known[key]]
         return cls(**known)
@@ -99,6 +101,7 @@ class Doc:
     pdf_text: str | None = None
     rendered: bool = False
     captured: list[Any] = field(default_factory=list)   # 描画中に捕まえた JSON 応答（render_json 用）
+    parent_url: str | None = None   # follow / follow_all で辿ってきた元の文書の URL（species.from: parent_url 用。入口は None）
 
     @property
     def is_pdf(self) -> bool:
@@ -353,12 +356,14 @@ class Executor:
         途中で通った文書は self.visited に残し、empty_text の照合に使う（PDF が 0 本の日など、
         最終文書が無くても入口ページの「現在いません」を拾えるように）。
         """
-        entry_url = self.recipe.url or entry_url
+        entry_urls = self.recipe.urls or [self.recipe.url or entry_url]
         rj = next((s["render_json"] for s in self.recipe.steps if "render_json" in s), None)
         render_first = any(s.get("render") for s in self.recipe.steps) or rj is not None
-        docs = [self._get(entry_url, render=render_first, capture=rj.get("match") if rj else None)]
+        docs = []
+        for u in entry_urls:
+            docs.append(self._get(u, render=render_first, capture=rj.get("match") if rj else None))
+            self.trace.append(f"entry {u}")
         self.visited: list[Doc] = list(docs)
-        self.trace.append(f"entry {entry_url}")
         for step in self.recipe.steps:
             if step.get("render"):
                 continue
@@ -377,7 +382,9 @@ class Executor:
                     raise RecipeError(f"follow: '{step['follow']}' が見つからない ({d.url})")
                 url = _abs(self.recipe.base_url or d.url, href)
                 self.trace.append(f"follow → {url}")
-                out.append(self._get(url, render=step.get("rendered", False)))
+                child = self._get(url, render=step.get("rendered", False))
+                child.parent_url = d.url
+                out.append(child)
         elif "follow_text" in step:
             words = step["follow_text"] if isinstance(step["follow_text"], list) else [step["follow_text"]]
             for d in docs:
@@ -410,8 +417,15 @@ class Executor:
                     tried += 1
                     doc = self._child(step, url, failed, lambda u=url: self._get(u, render=step.get("rendered", False)))
                     if doc is not None:
+                        doc.parent_url = d.url
                         out.append(doc)
                 self.trace.append(f"follow_all → {len(seen)} 件 ({d.url})")
+                if self.recipe.urls and d.parent_url is None and not seen:
+                    # 入口を複数にしたレシピで、子のリンクが 0 本なのに自分の 0 頭の文も出していない入口は、作りが変わったのであって
+                    # 空ではない。他の入口に子がいても成功にすると、その入口の子が黙って全部消える（W006 監査 B 班 F-01）
+                    ents = self.recipe.empty_text_entries
+                    if not (d.soup is not None and any(t in d.text() for t in ents)):
+                        raise RecipeError(f"follow_all: 入口 {d.url} に子のリンクが無く、empty_text_entries の文も無い（一覧の作りが変わった）")
             self._raise_if_all_failed("follow_all", tried, failed)
         elif "paginate" in step:
             sel, attr = parse_sel(step["paginate"])
@@ -864,6 +878,17 @@ def _header_row_value(el: Tag, label: str) -> str | None:
     return None
 
 
+def _table_has_header(el: Tag | None, word: str) -> bool:
+    """行（tr）を含む表に、記号・空白を除いて word と同じ見出しセル（th）があるか。表の中に入れ子の表があっても自分の表の th だけを見る。"""
+    table = el.find_parent("table") if el is not None else None
+    if table is None:
+        return False
+    for th in table.find_all("th"):
+        if th.find_parent("table") is table and visible_text(th).strip(_LABEL_PUNCT) == word:
+            return True
+    return False
+
+
 def nearest_heading(el: Tag, selector: str) -> str | None:
     """行より前にある、selector に合う直近の要素（見出し）のテキスト。"""
     root = el
@@ -889,6 +914,11 @@ def field_value(spec: Any, row: Row) -> str | None:
         return None
     if isinstance(spec, str):
         spec = {"selector": spec}
+    if "if_header" in spec or "unless_header" in spec:
+        # 表の見出し（th）に応じて列の意味が変わる表（船橋市 譲渡可能犬猫: 猫の表は見出し「毛色」、犬の表は見出し行が無く 2 列目が種類）
+        has = _table_has_header(row.el, str(spec.get("if_header") or spec.get("unless_header")))
+        if ("if_header" in spec and not has) or ("unless_header" in spec and has):
+            return None
     if "join" in spec:
         # 複数の指定で取った値を sep でつなぐ（取れなかったものと、前と同じ値は飛ばす）。明石 飼い主募集の猫の
         # 「トライアル中」の印と性格（2026-10-07 T521）
@@ -995,11 +1025,20 @@ def _sibling_holder(recipe: Recipe, spec: dict[str, Any], base: Tag, forward: bo
 
     holder = BeautifulSoup("", "lxml").new_tag("div", attrs={"class": "next-siblings" if forward else "prev-siblings"})
     sibs: list[Tag] = []
-    stop_at_row = spec.get("stop_at") == "row" and isinstance(recipe.rows, str)
+    stop_at = str(spec.get("stop_at") or "")
+    # "row, h2" は「rows に当たる要素」に加えて h2 の手前でも止める（岩手県 県央: 迷子の節の写真 p が、譲渡の最初の子まで遡って届くのを防ぐ）
+    stop_extra = stop_at[len("row,"):].strip() if stop_at.startswith("row,") else ""
+    stop_at_row = (stop_at == "row" or bool(stop_extra)) and isinstance(recipe.rows, str)
     walk = base.find_next_siblings() if forward else base.find_previous_siblings()
     for sib in walk:
         if not isinstance(sib, Tag):
             continue
+        if stop_extra:
+            try:
+                if sib.css.match(stop_extra):
+                    break
+            except Exception:
+                pass
         if stop_at_row:
             try:
                 if sib.css.match(recipe.rows):

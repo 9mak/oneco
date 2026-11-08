@@ -964,6 +964,7 @@ sources:
   mode: recipe
   recipe: recipes/city_funabashi-1.yaml
   enabled: true
+  note: "2026-11-07 W006 監査 F-02: ページは「動物愛護指導センターに収容し、元の飼い主を探している犬・猫」で、飼い主不明のまま保護された子の定義（stray）にも当たりうる。同型の収容公示ページ約 140 件が sheltered なので揃えて sheltered のまま。福山-2 は同趣旨の文を根拠に stray へ変えており、収容公示ページ全体の kind の基準（stray か sheltered か）は持ち主の判断待ち（OPERATIONS.md か台帳の凡例に 1 行で決める）"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_funabashi.py
     requires_js: false
@@ -2183,7 +2184,7 @@ sources:
   verified_at: '2026-10-15'
   verified_phone_url: "https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/237722.html"
   verified_address_url: "https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/237722.html"
-  kind: sheltered
+  kind: stray       # 2026-11-07 W006 監査: ページは「動物愛護センターに収容されている、迷い猫の情報」「元の飼い主さんに猫をお返しするための情報提供です。※譲渡猫の情報ではありません」。同じ市の迷い犬（-1）と同じ stray に揃えた
   species: cat
   mode: recipe
   recipe: recipes/city_fukuyama-2.yaml
@@ -4902,6 +4903,22 @@ sources:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_iwate.py
     requires_js: false
     pdf: false
+- slug: pref_iwate_kennan-2
+  name: 岩手県（県央保健所 迷子犬猫）
+  municipality: 県央保健所
+  prefecture: 岩手県
+  phone: "019-629-6588"
+  address: 岩手県盛岡市三ツ割5丁目17-59（県央保健所犬猫保護センター）
+  url: https://www.pref.iwate.jp/morioka/hoken/1012494.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.iwate.jp/morioka/hoken/1012494.html"
+  verified_address_url: "https://www.pref.iwate.jp/morioka/hoken/1012494.html"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_iwate_kennan-2.yaml
+  enabled: true
+  note: "pref_iwate_kennan と同じページの「元の飼主さんを探しています（迷子犬猫情報）」の節だけ（2026-11-07 W006 監査で分けた。迷子の柴犬 26040 が載っていなかった）。0 頭の日の実物は未観測なので、節ごと消える日を empty_absent で 0 頭と読む（本文の枠があり迷子の節の見出し・写真・保護日時の p が無い日だけ。大船渡と同じ作り）"
 - slug: pref_iwate_chubu
   name: 岩手県（中部保健所 譲渡犬猫）
   municipality: 中部保健所
@@ -5042,15 +5059,31 @@ sources:
   verified_phone_url: "https://www.pref.iwate.jp/engan/miya_hoken/hogodoubutsu/1014161.html"
   verified_address_url: "https://www.pref.iwate.jp/engan/miya_hoken/hogodoubutsu/1014161.html"
   kind: adoption    # 2026-10-05: 取れる行は全部【譲渡】新しい飼い主さんを募集しています の節（迷子が載った日は混ざる。T517）
-  species: cat
+  species: mixed    # 2026-11-07: 猫固定をやめ、各子の「動物種：」で決める（ページには犬の子の譲渡報告もあり、犬が載る日がある）
   mode: recipe
   recipe: recipes/pref_iwate_miyako.yaml
   enabled: true
-  note: ハブ pref_iwate から分割（2026-09-29）。2026-09-29時点は猫のみ
+  note: "ハブ pref_iwate から分割（2026-09-29）。2026-11-07 W006 監査: 迷子の節【保護】は pref_iwate_miyako-2 に分けた。備考に「右側のわんや君は譲渡が決まりました」とある子（てんや君）を譲渡済みと誤って捨てていたのを、見出し（【御報告】）で見るように直した。てんや君（2026-9-067C）の写真 tenyawanya.jpg には譲渡が決まったわんや君も写り、備考にも「右側のわんや君は譲渡が決まりました」とある（掲載元のとおり。color「てんや君はキジ白」も掲載元の文のとおりで名前が入る）。迷子猫 2026-10-074C の ID は pref_iwate_miyako の 122dfcc3a900 から pref_iwate_miyako-2 の e330cfccea14 に変わった（節を分けたため）"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_iwate.py
     requires_js: false
     pdf: false
+- slug: pref_iwate_miyako-2
+  name: 岩手県（宮古保健所 迷子猫）
+  municipality: 宮古保健所
+  prefecture: 岩手県
+  phone: "0193-64-2218"
+  address: 岩手県宮古市五月町1-20
+  url: https://www.pref.iwate.jp/engan/miya_hoken/hogodoubutsu/1014161.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.iwate.jp/engan/miya_hoken/hogodoubutsu/1014161.html"
+  verified_address_url: "https://www.pref.iwate.jp/engan/miya_hoken/hogodoubutsu/1014161.html"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_iwate_miyako-2.yaml
+  enabled: true
+  note: "pref_iwate_miyako と同じページの h2「【保護】元の飼い主さんを捜しています。」の節だけ（2026-11-07 W006 監査で分けた。保護猫 2026-10-074C が譲渡（adoption）として載っていた）。0 頭の日の実物は未観測なので、節ごと消える日を empty_absent で 0 頭と読む"
 - slug: pref_iwate_kuji
   name: 岩手県（久慈保健所 保護猫）
   municipality: 久慈保健所
@@ -7627,7 +7660,7 @@ sources:
   mode: recipe
   recipe: recipes/city_himeji-1.yaml
   enabled: true
-  note: 環境省リンク集から追加（2026-10-05 T519）。リンク集のリンク先（0000001412.html「ペットが迷子になったとき」）は案内だけで、動物の一覧は無い。姫路市は収容動物・譲渡犬猫の個体一覧をホームページに載せておらず（犬の譲渡・猫の譲渡のページは手続きの案内だけ。確認済み）、載っている一覧はこの「迷子のペット情報掲示板」だけ。市民が申請した「探しています」の告知を市が載せる（市は情報交換の場の提供のみ）。2026-10-05 は犬 1 件（逸走日 令和8年3月29日。掲載期間は 6 ヶ月とページにあり、期間は過ぎているが市のページには残っている。見つかったかどうかは分からない）。表の連絡先欄は個人のメールアドレスなので取り込まず、元ページのリンクで見てもらう。h3「掲載例」の見本（猫）は row_filter で落とす。複数件が並ぶ日・0 件の日の作りは未確認（0 件の文言が分からず empty_text は置いていない）。
+  note: 環境省リンク集から追加（2026-10-05 T519）。リンク集のリンク先（0000001412.html「ペットが迷子になったとき」）は案内だけで、動物の一覧は無い。姫路市は収容動物・譲渡犬猫の個体一覧をホームページに載せておらず（犬の譲渡・猫の譲渡のページは手続きの案内だけ。確認済み）、載っている一覧はこの「迷子のペット情報掲示板」だけ。市民が申請した「探しています」の告知を市が載せる（市は情報交換の場の提供のみ）。2026-10-05 は犬 1 件（逸走日 令和8年3月29日。掲載期間は 6 ヶ月とページにあり、期間は過ぎているが市のページには残っている。見つかったかどうかは分からない）。表の連絡先欄は個人のメールアドレスなので取り込まず、元ページのリンクで見てもらう。h3「掲載例」の見本（猫）は row_filter で落とす。複数件が並ぶ日・0 件の日の作りは未確認（0 件の文言が分からず empty_text は置いていない）。 2026-11-07 の追記 場所は表に欄が無いが、各件の見出し文（表の caption「令和8年3月20日姫路市玉手3丁目付近で犬が逃げたので探しています」）の「日」の後ろから「で犬が／で猫が」の前までを location に読む（文型が違う件は空のまま。実例は 1 件だけで他の文型は未確認）。
 
 - slug: city_matsumoto-6
   name: 松本市（新しい飼い主を探している猫・同じ掲載の 2 頭目）

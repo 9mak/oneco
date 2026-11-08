@@ -10,9 +10,14 @@
 #   エンジンが同じ p タグで遡りを止めるため届かない（engine_needs）。p.imageright 側の selector は先に書いておく。
 rows: "p:-soup-contains('管理番号：')"
 image: {selector: "h2 + p.imageright img, h2 + figure img@src", scope: prev_siblings, stop_at: row}   # 2026-10-04: 行も写真も p なので前の行まで遡る
+# 2026-11-07 W006 監査: 譲渡済みの除外を、行の文でなく直前の h2（【御報告】譲渡が決まりました💛）で見る。以前は行に「譲渡が決まりました」があれば捨てていて、
+#   備考に「右側のわんや君は譲渡が決まりました」とある現役のてんや君（2026-9-067C）まで捨てていた。迷子の節 h2「【保護】元の飼い主さんを捜しています。」は
+#   pref_iwate_miyako-2（kind = stray）に分けたので、この slug の行から外す（行としては残るので、最初の譲渡の子の写真の遡りが迷子の節まで届かない）。
 row_filter:
-  text_lacks: ["譲渡が決まりました"]
+  field_lacks: {section: ["御報告", "譲渡が決まりました", "【保護】"]}
 fields:
+  section: {from: heading, selector: "h2"}   # 除外判定用（animals には出ない）
+  species: {label: "動物種"}   # 2026-11-07: 台帳の猫固定をやめ、各子の「動物種：」のとおり（犬の子の譲渡報告が載る日がある）
   management_no: {regex: "管理番号[:：]\\s*([A-Za-z0-9\\-]+)"}
   name: {regex: "仮名[:：]\\s*([^）\\s]+)"}
   breed: {label: "種類"}
@@ -21,5 +26,8 @@ fields:
   size: {label: "体格"}
   age: {label: "推定年齢"}
   note: {regex: "性格等?[:：]\\s*(.+)"}
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
 empty_text:
   - "現在、保護されている動物はいません"
