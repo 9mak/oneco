@@ -17,7 +17,7 @@ fields:
   age: {label: "推定年齢"}
   size: {label: "体格"}
   location: {label: "保護場所"}
-  shelter_date: {regex: "保護日時[:：]\\s*(\\S+)"}
+  shelter_date: {regex: "保護日(?:時)?[:：]\\s*(\\S+)"}   # 「保護日：2026年10月19日」（2026-11-07 監査 C。city_kumamoto-2 と同じ）
 # 2026-11-06 T631: 見出し「迷子犬を保護しています」はサイト共通のメニューと子ページにも毎日出る（一覧の 13 か所に出る）ので empty_text にはできない。
 # 猫版 city_kumamoto-2（2026-10-31）と同じく、0 頭の日は div.kijiArea（「全N件」と記事の並び）ごと消える作りを empty_absent で見る。
 # page = 本文（#cont_body）の div.wideMenu の中の h1.classTitle「迷子犬を保護しています」（0 頭の日も子のいる日も出る枠）、
