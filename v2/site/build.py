@@ -49,7 +49,7 @@ MARKER = ".oneco-build"
 
 DEFAULT_CFG: dict[str, Any] = {
     "site_name": "oneco",
-    "base_url": "https://oneco.9mak-0x13.workers.dev",
+    "base_url": "https://oneco.pet",
     "issues_url": "https://github.com/9mak/oneco/issues",
     "repo_url": "https://github.com/9mak/oneco",
     "tagline": "全国の保護動物情報をひとつに",
