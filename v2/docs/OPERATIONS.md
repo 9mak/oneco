@@ -132,7 +132,7 @@ AI は案を書くだけ。案は `collector propose` が draft PR にし、**�
 
 | 項目 | やること | 反映先 |
 | --- | --- | --- |
-| 独自ドメイン | ドメインを取り、Cloudflare にゾーンを作って Workers & Pages → oneco → Settings → Domains & Routes → Custom domain で付ける | `site/config.json` の `base_url` を新ドメインに変える（canonical・OG・sitemap が変わる） |
+| 独自ドメイン | 済み（2026-11-08）。oneco.pet を Cloudflare Registrar で取得し（9mak.0x13 のアカウント、1 年・自動更新、期限 2027-11-08）、Worker oneco の Domains に Custom Domain として付けた。登録者メールの確認リンク（ICANN）を取得から 15 日以内に踏まないとドメインが止まる | `site/config.json` の `base_url`、`ops/wrangler.jsonc` の `routes`、`v2-deadman.yml` の `SITE`（W006 T073） |
 | アフィリエイト | Amazon アソシエイト等に申し込み、承認後にリンクを作る | `site/config.json` の `affiliate` に `{"title","url","note","species","beacon"}` を入れる（species は dog か cat かその一覧で、省略するとどの子にも出す。beacon は A8 の広告コードの計測用画像の URL で省略可）。その子に出す広告が無いページには枠も PR 表示も出ない。A8 は掲載後に管理画面の「広告掲載URL管理」から掲載 URL を提出する |
 | 死活監視 | 不要（GitHub Actions の `v2-deadman.yml` が公開サイトの日付を毎朝見る。1-4） | Actions で v2 deadman が緑であること |
 | 本番クローンの登録 | ターミナルで `bash v2/ops/macos/install.sh`（1-2a。`~/oneco-collect` を作って launchd の登録を入れ替える）→ `launchctl kickstart -k gui/$(id -u)/com.oneco.collect` で 1 回動かす | `~/oneco-collect/v2/logs/collect-<日付>.log` が毎日できること、サイトの日付が更新されること |
@@ -296,7 +296,8 @@ cd v2   # 本番クローンなら ~/oneco-collect/v2
 | GitHub Actions（死活監視 1 日 1 回・1 分未満。Public repo は無料） | 0 円 |
 | Discord webhook | 0 円 |
 | AI 修復（agy） | API 課金なし（Antigravity の既存契約の枠内） |
-| 合計（Mac で動かす場合） | 0 円（既存契約の範囲） |
+| 独自ドメイン oneco.pet（Cloudflare Registrar。原価販売で更新も同額） | 年 $22.22（$20.20 + 消費税 10%。2026-11-08 の初回は約 3,520 円）。月あたり約 290 円 |
+| 合計（Mac で動かす場合） | 月約 290 円（ドメイン代だけ。ほかは既存契約の範囲） |
 
 ## 台帳の電話・所在地の突合: `ops/verify_registry.py`（W006 T616）
 
