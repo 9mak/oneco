@@ -41,11 +41,13 @@ REGEX_LONG_LIMIT = 3.0
 # ネストしたキーの許可リスト（docs/RECIPE.md）。項目名（fields.<名前>）は自由（row_filter.field_* の参照先になる）
 STEP_KEYS = {
     "follow", "follow_text", "follow_all", "paginate", "pdf_links", "render", "render_json",
-    "skip_errors", "rendered", "max",
+    "skip_errors", "rendered", "max", "submit_form",
 }
+SUBMIT_FORM_KEYS = {"form", "set", "require", "repeat_while", "max"}
+MAX_FORM_SET = 20
 RENDER_KEYS = {"wait_for", "wait_ms"}
 RENDER_JSON_KEYS = {"match", "path", "follow", "max", "render"}
-ROW_FILTER_KEYS = {"text_has_any", "text_lacks", "min_text_length", "field_lacks", "field_has_any"}
+ROW_FILTER_KEYS = {"text_has_any", "text_lacks", "min_text_length", "field_lacks", "field_has_any", "field_required"}
 IMAGE_KEYS = {"selector", "exclude", "scope", "stop_at", "strip_query", "match_field"}
 FIELD_SPEC_KEYS = {
     "selector", "attr", "label", "regex", "default", "index", "header", "header_row", "from", "join", "sep",
@@ -363,6 +365,30 @@ def validate_recipe_dict(raw: dict[str, Any], source_url: str) -> list[str]:
                     if "wait_for" in rd:
                         c.selector(f"{w}.render.wait_for", rd["wait_for"])
                     c.int_max(f"{w}.render.wait_ms", rd.get("wait_ms"), MAX_WAIT_MS)
+                if "submit_form" in d:
+                    sf = c.keys(f"{w}.submit_form", d["submit_form"], SUBMIT_FORM_KEYS)
+                    if "form" not in sf:
+                        c.err(f"{w}.submit_form.form: 必須（form のセレクタ）")
+                    else:
+                        c.selector(f"{w}.submit_form.form", sf["form"])
+                    if "repeat_while" in sf:
+                        c.selector(f"{w}.submit_form.repeat_while", sf["repeat_while"])
+                    if "set" in sf:
+                        sv = sf["set"]
+                        if not isinstance(sv, dict):
+                            c.err(f"{w}.submit_form.set: マッピングでない")
+                        else:
+                            if len(sv) > MAX_FORM_SET:
+                                c.err(f"{w}.submit_form.set: {len(sv)} 項目 > {MAX_FORM_SET}")
+                            for name, val in sv.items():
+                                if not isinstance(name, str) or not isinstance(val, str):
+                                    c.err(f"{w}.submit_form.set.{name}: 名前も値も文字列でなければならない")
+                    if "require" in sf:
+                        if not isinstance(sf["require"], list):
+                            c.err(f"{w}.submit_form.require: リストでない")
+                        else:
+                            c.str_list(f"{w}.submit_form.require", sf["require"])
+                    c.int_max(f"{w}.submit_form.max", sf.get("max"), MAX_PAGES)
                 if "render_json" in d:
                     rj = c.keys(f"{w}.render_json", d["render_json"], RENDER_JSON_KEYS)
                     if "follow" in rj:
@@ -374,7 +400,7 @@ def validate_recipe_dict(raw: dict[str, Any], source_url: str) -> list[str]:
         for k in ("text_has_any", "text_lacks"):
             if k in rf:
                 c.str_list(f"row_filter.{k}", rf[k])
-        for k in ("field_lacks", "field_has_any"):
+        for k in ("field_lacks", "field_has_any", "field_required"):
             if k in rf:
                 fl = rf[k]
                 if not isinstance(fl, dict):

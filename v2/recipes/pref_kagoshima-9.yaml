@@ -1,0 +1,27 @@
+# 鹿児島県動物愛護ホームページ（保健所・動物管理所の譲渡対象犬）: 画像ボタンの JavaScript（search_submit）が、入口の form
+# （hidden の jouto_kubun・search_type と anti-forgery トークン）を POST して一覧を出す作り。
+# submit_form で入口の form に jouto_kubun=kanrisyo・search_type=dog を足して POST し、結果のページ送り
+# （form[name=paging] の act=next）を「次ページ」のリンクがある間たどる（10 件ずつ）。W006 2026-11-07。
+# 1 頭 = 結果の table.t-jouto 1 つ（写真は直前の p.thumbs_left）。0 件の日だけ「検索条件に一致する情報が見つかりませんでした。」が出る。
+steps:
+  - submit_form:
+      form: "form[name=type]"
+      set: {search_type: dog, jouto_kubun: kanrisyo}
+      require: ["__RequestVerificationToken"]
+  - submit_form:
+      form: "form[name=paging]"
+      set: {act: next}
+      repeat_while: "a.paging_next"
+      max: 30
+rows: "table.t-jouto"
+image: {selector: "a.popup-image img@src", scope: prev_siblings}
+# 譲渡済みの印が付いた行は載せない（取り下げ前の掲載が残る日がある）。「決まりましたら」（これから）や、複数匹の行の中の 1 匹だけ「既に譲渡済み」は
+# 行ごと落とすと載っている子が消えるので、終わった言い方だけを語にする（今日の実ページで確認）。
+row_filter:
+  text_lacks: ["譲渡済みです", "譲渡済みとなり", "譲渡済みになり", "譲渡しました", "譲渡されました", "決まりました。", "決まりました！", "新しい飼い主さんのもと", "新しい飼い主のもと", "新しい家族のもと", "新しい家族になりました"]
+fields:
+  management_no: {label: "No"}
+  sex: {label: "性別"}
+  age: {label: ["推定年齢", "年齢"]}
+  note: {join: [{label: "備考"}, {regex: "(お問い合わせ先\\s*\\S+（[0-9\\-]+）)"}], sep: "　"}
+empty_text: ["検索条件に一致する情報が見つかりませんでした"]

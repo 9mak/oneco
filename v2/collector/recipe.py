@@ -1,6 +1,6 @@
 """レシピ（recipes/<slug>.yaml）の読み込みと実行。
 
-流れ: 入口 URL → steps（follow / follow_text / follow_all / paginate / pdf_links / render）→ 文書の列
+流れ: 入口 URL → steps（follow / follow_text / follow_all / paginate / pdf_links / render / submit_form）→ 文書の列
 → 各文書に rows を適用 → 行 → fields で項目を取る。
 """
 
@@ -14,7 +14,7 @@ from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, TypeVar
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit
 
 import yaml
 from bs4 import BeautifulSoup, CData, NavigableString, PageElement, Tag, XMLParsedAsHTMLWarning
@@ -269,6 +269,49 @@ def _abs(base: str, href: str) -> str:
     return urljoin(base, href.strip())
 
 
+# --- form（steps の submit_form）---------------------------------------------
+_NO_SUBMIT_INPUT = frozenset({"submit", "button", "image", "reset", "file"})
+
+
+def form_data(form: Tag) -> dict[str, str | list[str]]:
+    """ブラウザが form を送るときの値の集め方（input・select・textarea）。ボタン類・無効な項目・チェックの無い
+    checkbox / radio は送らない。select multiple は選んだ全部を list で持つ。"""
+    data: dict[str, str | list[str]] = {}
+
+    def put(name: str, value: str) -> None:
+        cur = data.get(name)
+        if cur is None:
+            data[name] = value
+        elif isinstance(cur, list):
+            cur.append(value)
+        else:
+            data[name] = [cur, value]
+
+    for el in form.select("input, select, textarea"):
+        name = el.get("name")
+        if not isinstance(name, str) or not name or el.has_attr("disabled"):
+            continue
+        if el.name == "input":
+            typ = str(el.get("type") or "text").lower()
+            if typ in _NO_SUBMIT_INPUT:
+                continue
+            if typ in ("checkbox", "radio"):
+                if el.has_attr("checked"):
+                    put(name, str(el.get("value") if el.get("value") is not None else "on"))
+                continue
+            put(name, str(el.get("value") or ""))
+        elif el.name == "textarea":
+            put(name, el.get_text())
+        else:
+            options = el.select("option")
+            chosen = [o for o in options if o.has_attr("selected")]
+            if not chosen and options and not el.has_attr("multiple"):
+                chosen = options[:1]
+            for o in chosen:
+                put(name, str(o.get("value") if o.get("value") is not None else o.get_text(strip=True)))
+    return data
+
+
 # --- steps ------------------------------------------------------------------
 class Executor:
     def __init__(self, fetcher: Fetcher, recipe: Recipe) -> None:
@@ -410,6 +453,9 @@ class Executor:
                         out.append(_make_pdf_doc(page.final_url, page.content, columns=self._pdf_columns()))
                 self.trace.append(f"pdf_links → {len(seen)} 件")
             self._raise_if_all_failed("pdf_links", tried, failed)
+        elif "submit_form" in step:
+            for d in docs:
+                out.extend(self._submit_form(step["submit_form"], d))
         elif "render_json" in step:
             # 描画中に捕まえた JSON 応答（match の URL）から path の値を抜き、follow の {value} に差し込んで辿る。
             # 一覧が API 応答にしか無く <a href> が無い SPA（愛知わんにゃんナビ = Bubble）用
@@ -429,6 +475,55 @@ class Executor:
                 self.trace.append(f"render_json → {len(seen)} 件")
         else:
             raise RecipeError(f"未知の step: {step}")
+        return out
+
+    def _submit_form(self, spec: dict[str, Any], d: Doc) -> list[Doc]:
+        """文書 d の form を POST して結果の文書を返す（W006 鹿児島県。画像ボタンの JavaScript が hidden と anti-forgery
+        トークン付きの form を POST して一覧を出すサイト用）。hidden など form の値を集め、`set` の値で上書き・追加して送る。
+
+        - 宛先は form の action だけ（レシピに URL を書かせない）。文書と別のホスト・POST でない form は拒否する
+        - `require` の名前の値が form に無い・空なら送らず失敗（トークンが取れない日を 0 頭にしない）
+        - 結果の文書の URL は入口のページの URL のまま（source_url が POST 専用の URL にならないように）
+        - 返ってきた URL の path が action と違えば失敗（token 不正・セッション切れは /Shared/Error へ転送される）
+        - `repeat_while`（セレクタ）があれば paginate と同じ形: d を残し、その要素が結果にある間、結果の同じ form を送って次を得る。
+          max（既定 recipe.max_pages）ページで終わらず次がまだあれば、黙って切らず失敗にする"""
+        form_sel = spec["form"]
+        repeat = spec.get("repeat_while")
+        limit = int(spec.get("max", self.recipe.max_pages))
+        out: list[Doc] = []
+        cur = d
+        sent = 0
+        if repeat:
+            out.append(d)
+        while True:
+            if repeat and not (cur.soup and cur.soup.select_one(repeat)):
+                break
+            if sent >= limit and repeat:
+                raise RecipeError(f"submit_form: {limit}（max）ページ送っても '{repeat}' が続く ({cur.url})")
+            form = cur.soup.select_one(form_sel) if cur.soup else None
+            if form is None:
+                raise RecipeError(f"submit_form: form '{form_sel}' が見つからない ({cur.url})")
+            data = form_data(form)
+            for name in spec.get("require", []):
+                if not data.get(name):
+                    raise RecipeError(f"submit_form: form '{form_sel}' に '{name}' が無い・空 ({cur.url})")
+            if str(form.get("method") or "get").lower() != "post":
+                raise RecipeError(f"submit_form: form '{form_sel}' は POST でない ({cur.url})")
+            data.update(spec.get("set", {}))
+            action = _abs(self.recipe.base_url or cur.url, str(form.get("action") or cur.url))
+            if (urlsplit(action).hostname or "").lower() != (urlsplit(cur.url).hostname or "").lower():
+                raise RecipeError(f"submit_form: 別のホストへの form は送らない ({action})")
+            page = self.fetcher.post(action, data, referer=cur.url, encoding=self.recipe.encoding)
+            if urlsplit(page.final_url).path.lower() != urlsplit(action).path.lower():
+                raise RecipeError(f"submit_form: 結果が {action} でなく {page.final_url} だった（トークン不正・セッション切れ）")
+            # 結果の文書の URL は、人が開ける form のあるページ（入口）にする。POST 専用の URL は GET だとエラーページで、
+            # 個体の「自治体のページで詳細を見る」（source_url）にできない
+            cur = _make_doc(cur.url, page.html or "")
+            out.append(cur)
+            sent += 1
+            self.trace.append(f"submit_form → {action}（{sent} 回目）")
+            if not repeat:
+                break
         return out
 
     def _child(self, step: dict[str, Any], url: str, failed: list[str], fetch: Callable[[], T]) -> T | None:

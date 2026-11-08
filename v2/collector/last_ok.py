@@ -9,6 +9,7 @@ render（Playwright）を使った run は描画後の状態を再現できな�
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import logging
 import os
@@ -35,6 +36,14 @@ class RecordingFetcher:
         self.inner = inner
         self.pages: dict[str, Any] = {}
         self.rendered = False
+        self._posts = 0
+
+    def post(self, url: str, *args: Any, **kw: Any) -> Any:
+        """POST の結果は URL が同じなので、n 回目を "<url>#post<n>" の名前で覚える（再生は FakeFetcher.post が同じ並びで返す）。"""
+        page = self.inner.post(url, *args, **kw)
+        self._posts += 1
+        self.pages[f"{url}#post{self._posts}"] = dataclasses.replace(page, url=f"{url}#post{self._posts}")
+        return page
 
     def get(self, url: str, *args: Any, **kw: Any) -> Any:
         page = self.inner.get(url, *args, **kw)
