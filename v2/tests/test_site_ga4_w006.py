@@ -12,6 +12,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG = {"site_name": "oneco", "base_url": "https://oneco.pages.dev", "affiliate": []}
 GA = "G-TEST12345"
@@ -63,6 +65,19 @@ def test_malformed_ga4_id_is_ignored(tmp_path: Path) -> None:
     for name, h in pages.items():
         assert "googletagmanager" not in h, name
         assert "alert(1)" not in h, name
+
+
+@pytest.mark.parametrize("bad", ["g-abcd1234", "G-AB", "G-ABCD1234<", "UA-12345-1", "G-ABCD 1234", "G-ABCD1234\nx"])
+def test_ga4_id_must_be_the_exact_g_form(bad: str) -> None:
+    mod = _load_build()
+    assert mod.ga4_id({"ga4_id": bad}) == ""
+    assert mod.ga4_head({"ga4_id": bad}) == ""
+
+
+def test_surrounding_whitespace_is_trimmed_not_embedded() -> None:
+    mod = _load_build()
+    assert mod.ga4_id({"ga4_id": " G-ABCD1234\n"}) == "G-ABCD1234"
+    assert "\n" not in mod.ga4_head({"ga4_id": " G-ABCD1234\n"}).split("id=")[1].split('"')[0]
 
 
 def test_about_discloses_analytics_and_how_to_opt_out(tmp_path: Path) -> None:
