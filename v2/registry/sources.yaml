@@ -2079,13 +2079,14 @@ sources:
   mode: recipe
   recipe: recipes/city_kurashiki.yaml
   enabled: true
-  photo: pending
+  photo: ok
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_kurashiki.py
     requires_js: false
     pdf: false
     list_link_pattern: a[href*='/kurashi/pet/1013042/']
     pdf_link_pattern: null
+  note: 2026-11-09 倉敷市から、広告の予定（里親募集の子のページだけ。倉敷の子は保護中なので出ない）を伝えたうえで写真の表示を承知と返事（T630）。
 - slug: city_okayama
   name: 岡山市（保護動物情報）
   municipality: 岡山市
@@ -2667,13 +2668,14 @@ sources:
   mode: recipe
   recipe: recipes/city_machida-1.yaml
   enabled: true
-  photo: pending
+  photo: ok
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_machida.py
     requires_js: false
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+  note: 2026-11-09 町田市から、写真の表示はしてよいと返事（T630）。
 - slug: city_machida-2
   name: 町田市（迷子犬・捜索）
   municipality: 町田市
@@ -2688,13 +2690,14 @@ sources:
   mode: recipe
   recipe: recipes/city_machida-2.yaml
   enabled: true
-  photo: pending
+  photo: "no"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_machida.py
     requires_js: false
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+  note: 2026-11-09 町田市は写真の表示を可と返事したが、迷子の捜索ページの写真は飼い主さんが届け出たものと思われ、市の可は飼い主の権利まで含まないので出さない（おまえさん 2026-11-10「迷子の写真だけは出さなければいい」。T630）。
 - slug: city_machida-3
   name: 町田市（迷子猫・捜索）
   municipality: 町田市
@@ -2709,13 +2712,14 @@ sources:
   mode: recipe
   recipe: recipes/city_machida-3.yaml
   enabled: true
-  photo: pending
+  photo: "no"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_machida.py
     requires_js: false
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+  note: 2026-11-09 町田市は写真の表示を可と返事したが、迷子の捜索ページの写真は飼い主さんが届け出たものと思われ、市の可は飼い主の権利まで含まないので出さない（おまえさん 2026-11-10「迷子の写真だけは出さなければいい」。T630）。
 - slug: city_machida-4
   name: 町田市（迷子その他・捜索）
   municipality: 町田市
@@ -2730,13 +2734,14 @@ sources:
   mode: recipe
   recipe: recipes/city_machida-4.yaml
   enabled: true
-  photo: pending
+  photo: "no"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_machida.py
     requires_js: false
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+  note: 2026-11-09 町田市は写真の表示を可と返事したが、迷子の捜索ページの写真は飼い主さんが届け出たものと思われ、市の可は飼い主の権利まで含まないので出さない（おまえさん 2026-11-10「迷子の写真だけは出さなければいい」。T630）。
 - slug: shuyojoho_tokyo-1
   name: 東京都収容動物情報（犬）
   municipality: 東京都
@@ -3332,13 +3337,14 @@ sources:
   mode: recipe
   recipe: recipes/city_kawasaki-1.yaml
   enabled: true
-  photo: pending
+  photo: ok
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_kawasaki.py
     requires_js: false
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+  note: 2026-11-09 川崎市から、写真の参照表示・出典リンク・電話と所在地の転記の 3 点とも問題ないと返事。「里親募集のサイトではないという認識か」の確認に、保護中として載せていると 2026-11-10 に回答してから表示（T630）。
 - slug: city_kawasaki-2
   name: 川崎市（収容猫）
   municipality: 川崎市
@@ -3353,13 +3359,14 @@ sources:
   mode: recipe
   recipe: recipes/city_kawasaki-2.yaml
   enabled: true
-  photo: pending
+  photo: ok
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_kawasaki.py
     requires_js: false
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+  note: 2026-11-09 川崎市から、写真の参照表示・出典リンク・電話と所在地の転記の 3 点とも問題ないと返事。「里親募集のサイトではないという認識か」の確認に、保護中として載せていると 2026-11-10 に回答してから表示（T630）。
 - slug: city_kawasaki-3
   name: 川崎市（収容その他動物）
   municipality: 川崎市
@@ -3374,13 +3381,14 @@ sources:
   mode: recipe
   recipe: recipes/city_kawasaki-3.yaml
   enabled: true
-  photo: pending
+  photo: ok
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_kawasaki.py
     requires_js: false
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+  note: 2026-11-09 川崎市から、写真の参照表示・出典リンク・電話と所在地の転記の 3 点とも問題ないと返事。「里親募集のサイトではないという認識か」の確認に、保護中として載せていると 2026-11-10 に回答してから表示（T630）。
 - slug: city_yokohama-1
   name: 横浜市（収容犬）
   municipality: 横浜市
@@ -3724,13 +3732,14 @@ sources:
   mode: recipe
   recipe: recipes/city_kitakyushu-1.yaml
   enabled: true
-  photo: pending
+  photo: "no"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_kitakyushu.py
     requires_js: false
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+  note: 2026-11-09 北九州市から、いなくなった犬の画像が別画面に残らないよう、文字情報とリンクのみにしてほしいと返事（T630）。
 - slug: city_kitakyushu-2
   name: 北九州市（譲渡犬）
   municipality: 北九州市
@@ -3746,13 +3755,14 @@ sources:
   mode: recipe
   recipe: recipes/city_kitakyushu-2.yaml
   enabled: true
-  photo: pending
+  photo: "no"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_kitakyushu.py
     requires_js: false
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+  note: 2026-11-09 北九州市から、いなくなった犬の画像が別画面に残らないよう、文字情報とリンクのみにしてほしいと返事（T630）。
 - slug: wannyan_fukuoka-1
   name: 福岡市わんにゃん（犬保護中）
   municipality: 福岡市わんにゃん
