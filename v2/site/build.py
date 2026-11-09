@@ -467,7 +467,7 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
         contact.append("<div><dt>電話</dt><dd>電話番号は自治体のページでご確認ください。</dd></div>")
     # 県のまとめページの運営元の住所を、子のいる場所と思って訪ねないように（掲載元に無いことは断定しない）
     operator_note = ('<p class="fine">この連絡先は掲載元ページの運営窓口です。子がいる場所とは限りません。訪ねる前に、電話か自治体のページでご確認ください。</p>\n'
-                     if operator else "")
+                     if operator and (phone or addr) else "")
     cta = (f'<a class="cta" href="{esc(src)}" rel="noopener" target="_blank">自治体のページで詳細を見る<small>{esc(muni)}</small></a>'
            if src else f'<p class="cta cta-none">元ページの URL が取れていません。{esc(muni)}にお問い合わせください。</p>')
     # 「迎える準備」枠（広告）は里親募集の子だけ。保護中・迷子・探してます の子は飼い主の元に帰るかもしれない（T506）
@@ -493,7 +493,8 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
     # 広告を載せるページは、広告であることをファーストビュー（写真より上）に出す（T629・A8 の提携条件・ステマ規制）
     pr_html = ('<p class="pr-note"><span>PR</span>このページはアフィリエイト広告を利用しています（ページ下の「迎える準備」枠）。</p>'
                if aff_items else "")
-    desc = f"{muni}が{fmt_date(data.get('date'))}時点で公開している{'、飼い主さんが' if a.get('kind') == 'lost' else ''}{kind_phrase(a)}。"
+    desc = (f"飼い主さんが{kind_phrase(a)}。{muni}が{fmt_date(data.get('date'))}時点で公開している情報です。" if a.get("kind") == "lost"
+            else f"{muni}が{fmt_date(data.get('date'))}時点で公開している{kind_phrase(a)}。")
     if subline(a):
         desc += subline(a) + "。"
     if a.get("note"):
@@ -516,7 +517,7 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
 {chr(10).join(contact)}
 </dl>
 {operator_note}<p class="fine">この情報は {esc(fmt_date(data.get('date')))} に自治体のページから取得したものです。すでに譲渡・返還されている場合があります。</p>
-<p class="fine">自治体にお問い合わせのときは、管理番号か、日付と場所をお伝えください。ID <code>{esc(a['id'])}</code> はこのサイトの中だけの番号で、自治体には通じません。</p>
+<p class="fine">自治体にお問い合わせのときは、このページに載っている管理番号や日付、場所をお伝えください。ID <code>{esc(a['id'])}</code> はこのサイトの中だけの番号で、自治体には通じません。</p>
 </div>
 </article>
 {aff_html}"""

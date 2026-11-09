@@ -41,6 +41,8 @@ def _build(tmp_path: Path) -> Path:
         {**base, "id": "facility0001", "kind": "adoption", "species": "cat", "name": None, "contact_scope": "facility",
          "phone": "03-0000-0000", "address": "東京都どこか"},
         {**base, "id": "nophone00001", "kind": "adoption", "species": "cat", "name": None, "phone": None},
+        {**base, "id": "opnocontact1", "kind": "adoption", "species": "cat", "name": None, "contact_scope": "operator",
+         "phone": None, "address": None},
     ]
     data = {"date": "2026-11-09", "animals": b["animals"] + extra, "sources": b["sources"]}
     p = tmp_path / "latest.json"
@@ -60,7 +62,8 @@ def test_nameless_lost_animal_reads_naturally(tmp_path: Path):
         h = _page(out, id_)
         assert f"<h1>{word}</h1>" in h
         assert re.search(rf"<title>{word}（", h)
-        assert f"飼い主さんが{word}。" in re.search(r'<meta name="description" content="([^"]*)"', h).group(1)
+        desc = re.search(r'<meta name="description" content="([^"]*)"', h).group(1)
+        assert desc.startswith(f"飼い主さんが{word}。") and "時点で公開している情報です。" in desc
         assert "探してますの" not in h
         assert ">探してます<" in h      # 区分のバッジの呼び方は変えない
 
@@ -75,11 +78,12 @@ def test_operator_address_warns_against_visiting_only_for_operator(tmp_path: Pat
     note = "子がいる場所とは限りません"
     assert note in _page(out, "operator0001")
     assert note not in _page(out, "facility0001")
+    assert note not in _page(out, "opnocontact1")   # 連絡先が出ない子に「この連絡先は」と書かない
 
 
 def test_page_says_id_is_internal_and_what_to_tell_the_municipality(tmp_path: Path):
     h = _page(_build(tmp_path), "facility0001")
-    assert "このサイトの中だけの番号" in h and "管理番号" in h
+    assert "このサイトの中だけの番号" in h and "このページに載っている管理番号や日付、場所" in h
     assert "<code>facility0001</code>" in h
 
 
