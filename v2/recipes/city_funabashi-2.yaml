@@ -1,12 +1,15 @@
 # 船橋市（譲渡可能犬猫）: div.boxEntryFreeform 内に table が3つ（犬1頭表/猫N頭表/ボランティア団体一覧表）。
 # 犬猫とも列は [No., 種類or毛色, 名前・年齢・性別・メモの自由文, 画像]。直前の h2（犬がいます！/猫がいます！/ボランティアからの譲渡）で種別判定。
+# 2026-11-07: 2 列目の意味は表の見出しに従う。猫の表は見出し行（No./毛色/備考/画像）があり 2 列目は毛色（三毛・サバ。「子猫」と書く行もそのまま）、
+#   犬の表は見出し行が無く 2 列目は種類（ミックス（チワワ系））。以前は猫の毛色を種類に入れていた。
 # ボランティア団体一覧は写真も管理番号も無く自動で除外。備考に「決まりました」等があれば既に譲渡済のため除外する。
 rows: "div.boxEntryFreeform table tr"
 image: "img@src"
 row_filter:
   text_lacks: ["決まりました", "見つかりました", "決定しました"]
 fields:
-  breed: {selector: "td:nth-of-type(2)"}
+  breed: {selector: "td:nth-of-type(2)", unless_header: "毛色"}
+  color: {selector: "td:nth-of-type(2)", if_header: "毛色"}
   note: {selector: "td:nth-of-type(3)"}
   name: {selector: "td:nth-of-type(3)", regex: "名前[:：]\\s*([^\\s　]+)"}
   age: {selector: "td:nth-of-type(3)", regex: "年齢[:：]\\s*([^\\s　]+)"}

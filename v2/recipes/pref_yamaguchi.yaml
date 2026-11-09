@@ -40,7 +40,7 @@ fields:
   size: {label: "大きさ"}
   color: {label: "毛色"}
   note: {label: "その他"}
-  species: {label: "動物種"}
+  species: {join: [{label: "動物種"}, {regex: "この(犬|猫)は、収容施設"}]}   # 2026-11-07: 動物種の欄が無い周南の 8-3-120〜123 は、備考に「この犬は、収容施設の管理上、…」と書いてある。掲載元の文のとおり読む（その文が無い子は決めない）
 species:
   from: field
   map: {"犬": dog, "猫": cat}

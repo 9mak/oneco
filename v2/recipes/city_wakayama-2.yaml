@@ -1,0 +1,22 @@
+# 和歌山市動物愛護管理センター（迷子保護動物情報） https://www.city.wakayama.wakayama.jp/kurashi/kenko_iryo/1009125/1035775/1034270.html（2026-11-07 W006 監査 C で追加）
+# 「保護中の迷子動物」。1 頭 = <figure class="imagecenter">（写真 + <figcaption> に
+# 管理番号：…<br>種類：…<br>保護場所：…<br>性別：…<br>保護日：…<br>その他：…）。譲渡ではなく飼い主への返還が目的のページ。
+# 種類は「小型犬」「犬雑種」「猫雑種」「柴犬風」「猫ラグドール風」（Wayback 2024-05〜2025-10）。「ヨークシャーテリア風」（2024-05）のように
+# 犬猫の語が無い日があるので、species は種類の欄から map し、決まらない子は breed の語（infer）で決める。それでも決まらなければ種別なし。
+# 0 頭の日（Wayback 2026-07-12）は「現在、迷子動物情報はありません。」が出て figure が無くなる。この文は子がいる日（2024-05・2025-02・2025-09・2025-10・2026-11）には
+# 出ない。図が出る作りが変わって行が取れない日は、この文が無いので 0 頭にならず failed になる。
+rows: "div#voice figure:has(figcaption)"
+image: "img@src"
+fields:
+  management_no: {regex: "管理番号[:：]\\s*(\\S+)"}
+  species: {regex: "種類[:：]\\s*(\\S+)"}
+  breed: {regex: "種類[:：]\\s*(\\S+)"}
+  location: {regex: "保護場所[:：]\\s*(\\S+)"}
+  sex: {regex: "性別[:：]\\s*(\\S+)"}
+  shelter_date: {regex: "保護日[:：]\\s*(\\S+)"}
+  note: {regex: "その他[:：]\\s*(.+)"}
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+  infer: true
+empty_text: ["現在、迷子動物情報はありません"]

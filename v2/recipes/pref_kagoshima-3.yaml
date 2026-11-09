@@ -1,0 +1,28 @@
+# 鹿児島県動物愛護ホームページ（保健所等が保護した猫）: 画像ボタンの JavaScript（search_submit）が、入口の form
+# （hidden の lost_kubun・search_type と anti-forgery トークン）を POST して一覧を出す作り。
+# submit_form で入口の form に lost_kubun=lost・search_type=cat を足して POST し、結果のページ送り
+# （form[name=paging] の act=next）を「次ページ」のリンクがある間たどる（10 件ずつ）。W006 2026-11-07。
+# 1 頭 = 結果の table.t-jouto 1 つ（写真は直前の p.thumbs_left）。0 件の日だけ「検索条件に一致する情報が見つかりませんでした。」が出る。
+steps:
+  - submit_form:
+      form: "form[name=type]"
+      set: {search_type: cat, lost_kubun: lost}
+      require: ["__RequestVerificationToken"]
+  - submit_form:
+      form: "form[name=paging]"
+      set: {act: next}
+      repeat_while: "a.paging_next"
+      max: 30
+rows: "table.t-jouto"
+image: {selector: "a.popup-image img@src", scope: prev_siblings}
+# 除外語は「終わった言い方」だけ（「飼い主が見つかるまで」「返還できるよう」「見つかりましたら」は今いる子の備考に出るので語にしない）。
+row_filter:
+  text_lacks: ["帰りました", "戻りました", "飼い主が見つかりました。", "飼い主が見つかりました！", "飼い主が見つかりましたので", "飼い主さんが見つかりました。", "飼い主さんが見つかりました！", "飼い主さんが見つかりましたので", "飼主が見つかりました。", "飼主が見つかりました！", "飼主が見つかりましたので", "返還しました", "返還されました", "返還済み", "お返ししました", "解決しました", "解決済み"]
+fields:
+  management_no: {label: "No"}
+  sex: {label: "性別"}
+  age: {label: ["推定年齢", "年齢"]}
+  shelter_date: {label: "保護日", regex: "(\\d+年\\d+月\\d+日)"}
+  location: {label: "保護場所"}
+  note: {join: [{label: "備考"}, {regex: "(お問い合わせ先\\s*\\S+（[0-9\\-]+）)"}], sep: "　"}
+empty_text: ["検索条件に一致する情報が見つかりませんでした"]

@@ -16,7 +16,7 @@ species:
   allow_other: true
 fields:
   species: {selector: ".", attr: class, regex: 'animal_kind-(\w+)'}
-  management_no: {selector: "h2.entry-title", regex: '管理番号[:：]\s*([^（(\s]+)'}
+  management_no: {join: [{selector: "h2.entry-title", regex: '管理番号[:：]\s*([^（(\s、]+)'}, {selector: "h2.entry-title", regex: '[)）]\s*、\s*([^（(\s、]+)'}], sep: "、"}   # 2026-11-07: 見出しが「HC26251.253.254(柳町)、HC26266(市姫)」と 2 組並ぶ子は後ろの組も読む（括弧の中は収容場所のあだ名なので入れない）
   detail: {selector: "a[href*='/adoptable_animal/']", attr: href}
   breed: {label: "品種"}
   sex: {label: "性別"}

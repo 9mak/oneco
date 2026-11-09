@@ -1,7 +1,7 @@
 """T519 グループ7: 読めないので link_only にした宮崎県（みやざきドッグ愛ランド）・鹿児島県のページ。
 
 - 宮崎県: robots.txt が /modules/addon_module/（一覧と個体ページ）を Disallow している。収集器は robots を守るので読まない
-- 鹿児島県: 一覧は anti-forgery トークン付き form の POST でしか出ない。収集器は POST を持たない
+- 鹿児島県: 一覧は anti-forgery トークン付き form の POST でしか出ない。収集器は POST を持たなかった（2026-11-07 に submit_form を足して読むようになった。下のテストが現在の状態）
 どちらも「リンクだけ載せる」台帳のエントリになっていること（誤って recipe モードに戻すと毎日失敗するので固定する）。
 """
 
@@ -32,8 +32,9 @@ def test_miyazaki_six_lists_are_link_only_with_matching_kind_and_species():
         assert s.recipe is None, slug   # 読まないのでレシピは無い
 
 
-def test_kagoshima_pref_indexes_are_link_only():
+def test_kagoshima_pref_indexes_are_read_since_20261107():
+    # 2026-11-07 W006: POST の form を submit_form で通して読むようにしたのでリンクのみではなくなった（test_w006_pref_kagoshima_20261107.py）
     lost, jouto = SOURCES["pref_kagoshima-1"], SOURCES["pref_kagoshima-2"]
-    assert (lost.mode, lost.kind, lost.url) == ("link_only", "stray", "http://dogcat.pref.kagoshima.jp/Search/Lost_index")
-    assert (jouto.mode, jouto.kind, jouto.url) == ("link_only", "adoption", "http://dogcat.pref.kagoshima.jp/Search/Jouto_index")
-    assert lost.recipe is None and jouto.recipe is None
+    assert (lost.mode, lost.kind, lost.url) == ("recipe", "stray", "http://dogcat.pref.kagoshima.jp/Search/Lost_index")
+    assert (jouto.mode, jouto.kind, jouto.url) == ("recipe", "adoption", "http://dogcat.pref.kagoshima.jp/Search/Jouto_index")
+    assert lost.recipe == "recipes/pref_kagoshima-1.yaml" and jouto.recipe == "recipes/pref_kagoshima-2.yaml"
