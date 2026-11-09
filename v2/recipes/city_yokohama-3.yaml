@@ -1,7 +1,7 @@
 # 横浜市（収容その他動物）— 20121004110429.html。1 ページ完結、単一 table。
 # 1 頭 = table tr（先頭 tr がヘッダ: 掲載日/収容日・収容場所/写真/種類/性別/毛色等/体格/その他）。犬猫以外の動物なので species は「種類」列から判定（該当なしは other、allow_other で許可）。
 # 「写真」列は写真が無い個体だと代わりに「お問合せ番号26-XXXXXX」が入る。
-rows: "div.wysiwyg_wp table tr"
+rows: "div.wysiwyg_wp table tr:has(td)"   # ヘッダ行（th だけ）を行にしない（収容犬 -1・収容猫 -2 と同じ。2026-11-07 監査）。0 頭の日の「現在、…ありません」の行は td なので行に残り、写真も番号も無く捨てられて empty_text で 0 頭になる
 image: "img@src"
 fields:
   species: {label: "種類"}

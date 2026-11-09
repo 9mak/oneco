@@ -75,6 +75,7 @@ class Recipe:
     transpose: str | None = None    # 転置表（1 列 = 1 頭）の table セレクタ。指定時は rows の代わりに列を行にする
     row_until: str | None = None    # 指定時は rows の要素を 1 頭の始まりとし、後ろの兄弟要素を次の始まりかこの要素の手前までまとめて 1 行にする
     id_by_management_no: list[str] = field(default_factory=list)   # 同じ写真を共有する子のうち、この管理番号（前方一致）の行は写真でなく管理番号から ID を作る。先に載った子が消えても残った子の ID が写真由来（消えた子の ID）に移らないよう、先頭の子以外を固定する
+    unique_management_no: bool = False   # 同じ管理番号の行が 2 つ以上あるとき、先の行だけ採る（上が最新で下に古い掲載が残るページ。鹿児島市 保護犬）。写真の有無で ID が別になるので「同じ ID」の判定では重なりを捨てられない
     source_url: str | None = None   # PDF の子の元ページリンク。既定は入口ページ（日次で差し替わる PDF は翌日 404 になる）。"doc" で PDF そのもの
 
     @classmethod
@@ -721,6 +722,9 @@ def _filter_rows(recipe: Recipe, rows: list[Row]) -> list[Row]:
     return out
 
 
+FOLDED_CELL = "続き"   # pdf.fold_blank_key で畳んだ行の文字を入れるセル名（fields の header: "続き" で引く）
+
+
 def _pdf_rows(recipe: Recipe, doc: Doc) -> list[Row]:
     mode = (recipe.pdf or {}).get("mode", "table")
     rows: list[Row] = []
@@ -734,6 +738,7 @@ def _pdf_rows(recipe: Recipe, doc: Doc) -> list[Row]:
         return _filter_rows(recipe, rows)
     header_row = int((recipe.pdf or {}).get("header_row", 0))
     header_has = (recipe.pdf or {}).get("header_has")   # 見出し行にこの語があれば表とみなす
+    fold_key = (recipe.pdf or {}).get("fold_blank_key")   # この見出しの語の列が空の行は、直前の行の「続き」セルに畳む
     for table in doc.pdf_tables or []:
         hr = header_row
         if header_has:
@@ -745,6 +750,7 @@ def _pdf_rows(recipe: Recipe, doc: Doc) -> list[Row]:
         if len(table) <= hr:
             continue
         header = table[hr]
+        last: Row | None = None   # この表で直前に読んだ、キーのある行（fold_blank_key 用）
         for raw in table[hr + 1:]:
             cells: dict[str, str] = {}
             for i, v in enumerate(raw):
@@ -752,8 +758,22 @@ def _pdf_rows(recipe: Recipe, doc: Doc) -> list[Row]:
                 h = (header[i] if i < len(header) else "").replace("\n", "").replace(" ", "")
                 if h:
                     cells[h] = v
-            if any(v for k, v in cells.items()):
-                rows.append(Row(doc=doc, cells=cells))
+            if not any(v for k, v in cells.items()):
+                continue
+            keyed = True
+            if fold_key:
+                key_val = next((v for k, v in cells.items() if fold_key in k and not k.isdigit()), None)
+                keyed = bool((key_val or "").strip())
+                if not keyed and last is not None and last.cells is not None:
+                    # 重ね書きの文字が表の続きの行に割れて出る（香川 しっぽの森）。その行を直前の行の「続き」セルに畳む。
+                    # 続きの行は管理番号が無く、元の行の既存のセルには混ぜない
+                    extra = " ".join(v for k, v in cells.items() if k.isdigit() and v)
+                    last.cells[FOLDED_CELL] = f"{last.cells.get(FOLDED_CELL, '')} {extra}".strip()
+                    continue
+            row = Row(doc=doc, cells=cells)
+            rows.append(row)
+            if keyed:
+                last = row
     return _filter_rows(recipe, rows)
 
 

@@ -1,7 +1,7 @@
 # 横浜市（収容犬）— shuyoinfo.html。1 ページ完結、単一 table。
 # 1 頭 = table tr（先頭 tr がヘッダ: 収容日・収容場所/写真/種類/性別/毛色/体格/その他）。
 # 「写真」列は写真が無い個体だと代わりに「お問合せ番号26-XXXXXX」が入る（legacy adapter と同じ挙動）。
-rows: "div.wysiwyg_wp table tr"
+rows: "div.wysiwyg_wp table tr:has(td)"   # ヘッダ行（th だけ）を行にしない。label が「次の行の同じ列」を読んで 1 頭目と同じ子を写真なしで二重に作っていた（2026-11-07 監査。収容猫 -2 は直済み）
 image: "img@src"
 fields:
   breed: {label: "種類"}

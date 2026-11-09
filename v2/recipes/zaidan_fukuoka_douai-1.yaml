@@ -1,13 +1,22 @@
 # 福岡県動物愛護センター（保健所収容犬）
-# 一覧ページに全頭が並ぶ。1 頭 = div.animals-list li（写真 figure.list-pht img、項目は dl > dt/dd、a は詳細ページ）。
-# 個体管理ナンバー・収容日・保護した場所・収容先（各保健福祉事務所）が読める。
+# 一覧（animals/protections/dog）は 1 頭 = div.animals-list li（写真・個体管理ナンバー・収容日・保護した場所・収容先、a は個体ページ）。
+# 2026-11-07 監査: 一覧に無い性別・毛色・大きさ・推定年齢・犬種が個体ページ（animals/protection-detail/<uuid>）の表と h3 にあるので、
+# 個体ページを辿って読む（以前は一覧だけ）。個体ページの写真（div.sp-slide の 1 枚目）は一覧の写真と同じ URL なので ID は変わらない。
+# 個体ページ 1 枚 = 1 頭（div.main-area）。収容先の名前は「収容・問い合わせ先」の最初の 1 語（TEL の手前の事務所名）。首輪・掲載期限日は項目にしない。
 # 空のときは animals-list 自体が出ず「現在、掲載されている情報はありません。」になる（猫側で 2026-09-28 に確認）。
-rows: "div.animals-list li"
-image: "figure.list-pht img@src"
+# 子の個体ページが消えた日は読めなかった（failed）にする（skip_errors なし）。一覧に載っている子を黙って減らさない。
+steps:
+  - follow_all: "div.animals-list li a@href"
+rows: "div.main-area"
+image: "div.sp-slide img@src"
 fields:
-  management_no: {label: "ナンバー"}
+  management_no: {selector: "span.animals-no", regex: "No\\.\\s*([A-Za-z0-9]+)"}
+  breed: {selector: "span.animals-type"}
   shelter_date: {label: "収容日"}
-  location: {label: "収容先"}
-  note: {regex: "保護した\\s*場所\\s*(.+?)\\s*収容先"}
-  detail: {selector: "a", attr: "href"}
+  sex: {label: "性別"}
+  color: {label: "毛色"}
+  size: {label: "大きさ"}
+  age: {label: "推定年齢"}
+  location: {selector: "p.txt-information", regex: "^\\s*(\\S+)"}
+  note: {label: "保護した場所"}
 empty_text: ["現在、掲載されている情報はありません"]

@@ -54,7 +54,7 @@ FIELD_SPEC_KEYS = {
     "if_header", "unless_header",
 }
 SPECIES_KEYS = {"from", "selector", "map", "allow_other", "infer"}
-PDF_KEYS = {"mode", "header_row", "header_has", "columns"}
+PDF_KEYS = {"mode", "header_row", "header_has", "columns", "fold_blank_key"}
 EMPTY_ABSENT_KEYS = {"page", "none"}
 
 _BAD_SCHEMES = ("javascript:", "file:", "data:", "vbscript:")
@@ -465,7 +465,9 @@ def validate_recipe_dict(raw: dict[str, Any], source_url: str) -> list[str]:
                 c.err(f"species.map: {len(sp['map'])} 項目 > {MAX_MAP_ITEMS}")
 
     if "pdf" in raw:
-        c.keys("pdf", raw["pdf"], PDF_KEYS)
+        pdf = c.keys("pdf", raw["pdf"], PDF_KEYS)
+        if "fold_blank_key" in pdf and not (isinstance(pdf["fold_blank_key"], str) and pdf["fold_blank_key"].strip()):
+            c.err("pdf.fold_blank_key: 空でない文字列（見出しの語）が要る")
 
     if len(c.selectors) > MAX_SELECTORS:
         c.err(f"セレクタが {len(c.selectors)} 本 > {MAX_SELECTORS}")
