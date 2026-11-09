@@ -24,6 +24,10 @@ fields:
 species:
   from: field
   map: {"犬": dog, "猫": cat}
+# 2026-11-10: 0 頭の日も節の見出し「元の飼主さんを探しています（迷子犬猫情報）」は残り、下に「現在元の飼い主を探している動物はいません。」と出た
+# （節ごと消える想定の empty_absent では見出しが当たって failed）。この文は迷子の子がいる版（2026-11-07）には出ない。
+empty_text:
+  - "現在元の飼い主を探している動物はいません"
 empty_absent:
   page: "div#voice h1:-soup-contains('県央保健所保護動物情報')"
   none: >-
