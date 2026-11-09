@@ -82,6 +82,19 @@ def test_matsumoto_dogs_with_stopped_recruitment_are_not_listed():
     assert _res(c).animals == []
 
 
+def test_matsumoto_all_dogs_stopped_is_a_confirmed_zero_not_a_failure():
+    # 全頭が募集停止の日は「読めなかった」ではなく 0 頭。failed だと毎晩通知と AI 修復が走る（2026-11-08 全件 A/B で発見）
+    c = _single("city_matsumoto-4", _fx("w006a_city_matsumoto-4_20261107.html"))
+    assert c.status == "empty", c.error
+
+
+def test_matsumoto_unreadable_dog_headings_are_not_a_zero():
+    # 犬の見出しが h3・h4 でなくなった日は、案内見出しや表が残っていても 0 頭にしない
+    html = _fx("w006a_city_matsumoto-4_20261107.html").replace("<h4", "<h5").replace("</h4>", "</h5>").replace("<h3", "<h5").replace("</h3>", "</h5>")
+    c = _single("city_matsumoto-4", html)
+    assert c.status != "empty"
+
+
 def test_matsumoto_dog_without_the_stop_mark_is_listed():
     html = _swap(_fx("w006a_city_matsumoto-4_20261107.html"), "保健所譲渡犬No.8-1　募集を停止しています", "保健所譲渡犬No.8-1")
     animals = {a["management_no"]: a for a in _res(_single("city_matsumoto-4", html)).animals}
