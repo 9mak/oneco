@@ -98,7 +98,7 @@ def test_pref_page_lists_only_that_prefecture(built):
             assert a["id"] in saga
         else:
             assert a["id"] not in saga
-    assert "data.json" in saga   # 絞り込みはページ内 JS が data.json を読む
+    assert "/data.json" not in saga   # 絞り込みはページにあるカードの表示を切り替える（2026-11-09）
 
 
 def test_sources_page_status(tmp_path: Path):
