@@ -133,3 +133,22 @@ def test_registry_notes_record_old_posting_decision_and_seeker_note():
         assert "古い掲載は外さない" in raw[f"pref_kagoshima-{n}"], n
     for n in (6, 7):
         assert "備考は探している本人の自由記述" in raw[f"pref_kagoshima-{n}"], n
+
+
+# --- 公開ゲート F-01（2026-11-08）: 探している方の投稿にも「終わった言い方」が残る ------------------------------
+def _lost_cat(mutate=lambda h: h):
+    return _read("pref_kagoshima-7", LOST_INDEX, "lost_index", "klost_cat_p1", lambda h: mutate(h.replace("paging_next", "paging_x")))
+
+
+@pytest.mark.parametrize("words", ["飼い主が見つかりました。", "無事に帰りました", "解決しました"])
+def test_lost_post_saying_it_is_over_is_not_listed(words):
+    base = {a["management_no"] for a in _lost_cat().result.animals}
+    c = _lost_cat(lambda h: h.replace("人懐っこいです", f"人懐っこいです<br />{words}"))
+    assert "26C0481" in base
+    assert {a["management_no"] for a in c.result.animals} == base - {"26C0481"}
+
+
+def test_lost_post_still_searching_is_listed():
+    # 「見つかりましたら」は今探している人の言い方。落とさない
+    c = _lost_cat(lambda h: h.replace("人懐っこいです", "見つかりましたらご連絡ください"))
+    assert "26C0481" in {a["management_no"] for a in c.result.animals}
