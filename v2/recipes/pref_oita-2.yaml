@@ -20,7 +20,7 @@ fields:
   age: {label: "推定年齢"}
   location: {label: "保護場所"}
   color: {label: "毛色"}
-  breed: {label: "種類"}
+  breed: {label: ["種類", "種茶"]}   # 2026-11-07: 公式が a-808 の項目名を「種茶」と誤記（値は「雑種（シバ）」。位置は種類の欄）
   size: {label: "大きさ"}
   sex: {label: "性別"}
   note: {label: "その他"}

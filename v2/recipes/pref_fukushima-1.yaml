@@ -14,6 +14,7 @@ fields:
   color: {label: "毛の色", regex: "^([^／/]+)"}
   sex: {label: "性別"}
   age: {label: "推定年"}
-  note: {label: "その他の特徴", default: null}
+  # 「その他の特徴等」の値は 3 つ目のセルにある（2 つ目は幅ゼロの空白 U+200B だけ。2026-11-07 s-081005-2 の「※オレンジ色のリードは…」）。label は 2 つ目のセルを値に取って空になるので、行末までを regex で取る
+  note: {regex: "その他(?:の)?特徴等[\\s\u200b]*([^\\s\u200b].*?)[\\s\u200b]*$", default: null}
 empty_text:
   - "現在収容されている迷子犬は 0 頭です"

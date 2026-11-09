@@ -24,6 +24,9 @@ OPERATOR_SLUGS = sorted([
     "mie_dakc", "spec_pref_gifu", "pref_iwate", "shuyojoho_tokyo-1", "shuyojoho_tokyo-2",
     "pref_ishikawa", "pref_fukushima-1", "pref_fukushima-2", "animal_net_nagasaki-1", "animal_net_nagasaki-2",
     "animal_net_nagasaki-3", "animal_net_nagasaki-4", "pref_shizuoka", "kochi_apc", "pref_tottori",
+    # 鹿児島県動物愛護ホームページ（2026-11-07 W006）: 個体ごとの問い合わせ先は各保健所。-2・-8（センター管理の譲渡対象）は facility
+    "pref_kagoshima-1", "pref_kagoshima-3", "pref_kagoshima-4", "pref_kagoshima-5", "pref_kagoshima-6", "pref_kagoshima-7",
+    "pref_kagoshima-9", "pref_kagoshima-10", "pref_kagoshima-11", "pref_kagoshima-12",
 ])
 
 

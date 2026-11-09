@@ -1,0 +1,19 @@
+# 名古屋市 犬の情報や長期収容犬の紹介コーナー（譲渡犬）— city.nagoya.jp/kurashi/pet/1015473/1015483/1015484.html
+# 2026-11-07 W006: link_only をやめて 0 頭を読む。ページは「長期にわたり当センターで収容している犬を紹介します」と書くが、
+#   2025-12-10・2026-04-19・2026-07-10（Wayback）と 2026-11-07 の 4 版が同じ作りで、犬を 1 頭も載せていない
+#   （1 節 譲渡ボランティアの案内・2 節 長期収容犬の説明文・問い合わせだけ。写真・表・小見出しなし）。
+#   犬は譲渡ボランティアに渡されて各ボランティアのページで募集される（ページの 1 節）。
+# 犬が載った日の作りは未確認（子のいる版が Wayback にも last_ok にも無い）。そのため rows は今のページに無いものを指す
+#   （読めない作りを推測で読まない）。0 頭にするのは empty_absent だけ: 2 節の見出しがあり、本文に
+#   犬を載せうる要素（小見出し・表・本文の画像・PDF や配下ページへのリンク・知らない見出し・個体の項目名）が 1 つも無い日。
+#   犬が載ると none に当たって 0 頭にならず failed で通知される。そのとき rows を足す。
+rows: "article#content div.w006-dog-item"
+empty_absent:
+  page: "article#content h2:-soup-contains('長期収容中の犬')"
+  none: >-
+    article#content h3, article#content h4, article#content table,
+    article#content img[src*='/uploaded/'], article#content a[href$='.pdf'],
+    article#content a[href*='/1015483/']:not([href$='/1015487.html']),
+    article#content h2:not(:-soup-contains('譲渡ボランティアへ')):not(:-soup-contains('長期収容中の犬')):not(:-soup-contains('お問い合わせ')),
+    article#content p:-soup-contains('性別'), article#content p:-soup-contains('年齢'), article#content p:-soup-contains('犬種'),
+    article#content p:-soup-contains('管理番号'), article#content p:-soup-contains('愛称')

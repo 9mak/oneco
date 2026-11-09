@@ -312,6 +312,7 @@ sources:
   mode: link_only
   recipe: recipes/pref_saga-6.yaml
   enabled: true
+  note: "2026-11-07 W006 確認: このページ（県の「譲渡犬・猫情報」）に個体の一覧は無い。譲渡できる犬猫は Facebook（譲渡犬・譲渡猫の 2 ページ）・X（isshokennnesaga）・Instagram（isshokennesaga）で紹介すると本文にあり、「アカウントをお持ちでない場合は見られないこともあります」と断っている。「いっしょけんね」の紹介ページ（kiji00315040）にも一覧は無い。SNS はログイン壁と各社の規約のため取りに行かない（個別の確認はしていない）。取れないと確定。link_only のまま（県の案内ページへのリンク）"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_saga.py
     requires_js: false
@@ -963,6 +964,7 @@ sources:
   mode: recipe
   recipe: recipes/city_funabashi-1.yaml
   enabled: true
+  note: "2026-11-07 W006 監査 F-02: ページは「動物愛護指導センターに収容し、元の飼い主を探している犬・猫」で、飼い主不明のまま保護された子の定義（stray）にも当たりうる。同型の収容公示ページ約 140 件が sheltered なので揃えて sheltered のまま。福山-2 は同趣旨の文を根拠に stray へ変えており、収容公示ページ全体の kind の基準（stray か sheltered か）は持ち主の判断待ち（OPERATIONS.md か台帳の凡例に 1 行で決める）"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_funabashi.py
     requires_js: false
@@ -1040,6 +1042,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_chiba-1.yaml
   enabled: true
+  note: "2026-11-07 確認: 公式ページが「【容場所】」「【 容場所】」と誤字で書く日があり（kt261104-01・sa261102-01）、場所・品種・毛色が空になっていた。「場所】」から読む（千葉県の 2〜5 も同じ読み方に揃えた）。"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_chiba.py
     requires_js: false
@@ -1149,6 +1152,23 @@ sources:
     list_link_pattern: null
     pdf_link_pattern: null
   note: 1 つの枠に 2 匹（写真 1 枚を共有）が載ることがあり、その枠は 1 件として数える（エンジンは 1 行 = 1 頭。2026-09-29 反証で確認）
+- slug: city_wakayama-2
+  name: 和歌山市動物愛護管理センター（迷子保護動物）
+  municipality: 和歌山市動物愛護管理センター
+  prefecture: 和歌山県
+  phone: 073-488-2032
+  address: 〒640-8422 和歌山市松江東3丁目2番63号（和歌山市動物愛護管理センター）
+  url: https://www.city.wakayama.wakayama.jp/kurashi/kenko_iryo/1009125/1035775/1034270.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.city.wakayama.wakayama.jp/kurashi/kenko_iryo/1009125/1035775/1034270.html"
+  verified_address_url: "https://www.city.wakayama.wakayama.jp/kurashi/kenko_iryo/1009125/1035775/1034270.html"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/city_wakayama-2.yaml
+  enabled: true
+  photo: pending
+  note: "2026-11-07 W006 監査 C で追加。「迷子保護動物情報」（保護中の迷子動物。飼い主への返還が目的で譲渡ではない）。city_wakayama（譲渡候補）とは別ページ。写真の扱いは city_wakayama に合わせる"
 - slug: pref_wakayama
   name: 和歌山県（保護犬猫情報）
   municipality: 和歌山県
@@ -1268,6 +1288,7 @@ sources:
   mode: recipe
   recipe: recipes/city_saitama-2.yaml
   enabled: true
+  note: "2026-11-07 確認: 1 頭目だけ管理番号の p が div に包まれ、写真・属性が次の子の div の前半に入る作り（R08-58）で、管理番号だけの行になっていた。包みの外の兄弟も、次の子の始まりの手前まで 1 頭分として読む。"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_saitama.py
     requires_js: false
@@ -1390,6 +1411,7 @@ sources:
   mode: recipe
   recipe: recipes/city_hirakata.yaml
   enabled: true
+  note: "2026-11-07 確認: 写真のブロックの次の兄弟ブロックに表（種類・性別・毛色・体格・首輪・収容地域・その他）がある作りで、以前は写真だけで項目が全部空だった。表の見出しの列から読む。"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_hirakata.py
     requires_js: false
@@ -1553,7 +1575,7 @@ sources:
   prefecture: 奈良県
   phone: null
   address: null
-  note: "2026-10-30 収容動物の記事（soshiki/97/222574.html「迷子犬・迷子猫をお探しの方へ」）が 10/16 から 404。旧入口（/life/4/34/134/「ペットの飼養・届出」一覧）からは記事へのリンク文字が消え、市の案内ページ「ペットが迷子になったときは」（soshiki/97/8478.html・2026-01-30 更新）と環境省のリンク集は 222574 を指したまま。読む先が無いので、記事が戻るまでは案内ページへのリンクだけを載せる（W006 T624 見守り運転の確認）。記事が戻ったら mode を recipe に戻す（レシピは案内ページから記事のリンクを辿る）。2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
+  note: "2026-11-07 W006 再確認: 収容動物の記事（soshiki/97/222574.html）は今日も 404 で、案内ページ（soshiki/97/8478.html）のリンクは 222574 のまま。市サイトの「ペット・動物」（life/4/34/ と 134・135・136）・保健衛生課（soshiki/97/ とその 2 ページ目）・サイトマップに収容動物の新しいページは無い。別に「飼い主さん募集中！犬・猫の譲渡」（soshiki/97/10799.html・2026-10-16 更新）があるが、写真だけで名前は画像の alt、種別・性別・年齢の文字が無く、迷子ではなく譲渡の掲載なので、この slug では読まない。取れないと確定（記事が戻ったら mode を recipe に戻す。レシピは案内ページから記事のリンクを辿る）。2026-10-30 収容動物の記事（soshiki/97/222574.html「迷子犬・迷子猫をお探しの方へ」）が 10/16 から 404（W006 T624 見守り運転の確認）。読む先が無いので、記事が戻るまでは案内ページへのリンクだけを載せる。2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
   url: https://www.city.nara.lg.jp/soshiki/97/8478.html
   kind: sheltered
   species: mixed
@@ -1566,6 +1588,23 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+- slug: city_nara-2
+  name: 奈良市（飼い主さん募集中！犬・猫の譲渡）
+  municipality: 奈良市
+  prefecture: 奈良県
+  phone: 0742-93-8395
+  address: 〒630-8122 奈良市三条本町13番1号 はぐくみセンター（奈良市保健所・教育総合センター）
+  url: https://www.city.nara.lg.jp/soshiki/97/10799.html
+  verified_at: '2026-11-07'
+  verified_phone_url: "https://www.city.nara.lg.jp/soshiki/97/10799.html"
+  verified_address_url: "https://www.city.nara.lg.jp/soshiki/97/10799.html"
+  kind: adoption
+  species: mixed
+  mode: recipe
+  recipe: recipes/city_nara-2.yaml
+  enabled: true
+  photo: pending
+  note: "2026-11-07 W006 監査 C で追加。「現在、譲渡の準備ができた犬・猫たちのご紹介」の写真だけを載せる（名前・種別・性別・年齢は画像の中にあるだけで文字が無い。alt は「あ」「f」「エイズ」で名前とは限らないので読まない）。連絡先は掲載元ページの保健衛生課（奈良市保健所）"
 - slug: city_sendai-1
   name: 仙台市アニパル（譲渡犬）
   municipality: 仙台市アニパル
@@ -2179,7 +2218,7 @@ sources:
   verified_at: '2026-10-15'
   verified_phone_url: "https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/237722.html"
   verified_address_url: "https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/237722.html"
-  kind: sheltered
+  kind: stray       # 2026-11-07 W006 監査: ページは「動物愛護センターに収容されている、迷い猫の情報」「元の飼い主さんに猫をお返しするための情報提供です。※譲渡猫の情報ではありません」。同じ市の迷い犬（-1）と同じ stray に揃えた
   species: cat
   mode: recipe
   recipe: recipes/city_fukuyama-2.yaml
@@ -2454,9 +2493,10 @@ sources:
   verified_phone_url: "https://www.city.nagoya.jp/kurashi/pet/1015473/1015489/1015494.html"
   kind: adoption
   species: dog
-  mode: link_only
+  mode: recipe
   recipe: recipes/city_nagoya-2.yaml
   enabled: true
+  note: "2026-11-07 W006 link_only をやめて 0 頭を読む。ページは「長期にわたり当センターで収容している犬を紹介します」と書くが、2025-12-10・2026-04-19・2026-07-10（Wayback）と 2026-11-07 の 4 版とも犬を 1 頭も載せていない（1 節は譲渡ボランティアの案内、2 節は説明文だけ。写真・表・小見出しなし）。犬は譲渡ボランティアに渡され各ボランティアのページで募集される。犬が載った日の作りは未確認。載った日は 0 頭にならず failed で通知され、そのときレシピに rows を足す（recipes/city_nagoya-2.yaml）。写真は規約の返事待ち（photo: pending）"
   photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_nagoya.py
@@ -3662,6 +3702,7 @@ sources:
   mode: link_only
   recipe: recipes/pref_fukui.yaml
   enabled: true
+  note: "2026-11-07 W006 確認: このページ（県の「新たな飼い主を募集している犬・猫について」・最終更新 2025-06-05）自体に動物は載らず、犬・猫のリンクが fapscsite.com/adoptable_animal/animal_kind/dog・cat（ふくい動物愛護管理支援センター協会のサイト）に飛ぶだけ。同じ譲渡の一覧を fapscsite-2（recipe）が読んでいて今日も読めているので、ここを読むと二重になる。対象外と確定。link_only のまま（県の案内ページへのリンク）"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_fukui.py
     requires_js: false
@@ -4499,6 +4540,7 @@ sources:
   mode: link_only
   recipe: recipes/spec_city_nagasaki_lg-1.yaml
   enabled: true
+  note: "2026-11-07 W006 確認: 一覧ページ list7-19 は個別の記事 1 本（2794.html「引き取り犬（保護犬）の見学 受付中」）へのリンクだけ。記事は見学の案内文で、いま募集中の犬の個体情報は無い（「新しい飼い主（里親）が見つかりました」に譲渡済みの 5 頭の写真と名前、「引き取り犬（飼い犬）」は「公開準備中」）。迷子保護の情報はセンターの X に載せると記事にある。follow_all で辿っても読める個体が無いので取れないと確定。link_only・写真 pending のまま"
   photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/city_nagasaki_lg.yaml
@@ -4521,6 +4563,7 @@ sources:
   mode: link_only
   recipe: recipes/spec_city_nagasaki_lg-2.yaml
   enabled: true
+  note: "2026-11-07 W006 確認: 一覧ページ list7-18 は個別の記事 1 本（4368.html「猫の里親 募集中 見学できます」）へのリンクだけ。記事は案内文で、写真 6 枚は「動物愛護管理センターの猫たち（現在収容中の猫とは異なります）」と断ってあり、募集中の個体の情報ではない。follow_all で辿っても読める個体が無いので取れないと確定。link_only・写真 pending のまま"
   photo: pending
   legacy:
     adapter_file: src/data_collector/config/site_specs/city_nagasaki_lg.yaml
@@ -4543,6 +4586,7 @@ sources:
   mode: recipe
   recipe: recipes/nagano_hello_animal-1.yaml
   enabled: true
+  note: "2026-11-07 確認: 0 頭の日は h3「現在、飼い主募集中の犬はいません」の雛形が 1 つ残り、以前はそれを 1 頭の犬として載せていた（11/04〜11/07 に公開されていた）。雛形の行は捨て、同じ文を 0 頭の根拠にする。子のいる日（〜11/03 のやまと）は h3 が名前になりこの文は出ない。文面が変わった日は根拠が無いので読めなかった扱い。"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/nagano_hello_animal.py
     requires_js: false
@@ -4564,6 +4608,7 @@ sources:
   mode: recipe
   recipe: recipes/nagano_hello_animal-2.yaml
   enabled: true
+  note: "2026-11-07 追加: 犬ページ（nagano_hello_animal-1）と同じ雛形が 0 頭の日に出ると推定して同じ防ぎを入れた。猫ページの 0 頭の日の実物は未確認（2026-11-07 に Wayback の 2019-08〜2025-05 の 16 版を調べたが、猫が 0 頭の日は無かった）。empty_text の文は犬の文からの類推なので、猫が 0 頭になった日に文面が違えば 0 頭と確認できず failed で通知される（誤った 0 頭は載らない）。"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/nagano_hello_animal.py
     requires_js: false
@@ -4651,6 +4696,7 @@ sources:
   mode: recipe
   recipe: recipes/city_takamatsu_kagawa-1.yaml
   enabled: true
+  note: "2026-11-07 W006 確認: 一覧 URL（/udanimo/ani_infolist1.html）は今日も 404、入口 /udanimo/ani_top.html は保守・拒否ページ（incapsula）。市の告知（kurashi/shinotorikumi/koho/oshirase/webmaintenance.html・2026-11-04 更新）が「システムの安全性への対応のため」「高松市動物情報サイト「わんにゃん高松」」の公開を一時停止中とし、再開は「対応が完了次第」とだけ書く。市サイトの「動物・ペット」（kurashi/kurashi/pet/）と「高松市動物管理ステーション」のページは一覧を持たず、リンクはすべて /udanimo/ 向き。代わりの PDF・新 URL は見つからなかった。取れないと確定（公開停止中）。再開を検知できるよう recipe のまま残す（停止中は failed が続く）"
   photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_takamatsu_kagawa.py
@@ -4673,6 +4719,7 @@ sources:
   mode: recipe
   recipe: recipes/city_takamatsu_kagawa-2.yaml
   enabled: true
+  note: "2026-11-07 W006 確認: 一覧 URL（/udanimo/ani_infolist1.html?infotype=1&animaltype=2）は今日も 404、入口は保守・拒否ページ（incapsula）。市が「システムの安全性への対応のため」わんにゃん高松の公開を一時停止中（告知 2026-11-04 更新・再開は対応完了次第）。市サイト内に代わりのページ・PDF は見つからなかった（詳細は city_takamatsu_kagawa-1）。取れないと確定（公開停止中）。再開を検知できるよう recipe のまま残す（停止中は failed が続く）"
   photo: pending
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_takamatsu_kagawa.py
@@ -4885,11 +4932,27 @@ sources:
   mode: recipe
   recipe: recipes/pref_iwate_kennan.yaml
   enabled: true
-  note: ハブ pref_iwate から分割（2026-09-29）
+  note: "ハブ pref_iwate から分割（2026-09-29）。2026-11-07 確認: 県央保健所のページで、レオン（26030）だけ公式が「雑種：雑種」（項目名が種類でない）「特徴；」（セミコロン）と書き、品種と備考が空になっていた。両方の書き方を読む"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_iwate.py
     requires_js: false
     pdf: false
+- slug: pref_iwate_kennan-2
+  name: 岩手県（県央保健所 迷子犬猫）
+  municipality: 県央保健所
+  prefecture: 岩手県
+  phone: "019-629-6588"
+  address: 岩手県盛岡市三ツ割5丁目17-59（県央保健所犬猫保護センター）
+  url: https://www.pref.iwate.jp/morioka/hoken/1012494.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.iwate.jp/morioka/hoken/1012494.html"
+  verified_address_url: "https://www.pref.iwate.jp/morioka/hoken/1012494.html"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_iwate_kennan-2.yaml
+  enabled: true
+  note: "pref_iwate_kennan と同じページの「元の飼主さんを探しています（迷子犬猫情報）」の節だけ（2026-11-07 W006 監査で分けた。迷子の柴犬 26040 が載っていなかった）。0 頭の日の実物は未観測なので、節ごと消える日を empty_absent で 0 頭と読む（本文の枠があり迷子の節の見出し・写真・保護日時の p が無い日だけ。大船渡と同じ作り）"
 - slug: pref_iwate_chubu
   name: 岩手県（中部保健所 譲渡犬猫）
   municipality: 中部保健所
@@ -4923,7 +4986,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_iwate_oshu.yaml
   enabled: true
-  note: ハブ pref_iwate から分割（2026-09-29）。ページは保護猫のみ（犬セクション無し）。管理番号 R8-6-5 形式は 9/30 に対応済みで 4 頭とも通る（2026-10-04 確認）
+  note: "ハブ pref_iwate から分割（2026-09-29）。ページは保護猫のみ（犬セクション無し）。管理番号 R8-6-5 形式は 9/30 に対応済み（2026-10-04 確認）。2026-11-07 確認: R8-9-2 と R8-9-3 が同じ写真を使い、写真から作る ID が重なって R8-9-3（ホシちゃん）が「同じ ID の行が既にある」で載っていなかった。管理番号が違う衝突は、衝突した行だけ管理番号から ID を作る（載っている子の ID は変えない）"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_iwate.py
     requires_js: false
@@ -4999,7 +5062,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_iwate_ofunato-2.yaml
   enabled: true
-  note: pref_iwate_ofunato と同じページの「元の飼い主を探しています」の節だけ（2026-10-05 T517）。節に動物種の欄が無いので species は cat 固定（犬が載る日は未確認）
+  note: pref_iwate_ofunato と同じページの「元の飼い主を探しています」の節だけ（2026-10-05 T517）。節に動物種の欄が無いので species は cat 固定（犬が載る日は未確認。2026-11-07 W006 子のいない日は県のページから迷子の節ごと消え 0 頭の文言も出ないので、empty_absent（本文の h1 があり迷子の節の見出し・写真が無い日）で 0 頭と読む（10/20 から 19 日 failed が続いていた））
 - slug: pref_iwate_kamaishi
   name: 岩手県（釜石保健所 保護犬猫）
   municipality: 釜石保健所
@@ -5030,15 +5093,31 @@ sources:
   verified_phone_url: "https://www.pref.iwate.jp/engan/miya_hoken/hogodoubutsu/1014161.html"
   verified_address_url: "https://www.pref.iwate.jp/engan/miya_hoken/hogodoubutsu/1014161.html"
   kind: adoption    # 2026-10-05: 取れる行は全部【譲渡】新しい飼い主さんを募集しています の節（迷子が載った日は混ざる。T517）
-  species: cat
+  species: mixed    # 2026-11-07: 猫固定をやめ、各子の「動物種：」で決める（ページには犬の子の譲渡報告もあり、犬が載る日がある）
   mode: recipe
   recipe: recipes/pref_iwate_miyako.yaml
   enabled: true
-  note: ハブ pref_iwate から分割（2026-09-29）。2026-09-29時点は猫のみ
+  note: "ハブ pref_iwate から分割（2026-09-29）。2026-11-07 W006 監査: 迷子の節【保護】は pref_iwate_miyako-2 に分けた。備考に「右側のわんや君は譲渡が決まりました」とある子（てんや君）を譲渡済みと誤って捨てていたのを、見出し（【御報告】）で見るように直した。てんや君（2026-9-067C）の写真 tenyawanya.jpg には譲渡が決まったわんや君も写り、備考にも「右側のわんや君は譲渡が決まりました」とある（掲載元のとおり。color「てんや君はキジ白」も掲載元の文のとおりで名前が入る）。迷子猫 2026-10-074C の ID は pref_iwate_miyako の 122dfcc3a900 から pref_iwate_miyako-2 の e330cfccea14 に変わった（節を分けたため）"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_iwate.py
     requires_js: false
     pdf: false
+- slug: pref_iwate_miyako-2
+  name: 岩手県（宮古保健所 迷子猫）
+  municipality: 宮古保健所
+  prefecture: 岩手県
+  phone: "0193-64-2218"
+  address: 岩手県宮古市五月町1-20
+  url: https://www.pref.iwate.jp/engan/miya_hoken/hogodoubutsu/1014161.html
+  verified_at: '2026-10-15'
+  verified_phone_url: "https://www.pref.iwate.jp/engan/miya_hoken/hogodoubutsu/1014161.html"
+  verified_address_url: "https://www.pref.iwate.jp/engan/miya_hoken/hogodoubutsu/1014161.html"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_iwate_miyako-2.yaml
+  enabled: true
+  note: "pref_iwate_miyako と同じページの h2「【保護】元の飼い主さんを捜しています。」の節だけ（2026-11-07 W006 監査で分けた。保護猫 2026-10-074C が譲渡（adoption）として載っていた）。0 頭の日の実物は未観測なので、節ごと消える日を empty_absent で 0 頭と読む"
 - slug: pref_iwate_kuji
   name: 岩手県（久慈保健所 保護猫）
   municipality: 久慈保健所
@@ -6231,7 +6310,7 @@ sources:
   recipe: recipes/pref_saitama_joto_neko_minami.yaml
   enabled: true
   photo: ok
-  note: "2026-11-05 埼玉県（生活衛生課がとりまとめ）から、県内の収容動物の情報は写真を含め掲載して差し支えない（政令市・中核市を除く）と返事（T630）。 環境省リンク集から追加（2026-10-05 T519）。埼玉県「犬・猫の譲渡」（pref.saitama.lg.jp/b0716/doubutu-jouto-1.html）から辿る譲渡用猫（南支所）の募集ページ。1 頭 = 管理番号の table（管理番号の欄に「南2026-C67 (仮名：くろまめ) 譲渡されました！」と書かれ、写真は行の中）。決まった子の印は時期で変わり（Wayback 2019〜2026）、「飼い主さんが決まりました!」「飼主さんが 決まりました！」「（新しい飼い主さんが決まりました）」「新しい飼い主さんへ譲渡となりました」「譲渡されました！」「譲渡になりました！」の語が見出し（犬は h3）か管理番号の欄にある子は載せない（全部そうなら 0 頭。以前の「譲渡されました」だけの除外では、決まった子が募集中として載る日があった）。「お見合い中です」「マッチング中です！」「申込多数のため募集を一時停止」「お声がかかりました！（現在募集を停止しています）」の子は決まっていないので載せる（トライアル中と同じ扱い）。管理番号は「南2026-C67」のように連番の前に英字が付く形も読む（前任の直しはこれを雛形と取り違えて全部捨てていた）。管理番号が読めない雛形の表は捨てる。2026-10-07 の時点: 南支所は決定済みの 1 頭（くろまめ）だけ = 0 頭。以前は決まった子が募集中として載る日があった（2025-03 は 3 頭全部が決まっていたのに 3 頭と読んだ）。Wayback は CDX の全 19 版を当て、動物が載った日 13 版で募集中の子だけが読め、決まった子だけの日 5 版と雛形だけの日 1 版は 0 頭、読めなかった日は無い"
+  note: "2026-11-05 埼玉県（生活衛生課がとりまとめ）から、県内の収容動物の情報は写真を含め掲載して差し支えない（政令市・中核市を除く）と返事（T630）。 環境省リンク集から追加（2026-10-05 T519）。埼玉県「犬・猫の譲渡」（pref.saitama.lg.jp/b0716/doubutu-jouto-1.html）から辿る譲渡用猫（南支所）の募集ページ。1 頭 = 管理番号の table（管理番号の欄に「南2026-C67 (仮名：くろまめ) 譲渡されました！」と書かれ、写真は行の中）。決まった子の印は時期で変わり（Wayback 2019〜2026）、「飼い主さんが決まりました!」「飼主さんが 決まりました！」「（新しい飼い主さんが決まりました）」「新しい飼い主さんへ譲渡となりました」「譲渡されました！」「譲渡になりました！」の語が見出し（犬は h3）か管理番号の欄にある子は載せない（全部そうなら 0 頭。以前の「譲渡されました」だけの除外では、決まった子が募集中として載る日があった）。「お見合い中です」「マッチング中です！」「申込多数のため募集を一時停止」「お声がかかりました！（現在募集を停止しています）」の子は決まっていないので載せる（トライアル中と同じ扱い）。管理番号は「南2026-C67」のように連番の前に英字が付く形も読む（前任の直しはこれを雛形と取り違えて全部捨てていた）。管理番号が読めない雛形の表は捨てる。2026-10-07 の時点: 南支所は決定済みの 1 頭（くろまめ）だけ = 0 頭。以前は決まった子が募集中として載る日があった（2025-03 は 3 頭全部が決まっていたのに 3 頭と読んだ）。Wayback は CDX の全 19 版を当て、動物が載った日 13 版で募集中の子だけが読め、決まった子だけの日 5 版と雛形だけの日 1 版は 0 頭、読めなかった日は無い。2026-11-07 確認: 南2026-C76・C77・C78 が同じ写真を使い、写真から作る ID が重なって C77・C78 が「同じ ID の行が既にある」で載っていなかった（10/29〜）。管理番号が違う衝突は、衝突した行だけ管理番号から ID を作る（載っている C76 の ID は変えない）"
 - slug: city_takasaki-1
   name: 高崎市動物愛護センター（保護している犬）
   municipality: 高崎市
@@ -6724,37 +6803,219 @@ sources:
   photo: pending
   note: "環境省リンク集から追加（2026-10-05 T519）。みやざきドッグ愛ランドの迷子猫の一覧。robots.txt が /modules/addon_module/ を Disallow のためリンクのみ。「迷子」は飼い主が探している迷子と推定して kind: lost（中身は未確認）。2026-11-07 W006 に確かめ直し: みやざきドッグ愛ランド（dog.pref.miyazaki.lg.jp）は https でも http でも応答せず（https は空の応答で切れ、http は 502）、今日の robots.txt は読めなかった。Wayback の 2026-05-13 の版（web.archive.org/web/20260513230500id_/https://dog.pref.miyazaki.lg.jp/robots.txt）の robots.txt は /modules/addon_module/ を Disallow（一覧も個体ページもこの下。2019-08-18 の版も同じ）で、今日は直接確認できないので Disallow のものとして取りに行かない。県の公式サイト（www.pref.miyazaki.lg.jp）の動物愛護のページ（kurashi/aigo/ 以下と eiseikanri/kurashi/aigo/ 以下）を辿ったが、保護・譲渡・迷子の犬猫の一覧への入口もこのサイトへのリンクも無かった（猫の適正管理事業・推進員募集・虐待防止などの案内だけ）。別の入口が見つからないため、取れないと確定（リンクのみ）。許可を求める・県に別の入口を尋ねるかは人の判断。2026-10-18 掲載元ページに所在地が無いので外した（T628。別資料の値は載せない）"
 - slug: pref_kagoshima-1
-  name: 鹿児島県動物愛護ホームページ（迷子犬猫情報）
+  name: 鹿児島県動物愛護ホームページ（保健所等が保護した犬）
   municipality: 鹿児島県
   prefecture: 鹿児島県
   phone: 0995-44-6301
   address: 〒899-5105 鹿児島県霧島市隼人町小田1493-1 鹿児島県動物愛護センター
   url: http://dogcat.pref.kagoshima.jp/Search/Lost_index
-  verified_at: '2026-10-15'
+  verified_at: '2026-11-07'
   verified_phone_url: "http://dogcat.pref.kagoshima.jp/Search/Lost_index"
   verified_address_url: "http://dogcat.pref.kagoshima.jp/Search/Lost_index"
+  contact_scope: operator
   kind: stray
-  species: mixed
-  mode: link_only
+  species: dog
+  mode: recipe
+  recipe: recipes/pref_kagoshima-1.yaml
   enabled: true
   photo: pending
-  note: "環境省リンク集から追加（2026-10-05 T519）。迷子犬猫情報の入口。県内の保健所等が保護した犬猫・一般の方が保護している犬猫・迷子の犬猫を探している方の情報の 3 区分 × 犬猫の 6 一覧があるが、どれも画像ボタンの JavaScript（search_submit）が anti-forgery トークン付きの form を POST して表示する作り。GET では 302 でエラーページになり（/Search/Search_lost?… を実測）、収集器は POST を持たないので読めない（リンクのみ。mode: link_only）。鹿児島市保健所管内は city_kagoshima-1・-2 が載せている。"
+  note: "2026-11-07 W006: 入口の form を POST して一覧を出す作り（画像ボタンの JavaScript search_submit が hidden と anti-forgery トークンを送る）を、steps の submit_form で読むようにした（それまではリンクのみ）。robots.txt は無い（/robots.txt はエラーページへの転送）。問い合わせ先は個体ごとに保健所・センターが違うので、各個体の備考に掲載元ページの「お問い合わせ先」の欄をそのまま添える（台帳の電話・所在地は県動物愛護センターの代表）。写真は許諾待ちのため pending（T630）。迷子犬猫情報の「保健所等が保護した犬猫」（迷子対象犬）。10 件ずつのページ送りをたどる。備考に「飼い主さんと一緒に帰りました」とある返還済みの子は載せない。鹿児島市保健所管内は city_kagoshima-1 が載せているので、この一覧にはいない（2026-11-07 実測: 鹿屋・西之表・徳之島・志布志の保健所の子）。 個体の元ページのリンクは入口のページ（結果は POST 専用で GET だとエラーページになるため）で、入口で区分を選んで検索し直す必要がある。"
 - slug: pref_kagoshima-2
-  name: 鹿児島県動物愛護ホームページ（譲渡犬猫情報）
+  name: 鹿児島県動物愛護ホームページ（動物愛護センターの譲渡対象犬）
   municipality: 鹿児島県
   prefecture: 鹿児島県
   phone: 0995-44-6301
   address: 〒899-5105 鹿児島県霧島市隼人町小田1493-1 鹿児島県動物愛護センター
   url: http://dogcat.pref.kagoshima.jp/Search/Jouto_index
-  verified_at: '2026-10-15'
-  verified_phone_url: "http://dogcat.pref.kagoshima.jp/Search/Lost_index"
-  verified_address_url: "http://dogcat.pref.kagoshima.jp/Search/Lost_index"
+  verified_at: '2026-11-07'
+  verified_phone_url: "http://dogcat.pref.kagoshima.jp/Search/Jouto_index"
+  verified_address_url: "http://dogcat.pref.kagoshima.jp/Search/Jouto_index"
   kind: adoption
-  species: mixed
-  mode: link_only
+  species: dog
+  mode: recipe
+  recipe: recipes/pref_kagoshima-2.yaml
   enabled: true
   photo: pending
-  note: "環境省リンク集から追加（2026-10-05 T519）。譲渡犬猫情報の入口（動物愛護センターと保健所・動物管理所の譲渡対象犬猫、里親を探す掲載依頼の犬猫）。一覧は迷子犬猫情報（pref_kagoshima-1）と同じ POST form で読めないためリンクのみ（mode: link_only）。里親を探す掲載依頼の犬猫（県の施設にいない個人の掲載）が混ざる。"
+  note: "2026-11-07 W006: 入口の form を POST して一覧を出す作り（画像ボタンの JavaScript search_submit が hidden と anti-forgery トークンを送る）を、steps の submit_form で読むようにした（それまではリンクのみ）。robots.txt は無い（/robots.txt はエラーページへの転送）。問い合わせ先は個体ごとに保健所・センターが違うので、各個体の備考に掲載元ページの「お問い合わせ先」の欄をそのまま添える（台帳の電話・所在地は県動物愛護センターの代表）。写真は許諾待ちのため pending（T630）。譲渡犬猫情報の「県の施設にいる譲渡対象犬猫」のうち動物愛護センター管理の犬。2026-11-07 は 7 頭。「トライアル（お試し）実施中」と備考に書いてある子（26D0277・26D0123）も載せる（掲載元が譲渡対象として載せ続けており、譲渡が決まった印ではない。備考にそのまま残るので読む人に伝わる。譲渡済みの語とは区別する。2026-11-07 判断）。 個体の元ページのリンクは入口のページ（結果は POST 専用で GET だとエラーページになるため）で、入口で区分を選んで検索し直す必要がある。"
+- slug: pref_kagoshima-3
+  name: 鹿児島県動物愛護ホームページ（保健所等が保護した猫）
+  municipality: 鹿児島県
+  prefecture: 鹿児島県
+  phone: 0995-44-6301
+  address: 〒899-5105 鹿児島県霧島市隼人町小田1493-1 鹿児島県動物愛護センター
+  url: http://dogcat.pref.kagoshima.jp/Search/Lost_index
+  verified_at: '2026-11-07'
+  verified_phone_url: "http://dogcat.pref.kagoshima.jp/Search/Lost_index"
+  verified_address_url: "http://dogcat.pref.kagoshima.jp/Search/Lost_index"
+  contact_scope: operator
+  kind: stray
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_kagoshima-3.yaml
+  enabled: true
+  photo: pending
+  note: "2026-11-07 W006: 入口の form を POST して一覧を出す作り（画像ボタンの JavaScript search_submit が hidden と anti-forgery トークンを送る）を、steps の submit_form で読むようにした（それまではリンクのみ）。robots.txt は無い（/robots.txt はエラーページへの転送）。問い合わせ先は個体ごとに保健所・センターが違うので、各個体の備考に掲載元ページの「お問い合わせ先」の欄をそのまま添える（台帳の電話・所在地は県動物愛護センターの代表）。写真は許諾待ちのため pending（T630）。迷子犬猫情報の「保健所等が保護した犬猫」（迷子対象猫）。2026-11-07 は 0 件（「検索条件に一致する情報が見つかりませんでした。」は 0 件の日だけ出る文言で、子のいる日の結果には無いことを犬の日の実ページで確認）。鹿児島市保健所管内は city_kagoshima-2 が載せている。 個体の元ページのリンクは入口のページ（結果は POST 専用で GET だとエラーページになるため）で、入口で区分を選んで検索し直す必要がある。"
+- slug: pref_kagoshima-4
+  name: 鹿児島県動物愛護ホームページ（一般の方が保護している犬）
+  municipality: 鹿児島県
+  prefecture: 鹿児島県
+  phone: 0995-44-6301
+  address: 〒899-5105 鹿児島県霧島市隼人町小田1493-1 鹿児島県動物愛護センター
+  url: http://dogcat.pref.kagoshima.jp/Search/Lost_index
+  verified_at: '2026-11-07'
+  verified_phone_url: "http://dogcat.pref.kagoshima.jp/Search/Lost_index"
+  verified_address_url: "http://dogcat.pref.kagoshima.jp/Search/Lost_index"
+  contact_scope: operator
+  kind: stray
+  species: dog
+  mode: recipe
+  recipe: recipes/pref_kagoshima-4.yaml
+  enabled: true
+  photo: pending
+  note: "2026-11-07 W006: 入口の form を POST して一覧を出す作り（画像ボタンの JavaScript search_submit が hidden と anti-forgery トークンを送る）を、steps の submit_form で読むようにした（それまではリンクのみ）。robots.txt は無い（/robots.txt はエラーページへの転送）。問い合わせ先は個体ごとに保健所・センターが違うので、各個体の備考に掲載元ページの「お問い合わせ先」の欄をそのまま添える（台帳の電話・所在地は県動物愛護センターの代表）。写真は許諾待ちのため pending（T630）。迷子犬猫情報の「一般の方が保護している犬猫の情報」（掲載依頼）。2026-11-07 は 0 件。子のいる日の形は未確認（同じ Search_lost の結果なので保護した犬猫の一覧と同じ表と推定。違えば行が 0 で 0 件の文言も無く failed になる）。掲載者の氏名・連絡先は結果に出ない（問い合わせ先は保健所・センター）。 保護場所の欄が子のいる日にあるかは未確認なので、recipe は保護場所（市町村名の語を含む行）が取れない行を動物にしない（row_filter.field_required。「除外」に数えないので、保護場所の欄が無い形に変わって全行が読めなくなった日は 0 頭と確定せず failed になる。一部の行だけ場所を取れないときは、取れた行だけ載せる）。写真は読まない（掲載者の氏名がファイル名に入りうる。写真が ok になる前にファイル名を見直す）。備考の自由記述も読まない（掲載者本人が書く欄で氏名・連絡先・家族の事情が入りうる。-6・-7・-11・-12 と同じ）。読むのは保護場所・保護日・問い合わせ先だけ。子のいる日の形を実測できたら、備考を読んでよいか見直す。 個体の元ページのリンクは入口のページ（結果は POST 専用で GET だとエラーページになるため）で、入口で区分を選んで検索し直す必要がある。"
+- slug: pref_kagoshima-5
+  name: 鹿児島県動物愛護ホームページ（一般の方が保護している猫）
+  municipality: 鹿児島県
+  prefecture: 鹿児島県
+  phone: 0995-44-6301
+  address: 〒899-5105 鹿児島県霧島市隼人町小田1493-1 鹿児島県動物愛護センター
+  url: http://dogcat.pref.kagoshima.jp/Search/Lost_index
+  verified_at: '2026-11-07'
+  verified_phone_url: "http://dogcat.pref.kagoshima.jp/Search/Lost_index"
+  verified_address_url: "http://dogcat.pref.kagoshima.jp/Search/Lost_index"
+  contact_scope: operator
+  kind: stray
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_kagoshima-5.yaml
+  enabled: true
+  photo: pending
+  note: "2026-11-07 W006: 入口の form を POST して一覧を出す作り（画像ボタンの JavaScript search_submit が hidden と anti-forgery トークンを送る）を、steps の submit_form で読むようにした（それまではリンクのみ）。robots.txt は無い（/robots.txt はエラーページへの転送）。問い合わせ先は個体ごとに保健所・センターが違うので、各個体の備考に掲載元ページの「お問い合わせ先」の欄をそのまま添える（台帳の電話・所在地は県動物愛護センターの代表）。写真は許諾待ちのため pending（T630）。迷子犬猫情報の「一般の方が保護している犬猫の情報」（掲載依頼）。2026-11-07 は 0 件。子のいる日の形は未確認（-4 と同じ）。掲載者の氏名・連絡先は結果に出ない（問い合わせ先は保健所・センター）。 保護場所の欄の扱いは -4 と同じ（未確認。市町村名の語を含む行だけ読み、全行の場所が取れない日は failed）。写真と備考の自由記述は読まない（-4 と同じ理由）。 個体の元ページのリンクは入口のページ（結果は POST 専用で GET だとエラーページになるため）で、入口で区分を選んで検索し直す必要がある。"
+- slug: pref_kagoshima-6
+  name: 鹿児島県動物愛護ホームページ（迷子の犬を探している方の情報）
+  municipality: 鹿児島県
+  prefecture: 鹿児島県
+  phone: 0995-44-6301
+  address: 〒899-5105 鹿児島県霧島市隼人町小田1493-1 鹿児島県動物愛護センター
+  url: http://dogcat.pref.kagoshima.jp/Search/Lost_index
+  verified_at: '2026-11-07'
+  verified_phone_url: "http://dogcat.pref.kagoshima.jp/Search/Lost_index"
+  verified_address_url: "http://dogcat.pref.kagoshima.jp/Search/Lost_index"
+  contact_scope: operator
+  kind: lost
+  species: dog
+  mode: recipe
+  recipe: recipes/pref_kagoshima-6.yaml
+  enabled: true
+  photo: pending
+  note: "2026-11-07 W006: 入口の form を POST して一覧を出す作り（画像ボタンの JavaScript search_submit が hidden と anti-forgery トークンを送る）を、steps の submit_form で読むようにした（それまではリンクのみ）。robots.txt は無い（/robots.txt はエラーページへの転送）。問い合わせ先は個体ごとに保健所・センターが違うので、各個体の備考に掲載元ページの「お問い合わせ先」の欄をそのまま添える（台帳の電話・所在地は県動物愛護センターの代表）。写真は許諾待ちのため pending（T630）。迷子犬猫情報の「迷子犬猫を探している方の情報」（飼い主が探している犬）。2026-11-07 は 4 件。探している方の氏名・連絡先は結果に出ない（問い合わせ先は保健所・センター）が、備考は探している本人の自由記述で電話・氏名が入っても落とす仕組みが無いので読まない（掲載日と保健所・センターの問い合わせ先だけ残す）。 写真は読まない（探している方の氏名がファイル名に入りうる）。掲載日を note に残す。掲載を取り下げた印は掲載元ページに無く、古い掲載が残りうる（読む人が掲載日で判断する。取り下げの運用は保健所へ未確認）。古い掲載は外さない（判断 2026-11-07: 掲載元の公式ページに載っている間はそのまま載せ、掲載日を note に出す。町田市の古い迷子の掲載と同じ扱いで、PROJECT.md の「書いてあることをそのまま」。変えるなら人の判断）。 個体の元ページのリンクは入口のページ（結果は POST 専用で GET だとエラーページになるため）で、入口で区分を選んで検索し直す必要がある。"
+- slug: pref_kagoshima-7
+  name: 鹿児島県動物愛護ホームページ（迷子の猫を探している方の情報）
+  municipality: 鹿児島県
+  prefecture: 鹿児島県
+  phone: 0995-44-6301
+  address: 〒899-5105 鹿児島県霧島市隼人町小田1493-1 鹿児島県動物愛護センター
+  url: http://dogcat.pref.kagoshima.jp/Search/Lost_index
+  verified_at: '2026-11-07'
+  verified_phone_url: "http://dogcat.pref.kagoshima.jp/Search/Lost_index"
+  verified_address_url: "http://dogcat.pref.kagoshima.jp/Search/Lost_index"
+  contact_scope: operator
+  kind: lost
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_kagoshima-7.yaml
+  enabled: true
+  photo: pending
+  note: "2026-11-07 W006: 入口の form を POST して一覧を出す作り（画像ボタンの JavaScript search_submit が hidden と anti-forgery トークンを送る）を、steps の submit_form で読むようにした（それまではリンクのみ）。robots.txt は無い（/robots.txt はエラーページへの転送）。問い合わせ先は個体ごとに保健所・センターが違うので、各個体の備考に掲載元ページの「お問い合わせ先」の欄をそのまま添える（台帳の電話・所在地は県動物愛護センターの代表）。写真は許諾待ちのため pending（T630）。迷子犬猫情報の「迷子犬猫を探している方の情報」（飼い主が探している猫）。2026-11-07 は 12 件（2 ページ）。探している方の氏名・連絡先は結果に出ない（問い合わせ先は保健所・センター）が、備考は探している本人の自由記述で電話・氏名が入っても落とす仕組みが無いので読まない（掲載日と保健所・センターの問い合わせ先だけ残す）。 写真は読まない（-6 と同じ）。掲載日を note に残す。「行方不明になって 1 年」のような古い掲載が残りうる（取り下げの印は掲載元ページに無い。取り下げの運用は保健所へ未確認）。古い掲載は外さない（判断 2026-11-07: 掲載元の公式ページに載っている間はそのまま載せ、掲載日を note に出す。町田市の古い迷子の掲載と同じ扱いで、PROJECT.md の「書いてあることをそのまま」。変えるなら人の判断）。 個体の元ページのリンクは入口のページ（結果は POST 専用で GET だとエラーページになるため）で、入口で区分を選んで検索し直す必要がある。"
+- slug: pref_kagoshima-8
+  name: 鹿児島県動物愛護ホームページ（動物愛護センターの譲渡対象猫）
+  municipality: 鹿児島県
+  prefecture: 鹿児島県
+  phone: 0995-44-6301
+  address: 〒899-5105 鹿児島県霧島市隼人町小田1493-1 鹿児島県動物愛護センター
+  url: http://dogcat.pref.kagoshima.jp/Search/Jouto_index
+  verified_at: '2026-11-07'
+  verified_phone_url: "http://dogcat.pref.kagoshima.jp/Search/Jouto_index"
+  verified_address_url: "http://dogcat.pref.kagoshima.jp/Search/Jouto_index"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_kagoshima-8.yaml
+  enabled: true
+  photo: pending
+  note: "2026-11-07 W006: 入口の form を POST して一覧を出す作り（画像ボタンの JavaScript search_submit が hidden と anti-forgery トークンを送る）を、steps の submit_form で読むようにした（それまではリンクのみ）。robots.txt は無い（/robots.txt はエラーページへの転送）。問い合わせ先は個体ごとに保健所・センターが違うので、各個体の備考に掲載元ページの「お問い合わせ先」の欄をそのまま添える（台帳の電話・所在地は県動物愛護センターの代表）。写真は許諾待ちのため pending（T630）。譲渡犬猫情報の「県の施設にいる譲渡対象犬猫」のうち動物愛護センター管理の猫。2026-11-07 は 7 頭。 個体の元ページのリンクは入口のページ（結果は POST 専用で GET だとエラーページになるため）で、入口で区分を選んで検索し直す必要がある。"
+- slug: pref_kagoshima-9
+  name: 鹿児島県動物愛護ホームページ（保健所・動物管理所の譲渡対象犬）
+  municipality: 鹿児島県
+  prefecture: 鹿児島県
+  phone: 0995-44-6301
+  address: 〒899-5105 鹿児島県霧島市隼人町小田1493-1 鹿児島県動物愛護センター
+  url: http://dogcat.pref.kagoshima.jp/Search/Jouto_index
+  verified_at: '2026-11-07'
+  verified_phone_url: "http://dogcat.pref.kagoshima.jp/Search/Jouto_index"
+  verified_address_url: "http://dogcat.pref.kagoshima.jp/Search/Jouto_index"
+  contact_scope: operator
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/pref_kagoshima-9.yaml
+  enabled: true
+  photo: pending
+  note: "2026-11-07 W006: 入口の form を POST して一覧を出す作り（画像ボタンの JavaScript search_submit が hidden と anti-forgery トークンを送る）を、steps の submit_form で読むようにした（それまではリンクのみ）。robots.txt は無い（/robots.txt はエラーページへの転送）。問い合わせ先は個体ごとに保健所・センターが違うので、各個体の備考に掲載元ページの「お問い合わせ先」の欄をそのまま添える（台帳の電話・所在地は県動物愛護センターの代表）。写真は許諾待ちのため pending（T630）。譲渡犬猫情報の「県の施設にいる譲渡対象犬猫」のうち保健所・動物管理所の犬。2026-11-07 は 13 頭。保健所ごとに手続きが違うので問い合わせ先は個体の備考のとおり。 個体の元ページのリンクは入口のページ（結果は POST 専用で GET だとエラーページになるため）で、入口で区分を選んで検索し直す必要がある。"
+- slug: pref_kagoshima-10
+  name: 鹿児島県動物愛護ホームページ（保健所・動物管理所の譲渡対象猫）
+  municipality: 鹿児島県
+  prefecture: 鹿児島県
+  phone: 0995-44-6301
+  address: 〒899-5105 鹿児島県霧島市隼人町小田1493-1 鹿児島県動物愛護センター
+  url: http://dogcat.pref.kagoshima.jp/Search/Jouto_index
+  verified_at: '2026-11-07'
+  verified_phone_url: "http://dogcat.pref.kagoshima.jp/Search/Jouto_index"
+  verified_address_url: "http://dogcat.pref.kagoshima.jp/Search/Jouto_index"
+  contact_scope: operator
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_kagoshima-10.yaml
+  enabled: true
+  photo: pending
+  note: "2026-11-07 W006: 入口の form を POST して一覧を出す作り（画像ボタンの JavaScript search_submit が hidden と anti-forgery トークンを送る）を、steps の submit_form で読むようにした（それまではリンクのみ）。robots.txt は無い（/robots.txt はエラーページへの転送）。問い合わせ先は個体ごとに保健所・センターが違うので、各個体の備考に掲載元ページの「お問い合わせ先」の欄をそのまま添える（台帳の電話・所在地は県動物愛護センターの代表）。写真は許諾待ちのため pending（T630）。譲渡犬猫情報の「県の施設にいる譲渡対象犬猫」のうち保健所・動物管理所の猫。2026-11-07 は 8 頭。 個体の元ページのリンクは入口のページ（結果は POST 専用で GET だとエラーページになるため）で、入口で区分を選んで検索し直す必要がある。"
+- slug: pref_kagoshima-11
+  name: 鹿児島県動物愛護ホームページ（里親を探す掲載依頼のあった犬）
+  municipality: 鹿児島県
+  prefecture: 鹿児島県
+  phone: 0995-44-6301
+  address: 〒899-5105 鹿児島県霧島市隼人町小田1493-1 鹿児島県動物愛護センター
+  url: http://dogcat.pref.kagoshima.jp/Search/Jouto_index
+  verified_at: '2026-11-07'
+  verified_phone_url: "http://dogcat.pref.kagoshima.jp/Search/Jouto_index"
+  verified_address_url: "http://dogcat.pref.kagoshima.jp/Search/Jouto_index"
+  contact_scope: operator
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/pref_kagoshima-11.yaml
+  enabled: true
+  photo: pending
+  note: "2026-11-07 W006: 入口の form を POST して一覧を出す作り（画像ボタンの JavaScript search_submit が hidden と anti-forgery トークンを送る）を、steps の submit_form で読むようにした（それまではリンクのみ）。robots.txt は無い（/robots.txt はエラーページへの転送）。問い合わせ先は個体ごとに保健所・センターが違うので、各個体の備考に掲載元ページの「お問い合わせ先」の欄をそのまま添える（台帳の電話・所在地は県動物愛護センターの代表）。写真は許諾待ちのため pending（T630）。譲渡犬猫情報の「里親を探す掲載依頼のあった犬猫（県の施設にはいません）」の犬。2026-11-07 は 13 頭。個人が飼養している子が混ざるが、結果に出る問い合わせ先は保健所・センターで、掲載者の氏名・連絡先は出ない（備考を 2026-11-07 時点の全件で電話番号・メール・URL・氏名の形を検査して確認）。県の施設にはいない子なので、備考の飼養場所をそのまま見せる。 写真は読まない（掲載者の氏名がファイル名に入る子がいた）。備考は読まない（掲載者の家族の病状・家族構成など個人の事情が自由記述に入るため。飼養場所の市町村だけ備考から取って location に入れる）。掲載日を note に残す。取り下げの印は掲載元ページに無く、古い掲載が残りうる（年齢・「募集中」は掲載日時点。取り下げの運用は保健所へ未確認）。古い掲載は外さない（判断 2026-11-07: 掲載元の公式ページに載っている間はそのまま載せ、掲載日を note に出す。町田市の古い迷子の掲載と同じ扱いで、PROJECT.md の「書いてあることをそのまま」。変えるなら人の判断）。 個体の元ページのリンクは入口のページ（結果は POST 専用で GET だとエラーページになるため）で、入口で区分を選んで検索し直す必要がある。"
+- slug: pref_kagoshima-12
+  name: 鹿児島県動物愛護ホームページ（里親を探す掲載依頼のあった猫）
+  municipality: 鹿児島県
+  prefecture: 鹿児島県
+  phone: 0995-44-6301
+  address: 〒899-5105 鹿児島県霧島市隼人町小田1493-1 鹿児島県動物愛護センター
+  url: http://dogcat.pref.kagoshima.jp/Search/Jouto_index
+  verified_at: '2026-11-07'
+  verified_phone_url: "http://dogcat.pref.kagoshima.jp/Search/Jouto_index"
+  verified_address_url: "http://dogcat.pref.kagoshima.jp/Search/Jouto_index"
+  contact_scope: operator
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_kagoshima-12.yaml
+  enabled: true
+  photo: pending
+  note: "2026-11-07 W006: 入口の form を POST して一覧を出す作り（画像ボタンの JavaScript search_submit が hidden と anti-forgery トークンを送る）を、steps の submit_form で読むようにした（それまではリンクのみ）。robots.txt は無い（/robots.txt はエラーページへの転送）。問い合わせ先は個体ごとに保健所・センターが違うので、各個体の備考に掲載元ページの「お問い合わせ先」の欄をそのまま添える（台帳の電話・所在地は県動物愛護センターの代表）。写真は許諾待ちのため pending（T630）。譲渡犬猫情報の「里親を探す掲載依頼のあった犬猫（県の施設にはいません）」の猫。2026-11-07 は 140 頭（14 ページ。掲載日は 2024-08 まで遡る）。掲載を取り下げた子が残っているかは掲載元ページからは分からない（未確認）。掲載者の氏名・連絡先は結果に出ない。 写真は読まない（-11 と同じ）。備考は読まない（-11 と同じ。飼養場所の市町村だけ location に入れる）。掲載日を note に残す。取り下げの印も掲載期限も掲載元ページに無く、古い掲載が残りうる（2024-08 掲載の「生後3か月」の子猫が今も載っている。年齢は掲載日時点。取り下げの運用は保健所へ未確認）。古い掲載は外さない（判断 2026-11-07: 掲載元の公式ページに載っている間はそのまま載せ、掲載日を note に出す。町田市の古い迷子の掲載と同じ扱いで、PROJECT.md の「書いてあることをそのまま」。変えるなら人の判断）。1 行に複数匹（24C0503 は 4 匹）の掲載があり、頭数は行数と合わない。 個体の元ページのリンクは入口のページ（結果は POST 専用で GET だとエラーページになるため）で、入口で区分を選んで検索し直す必要がある。"
 - slug: city_akita-1
   name: 秋田市保健所（収容中の犬猫・公示）
   municipality: 秋田市保健所
@@ -6957,7 +7218,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_miyagi-6.yaml
   enabled: true
-  note: 環境省リンク集から追加（2026-10-05 T519）。気仙沼保健所管内（気仙沼市・南三陸町）で保護した犬・猫。電話は同ページの問い合わせ窓口「宮城県保健所犬猫ダイヤル」（住所の記載は無い）。2026-10-07 時点は犬 1 頭・猫 2 頭を実ページで確認。Wayback 2022-05〜2026-05 の 7 版で、猫の行（収容日が「9/26」の書き方の日もある）と 0 頭の日（「現在，保護猫の情報はありません。」。読点が「，」）を確認済み。犬が載った保存は無く、犬の行は今日の 1 頭のみ。猫の文言 1 つだけで 0 頭と判定するので、猫が 0 頭のまま犬の表が読めなくなった日は 0 頭に見える
+  note: "環境省リンク集から追加（2026-10-05 T519）。気仙沼保健所管内（気仙沼市・南三陸町）で保護した犬・猫。電話は同ページの問い合わせ窓口「宮城県保健所犬猫ダイヤル」（住所の記載は無い）。2026-10-07 時点は犬 1 頭・猫 2 頭を実ページで確認。Wayback 2022-05〜2026-05 の 7 版で、猫の行（収容日が「9/26」の書き方の日もある）と 0 頭の日（「現在，保護猫の情報はありません。」。読点が「，」）を確認済み。犬が載った保存は無く、犬の行は今日の 1 頭のみ。猫の文言 1 つだけで 0 頭と判定するので、猫が 0 頭のまま犬の表が読めなくなった日は 0 頭に見える。2026-11-07 確認: 10/29〜10/30 は 3 つ目のセルの区切りが全角の「／」で、品種・毛色・性別・年齢・備考が全部空だった。「/」「／」の両方で区切る。年齢は 4 つ目が年齢らしい語のときだけ（公式の見出しは「犬種/毛色/性別/特徴」）"
 - slug: pref_miyagi-7
   name: 宮城県動物愛護センター（譲渡猫の紹介）
   municipality: 宮城県動物愛護センター
@@ -7435,7 +7696,7 @@ sources:
   mode: recipe
   recipe: recipes/city_himeji-1.yaml
   enabled: true
-  note: 環境省リンク集から追加（2026-10-05 T519）。リンク集のリンク先（0000001412.html「ペットが迷子になったとき」）は案内だけで、動物の一覧は無い。姫路市は収容動物・譲渡犬猫の個体一覧をホームページに載せておらず（犬の譲渡・猫の譲渡のページは手続きの案内だけ。確認済み）、載っている一覧はこの「迷子のペット情報掲示板」だけ。市民が申請した「探しています」の告知を市が載せる（市は情報交換の場の提供のみ）。2026-10-05 は犬 1 件（逸走日 令和8年3月29日。掲載期間は 6 ヶ月とページにあり、期間は過ぎているが市のページには残っている。見つかったかどうかは分からない）。表の連絡先欄は個人のメールアドレスなので取り込まず、元ページのリンクで見てもらう。h3「掲載例」の見本（猫）は row_filter で落とす。複数件が並ぶ日・0 件の日の作りは未確認（0 件の文言が分からず empty_text は置いていない）。
+  note: 環境省リンク集から追加（2026-10-05 T519）。リンク集のリンク先（0000001412.html「ペットが迷子になったとき」）は案内だけで、動物の一覧は無い。姫路市は収容動物・譲渡犬猫の個体一覧をホームページに載せておらず（犬の譲渡・猫の譲渡のページは手続きの案内だけ。確認済み）、載っている一覧はこの「迷子のペット情報掲示板」だけ。市民が申請した「探しています」の告知を市が載せる（市は情報交換の場の提供のみ）。2026-10-05 は犬 1 件（逸走日 令和8年3月29日。掲載期間は 6 ヶ月とページにあり、期間は過ぎているが市のページには残っている。見つかったかどうかは分からない）。表の連絡先欄は個人のメールアドレスなので取り込まず、元ページのリンクで見てもらう。h3「掲載例」の見本（猫）は row_filter で落とす。複数件が並ぶ日・0 件の日の作りは未確認（0 件の文言が分からず empty_text は置いていない）。 2026-11-07 の追記 場所は表に欄が無いが、各件の見出し文（表の caption「令和8年3月20日姫路市玉手3丁目付近で犬が逃げたので探しています」）の「日」の後ろから「で犬が／で猫が」の前までを location に読む（文型が違う件は空のまま。実例は 1 件だけで他の文型は未確認）。
 
 - slug: city_matsumoto-6
   name: 松本市（新しい飼い主を探している猫・同じ掲載の 2 頭目）

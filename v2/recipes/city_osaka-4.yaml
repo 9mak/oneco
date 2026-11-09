@@ -17,7 +17,7 @@ fields:
   color: {regex: "毛色／(\\S+)"}
   sex: {regex: "性別／(\\S+)"}
   age: {regex: "年齢／(\\S+)"}
-  size: {regex: "体格／(\\S+)"}
+  size: {regex: "体格／(.+?)(?=\\s+・|$)"}   # 「小（体重 約6.4kg）」を空白で切らない（W006 監査 C）
   note: {regex: "性格／(.+?)(?=\\s*・その他|$)"}
 empty_text:
   - "現在、譲渡対象動物はいません"

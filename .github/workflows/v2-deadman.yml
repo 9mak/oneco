@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      SITE: https://oneco.9mak-0x13.workers.dev
+      SITE: https://oneco.pet
     steps:
       - name: 公開サイトの data.json の日付を見る
         id: probe

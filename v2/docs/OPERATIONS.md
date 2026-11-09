@@ -2,7 +2,7 @@
 
 毎日 JST 0:05 に収集サーバー（手元の Mac の launchd。控えは VPS）が全自治体のページを読み、静的サイトを作り直して Cloudflare Workers（静的アセット）に置く。人がやるのは「通知が来た日に見る」「新しい自治体の通知（週 1 回・増減があるときだけ）が来たらセッションで台帳への追加を頼む」「撤去依頼が来たら台帳を 1 行直す」の 3 つ。
 
-公開 URL は `https://oneco.9mak-0x13.workers.dev`（`site/config.json` の `base_url`。独自ドメインを付けたらここも変える）。
+公開 URL は `https://oneco.pet`（`site/config.json` の `base_url`。2026-11-08 に独自ドメインへ切り替え、W006 T073）。旧 URL `https://oneco.9mak-0x13.workers.dev` も同じ中身を配信し続ける（自治体への写真許諾の依頼メール〔T630〕に書いたので止めない・転送もしない。canonical は oneco.pet を指す）。
 
 ## 1. 初期設定（1 回だけ）
 
@@ -13,7 +13,7 @@
 1. 認証: 手元の Mac なら `npx wrangler login`（ブラウザで許可。OAuth が `~/Library/Preferences/.wrangler/config/default.toml` に保存され、以後 `CLOUDFLARE_API_TOKEN` は不要）。別マシンなら My Profile → API Tokens → Create Token → Custom token → `Account / Workers Scripts / Edit` で作り `CLOUDFLARE_API_TOKEN` に入れる（作った直後の 1 回しか表示されない）
 2. **Account ID**: `npx wrangler whoami` の表に出る 32 桁。`CLOUDFLARE_ACCOUNT_ID`
 3. 初回 deploy: `npx wrangler deploy --config v2/ops/wrangler.jsonc`。URL は `https://oneco.<サブドメイン>.workers.dev`（`oneco.pages.dev` は他人が使っていて取れない）
-4. 独自ドメインを付けるなら ダッシュボード → Workers & Pages → oneco → Settings → Domains & Routes → Add → Custom domain（ゾーンが Cloudflare にあれば DNS は自動）
+4. 独自ドメインは `ops/wrangler.jsonc` の `routes` に `{"pattern": "oneco.pet", "custom_domain": true}` で書いてあり、deploy のたびに付け直される（ゾーンが同じアカウントの Cloudflare にあり Active であることが前提。DNS と証明書は Cloudflare が自動で作る）。`"workers_dev": true` は消さない（routes があると既定値が false になり、旧 URL が止まる）。API トークンで deploy する別マシンでは、トークンに `Zone / Workers Routes / Edit` と `Zone / Zone / Read` も要る
 5. `ONECO_PAGES_PROJECT` は Worker 名（`oneco`）。collect.sh はこの名前で `wrangler deploy` する
 
 ### 1-2. 収集サーバー
@@ -132,9 +132,10 @@ AI は案を書くだけ。案は `collector propose` が draft PR にし、**�
 
 | 項目 | やること | 反映先 |
 | --- | --- | --- |
-| 独自ドメイン | ドメインを取り、Cloudflare にゾーンを作って Workers & Pages → oneco → Settings → Domains & Routes → Custom domain で付ける | `site/config.json` の `base_url` を新ドメインに変える（canonical・OG・sitemap が変わる） |
-| アフィリエイト | Amazon アソシエイト等に申し込み、承認後にリンクを作る | `site/config.json` の `affiliate` に `{"title","url","note"}` を入れる。空のあいだは「迎える準備」枠ごと出ない |
+| 独自ドメイン | 済み（2026-11-08）。oneco.pet を Cloudflare Registrar で取得し（9mak.0x13 のアカウント、1 年・自動更新、期限 2027-11-08）、Worker oneco の Domains に Custom Domain として付けた。登録者メールの確認リンク（ICANN）を取得から 15 日以内に踏まないとドメインが止まる | `site/config.json` の `base_url`、`ops/wrangler.jsonc` の `routes`、`v2-deadman.yml` の `SITE`（W006 T073） |
+| アフィリエイト | Amazon アソシエイト等に申し込み、承認後にリンクを作る | `site/config.json` の `affiliate` に `{"title","url","note","species","beacon"}` を入れる（species は dog か cat かその一覧で、省略するとどの子にも出す。beacon は A8 の広告コードの計測用画像の URL で省略可）。その子に出す広告が無いページには枠も PR 表示も出ない。A8 は掲載後に管理画面の「広告掲載URL管理」から掲載 URL を提出する |
 | 死活監視 | 不要（GitHub Actions の `v2-deadman.yml` が公開サイトの日付を毎朝見る。1-4） | Actions で v2 deadman が緑であること |
+| 検索と計測 | 済み（2026-11-08）。Search Console にドメインプロパティ oneco.pet（9mak.0x13。所有確認は Cloudflare DNS の TXT `google-site-verification=…`。消すと確認が外れる）を作り、`https://oneco.pet/sitemap.xml` を送信。GA4 は旧サイトのプロパティ oneco（properties/541319394、測定 ID G-KEE66C1E8B）を使い回し、ストリーム oneco-web の URL を oneco.pet に変えた | `site/config.json` の `ga4_id`（全ページの head に gtag.js、about に「アクセス解析」の節。空にすると両方消える）。旧 URL（workers.dev）でも同じタグが動き、Cookie はホストごとに別なので両方を見た人は 2 人に数えられる。GA4 のレポートは「ホスト名」で oneco.pet に絞って見る（旧 URL の分は自治体の担当者の閲覧が多い） |
 | 本番クローンの登録 | ターミナルで `bash v2/ops/macos/install.sh`（1-2a。`~/oneco-collect` を作って launchd の登録を入れ替える）→ `launchctl kickstart -k gui/$(id -u)/com.oneco.collect` で 1 回動かす | `~/oneco-collect/v2/logs/collect-<日付>.log` が毎日できること、サイトの日付が更新されること |
 
 ## 2. 毎日自動で起きること
@@ -296,7 +297,8 @@ cd v2   # 本番クローンなら ~/oneco-collect/v2
 | GitHub Actions（死活監視 1 日 1 回・1 分未満。Public repo は無料） | 0 円 |
 | Discord webhook | 0 円 |
 | AI 修復（agy） | API 課金なし（Antigravity の既存契約の枠内） |
-| 合計（Mac で動かす場合） | 0 円（既存契約の範囲） |
+| 独自ドメイン oneco.pet（Cloudflare Registrar。原価販売で更新も同額） | 年 $22.22（$20.20 + 消費税 10%。2026-11-08 の初回は約 3,520 円）。月あたり約 290 円 |
+| 合計（Mac で動かす場合） | 月約 290 円（ドメイン代だけ。ほかは既存契約の範囲） |
 
 ## 台帳の電話・所在地の突合: `ops/verify_registry.py`（W006 T616）
 

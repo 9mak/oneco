@@ -13,16 +13,20 @@
 # 迷子（元の飼い主探し）セクションは通常0件、譲渡候補セクションが本体。
 rows: "p:-soup-contains('名前：')"
 row_until: "p.imageleft, p.imagecenter, h2, h3"
-image: {selector: "p.imageleft img@src", scope: prev_siblings, stop_at: row}   # 2026-10-04: 行も写真も p なので前の行まで遡る
+# 2026-11-07 W006 監査: 迷子の節（h2「元の飼主さんを探しています（迷子犬猫情報）」。名前の欄が無く 1 頭ぶんが「保護日時：… 管理番号：…」の 1 つの p）は
+#   この slug の行（名前：の p）に当たらず載っていなかった（迷子の柴犬 26040）。節を分けた pref_iwate_kennan-2（kind = stray）で読む。この slug は譲渡の節だけ
+#   （元の slug を譲渡側に残し、譲渡の子の ID を引き継ぐ）。迷子の節が行に当たらないため、最初の子（三郎・二郎）の写真の遡りが迷子の節まで届き、
+#   迷子の柴犬の写真が付いていた。stop_at に h2 を足して、譲渡の節の見出しの手前で止める。
+image: {selector: "p.imageleft img@src", scope: prev_siblings, stop_at: "row, h2"}   # 2026-10-04: 行も写真も p なので前の行まで遡る
 fields:
   name: {label: "名前"}
   species: {label: "動物種"}
-  breed: {label: "種類"}
+  breed: {label: ["種類", "雑種"]}   # 公式が「雑種：雑種」と項目名を取り違えて書く子がいる（レオン 26030。2026-11-07）
   sex: {label: "性別"}
   color: {label: "毛色"}
   size: {label: "大きさ"}
   age: {label: "推定年齢"}
-  note: {label: "特徴"}
+  note: {regex: "特徴[：；:;]\\s*(?![^\\s\\d:：]{1,8}[:：])(\\S+)"}   # 「特徴；人懐こい」とセミコロンで書く子がいる（レオン）。空欄の次の項目名は取らない
   management_no: {label: "管理番号"}
 species:
   from: field

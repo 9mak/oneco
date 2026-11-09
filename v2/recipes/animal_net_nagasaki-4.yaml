@@ -3,7 +3,19 @@
 # WordPress。一覧 div.list-area 配下の /animal/no-xxx リンクを個体ページ方式（follow_all）で1頭=1ページとして辿る。
 # 詳細ページは <li><p>ラベル</p><p>値</p></li> 構造で dt/dd を使わないため label 抽出が効かず、正規表現で本文から拾う。
 # 収容日に相当するのは「保護した日時」（"6/15～" 等、日付として不完全な表記もある）。場所は「保護した場所」。
-# 犬猫の別は明記が無い。「模様・柄」が三毛/サビ/キジ/トラ（猫固有の柄）なら猫、それ以外は犬とみなす（既定値）。
+# [旧・2026-11-07 廃止。下の注] 犬猫の別は明記が無い。「模様・柄」が三毛/サビ/キジ/トラ（猫固有の柄）なら猫、それ以外は犬とみなす（既定値）。
+# 2026-11-07 W006 監査: 犬猫の別は詳細ページのどこにも書かれていない（品種・柄・備考から推すしかない）のに、「柄が三毛・サビ・キジ・トラなら猫、
+#   それ以外は犬」と既定値を犬に置いていたため、猫を犬と表示していた（迷子 20106 は品種「日本ねこ」、20155・20108 も一覧では猫。保護 20143 も猫）。
+#   サイト自身の一覧に絞り込み（?animal-type=dog|cat|others。サイトの「種別」ボタンの GET パラメータ）があり、入口を 3 本に分けると
+#   一覧の URL が種別の根拠になる（species.from: parent_url。詳細ページは辿ってきた一覧の URL を持つ）。既定値の犬は置かない。
+#   0 件の一覧は「投稿がありません」だけ（3 本とも 0 件の日だけ 0 頭。1 本でも読めなければ failed）。ID は写真から決まるので変わらない。
+urls:
+  - https://animal-net.pref.nagasaki.jp/hogo/?animal-type=dog
+  - https://animal-net.pref.nagasaki.jp/hogo/?animal-type=cat
+  - https://animal-net.pref.nagasaki.jp/hogo/?animal-type=others
+species:
+  from: parent_url
+  map: {"animal-type=dog": dog, "animal-type=cat": cat, "animal-type=others": other}
 steps:
   - follow_all: "div.list-area a[href*='/animal/no-']@href"
 rows: "body"
@@ -18,8 +30,4 @@ fields:
   shelter_date: {regex: "保護した日時\\s*(.+?)(?=保護した場所|問い合わせ先)"}
   location: {regex: "保護した場所\\s*(.+?)(?=問い合わせ先)"}
   note: {regex: "備考\\s*(?!動画|動物を譲りたい方)(.+?)(?=\\s*(?:動画|動物を譲りたい方))"}   # 備考の本文を次の見出しの手前まで（備考が空の子は「動物を譲りたい方」を拾わない）
-  species: {regex: "模様・柄\\s*(\\S+)", default: "-"}
-species:
-  from: field
-  map: {"三毛": cat, "サビ": cat, "キジ": cat, "トラ": cat, "": dog}
-empty_text: ["投稿がありません"]
+empty_text_entries: ["投稿がありません"]   # 3 本の一覧の全部が空のときだけ 0 頭（犬の一覧だけ空の日は子がいる）
