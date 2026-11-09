@@ -1,32 +1,25 @@
-# 寝屋川市 保健所収容動物。h2「保健所収容動物情報」の下の <div class="wysiwyg"> に、0 頭の日は
-# <p>現在保健所に収容中の動物はいません。</p> だけが出る（2026-10-05 確認）。
-# 動物が載った日の作りは未確認（T519。Wayback の保存は 2023-03 の 1 つだけで、値の入っていない雛形だった）。2023-03 の雛形は
-# <div class="wysiwyg"> の中に <table><caption>収容動物情報：</caption> の 1 列表（th: 公開期限・収容場所・種類・毛色・体格・性別・推定年齢・首輪・その他 / td: 値）が
-# 1 つ入っていた（2026-10-07 T519v）。値の入る日はこの表（と、あれば同じ div の写真）が動物になると見て、
-# 収容場所・公開期限などの語がある本文ブロック（div.wysiwyg）だけを 1 頭とする。ページ先頭の案内（「行方不明になった犬及び猫を捜している飼い主の方に向けて」）や
-# 「逃げてしまった方へ」の div.wysiwyg はこれらの語を持たないので落ちる。
-# 値が入った日に写真も管理番号も収容日も無いと動物として通らず「読めなかった」で通知に出る（誤掲載しない側に倒す。公開期限は収容日ではないので収容日には取らない）。
-# 種別は台帳が mixed で作りも未確認なので決めない（種別なしで載る。記述の項目が 2 つ以上取れる行だけ）。
+# proposal: run の日付 2026-11-09・元の失敗理由 0 頭で empty_text も無い（行 0・捨てた 0）・取れた頭数 1・採用条件は次の行（人が差分を見て recipes/ へ反映する。今日の HTML は <slug>.today.html）
+# 採用条件: 合格 a 必須項目・b 重複・c 行数・v1 見出し語・v2 日付・v3 現行の指定を保つ / 飛ばした d 回帰（保存 HTML なし）・v4 旧新比較（旧レシピが読めた保存ページが無い） / 回帰未確認 / 半自動の対象外（旧新の比較ができていない。draft のまま人が見る）
+# agy note: 実際の掲載が表ではなくpタグによる箇条書き形式（「引取り又は収容の場所/日」等）だったため、row_filterの判定語を追加しました。各項目をpタグ内のテキストから正規表現で取得するようにし、年なしの日付にも対応させました。また実態のないempty_selectorを整理しました。
+# 寝屋川市 保健所収容動物。h2「保健所収容動物情報」下の div.wysiwyg を 1 頭とする。
+# 収容時は p タグで「引取り又は収容の場所/日」等の項目と写真が並び、0 頭時は「現在保健所に収容中の動物はいません」が出る。
 rows: "div.wysiwyg"
 row_filter:
-  text_has_any: ["収容日", "保護日", "収容場所", "保護場所", "管理番号", "収容年月日", "公開期限"]
+  text_has_any: ["引取り又は収容", "収容の場所", "収容の日", "収容場所", "保護場所", "収容日", "保護日", "公開期限"]
 fields:
-  management_no: {label: "管理番号"}
-  shelter_date: {label: ["収容日時", "収容日", "収容年月日"], regex: "((?:令和|平成)?\\s*\\d+年\\s*\\d+月\\s*\\d+日)"}
-  location: {label: ["収容場所", "保護場所"]}
-  breed: {label: ["種類", "犬種"]}
-  species: {label: ["種類", "犬種"]}
-  color: {label: "毛色"}
-  sex: {label: "性別"}
-  age: {label: ["推定年齢", "年齢"]}
-  size: {label: "体格"}
-  note: {label: ["その他", "特徴"]}
+  management_no: {selector: "p:-soup-contains('番号')", regex: "番号[:：]\\s*(\\S+)"}
+  shelter_date: {regex: "(?:収容の日|収容日|収容年月日)[:：]\\s*((?:(?:令和|平成)?\\s*\\d+年\\s*)?\\d+月\\d+日)"}
+  location: {selector: "p:-soup-contains('場所')", regex: "場所[:：]\\s*(.+)"}
+  breed: {selector: "p:-soup-contains('種類')", regex: "種類[:：]\\s*(.+)"}
+  species: {selector: "p:-soup-contains('種類')", regex: "種類[:：]\\s*(.+)"}
+  color: {selector: "p:-soup-contains('特徴')", regex: "(?:色等の特徴|毛色|色|特徴)[:：]\\s*(.+)"}
+  sex: {selector: "p:-soup-contains('性別')", regex: "性別[:：]\\s*(.+)"}
+  size: {selector: "p:-soup-contains('体格')", regex: "体格[:：]\\s*(.+)"}
+  age: {selector: "p:-soup-contains('年齢')", regex: "年齢[:：]\\s*(.+)"}
+  note: {selector: "p:-soup-contains('備考')", regex: "備考[:：]\\s*(.+)"}
 species:
   from: field
   map: {"猫": cat, "ねこ": cat, "ネコ": cat, "犬": dog, "いぬ": dog, "イヌ": dog}
   infer: true
 empty_text:
   - "現在保健所に収容中の動物はいません"
-# 値の入っていない雛形の表が出る日（Wayback 2023-03。文言は無く、表の td の p がすべて空）も 0 頭。表の caption「収容動物情報」の表の td の p だけを見る
-# （値が入った日は p に文字があるので当たらない。他の表の td は見ない）。
-empty_selector: "div.wysiwyg table:has(caption:-soup-contains('収容動物情報')) td p"
