@@ -387,7 +387,7 @@ def check_recipe_change(old: dict | None, new: dict) -> list[str]:
             for w in _as_list(words)
             if w not in nw
         ]
-    for key in ("text_has_any", "field_has_any", "field_required", "min_text_length"):
+    for key in ("text_has_any", "field_has_any", "field_required", "field_not_past", "min_text_length"):
         if orf.get(key) and not nrf.get(key):
             out.append(f"v3 行の絞り込み（row_filter.{key}）を消している")
     for word in _as_list(orf.get("text_has_any")):

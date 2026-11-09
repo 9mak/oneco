@@ -549,3 +549,9 @@ def test_dumped_recipe_keeps_the_leading_comment(tmp_path):
 
 def test_module_exposes_the_check_names():
     assert hasattr(ai_repair, "HEADING_WORDS") and "収容場所" in ai_repair.HEADING_WORDS
+
+
+def test_v3_removing_field_not_past_is_rejected():
+    # 公開ゲート F-02（2026-11-08）: 相模原 -2 の収容期限の指定を AI が消すと、期限切れの犬が載る
+    old = {**OLD, "row_filter": {**(OLD.get("row_filter") or {}), "field_not_past": ["deadline"]}}
+    assert any("field_not_past" in why for why in check_recipe_change(old, _new()))
