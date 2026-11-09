@@ -1,6 +1,6 @@
 # 大阪市（譲渡犬）https://www.city.osaka.lg.jp/kenko/page/0000206024.html
 # 構造は city_osaka-4（譲渡猫）と同一テンプレート。詳細は city_osaka-4.yaml のコメント参照。
-# 識別番号・仮名は h3（rows の外の兄弟要素）にしかないため management_no/name は取得不可。
+# 識別番号・仮名は h3（rows の外の直前の兄弟要素）にあるので from: heading で読む（2026-11-07 監査 C）。
 # 2026-09-29 時点は 0 頭。0 頭時は画像がプレースホルダ joutonasi.JPG（alt=「現在、譲渡対象動物はいません」）になるが、
 # alt は soup.get_text() に含まれず empty_text で照合できない。代わりに 0 頭時だけ値が空になる
 # 見出し「識別番号 / 」直後の並び（h3「識別番号 / 」+ 属性 p の先頭「・撮影日／」）を empty_text にする
@@ -12,11 +12,15 @@ image:
   selector: "img@src"
   exclude: ["joutonasi", "shuyounasi"]
 fields:
+  # 識別番号と仮名は rows の外の直前の h3（「識別番号 /8-3-12（仮名：ジャックくん）」）。city_osaka-4 と同じに from: heading で読む（W006 監査 C。
+  # 以前は取れないと書いていたが、from: heading で取れる。ID は写真由来なので変わらない）
+  management_no: {from: heading, selector: "h3", regex: "識別番号\\s*/\\s*(\\S+?)（"}
+  name: {from: heading, selector: "h3", regex: "仮名：(.+?)）"}
   breed: {regex: "種類／(\\S+)"}
   color: {regex: "毛色／(\\S+)"}
   sex: {regex: "性別／(\\S+)"}
   age: {regex: "年齢／(\\S+)"}
-  size: {regex: "体格／(\\S+)"}
+  size: {regex: "体格／(.+?)(?=\\s+・|$)"}   # 「小（体重 約6.4kg）」を空白で切らない
   note: {regex: "性格／(.+?)(?=\\s*・その他|$)"}
 empty_text:
   - "識別番号 / ・撮影日／"

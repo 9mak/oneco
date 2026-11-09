@@ -1,8 +1,10 @@
 // oneco v2 の配信設定（Cloudflare Workers の静的アセット配信）。
 // 2026-09-30 時点、Cloudflare Pages の新規プロジェクトは Workers（static assets）に統合されているので、
 // `wrangler pages deploy` ではなく `wrangler deploy --config v2/ops/wrangler.jsonc` で site/dist を丸ごと置く。
-// スクリプトは無く、assets だけの Worker。URL は https://oneco.<アカウントのサブドメイン>.workers.dev と、
-// ダッシュボード（Workers & Pages → oneco → Settings → Domains & Routes）で付ける独自ドメイン。
+// スクリプトは無く、assets だけの Worker。URL は独自ドメイン https://oneco.pet（routes の custom_domain。W006 T073）と、
+// 旧 URL https://oneco.<アカウントのサブドメイン>.workers.dev の 2 つ。独自ドメインは deploy のたびにこの設定どおり付け直される。
+// workers_dev は消さない: 自治体への写真許諾の依頼メール（T630）に旧 URL を書いている。routes があると既定値が false になり、
+// 消すと次の deploy で旧 URL が黙って止まる。canonical・OG・sitemap は site/config.json の base_url（oneco.pet）を指すので、旧 URL は転送しない。
 {
   "$schema": "https://developers.cloudflare.com/schemas/wrangler.json",
   "name": "oneco",
@@ -12,5 +14,8 @@
     "not_found_handling": "404-page",
     "html_handling": "auto-trailing-slash"
   },
+  "routes": [
+    { "pattern": "oneco.pet", "custom_domain": true }
+  ],
   "workers_dev": true
 }

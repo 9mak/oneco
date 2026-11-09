@@ -258,9 +258,28 @@ class Fetcher:
         self.cache[key] = page
         return page
 
-    def _get_with_retry(self, url: str) -> tuple[httpx.Response, int]:
+    def post(self, url: str, data: dict[str, str | list[str]], referer: str | None = None,
+             encoding: str | None = None) -> Page:
+        """form の POST（steps の submit_form 専用。W006 鹿児島県）。cookie は get と同じ client で共有する
+        （入口の GET で貰った anti-forgery の cookie を返すため）。robots.txt・間隔・取り直し・200 応答の検証は get と同じ。
+        結果は状態（セッション・ページ送り）に依るので cache しない。"""
+        if not self._allowed(url):
+            raise FetchError(f"robots.txt により拒否: {url}", ErrorInfo("robots", host=host_of(url), url=url))
+        r, attempt = self._get_with_retry(url, data=data, referer=referer)
+        if r.status_code >= 400:
+            raise FetchError(f"HTTP {r.status_code}: {url}",
+                             ErrorInfo("http", status=r.status_code, host=host_of(url), url=url, attempt=attempt))
+        ctype = r.headers.get("content-type", "")
+        html = None if "pdf" in ctype else decode(r.content, r.charset_encoding, encoding)
+        page = Page(url, str(r.url), r.status_code, r.content, html, ctype)
+        _raise_if_unreadable(page)
+        return page
+
+    def _get_with_retry(self, url: str, data: dict[str, str | list[str]] | None = None,
+                        referer: str | None = None) -> tuple[httpx.Response, int]:
         """RETRY_STATUSES と RETRY_EXCEPTIONS の失敗を、上限付き指数 backoff（Full Jitter）か Retry-After で取り直す。
         試行は MAX_ATTEMPTS 回まで、待ちの合計は RETRY_BUDGET_SECONDS まで。
+        data があれば form の POST（post() 専用。検索の送信で副作用が無いので取り直してよい）。
         返すのは (応答, 試行回数)。再試行しない 4xx・再試行を尽くした最後の応答もそのまま返す（呼び出し側が HTTP エラーにする）。"""
         waited = 0.0
         attempt = 0
@@ -270,7 +289,10 @@ class Fetcher:
             attempt += 1
             self._throttle(url)
             try:
-                r = resp = self.client.get(url)
+                if data is None:
+                    r = resp = self.client.get(url)
+                else:
+                    r = resp = self.client.post(url, data=data, headers={"Referer": referer} if referer else None)
                 failure = None
                 reason = f"HTTP {r.status_code}"
                 retry_after = None
@@ -366,6 +388,7 @@ class FakeFetcher(Fetcher):
         self.captures = captures or {}
         self.status = status or {}      # URL → HTTP ステータス（400 以上なら本物の Fetcher と同じ「HTTP 404: URL」で失敗する）
         self.render_calls: list[tuple[str, str | None]] = []
+        self.post_calls: list[tuple[str, dict[str, str | list[str]]]] = []
 
     def get(self, url: str, encoding: str | None = None) -> Page:
         if self.status.get(url, 200) >= 400:
@@ -377,6 +400,19 @@ class FakeFetcher(Fetcher):
         if isinstance(body, bytes):
             is_pdf = body[:5] == b"%PDF-"
             return Page(url, final, 200, body, None if is_pdf else decode(body, None, encoding), "application/pdf" if is_pdf else "text/html")
+        return Page(url, final, 200, body.encode("utf-8"), body, "text/html")
+
+    def post(self, url: str, data: dict[str, str | list[str]], referer: str | None = None,
+             encoding: str | None = None) -> Page:
+        """n 回目の POST には pages["<url>#post<n>"] を返す（last_ok の保存・再生と同じ並び順の約束。RecordingFetcher）。"""
+        self.post_calls.append((url, {k: (list(v) if isinstance(v, list) else v) for k, v in data.items()}))
+        key = f"{url}#post{len(self.post_calls)}"
+        if key not in self.pages:
+            raise FetchError(f"FakeFetcher に無い POST: {key}", ErrorInfo("connect", host=host_of(url), url=url))
+        body = self.pages[key]
+        final = self.redirects.get(key, url)
+        if isinstance(body, bytes):
+            return Page(url, final, 200, body, decode(body, None, encoding), "text/html")
         return Page(url, final, 200, body.encode("utf-8"), body, "text/html")
 
     def render(self, url: str, wait_ms: int = 0, capture: str | None = None, wait_for: str | None = None) -> Page:

@@ -6,8 +6,10 @@ import hashlib
 import re
 import unicodedata
 from dataclasses import dataclass, field
+from datetime import date, datetime
 from typing import Any
 from urllib.parse import urljoin
+from zoneinfo import ZoneInfo
 
 from bs4 import Tag
 
@@ -33,7 +35,7 @@ _SPECIES_DEFAULT_MAP = {"犬": "dog", "いぬ": "dog", "イヌ": "dog", "猫": "
 # 高知「茶サビ」・甲斐犬の「虎毛」）、大きさ（小・中・大、小型・中型・大型は猫にも使う。周南 8-3-99 は猫で「小」）
 _INFER_DOG = (
     "犬", "いぬ", "イヌ",
-    "柴", "秋田", "紀州", "狆", "チワワ", "チワプー", "ダックス", "プードル", "マルプー", "ポメ", "シーズー", "シー・ズー",
+    "柴", "シバ", "秋田", "紀州", "狆", "チワワ", "チワプー", "ダックス", "プードル", "マルプー", "ポメ", "シーズー", "シー・ズー",
     "マルチーズ", "ヨークシャー", "ヨーキー", "パピヨン", "ビーグル", "コーギー", "ラブラド", "レトリ", "シェパード",
     "ハスキー", "コリー", "シェルティ", "シェットランド", "ポインター", "セッター", "テリア", "ハウンド", "ブルドッグ",
     "ブルドック", "パグ", "シュナウザー", "ドーベルマン", "ペキニーズ", "キャバリア", "スピッツ", "ピンシャー",
@@ -84,6 +86,8 @@ def resolve_species(source: Source, recipe: Recipe, row: Row, fields: dict[str, 
         text = nearest_heading(row.origin, spec.get("selector", "h2, h3, h4"))   # まとめた行（row_until）は元の始まりの位置から
     elif src == "url":
         text = row.doc.url          # dog.pdf / cat.pdf のように文書の URL で決まるとき
+    elif src == "parent_url":
+        text = row.doc.parent_url   # 辿ってきた元の一覧の URL（?animal-type=cat）で決まるとき。サイト自身の絞り込みが種別の根拠（長崎犬猫ネット）
     else:
         text = row.text()
     if text:
@@ -281,7 +285,7 @@ def _all_excluded_evidence(recipe: Recipe, docs: list[Doc]) -> tuple[str | None,
 @dataclass
 class EmptyHit:
     """0 頭の根拠が 1 つ成立したこと。build の 0 頭判定と ops/audit_empty.py（子のいる日に成立していないかの監査）が同じ関数を通る。"""
-    kind: str            # empty_selector / empty_absent / empty_text / empty_text_all / empty_text_each
+    kind: str            # empty_selector / empty_absent / empty_text / empty_text_all / empty_text_each / empty_text_entries
     detail: str          # 当たった文言（empty_text_all は " + " でつないだ全文）かセレクタ
     urls: list[str]      # 当たった文書の URL
     count: int           # 出現回数（要素なら該当要素の数）
@@ -323,6 +327,11 @@ def empty_hits(recipe: Recipe, pool: list[Doc], docs: list[Doc] | None = None) -
             urls = list(dict.fromkeys(u for t in recipe.empty_text_all for u in where(t)))
             hits.append(EmptyHit("empty_text_all", " + ".join(recipe.empty_text_all), urls,
                                  sum(whole.count(t) for t in recipe.empty_text_all)))
+    if recipe.empty_text_entries:
+        # 入口の文書（辿ってきた元が無い文書）の全部が、自分の 0 頭の文を出しているか。1 本でも子の一覧（文を出さない）なら成立しない
+        entries = [d for d in pool if d.parent_url is None]
+        if entries and all(d.soup is not None and any(t in d.text() for t in recipe.empty_text_entries) for d in entries):
+            hits.append(EmptyHit("empty_text_entries", " | ".join(recipe.empty_text_entries), [d.url for d in entries], len(entries)))
     if recipe.empty_text_each and docs:
         # 文書ごとに、自分の 0 頭の文（本文か img の alt）を出しているか。1 文書でも出していなければ（子がいる・作りが変わった）成立しない
         def own(d: Doc) -> list[str]:
@@ -336,6 +345,26 @@ def empty_hits(recipe: Recipe, pool: list[Doc], docs: list[Doc] | None = None) -
     return hits
 
 
+_JP_DATE = re.compile(r"(令和|平成|R|H)?\s*(\d{1,4})\s*[年./\-]\s*(\d{1,2})\s*[月./\-]\s*(\d{1,2})")
+_ERA_OFFSET = {"令和": 2018, "R": 2018, "平成": 1988, "H": 1988}
+
+
+def _today() -> date:
+    return datetime.now(ZoneInfo("Asia/Tokyo")).date()
+
+
+def _parse_jp_date(s: str | None) -> date | None:
+    """和暦・西暦の年月日。年のない日付や読めない値は None（row_filter.field_not_past が「期限が読めない行」として捨てる）。"""
+    m = _JP_DATE.search(unicodedata.normalize("NFKC", s or ""))
+    if not m:
+        return None
+    era, y, mo, d = m.group(1), int(m.group(2)), int(m.group(3)), int(m.group(4))
+    try:
+        return date(y + _ERA_OFFSET[era] if era else y, mo, d)
+    except (ValueError, KeyError):
+        return None
+
+
 def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | None = None) -> Result:
     """docs: rows を適用する文書。visited: 入口から辿った全文書（empty_text の照合にも使う）。"""
     res = Result(docs=len(docs))
@@ -347,7 +376,15 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
     # row_filter.field_has_any: {name: ["探しています"]} — field_lacks の逆。取った項目にこの語が 1 つも無い行は捨てる
     # （同じ一覧から「探しています」だけを 4 区分目 lost の別 slug で拾う。旭川市あにまある）
     field_has_any: dict[str, list[str]] = (recipe.row_filter or {}).get("field_has_any") or {}
+    # row_filter.field_required: {name: ["市", "町"]} — 取った項目にこの語が 1 つも無い行は動物にしない。field_has_any と違い
+    # 「除外」に数えない: 全行がこれで捨てられた日は 0 頭と確定せず failed になる（項目の書き方が変わって読めなくなった日を 0 頭と読まない）
+    field_required: dict[str, list[str]] = (recipe.row_filter or {}).get("field_required") or {}
+    # row_filter.field_not_past: [name] — 取った項目（収容期限など）の日付が今日より前の行、日付が読めない行は捨てる。
+    # 期限を過ぎた子は収容中ではない（返還・処分後も掲載が残るページ用。相模原市）。読めない行も載せない（fail-closed）
+    not_past: list[str] = (recipe.row_filter or {}).get("field_not_past") or []
+    today = _today() if not_past else None
     excluded = 0
+    expired = 0   # 期限切れ・期限が読めない行（全行がこれだけの日は 0 頭の証拠にしない）
     for doc in docs:
         rows = extract_rows(recipe, doc)
         res.rows += len(rows)
@@ -365,6 +402,17 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
                 res.dropped.append(Dropped(f"対象語なし（{miss}）", row.text()[:80]))
                 excluded += 1
                 continue
+            unread = next((k for k, ws in field_required.items() if not any(w in (f.get(k) or "") for w in ws)), None)
+            if unread:
+                res.dropped.append(Dropped(f"必須項目が読めない（{unread}）", row.text()[:80]))
+                continue
+            if today is not None:
+                bad = next((k for k in not_past if (d := _parse_jp_date(f.get(k))) is None or d < today), None)
+                if bad:
+                    res.dropped.append(Dropped(f"期限切れか期限が読めない（{bad}: {f.get(bad)}）", row.text()[:80]))
+                    excluded += 1
+                    expired += 1
+                    continue
             img_abs, img_raw = image_url(recipe, row, f)   # f: image.match_field（行の管理番号を含む写真を文書全体から探す）用
             dv = f.pop("detail", None)   # 個体ページの URL（相対可）。写真の無い子でも個体ページがあれば動物とみなす
             has_key = looks_like_mgmt(f.get("management_no")) or looks_like_date(f.get("shelter_date")) or bool(dv)
@@ -428,6 +476,8 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
         # 載っている子が全部「除外語」の子（飼い主が探している告知だけ等）。ただし構造が変わって全行が除外語に
         # 当たる日と区別するため、見出しの項目名一致かコンテナ存在の肯定的な証拠が要る（W006 T605）
         evidence, reason = _all_excluded_evidence(recipe, docs)
+        if expired:
+            evidence, reason = None, "期限を過ぎた行・期限が読めない行しか無い（収容中の子がいないとは言い切れない）"
         if evidence:
             res.empty_confirmed = True
             res.empty_evidence = evidence

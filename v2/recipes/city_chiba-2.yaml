@@ -17,7 +17,7 @@ fields:
   shelter_date: {label: "収容日"}
   location: {selector: "p:-soup-contains('収容場所')", regex: "収容場所[:：]\\s*(?=\\S)(?![^\\s\\d:：]{1,8}[:：])(.+?)(?=\\s+(?![A-Za-zＡ-Ｚａ-ｚ])[^\\s\\d:：]{1,8}[:：]|$)"}
   breed: {selector: "p:-soup-contains('種類')", regex: "種類[:：]\\s*(?=\\S)(?![^\\s\\d:：]{1,8}[:：])(.+?)(?=\\s+(?![A-Za-zＡ-Ｚａ-ｚ])[^\\s\\d:：]{1,8}[:：]|$)"}
-  color: {selector: "p:-soup-contains('毛色')", regex: "毛色[:：]\\s*(?=\\S)(?![^\\s\\d:：]{1,8}[:：])(.+?)(?=\\s+(?![A-Za-zＡ-Ｚａ-ｚ])[^\\s\\d:：]{1,8}[:：]|$)"}
+  color: {selector: "p:-soup-contains('収容場所')", regex: "(?<![^\\s])(?:毛色|色)[:：]\\s*(?=\\S)(?![^\\s\\d:：]{1,8}[:：])(.+?)(?=\\s+(?![A-Za-zＡ-Ｚａ-ｚ])[^\\s\\d:：]{1,8}[:：]|$)"}
   sex: {label: "性別"}
   size: {label: "体格"}
   note: {selector: "p:-soup-contains('特徴')", regex: "特徴[:：]\\s*(.+)"}

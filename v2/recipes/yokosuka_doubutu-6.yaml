@@ -8,7 +8,7 @@ fields:
   management_no: {label: "整理番号"}
   breed: {label: "種類"}
   sex: {label: "性別"}
-  age: {label: "特徴", regex: "(\\d+歳(?:\\d+(?:か月|ヶ月|ヵ月|カ月|ケ月))?)"}
+  age: {label: "特徴", regex: "(\\d+歳(?:\\d+(?:か月|ヶ月|ヵ月|カ月|ケ月))?|(?<=推定)\\d+(?:か月|ヶ月|ヵ月|カ月|ケ月)半?齢?)"}   # 「推定1か月半齢」も（2026-11-07）
   note: {label: "特徴"}
   location: {label: "収容場所", default: "横須賀市動物愛護センター"}
 species:

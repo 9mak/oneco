@@ -1,7 +1,23 @@
 {
   "site_name": "oneco",
-  "base_url": "https://oneco.9mak-0x13.workers.dev",
+  "base_url": "https://oneco.pet",
   "issues_url": "https://github.com/9mak/oneco/issues",
   "contact_email": "9mak.org@gmail.com",
-  "affiliate": []
+  "ga4_id": "G-KEE66C1E8B",
+  "affiliate": [
+    {
+      "title": "プレミアムドッグフード『モグワン』",
+      "url": "https://px.a8.net/svt/ejp?a8mat=4BGFJE+1OQA0Y+3J8+1BP8ZM",
+      "note": "ドッグフード",
+      "species": "dog",
+      "beacon": "https://www17.a8.net/0.gif?a8mat=4BGFJE+1OQA0Y+3J8+1BP8ZM"
+    },
+    {
+      "title": "ONEKOSAMA OINUSAMA",
+      "url": "https://px.a8.net/svt/ejp?a8mat=4BGFJE+1R40G2+3FF2+HV7V6",
+      "note": "犬・猫のために作ったペット用品ブランド",
+      "species": ["dog", "cat"],
+      "beacon": "https://www10.a8.net/0.gif?a8mat=4BGFJE+1R40G2+3FF2+HV7V6"
+    }
+  ]
 }

@@ -5,7 +5,7 @@ row_filter:
   text_has_any: ["収容年月日", "保護場所"]
 image: "img@src"
 fields:
-  management_no: {selector: "img", attr: "src", regex: "([A-Za-z]{1,3}\\d{6}-\\d+)"}
+  management_no: {from: heading, selector: "h2", regex: "([A-Za-z]{1,3}\\d{6}-\\d+)"}   # 2026-11-07: 見出しから読む。市が写真のファイル名を打ち間違える（見出し LC081104-01 の 1 枚目が lc081104-03_1.jpeg）ので、写真の名前からは取らない（写真・ID は変えない）
   shelter_date: {label: "収容年月日"}
   location: {label: "保護場所"}
   breed: {label: "種類"}
