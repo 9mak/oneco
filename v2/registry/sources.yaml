@@ -2739,7 +2739,7 @@ sources:
     pdf_link_pattern: null
 - slug: shuyojoho_tokyo-1
   name: 東京都収容動物情報（犬）
-  municipality: 東京都収容動物情報
+  municipality: 東京都
   prefecture: 東京都
   phone: 03-3302-3507
   address: 〒156-0056 東京都世田谷区八幡山二丁目9番地11号（東京都動物愛護相談センター）
@@ -2762,7 +2762,7 @@ sources:
     pdf_link_pattern: null
 - slug: shuyojoho_tokyo-2
   name: 東京都収容動物情報（猫等）
-  municipality: 東京都収容動物情報
+  municipality: 東京都
   prefecture: 東京都
   phone: 03-3302-3507
   address: 〒156-0056 東京都世田谷区八幡山二丁目9番地11号（東京都動物愛護相談センター）

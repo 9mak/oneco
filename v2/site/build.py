@@ -192,7 +192,9 @@ def species_label(a: dict[str, Any]) -> str:
 
 
 def species_noun(a: dict[str, Any]) -> str:
-    """見出し・説明文の「◯◯の犬」の部分。種別なしの子は「子」（保護中の子）。"""
+    """見出し・説明文の「◯◯の犬」の部分。種別なしの子は「子」（保護中の子）、犬猫以外は「動物」（保護中の動物）。"""
+    if species_key(a) == "other":
+        return "動物"
     return species_label(a) or "子"
 
 
@@ -200,10 +202,17 @@ def kind_label(a: dict[str, Any]) -> str:
     return KINDS.get(str(a.get("kind")), str(a.get("kind") or ""))
 
 
+def kind_phrase(a: dict[str, Any]) -> str:
+    """区分と種別をつないだ呼び方。「探してます」は「探してますの犬」と続けられないので「探している犬」にする。"""
+    if a.get("kind") == "lost":
+        return f"探している{species_noun(a)}"
+    return f"{kind_label(a)}の{species_noun(a)}"
+
+
 def headline(a: dict[str, Any]) -> str:
     """カード・詳細の見出し。名前があれば名前、無ければ種別。"""
     name = a.get("name")
-    return str(name) if name else f"{kind_label(a)}の{species_noun(a)}"
+    return str(name) if name else kind_phrase(a)
 
 
 def subline(a: dict[str, Any]) -> str:
@@ -387,47 +396,22 @@ def build_index(cfg: dict[str, Any], data: dict[str, Any], animals: list[dict[st
 
 PREF_JS = """
 (function(){
-  var pref=document.body.dataset.pref;
   var grid=document.getElementById('grid');
   var count=document.getElementById('count');
   var empty=document.getElementById('empty');
-  var SP={dog:'犬',cat:'猫',other:'その他'};
-  var KD={adoption:'里親募集',sheltered:'保護中',stray:'迷子',lost:'探してます'};
   var q=new URLSearchParams(location.search);
   var state={species:q.get('species')||'all',kind:q.get('kind')||'all'};
-  var cache=null;
-  function ok(u){return typeof u==='string'&&/^https?:\\/\\//i.test(u);}
-  function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e;}
-  function ph(){var d=el('div','ph');d.setAttribute('role','img');d.setAttribute('aria-label','写真はありません');d.appendChild(el('span',null,'写真はありません'));return d;}
-  function card(a){
-    var sp=a.species||'none', kd=a.kind||'';
-    var c=el('a','card');c.href='/animals/'+encodeURIComponent(a.id)+'/';c.dataset.species=sp;c.dataset.kind=kd;
-    var m=el('div','media');
-    if(ok(a.image_url)){var img=el('img');img.src=a.image_url;img.alt=(a.name||((KD[kd]||kd)+'の'+(SP[sp]||'子')))+'（'+(a.municipality||'')+'）';img.loading='lazy';img.referrerPolicy='no-referrer';img.onerror=function(){m.classList.add('noimg');img.remove();};m.appendChild(img);}
-    m.appendChild(ph());c.appendChild(m);
-    var b=el('div','card-body');var bd=el('div','badges');
-    if(SP[sp])bd.appendChild(el('span','badge sp-'+sp,SP[sp]));bd.appendChild(el('span','badge kd-'+kd,KD[kd]||kd));b.appendChild(bd);
-    b.appendChild(el('h3',null,a.name||((KD[kd]||kd)+'の'+(SP[sp]||'子'))));
-    var sub=[a.breed,a.sex,a.age].filter(Boolean).join(' / ');if(sub)b.appendChild(el('p','sub',sub));
-    b.appendChild(el('p','muni',a.municipality||''));c.appendChild(b);return c;
-  }
   function match(sp,kd){return (state.species==='all'||sp===state.species)&&(state.kind==='all'||kd===state.kind);}
   function syncButtons(){document.querySelectorAll('[data-filter]').forEach(function(b){b.setAttribute('aria-pressed',state[b.dataset.filter]===b.dataset.value?'true':'false');});}
   function apply(){
     syncButtons();var n=0;
-    if(cache){grid.textContent='';cache.forEach(function(a){if(match(a.species||'none',a.kind||'')){grid.appendChild(card(a));n++;}});}
-    else{grid.querySelectorAll('.card').forEach(function(c){var s=match(c.dataset.species,c.dataset.kind);c.hidden=!s;if(s)n++;});}
+    grid.querySelectorAll('.card').forEach(function(c){var s=match(c.dataset.species,c.dataset.kind);c.hidden=!s;if(s)n++;});
     count.textContent=n;empty.hidden=n!==0;
     var p=new URLSearchParams();if(state.species!=='all')p.set('species',state.species);if(state.kind!=='all')p.set('kind',state.kind);
     var qs=p.toString();history.replaceState(null,'',location.pathname+(qs?'?'+qs:''));
   }
   document.querySelectorAll('[data-filter]').forEach(function(b){b.addEventListener('click',function(){state[b.dataset.filter]=b.dataset.value;apply();});});
   if(state.species!=='all'||state.kind!=='all')apply();
-  fetch('/data.json',{cache:'no-cache'}).then(function(r){return r.ok?r.json():null;}).then(function(d){
-    if(!d||!Array.isArray(d.animals))return;
-    cache=d.animals.filter(function(a){return a.prefecture===pref&&a.id;});
-    if(state.species!=='all'||state.kind!=='all')apply();
-  }).catch(function(){});
 })();
 """
 
@@ -480,7 +464,10 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
     if addr:
         contact.append(f"<div><dt>{addr_label}</dt><dd>{esc(addr)}</dd></div>")
     if not phone:
-        contact.append("<div><dt>連絡先</dt><dd>電話番号は自治体のページでご確認ください。</dd></div>")
+        contact.append("<div><dt>電話</dt><dd>電話番号は自治体のページでご確認ください。</dd></div>")
+    # 県のまとめページの運営元の住所を、子のいる場所と思って訪ねないように（掲載元に無いことは断定しない）
+    operator_note = ('<p class="fine">この連絡先は掲載元ページの運営窓口です。子がいる場所とは限りません。訪ねる前に、電話か自治体のページでご確認ください。</p>\n'
+                     if operator and (phone or addr) else "")
     cta = (f'<a class="cta" href="{esc(src)}" rel="noopener" target="_blank">自治体のページで詳細を見る<small>{esc(muni)}</small></a>'
            if src else f'<p class="cta cta-none">元ページの URL が取れていません。{esc(muni)}にお問い合わせください。</p>')
     # 「迎える準備」枠（広告）は里親募集の子だけ。保護中・迷子・探してます の子は飼い主の元に帰るかもしれない（T506）
@@ -506,7 +493,8 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
     # 広告を載せるページは、広告であることをファーストビュー（写真より上）に出す（T629・A8 の提携条件・ステマ規制）
     pr_html = ('<p class="pr-note"><span>PR</span>このページはアフィリエイト広告を利用しています（ページ下の「迎える準備」枠）。</p>'
                if aff_items else "")
-    desc = f"{muni}が{fmt_date(data.get('date'))}時点で公開している{kind_label(a)}の{species_noun(a)}。"
+    desc = (f"飼い主さんが{kind_phrase(a)}。{muni}が{fmt_date(data.get('date'))}時点で公開している情報です。" if a.get("kind") == "lost"
+            else f"{muni}が{fmt_date(data.get('date'))}時点で公開している{kind_phrase(a)}。")
     if subline(a):
         desc += subline(a) + "。"
     if a.get("note"):
@@ -528,7 +516,8 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
 <dl class="facts">
 {chr(10).join(contact)}
 </dl>
-<p class="fine">この情報は {esc(fmt_date(data.get('date')))} に自治体のページから取得したものです。すでに譲渡・返還されている場合があります。ID: <code>{esc(a['id'])}</code></p>
+{operator_note}<p class="fine">この情報は {esc(fmt_date(data.get('date')))} に自治体のページから取得したものです。すでに譲渡・返還されている場合があります。</p>
+<p class="fine">自治体にお問い合わせのときは、このページに載っている管理番号や日付、場所をお伝えください。ID <code>{esc(a['id'])}</code> はこのサイトの中だけの番号で、自治体には通じません。</p>
 </div>
 </article>
 {aff_html}"""
@@ -673,7 +662,7 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
 <li>掲載するのは自治体の公開ページに載っている情報だけです。写真・項目は元ページのまま、電話番号と所在地は自治体の公式情報から転記しています。</li>
 <li>毎日、各自治体のページを確認して当日の情報だけを載せます。個体を追跡したり、過去の情報を残したりはしません。</li>
 <li>すべての子に「自治体のページで詳細を見る」リンクを付けています。譲渡の申し込みや迷子の問い合わせは、必ず自治体に直接行ってください。{site} は仲介をしません。</li>
-<li>読み取りに失敗した自治体は<a href="/sources/">情報源の一覧</a>に「本日は確認できませんでした」と表示し、元ページへのリンクを残します。</li>
+<li>読み取りに失敗した自治体は<a href="/sources/">情報源の一覧</a>に「本日は読めませんでした」と表示し、元ページへのリンクを残します。</li>
 </ul>
 </section>
 <section>
@@ -690,7 +679,7 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
 {analytics}<section>
 <h2>免責</h2>
 <p>{site} は自治体の公式サイトではなく、自治体との提携や委託もない個人のサイトです。</p>
-<p>掲載内容は取得時点の自治体ページに基づきます。すでに譲渡・返還されている場合や、元ページの更新が反映されていない場合があります。ページはプログラムで自動に読み取っているため、写真や項目が別の子のものになるなどの誤りが起きることがあります。最終的な情報は必ず各自治体にご確認ください。誤りに気づいたら、上の窓口からお知らせください。</p>
+<p>掲載内容は取得時点の自治体ページに基づきます。すでに譲渡・返還されている場合や、元ページの更新が反映されていない場合があります。ページはプログラムが自動で読み取っているため、写真や項目が別の子のものになるなどの誤りが起きることがあります。最終的な情報は必ず各自治体にご確認ください。誤りに気づいたら、上の窓口からお知らせください。</p>
 <p>写真と文章の権利は、各自治体と撮影者にあります。写真は自治体のページから直接表示しています。</p>
 <p>掲載内容によって生じた損害について、運営者は責任を負いかねます。</p>
 </section>

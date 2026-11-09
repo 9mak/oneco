@@ -76,7 +76,7 @@ def test_other_species_is_still_labelled_other(tmp_path: Path):
     out = _build(tmp_path)
     body = _main(_read(out / "animals" / "other0000001" / "index.html"))
     assert '<span class="badge sp-other">その他</span>' in body
-    assert "<h1>保護中のその他</h1>" in body
+    assert "<h1>保護中の動物</h1>" in body
 
 
 def test_pref_page_card_and_counts(tmp_path: Path):
@@ -89,9 +89,8 @@ def test_pref_page_card_and_counts(tmp_path: Path):
     assert "犬 2 頭" in stats and "猫 0 頭" in stats and "その他 1 頭" in stats and "犬猫の区別なし 1 頭" in stats
     # 絞り込みの選択肢は すべて・犬・猫 のまま（種別なしの選択肢は作らない）
     assert 'data-filter="species" data-value="none"' not in h
-    # クライアント側 JS: 種別が空の子を other 扱いにしない。バッジは種別の名前がある子だけ、見出しは「…の子」
-    assert "a.species||'other'" not in h and "a.species||'none'" in h
-    assert "(SP[sp]||'子')" in h
+    # 種別が空の子のカードは data-species="none"（絞り込みで犬猫に入らない）
+    assert 'data-species="none"' in h
     desc = re.search(r'<meta name="description" content="([^"]*)"', h).group(1)
     assert "保護犬 2 頭・保護猫 0 頭" in desc and "ほか 2 頭" in desc
 
