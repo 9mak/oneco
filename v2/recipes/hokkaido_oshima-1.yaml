@@ -1,0 +1,19 @@
+# 北海道 渡島総合振興局 犬猫の新しい飼い主さんの募集について（/hk/kks/inuneko2/191026.html）の渡島保健所の節。
+# h3「渡島保健所に収容中の猫（負傷）」の div → p が入った div（写真・品種・年齢・性別・毛色・体重・収容日・状態・経過）。管理番号は無い（収容日と写真で見分ける）。
+# h3 の div を始まりにして、次の h3・h2 の div の手前までまとめる。動物愛護センター（道南）の節は別の h3 で、個別の子は載せていない（案内とリンクだけ）。
+# 0 頭の日の文言は未確認。
+rows: "div.ss-alignment:has(> h3:-soup-contains('保健所に収容中'))"
+row_until: "div.ss-alignment:has(> h3), div.ss-alignment:has(> h2)"
+fields:
+  species: {selector: "h3", regex: "収容中の(猫|犬)"}
+  breed: {regex: "品種[:：]\\s*(\\S+)"}
+  age: {regex: "年齢[:：]\\s*(\\S+)"}
+  sex: {regex: "性別[:：]\\s*(オス|メス|不明)"}
+  color: {regex: "毛色[:：]\\s*(\\S+)"}
+  size: {regex: "体重[:：]\\s*(\\S+(?:\\s*kg)?)"}
+  shelter_date: {regex: "収容日[:：]\\s*(\\S+)"}
+  note: {regex: "状態[:：]\\s*(.+?)(?=\\s+収容当初|$)"}
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+image: "img@src"

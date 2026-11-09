@@ -1,0 +1,23 @@
+# 北海道 オホーツク総合振興局 紋別保健所・遠軽支所 犬・猫情報（/hk/mth/wanneko.html）の「飼い主募集中」の表（迷子の表は hokkaido_okhotsk-5）。
+# 見出し（h4。遠軽支所の募集猫だけ p）の下に、犬猫・保健所と支所ごとの表。結合セルは無く、見出し行（写真・性別・年齢・特徴など・種類）の下にデータ行が並ぶ。
+# 子のいない表は、データ行が 1 行だけ「現在、飼い主募集中の…はいません。」になる。その行は読まず、子のいる行だけ読む。
+# 1 行に複数頭（C1・C2）が載ることがある。1 行 = 1 件で載せ、各頭の説明は note にそのまま入れる（性別・年齢の欄が 1 つで、頭ごとかは書いていない）。募集期限は note に載せる。
+# 0 頭の日は全部の表が「いません」の行だけになる。この文は子のいる日も別の表に出るので empty_text にせず、
+# 動物の表にいません以外の行が 1 つも無い日だけ 0 頭にする（empty_absent。見出し直下の表も数え、表の見出し語が変わった日は 0 頭にしない）。
+rows: "table:has(td:-soup-contains('特徴など')) tr:nth-child(n+2):not(:has(td:-soup-contains('いません')))"
+fields:
+  sex: {selector: ":scope > :nth-child(2)"}
+  age: {selector: ":scope > :nth-child(3)"}
+  breed: {selector: ":scope > :nth-child(5)"}
+  note:
+    join:
+      - {selector: ":scope > :nth-child(4)", regex: "^(.*?)(?:\\s*【お問い合わせ先】|$)"}
+      - {selector: ":scope > :nth-child(4)", regex: "(【募集期限】.*)$"}
+species:
+  from: heading
+  selector: "h4, p:-soup-contains('飼い主募集中の')"
+  map: {"犬(": dog, "猫(": cat, "犬（": dog, "猫（": cat}
+image: "img@src"
+empty_absent:
+  page: "h2:-soup-contains('譲渡可能な犬・猫の情報')"
+  none: "table:has(td:-soup-contains('特徴など')) tr:nth-child(n+2):not(:has(td:-soup-contains('いません'))), h4:-soup-contains('飼い主募集中の') + table tr:nth-child(n+2):not(:has(td:-soup-contains('いません'))), p:-soup-contains('飼い主募集中の') + p + table tr:nth-child(n+2):not(:has(td:-soup-contains('いません')))"

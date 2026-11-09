@@ -1,0 +1,19 @@
+# 北海道 胆振総合振興局 室蘭保健所の犬猫について（/hk/hgc/muroran-inuneko.html）の新しい飼い主を募集している犬・猫の節。
+# h3「新しい飼い主を募集している猫【3匹います！】」の div の後に、1 頭ごとに写真の p の div → 「名前：くろ 性別：メス 年齢：18～19さい 毛色：黒色 性格：…」の p の div が並ぶ（写真が先）。
+# 「名前：」の p の div を 1 頭の始まりにして、写真は直前の div から次の行の手前まで遡る。
+# 種別は直前の h3「新しい飼い主を募集している猫／犬」から決め、それ以外の見出しの下の「名前：」（飼い主探しノート・譲渡済み等）は row_filter で除く。
+# 迷子の節（保管中の迷い犬【今はいません】・迷い猫【今はいません】）・負傷などで収容中の節は読まない。「今はいません」の見出しは犬の節にも出るので 0 頭の根拠にしない（読めなかった通知になる）。
+rows: "div.ss-alignment:has(> p:-soup-contains('名前：'))"
+row_filter:
+  field_has_any: {species: ["猫", "犬"]}
+fields:
+  species: {from: heading, selector: "h3", regex: "新しい飼い主を募集している(猫|犬)"}
+  name: {regex: "名前[:：]\\s*(\\S+)"}
+  sex: {regex: "性別[:：]\\s*(オス|メス|不明)"}
+  age: {regex: "年齢[:：]\\s*(\\S+)"}
+  color: {regex: "毛色[:：]\\s*(\\S+)"}
+  note: {regex: "性格[:：]\\s*(.+)"}
+species:
+  from: field
+  map: {"猫": cat, "犬": dog}
+image: {selector: "img@src", scope: prev_siblings, stop_at: row}
