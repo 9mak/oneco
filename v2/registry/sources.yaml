@@ -1968,13 +1968,14 @@ sources:
   mode: recipe
   recipe: recipes/pref_yamanashi-3.yaml
   enabled: true
-  photo: pending
+  photo: "no"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_yamanashi.py
     requires_js: false
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+  note: 2026-11-11 写真の許諾の依頼で、迷子（飼い主さんが探している子）のページは飼い主の方が届け出た写真の可能性があるので写真を出さないと先方に伝えた（町田市 -2〜-4 と同じ扱い。おまえさん 2026-11-10。T630）。
 - slug: pref_yamanashi-4
   name: 山梨県（保護されている猫）
   municipality: 山梨県
@@ -2012,13 +2013,14 @@ sources:
   mode: recipe
   recipe: recipes/pref_yamanashi-5.yaml
   enabled: true
-  photo: pending
+  photo: "no"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_yamanashi.py
     requires_js: false
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+  note: 2026-11-11 写真の許諾の依頼で、迷子（飼い主さんが探している子）のページは飼い主の方が届け出た写真の可能性があるので写真を出さないと先方に伝えた（町田市 -2〜-4 と同じ扱い。おまえさん 2026-11-10。T630）。
 - slug: pref_yamanashi-6
   name: 山梨県（探している猫）
   municipality: 山梨県
@@ -2034,13 +2036,14 @@ sources:
   mode: recipe
   recipe: recipes/pref_yamanashi-6.yaml
   enabled: true
-  photo: pending
+  photo: "no"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_yamanashi.py
     requires_js: false
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+  note: 2026-11-11 写真の許諾の依頼で、迷子（飼い主さんが探している子）のページは飼い主の方が届け出た写真の可能性があるので写真を出さないと先方に伝えた（町田市 -2〜-4 と同じ扱い。おまえさん 2026-11-10。T630）。
 - slug: spec_pref_gifu
   name: 岐阜県（迷い犬情報）
   municipality: 岐阜県
@@ -2968,13 +2971,14 @@ sources:
   mode: recipe
   recipe: recipes/aniwel_okinawa-3.yaml
   enabled: true
-  photo: pending
+  photo: "no"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/aniwel_okinawa.py
     requires_js: false
     pdf: false
     list_link_pattern: a[href*='/animals/missing_view/']
     pdf_link_pattern: null
+  note: 2026-11-11 写真の許諾の依頼で、迷子（飼い主さんが探している子）のページは飼い主の方が届け出た写真の可能性があるので写真を出さないと先方に伝えた（町田市 -2〜-4 と同じ扱い。おまえさん 2026-11-10。T630）。
 - slug: aniwel_okinawa-4
   name: 沖縄県動物愛護管理センター（行方不明猫）
   municipality: 沖縄県動物愛護管理センター
@@ -2990,13 +2994,14 @@ sources:
   mode: recipe
   recipe: recipes/aniwel_okinawa-4.yaml
   enabled: true
-  photo: pending
+  photo: "no"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/aniwel_okinawa.py
     requires_js: false
     pdf: false
     list_link_pattern: a[href*='/animals/missing_view/']
     pdf_link_pattern: null
+  note: 2026-11-11 写真の許諾の依頼で、迷子（飼い主さんが探している子）のページは飼い主の方が届け出た写真の可能性があるので写真を出さないと先方に伝えた（町田市 -2〜-4 と同じ扱い。おまえさん 2026-11-10。T630）。
 - slug: aniwel_okinawa-5
   name: 沖縄県動物愛護管理センター（迷い込み保護犬）
   municipality: 沖縄県動物愛護管理センター
@@ -4456,13 +4461,13 @@ sources:
   verified_at: '2026-10-15'
   verified_phone_url: "https://animal-net.pref.nagasaki.jp/maigo"
   verified_address_url: "https://animal-net.pref.nagasaki.jp/maigo"
-  note: "県のまとめページ。個体の収容先（保健所）は別のことがある"
+  note: "県のまとめページ。個体の収容先（保健所）は別のことがある 2026-11-11 写真の許諾の依頼で、迷子（飼い主さんが探している子）のページは飼い主の方が届け出た写真の可能性があるので写真を出さないと先方に伝えた（町田市 -2〜-4 と同じ扱い。おまえさん 2026-11-10。T630）。"
   kind: lost   # 飼い主が自分の迷子を探している告知（2026-10-02 監査で区分を追加）
   species: mixed
   mode: recipe
   recipe: recipes/animal_net_nagasaki-3.yaml
   enabled: true
-  photo: pending
+  photo: "no"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/animal_net_nagasaki.py
     requires_js: false
