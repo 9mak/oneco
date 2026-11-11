@@ -1921,10 +1921,11 @@ sources:
   verified_address_url: "https://www.pref.yamanashi.jp/doubutsu/p_dog/index.html"
   kind: sheltered
   species: dog
-  mode: recipe
+  mode: link_only
   recipe: recipes/pref_yamanashi-1.yaml
   enabled: true
-  photo: pending
+  photo: "no"
+  note: "2026-11-11 山梨県動物愛護指導センターから、写真だけでなく文字の内容も載せないでほしいと返事（T630 の写真表示のお伺いへの回答。依頼は所管の衛生薬務課のフォームから送った）。一覧は読まず（写真も文字も転記しない）リンクだけを載せる。レシピは許諾が変わったときのために残す。"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_yamanashi.py
     requires_js: false
@@ -1943,10 +1944,11 @@ sources:
   verified_address_url: "https://www.pref.yamanashi.jp/doubutsu/p_dog/index.html"
   kind: sheltered
   species: mixed
-  mode: recipe
+  mode: link_only
   recipe: recipes/pref_yamanashi-2.yaml
   enabled: true
-  photo: pending
+  photo: "no"
+  note: "2026-11-11 山梨県動物愛護指導センターから、写真だけでなく文字の内容も載せないでほしいと返事（T630 の写真表示のお伺いへの回答。依頼は所管の衛生薬務課のフォームから送った）。一覧は読まず（写真も文字も転記しない）リンクだけを載せる。レシピは許諾が変わったときのために残す。"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_yamanashi.py
     requires_js: false
@@ -1965,7 +1967,7 @@ sources:
   verified_address_url: "https://www.pref.yamanashi.jp/doubutsu/p_dog/index.html"
   kind: lost   # 飼い主が自分の迷子を探している告知（2026-10-02 監査で区分を追加）
   species: mixed
-  mode: recipe
+  mode: link_only
   recipe: recipes/pref_yamanashi-3.yaml
   enabled: true
   photo: "no"
@@ -1975,7 +1977,7 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
-  note: 2026-11-11 写真の許諾の依頼で、迷子（飼い主さんが探している子）のページは飼い主の方が届け出た写真の可能性があるので写真を出さないと先方に伝えた（町田市 -2〜-4 と同じ扱い。おまえさん 2026-11-10。T630）。
+  note: "2026-11-11 山梨県動物愛護指導センターから、写真だけでなく文字の内容も載せないでほしいと返事（T630 の写真表示のお伺いへの回答。依頼は所管の衛生薬務課のフォームから送った）。一覧は読まず（写真も文字も転記しない）リンクだけを載せる。レシピは許諾が変わったときのために残す。以下は読んでいた時の記録。2026-11-11 写真の許諾の依頼で、迷子（飼い主さんが探している子）のページは飼い主の方が届け出た写真の可能性があるので写真を出さないと先方に伝えた（町田市 -2〜-4 と同じ扱い。おまえさん 2026-11-10。T630）。"
 - slug: pref_yamanashi-4
   name: 山梨県（保護されている猫）
   municipality: 山梨県
@@ -1988,10 +1990,11 @@ sources:
   verified_address_url: "https://www.pref.yamanashi.jp/doubutsu/p_dog/index.html"
   kind: sheltered
   species: cat
-  mode: recipe
+  mode: link_only
   recipe: recipes/pref_yamanashi-4.yaml
   enabled: true
-  photo: pending
+  photo: "no"
+  note: "2026-11-11 山梨県動物愛護指導センターから、写真だけでなく文字の内容も載せないでほしいと返事（T630 の写真表示のお伺いへの回答。依頼は所管の衛生薬務課のフォームから送った）。一覧は読まず（写真も文字も転記しない）リンクだけを載せる。レシピは許諾が変わったときのために残す。"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_yamanashi.py
     requires_js: false
@@ -2010,7 +2013,7 @@ sources:
   verified_address_url: "https://www.pref.yamanashi.jp/doubutsu/p_dog/index.html"
   kind: lost   # 飼い主が自分の迷子を探している告知（2026-10-02 監査で区分を追加）
   species: dog
-  mode: recipe
+  mode: link_only
   recipe: recipes/pref_yamanashi-5.yaml
   enabled: true
   photo: "no"
@@ -2020,7 +2023,7 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
-  note: 2026-11-11 写真の許諾の依頼で、迷子（飼い主さんが探している子）のページは飼い主の方が届け出た写真の可能性があるので写真を出さないと先方に伝えた（町田市 -2〜-4 と同じ扱い。おまえさん 2026-11-10。T630）。
+  note: "2026-11-11 山梨県動物愛護指導センターから、写真だけでなく文字の内容も載せないでほしいと返事（T630 の写真表示のお伺いへの回答。依頼は所管の衛生薬務課のフォームから送った）。一覧は読まず（写真も文字も転記しない）リンクだけを載せる。レシピは許諾が変わったときのために残す。以下は読んでいた時の記録。2026-11-11 写真の許諾の依頼で、迷子（飼い主さんが探している子）のページは飼い主の方が届け出た写真の可能性があるので写真を出さないと先方に伝えた（町田市 -2〜-4 と同じ扱い。おまえさん 2026-11-10。T630）。"
 - slug: pref_yamanashi-6
   name: 山梨県（探している猫）
   municipality: 山梨県
@@ -2033,7 +2036,7 @@ sources:
   verified_address_url: "https://www.pref.yamanashi.jp/doubutsu/p_dog/index.html"
   kind: lost   # 飼い主が自分の迷子を探している告知（2026-10-02 監査で区分を追加）
   species: cat
-  mode: recipe
+  mode: link_only
   recipe: recipes/pref_yamanashi-6.yaml
   enabled: true
   photo: "no"
@@ -2043,7 +2046,7 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
-  note: 2026-11-11 写真の許諾の依頼で、迷子（飼い主さんが探している子）のページは飼い主の方が届け出た写真の可能性があるので写真を出さないと先方に伝えた（町田市 -2〜-4 と同じ扱い。おまえさん 2026-11-10。T630）。
+  note: "2026-11-11 山梨県動物愛護指導センターから、写真だけでなく文字の内容も載せないでほしいと返事（T630 の写真表示のお伺いへの回答。依頼は所管の衛生薬務課のフォームから送った）。一覧は読まず（写真も文字も転記しない）リンクだけを載せる。レシピは許諾が変わったときのために残す。以下は読んでいた時の記録。2026-11-11 写真の許諾の依頼で、迷子（飼い主さんが探している子）のページは飼い主の方が届け出た写真の可能性があるので写真を出さないと先方に伝えた（町田市 -2〜-4 と同じ扱い。おまえさん 2026-11-10。T630）。"
 - slug: spec_pref_gifu
   name: 岐阜県（迷い犬情報）
   municipality: 岐阜県
@@ -5545,11 +5548,11 @@ sources:
   verified_address_url: "https://www.city.niigata.lg.jp/kurashi/animal/animal_aigo/hogoshuyo/inu_hogoken.html"
   kind: stray
   species: dog
-  mode: recipe
+  mode: link_only
   recipe: recipes/city_niigata-1.yaml
   enabled: true
-  photo: pending
-  note: 環境省リンク集から追加（2026-10-05 T519）。リンク集のリンク先（迷子犬・猫保護収容情報）から辿った「迷子で動物愛護センターに保護されている犬」。0 頭の日は「…保護している犬はいません。」。動物が載った日の作りは 4 つあり Wayback（2023-06・2024-06〜12・2025-11）で確認して読む（2026-10-07 T519 v-g3 で最初の「譲渡ページと同じ作り」の仮定を直し、2026-10-08 T519 v2-g3 で 2025-11 の h3bg「犬ID R7-54」の作りも読めるようにした）。
+  photo: "no"
+  note: "2026-11-10 新潟市動物愛護センターから、譲渡の状況がすぐには反映されないことと新潟県の情報と紛れるおそれがあることから表示しないでほしい、センターのページへのリンクは載せてほしいと返事（T630 の写真表示のお伺いへの回答。お伺いは -1 のページについてだったが、理由が全ページに当てはまるので -1〜-4 をリンクのみにする）。一覧は読まず（写真も文字も転記しない）リンクだけを載せる。レシピは許諾が変わったときのために残す。以下は読んでいた時の記録。環境省リンク集から追加（2026-10-05 T519）。リンク集のリンク先（迷子犬・猫保護収容情報）から辿った「迷子で動物愛護センターに保護されている犬」。0 頭の日は「…保護している犬はいません。」。動物が載った日の作りは 4 つあり Wayback（2023-06・2024-06〜12・2025-11）で確認して読む（2026-10-07 T519 v-g3 で最初の「譲渡ページと同じ作り」の仮定を直し、2026-10-08 T519 v2-g3 で 2025-11 の h3bg「犬ID R7-54」の作りも読めるようにした）。"
 - slug: city_niigata-2
   name: 新潟市動物愛護センター（迷子で保護している猫）
   municipality: 新潟市
@@ -5562,11 +5565,11 @@ sources:
   verified_address_url: "https://www.city.niigata.lg.jp/kurashi/animal/animal_aigo/hogoshuyo/inu_hogoken.html"
   kind: stray
   species: cat
-  mode: recipe
+  mode: link_only
   recipe: recipes/city_niigata-2.yaml
   enabled: true
-  photo: pending
-  note: 環境省リンク集から追加（2026-10-05 T519）。リンク集のリンク先から辿った「迷子で動物愛護センターに保護されている猫」。0 頭の日は「…保護している猫がいません。」「…保護している猫はいません。」。動物が載った日の作りは 4 つあり Wayback（2024-06・2025-05 の 4 頭・2026-08 の R8-140）で確認して読む（2026-10-07 T519 v-g3・2026-10-08 T519 v2-g3 で直した）。「猫ID」の新しい作りの猫は未確認。
+  photo: "no"
+  note: "2026-11-10 新潟市動物愛護センターから、譲渡の状況がすぐには反映されないことと新潟県の情報と紛れるおそれがあることから表示しないでほしい、センターのページへのリンクは載せてほしいと返事（T630 の写真表示のお伺いへの回答。お伺いは -1 のページについてだったが、理由が全ページに当てはまるので -1〜-4 をリンクのみにする）。一覧は読まず（写真も文字も転記しない）リンクだけを載せる。レシピは許諾が変わったときのために残す。以下は読んでいた時の記録。環境省リンク集から追加（2026-10-05 T519）。リンク集のリンク先から辿った「迷子で動物愛護センターに保護されている猫」。0 頭の日は「…保護している猫がいません。」「…保護している猫はいません。」。動物が載った日の作りは 4 つあり Wayback（2024-06・2025-05 の 4 頭・2026-08 の R8-140）で確認して読む（2026-10-07 T519 v-g3・2026-10-08 T519 v2-g3 で直した）。「猫ID」の新しい作りの猫は未確認。"
 - slug: city_niigata-3
   name: 新潟市動物愛護センター（譲渡犬）
   municipality: 新潟市
@@ -5579,11 +5582,11 @@ sources:
   verified_address_url: "https://www.city.niigata.lg.jp/kurashi/animal/animal_aigo/hogoshuyo/inu_hogoken.html"
   kind: adoption
   species: dog
-  mode: recipe
+  mode: link_only
   recipe: recipes/city_niigata-3.yaml
   enabled: true
-  photo: pending
-  note: 環境省リンク集から追加（2026-10-05 T519）。リンク集のリンク先の左メニュー「犬・猫 譲渡情報」から辿った譲渡犬ページ（2026-10-07 時点 4 頭）。0 頭の日は「現在、譲渡対象の犬はいません。」「只今、新しい飼い主さんを待っている犬はおりません。」（Wayback 2023-02・2024-11・2026-06 で確認）。
+  photo: "no"
+  note: "2026-11-10 新潟市動物愛護センターから、譲渡の状況がすぐには反映されないことと新潟県の情報と紛れるおそれがあることから表示しないでほしい、センターのページへのリンクは載せてほしいと返事（T630 の写真表示のお伺いへの回答。お伺いは -1 のページについてだったが、理由が全ページに当てはまるので -1〜-4 をリンクのみにする）。一覧は読まず（写真も文字も転記しない）リンクだけを載せる。レシピは許諾が変わったときのために残す。以下は読んでいた時の記録。環境省リンク集から追加（2026-10-05 T519）。リンク集のリンク先の左メニュー「犬・猫 譲渡情報」から辿った譲渡犬ページ（2026-10-07 時点 4 頭）。0 頭の日は「現在、譲渡対象の犬はいません。」「只今、新しい飼い主さんを待っている犬はおりません。」（Wayback 2023-02・2024-11・2026-06 で確認）。"
 - slug: city_niigata-4
   name: 新潟市動物愛護センター（譲渡猫）
   municipality: 新潟市
@@ -5596,11 +5599,11 @@ sources:
   verified_address_url: "https://www.city.niigata.lg.jp/kurashi/animal/animal_aigo/hogoshuyo/inu_hogoken.html"
   kind: adoption
   species: cat
-  mode: recipe
+  mode: link_only
   recipe: recipes/city_niigata-4.yaml
   enabled: true
-  photo: pending
-  note: 環境省リンク集から追加（2026-10-05 T519）。譲渡猫ページ（2026-10-05 時点 2 頭）。このページに載るのは動物愛護センターで飼育している猫だけ。動物ふれあいセンター（いくとぴあ食花）で飼育展示している猫は別サイトにあり、slug ikutopia-1 で扱う。0 頭の日の文言は未確認。
+  photo: "no"
+  note: "2026-11-10 新潟市動物愛護センターから、譲渡の状況がすぐには反映されないことと新潟県の情報と紛れるおそれがあることから表示しないでほしい、センターのページへのリンクは載せてほしいと返事（T630 の写真表示のお伺いへの回答。お伺いは -1 のページについてだったが、理由が全ページに当てはまるので -1〜-4 をリンクのみにする）。一覧は読まず（写真も文字も転記しない）リンクだけを載せる。レシピは許諾が変わったときのために残す。以下は読んでいた時の記録。環境省リンク集から追加（2026-10-05 T519）。譲渡猫ページ（2026-10-05 時点 2 頭）。このページに載るのは動物愛護センターで飼育している猫だけ。動物ふれあいセンター（いくとぴあ食花）で飼育展示している猫は別サイトにあり、slug ikutopia-1 で扱う。0 頭の日の文言は未確認。"
 - slug: ikutopia-1
   name: 新潟市動物ふれあいセンター（いくとぴあ食花 譲渡猫）
   municipality: 新潟市
@@ -7358,7 +7361,8 @@ sources:
   mode: recipe
   recipe: recipes/city_kofu-1.yaml
   enabled: true
-  note: 環境省リンク集から追加（2026-10-05 T519）。同じページの「保護しています」表だけを拾う（「探しています」は city_kofu-2）。保健所の保護に加え、住民が保護した情報も同じ表に載る（情報源の列。掲載期間は約 3 か月）。負傷のため写真なしの行がある。2026-10-28 から旧 URL（www.city.kofu.yamanashi.jp/hokenjo/2019mayoiinuneko.html）は市のサイトの移転で 301 になったので、移転先のページを url にした（電話・所在地は移転先の「お問い合わせ先」と同じ。2026-10-31 確認）。
+  photo: pending
+  note: 2026-11-12 山梨県動物愛護指導センターから甲府市は別運営なので甲府市保健所へ直接と案内があり、甲府市にも写真の表示のお伺いを送るため、返事が来るまで写真を出さない（文字とリンクは読む。T630）。環境省リンク集から追加（2026-10-05 T519）。同じページの「保護しています」表だけを拾う（「探しています」は city_kofu-2）。保健所の保護に加え、住民が保護した情報も同じ表に載る（情報源の列。掲載期間は約 3 か月）。負傷のため写真なしの行がある。2026-10-28 から旧 URL（www.city.kofu.yamanashi.jp/hokenjo/2019mayoiinuneko.html）は市のサイトの移転で 301 になったので、移転先のページを url にした（電話・所在地は移転先の「お問い合わせ先」と同じ。2026-10-31 確認）。
 - slug: city_kofu-2
   name: 甲府市（迷子の犬猫・探しています）
   municipality: 甲府市
@@ -7374,7 +7378,8 @@ sources:
   mode: recipe
   recipe: recipes/city_kofu-2.yaml
   enabled: true
-  note: 環境省リンク集から追加（2026-10-05 T519）。city_kofu-1 と同じページの「探しています」表（飼い主が逸走した犬猫等を探している告知）だけを拾う。犬猫以外（その他の動物）が載る日は species other で載る。2026-10-28 から url は移転先（city_kofu-1 と同じ）。
+  photo: pending
+  note: 2026-11-12 city_kofu-1 と同じ理由で、甲府市の返事が来るまで写真を出さない（T630）。環境省リンク集から追加（2026-10-05 T519）。city_kofu-1 と同じページの「探しています」表（飼い主が逸走した犬猫等を探している告知）だけを拾う。犬猫以外（その他の動物）が載る日は species other で載る。2026-10-28 から url は移転先（city_kofu-1 と同じ）。
 - slug: city_nagano-1
   name: 長野市保健所（譲渡対象の犬猫・保健所収容）
   municipality: 長野市保健所
