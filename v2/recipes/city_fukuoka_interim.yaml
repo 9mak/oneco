@@ -22,20 +22,29 @@
 #   代わりに empty_absent: その文の p があり、同じ div.f_parallel2 に li（管理番号などの項目）も写真も無い日だけ 0 頭。手編集で文だけ残したまま子を足した日は li が出るので 0 頭にならず、行が読めなければ failed のまま。
 #   猫ページ（cathoused.html）は 0 頭の日の文言が未確認なので、猫ではこの文に当たらず従来どおり（ブロックが無い・読めない日は通知に出す。その日の文言が分かったらページを保存して足す）。
 # 管理番号も写真も収容日も無い子は動物とみなされず捨てられるが、管理番号（d1877・c1937）があれば写真が無くても載る。
-rows: "h2:-soup-contains('収容') ~ div.f_parallel2:has(li:-soup-contains('状況'))"
+# 2026-11-12 から作りが変わった（上の li の入れ子・「品種・毛色」の 1 欄の説明は 11/11 までの作り。その試験は test_w006_fix_20261113.py に移した）:
+#   1 頭 = h3「d1878　返還済」「ｃ４９３８」（管理番号。全角のこともある）と、その後ろの div.f_parallel2（写真の div と、td「犬種｜雑種」
+#   「品種｜雑種」のような 2 列の表）。品種と毛色は別の行になった。収容日は「収容期間　令和８年１１月１１日～令和８年１１月１９日」の頭。
+#   h3 から次の h3 か h2 の手前までを 1 行にまとめる。行にするのは表に「状況」の行がある子だけ（項目名が変わって状況を読めない日に、
+#   返還済・死亡の子を収容中として載せない。全部読めなければ failed）。
+rows: "div.wb-contents h3"
+row_until: "h2, h3"
 row_filter:
-  text_has_any: ["管理番号"]
-  field_lacks: {status: ["返還", "譲渡", "死亡"], note: ["死亡"]}
+  text_has_any: ["状況"]
+  field_lacks: {status: ["返還", "譲渡", "死亡"], note: ["死亡"], h3_text: ["返還", "譲渡", "死亡"]}   # 見出しにも「返還済」と書く（d1878　返還済）。表の状況が空でも見出しに書いてあれば載せない（reviewer F-03）
 image: "img@src"
 fields:
-  management_no: {selector: "li:-soup-contains('管理番号') > ul > li"}
-  breed: {selector: "li:-soup-contains('品種・毛色') > ul > li", regex: "^((?!(?:トイ|ミニチュア|シー|ジャック|ヨークシャー|ウ[ェエ]ルシュ|ゴールデン|ラブラドール|ボーダー|ジャーマン|セント|フレンチ|イングリッシュ|アメリカン|ビション|ブル|ボストン|スコティッシュ|シベリアン|チャウ|ロシアン|メイン|ブリティッシュ|ノルウェージャン|グレート|バセット|キャバリア|ジャパニーズ)・)(?=[^・]+・[^・]+$)[^・]+|.+)"}
-  color: {selector: "li:-soup-contains('品種・毛色') > ul > li", regex: "^(?!(?:トイ|ミニチュア|シー|ジャック|ヨークシャー|ウ[ェエ]ルシュ|ゴールデン|ラブラドール|ボーダー|ジャーマン|セント|フレンチ|イングリッシュ|アメリカン|ビション|ブル|ボストン|スコティッシュ|シベリアン|チャウ|ロシアン|メイン|ブリティッシュ|ノルウェージャン|グレート|バセット|キャバリア|ジャパニーズ)・)[^・]+・([^・]+)$"}
-  age: {selector: "li:-soup-contains('推定年齢') > ul > li"}
-  sex: {selector: "li:-soup-contains('性別') > ul > li"}
-  status: {selector: "li:-soup-contains('状況') > ul"}   # 除外判定用（animals には出ない）
-  location: {selector: "li:-soup-contains('収容場所') > ul > li"}
-  note: {selector: "li:-soup-contains('備考') > ul"}
+  h3_text: {selector: "h3"}   # 除外判定用（animals には出ない）
+  management_no: {selector: "h3", regex: "([A-Za-zＡ-Ｚａ-ｚ]\\s*[0-9０-９]{3,})"}
+  breed: {label: ["品種", "犬種", "猫種"]}
+  color: {label: "毛色"}
+  age: {label: ["推定年齢", "年齢"]}
+  sex: {label: "性別"}
+  size: {label: "体格"}
+  shelter_date: {label: "収容期間", regex: "^(.+?)\\s*[～〜~]"}
+  status: {label: "状況"}   # 除外判定用（animals には出ない）
+  location: {label: "収容場所"}
+  note: {label: "備考"}
 empty_absent:
   page: "div.f_parallel2 p:-soup-contains('飼い主不明の迷い犬はセンターに収容されていません')"
   none: "div.f_parallel2 li, div.f_parallel2 img, div.f_parallel2 table"

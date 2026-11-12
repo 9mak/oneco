@@ -2119,9 +2119,10 @@ sources:
   prefecture: 岡山県
   phone: 086-724-9512
   address: null
-  url: https://www.pref.okayama.jp/page/859555.html
-  verified_at: '2026-10-15'
-  verified_phone_url: "https://www.pref.okayama.jp/page/859555.html"
+  url: https://www.pref.okayama.lg.jp/page/859555.html
+  verified_at: '2026-11-13'
+  verified_phone_url: "https://www.pref.okayama.lg.jp/page/859555.html"
+  note: "2026-11-11 から県のサイトが www.pref.okayama.jp から www.pref.okayama.lg.jp へ移り、旧 URL は同じパスへ 301 で飛ばすだけになった（収集は別サイトへの転送を取得不能にするので 11/11〜13 は failed）。2026-11-13 に新ドメインへ書き換え、ページの作りは同じでレシピのまま読めること（犬 3・猫 2）と、問い合わせ先の電話（全角の ０８６－７２４－９５１２）を確認"
   kind: sheltered
   species: mixed
   mode: recipe

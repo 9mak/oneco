@@ -42,6 +42,8 @@ steps:
 
 `follow_all` と `pdf_links` に `skip_errors: true` を付けると、子が「ページが無い」（HTTP 404・410）ときはその 1 本だけ捨てて続ける（一覧に消えた個別ページへのリンクが残る群馬県・岐阜県）。捨てた子は `collector show` の trace（`skip <URL>: <理由>`）と report.json の `skipped` に残る。
 
+`follow_all` に `script_url: <正規表現>` を付けると、セレクタのリンクに加えて、文書のインラインの script（`src` の無いもの）から正規表現に合う URL も辿る（グループがあれば 1 番目）。文書と別のホストの URL は辿らない。記事が 1 件の日だけ一覧を出さず `location.href='…'` でその記事へ飛ばすサイト用（熊本市 `script_url: "location\\.href='([^']*/hpkiji/pub/detail\\.aspx\\?[^']*)'"`）。`follow_all` 以外に付けるとレシピの検査で落ちる。
+
 ```yaml
 steps:
   - follow_all: "div.detail_free a[href*='/page/']@href"
