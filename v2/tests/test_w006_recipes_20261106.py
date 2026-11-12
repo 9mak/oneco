@@ -200,11 +200,6 @@ def test_fukuoka_1_day_with_a_dog_does_not_show_the_zero_sentence():
     assert "収容されていません" not in text
 
 
-def test_fukuoka_1_closed_dog_day_is_still_zero_as_before():
-    res = _run(FUK1, _fx("w006_city_fukuoka_doghoused_20261031.html"))
-    assert res.animals == [] and res.empty_confirmed
-
-
 @pytest.mark.parametrize("edit", [("返還済", ""), ("管理番号", "整理番号")])
 def test_fukuoka_1_stale_sentence_with_a_dog_row_is_not_zero(edit):
     # 手編集で文を消し忘れたまま子の行が足された日。読めても（状況が空）、項目名が変わって読めなくても、li が残るので 0 頭にしない
@@ -227,7 +222,3 @@ def test_fukuoka_1_sentence_gone_is_not_zero():
     assert res.animals == [] and not res.empty_confirmed
 
 
-def test_fukuoka_2_cat_page_is_untouched_by_the_dog_sentence():
-    # 猫ページの 0 頭の日の文言は未確認のまま。犬の文には当たらず、従来どおり
-    res = _run(FUK2, _fx("w006_city_fukuoka_cathoused_20261031.html"))
-    assert res.animals == [] and res.empty_confirmed  # 死亡の 1 件だけ（全行除外）

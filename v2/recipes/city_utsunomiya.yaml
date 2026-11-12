@@ -3,21 +3,20 @@
 # 収容日・収容場所・種類・毛色・性別・体格・装着物が入る（1頭=1見出し+後続p群）。
 # 種別(犬/猫)は h2 のテキストから判定。0件時は「現在収容中の犬/猫はいません」。
 rows: "div#voice h2"
+# 2026-11-13: 初めて子が載った日（迷子犬 1・負傷猫 1）に作りを確かめた。h2 の後ろに写真の p.imageright と
+# 「収容日　　令和8年…」のような 1 項目 1 段落の p が平らに並ぶ（h2 の子孫ではない）。次の h2 の手前までを 1 頭にまとめる。
+row_until: "h2"
 row_filter:
-  text_has_any: ["掲載期限"]
-
-# 注意: 収容日等の値は h2 の「兄弟」の <p> にあり、h2 自身の子孫ではない
-# （<h2>迷子犬（掲載期限…）</h2><p>収容日　令和8年5月13日</p> …）。
-# このエンジンの fields.label は row 要素の子孫しか見ないため、実際に動物が
-# 掲載された状態で値が正しく拾えるかは未検証（2026-09-29 現在は 0 件で確認不能）。
-# 次に動物が出た時点で show の捨てた理由・取れた値を必ず確認して直すこと。
+  text_has_any: ["掲載期限"]   # 子の見出しは「迷子犬（掲載期限…）」。下の「栃木県動物愛護指導センター」等の h2 はここで落ちる
+image: "img@src"
 fields:
-  shelter_date: {label: "収容日"}
-  location: {label: "収容場所"}
-  breed: {label: "種類"}
-  color: {label: "毛色"}
-  sex: {label: "性別"}
-  size: {label: "体格"}
+  shelter_date: {selector: "p:-soup-contains('収容日')", regex: "収容日\\s*(.+)"}
+  location: {selector: "p:-soup-contains('収容場所')", regex: "収容場所\\s*(.+)"}
+  breed: {selector: "p:-soup-contains('種類')", regex: "種類\\s*(.+)"}
+  color: {selector: "p:-soup-contains('毛色')", regex: "毛色\\s*(.+)"}
+  sex: {selector: "p:-soup-contains('性別')", regex: "性別\\s*(.+)"}
+  size: {selector: "p:-soup-contains('体格')", regex: "体格\\s*(.+)"}
+  note: {selector: "p:-soup-contains('装着物')", regex: "装着物\\s*(?!なし\\s*$)(\\S.*)"}   # 首輪など（「なし」は載せない）
 
 species:
   from: text

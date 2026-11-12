@@ -10,7 +10,9 @@
 # 個体ページの 404 固定除外（775956・776793。今日も 404 で一覧に残っている）を外した。今後新しく 404 が出ても slug は落ちない。
 # 7895（「収容の情報ページへ戻る」。今は 200 で返る収容動物情報の目次）と 7896 は 404 ではなく動物でない導線なので除外を残す。
 steps:
-  - follow_all: "div#main_body div.detail_free a[href*='/page/']:not([href='/page/7895.html']):not([href='/page/7896.html'])"
+  # 2026-11-13: 一覧（更新日 11/11）に残る 26-134（渋川市北牧）の個別ページ /page/782041.html が 404（11/12 までは読めた。返還等で個別ページだけ
+  # 先に消え、一覧の更新が遅れている）。子がこの 1 本だけなので skip_errors でも「全部失敗」で failed になる → 10/04 の前例どおりこの 1 本を外す。
+  - follow_all: "div#main_body div.detail_free a[href*='/page/']:not([href='/page/7895.html']):not([href='/page/7896.html']):not([href='/page/782041.html'])"
     skip_errors: true
 rows: "body"
 image: "div#main_body img@src"
@@ -26,5 +28,6 @@ fields:
   note: {label: "備考", default: null}
 empty_text:
   - "保管期間中の犬はおりません"
+  - "保管期間中の動物はおりません"   # 地区ごとの 0 頭の文（「中毛地区 … 現在、保管期間中の動物はおりません。」）。子が読めた日は使われない
   - "保管期間中の負傷猫はいません"
   - "保管期間中の猫はいません"

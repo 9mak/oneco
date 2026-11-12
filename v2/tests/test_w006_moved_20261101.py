@@ -244,90 +244,10 @@ def test_fukuoka_interim_phone_and_address_are_only_what_the_page_says(slug):
     assert s.verified_phone_url == url and s.verified_address_url == url
 
 
-def test_fukuoka_real_pages_list_nothing_because_the_one_animal_on_each_is_closed():
-    # 捨てた理由には当たった除外語が出る（返還済は「返還」に、死亡は「死亡」に当たる）
-    c = _dog(_fx(DOG_PAGE))
-    assert c.status == "empty", c.error
-    assert _res(c).animals == [] and _res(c).empty_evidence == "all_excluded+container"
-    assert [d.reason for d in _res(c).dropped] == ["除外語（status: 返還）"]
-    assert "管理番号 d1877" in _res(c).dropped[0].text
-    c = _cat(_fx(CAT_PAGE))
-    assert c.status == "empty", c.error
-    assert _res(c).animals == [] and _res(c).empty_evidence == "all_excluded+container"
-    assert [d.reason for d in _res(c).dropped] == ["除外語（status: 死亡）"]
-    assert "管理番号 ｃ1937" in _res(c).dropped[0].text      # 捨てた行の文字は元のまま（全角の ｃ）
-
-
-@pytest.mark.parametrize("status", ["", "収容中", "公示中"])
-def test_fukuoka_dog_synthetic_page_with_the_status_edited_is_listed_with_the_official_fields(status):
-    # 合成: 実ページ（d1877・返還済）の「状況」だけを書き換えて、収容中の子が載った形にした。収容中の子の状況の書き方は実例が無いので 3 通り
-    html = _swap(_fx(DOG_PAGE), "<li>返還済</li>", f"<li>{status}</li>")
-    c = _dog(html)
-    assert c.status == "ok", c.error
-    (a,) = _res(c).animals
-    assert _pick(a, "species", "management_no", "breed", "color", "age", "sex", "location", "note", "shelter_date", "image_url", "source_url") == {
-        "species": "dog", "management_no": "d1877", "breed": "ハスキー", "color": "灰白", "age": "3~5才", "sex": "おす",
-        "location": "城南区 樋井川4丁目", "note": "東油山で発見。午前5時45分頃上記で保護。", "shelter_date": None,
-        "image_url": "https://www.city.fukuoka.lg.jp/hofuku/dobutsukanri/life/images/d1877.JPG", "source_url": FUKUOKA_DOG}
-
-
-def test_fukuoka_cat_synthetic_page_with_the_status_blanked_is_listed_without_a_photo():
-    # 合成: 実ページ（ｃ1937・死亡）の「状況」だけ空にした。「写真は掲載しておりません」の子は管理番号で載る。備考は 3 行を空白でつなぐ
-    c = _cat(_swap(_fx(CAT_PAGE), "<li>死亡</li>", "<li></li>"))
-    assert c.status == "ok", c.error
-    (a,) = _res(c).animals
-    assert _pick(a, "species", "management_no", "breed", "color", "age", "sex", "location", "note", "image_url", "source_url") == {
-        "species": "cat", "management_no": "c1937", "breed": "雑種", "color": "キジ", "age": "10歳以上", "sex": "不妊めす",
-        "location": "博多区月隈5丁目", "note": "夜間動物病院経由で収容 城南区堤2丁目にて10月29日 22時頃保護 左耳カット有り",
-        "image_url": None, "source_url": FUKUOKA_CAT}
-
-
-def test_fukuoka_dog_synthetic_page_with_one_returned_and_one_active_lists_only_the_active():
-    html = _fx(DOG_PAGE)
-    start = html.index('<div class="f_parallel2">')
-    end = html.index("<p>&nbsp;</p>", start)
-    block = html[start:end]
-    active = block.replace("d1877", "d1878").replace("<li>返還済</li>", "<li>収容中</li>")
-    assert active != block
-    c = _dog(html[:end] + active + html[end:])
-    assert c.status == "ok", c.error
-    assert [a["management_no"] for a in _res(c).animals] == ["d1878"]
-    assert [d.reason for d in _res(c).dropped] == ["除外語（status: 返還）"]
-
-
-@pytest.mark.parametrize("closed", ["返還済", "譲渡済", "死亡", "譲渡決定"])
-def test_fukuoka_dog_synthetic_page_never_lists_a_closed_status(closed):
-    html = _fx(DOG_PAGE)
-    if closed != "返還済":     # 返還済は実ページの状況そのまま。ほかは状況の欄だけ書き換えた合成
-        html = _swap(html, "<li>返還済</li>", f"<li>{closed}</li>")
-    c = _dog(html)
-    assert c.status == "empty" and _res(c).animals == []
-
-
-def test_fukuoka_dog_synthetic_page_with_death_in_the_remarks_is_not_listed():
-    # 状況が空でも備考に「死亡」とある子は載せない（わんにゃんよかネット時代の 2026-10-05 監査と同じ）
-    html = _swap(_swap(_fx(DOG_PAGE), "<li>返還済</li>", "<li></li>"), "東油山で発見。午前５時45分頃上記で保護。", "10/3死亡")
-    c = _dog(html)
-    assert c.status == "empty" and _res(c).animals == []
-
-
-@pytest.mark.parametrize("cell,breed,color", [
-    ("ハスキー・灰白", "ハスキー", "灰白"), ("雑種・キジ", "雑種", "キジ"), ("柴・白", "柴", "白"), ("柴", "柴", None),
-    ("シー・ズー・白茶", "シー・ズー・白茶", None),                        # 「・」が 2 つ以上は、欄をそのまま品種に入れて毛色は空
-    # reviewer F-04: 毛色の無い「・」入りの犬猫種（「・」が 1 つ）を「品種・毛色」と取り違えて分けない。頭の語が「トイ・」「シー・」等で始まる欄は分けない
-    ("トイ・プードル", "トイ・プードル", None), ("シー・ズー", "シー・ズー", None), ("ミニチュア・ダックスフンド", "ミニチュア・ダックスフンド", None),
-    ("ジャック・ラッセル・テリア", "ジャック・ラッセル・テリア", None), ("ゴールデン・レトリバー", "ゴールデン・レトリバー", None),
-    ("アメリカン・ショートヘア", "アメリカン・ショートヘア", None), ("トイ・プードル・白", "トイ・プードル・白", None)])
-def test_fukuoka_dog_synthetic_breed_and_color_are_split_only_when_there_is_one_separator(cell, breed, color):
-    # 品種・毛色は 1 つの欄。「・」がちょうど 1 つで、頭の語が「・」入りの犬猫種の頭（トイ・ ミニチュア・ シー・ ジャック・ ゴールデン・ アメリカン・ 等）でないときだけ分ける。
-    # 品種に「・」を含む犬種（シー・ズー）や色が「・」でつながる子は、欄をそのまま品種に入れて毛色は空（誤って切らない）
-    html = _swap(_fx(DOG_PAGE), "<li>返還済</li>", "<li></li>")
-    if cell != "ハスキー・灰白":
-        html = _swap(html, "<li>ハスキー・灰白</li>", f"<li>{cell}</li>")
-    (a,) = _res(_dog(html)).animals
-    assert (a["breed"], a["color"]) == (breed, color)
-
-
+# 2026-11-13: 市のページが 11/12 から表と h3 の管理番号の作りに変わり、レシピを今の作りに合わせた。前の作り（このファイルの
+# 2026-10-31 の保存ページ）で子を読む試験（状況の書き換え・除外語・備考の死亡・品種と毛色の 1 欄・状況の項目名の変更）は、
+# 同じ性質を今の作りの実ページで確かめる試験に置き換えた（tests/test_w006_fix_20261113.py の福岡市の節）。
+# 下の 3 つは前の作りのページでも「0 頭にしない（failed）」ことを確かめる試験で、今のレシピでもそのまま成り立つので残す。
 def test_fukuoka_a_page_without_any_animal_block_is_not_zero():
     # 一覧に 1 頭もいない日の文言は未確認。ブロックが 1 つも無いページは 0 頭にせず、読めなかったことにする
     html = _fx(DOG_PAGE)
@@ -342,19 +262,6 @@ def test_fukuoka_changed_structure_is_not_zero():
                    _swap(dog, "<li>管理番号 ", "<li>番号 ")):                    # 項目名が変わった
         c = _dog(broken)
         assert c.status == "failed" and _res(c).animals == []
-
-
-def test_fukuoka_status_label_renamed_is_not_read_as_active():
-    # reviewer F-01: 項目名「状況」が変わると、返還済・死亡の子の状況を読めず収容中として載ってしまう（fail-open）。
-    # 状況の項目が無いブロックは行にせず、読めなかったことにする（failed）。状況の欄が空の収容中の子は、項目名があるので行になる
-    dog, cat = _fx(DOG_PAGE), _fx(CAT_PAGE)
-    for c in (_dog(_swap(dog, "<li>状況 ", "<li>ステータス ")), _cat(_swap(cat, "<li>状況 ", "<li>ステータス "))):
-        assert c.status == "failed" and _res(c).animals == []
-    # 今日の 2 ページは 0 頭確定のまま、状況が空欄の収容中の子は載る
-    for c in (_dog(dog), _cat(cat)):
-        assert c.status == "empty" and _res(c).empty_evidence == "all_excluded+container"
-    assert [a["management_no"] for a in _res(_dog(_swap(dog, "<li>返還済</li>", "<li></li>"))).animals] == ["d1877"]
-    assert [a["management_no"] for a in _res(_cat(_swap(cat, "<li>死亡</li>", "<li></li>"))).animals] == ["c1937"]
 
 
 def test_fukuoka_blocks_that_cannot_be_read_are_not_zero():
