@@ -6,7 +6,11 @@
 #   alt「R8犬6PPB3b (PNG 897KB)」）が 2 つ載った。本番の AI 修復の案（proposals/hokkaido_hidaka-1.yaml）を元に、チラシ 1 枚を 1 頭として読む。
 #   個体の項目（性別・毛色など）はチラシの画像の中にしか無いので読まない。alt はファイル名なので管理番号には使わない（案から外した）。
 #   種別は alt の「犬」「猫」、場所は直前の h3（○静内保健所）。
-rows: "article.body p:has(> a > img)"
+#   行はリンクで包んだ画像（p > a:has(> img)。:has の中に結合子を 2 つ並べると CI の soupsieve が拒む）。種別（alt の犬・猫）が読めない画像
+#   （ポスター・バナー等）は動物にしない（field_required。全部がそうなら 0 頭にせず failed。reviewer F-02）。
+rows: "article.body p > a:has(> img)"
+row_filter:
+  field_required: {species: ["犬", "猫"]}
 image: "img@src"
 fields:
   species: {selector: "img", attr: "alt"}

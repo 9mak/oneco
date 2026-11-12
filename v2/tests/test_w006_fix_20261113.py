@@ -123,6 +123,26 @@ def test_hidaka_reads_one_dog_per_flyer_image():
     assert all(a.get("management_no") is None for a in res.animals)   # alt はファイル名なので管理番号にしない
 
 
+HIDAKA_POSTER = '<p><img alt="飼い主探しノートポスター"'
+
+
+def test_hidaka_linked_image_without_dog_or_cat_in_alt_is_not_an_animal():
+    # ポスターがリンクで包まれた日も、alt に犬・猫が無い画像は動物にしない（reviewer F-02）
+    html = _fx("w006_hokkaido_hidaka-1_20261113.html")
+    assert HIDAKA_POSTER in html
+    html = _swap(html, HIDAKA_POSTER, '<p><a href="/fs/poster.jpg"><img alt="飼い主探しノートポスター"').replace(
+        "ポスター.jpg\"/></p>", "ポスター.jpg\"/></a></p>")
+    res = _run("hokkaido_hidaka-1", html)
+    assert len(res.animals) == 2 and all(a["species"] == "dog" for a in res.animals)
+
+
+def test_hidaka_only_non_animal_images_is_not_zero():
+    # 種別の読めない画像だけの日（作りが変わった・チラシの alt が変わった）は 0 頭にしない
+    html = _fx("w006_hokkaido_hidaka-1_20261113.html").replace('alt="R8犬', 'alt="R8')
+    res = _run("hokkaido_hidaka-1", html)
+    assert res.animals == [] and not res.empty_confirmed
+
+
 def test_hidaka_zero_day_is_still_a_zero_day():
     res = _run("hokkaido_hidaka-1", _fx("w006_hokkaido_zero_hidaka-1_20261107.html"))
     assert res.animals == [] and res.empty_confirmed
@@ -135,6 +155,17 @@ def test_kushiro_reads_the_dog_and_skips_the_blank_templates():
         "species": "dog", "management_no": "SD11-1", "breed": "雑種", "size": "中型", "age": "推定1~5歳", "color": "白", "sex": "メス",
         "location": "標茶町字中茶安別原野", "shelter_date": "令和8年(2026年)11月10日", "note": "人慣れしていない"}
     assert a["image_url"].endswith("/SD11-1.jpeg")
+
+
+def test_kushiro_numbered_dog_with_a_blank_breed_is_not_dropped_as_a_template():
+    # 雛形として捨てるのは番号の無い「No.D」「No.C」だけ。番号のある子は種類が空でも管理番号で載る（reviewer F-05）
+    html = _swap(_fx("w006_hokkaido_kushiro-2_20261113.html"), "<li>種類：雑種</li>", "<li>種類：</li>")
+    (a,) = _run("hokkaido_kushiro-2", html).animals
+    assert a["management_no"] == "SD11-1" and a.get("breed") is None and a["size"] == "中型"   # 空欄から次の項目を読まない
+    blank = _swap(_swap(_fx("w006_hokkaido_kushiro-2_20261113.html"), "<li>特徴：人慣れしていない</li>", "<li>特徴：</li>"),
+                  "<li>保護場所：標茶町字中茶安別原野</li>", "<li>保護場所：</li>")
+    (b,) = _run("hokkaido_kushiro-2", blank).animals
+    assert b.get("note") is None and b.get("location") is None
 
 
 def test_kushiro_zero_day_needs_all_three_headings():
@@ -164,6 +195,18 @@ def test_kumamoto_cat_redirect_page_without_the_target_is_not_zero():
     # 転送先が取れない日は 0 頭にしない（従来どおり failed）
     c = _collect("city_kumamoto-2", {KUMA_LIST: _fx("w006_city_kumamoto-2_list_redirect_20261113.html")}, status={KUMA_DETAIL: 500})
     assert c.status == "failed"
+
+
+def test_kumamoto_dog_single_article_day_follows_the_script_redirect_too():
+    # 犬（city_kumamoto-1）も同じ CMS。猫の転送ページを犬の分類に置き換え、11/06 の犬の記事を転送先にした合成
+    dog_list = SOURCES["city_kumamoto-1"].url
+    detail = KUMA_DETAIL.replace("id=73813", "id=73653").replace("class_id=3615", "class_id=3612")
+    html = _fx("w006_city_kumamoto-2_list_redirect_20261113.html").replace(KUMA_DETAIL, detail)
+    assert detail in html
+    c = _collect("city_kumamoto-1", {dog_list: html, detail: _fx("t631_city_kumamoto-1_kiji00373653_20261106.html")},
+                 redirects={detail: "https://www.city.kumamoto.jp/doubutuaigo/kiji00373653/index.html"})
+    assert c.status == "ok", c.error
+    assert [a["species"] for a in _res(c).animals] == ["dog"]
 
 
 def test_kumamoto_cat_zero_day_and_list_day_are_unchanged():
@@ -221,6 +264,17 @@ def test_script_url_must_be_a_safe_regex_on_the_same_host():
     assert validate_recipe_dict(alone, "https://x.jp/list.html")    # follow_all 以外に付けたら誤り
 
 
+def test_script_url_only_http_on_the_same_host_after_base_url():
+    # 辿るときと同じ base で解決して判定する（base_url が別ホストなら相対 URL も別ホスト扱い）。http(s) 以外は拾わない（reviewer F-04）
+    step = {"follow_all": "div#list a@href", "script_url": r"location\.href='([^']*)'"}
+    ftp = LIST_WITH_REDIRECT.replace("https://x.jp/detail.aspx", "ftp://x.jp/detail.aspx")
+    _, docs = _exec(step, {_src().url: ftp})
+    assert docs == []
+    rel = LIST_WITH_REDIRECT.replace("https://x.jp/detail.aspx", "/detail.aspx")
+    recipe = Recipe.from_dict({"steps": [step], "rows": "body", "base_url": "https://cdn.example/"})
+    assert Executor(FakeFetcher({_src().url: rel}), recipe).resolve(_src().url) == []
+
+
 def test_script_url_to_another_host_is_not_followed():
     step = {"follow_all": "div#list a@href", "script_url": r"location\.href='([^']*)'"}
     html = LIST_WITH_REDIRECT.replace("https://x.jp/detail.aspx", "https://evil.example/detail.aspx")
@@ -270,9 +324,17 @@ def test_fukuoka_cat_without_a_photo_is_listed_by_its_number_when_its_status_is_
     assert [a["management_no"] for a in _res(c).animals] == ["c4938", "c4939"]
 
 
+RETURNED_MARK = '　<strong style="color:#c0392b;">返還済</strong>'   # 見出し h3「d1878　返還済」の印
+
+
+def _dog_active(status: str) -> str:
+    """実ページ（d1878・返還済）の表の状況を書き換え、見出しの印も外して、収容中の子が載った形にした合成。"""
+    return _swap(_swap(_fx(DOG), "<td>返還済</td>", f"<td>{status}</td>"), RETURNED_MARK, "")
+
+
 @pytest.mark.parametrize("status", ["", "収容中", "公示中"])
 def test_fukuoka_dog_with_the_status_edited_is_listed(status):
-    c = _dog(_swap(_fx(DOG), "<td>返還済</td>", f"<td>{status}</td>"))
+    c = _dog(_dog_active(status))
     assert c.status == "ok", c.error
     (a,) = _res(c).animals
     assert _pick(a, "species", "management_no", "breed", "color", "sex", "age", "size", "shelter_date", "location") == {
@@ -282,12 +344,18 @@ def test_fukuoka_dog_with_the_status_edited_is_listed(status):
 
 @pytest.mark.parametrize("closed", ["返還済", "譲渡済", "死亡", "譲渡決定"])
 def test_fukuoka_dog_never_lists_a_closed_status(closed):
-    c = _dog(_swap(_fx(DOG), "<td>返還済</td>", f"<td>{closed}</td>"))
+    c = _dog(_dog_active(closed))     # 見出しの印は外し、表の状況だけで除外されることを見る
+    assert c.status == "empty" and _res(c).animals == []
+
+
+def test_fukuoka_dog_returned_only_in_the_heading_is_not_listed():
+    # 表の状況が空でも、見出しに「返還済」とあれば載せない（reviewer F-03）
+    c = _dog(_swap(_fx(DOG), "<td>返還済</td>", "<td></td>"))
     assert c.status == "empty" and _res(c).animals == []
 
 
 def test_fukuoka_dog_with_death_in_the_remarks_is_not_listed():
-    html = _swap(_swap(_fx(DOG), "<td>返還済</td>", "<td></td>"), "首輪（赤）、マイクロチップ装着あり", "11/12死亡")
+    html = _swap(_dog_active(""), "首輪（赤）、マイクロチップ装着あり", "11/12死亡")
     c = _dog(html)
     assert c.status == "empty" and _res(c).animals == []
 
@@ -312,21 +380,30 @@ def test_fukuoka_zero_sentence_day_is_still_zero():
     assert c.status == "empty" and _res(c).empty_evidence == "empty_absent"
 
 
-# --- 群馬 保護犬: 個別ページだけ消えた子 ---------------------------------------------------------------------------------------
+# --- 群馬 保護犬: 地区ごとの 0 頭の文 -------------------------------------------------------------------------------------------
 GUNMA = SOURCES["pref_gunma-1"].url
+GUNMA_DEAD = "https://www.pref.gunma.jp/page/782041.html"
+GUNMA_KITAMO_DOG = '<p>　<a href="/page/782041.html">管理番号：26-134（渋川市北牧）</a></p>'
 
 
-def test_gunma_dog_list_with_only_the_deleted_page_is_a_zero_day():
+def test_gunma_dog_list_with_a_deleted_child_page_is_not_zero():
+    # 11/13 の実ページ: 北毛に 26-134 のリンクが残り、その個別ページだけ 404。他の 2 地区の「おりません」だけでは 0 頭にしない（reviewer F-01）
     html = _fx("w006_pref_gunma-1_list_20261113.html")
-    assert "/page/782041.html" in html and "現在、保管期間中の動物はおりません" in html
-    c = _collect("pref_gunma-1", {GUNMA: html}, status={"https://www.pref.gunma.jp/page/782041.html": 404})
+    assert GUNMA_KITAMO_DOG in html
+    c = _collect("pref_gunma-1", {GUNMA: html}, status={GUNMA_DEAD: 404})
+    assert c.status == "failed"
+
+
+def test_gunma_dog_unreadable_child_with_other_districts_empty_is_not_zero():
+    # 子の個別ページは 200 で返るが作りが変わって読めない日。他の 2 地区の文で 0 頭にしない（reviewer F-01 の再現）
+    c = _collect("pref_gunma-1", {GUNMA: _fx("w006_pref_gunma-1_list_20261113.html"), GUNMA_DEAD: "<html><body><p>準備中</p></body></html>"})
+    assert c.status == "failed"
+
+
+def test_gunma_dog_all_three_districts_empty_is_a_zero_day():
+    html = _swap(_fx("w006_pref_gunma-1_list_20261113.html"), GUNMA_KITAMO_DOG, "<p>　現在、保管期間中の動物はおりません。</p>")
+    c = _collect("pref_gunma-1", {GUNMA: html})
     assert c.status == "empty", c.error
-
-
-def test_gunma_dog_other_links_are_still_followed():
-    html = _swap(_fx("w006_pref_gunma-1_list_20261113.html"), "/page/782041.html", "/page/790000.html")
-    c = _collect("pref_gunma-1", {GUNMA: html}, status={"https://www.pref.gunma.jp/page/790000.html": 404})
-    assert c.status == "failed"          # 新しいリンクは辿る（ここでは 404 にしたので全部失敗＝failed）
 
 
 # --- 岡山県: ドメインの移転 ------------------------------------------------------------------------------------------------

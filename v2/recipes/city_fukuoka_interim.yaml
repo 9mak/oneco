@@ -31,9 +31,10 @@ rows: "div.wb-contents h3"
 row_until: "h2, h3"
 row_filter:
   text_has_any: ["状況"]
-  field_lacks: {status: ["返還", "譲渡", "死亡"], note: ["死亡"]}
+  field_lacks: {status: ["返還", "譲渡", "死亡"], note: ["死亡"], h3_text: ["返還", "譲渡", "死亡"]}   # 見出しにも「返還済」と書く（d1878　返還済）。表の状況が空でも見出しに書いてあれば載せない（reviewer F-03）
 image: "img@src"
 fields:
+  h3_text: {selector: "h3"}   # 除外判定用（animals には出ない）
   management_no: {selector: "h3", regex: "([A-Za-zＡ-Ｚａ-ｚ]\\s*[0-9０-９]{3,})"}
   breed: {label: ["品種", "犬種", "猫種"]}
   color: {label: "毛色"}

@@ -273,10 +273,11 @@ def _abs(base: str, href: str) -> str:
     return urljoin(base, href.strip())
 
 
-def _script_urls(doc: Doc, pattern: str) -> list[str]:
+def _script_urls(doc: Doc, pattern: str, base: str) -> list[str]:
     """follow_all の script_url: 文書のインラインの script（src の無いもの）から pattern に合う URL を拾う。
-    グループがあれば 1 番目、無ければ全体。文書と別のホストの URL は拾わない（解析用のタグ等を辿らない）。
-    熊本市の一覧は記事が 1 件の日だけ一覧を出さず location.href='…detail.aspx?…' でその記事へ飛ばす（W006 2026-11-13）。"""
+    グループがあれば 1 番目、無ければ全体。辿るときと同じ base で解決し、http(s) で文書と同じホストの URL だけ拾う
+    （解析用のタグ等を辿らない）。熊本市の一覧は記事が 1 件の日だけ一覧を出さず location.href='…detail.aspx?…' で
+    その記事へ飛ばす（W006 2026-11-13）。"""
     if doc.soup is None:
         return []
     host = urlsplit(doc.url).hostname
@@ -286,7 +287,10 @@ def _script_urls(doc: Doc, pattern: str) -> list[str]:
             continue
         for m in re.finditer(pattern, s.get_text()):
             href = (m.group(1) if m.groups() else m.group(0)).strip()
-            if href and urlsplit(urljoin(doc.url, href)).hostname == host:
+            if not href:
+                continue
+            u = urlsplit(_abs(base, href))
+            if u.scheme in ("http", "https") and u.hostname == host:
                 out.append(href)
     return out
 
@@ -427,7 +431,7 @@ class Executor:
                 seen: set[str] = set()
                 hrefs = [_attr(el, attr) for el in (d.soup.select(sel) if d.soup else [])]
                 if step.get("script_url"):
-                    hrefs += _script_urls(d, str(step["script_url"]))
+                    hrefs += _script_urls(d, str(step["script_url"]), self.recipe.base_url or d.url)
                 for href in hrefs:
                     if not href:
                         continue
