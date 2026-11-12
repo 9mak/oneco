@@ -41,7 +41,7 @@ REGEX_LONG_LIMIT = 3.0
 # ネストしたキーの許可リスト（docs/RECIPE.md）。項目名（fields.<名前>）は自由（row_filter.field_* の参照先になる）
 STEP_KEYS = {
     "follow", "follow_text", "follow_all", "paginate", "pdf_links", "render", "render_json",
-    "skip_errors", "rendered", "max", "submit_form",
+    "skip_errors", "rendered", "max", "submit_form", "script_url",
 }
 SUBMIT_FORM_KEYS = {"form", "set", "require", "repeat_while", "max"}
 MAX_FORM_SET = 20
@@ -378,6 +378,10 @@ def validate_recipe_dict(raw: dict[str, Any], source_url: str) -> list[str]:
                         c.step_link(f"{w}.{k}", d[k])
                 if "follow_text" in d and not isinstance(d["follow_text"], str):
                     c.err(f"{w}.follow_text: 文字列でない")
+                if "script_url" in d:
+                    if "follow_all" not in d:
+                        c.err(f"{w}.script_url: follow_all と一緒にだけ使える")
+                    c.regex(f"{w}.script_url", d["script_url"])
                 c.int_max(f"{w}.max", d.get("max"), MAX_PAGES)
                 if isinstance(d.get("render"), dict):
                     rd = c.keys(f"{w}.render", d["render"], RENDER_KEYS)

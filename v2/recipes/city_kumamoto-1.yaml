@@ -8,6 +8,8 @@
 # 無いため、このページ固有の見出し文言（h1.classTitle）を「正しいページが読めた」確認に使う）。
 steps:
   - follow_all: "div.kijiArea ul.kijilist li.loadbox div.title a@href"
+    # 記事が 1 件の日は一覧を出さず script の location.href で記事へ飛ばす（猫 city_kumamoto-2 で 2026-11-12 に確認。同じ CMS）
+    script_url: "location\\.href='([^']*/hpkiji/pub/detail\\.aspx\\?[^']*)'"
 rows: "body"
 image: "table.templateForOneImages img@src"
 fields:

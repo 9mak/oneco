@@ -4,8 +4,13 @@
 # 一覧ページの div.kijiArea > ul.kijilist > li.loadbox の記事リンクを個別ページ（kijiNNNNNNNN）へ辿る。1 頭 = 1 記事。
 # 個別ページは table.templateForOneImages に写真、table.__wys_table（保護場所/種類/毛色/性別/推定年齢/首輪/体格）に属性。
 # 保護日時はテーブルに無く本文「保護日時：yyyy年m月d日…」から regex で取る。city_kumamoto-1（迷子犬）と同一テンプレート。
+# 2026-11-13: 記事が 1 件だけの日は一覧（kijiArea・h1.classTitle・横のメニュー）を出さず、script の
+#   location.href='https://www.city.kumamoto.jp/dynamic/doubutuaigo/hpkiji/pub/detail.aspx?c_id=3&id=73813&…' で記事へ飛ばす
+#   （detail.aspx は同じホストの kiji00373813/index.html へ 302）。11/12・13 はこれで「0 頭の枠も記事も無い」 failed だった。
+#   script_url でその URL も辿る（インラインの script だけ・同じホストだけ）。転送先が取れない日は従来どおり failed。
 steps:
   - follow_all: "div.kijiArea ul.kijilist li.loadbox div.title a@href"
+    script_url: "location\\.href='([^']*/hpkiji/pub/detail\\.aspx\\?[^']*)'"
 rows: "body"
 image: "table.templateForOneImages img@src"
 fields:
