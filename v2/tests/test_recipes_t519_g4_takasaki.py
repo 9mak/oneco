@@ -78,7 +78,7 @@ def test_resident_protected_dogs_split_the_combined_cells():
     a = res.animals[0]
     assert _pick(a, "species", "kind", "shelter_date", "location", "breed", "sex", "size", "age", "color") == {
         "species": "dog", "kind": "sheltered", "shelter_date": "令和8年9月21日", "location": "中里町", "breed": "雑種", "sex": "オス", "size": "中型",
-        "age": "10才", "color": "白が多い・革製青色"}
+        "age": "10才", "color": "白が多い"}   # 2026-11-13: 「毛色・首輪」の首輪は備考へ（test_collector_review_20261113.py）
     assert "腫瘍" in a["note"]
 
 

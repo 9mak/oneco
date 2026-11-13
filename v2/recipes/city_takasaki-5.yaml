@@ -13,6 +13,7 @@ fields:
   sex: {selector: "td:nth-of-type(4)", regex: "^([^・]+)"}
   size: {selector: "td:nth-of-type(4)", regex: "^[^・]+・([^・]+)"}
   age: {selector: "td:nth-of-type(4)", regex: "^[^・]+・[^・]+・(.+)$"}
-  color: {selector: "td:nth-of-type(5)"}
-  note: {selector: "td:nth-of-type(6)"}
+  # 5 列目は「毛色・首輪」（「茶・無」「白が多い・革製青色」「首輪無」）。毛色は最後の「・」より前、首輪は備考に「首輪：…」（2026-11-13 Codex #6）
+  color: {selector: "td:nth-of-type(5)", regex: "^(?!首輪)(.+?)(?:・[^・]*)?$"}
+  note: {join: [{selector: "td:nth-of-type(6)"}, {selector: "td:nth-of-type(5)", regex: "(?:・|^首輪)([^・]+)$", prefix: "首輪："}], sep: " "}
 empty_selector: "table tr:has(td) td"

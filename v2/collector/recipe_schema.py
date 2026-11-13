@@ -51,10 +51,10 @@ ROW_FILTER_KEYS = {"text_has_any", "text_lacks", "min_text_length", "field_lacks
 IMAGE_KEYS = {"selector", "exclude", "scope", "stop_at", "strip_query", "match_field"}
 FIELD_SPEC_KEYS = {
     "selector", "attr", "label", "regex", "default", "index", "header", "header_row", "from", "join", "sep",
-    "if_header", "unless_header",
+    "if_header", "unless_header", "prefix",
 }
 SPECIES_KEYS = {"from", "selector", "map", "allow_other", "infer"}
-PDF_KEYS = {"mode", "header_row", "header_has", "columns", "fold_blank_key"}
+PDF_KEYS = {"mode", "header_row", "header_has", "columns", "fold_blank_key", "join_ja_lines"}
 EMPTY_ABSENT_KEYS = {"page", "none"}
 
 _BAD_SCHEMES = ("javascript:", "file:", "data:", "vbscript:")
@@ -242,6 +242,8 @@ class _Check:
         for k in ("if_header", "unless_header"):
             if k in d and not (isinstance(d[k], str) and 0 < len(d[k]) <= 40):
                 self.err(f"{where}.{k}: 40 文字以内の文字列でない")
+        if "prefix" in d and not (isinstance(d["prefix"], str) and 0 < len(d["prefix"]) <= 20):
+            self.err(f"{where}.prefix: 20 文字以内の文字列でない")
         if "join" in d:
             j = d["join"]
             if not isinstance(j, list) or len(j) > MAX_LIST_ITEMS or depth >= 2:
@@ -472,6 +474,8 @@ def validate_recipe_dict(raw: dict[str, Any], source_url: str) -> list[str]:
         pdf = c.keys("pdf", raw["pdf"], PDF_KEYS)
         if "fold_blank_key" in pdf and not (isinstance(pdf["fold_blank_key"], str) and pdf["fold_blank_key"].strip()):
             c.err("pdf.fold_blank_key: 空でない文字列（見出しの語）が要る")
+        if "join_ja_lines" in pdf and not isinstance(pdf["join_ja_lines"], bool):
+            c.err("pdf.join_ja_lines: true か false")
 
     if len(c.selectors) > MAX_SELECTORS:
         c.err(f"セレクタが {len(c.selectors)} 本 > {MAX_SELECTORS}")

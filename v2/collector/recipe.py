@@ -118,7 +118,7 @@ def _make_doc(url: str, html: str) -> Doc:
     return Doc(url=url, html=html, soup=BeautifulSoup(html, "lxml"))
 
 
-def _make_pdf_doc(url: str, content: bytes, columns: int = 1) -> Doc:
+def _make_pdf_doc(url: str, content: bytes, columns: int = 1, join_ja: bool = False) -> Doc:
     """PDF を文字と表にする。columns > 1 なら各ページを左右に等分して列ごとに読む
     （茨城県のように 1 ページ 2 段組みで、丸ごと読むと左右の行が 1 行に混ざる PDF のため）。"""
     import pdfplumber
@@ -134,8 +134,32 @@ def _make_pdf_doc(url: str, content: bytes, columns: int = 1) -> Doc:
             for part in parts:
                 texts.append(part.extract_text() or "")
                 for t in _page_tables(part):
-                    tables.append([[(c or "").replace("\n", " ").strip() for c in row] for row in t])
+                    tables.append([[_pdf_cell(c, join_ja) for c in row] for row in t])
     return Doc(url=url, pdf_tables=tables, pdf_text="\n".join(texts))
+
+
+# 和文の文字（かな・カナ・漢字・長音・々・〜）。「・」「※」「。」は入れない（箇条書きの頭と文の終わりの改行は空白にする）
+_JA = "ぁ-んァ-ヶー一-龠々〆〜"
+_JA_BREAK = re.compile(rf"(?<=[{_JA}])\n(?=[{_JA}])")
+
+
+def _pdf_cell(c: str | None, join_ja: bool = False) -> str:
+    """PDF の表のセル。改行は空白にする。join_ja（レシピの pdf.join_ja_lines）なら、セル幅で折り返した和文の途中の改行は詰める
+    （香川 さぬき「スクスク成 長しています」。2026-11-13 Codex #28）。神奈川県のように改行で句を区切る PDF もあるので既定では詰めない。"""
+    s = _JA_BREAK.sub("", c or "") if join_ja else (c or "")
+    return s.replace("\n", " ").strip()
+
+
+_CIRCLED = re.compile("[①-⑳]")   # ①〜⑳
+
+
+def _norm_text(val: str) -> str | None:
+    """項目の値の正規化（NFKC・空白を 1 つに）。丸数字は NFKC で数字に潰れて「メス:4匹①②③⑤」が「メス:4匹1235」に
+    なるので残す（福井県動物愛護センター。2026-11-13 Codex #5）。"""
+    marks = _CIRCLED.findall(val)
+    parts = [unicodedata.normalize("NFKC", p) for p in _CIRCLED.split(val)]
+    joined = "".join(p + (marks[i] if i < len(marks) else "") for i, p in enumerate(parts))
+    return re.sub(r"\s+", " ", joined).strip() or None
 
 
 def _page_tables(page: Any) -> list[list[list[str | None]]]:
@@ -354,7 +378,7 @@ class Executor:
             return d
         page = self.fetcher.get(url, encoding=self.recipe.encoding)
         if page.html is None:
-            return _make_pdf_doc(page.final_url, page.content, columns=self._pdf_columns())
+            return _make_pdf_doc(page.final_url, page.content, columns=self._pdf_columns(), **self._pdf_opts())
         return _make_doc(page.final_url, page.html)
 
     def _render_opts(self) -> dict[str, Any]:
@@ -371,6 +395,10 @@ class Executor:
 
     def _pdf_columns(self) -> int:
         return int((self.recipe.pdf or {}).get("columns", 1))
+
+    def _pdf_opts(self) -> dict[str, bool]:
+        """_make_pdf_doc に足す引数。指定のあるレシピだけ渡す（試験で _make_pdf_doc を差し替えているものを壊さない）。"""
+        return {"join_ja": True} if (self.recipe.pdf or {}).get("join_ja_lines") is True else {}
 
     def resolve(self, entry_url: str) -> list[Doc]:
         """入口 URL から steps を辿り、rows を適用する文書の列を返す。
@@ -489,7 +517,7 @@ class Executor:
                     tried += 1
                     page = self._child(step, url, failed, lambda u=url: self.fetcher.get(u))
                     if page is not None:
-                        out.append(_make_pdf_doc(page.final_url, page.content, columns=self._pdf_columns()))
+                        out.append(_make_pdf_doc(page.final_url, page.content, columns=self._pdf_columns(), **self._pdf_opts()))
                 self.trace.append(f"pdf_links → {len(seen)} 件")
             self._raise_if_all_failed("pdf_links", tried, failed)
         elif "submit_form" in step:
@@ -1001,7 +1029,9 @@ def field_value(spec: Any, row: Row) -> str | None:
     if val is None and "default" in spec:
         val = spec["default"]
     if isinstance(val, str):
-        val = re.sub(r"\s+", " ", unicodedata.normalize("NFKC", val)).strip() or None
+        val = _norm_text(val)
+    if val and "prefix" in spec:
+        val = f"{spec['prefix']}{val}"   # 取れた値の頭に足す（高崎「毛色・首輪」の首輪を備考で「首輪：無」。2026-11-13）
     return val
 
 

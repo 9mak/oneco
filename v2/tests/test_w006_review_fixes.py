@@ -99,7 +99,7 @@ def test_ambiguous_empty_drops_children_and_site_says_unreadable(tmp_path, monke
     sources = (dist / "sources" / "index.html").read_text(encoding="utf-8")
     assert "本日は読めませんでした。自治体のページをご確認ください" in sources
     assert ">ambiguous_empty<" not in sources and "最終確認" not in sources and "前回確認分" not in sources
-    assert "確認できず 1 件" in sources
+    assert "読めなかった 1 件" in sources   # 2026-11-13 夜:「確認できず」→「読めなかった」（掲載元の状態の言い方にそろえる）
 
 
 # ---------------------------------------------------------------- S2
