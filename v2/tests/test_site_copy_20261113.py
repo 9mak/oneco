@@ -61,6 +61,9 @@ def _a(**kw: Any) -> dict[str, Any]:
     ({"breed": "雑種", "sex": "メス（不妊手術済み）"}, "雑種（メス）"),
     ({"breed": "雑種", "sex": "去勢オス"}, "雑種（去勢オス）"),
     ({"breed": "雑種(柴風)", "sex": "メス"}, "雑種(柴風)・メス"),
+    ({"breed": "雑種", "sex": "メス:4匹1235 オス:2匹46 不明:2匹78"}, "雑種"),               # 複数頭をまとめた欄は見出しに出さない（#123 F-02）
+    ({"breed": "雑種", "sex": "オス1匹 2匹目は不明、確認できていない"}, "雑種"),
+    ({"breed": None, "color": "不明", "species": "cat", "sex": "オス"}, "猫（オス）"),        # 毛色が「不明」なら「不明の猫」としない
     ({"breed": None, "color": "黒白(おひげ模様)", "species": "cat", "sex": "メス"}, "黒白(おひげ模様)の猫・メス"),
     ({"breed": None, "color": None, "species": "other", "sex": None}, "動物"),
     ({"breed": None, "color": None, "species": None, "sex": None}, "保護中の子"),              # 種別も何も無い子だけ区分で呼ぶ
@@ -82,6 +85,8 @@ def test_subline_does_not_repeat_what_the_headline_says():
     assert B.subline(named) == "柴犬 / オス / 3歳"
     by_color = _a(breed=None, color="茶白", species="cat", sex="メス", age="子猫")
     assert B.subline(by_color) == "子猫"
+    many = _a(breed="雑種", color=None, sex="メス:4匹 オス:2匹", age=None)    # 見出しに出さなかった性別の欄は下の行に出す
+    assert B.headline(many) == "雑種" and B.subline(many) == "メス:4匹 オス:2匹"
 
 
 # --- サイト全体を組む ----------------------------------------------------------------------------------------------
@@ -152,6 +157,13 @@ def test_titles_and_alts_do_not_nest_parentheses(tmp_path: Path):
     title = re.search(r"<title>([^<]+)</title>", h).group(1)
     assert title == "雑種（オス）｜町田市｜oneco"
     assert "）（" not in h
+    assert 'alt="雑種（オス）の犬・町田市"' in h        # 写真の alt には種別を足す（読み上げで犬か猫か分かる。#123 F-03）
+
+
+def test_only_kumamoto_recipes_read_a_phone_per_animal():
+    # 子ごとの電話を読むのは熊本県動物愛護センターだけ。三重（mie_dakc）は運営元の電話・所在地の組なので読まない（#123 F-01）
+    have = sorted(p.stem for p in (ROOT / "recipes").glob("*.yaml") if re.search(r"(?m)^  phone:", p.read_text(encoding="utf-8")))
+    assert have == ["kumamoto_doubutuaigo-1", "kumamoto_doubutuaigo-2", "kumamoto_doubutuaigo-7", "kumamoto_doubutuaigo-8"]
 
 
 def test_colons_are_full_width_and_dates_are_not_spaced(tmp_path: Path):

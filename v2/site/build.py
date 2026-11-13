@@ -214,6 +214,8 @@ _MIX_BREED = re.compile(r"^(?:雑|雑種|MIX|Mix|mix|ミックス|雑種\s*[(（
 _SEX_WORDS = {"雄": "オス", "おす": "オス", "♂": "オス", "雌": "メス", "めす": "メス", "♀": "メス"}
 _NOT_A_BREED = {"その他", "不明", "-", "ー", "犬", "猫", "いぬ", "ねこ", "イヌ", "ネコ"}   # 品種の欄に種別や「不明」しか無い子
 _NOT_A_SEX = {"不明", "-", "ー"}
+_HEADLINE_SEX = re.compile(r"(?:去勢|不妊|避妊)?(?:オス|メス)")   # 見出しに出す性別はこの形だけ
+_NOT_A_COLOR = {"不明", "不詳", "-", "ー", "その他"}
 _EMPTY_NOTES = {"無", "無し", "なし", "-", "ー", "募集中"}   # 備考に出しても意味の無い値（大分「無」・福岡県動物愛護協会「募集中」）
 
 
@@ -244,8 +246,9 @@ def _headline_parts(a: dict[str, Any]) -> tuple[str, str, str]:
     breed = disp_breed(a.get("breed"))
     breed = "" if breed in _NOT_A_BREED else breed
     sex = disp_sex(re.sub(r"\s*[(（].*$", "", str(a.get("sex") or "")))   # 「オス(去勢済)」のかっこ書きは見出しでは外す（詳細の表には出す）
-    sex = "" if sex in _NOT_A_SEX else sex
+    sex = sex if _HEADLINE_SEX.fullmatch(sex) else ""   # 複数頭をまとめた欄（「メス:4匹 オス:2匹」）等は見出しに出さない（#123 reviewer F-02）
     color = str(a.get("color") or "").strip()
+    color = "" if color in _NOT_A_COLOR or len(color) > 12 else color
     if breed:
         return breed, "breed", sex
     if color:
@@ -272,8 +275,11 @@ def subline(a: dict[str, Any]) -> str:
     if a.get("name"):
         parts = [disp_breed(a.get("breed")), disp_sex(a.get("sex")), str(a.get("age") or "")]
     else:
-        _, used, _ = _headline_parts(a)
-        parts = ([str(a.get("color") or "")] if used == "breed" else []) + [str(a.get("age") or "")]
+        _, used, sex = _headline_parts(a)
+        raw_sex = disp_sex(a.get("sex"))
+        parts = ([str(a.get("color") or "")] if used != "color" else [])
+        parts += [raw_sex] if not sex and raw_sex not in _NOT_A_SEX else []   # 見出しに出さなかった性別の欄は下の行に
+        parts += [str(a.get("age") or "")]
     return " / ".join(p.strip() for p in parts if p and p.strip())
 
 
@@ -368,7 +374,11 @@ def media(a: dict[str, Any], *, big: bool = False) -> str:
     img = safe_url(a.get("image_url"))
     if not img:
         return f'<div class="media">{placeholder(a)}</div>'
-    alt = esc(f"{headline(a)}・{a.get('municipality') or ''}")
+    h = headline(a)
+    # 見出しに種別の語が無ければ alt に足す（読み上げで犬か猫か分かるように。#123 reviewer F-03）。種別なしの子は足さない
+    if species_key(a) != "none" and species_noun(a) not in h:
+        h = f"{h}の{species_noun(a)}"
+    alt = esc(f"{h}・{a.get('municipality') or ''}")
     attrs = 'loading="eager" fetchpriority="high"' if big else 'loading="lazy"'
     # 自治体サイトの写真を直接表示する。取れなかったときは JS でプレースホルダに差し替える
     return (f'<div class="media"><img src="{esc(img)}" alt="{alt}" referrerpolicy="no-referrer" {attrs} '
