@@ -12,6 +12,6 @@ fields:
   sex: {label: "性別"}
   management_no: {label: "個体管理ナンバー"}
   location: {selector: "dt:-soup-contains('保健所') + dd"}
-  note: {label: "電話番号"}
+  phone: {label: "電話番号", regex: "(0\\d{1,4}-\\d{1,4}-\\d{3,4})"}   # 子ごとの収容先（保健所）の電話。2026-11-13 まで備考に出していた
   detail: {selector: "a", attr: "href"}
 empty_text: ["0件中 0～0件目を表示"]

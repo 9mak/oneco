@@ -472,6 +472,10 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
             }
             for k in FIELD_NAMES:
                 animal[k] = f.get(k)
+            # レシピの phone 項目: 子ごとに収容先の電話が載る掲載元（熊本県動愛の各保健所）は、読めた子だけその電話を出す。
+            # 読めなければ台帳の値のまま（T628: 電話は掲載元ページにあるものだけ。子の行の電話も掲載元ページの値）
+            if f.get("phone"):
+                animal["phone"] = f["phone"]
             res.animals.append(animal)
     pool = list(docs) + [d for d in (visited or []) if d not in docs]
     if not res.animals:
