@@ -277,7 +277,8 @@ def subline(a: dict[str, Any]) -> str:
     else:
         _, used, sex = _headline_parts(a)
         raw_sex = disp_sex(a.get("sex"))
-        parts = ([str(a.get("color") or "")] if used != "color" else [])
+        color = str(a.get("color") or "").strip()
+        parts = [color] if used != "color" and color not in _NOT_A_COLOR else []   # 「不明」だけの行は出さない（#123 F-06）
         parts += [raw_sex] if not sex and raw_sex not in _NOT_A_SEX else []   # 見出しに出さなかった性別の欄は下の行に
         parts += [str(a.get("age") or "")]
     return " / ".join(p.strip() for p in parts if p and p.strip())
@@ -377,7 +378,7 @@ def media(a: dict[str, Any], *, big: bool = False) -> str:
     h = headline(a)
     # 見出しに種別の語が無ければ alt に足す（読み上げで犬か猫か分かるように。#123 reviewer F-03）。種別なしの子は足さない
     if species_key(a) != "none" and species_noun(a) not in h:
-        h = f"{h}の{species_noun(a)}"
+        h = f"{h}（{species_noun(a)}）" if a.get("name") else f"{h}の{species_noun(a)}"   # 名前は「ポチ（犬）」（「ポチの犬」と読まれない）
     alt = esc(f"{h}・{a.get('municipality') or ''}")
     attrs = 'loading="eager" fetchpriority="high"' if big else 'loading="lazy"'
     # 自治体サイトの写真を直接表示する。取れなかったときは JS でプレースホルダに差し替える

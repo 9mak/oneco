@@ -87,6 +87,8 @@ def test_subline_does_not_repeat_what_the_headline_says():
     assert B.subline(by_color) == "子猫"
     many = _a(breed="雑種", color=None, sex="メス:4匹 オス:2匹", age=None)    # 見出しに出さなかった性別の欄は下の行に出す
     assert B.headline(many) == "雑種" and B.subline(many) == "メス:4匹 オス:2匹"
+    unknown = _a(breed=None, color="不明", species="cat", sex="メス", age=None)  # 下の行に「不明」だけを出さない（#123 F-06）
+    assert B.headline(unknown) == "猫（メス）" and B.subline(unknown) == ""
 
 
 # --- サイト全体を組む ----------------------------------------------------------------------------------------------
