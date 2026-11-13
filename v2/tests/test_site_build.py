@@ -150,7 +150,7 @@ def test_placeholder_when_no_image(tmp_path: Path):
     out = tmp_path / "dist"
     _load_build().build_site(data, CONFIG, out)
     h = _read(out / "animals" / "noimg0000001" / "index.html")
-    assert 'class="ph"' in h
+    assert ('class="ph"' in h or 'class="ph ph-' in h)   # 2026-11-13: 犬・猫は class="ph ph-dog" 等（写真なしの枠が出ていればよい）
     assert "<img" not in h.split("<main")[1].split("</main>")[0]   # 本文には img が無い（フッターのロゴは除く）
     assert 'property="og:image" content="https://oneco.pages.dev/brand/oneco-avatar-512.png"' in h   # 写真が無い子はブランド画像
     assert "D999" in h

@@ -368,7 +368,9 @@ def placeholder(a: dict[str, Any] | None = None) -> str:
     """写真が無い子の枠。絵は CSS（.ph の疑似要素）だけで描く。写真を止めている掲載元（T630: 許諾待ち・不可）の子は
     掲載元には写真があるので「写真はありません」とは書かない。"""
     msg = "写真は自治体のページで見られます" if a and a.get("_photo_withheld") else "写真はありません"
-    return f'<div class="ph" role="img" aria-label="{msg}"><span>{msg}</span></div>'
+    sp = species_key(a) if a else "none"
+    cls = f"ph ph-{sp}" if sp in ("dog", "cat") else "ph"   # 犬・猫はシルエット、それ以外は肉球（2026-11-13）
+    return f'<div class="{cls}" role="img" aria-label="{msg}"><span>{msg}</span></div>'
 
 
 def media(a: dict[str, Any], *, big: bool = False) -> str:
@@ -896,6 +898,23 @@ code{font-size:.85em;background:#eef1f4;padding:.1em .3em;border-radius:4px}
 [hidden]{display:none!important}
 """
 
+# 写真なしの枠の絵（2026-11-13）: 犬は垂れ耳とまるい鼻先、猫はとがった耳としっぽの、座った姿のシルエット。色は肉球と同じ #b3c0cc
+_PH_SVG = {
+    "dog": ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g fill="#b3c0cc">'
+            '<ellipse cx="50" cy="71" rx="19" ry="21"/><circle cx="50" cy="35" r="15"/><ellipse cx="50" cy="44" rx="8" ry="6.5"/>'
+            '<ellipse cx="35.5" cy="36" rx="5.5" ry="11" transform="rotate(18 35.5 36)"/>'
+            '<ellipse cx="64.5" cy="36" rx="5.5" ry="11" transform="rotate(-18 64.5 36)"/></g>'
+            '<path d="M66 84 Q84 80 80 64" fill="none" stroke="#b3c0cc" stroke-width="6" stroke-linecap="round"/></svg>'),
+    "cat": ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g fill="#b3c0cc">'
+            '<ellipse cx="50" cy="71" rx="18" ry="21"/><circle cx="50" cy="36" r="14"/>'
+            '<path d="M37 31 L39 15 L49 25 Z"/><path d="M63 31 L61 15 L51 25 Z"/></g>'
+            '<path d="M66 86 Q88 84 82 62" fill="none" stroke="#b3c0cc" stroke-width="5.5" stroke-linecap="round"/></svg>'),
+}
+CSS += "".join(
+    f'.ph-{sp}::before{{width:4.2em;height:4.2em;margin:-2.7em 0 0 -2.1em;border-radius:0;'
+    f'background:url("data:image/svg+xml,{quote(svg)}") center/contain no-repeat}}\n.ph-{sp}::after{{display:none}}\n'
+    for sp, svg in _PH_SVG.items())
+
 
 # ---------------------------------------------------------------- driver
 
@@ -967,7 +986,8 @@ def build_site(data: dict[str, Any], cfg: dict[str, Any], out: Path, data_path: 
         seen.add(aid)
         # ページを組むときだけ使う印。data.json（data の dict）には入れない
         animals.append({**a, "_photo_withheld": True} if aid in withheld else a)
-    animals.sort(key=lambda a: KIND_ORDER.get(str(a.get("kind")), 9))   # stable: 里親募集→保護中→迷子→探してます。元の順は保つ
+    # stable: 里親募集→保護中→迷子→探してます。同じ区分の中では写真のある子を先に（写真を止めている子は写真なし扱い。2026-11-13）。元の順は保つ
+    animals.sort(key=lambda a: (KIND_ORDER.get(str(a.get("kind")), 9), 0 if safe_url(a.get("image_url")) else 1))
 
     by_pref: dict[str, list[dict[str, Any]]] = {}
     for a in animals:
