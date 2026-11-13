@@ -58,10 +58,11 @@ def _page(out: Path, id_: str) -> str:
 
 def test_nameless_lost_animal_reads_naturally(tmp_path: Path):
     out = _build(tmp_path)
+    # 2026-11-13: 見出しは品種と性別になった（区分はバッジにある。test_site_copy_20261113.py）。説明文は区分で呼ぶまま
     for id_, word in (("lostdog00001", "探している犬"), ("lostother001", "探している動物"), ("lostnone0001", "探している子")):
         h = _page(out, id_)
-        assert f"<h1>{word}</h1>" in h
-        assert re.search(rf"<title>{word}（", h)
+        assert "<h1>雑種（オス）</h1>" in h
+        assert re.search(r"<title>雑種（オス）｜", h)
         desc = re.search(r'<meta name="description" content="([^"]*)"', h).group(1)
         assert desc.startswith(f"飼い主さんが{word}。") and "時点で公開している情報です。" in desc
         assert "探してますの" not in h
@@ -70,7 +71,8 @@ def test_nameless_lost_animal_reads_naturally(tmp_path: Path):
 
 def test_other_species_is_called_animal_in_sentences(tmp_path: Path):
     h = _page(_build(tmp_path), "shelother001")
-    assert "<h1>保護中の動物</h1>" in h and "保護中のその他" not in h
+    desc = re.search(r'<meta name="description" content="([^"]*)"', h).group(1)
+    assert "公開している保護中の動物。" in desc and "保護中のその他" not in h   # 2026-11-13: 見出しは品種と性別になったので説明文で見る
 
 
 def test_operator_address_warns_against_visiting_only_for_operator(tmp_path: Path):

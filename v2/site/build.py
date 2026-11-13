@@ -209,15 +209,79 @@ def kind_phrase(a: dict[str, Any]) -> str:
     return f"{kind_label(a)}の{species_noun(a)}"
 
 
+# 表記ゆれをそろえる（表示だけ。data.json の値は掲載元のまま）。2026-11-13 おまえさん「違和感がある文字列」
+_MIX_BREED = re.compile(r"^(?:雑|雑種|MIX|Mix|mix|ミックス|雑種\s*[(（]\s*ミックス\s*[)）]|ミックス\s*[(（]\s*雑種\s*[)）])$")
+_SEX_WORDS = {"雄": "オス", "おす": "オス", "♂": "オス", "雌": "メス", "めす": "メス", "♀": "メス"}
+_NOT_A_BREED = {"その他", "不明", "-", "ー", "犬", "猫", "いぬ", "ねこ", "イヌ", "ネコ"}   # 品種の欄に種別や「不明」しか無い子
+_NOT_A_SEX = {"不明", "-", "ー"}
+_HEADLINE_SEX = re.compile(r"(?:去勢|不妊|避妊)?(?:オス|メス)")   # 見出しに出す性別はこの形だけ
+_NOT_A_COLOR = {"不明", "不詳", "-", "ー", "その他"}
+_EMPTY_NOTES = {"無", "無し", "なし", "-", "ー", "募集中"}   # 備考に出しても意味の無い値（大分「無」・福岡県動物愛護協会「募集中」）
+
+
+def disp_breed(v: Any) -> str:
+    s = str(v or "").strip()
+    return "雑種" if _MIX_BREED.match(s) else s
+
+
+def disp_sex(v: Any) -> str:
+    s = str(v or "").strip()
+    return _SEX_WORDS.get(s, s)
+
+
+def disp_value(key: str, v: Any) -> str:
+    """詳細ページの項目の表示値。空にした項目は出さない。"""
+    if key == "breed":
+        return disp_breed(v)
+    if key == "sex":
+        return disp_sex(v)
+    s = str(v or "").strip()
+    if key == "note" and s in _EMPTY_NOTES:
+        return ""
+    return s
+
+
+def _headline_parts(a: dict[str, Any]) -> tuple[str, str, str]:
+    """(見出しの本体, 使った項目 breed|color|species|kind, 性別)。"""
+    breed = disp_breed(a.get("breed"))
+    breed = "" if breed in _NOT_A_BREED else breed
+    sex = disp_sex(re.sub(r"\s*[(（].*$", "", str(a.get("sex") or "")))   # 「オス(去勢済)」のかっこ書きは見出しでは外す（詳細の表には出す）
+    sex = sex if _HEADLINE_SEX.fullmatch(sex) else ""   # 複数頭をまとめた欄（「メス:4匹 オス:2匹」）等は見出しに出さない（#123 reviewer F-02）
+    color = str(a.get("color") or "").strip()
+    color = "" if color in _NOT_A_COLOR or len(color) > 12 else color
+    if breed:
+        return breed, "breed", sex
+    if color:
+        return f"{color}の{species_noun(a)}", "color", sex
+    if species_key(a) == "none":
+        return kind_phrase(a), "kind", sex   # 種別も品種も毛色も無い子だけ区分で呼ぶ（「子（オス）」とはしない）
+    return species_noun(a), "species", sex
+
+
 def headline(a: dict[str, Any]) -> str:
-    """カード・詳細の見出し。名前があれば名前、無ければ種別。"""
+    """カード・詳細の見出し。名前があれば名前。無ければ品種と性別（「ミニチュア・シュナウザー（オス）」）、品種が無ければ
+    毛色と種別（「茶白の猫（メス）」）、それも無ければ種別（「犬（オス）」）。区分（里親募集など）はバッジにあるので見出しに重ねない。"""
     name = a.get("name")
-    return str(name) if name else kind_phrase(a)
+    if name:
+        return str(name)
+    base, _, sex = _headline_parts(a)
+    if not sex:
+        return base
+    return f"{base}・{sex}" if re.search(r"[(（)）]", base) else f"{base}（{sex}）"   # 品種にかっこ書きがあれば（「雑種(柴風)」）かっこを重ねない
 
 
 def subline(a: dict[str, Any]) -> str:
-    parts = [str(a[k]) for k in ("breed", "sex", "age") if a.get(k)]
-    return " / ".join(parts)
+    """見出しの下の行。見出しに出した項目は重ねない。"""
+    if a.get("name"):
+        parts = [disp_breed(a.get("breed")), disp_sex(a.get("sex")), str(a.get("age") or "")]
+    else:
+        _, used, sex = _headline_parts(a)
+        raw_sex = disp_sex(a.get("sex"))
+        color = str(a.get("color") or "").strip()
+        parts = [color] if used != "color" and color not in _NOT_A_COLOR else []   # 「不明」だけの行は出さない（#123 F-06）
+        parts += [raw_sex] if not sex and raw_sex not in _NOT_A_SEX else []   # 見出しに出さなかった性別の欄は下の行に
+        parts += [str(a.get("age") or "")]
+    return " / ".join(p.strip() for p in parts if p and p.strip())
 
 
 def shorten(s: Any, n: int) -> str:
@@ -290,7 +354,7 @@ def page(cfg: dict[str, Any], *, title: str, desc: str, path: str, body: str,
 </main>
 <footer class="site-foot">
 <div class="foot-brand"><img src="/brand/oneco-mark.svg" width="28" height="28" alt="" loading="lazy"><span>ふたつの円は、犬のポムと猫のビリー。<a href="/about/">このサイトについて</a></span></div>
-<p>掲載しているのは各自治体が公開している情報です。{f'データ確認日: {esc(fmt_date(data_date))}。' if data_date else ''}最新の状況は自治体のページ・電話でご確認ください。</p>
+<p>掲載しているのは各自治体が公開している情報です。{f'データ確認日：{esc(fmt_date(data_date))}。' if data_date else ''}最新の状況は自治体のページ・電話でご確認ください。</p>
 <p><a href="/sources/">情報源の一覧</a> ・ <a href="/about/#takedown">取り下げ・訂正の依頼</a> ・ <a href="{esc(repo)}" rel="noopener" target="_blank">GitHub</a></p>
 </footer>
 </body>
@@ -300,16 +364,22 @@ def page(cfg: dict[str, Any], *, title: str, desc: str, path: str, body: str,
 
 # ---------------------------------------------------------------- partials
 
-def placeholder() -> str:
-    """写真が無い子の枠。絵は CSS（.ph の疑似要素）だけで描く。"""
-    return '<div class="ph" role="img" aria-label="写真はありません"><span>写真はありません</span></div>'
+def placeholder(a: dict[str, Any] | None = None) -> str:
+    """写真が無い子の枠。絵は CSS（.ph の疑似要素）だけで描く。写真を止めている掲載元（T630: 許諾待ち・不可）の子は
+    掲載元には写真があるので「写真はありません」とは書かない。"""
+    msg = "写真は自治体のページで見られます" if a and a.get("_photo_withheld") else "写真はありません"
+    return f'<div class="ph" role="img" aria-label="{msg}"><span>{msg}</span></div>'
 
 
 def media(a: dict[str, Any], *, big: bool = False) -> str:
     img = safe_url(a.get("image_url"))
     if not img:
-        return f'<div class="media">{placeholder()}</div>'
-    alt = esc(f"{headline(a)}（{a.get('municipality') or ''}）")
+        return f'<div class="media">{placeholder(a)}</div>'
+    h = headline(a)
+    # 見出しに種別の語が無ければ alt に足す（読み上げで犬か猫か分かるように。#123 reviewer F-03）。種別なしの子は足さない
+    if species_key(a) != "none" and species_noun(a) not in h:
+        h = f"{h}（{species_noun(a)}）" if a.get("name") else f"{h}の{species_noun(a)}"   # 名前は「ポチ（犬）」（「ポチの犬」と読まれない）
+    alt = esc(f"{h}・{a.get('municipality') or ''}")
     attrs = 'loading="eager" fetchpriority="high"' if big else 'loading="lazy"'
     # 自治体サイトの写真を直接表示する。取れなかったときは JS でプレースホルダに差し替える
     return (f'<div class="media"><img src="{esc(img)}" alt="{alt}" referrerpolicy="no-referrer" {attrs} '
@@ -363,7 +433,7 @@ def build_index(cfg: dict[str, Any], data: dict[str, Any], animals: list[dict[st
     body = f"""<section class="intro">
 <h1>保護犬・保護猫を、自治体から探す</h1>
 <p>{esc(cfg['site_name'])} は、全国の自治体（動物愛護センター・保健所など）が公開している保護犬・保護猫の情報を 1 か所にまとめたサイトです。毎日それぞれの自治体のページを確認し、その日に掲載されている子だけを出典つきで載せています。気になる子がいたら、掲載元の自治体に直接ご連絡ください。</p>
-<p class="stats">{esc(fmt_date(data.get('date')))} 時点: 犬 <b>{total['dog']}</b> 頭 ・ 猫 <b>{total['cat']}</b> 頭{f" ・ その他 <b>{total['other']}</b> 頭" if total['other'] else ''}{f" ・ 犬猫の区別なし <b>{total['none']}</b> 頭" if total['none'] else ''}（{len(by_pref)} 都道府県・{ok_sources} 自治体ページ）</p>
+<p class="stats">{esc(fmt_date(data.get('date')))}時点：犬 <b>{total['dog']}</b> 頭 ・ 猫 <b>{total['cat']}</b> 頭{f" ・ その他 <b>{total['other']}</b> 頭" if total['other'] else ''}{f" ・ 犬猫の区別なし <b>{total['none']}</b> 頭" if total['none'] else ''}（{len(by_pref)} 都道府県・{ok_sources} 自治体ページ）</p>
 </section>
 <section>
 <h2>都道府県から探す</h2>
@@ -424,7 +494,7 @@ def build_pref(cfg: dict[str, Any], data: dict[str, Any], pref: str, animals: li
     rest_desc = f"（ほか {rest} 頭）" if rest else ""
     body = f"""<nav class="crumbs"><a href="/">都道府県</a> › <span>{esc(pref)}</span></nav>
 <h1>{esc(pref)}の保護犬・保護猫</h1>
-<p class="stats">{esc(fmt_date(data.get('date')))} 時点: 犬 {c['dog']} 頭 ・ 猫 {c['cat']} 頭{f" ・ その他 {c['other']} 頭" if c['other'] else ''}{f" ・ 犬猫の区別なし {c['none']} 頭" if c['none'] else ''}。掲載元: {esc('、'.join(munis))}</p>
+<p class="stats">{esc(fmt_date(data.get('date')))}時点：犬 {c['dog']} 頭 ・ 猫 {c['cat']} 頭{f" ・ その他 {c['other']} 頭" if c['other'] else ''}{f" ・ 犬猫の区別なし {c['none']} 頭" if c['none'] else ''}。掲載元：{esc('、'.join(munis))}</p>
 <div class="filters">
 {filter_bar('species', [('all', 'すべて'), ('dog', '犬'), ('cat', '猫')])}
 {filter_bar('kind', [('all', 'すべての区分')] + list(KINDS.items()))}
@@ -447,8 +517,8 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
     rows = []
     labels = FIELD_LABELS_BY_KIND.get(str(a.get("kind")), {})
     for key, label in FIELDS:
-        v = a.get(key)
-        if v is None or str(v).strip() == "":
+        v = disp_value(key, a.get(key))
+        if not v:
             continue
         rows.append(f"<div><dt>{esc(labels.get(key, label))}</dt><dd>{esc(v)}</dd></div>")
     phone = str(a.get("phone") or "").strip()
@@ -505,7 +575,7 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
 <div class="detail-body">
 <div class="badges">{badges(a)}</div>
 <h1>{esc(headline(a))}</h1>
-<p class="muni">{esc(muni) if muni == pref else f"{esc(muni)}（{esc(pref)}）"}</p>
+<p class="muni">{esc(muni) if pref in muni else f"{esc(muni)}（{esc(pref)}）"}</p>
 <p class="kind-help">{esc(KIND_HELP.get(str(a.get('kind')), ''))}</p>
 {cta}
 <h2>取れている情報</h2>
@@ -516,12 +586,12 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
 <dl class="facts">
 {chr(10).join(contact)}
 </dl>
-{operator_note}<p class="fine">この情報は {esc(fmt_date(data.get('date')))} に自治体のページから取得したものです。すでに譲渡・返還されている場合があります。</p>
+{operator_note}<p class="fine">この情報は{esc(fmt_date(data.get('date')))}に自治体のページから取得したものです。すでに譲渡・返還されている場合があります。</p>
 <p class="fine">自治体にお問い合わせのときは、このページに載っている管理番号や日付、場所をお伝えください。ID <code>{esc(a['id'])}</code> はこのサイトの中だけの番号で、自治体には通じません。</p>
 </div>
 </article>
 {aff_html}"""
-    return page(cfg, title=f"{headline(a)}（{muni}）", path=animal_path(a["id"]), body=body, og_type="article",
+    return page(cfg, title=f"{headline(a)}｜{muni}", path=animal_path(a["id"]), body=body, og_type="article",
                 og_image=safe_url(a.get("image_url")), data_date=str(data.get("date") or ""), desc=shorten(desc, 160))
 
 
@@ -559,7 +629,7 @@ def build_sources(cfg: dict[str, Any], data: dict[str, Any]) -> str:
     if st["disabled"]:
         summary += f"、停止中 {st['disabled']} 件"
     body = f"""<h1>情報源（自治体ページ）の一覧</h1>
-<p>{esc(fmt_date(data.get('date')))} に確認した自治体ページ {len(sources)} 件の状況です（{summary}）。「本日は読めませんでした」のページは、自治体側の更新やページ構造の変化で読み取れなかったものです。リンク先で直接ご確認ください。</p>
+<p>{esc(fmt_date(data.get('date')))}に確認した自治体ページ {len(sources)} 件の状況です（{summary}）。「本日は読めませんでした」のページは、自治体側の更新やページ構造の変化で読み取れなかったものです。リンク先で直接ご確認ください。</p>
 {chr(10).join(sections) if sections else '<p class="empty">情報源がありません。</p>'}"""
     return page(cfg, title="情報源の一覧", path="/sources/", body=body, data_date=str(data.get("date") or ""),
                 desc="oneco が毎日確認している自治体の保護犬・保護猫ページの一覧と、本日の確認状況。")
@@ -622,7 +692,7 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
 <section>
 <h2>{site} とは</h2>
 <p>{site} は、全国の自治体（動物愛護センター・保健所・市区町村）が公開している保護犬・保護猫の情報を、出典を明示して 1 か所に集めた、個人運営のサイトです。自治体のページに載っていない情報（保護団体や個人の里親募集など）は扱いません。</p>
-<p>載せている子は 4 つに分けています: {kinds}。「探してます」は、飼い主さんが自分の迷子を探している告知のうち、自治体のページに載っているものです。犬猫以外の動物も、自治体のページにあれば載せています。自治体のページで犬か猫か分からない子は、種別を付けずに載せています（犬・猫の絞り込みには出ず、「すべて」に出ます）。</p>
+<p>載せている子は 4 つに分けています：{kinds}。「探してます」は、飼い主さんが自分の迷子を探している告知のうち、自治体のページに載っているものです。犬猫以外の動物も、自治体のページにあれば載せています。自治体のページで犬か猫か分からない子は、種別を付けずに載せています（犬・猫の絞り込みには出ず、「すべて」に出ます）。</p>
 <p>いま、{reach}。載っているのは「その日、その自治体のページに出ている子」だけです。気になる子がいたら、掲載元の自治体に直接ご連絡ください。</p>
 </section>
 <section>
@@ -878,6 +948,10 @@ def build_site(data: dict[str, Any], cfg: dict[str, Any], out: Path, data_path: 
     写真を出さない掲載元（台帳 photo が ok 以外）があるときは image_url を落とした data を書く。"""
     cfg = {**DEFAULT_CFG, **cfg}
     prepare_out(out)
+    # 掲載元には写真があるが、許諾待ち・不可で止めている子（枠に「写真は自治体のページで見られます」と出す）
+    hidden = no_photo_sources(data)
+    withheld = {str(a.get("id")) for a in data.get("animals", [])
+                if isinstance(a, dict) and a.get("source") in hidden and a.get("image_url")}
     stripped = strip_photos(data)
     if stripped is not data:
         data, data_path = stripped, None
@@ -891,7 +965,8 @@ def build_site(data: dict[str, Any], cfg: dict[str, Any], out: Path, data_path: 
             skipped += 1
             continue
         seen.add(aid)
-        animals.append(a)
+        # ページを組むときだけ使う印。data.json（data の dict）には入れない
+        animals.append({**a, "_photo_withheld": True} if aid in withheld else a)
     animals.sort(key=lambda a: KIND_ORDER.get(str(a.get("kind")), 9))   # stable: 里親募集→保護中→迷子→探してます。元の順は保つ
 
     by_pref: dict[str, list[dict[str, Any]]] = {}

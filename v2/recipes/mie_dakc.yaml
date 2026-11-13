@@ -10,7 +10,9 @@ fields:
   color: {selector: "tr:nth-of-type(5) td:nth-of-type(2)", regex: "(.+)"}
   sex: {selector: "tr:nth-of-type(7) td:nth-of-type(1)", regex: "(.+)"}
   note: {selector: "tr:nth-of-type(9) td:nth-of-type(1)", regex: "(.+)"}
-  phone: {selector: "tr:nth-of-type(10) td:nth-of-type(2)", regex: "(0\\d{2,3}-\\d{3,4}-\\d{3,4}|0\\d{9,10})"}
+  # 2026-11-13: 表の「問い合わせ先」の電話（個体ごとの保健所）を読む phone 項目があったが、エンジンが phone 項目を使っていなかったので
+  #   一度も効いていなかった。エンジンが使うようにした（熊本県動物愛護センター）のに合わせて外す。台帳は運営元（contact_scope: operator）の
+  #   電話と所在地で、子ごとの電話だけ上書きすると所在地と食い違うため（#123 reviewer F-01）。
 empty_text:
   - "現在、迷い犬情報はありません"
   - "迷子犬情報はありません"

@@ -61,22 +61,23 @@ def test_animal_page_without_species_has_no_species_badge_or_word(tmp_path: Path
     body = _main(h)
     assert 'class="badge sp-' not in body                       # 種別のバッジを出さない
     assert '<span class="badge kd-sheltered">保護中</span>' in body
-    assert "<h1>保護中の子</h1>" in body                         # 見出しは種別の語を使わない
+    # 2026-11-13: 見出しは品種と性別になった（区分はバッジにある。test_site_copy_20261113.py）。種別の語は使わないまま
+    assert "<h1>雑種（オス）</h1>" in body
     assert "その他" not in body and "None" not in h
-    assert re.search(r'<title>保護中の子（[^<]+）｜oneco</title>', h)
-    assert re.search(r'property="og:title" content="保護中の子（', h)
+    assert re.search(r'<title>雑種（オス）｜[^<]+｜oneco</title>', h)
+    assert re.search(r'property="og:title" content="雑種（オス）｜', h)
     desc = re.search(r'<meta name="description" content="([^"]*)"', h).group(1)
     assert "公開している保護中の子。" in desc and "その他" not in desc
     assert re.search(r'property="og:description" content="[^"]*保護中の子。', h)
     # 写真の alt も同じ見出し
-    assert 'alt="保護中の子（' in body
+    assert 'alt="雑種（オス）・' in body
 
 
 def test_other_species_is_still_labelled_other(tmp_path: Path):
     out = _build(tmp_path)
     body = _main(_read(out / "animals" / "other0000001" / "index.html"))
     assert '<span class="badge sp-other">その他</span>' in body
-    assert "<h1>保護中の動物</h1>" in body
+    assert "<h1>保護中のその他</h1>" not in body and "<h1>雑種（オス）</h1>" in body   # 2026-11-13: 見出しは品種と性別
 
 
 def test_pref_page_card_and_counts(tmp_path: Path):
