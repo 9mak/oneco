@@ -66,7 +66,7 @@ def _a(**kw: Any) -> dict[str, Any]:
     ({"breed": None, "color": "不明", "species": "cat", "sex": "オス"}, "猫（オス）"),        # 毛色が「不明」なら「不明の猫」としない
     ({"breed": None, "color": "黒白(おひげ模様)", "species": "cat", "sex": "メス"}, "黒白(おひげ模様)の猫・メス"),
     ({"breed": None, "color": None, "species": "other", "sex": None}, "動物"),
-    ({"breed": None, "color": None, "species": None, "sex": None}, "保護中の子"),              # 種別も何も無い子だけ区分で呼ぶ
+    ({"breed": None, "color": None, "species": None, "sex": None}, "種類の記載なし"),          # 種別も何も無い子（区分で呼ぶとバッジと重なる。test_site_review_20261113.py）
 ])
 def test_headline_uses_breed_and_sex_not_the_kind(kw, want):
     assert B.headline(_a(**kw)) == want
@@ -125,7 +125,7 @@ def test_withheld_photo_says_the_photo_is_on_the_source_page(tmp_path: Path):
     w = _page(out, "withheld0001")
     assert "写真は自治体のページで見られます" in w and "写真はありません" not in w
     n = _page(out, "nophoto00001")
-    assert "写真はありません" in n and "写真は自治体のページで見られます" not in n
+    assert "写真は自治体のページでご確認ください" in n and "写真は自治体のページで見られます" not in n   # 無いとは言い切らない（test_site_review_20261113.py）
     # 一覧のカードも同じ
     pref = (out / "pref" / "佐賀県" / "index.html").read_text(encoding="utf-8")
     assert "写真は自治体のページで見られます" in pref
@@ -159,7 +159,7 @@ def test_titles_and_alts_do_not_nest_parentheses(tmp_path: Path):
     title = re.search(r"<title>([^<]+)</title>", h).group(1)
     assert title == "雑種（オス）｜町田市｜oneco"
     assert "）（" not in h
-    assert 'alt="雑種（オス）の犬・町田市"' in h        # 写真の alt には種別を足す（読み上げで犬か猫か分かる。#123 F-03）
+    assert 'alt="雑種の犬（オス）"' in h        # 写真の alt には種別を足す（読み上げで犬か猫か分かる。#123 F-03）。自治体名は本文にあるので重ねない
 
 
 def test_only_kumamoto_recipes_read_a_phone_per_animal():
