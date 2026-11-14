@@ -11,6 +11,6 @@ fields:
   management_no: {label: "番号", regex: "No\\.?\\s*([A-Za-zＡ-Ｚａ-ｚ0-9０-９\\-－]+)"}
   name: {label: "番号", regex: "愛称[:：]?\\s*(.+)[)）]"}   # 「（愛称　すいが）」のように区切りが全角空白の行もある
   sex: {label: "性別"}
-  age: {label: "推定生年月日"}
+  age: {label: "推定生年月日", prefix: "推定 "}   # 推定であることを build に伝える（「…生まれ（推定）」。#124 reviewer F-01）
   note: {label: "その他の情報"}
 empty_text: ["現在、掲載されている情報はありません", "現在、譲渡予定の犬はいません", "該当するデータはありません"]

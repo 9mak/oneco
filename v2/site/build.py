@@ -84,14 +84,22 @@ KINDS = {"adoption": "里親募集", "sheltered": "保護中", "stray": "迷子"
 KIND_HELP = {
     "adoption": "新しい家族を募集している子",
     "sheltered": "自治体や市民に保護されている子",   # 千葉市・越谷市の「個人保護」は市民が保護している子（T518）
-    "stray": "飼い主が分からないまま保護されている子",
+    "stray": "飼い主さんが分からないまま保護されている子",
     "lost": "飼い主さんが探している迷子の子",
 }
+# 個体ページの「すでに〜場合があります」は区分ごと（探してますの子に「譲渡・返還」とは書かない。2026-11-13 Codex #16）
+FINE_BY_KIND = {
+    "adoption": "すでに譲渡先が決まっている場合があります。",
+    "sheltered": "すでに飼い主さんの元に戻ったり、譲渡されたりしている場合があります。",
+    "stray": "すでに飼い主さんの元に戻ったり、譲渡されたりしている場合があります。",
+    "lost": "すでに見つかっている場合があります。",
+}
+NO_SPECIES = "種類の記載なし"   # 自治体のページで犬か猫かも品種も毛色も分からない子（奈良市・呉市。2026-11-13 agy「里親募集の子」の重複）
 KIND_ORDER = {"adoption": 0, "sheltered": 1, "stray": 2, "lost": 3}
 # 区分ごとの項目名の言い換え（探してます: 収容日・保護場所ではなく、いなくなった日・場所）
 FIELD_LABELS_BY_KIND = {"lost": {"shelter_date": "いなくなった日", "location": "いなくなった場所"}}
 STATUS = {
-    "ok": "確認済み",
+    "ok": "掲載あり",
     "empty": "本日は 0 頭",
     "failed": "本日は読めませんでした。自治体のページをご確認ください",
     "ambiguous_empty": "本日は読めませんでした。自治体のページをご確認ください",   # 0 頭に見えるが確定できない日も前回分は載せず failed と同じ扱い
@@ -210,13 +218,30 @@ def kind_phrase(a: dict[str, Any]) -> str:
 
 
 # 表記ゆれをそろえる（表示だけ。data.json の値は掲載元のまま）。2026-11-13 おまえさん「違和感がある文字列」
-_MIX_BREED = re.compile(r"^(?:雑|雑種|MIX|Mix|mix|ミックス|雑種\s*[(（]\s*ミックス\s*[)）]|ミックス\s*[(（]\s*雑種\s*[)）])$")
+_MIX_BREED = re.compile(r"^(?:雑|雑種|MIX|Mix|mix|ミックス|雑種\s*[(（]\s*ミックス\s*[)）]|ミックス\s*[(（]\s*雑種\s*[)）]"
+                        r"|(?:MIX|Mix|mix|ミックス|雑種)\s*[(（]\s*(?:品種)?不明\s*[)）])$")   # 「MIX(品種不明)」（横須賀市）も雑種
 _SEX_WORDS = {"雄": "オス", "おす": "オス", "♂": "オス", "雌": "メス", "めす": "メス", "♀": "メス"}
-_NOT_A_BREED = {"その他", "不明", "-", "ー", "犬", "猫", "いぬ", "ねこ", "イヌ", "ネコ"}   # 品種の欄に種別や「不明」しか無い子
+_SEX_HEAD = re.compile(r"^(去勢|避妊|不妊)?(雄|雌|おす|めす|♂|♀)(?=$|[\s(（])")   # 「雄(去勢済み)」「去勢雄」の性別だけ言い換える（「雌雄不明」は触らない）
+_NOT_A_BREED = {"その他", "不明", "-", "ー", "犬", "猫", "いぬ", "ねこ", "イヌ", "ネコ",
+                "雄", "雌", "オス", "メス", "おす", "めす", "♂", "♀"}   # 品種の欄に種別・性別・「不明」しか無い子（佐賀「雌（オス）」）
 _NOT_A_SEX = {"不明", "-", "ー"}
 _HEADLINE_SEX = re.compile(r"(?:去勢|不妊|避妊)?(?:オス|メス)")   # 見出しに出す性別はこの形だけ
 _NOT_A_COLOR = {"不明", "不詳", "-", "ー", "その他"}
-_EMPTY_NOTES = {"無", "無し", "なし", "-", "ー", "募集中"}   # 備考に出しても意味の無い値（大分「無」・福岡県動物愛護協会「募集中」）
+# 毛色の欄に性別・年齢の語や特徴の文が入っている値は見出しに使わない（千葉市「避妊雌」・船橋市「子猫」・「茶色、縞模様あり」）。
+_COLOR_NOT_FOR_HEADLINE = re.compile(r"雌|雄|オス|メス|避妊|去勢|不妊|子猫|子犬|成猫|成犬|。|あり")   # 読点だけの多色（「黒、白」）は毛色として使う（#124 F-03）
+_EMPTY_NOTES = {"無", "無し", "なし", "有", "-", "ー", "募集中"}   # 備考に出しても意味の無い値（大分「無」「有」・福岡県動物愛護協会「募集中」）
+# 名前の欄に入った、名前でないもの（2026-11-13 Codex #7・#13・#14）
+_NOT_A_NAME = re.compile(r"探して(?:い)?ます|保護して(?:い)?ます")   # 旭川市あにまある「犬 探しています(フルサワ)」= 告知の見出し
+_NAME_IN_NOTE = re.compile(r"名前\s*[:：]\s*([^\s・、。,，/／]+)")     # その子の名前は備考の「・名前:あの」にある
+_NOT_AN_AGE = {"不明", "不詳", "-", "ー", "?", "？"}
+_ERA = {"令和": 2018, "R": 2018, "r": 2018, "平成": 1988, "H": 1988, "h": 1988}
+_DATES = [
+    re.compile(r"(?P<y>\d{4})\s*[/\-.]\s*(?P<m>\d{1,2})\s*[/\-.]\s*(?P<d>\d{1,2})"),
+    re.compile(r"(?P<y>\d{4})年\s*(?P<m>\d{1,2})月\s*(?P<d>\d{1,2})日"),
+    re.compile(r"(?P<era>令和|平成|[RrHh])\s*(?P<y>\d{1,2}|元)\s*[年.\-/、]\s*(?P<m>\d{1,2})\s*[月.\-/]\s*(?P<d>\d{1,2})日?"),
+]
+_AGE_IN_SIZE = re.compile(r"子|仔|成猫|成犬|子猫|子犬|生後.+|幼齢.*")   # 大きさの欄に年齢が入っている（千葉市「仔」「生後1か月前後」）
+_SIZE_WORDS = {"中": "中型", "小": "小型", "大": "大型"}
 
 
 def disp_breed(v: Any) -> str:
@@ -225,12 +250,101 @@ def disp_breed(v: Any) -> str:
 
 
 def disp_sex(v: Any) -> str:
+    """性別の表示。頭の 雄・雌 等をオス・メスに、かっこ書きは全角に（「雄(去勢済み)」→「オス（去勢済み）」）。"""
     s = str(v or "").strip()
-    return _SEX_WORDS.get(s, s)
+    s = _SEX_HEAD.sub(lambda m: (m.group(1) or "") + _SEX_WORDS[m.group(2)], s)
+    s = re.sub(r"\s+(?=[(（])", "", s)   # 「オス (去勢済)」のかっこ前の空白（#124 F-05）
+    return re.sub(r"\(([^()（）]*)\)", r"（\1）", s)
+
+
+def disp_name(a: dict[str, Any]) -> str:
+    """名前の表示。告知の見出し（「探しています」）・管理番号入り・「※」の注記は名前として扱わない。"""
+    s = str(a.get("name") or "").strip()
+    if not s:
+        return ""
+    if _NOT_A_NAME.search(s):
+        m = _NAME_IN_NOTE.search(str(a.get("note") or ""))
+        return m.group(1) if m else ""
+    no = str(a.get("management_no") or "").strip()
+    if len(no) >= 3 and (s.endswith(no) or s.startswith(no)):   # 福島市「譲渡猫R7ねー35」（管理番号は詳細の表に出る）。短い番号は名前の一部かもしれない（#124 F-09）
+        return ""
+    return s.split("※", 1)[0].strip()   # 「べティちゃん ※現在アシストファーム南国店にいます」（注記は備考にもある）
+
+
+_REF_DATE: list[date] = []   # 掲載日（build_site が入れる）。「生まれ」を付けてよいかの判定に使う。空なら今日
+
+
+def parse_date(s: Any) -> date | None:
+    """日付だけの値（令和・R・/・-・. の形）を date に。時刻や注記の付いた値、年の無い値は None。"""
+    t = str(s or "").strip()
+    for p in _DATES:
+        m = p.fullmatch(t)
+        if not m:
+            continue
+        g = m.groupdict()
+        y = int(g["y"]) if g["y"] != "元" else 1
+        if g.get("era"):
+            y += _ERA[g["era"]]
+        try:
+            return date(y, int(g["m"]), int(g["d"]))
+        except ValueError:
+            return None
+    return None
+
+
+def norm_date(s: Any) -> str:
+    """日付だけの値を「2026年7月23日」に。日付だけでなければ空（元のまま出す）。"""
+    d = parse_date(s)
+    return f"{d.year}年{d.month}月{d.day}日" if d else ""
+
+
+def _tidy_numbers(s: str) -> str:
+    """数字の後の 才 → 歳、ヶ月 等 → か月、数字の間の ~ → 〜。"""
+    s = re.sub(r"(?<=[0-9])才", "歳", s)
+    s = re.sub(r"[ヶヵカケ]月", "か月", s)
+    return re.sub(r"(?<=[0-9歳月])\s*[~～]\s*(?=[0-9])", "〜", s)
+
+
+def disp_age(a: dict[str, Any]) -> str:
+    """年齢の表示。日付だけなら「2026年6月6日生まれ」、掲載元が推定と書いている日付（レシピの prefix「推定 」）は
+    「2026年6月6日生まれ（推定）」。掲載日より後の日付は「生まれ」と言わない（徳島の誤記。#124 F-01）。
+    単位の無い数字（沖縄の推定年齢「10」）はそう書き添える。年齢が空か「不明」で大きさの欄に年齢が入っていれば（千葉市「仔」）それを年齢にする。"""
+    s = _strip_estimated_unknown(str(a.get("age") or "").strip())
+    if not s or s in _NOT_AN_AGE:
+        size = str(a.get("size") or "").strip()
+        if not _AGE_IN_SIZE.fullmatch(size):
+            return s
+        if size in ("子", "仔") and species_key(a) in ("dog", "cat"):
+            return f"子{species_label(a)}"
+        s = size
+    est = s.startswith("推定")
+    d = parse_date(re.sub(r"^推定\s*", "", s) if est else s)
+    if d:
+        ymd = f"{d.year}年{d.month}月{d.day}日"
+        if d > (_REF_DATE[0] if _REF_DATE else date.today()):
+            return f"推定 {ymd}" if est else ymd
+        return f"{ymd}生まれ（推定）" if est else f"{ymd}生まれ"
+    if re.fullmatch(r"\d+(?:\.\d+)?", s):
+        return f"{s}（単位の記載なし）"
+    return _tidy_numbers(s)
+
+
+def _strip_estimated_unknown(s: str) -> str:
+    """レシピが「推定 」を足した「推定 不明」は「不明」として扱う（#124 G-03）。"""
+    m = re.fullmatch(r"推定\s*(.+)", s)
+    return m.group(1) if m and m.group(1) in _NOT_AN_AGE else s
+
+
+def card_age(a: dict[str, Any]) -> str:
+    """カードの下の行に出す年齢。「不明」や単位の無い数字は出さない。"""
+    s = _strip_estimated_unknown(str(a.get("age") or "").strip())
+    if s in _NOT_AN_AGE or re.fullmatch(r"\d+(?:\.\d+)?", s):
+        return ""
+    return disp_age(a)
 
 
 def disp_value(key: str, v: Any) -> str:
-    """詳細ページの項目の表示値。空にした項目は出さない。"""
+    """詳細ページの項目の表示値。空にした項目は出さない。名前・年齢は disp_name・disp_age（子の他の項目を見る）。"""
     if key == "breed":
         return disp_breed(v)
     if key == "sex":
@@ -238,32 +352,48 @@ def disp_value(key: str, v: Any) -> str:
     s = str(v or "").strip()
     if key == "note" and s in _EMPTY_NOTES:
         return ""
+    if key == "shelter_date":
+        return norm_date(s) or s
+    if key == "size":
+        return _tidy_numbers(_SIZE_WORDS.get(s, s))
     return s
 
 
+def disp_field(a: dict[str, Any], key: str) -> str:
+    if key == "name":
+        return disp_name(a)
+    if key == "age":
+        return disp_age(a)
+    if key == "size":   # 大きさの欄の年齢語は、年齢が空か「不明」のときだけ年齢に移す（それ以外は捨てない。#124 F-04）
+        age = str(a.get("age") or "").strip()
+        if _AGE_IN_SIZE.fullmatch(str(a.get("size") or "").strip()) and (not age or age in _NOT_AN_AGE):
+            return ""
+    return disp_value(key, a.get(key))
+
+
 def _headline_parts(a: dict[str, Any]) -> tuple[str, str, str]:
-    """(見出しの本体, 使った項目 breed|color|species|kind, 性別)。"""
+    """(見出しの本体, 使った項目 breed|color|species|none, 性別)。"""
     breed = disp_breed(a.get("breed"))
     breed = "" if breed in _NOT_A_BREED else breed
-    sex = disp_sex(re.sub(r"\s*[(（].*$", "", str(a.get("sex") or "")))   # 「オス(去勢済)」のかっこ書きは見出しでは外す（詳細の表には出す）
+    sex = disp_sex(re.sub(r"\s*[(（].*$", "", str(a.get("sex") or "")))   # 「オス(去勢済)」のかっこ書きは見出しでは外す（下の行と詳細の表に出す）
     sex = sex if _HEADLINE_SEX.fullmatch(sex) else ""   # 複数頭をまとめた欄（「メス:4匹 オス:2匹」）等は見出しに出さない（#123 reviewer F-02）
     color = str(a.get("color") or "").strip()
-    color = "" if color in _NOT_A_COLOR or len(color) > 12 else color
+    color = "" if color in _NOT_A_COLOR or len(color) > 12 or _COLOR_NOT_FOR_HEADLINE.search(color) else color
     if breed:
         return breed, "breed", sex
     if color:
         return f"{color}の{species_noun(a)}", "color", sex
     if species_key(a) == "none":
-        return kind_phrase(a), "kind", sex   # 種別も品種も毛色も無い子だけ区分で呼ぶ（「子（オス）」とはしない）
+        return NO_SPECIES, "none", sex   # 区分で呼ぶとバッジと重なる（「里親募集」＋「里親募集の子」。agy 2026-11-13）
     return species_noun(a), "species", sex
 
 
 def headline(a: dict[str, Any]) -> str:
     """カード・詳細の見出し。名前があれば名前。無ければ品種と性別（「ミニチュア・シュナウザー（オス）」）、品種が無ければ
     毛色と種別（「茶白の猫（メス）」）、それも無ければ種別（「犬（オス）」）。区分（里親募集など）はバッジにあるので見出しに重ねない。"""
-    name = a.get("name")
+    name = disp_name(a)
     if name:
-        return str(name)
+        return name
     base, _, sex = _headline_parts(a)
     if not sex:
         return base
@@ -271,17 +401,41 @@ def headline(a: dict[str, Any]) -> str:
 
 
 def subline(a: dict[str, Any]) -> str:
-    """見出しの下の行。見出しに出した項目は重ねない。"""
-    if a.get("name"):
-        parts = [disp_breed(a.get("breed")), disp_sex(a.get("sex")), str(a.get("age") or "")]
+    """見出しの下の行。見出しに出した項目は重ねない。見出しに性別を出しても手術の注記（「去勢手術済」）は残す。
+    何も無い子は管理番号（写真を止めていて同じ見た目のカードが並ぶ熊本県動愛など。agy 2026-11-13）。"""
+    raw_sex = disp_sex(a.get("sex"))
+    if disp_name(a):
+        breed = disp_breed(a.get("breed"))
+        parts = ["" if breed in _NOT_A_BREED else breed, "" if raw_sex in _NOT_A_SEX else raw_sex, card_age(a)]
     else:
         _, used, sex = _headline_parts(a)
-        raw_sex = disp_sex(a.get("sex"))
         color = str(a.get("color") or "").strip()
         parts = [color] if used != "color" and color not in _NOT_A_COLOR else []   # 「不明」だけの行は出さない（#123 F-06）
-        parts += [raw_sex] if not sex and raw_sex not in _NOT_A_SEX else []   # 見出しに出さなかった性別の欄は下の行に
-        parts += [str(a.get("age") or "")]
-    return " / ".join(p.strip() for p in parts if p and p.strip())
+        if sex:
+            m = re.search(r"[(（]\s*([^)）]+?)\s*[)）]", str(a.get("sex") or ""))
+            parts += [m.group(1)] if m else []
+        elif raw_sex not in _NOT_A_SEX:
+            parts += [raw_sex]   # 見出しに出さなかった性別の欄は下の行に
+        parts += [card_age(a)]
+    parts = [p.strip() for p in parts if p and p.strip()]
+    no = str(a.get("management_no") or "").strip()
+    if not parts and no:
+        parts = [f"管理番号 {no}"]
+    return " / ".join(parts)
+
+
+def photo_alt(a: dict[str, Any]) -> str:
+    """詳細ページの写真の alt（「雑種の犬（オス）」「ポチ（犬）」）。カードの写真は alt="" にする（カードの文字で読める。agy ⑦）。"""
+    sp = species_noun(a) if species_key(a) != "none" else ""
+    name = disp_name(a)
+    if name:
+        return f"{name}（{sp}）" if sp else name
+    base, used, sex = _headline_parts(a)
+    if used == "breed" and sp and sp not in base:
+        base = f"{base}の{sp}"   # 見出しに種別の語が無ければ足す（読み上げで犬か猫か分かるように。#123 reviewer F-03）
+    if not sex:
+        return base
+    return f"{base}・{sex}" if re.search(r"[(（)）]", base) else f"{base}（{sex}）"
 
 
 def shorten(s: Any, n: int) -> str:
@@ -366,20 +520,19 @@ def page(cfg: dict[str, Any], *, title: str, desc: str, path: str, body: str,
 
 def placeholder(a: dict[str, Any] | None = None) -> str:
     """写真が無い子の枠。絵は CSS（.ph の疑似要素）だけで描く。写真を止めている掲載元（T630: 許諾待ち・不可）の子は
-    掲載元には写真があるので「写真はありません」とは書かない。"""
-    msg = "写真は自治体のページで見られます" if a and a.get("_photo_withheld") else "写真はありません"
-    return f'<div class="ph" role="img" aria-label="{msg}"><span>{msg}</span></div>'
+    掲載元には写真があるので「写真はありません」とは書かない。それ以外も、取れなかっただけかもしれないので「無い」とは言い切らない（Codex #22）。"""
+    msg = "写真は自治体のページで見られます" if a and a.get("_photo_withheld") else "写真は自治体のページでご確認ください"
+    sp = species_key(a) if a else "none"
+    cls = f"ph ph-{sp}" if sp in ("dog", "cat") else "ph"   # 犬・猫はシルエット、それ以外は肉球（2026-11-13）
+    return f'<div class="{cls}" role="img" aria-label="{msg}"><span>{msg}</span></div>'
 
 
 def media(a: dict[str, Any], *, big: bool = False) -> str:
     img = safe_url(a.get("image_url"))
     if not img:
         return f'<div class="media">{placeholder(a)}</div>'
-    h = headline(a)
-    # 見出しに種別の語が無ければ alt に足す（読み上げで犬か猫か分かるように。#123 reviewer F-03）。種別なしの子は足さない
-    if species_key(a) != "none" and species_noun(a) not in h:
-        h = f"{h}（{species_noun(a)}）" if a.get("name") else f"{h}の{species_noun(a)}"   # 名前は「ポチ（犬）」（「ポチの犬」と読まれない）
-    alt = esc(f"{h}・{a.get('municipality') or ''}")
+    # カードはリンクの中の見出し・下の行・自治体名で読めるので、写真は飾り（alt=""）。同じ語を 4 回読み上げない（agy ⑦）
+    alt = esc(photo_alt(a)) if big else ""
     attrs = 'loading="eager" fetchpriority="high"' if big else 'loading="lazy"'
     # 自治体サイトの写真を直接表示する。取れなかったときは JS でプレースホルダに差し替える
     return (f'<div class="media"><img src="{esc(img)}" alt="{alt}" referrerpolicy="no-referrer" {attrs} '
@@ -406,11 +559,27 @@ def card(a: dict[str, Any]) -> str:
 </a>"""
 
 
-def filter_bar(name: str, options: list[tuple[str, str]]) -> str:
+def filter_bar(name: str, options: list[tuple[str, str]], label: str) -> str:
     btns = "".join(
-        f'<button type="button" data-filter="{esc(name)}" data-value="{esc(v)}" aria-pressed="{"true" if v == "all" else "false"}">{esc(label)}</button>'
-        for v, label in options)
-    return f'<div class="chips" role="group">{btns}</div>'
+        f'<button type="button" data-filter="{esc(name)}" data-value="{esc(v)}" aria-pressed="{"true" if v == "all" else "false"}">{esc(lb)}</button>'
+        for v, lb in options)
+    return f'<div class="chips" role="group" aria-label="{esc(label)}">{btns}</div>'
+
+
+def species_options(c: Counter[str]) -> list[tuple[str, str]]:
+    """種別の絞り込み。犬猫以外と種類の記載なしの子がいれば「その他」も出す（agy ⑤）。"""
+    opts = [("all", "すべて"), ("dog", "犬"), ("cat", "猫")]
+    return [*opts, ("other", "その他")] if c["other"] + c["none"] else opts
+
+
+def species_counts(c: Counter[str], *, bold: bool) -> str:
+    """「犬 30 頭 ・ 猫 67 頭 ・ その他の動物 2 頭 ・ 種類の記載なし 1 頭」（統計の行）。"""
+    def n(k: str) -> str:
+        return f"<b>{c[k]}</b>" if bold else str(c[k])
+    parts = [f"犬 {n('dog')} 頭", f"猫 {n('cat')} 頭"]
+    parts += [f"その他の動物 {n('other')} 頭"] if c["other"] else []
+    parts += [f"{NO_SPECIES} {n('none')} 頭"] if c["none"] else []
+    return " ・ ".join(parts)
 
 
 # ---------------------------------------------------------------- pages
@@ -427,21 +596,25 @@ def build_index(cfg: dict[str, Any], data: dict[str, Any], animals: list[dict[st
     for p in sorted(by_pref, key=pref_key):
         c = by_pref[p]
         rows.append(
-            f'<li data-pref="{esc(p)}" data-dog="{c["dog"]}" data-cat="{c["cat"]}" data-other="{c["other"]}" data-total="{c["total"]}">'
+            f'<li data-pref="{esc(p)}" data-dog="{c["dog"]}" data-cat="{c["cat"]}" data-other="{c["other"] + c["none"]}" data-total="{c["total"]}">'
             f'<a href="{esc(pref_path(p))}"><span class="pref">{esc(p)}</span>'
             f'<span class="cnt"><b class="n">{c["total"]}</b> 頭</span></a></li>')
+    # 今日 1 頭もいない県は一覧から消えるので、0 なのか対象外なのか分かるように名前を出す（Codex #10。島根県）
+    empty_prefs = [p for p in PREF_ORDER if p not in by_pref]
+    missing = (f'<p class="hint">本日の掲載が無い都道府県：{esc("、".join(empty_prefs))}'
+               f'（確認の状況は<a href="/sources/">情報源の一覧</a>にあります）</p>\n' if rows and empty_prefs else "")
     body = f"""<section class="intro">
 <h1>保護犬・保護猫を、自治体から探す</h1>
-<p>{esc(cfg['site_name'])} は、全国の自治体（動物愛護センター・保健所など）が公開している保護犬・保護猫の情報を 1 か所にまとめたサイトです。毎日それぞれの自治体のページを確認し、その日に掲載されている子だけを出典つきで載せています。気になる子がいたら、掲載元の自治体に直接ご連絡ください。</p>
-<p class="stats">{esc(fmt_date(data.get('date')))}時点：犬 <b>{total['dog']}</b> 頭 ・ 猫 <b>{total['cat']}</b> 頭{f" ・ その他 <b>{total['other']}</b> 頭" if total['other'] else ''}{f" ・ 犬猫の区別なし <b>{total['none']}</b> 頭" if total['none'] else ''}（{len(by_pref)} 都道府県・{ok_sources} 自治体ページ）</p>
+<p>{esc(cfg['site_name'])} は、全国の自治体（動物愛護センター・保健所など）が公開している保護犬・保護猫の情報を 1 か所にまとめたサイトです。毎日それぞれの自治体のページを確認し、その日に掲載されている子を出典つきで載せています。気になる子がいたら、掲載元の自治体に直接ご連絡ください。</p>
+<p class="stats">{esc(fmt_date(data.get('date')))}時点：{species_counts(total, bold=True)}（{len(by_pref)} 都道府県・{ok_sources} 自治体ページ）</p>
 </section>
 <section>
 <h2>都道府県から探す</h2>
-{filter_bar('species', [('all', 'すべて'), ('dog', '犬'), ('cat', '猫')])}
+{filter_bar('species', species_options(total), '動物の種類')}
 <ul class="pref-list" id="pref-list">
 {chr(10).join(rows) if rows else '<li class="empty">本日の掲載はありません。</li>'}
 </ul>
-<p class="hint">区分の意味: {'。'.join(f'{esc(KINDS[k])}＝{esc(KIND_HELP[k])}' for k in KINDS)}。</p>
+{missing}<p class="hint">区分の意味：{'。'.join(f'{esc(KINDS[k])}＝{esc(KIND_HELP[k])}' for k in KINDS)}。</p>
 </section>
 <script>
 (function(){{
@@ -471,7 +644,11 @@ PREF_JS = """
   var empty=document.getElementById('empty');
   var q=new URLSearchParams(location.search);
   var state={species:q.get('species')||'all',kind:q.get('kind')||'all'};
-  function match(sp,kd){return (state.species==='all'||sp===state.species)&&(state.kind==='all'||kd===state.kind);}
+  function known(k){return Array.prototype.some.call(document.querySelectorAll('[data-filter="'+k+'"]'),function(b){return b.dataset.value===state[k];});}
+  if(!known('species'))state.species='all';
+  if(!known('kind'))state.kind='all';
+  function spOk(sp){return state.species==='all'||sp===state.species||(state.species==='other'&&sp==='none');}
+  function match(sp,kd){return spOk(sp)&&(state.kind==='all'||kd===state.kind);}
   function syncButtons(){document.querySelectorAll('[data-filter]').forEach(function(b){b.setAttribute('aria-pressed',state[b.dataset.filter]===b.dataset.value?'true':'false');});}
   function apply(){
     syncButtons();var n=0;
@@ -490,20 +667,20 @@ def build_pref(cfg: dict[str, Any], data: dict[str, Any], pref: str, animals: li
     c = Counter(species_key(a) for a in animals)
     munis = sorted({str(a.get("municipality") or "") for a in animals})
     cards = "\n".join(card(a) for a in animals)
-    rest = c["other"] + c["none"]   # 犬猫以外 + 種別なし
-    rest_desc = f"（ほか {rest} 頭）" if rest else ""
+    # 説明文で「（ほか 56 頭）」と書いても何の子か分からない（agy ④）ので名指しする
+    rest_desc = (f"・その他の動物 {c['other']} 頭" if c["other"] else "") + (f"・{NO_SPECIES} {c['none']} 頭" if c["none"] else "")
     body = f"""<nav class="crumbs"><a href="/">都道府県</a> › <span>{esc(pref)}</span></nav>
 <h1>{esc(pref)}の保護犬・保護猫</h1>
-<p class="stats">{esc(fmt_date(data.get('date')))}時点：犬 {c['dog']} 頭 ・ 猫 {c['cat']} 頭{f" ・ その他 {c['other']} 頭" if c['other'] else ''}{f" ・ 犬猫の区別なし {c['none']} 頭" if c['none'] else ''}。掲載元：{esc('、'.join(munis))}</p>
+<p class="stats">{esc(fmt_date(data.get('date')))}時点：{species_counts(c, bold=False)}。掲載元：{esc('、'.join(munis))}</p>
 <div class="filters">
-{filter_bar('species', [('all', 'すべて'), ('dog', '犬'), ('cat', '猫')])}
-{filter_bar('kind', [('all', 'すべての区分')] + list(KINDS.items()))}
+{filter_bar('species', species_options(c), '動物の種類')}
+{filter_bar('kind', [('all', 'すべての区分'), *KINDS.items()], '掲載の区分')}
 </div>
-<p class="count"><b id="count">{len(animals)}</b> 頭</p>
+<p class="count" aria-live="polite"><b id="count">{len(animals)}</b> 頭</p>
 <div class="grid" id="grid">
 {cards}
 </div>
-<p class="empty" id="empty" hidden>この条件に当てはまる子はいません。</p>
+<p class="empty" id="empty" hidden>この条件に当てはまる掲載はありません。</p>
 <script>{PREF_JS}</script>"""
     return page(cfg, title=f"{pref}の保護犬・保護猫", path=pref_path(pref), body=body,
                 body_attrs=f' data-pref="{esc(pref)}"', data_date=str(data.get("date") or ""),
@@ -517,7 +694,7 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
     rows = []
     labels = FIELD_LABELS_BY_KIND.get(str(a.get("kind")), {})
     for key, label in FIELDS:
-        v = disp_value(key, a.get(key))
+        v = disp_field(a, key)
         if not v:
             continue
         rows.append(f"<div><dt>{esc(labels.get(key, label))}</dt><dd>{esc(v)}</dd></div>")
@@ -563,12 +740,22 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
     # 広告を載せるページは、広告であることをファーストビュー（写真より上）に出す（T629・A8 の提携条件・ステマ規制）
     pr_html = ('<p class="pr-note"><span>PR</span>このページはアフィリエイト広告を利用しています（ページ下の「迎える準備」枠）。</p>'
                if aff_items else "")
+    # 問い合わせのときに伝えるもの。サイト内の ID は自治体に通じないので出さない（Codex #15）。管理番号が無ければ実際に載っている日付・場所
+    mgmt = str(a.get("management_no") or "").strip()
+    if mgmt:
+        ask = f"自治体にお問い合わせのときは、管理番号「{esc(mgmt)}」をお伝えください。"
+    else:
+        have = [w for k, w in (("shelter_date", labels.get("shelter_date", "保護日")), ("location", "場所")) if disp_value(k, a.get(k))]
+        ask = (f"自治体にお問い合わせのときは、このページの{'と'.join(have)}をお伝えください。" if have
+               else "自治体にお問い合わせのときは、このページに載っている特徴をお伝えください。" if rows else "")
+    ask_html = f'<p class="fine">{ask}</p>' if ask else ""
     desc = (f"飼い主さんが{kind_phrase(a)}。{muni}が{fmt_date(data.get('date'))}時点で公開している情報です。" if a.get("kind") == "lost"
             else f"{muni}が{fmt_date(data.get('date'))}時点で公開している{kind_phrase(a)}。")
     if subline(a):
-        desc += subline(a) + "。"
-    if a.get("note"):
-        desc += shorten(a["note"], 80)
+        desc += subline(a).rstrip("。") + "。"   # 下の行が「…思われます。」で終わると「。。」になる（agy ⑥）
+    note = disp_value("note", a.get("note"))   # 本文で出さない備考（「無」「有」）は説明文にも出さない（Codex #17）
+    if note:
+        desc += shorten(note, 80)
     body = f"""<nav class="crumbs"><a href="/">都道府県</a> › <a href="{esc(pref_path(pref))}">{esc(pref)}</a> › <span>{esc(headline(a))}</span></nav>
 {pr_html}<article class="detail" data-id="{esc(a['id'])}">
 {media(a, big=True)}
@@ -578,21 +765,35 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
 <p class="muni">{esc(muni) if pref in muni else f"{esc(muni)}（{esc(pref)}）"}</p>
 <p class="kind-help">{esc(KIND_HELP.get(str(a.get('kind')), ''))}</p>
 {cta}
-<h2>取れている情報</h2>
+<h2>基本情報</h2>
 <dl class="facts">
-{chr(10).join(rows) if rows else '<div><dd>写真以外の項目は取れていません。自治体のページをご覧ください。</dd></div>'}
+{chr(10).join(rows) if rows else '<div><dd>詳しい情報は自治体のページでご確認ください。</dd></div>'}
 </dl>
 <h2>連絡先</h2>
 <dl class="facts">
 {chr(10).join(contact)}
 </dl>
-{operator_note}<p class="fine">この情報は{esc(fmt_date(data.get('date')))}に自治体のページから取得したものです。すでに譲渡・返還されている場合があります。</p>
-<p class="fine">自治体にお問い合わせのときは、このページに載っている管理番号や日付、場所をお伝えください。ID <code>{esc(a['id'])}</code> はこのサイトの中だけの番号で、自治体には通じません。</p>
+{operator_note}<p class="fine">この情報は{esc(fmt_date(data.get('date')))}に自治体のページから取得したものです。{FINE_BY_KIND.get(str(a.get('kind')), '')}</p>
+{ask_html}
 </div>
 </article>
 {aff_html}"""
-    return page(cfg, title=f"{headline(a)}｜{muni}", path=animal_path(a["id"]), body=body, og_type="article",
+    # 何も分からない子は見出し「種類の記載なし」だけでは何のページか分からないので、タイトルには区分を足す（#124 F-06）
+    lead = "飼い主さんが探している動物" if a.get("kind") == "lost" else f"{kind_label(a)}の動物"   # 「探してますの動物」とはしない（#124 G-03）
+    title_head = f"{lead}・{headline(a)}" if not disp_name(a) and _headline_parts(a)[1] == "none" else headline(a)
+    return page(cfg, title=f"{title_head}｜{muni}", path=animal_path(a["id"]), body=body, og_type="article",
                 og_image=safe_url(a.get("image_url")), data_date=str(data.get("date") or ""), desc=shorten(desc, 160))
+
+
+def source_species(s: dict[str, Any]) -> str:
+    """情報源の種別の表示。台帳の種別は dog・cat・mixed だけなので、名前に「その他」があればそれも出す
+    （旭川「飼い主が探している その他の動物」を「犬・猫」と出さない。Codex #11）。"""
+    sp = str(s.get("species") or "")
+    name = str(s.get("name") or "")
+    if "その他" not in name:
+        return SPECIES.get(sp, "犬・猫") if sp in ("dog", "cat") else "犬・猫"
+    have = [w for w in ("犬", "猫") if w in name or sp == {"犬": "dog", "猫": "cat"}[w]]
+    return "・".join([*have, "その他の動物"])
 
 
 def build_sources(cfg: dict[str, Any], data: dict[str, Any]) -> str:
@@ -609,7 +810,7 @@ def build_sources(cfg: dict[str, Any], data: dict[str, Any]) -> str:
             url = safe_url(s.get("url"))
             link = f'<a href="{esc(url)}" rel="noopener" target="_blank">自治体のページ</a>' if url else ""
             kind = KINDS.get(str(s.get("kind")), "")
-            sp = SPECIES.get(str(s.get("species")), "犬・猫")
+            sp = source_species(s)
             if status == "ok":
                 res = f'<b>{int(s.get("count") or 0)} 頭</b>'
                 if str(s.get("photo") or "ok") == "pending":
@@ -620,16 +821,20 @@ def build_sources(cfg: dict[str, Any], data: dict[str, Any]) -> str:
                 res = "このページは一覧を読み取らず、リンクだけ載せています"
             else:
                 res = esc(STATUS.get(status, status))
+            # 名前に自治体名が入っていれば下の行で重ねない（「札幌市（迷子犬）」の下に「札幌市 ・ …」。Codex #30）
+            muni = str(s.get("municipality") or "")
+            meta = [kind, sp] if muni and muni in str(s.get("name") or "") else [muni, kind, sp]
             items.append(
                 f'<li class="src st-{esc(status)}"><span class="src-name">{esc(s.get("name"))}</span>'
-                f'<span class="src-meta">{esc(s.get("municipality"))} ・ {esc(kind)} ・ {esc(sp)}</span>'
+                f'<span class="src-meta">{esc(" ・ ".join(m for m in meta if m))}</span>'
                 f'<span class="src-status">{res}</span><span class="src-link">{link}</span></li>')
         sections.append(f'<h2 id="{esc(p)}">{esc(p)}</h2><ul class="src-list">{"".join(items)}</ul>')
-    summary = f"確認済み {st['ok']} 件、本日 0 頭 {st['empty']} 件、確認できず {st['failed'] + st['ambiguous_empty']} 件、リンクのみ {st['link_only']} 件"
+    summary = f"掲載あり {st['ok']} 件、本日 0 頭 {st['empty']} 件、読めなかった {st['failed'] + st['ambiguous_empty']} 件、リンクのみ {st['link_only']} 件"
     if st["disabled"]:
         summary += f"、停止中 {st['disabled']} 件"
+    # 読めなかった理由は自治体側の変更だけではない（接続の失敗・503 もある。Codex #12）
     body = f"""<h1>情報源（自治体ページ）の一覧</h1>
-<p>{esc(fmt_date(data.get('date')))}に確認した自治体ページ {len(sources)} 件の状況です（{summary}）。「本日は読めませんでした」のページは、自治体側の更新やページ構造の変化で読み取れなかったものです。リンク先で直接ご確認ください。</p>
+<p>{esc(fmt_date(data.get('date')))}に確認した自治体ページ {len(sources)} 件の状況です（{summary}）。「本日は読めませんでした」のページは、接続できなかったり、ページの作りが変わったりして読み取れなかったものです。リンク先で直接ご確認ください。</p>
 {chr(10).join(sections) if sections else '<p class="empty">情報源がありません。</p>'}"""
     return page(cfg, title="情報源の一覧", path="/sources/", body=body, data_date=str(data.get("date") or ""),
                 desc="oneco が毎日確認している自治体の保護犬・保護猫ページの一覧と、本日の確認状況。")
@@ -692,8 +897,8 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
 <section>
 <h2>{site} とは</h2>
 <p>{site} は、全国の自治体（動物愛護センター・保健所・市区町村）が公開している保護犬・保護猫の情報を、出典を明示して 1 か所に集めた、個人運営のサイトです。自治体のページに載っていない情報（保護団体や個人の里親募集など）は扱いません。</p>
-<p>載せている子は 4 つに分けています：{kinds}。「探してます」は、飼い主さんが自分の迷子を探している告知のうち、自治体のページに載っているものです。犬猫以外の動物も、自治体のページにあれば載せています。自治体のページで犬か猫か分からない子は、種別を付けずに載せています（犬・猫の絞り込みには出ず、「すべて」に出ます）。</p>
-<p>いま、{reach}。載っているのは「その日、その自治体のページに出ている子」だけです。気になる子がいたら、掲載元の自治体に直接ご連絡ください。</p>
+<p>載せている子は 4 つに分けています：{kinds}。「探してます」は、飼い主さんが自分の迷子を探している告知のうち、自治体のページに載っているものです。犬猫以外の動物も、自治体のページにあれば載せています。自治体のページで犬か猫か分からない子は、「{NO_SPECIES}」として載せています（絞り込みでは「その他」に出ます）。</p>
+<p>いま、{reach}。載っているのは、その日に自治体のページに出ている子です。内容は自治体のページの記載どおりなので、最新とは限りません。気になる子がいたら、掲載元の自治体に直接ご連絡ください。</p>
 </section>
 <section>
 <h2>{site} という名前と、ふたつの円</h2>
@@ -730,7 +935,7 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
 <h2>運営方針</h2>
 <ul>
 <li>掲載するのは自治体の公開ページに載っている情報だけです。写真・項目は元ページのまま、電話番号と所在地は自治体の公式情報から転記しています。</li>
-<li>毎日、各自治体のページを確認して当日の情報だけを載せます。個体を追跡したり、過去の情報を残したりはしません。</li>
+<li>毎日、各自治体のページを確認して、その日に載っている子を載せます。個体を追跡したり、過去の情報を残したりはしません。</li>
 <li>すべての子に「自治体のページで詳細を見る」リンクを付けています。譲渡の申し込みや迷子の問い合わせは、必ず自治体に直接行ってください。{site} は仲介をしません。</li>
 <li>読み取りに失敗した自治体は<a href="/sources/">情報源の一覧</a>に「本日は読めませんでした」と表示し、元ページへのリンクを残します。</li>
 </ul>
@@ -760,7 +965,7 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
 
 def build_404(cfg: dict[str, Any]) -> str:
     body = """<h1>ページが見つかりません</h1>
-<p>この子の掲載は終了したか、URL が間違っています。掲載は当日の自治体ページに基づくため、譲渡・返還された子のページは翌日には無くなります。</p>
+<p>お探しのページは見つかりませんでした。自治体のページから掲載が無くなった子のページは、翌日の更新で消えます。URL が正しいかもご確認ください。</p>
 <p><a class="cta" href="/">都道府県の一覧へ戻る</a></p>"""
     return page(cfg, title="ページが見つかりません", path="/404.html", body=body, desc="ページが見つかりません。")
 
@@ -832,7 +1037,7 @@ code{font-size:.85em;background:#eef1f4;padding:.1em .3em;border-radius:4px}
 .card:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .card-body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px}
 .card h3{font-size:.98rem;line-height:1.35}
-.card .sub{font-size:.85rem;color:var(--mute);margin:0;overflow-wrap:anywhere}
+.card .sub{font-size:.85rem;color:var(--mute);margin:0;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 .card .muni{font-size:.8rem;color:var(--mute);margin:0}
 .badges{display:flex;gap:6px;flex-wrap:wrap}
 .badge{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:999px;background:#eef1f4;color:var(--ink);line-height:1.5}
@@ -843,7 +1048,7 @@ code{font-size:.85em;background:#eef1f4;padding:.1em .3em;border-radius:4px}
 .media img+.ph{display:none}
 .media.noimg .ph{display:flex}
 .ph{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6%;background:linear-gradient(160deg,#e8edf2,#d3dbe3);color:#6b7a88;font-size:clamp(9px,7cqw,30px)}
-.ph span{font-size:max(11px,.5em);letter-spacing:.05em}
+.ph span{font-size:max(13px,.5em);letter-spacing:.05em;text-align:center;padding:0 8px;line-height:1.4}
 .ph::before{content:"";position:absolute;left:50%;top:50%;width:2.8em;height:2.4em;margin:-.7em 0 0 -1.4em;background:var(--ph);border-radius:50%/55% 55% 45% 45%}
 .ph::after{content:"";position:absolute;left:50%;top:50%;width:5em;height:2.2em;margin:-2.5em 0 0 -2.5em;background:radial-gradient(circle at .6em 1.6em,var(--ph) .55em,transparent .6em),radial-gradient(circle at 1.9em .6em,var(--ph) .6em,transparent .65em),radial-gradient(circle at 3.1em .6em,var(--ph) .6em,transparent .65em),radial-gradient(circle at 4.4em 1.6em,var(--ph) .55em,transparent .6em)}
 .detail{display:grid;gap:16px;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
@@ -855,7 +1060,8 @@ code{font-size:.85em;background:#eef1f4;padding:.1em .3em;border-radius:4px}
 .detail .muni{color:var(--mute);margin:0}
 .kind-help{color:var(--mute);font-size:.9rem}
 .facts{margin:0;display:grid;gap:6px}
-.facts>div{display:grid;grid-template-columns:7.5em 1fr;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
+.facts>div{display:grid;grid-template-columns:7.5em 1fr;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);align-items:baseline}
+@media (max-width:480px){.facts>div{grid-template-columns:1fr;gap:2px}}
 .facts dt{color:var(--mute);font-size:.9rem}
 .facts dd{margin:0;overflow-wrap:anywhere;white-space:pre-line}
 .cta{display:block;background:var(--accent);color:#fff;text-decoration:none;text-align:center;font-weight:700;font-size:1.05rem;padding:14px 16px;border-radius:12px;margin:14px 0}
@@ -895,6 +1101,23 @@ code{font-size:.85em;background:#eef1f4;padding:.1em .3em;border-radius:4px}
 .two-circles{display:flex;justify-content:center;margin:28px 0 14px}
 [hidden]{display:none!important}
 """
+
+# 写真なしの枠の絵（2026-11-13）: 犬は垂れ耳とまるい鼻先、猫はとがった耳としっぽの、座った姿のシルエット。色は肉球と同じ #b3c0cc
+_PH_SVG = {
+    "dog": ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g fill="#b3c0cc">'
+            '<ellipse cx="50" cy="71" rx="19" ry="21"/><circle cx="50" cy="35" r="15"/><ellipse cx="50" cy="44" rx="8" ry="6.5"/>'
+            '<ellipse cx="35.5" cy="36" rx="5.5" ry="11" transform="rotate(18 35.5 36)"/>'
+            '<ellipse cx="64.5" cy="36" rx="5.5" ry="11" transform="rotate(-18 64.5 36)"/></g>'
+            '<path d="M66 84 Q84 80 80 64" fill="none" stroke="#b3c0cc" stroke-width="6" stroke-linecap="round"/></svg>'),
+    "cat": ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g fill="#b3c0cc">'
+            '<ellipse cx="50" cy="71" rx="18" ry="21"/><circle cx="50" cy="36" r="14"/>'
+            '<path d="M37 31 L39 15 L49 25 Z"/><path d="M63 31 L61 15 L51 25 Z"/></g>'
+            '<path d="M66 86 Q88 84 82 62" fill="none" stroke="#b3c0cc" stroke-width="5.5" stroke-linecap="round"/></svg>'),
+}
+CSS += "".join(
+    f'.ph-{sp}::before{{width:4.2em;height:4.2em;margin:-2.7em 0 0 -2.1em;border-radius:0;'
+    f'background:url("data:image/svg+xml,{quote(svg)}") center/contain no-repeat}}\n.ph-{sp}::after{{display:none}}\n'
+    for sp, svg in _PH_SVG.items())
 
 
 # ---------------------------------------------------------------- driver
@@ -967,7 +1190,10 @@ def build_site(data: dict[str, Any], cfg: dict[str, Any], out: Path, data_path: 
         seen.add(aid)
         # ページを組むときだけ使う印。data.json（data の dict）には入れない
         animals.append({**a, "_photo_withheld": True} if aid in withheld else a)
-    animals.sort(key=lambda a: KIND_ORDER.get(str(a.get("kind")), 9))   # stable: 里親募集→保護中→迷子→探してます。元の順は保つ
+    d0 = parse_date(str(data.get("date") or "")[:10])
+    _REF_DATE[:] = [d0] if d0 else []
+    # stable: 里親募集→保護中→迷子→探してます。同じ区分の中では写真のある子を先に（写真を止めている子は写真なし扱い。2026-11-13）。元の順は保つ
+    animals.sort(key=lambda a: (KIND_ORDER.get(str(a.get("kind")), 9), 0 if safe_url(a.get("image_url")) else 1))
 
     by_pref: dict[str, list[dict[str, Any]]] = {}
     for a in animals:

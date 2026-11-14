@@ -67,7 +67,7 @@ def test_site_hides_photos_of_pending_sources(tmp_path: Path):
     h = (out / "animals" / saga[0]["id"] / "index.html").read_text(encoding="utf-8")
     main = h.split("<main")[1].split("</main>")[0]
     assert "<img" not in main
-    assert 'class="ph"' in main
+    assert ('class="ph"' in main or 'class="ph ph-' in main)   # 2026-11-13: 犬・猫は class="ph ph-dog" 等（写真なしの枠が出ていればよい）
     assert 'property="og:image" content="https://oneco.pages.dev/brand/oneco-avatar-512.png"' in h
     assert saga[0]["image_url"] not in h
     # 佐賀以外は今までどおり

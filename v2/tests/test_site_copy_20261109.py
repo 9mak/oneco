@@ -85,8 +85,9 @@ def test_operator_address_warns_against_visiting_only_for_operator(tmp_path: Pat
 
 def test_page_says_id_is_internal_and_what_to_tell_the_municipality(tmp_path: Path):
     h = _page(_build(tmp_path), "facility0001")
-    assert "このサイトの中だけの番号" in h and "このページに載っている管理番号や日付、場所" in h
-    assert "<code>facility0001</code>" in h
+    # 2026-11-13 夜: サイト内 ID は自治体に通じないので出さない。伝えるもの（管理番号か、載っている日付・場所）だけ案内する
+    assert "このサイトの中だけの番号" not in h and "<code>facility0001</code>" not in h
+    assert "自治体にお問い合わせのときは、" in h and "をお伝えください。" in h
 
 
 def test_missing_phone_row_is_labelled_phone_under_contact_heading(tmp_path: Path):

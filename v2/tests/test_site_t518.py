@@ -70,7 +70,7 @@ def test_animal_page_without_species_has_no_species_badge_or_word(tmp_path: Path
     assert "公開している保護中の子。" in desc and "その他" not in desc
     assert re.search(r'property="og:description" content="[^"]*保護中の子。', h)
     # 写真の alt も同じ見出し
-    assert 'alt="雑種（オス）・' in body
+    assert 'alt="雑種（オス）"' in body          # 種別なしの子は種別の語を足さない
 
 
 def test_other_species_is_still_labelled_other(tmp_path: Path):
@@ -87,22 +87,22 @@ def test_pref_page_card_and_counts(tmp_path: Path):
     assert 'href="/animals/other0000001/" data-species="other"' in h
     assert '<b id="count">4</b>' in h                                     # すべて = 犬 2 + その他 1 + 種別なし 1
     stats = re.search(r'<p class="stats">([^<]*)</p>', h).group(1)
-    assert "犬 2 頭" in stats and "猫 0 頭" in stats and "その他 1 頭" in stats and "犬猫の区別なし 1 頭" in stats
-    # 絞り込みの選択肢は すべて・犬・猫 のまま（種別なしの選択肢は作らない）
-    assert 'data-filter="species" data-value="none"' not in h
+    assert "犬 2 頭" in stats and "猫 0 頭" in stats and "その他の動物 1 頭" in stats and "種類の記載なし 1 頭" in stats
+    # 種別なしだけの選択肢は作らない（2026-11-13 夜: 犬猫以外と合わせた「その他」で絞れる）
+    assert 'data-filter="species" data-value="none"' not in h and 'data-filter="species" data-value="other"' in h
     # 種別が空の子のカードは data-species="none"（絞り込みで犬猫に入らない）
     assert 'data-species="none"' in h
     desc = re.search(r'<meta name="description" content="([^"]*)"', h).group(1)
-    assert "保護犬 2 頭・保護猫 0 頭" in desc and "ほか 2 頭" in desc
+    assert "保護犬 2 頭・保護猫 0 頭" in desc and "その他の動物 1 頭・種類の記載なし 1 頭" in desc
 
 
 def test_index_counts_include_unknown_only_in_total(tmp_path: Path):
     out = _build(tmp_path)
     h = _read(out / "index.html")
     li = re.search(r'<li data-pref="佐賀県"[^>]*>', h).group(0)
-    assert 'data-dog="2"' in li and 'data-cat="0"' in li and 'data-other="1"' in li and 'data-total="4"' in li
+    assert 'data-dog="2"' in li and 'data-cat="0"' in li and 'data-other="2"' in li and 'data-total="4"' in li   # その他 = 犬猫以外 + 種類の記載なし
     stats = re.search(r'<p class="stats">(.*?)</p>', h).group(1)
-    assert "犬 <b>22</b> 頭" in stats and "その他 <b>1</b> 頭" in stats and "犬猫の区別なし <b>1</b> 頭" in stats
+    assert "犬 <b>22</b> 頭" in stats and "その他の動物 <b>1</b> 頭" in stats and "種類の記載なし <b>1</b> 頭" in stats
 
 
 def test_data_json_keeps_species_null(tmp_path: Path):
@@ -115,7 +115,7 @@ def test_data_json_keeps_species_null(tmp_path: Path):
 def test_about_explains_animals_without_species(tmp_path: Path):
     out = _build(tmp_path)
     h = _read(out / "about" / "index.html")
-    assert "犬か猫か分からない子は、種別を付けずに載せています" in h
+    assert "犬か猫か分からない子は、「種類の記載なし」として載せています" in h
 
 
 # --- ② 保護中の説明 --------------------------------------------------------------------
