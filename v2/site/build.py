@@ -423,7 +423,8 @@ def subline(a: dict[str, Any]) -> str:
     else:
         _, used, sex = _headline_parts(a)
         color = str(a.get("color") or "").strip()
-        parts = [_breed_parts(a)[1]] if used == "breed" else []   # 見出しから外した品種のかっこ書き（「キジ白」）
+        note = _breed_parts(a)[1] if used == "breed" else ""   # 見出しから外した品種のかっこ書き（「キジ白」）
+        parts = [note] if note and note not in (color, sex) else []   # 毛色・見出しの性別と同じなら重ねない（#125 H-02）
         parts += [color] if used != "color" and color not in _NOT_A_COLOR else []   # 「不明」だけの行は出さない（#123 F-06）
         if sex:
             m = re.search(r"[(（]\s*([^)）]+?)\s*[)）]", str(a.get("sex") or ""))

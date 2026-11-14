@@ -52,3 +52,9 @@ def test_breed_parenthesis_goes_to_the_subline(breed, sex, head, sub):
 
 def test_detail_table_keeps_the_breed_as_written():
     assert B.disp_field(_a(breed="雑種(キジ白)"), "breed") == "雑種(キジ白)"
+
+
+def test_parenthesis_that_repeats_the_color_or_the_sex_is_not_repeated():
+    # 「雑種(茶)」＋毛色「茶」で「茶 / 茶」、「柴犬(オス)」で見出しと同じ「オス」を下の行に出さない（#125 reviewer H-02）
+    assert B.subline(_a(breed="雑種(茶)", sex="オス", color="茶")) == "茶"
+    assert B.subline(_a(breed="柴犬(オス)", sex="オス")) == ""
