@@ -371,10 +371,23 @@ def disp_field(a: dict[str, Any], key: str) -> str:
     return disp_value(key, a.get(key))
 
 
+_BREED_PAREN = re.compile(r"(.+?)\s*[(（]\s*([^()（）]+?)\s*[)）]")
+
+
+def _breed_parts(a: dict[str, Any]) -> tuple[str, str]:
+    """(見出しに使う品種, 下の行に回すかっこ書き)。「雑種(キジ白)」→（雑種, キジ白）、本体が「不明」なら
+    かっこの中を品種に（「不明(フレンチブルドッグ風)」→（フレンチブルドッグ風, ""））。agy 2026-11-14 ③"""
+    breed = disp_breed(a.get("breed"))
+    m = _BREED_PAREN.fullmatch(breed)
+    base, note = (disp_breed(m.group(1)), m.group(2)) if m else (breed, "")   # 「ミックス(キジ白)」「雑(メインクーン風)」の本体も雑種に
+    if base in _NOT_A_BREED and note:
+        base, note = note, ""
+    return ("" if base in _NOT_A_BREED else base), note
+
+
 def _headline_parts(a: dict[str, Any]) -> tuple[str, str, str]:
     """(見出しの本体, 使った項目 breed|color|species|none, 性別)。"""
-    breed = disp_breed(a.get("breed"))
-    breed = "" if breed in _NOT_A_BREED else breed
+    breed, _ = _breed_parts(a)
     sex = disp_sex(re.sub(r"\s*[(（].*$", "", str(a.get("sex") or "")))   # 「オス(去勢済)」のかっこ書きは見出しでは外す（下の行と詳細の表に出す）
     sex = sex if _HEADLINE_SEX.fullmatch(sex) else ""   # 複数頭をまとめた欄（「メス:4匹 オス:2匹」）等は見出しに出さない（#123 reviewer F-02）
     color = str(a.get("color") or "").strip()
@@ -410,7 +423,8 @@ def subline(a: dict[str, Any]) -> str:
     else:
         _, used, sex = _headline_parts(a)
         color = str(a.get("color") or "").strip()
-        parts = [color] if used != "color" and color not in _NOT_A_COLOR else []   # 「不明」だけの行は出さない（#123 F-06）
+        parts = [_breed_parts(a)[1]] if used == "breed" else []   # 見出しから外した品種のかっこ書き（「キジ白」）
+        parts += [color] if used != "color" and color not in _NOT_A_COLOR else []   # 「不明」だけの行は出さない（#123 F-06）
         if sex:
             m = re.search(r"[(（]\s*([^)）]+?)\s*[)）]", str(a.get("sex") or ""))
             parts += [m.group(1)] if m else []
