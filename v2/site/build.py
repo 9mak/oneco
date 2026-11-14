@@ -309,7 +309,7 @@ def disp_age(a: dict[str, Any]) -> str:
     """年齢の表示。日付だけなら「2026年6月6日生まれ」、掲載元が推定と書いている日付（レシピの prefix「推定 」）は
     「2026年6月6日生まれ（推定）」。掲載日より後の日付は「生まれ」と言わない（徳島の誤記。#124 F-01）。
     単位の無い数字（沖縄の推定年齢「10」）はそう書き添える。年齢が空か「不明」で大きさの欄に年齢が入っていれば（千葉市「仔」）それを年齢にする。"""
-    s = str(a.get("age") or "").strip()
+    s = _strip_estimated_unknown(str(a.get("age") or "").strip())
     if not s or s in _NOT_AN_AGE:
         size = str(a.get("size") or "").strip()
         if not _AGE_IN_SIZE.fullmatch(size):
@@ -329,9 +329,15 @@ def disp_age(a: dict[str, Any]) -> str:
     return _tidy_numbers(s)
 
 
+def _strip_estimated_unknown(s: str) -> str:
+    """レシピが「推定 」を足した「推定 不明」は「不明」として扱う（#124 G-03）。"""
+    m = re.fullmatch(r"推定\s*(.+)", s)
+    return m.group(1) if m and m.group(1) in _NOT_AN_AGE else s
+
+
 def card_age(a: dict[str, Any]) -> str:
     """カードの下の行に出す年齢。「不明」や単位の無い数字は出さない。"""
-    s = str(a.get("age") or "").strip()
+    s = _strip_estimated_unknown(str(a.get("age") or "").strip())
     if s in _NOT_AN_AGE or re.fullmatch(r"\d+(?:\.\d+)?", s):
         return ""
     return disp_age(a)
@@ -638,7 +644,7 @@ PREF_JS = """
   var empty=document.getElementById('empty');
   var q=new URLSearchParams(location.search);
   var state={species:q.get('species')||'all',kind:q.get('kind')||'all'};
-  function known(k){return !!document.querySelector('[data-filter="'+k+'"][data-value="'+state[k]+'"]');}
+  function known(k){return Array.prototype.some.call(document.querySelectorAll('[data-filter="'+k+'"]'),function(b){return b.dataset.value===state[k];});}
   if(!known('species'))state.species='all';
   if(!known('kind'))state.kind='all';
   function spOk(sp){return state.species==='all'||sp===state.species||(state.species==='other'&&sp==='none');}
@@ -773,7 +779,8 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
 </article>
 {aff_html}"""
     # 何も分からない子は見出し「種類の記載なし」だけでは何のページか分からないので、タイトルには区分を足す（#124 F-06）
-    title_head = (f"{kind_label(a)}の動物・{headline(a)}" if not disp_name(a) and _headline_parts(a)[1] == "none" else headline(a))
+    lead = "飼い主さんが探している動物" if a.get("kind") == "lost" else f"{kind_label(a)}の動物"   # 「探してますの動物」とはしない（#124 G-03）
+    title_head = f"{lead}・{headline(a)}" if not disp_name(a) and _headline_parts(a)[1] == "none" else headline(a)
     return page(cfg, title=f"{title_head}｜{muni}", path=animal_path(a["id"]), body=body, og_type="article",
                 og_image=safe_url(a.get("image_url")), data_date=str(data.get("date") or ""), desc=shorten(desc, 160))
 

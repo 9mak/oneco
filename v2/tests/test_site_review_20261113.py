@@ -327,3 +327,24 @@ def test_title_of_an_animal_with_nothing_known_says_what_it_is(tmp_path: Path):
 def test_unknown_filter_in_the_url_falls_back_to_all():
     # 「その他」のボタンが無い県に ?species=other で来たら「すべて」に戻す（#124 reviewer F-10）
     assert "data-value=\"'+state.species+'\"" in B.PREF_JS or "state.species='all'" in B.PREF_JS
+
+
+def test_url_filter_values_are_not_put_into_a_selector():
+    # ?species=a"b のような値でセレクタが壊れてスクリプトが止まらないように、ボタンの値と比べる（#124 reviewer G-01）
+    assert "[data-value=\"'+state" not in B.PREF_JS and "dataset.value===state[k]" in B.PREF_JS
+
+
+def test_lost_animal_with_nothing_known_has_a_natural_title(tmp_path: Path):
+    a = _a(id="lostnone0001", name=None, species=None, breed=None, color=None, sex=None, kind="lost", municipality="町田市", prefecture="東京都")
+    assert "<title>飼い主さんが探している動物・種類の記載なし｜町田市｜oneco</title>" in _page(_build(tmp_path, [a]), "lostnone0001")
+
+
+def test_estimated_unknown_age_is_just_unknown():
+    assert B.disp_age(_a(age="推定 不明")) == "不明" and B.card_age(_a(age="推定 不明")) == ""
+
+
+def test_takasaki_estimated_birth_month_has_no_day():
+    import yaml
+    spec = yaml.safe_load((ROOT / "recipes" / "city_takasaki-8.yaml").read_text(encoding="utf-8"))["fields"]["age"]
+    m = re.search(spec["regex"], "令和8年6月1日")
+    assert m and m.group(1) == "令和8年6月" and spec["prefix"] == "推定 "
