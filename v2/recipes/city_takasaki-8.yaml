@@ -11,6 +11,6 @@ fields:
   name: {selector: "td:nth-of-type(3)"}
   color: {selector: "td:nth-of-type(4)"}
   sex: {selector: "td:nth-of-type(5)"}
-  age: {selector: "td:nth-of-type(6)"}
+  age: {selector: "td:nth-of-type(6)", prefix: "推定 "}   # 6 列目は「推定誕生月」（#124 reviewer F-01）
   detail: {selector: "a", attr: href}
 empty_selector: "table tr:has(td) td"

@@ -98,3 +98,23 @@ def test_nyantomo_name_drops_the_facility_prefix():
     html = NYANTOMO.format("".join(CARD.format(i=i, name=n) for i, n in enumerate(names)))
     got = [a["name"] for a in build(src, recipe, [Doc(url=src.url, html=html, soup=BeautifulSoup(html, "lxml"))]).animals]
     assert got == ["かぐら", "しじみ", "みゆき", "ミキ", "函館太郎"]
+
+
+def test_circled_numbers_still_look_like_a_management_number():
+    # 丸数字を残しても、管理番号らしさの判定は数字として見る（写真の無い行が「番号なし」で落ちない。#124 reviewer F-02）
+    from collector.recipe import looks_like_mgmt
+    assert looks_like_mgmt("No.8F-9-1③") == looks_like_mgmt("No.8F-9-13") is True
+
+
+def test_kurume_marks_an_estimated_birth_date():
+    import re
+
+    spec = yaml.safe_load((ROOT / "recipes" / "city_kurume-2.yaml").read_text(encoding="utf-8"))["fields"]["age"]
+    first = spec["join"][0]
+    assert re.search(first["regex"], "推定生年月日：令和8年4月28日") and first.get("prefix") is None
+    r = Recipe.from_dict({"rows": "div.a", "image": "img@src", "fields": {"age": spec}})
+    src = Source(slug="t", name="t", municipality="久留米市", prefecture="福岡県", url="https://x.jp/a/", kind="sheltered", species="dog")
+    html = ('<div class="a">推定生年月日：令和8年4月28日、性別：オス<img src="/a.jpg"></div>'
+            '<div class="a">推定年齢：3歳、性別：メス<img src="/b.jpg"></div>')
+    got = [a["age"] for a in build(src, r, [Doc(url=src.url, html=html, soup=BeautifulSoup(html, "lxml"))]).animals]
+    assert got == ["推定 令和8年4月28日", "3歳"]

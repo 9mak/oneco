@@ -1133,4 +1133,5 @@ def looks_like_date(s: str | None) -> bool:
 
 
 def looks_like_mgmt(s: str | None) -> bool:
-    return bool(s and _MGMT_RE.search(s))
+    # 丸数字（「No.8F-9-1③」）は値には残すが、管理番号らしさは数字として見る（#124 reviewer F-02）
+    return bool(s and _MGMT_RE.search(unicodedata.normalize("NFKC", s)))

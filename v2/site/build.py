@@ -227,8 +227,8 @@ _NOT_A_BREED = {"その他", "不明", "-", "ー", "犬", "猫", "いぬ", "ね�
 _NOT_A_SEX = {"不明", "-", "ー"}
 _HEADLINE_SEX = re.compile(r"(?:去勢|不妊|避妊)?(?:オス|メス)")   # 見出しに出す性別はこの形だけ
 _NOT_A_COLOR = {"不明", "不詳", "-", "ー", "その他"}
-# 毛色の欄に性別・年齢の語や特徴の文が入っている値は見出しに使わない（千葉市「避妊雌」・船橋市「子猫」・「茶色、縞模様あり」）
-_COLOR_NOT_FOR_HEADLINE = re.compile(r"雌|雄|オス|メス|避妊|去勢|不妊|子猫|子犬|成猫|成犬|[、。,，]")
+# 毛色の欄に性別・年齢の語や特徴の文が入っている値は見出しに使わない（千葉市「避妊雌」・船橋市「子猫」・「茶色、縞模様あり」）。
+_COLOR_NOT_FOR_HEADLINE = re.compile(r"雌|雄|オス|メス|避妊|去勢|不妊|子猫|子犬|成猫|成犬|。|あり")   # 読点だけの多色（「黒、白」）は毛色として使う（#124 F-03）
 _EMPTY_NOTES = {"無", "無し", "なし", "有", "-", "ー", "募集中"}   # 備考に出しても意味の無い値（大分「無」「有」・福岡県動物愛護協会「募集中」）
 # 名前の欄に入った、名前でないもの（2026-11-13 Codex #7・#13・#14）
 _NOT_A_NAME = re.compile(r"探して(?:い)?ます|保護して(?:い)?ます")   # 旭川市あにまある「犬 探しています(フルサワ)」= 告知の見出し
@@ -253,6 +253,7 @@ def disp_sex(v: Any) -> str:
     """性別の表示。頭の 雄・雌 等をオス・メスに、かっこ書きは全角に（「雄(去勢済み)」→「オス（去勢済み）」）。"""
     s = str(v or "").strip()
     s = _SEX_HEAD.sub(lambda m: (m.group(1) or "") + _SEX_WORDS[m.group(2)], s)
+    s = re.sub(r"\s+(?=[(（])", "", s)   # 「オス (去勢済)」のかっこ前の空白（#124 F-05）
     return re.sub(r"\(([^()（）]*)\)", r"（\1）", s)
 
 
@@ -265,13 +266,16 @@ def disp_name(a: dict[str, Any]) -> str:
         m = _NAME_IN_NOTE.search(str(a.get("note") or ""))
         return m.group(1) if m else ""
     no = str(a.get("management_no") or "").strip()
-    if no and no in s:   # 福島市「譲渡猫R7ねー35」（管理番号は詳細の表に出る）
+    if len(no) >= 3 and (s.endswith(no) or s.startswith(no)):   # 福島市「譲渡猫R7ねー35」（管理番号は詳細の表に出る）。短い番号は名前の一部かもしれない（#124 F-09）
         return ""
     return s.split("※", 1)[0].strip()   # 「べティちゃん ※現在アシストファーム南国店にいます」（注記は備考にもある）
 
 
-def norm_date(s: Any) -> str:
-    """日付だけの値を「2026年7月23日」に（令和・R・/・-・. の形）。時刻や注記の付いた値、年の無い値は空（元のまま出す）。"""
+_REF_DATE: list[date] = []   # 掲載日（build_site が入れる）。「生まれ」を付けてよいかの判定に使う。空なら今日
+
+
+def parse_date(s: Any) -> date | None:
+    """日付だけの値（令和・R・/・-・. の形）を date に。時刻や注記の付いた値、年の無い値は None。"""
     t = str(s or "").strip()
     for p in _DATES:
         m = p.fullmatch(t)
@@ -282,11 +286,16 @@ def norm_date(s: Any) -> str:
         if g.get("era"):
             y += _ERA[g["era"]]
         try:
-            d = date(y, int(g["m"]), int(g["d"]))
+            return date(y, int(g["m"]), int(g["d"]))
         except ValueError:
-            return ""
-        return f"{d.year}年{d.month}月{d.day}日"
-    return ""
+            return None
+    return None
+
+
+def norm_date(s: Any) -> str:
+    """日付だけの値を「2026年7月23日」に。日付だけでなければ空（元のまま出す）。"""
+    d = parse_date(s)
+    return f"{d.year}年{d.month}月{d.day}日" if d else ""
 
 
 def _tidy_numbers(s: str) -> str:
@@ -297,19 +306,24 @@ def _tidy_numbers(s: str) -> str:
 
 
 def disp_age(a: dict[str, Any]) -> str:
-    """年齢の表示。日付だけなら「2026年6月6日生まれ」、単位の無い数字（沖縄の推定年齢「10」）はそう書き添える。
-    年齢が空で大きさの欄に年齢が入っていれば（千葉市「仔」）それを年齢にする。"""
+    """年齢の表示。日付だけなら「2026年6月6日生まれ」、掲載元が推定と書いている日付（レシピの prefix「推定 」）は
+    「2026年6月6日生まれ（推定）」。掲載日より後の日付は「生まれ」と言わない（徳島の誤記。#124 F-01）。
+    単位の無い数字（沖縄の推定年齢「10」）はそう書き添える。年齢が空か「不明」で大きさの欄に年齢が入っていれば（千葉市「仔」）それを年齢にする。"""
     s = str(a.get("age") or "").strip()
-    if not s:
+    if not s or s in _NOT_AN_AGE:
         size = str(a.get("size") or "").strip()
         if not _AGE_IN_SIZE.fullmatch(size):
-            return ""
+            return s
         if size in ("子", "仔") and species_key(a) in ("dog", "cat"):
             return f"子{species_label(a)}"
         s = size
-    d = norm_date(s)
+    est = s.startswith("推定")
+    d = parse_date(re.sub(r"^推定\s*", "", s) if est else s)
     if d:
-        return f"{d}生まれ"
+        ymd = f"{d.year}年{d.month}月{d.day}日"
+        if d > (_REF_DATE[0] if _REF_DATE else date.today()):
+            return f"推定 {ymd}" if est else ymd
+        return f"{ymd}生まれ（推定）" if est else f"{ymd}生まれ"
     if re.fullmatch(r"\d+(?:\.\d+)?", s):
         return f"{s}（単位の記載なし）"
     return _tidy_numbers(s)
@@ -335,8 +349,6 @@ def disp_value(key: str, v: Any) -> str:
     if key == "shelter_date":
         return norm_date(s) or s
     if key == "size":
-        if _AGE_IN_SIZE.fullmatch(s):
-            return ""
         return _tidy_numbers(_SIZE_WORDS.get(s, s))
     return s
 
@@ -346,6 +358,10 @@ def disp_field(a: dict[str, Any], key: str) -> str:
         return disp_name(a)
     if key == "age":
         return disp_age(a)
+    if key == "size":   # 大きさの欄の年齢語は、年齢が空か「不明」のときだけ年齢に移す（それ以外は捨てない。#124 F-04）
+        age = str(a.get("age") or "").strip()
+        if _AGE_IN_SIZE.fullmatch(str(a.get("size") or "").strip()) and (not age or age in _NOT_AN_AGE):
+            return ""
     return disp_value(key, a.get(key))
 
 
@@ -622,6 +638,9 @@ PREF_JS = """
   var empty=document.getElementById('empty');
   var q=new URLSearchParams(location.search);
   var state={species:q.get('species')||'all',kind:q.get('kind')||'all'};
+  function known(k){return !!document.querySelector('[data-filter="'+k+'"][data-value="'+state[k]+'"]');}
+  if(!known('species'))state.species='all';
+  if(!known('kind'))state.kind='all';
   function spOk(sp){return state.species==='all'||sp===state.species||(state.species==='other'&&sp==='none');}
   function match(sp,kd){return spOk(sp)&&(state.kind==='all'||kd===state.kind);}
   function syncButtons(){document.querySelectorAll('[data-filter]').forEach(function(b){b.setAttribute('aria-pressed',state[b.dataset.filter]===b.dataset.value?'true':'false');});}
@@ -753,7 +772,9 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
 </div>
 </article>
 {aff_html}"""
-    return page(cfg, title=f"{headline(a)}｜{muni}", path=animal_path(a["id"]), body=body, og_type="article",
+    # 何も分からない子は見出し「種類の記載なし」だけでは何のページか分からないので、タイトルには区分を足す（#124 F-06）
+    title_head = (f"{kind_label(a)}の動物・{headline(a)}" if not disp_name(a) and _headline_parts(a)[1] == "none" else headline(a))
+    return page(cfg, title=f"{title_head}｜{muni}", path=animal_path(a["id"]), body=body, og_type="article",
                 og_image=safe_url(a.get("image_url")), data_date=str(data.get("date") or ""), desc=shorten(desc, 160))
 
 
@@ -1162,6 +1183,8 @@ def build_site(data: dict[str, Any], cfg: dict[str, Any], out: Path, data_path: 
         seen.add(aid)
         # ページを組むときだけ使う印。data.json（data の dict）には入れない
         animals.append({**a, "_photo_withheld": True} if aid in withheld else a)
+    d0 = parse_date(str(data.get("date") or "")[:10])
+    _REF_DATE[:] = [d0] if d0 else []
     # stable: 里親募集→保護中→迷子→探してます。同じ区分の中では写真のある子を先に（写真を止めている子は写真なし扱い。2026-11-13）。元の順は保つ
     animals.sort(key=lambda a: (KIND_ORDER.get(str(a.get("kind")), 9), 0 if safe_url(a.get("image_url")) else 1))
 

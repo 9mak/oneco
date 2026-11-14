@@ -53,6 +53,7 @@ def _a(**kw: Any) -> dict[str, Any]:
     # 高知県・和歌山市: 名前の後ろの「※」の注記
     ({"name": "べティちゃん ※現在アシストファーム南国店にいます"}, "べティちゃん"),
     ({"name": "コロ※"}, "コロ"),
+    ({"name": "モモ1", "management_no": "1"}, "モモ1"),                 # 短い番号が名前に含まれるだけでは捨てない（#124 reviewer F-09）
 ])
 def test_things_that_are_not_names_are_not_used_as_the_name(kw, want):
     assert B.headline(_a(**kw)) == want
@@ -80,6 +81,7 @@ def test_animal_with_nothing_known_is_not_called_by_its_kind(kind):
     ({"breed": None, "color": "避妊雌", "species": "cat", "sex": "メス"}, "猫（メス）"),   # 千葉市: 毛色の欄に「避妊雌」
     ({"breed": None, "color": "子猫", "species": "cat", "sex": "メス"}, "猫（メス）"),     # 船橋市: 毛色の欄に「子猫」
     ({"breed": None, "color": "茶色、縞模様あり", "species": "cat", "sex": "オス"}, "猫（オス）"),   # 特徴の文
+    ({"breed": None, "color": "黒、白", "species": "cat", "sex": "メス"}, "黒、白の猫（メス）"),  # 読点だけの多色は毛色（#124 reviewer F-03）
     ({"breed": "MIX(品種不明)", "sex": "オス"}, "雑種（オス）"),                          # 横須賀市
     ({"breed": "ミックス（不明）", "sex": "メス"}, "雑種（メス）"),
 ])
@@ -118,6 +120,7 @@ def test_subline_falls_back_to_the_management_number():
     ("♀", "メス"),
     ("めす（不妊手術済み）", "メス（不妊手術済み）"),
     ("去勢雄", "去勢オス"),
+    ("オス (去勢済)", "オス（去勢済）"),
     ("避妊雌", "避妊メス"),
     ("雌雄不明", "雌雄不明"),
     ("メス:4匹 オス:2匹", "メス:4匹 オス:2匹"),
@@ -155,9 +158,20 @@ def test_plain_dates_are_written_the_same_way(raw, want):
     ("推定3歳", "推定3歳"),
     ("2025年6月頃生まれ(推定)", "2025年6月頃生まれ(推定)"),
     ("10", "10（単位の記載なし）"),
+    ("推定 2026年6月6日", "2026年6月6日生まれ（推定）"),        # 徳島「推定生年月日」（レシピの prefix。#124 reviewer F-01）
+    ("推定 令和8年6月1日", "2026年6月1日生まれ（推定）"),
+    ("2099年11月22日", "2099年11月22日"),                    # 今日より後の日付は「生まれ」と言わない（掲載元の誤記）
+    ("推定 2099年11月22日", "推定 2099年11月22日"),
 ])
 def test_ages_are_written_the_same_way(raw, want):
     assert B.disp_age(_a(age=raw)) == want
+
+
+@pytest.mark.parametrize("slug", ["douai_tokushima-2", "douai_tokushima-3", "city_takasaki-8"])
+def test_recipes_with_an_estimated_birth_date_mark_it(slug):
+    # 掲載元の項目名が「推定生年月日」「推定誕生月」の欄は、値の頭に「推定 」を付けて build に伝える（#124 reviewer F-01）
+    lines = (ROOT / "recipes" / f"{slug}.yaml").read_text(encoding="utf-8").splitlines()
+    assert 'prefix: "推定 "' in next(line for line in lines if line.strip().startswith("age:"))
 
 
 @pytest.mark.parametrize("raw,want", [("中", "中型"), ("小", "小型"), ("大", "大型"), ("3~4kg", "3〜4kg"), ("中型", "中型")])
@@ -167,11 +181,13 @@ def test_sizes_are_written_the_same_way(raw, want):
 
 def test_age_words_in_the_size_field_move_to_the_age():
     a = _a(age=None, size="生後1か月前後", species="cat")      # 千葉市
-    assert B.disp_age(a) == "生後1か月前後" and B.disp_value("size", a["size"]) == ""
+    assert B.disp_age(a) == "生後1か月前後" and B.disp_field(a, "size") == ""
     b = _a(age=None, size="仔", species="cat")
-    assert B.disp_age(b) == "子猫" and B.disp_value("size", b["size"]) == ""
-    c = _a(age="2歳", size="成猫", species="cat")                # 年齢があれば年齢はそのまま、大きさの欄の年齢語は出さない
-    assert B.disp_age(c) == "2歳" and B.disp_value("size", c["size"]) == ""
+    assert B.disp_age(b) == "子猫" and B.disp_field(b, "size") == ""
+    c = _a(age="2歳", size="成猫", species="cat")                # 年齢があれば両方そのまま（大きさの欄の語を捨てない。#124 reviewer F-04）
+    assert B.disp_age(c) == "2歳" and B.disp_field(c, "size") == "成猫"
+    d = _a(age="不明", size="成猫", species="cat")               # 年齢が「不明」なら大きさの欄の語を年齢に
+    assert B.disp_age(d) == "成猫" and B.disp_field(d, "size") == ""
 
 
 # --- 個体ページ ----------------------------------------------------------------------------------------------------------
@@ -298,3 +314,16 @@ def test_css_stacks_facts_on_narrow_screens_and_keeps_small_text_readable():
     assert "max(11px" not in css and ".ph span{font-size:max(13px" in css
     assert re.search(r"@media \(max-width:\d+px\)\{\.facts>div\{grid-template-columns:1fr", css)
     assert "-webkit-line-clamp:2" in css
+
+
+def test_title_of_an_animal_with_nothing_known_says_what_it_is(tmp_path: Path):
+    # 見出しは「種類の記載なし」のまま、タイトルには区分を足して何のページか分かるようにする（#124 reviewer F-06）
+    nara = _a(id="nara00000002", name=None, species=None, breed=None, color=None, sex=None, kind="adoption", municipality="奈良市", prefecture="奈良県")
+    h = _page(_build(tmp_path, [nara]), "nara00000002")
+    assert "<title>里親募集の動物・種類の記載なし｜奈良市｜oneco</title>" in h
+    assert "<h1>種類の記載なし</h1>" in h
+
+
+def test_unknown_filter_in_the_url_falls_back_to_all():
+    # 「その他」のボタンが無い県に ?species=other で来たら「すべて」に戻す（#124 reviewer F-10）
+    assert "data-value=\"'+state.species+'\"" in B.PREF_JS or "state.species='all'" in B.PREF_JS
