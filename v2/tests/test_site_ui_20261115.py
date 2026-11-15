@@ -322,6 +322,21 @@ def test_view_bar_counts_and_toggles_one_or_two_columns(tmp_path: Path):
     assert ".animal-grid .card-note{display:none}" in css
 
 
+def test_unknown_tab_in_the_url_falls_back_to_the_default_tab():
+    # ?tab=不正値 で来たら、サーバーが決めた初めのタブ（里親募集 0 頭なら迷子情報）に戻す（PR #126 reviewer F-02）
+    assert "if(!known('tab'))state.tab=list.getAttribute('data-default-tab')||'adopt';" in B.PREF_JS
+
+
+def test_cards_of_the_other_tab_are_reachable_without_javascript(tmp_path: Path):
+    # JS が動かないと絞り込みのボタンは効かないので、隠していたカードを全部出し、効かないボタンは隠す（PR #126 reviewer F-03）
+    h = _pref(_build(tmp_path, [_a("adop00000001", kind="adoption"), _a("shel00000001")]))
+    head = h.split("</head>", 1)[0]
+    m = re.search(r"<noscript><style>(.*?)</style></noscript>", head)
+    assert m and ".card[hidden]{display:grid!important}" in m.group(1)
+    for sel in (".tablist", ".sub-seg", ".filter-row", ".view-bar"):
+        assert sel in m.group(1), sel
+
+
 def test_pref_script_remembers_and_restores_the_view():
     js = B.PREF_JS
     assert "localStorage.setItem('oneco_last_pref'" in js            # トップの「前回見た地域」

@@ -108,7 +108,7 @@ def test_pref_filter_does_not_fetch_data_json_and_toggles_rendered_cards(tmp_pat
     out = _build(tmp_path)
     h = (out / "pref" / "佐賀県" / "index.html").read_text(encoding="utf-8")
     assert "/data.json" not in h and "fetch(" not in h
-    assert "c.hidden=" in h
+    assert "c.hidden=!ok" in h
     # ページのカードは 里親募集→保護中→迷子→探してます の順
     kinds = re.findall(r'class="card"[^>]*data-kind="(\w+)"', h)
     order = {"adoption": 0, "sheltered": 1, "stray": 2, "lost": 3}

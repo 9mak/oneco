@@ -518,6 +518,10 @@ def card_note(a: dict[str, Any]) -> str:
 
 GA4_ID_RE = re.compile(r"G-[A-Z0-9]{4,20}")
 
+# JS が動かないとき: タブ・絞り込みのボタンは効かないので隠し、初めのタブ以外で隠していたカードも全部出す（PR #126 reviewer F-03）
+NOSCRIPT_CSS = ("\n<noscript><style>.card[hidden]{display:grid!important}"
+                ".tablist,.sub-seg,.filter-row,.view-bar{display:none!important}</style></noscript>")
+
 
 def ga4_id(cfg: dict[str, Any]) -> str:
     """config の ga4_id が G-… の形のときだけ返す（形が違えば空。script に埋め込むので形で絞る）。"""
@@ -565,7 +569,7 @@ def page(cfg: dict[str, Any], *, title: str, desc: str, path: str, body: str,
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="/style.css">{extra_head}{ga4_head(cfg)}
+<link rel="stylesheet" href="/style.css">{NOSCRIPT_CSS}{extra_head}{ga4_head(cfg)}
 </head>
 <body{body_attrs}>
 <header class="site-head">
@@ -734,7 +738,7 @@ PREF_JS = """
   else if(q.get('species')){state.sp=q.get('species');}
   if(q.get('view'))state.view=q.get('view');
   function apply(){
-    if(!known('tab'))state.tab='adopt';
+    if(!known('tab'))state.tab=list.getAttribute('data-default-tab')||'adopt';
     if(state.tab!=='missing'||!known('sub'))state.sub='all';
     var hasOther=cards.some(function(c){return c.dataset.group===state.tab&&(c.dataset.species==='other'||c.dataset.species==='none');});
     if(!known('sp')||(state.sp==='other'&&!hasOther))state.sp='all';
