@@ -71,6 +71,6 @@ def test_pr_notice_is_in_the_first_view_above_the_photo_and_the_box(tmp_path: Pa
     aid = next(a["id"] for a in data["animals"] if a["kind"] == "adoption")
     h = (out / "animals" / aid / "index.html").read_text(encoding="utf-8")
     i = h.index(PR_TEXT)
-    assert i < h.index('<article class="detail"')     # 写真（article の先頭）より上
+    assert i < h.index('<article class="detail-box"')     # 写真（article の先頭）より上
     assert i < h.index("迎える準備")
     assert "PR" in h[max(0, i - 80):i]                # 「PR」の文字を添える（広告と分かる表現）

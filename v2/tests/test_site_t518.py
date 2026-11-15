@@ -61,8 +61,8 @@ def test_animal_page_without_species_has_no_species_badge_or_word(tmp_path: Path
     body = _main(h)
     assert 'class="badge sp-' not in body                       # 種別のバッジを出さない
     assert '<span class="badge kd-sheltered">保護中</span>' in body
-    # 2026-11-13: 見出しは品種と性別になった（区分はバッジにある。test_site_copy_20261113.py）。種別の語は使わないまま
-    assert "<h1>雑種（オス）</h1>" in body
+    # 2026-11-15 UI 刷新: 見出しは「名無しの動物」（種別の語は使わないまま）。タイトルは品種と性別
+    assert '<h1 class="detail-title">名無しの動物</h1>' in body
     assert "その他" not in body and "None" not in h
     assert re.search(r'<title>雑種（オス）｜[^<]+｜oneco</title>', h)
     assert re.search(r'property="og:title" content="雑種（オス）｜', h)
@@ -77,7 +77,7 @@ def test_other_species_is_still_labelled_other(tmp_path: Path):
     out = _build(tmp_path)
     body = _main(_read(out / "animals" / "other0000001" / "index.html"))
     assert '<span class="badge sp-other">その他</span>' in body
-    assert "<h1>保護中のその他</h1>" not in body and "<h1>雑種（オス）</h1>" in body   # 2026-11-13: 見出しは品種と性別
+    assert "保護中のその他" not in body and '<h1 class="detail-title">名無しの動物</h1>' in body   # 2026-11-15 UI 刷新の見出し
 
 
 def test_pref_page_card_and_counts(tmp_path: Path):
@@ -86,10 +86,8 @@ def test_pref_page_card_and_counts(tmp_path: Path):
     assert 'href="/animals/nosp00000001/" data-species="none"' in h       # 犬・猫の絞り込みに当たらない
     assert 'href="/animals/other0000001/" data-species="other"' in h
     assert '<b id="count">4</b>' in h                                     # すべて = 犬 2 + その他 1 + 種別なし 1
-    stats = re.search(r'<p class="stats">([^<]*)</p>', h).group(1)
-    assert "犬 2 頭" in stats and "猫 0 頭" in stats and "その他の動物 1 頭" in stats and "種類の記載なし 1 頭" in stats
-    # 種別なしだけの選択肢は作らない（2026-11-13 夜: 犬猫以外と合わせた「その他」で絞れる）
-    assert 'data-filter="species" data-value="none"' not in h and 'data-filter="species" data-value="other"' in h
+    # 種別なしだけの選択肢は作らない（2026-11-13 夜: 犬猫以外と合わせた「その他」で絞れる。2026-11-15 UI 刷新でも同じ）
+    assert 'data-sp="none"' not in h and 'data-sp="other"' in h
     # 種別が空の子のカードは data-species="none"（絞り込みで犬猫に入らない）
     assert 'data-species="none"' in h
     desc = re.search(r'<meta name="description" content="([^"]*)"', h).group(1)
@@ -99,10 +97,10 @@ def test_pref_page_card_and_counts(tmp_path: Path):
 def test_index_counts_include_unknown_only_in_total(tmp_path: Path):
     out = _build(tmp_path)
     h = _read(out / "index.html")
-    li = re.search(r'<li data-pref="佐賀県"[^>]*>', h).group(0)
-    assert 'data-dog="2"' in li and 'data-cat="0"' in li and 'data-other="2"' in li and 'data-total="4"' in li   # その他 = 犬猫以外 + 種類の記載なし
-    stats = re.search(r'<p class="stats">(.*?)</p>', h).group(1)
-    assert "犬 <b>22</b> 頭" in stats and "その他の動物 <b>1</b> 頭" in stats and "種類の記載なし <b>1</b> 頭" in stats
+    # 2026-11-15 UI 刷新: タイルは区分のタブごとの頭数。種別の数は上の 1 行だけで、その他 = 犬猫以外 + 種類の記載なし
+    assert 'data-pref="佐賀県" data-all="4" data-adopt="0" data-missing="4"' in h
+    stats = re.search(r'<p class="hero-stats">(.*?)</p>', h).group(1)
+    assert "犬 <b>22</b> ・ 猫 <b>0</b> ・ その他 <b>2</b>" in stats
 
 
 def test_data_json_keeps_species_null(tmp_path: Path):
@@ -115,14 +113,11 @@ def test_data_json_keeps_species_null(tmp_path: Path):
 def test_about_explains_animals_without_species(tmp_path: Path):
     out = _build(tmp_path)
     h = _read(out / "about" / "index.html")
-    assert "犬か猫か分からない子は、「種類の記載なし」として載せています" in h
+    assert "犬か猫か分からない子は、種別を付けずに載せています（絞り込みでは「その他」に出ます）" in h   # 2026-11-15: 見出しは「名無しの動物」
 
 
 # --- ② 保護中の説明 --------------------------------------------------------------------
 def test_sheltered_help_includes_citizens(tmp_path: Path):
-    mod = _mod()
-    assert mod.KIND_HELP["sheltered"] == "自治体や市民に保護されている子"
+    # 2026-11-15 UI 刷新: バッジは場所を断定しない「保護中」（「施設で保護中」は市民保護の子に合わない。PR #126 reviewer・Codex）
     out = _build(tmp_path)
-    assert "保護中（自治体や市民に保護されている子）" in _read(out / "about" / "index.html")
-    assert "保護中＝自治体や市民に保護されている子" in _read(out / "index.html")
-    assert '<p class="kind-help">自治体や市民に保護されている子</p>' in _read(out / "animals" / "nosp00000001" / "index.html")
+    assert "「保護中」（自治体の施設や、市民の方に保護されている子）" in _read(out / "about" / "index.html")

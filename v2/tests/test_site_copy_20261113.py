@@ -138,15 +138,16 @@ def test_withheld_photo_says_the_photo_is_on_the_source_page(tmp_path: Path):
 def test_municipality_with_the_prefecture_in_its_name_does_not_repeat_it(tmp_path: Path):
     out = _build(tmp_path)
     assert "愛知県動物愛護センター（わんにゃんナビ）（愛知県）" not in _page(out, "aichi0000001")
-    assert '<p class="muni">愛知県動物愛護センター（わんにゃんナビ）</p>' in _page(out, "aichi0000001")
-    assert '<p class="muni">町田市（東京都）</p>' in _page(out, "machida00001")
+    # 2026-11-15 UI 刷新: 見出しの下の自治体名はやめ、「掲載元・所在地」の表に掲載元の名前のまま出す（県は戻るリンクにある）
+    assert "<dt>掲載元</dt><dd>愛知県動物愛護センター（わんにゃんナビ）</dd>" in _page(out, "aichi0000001")
+    assert "<dt>掲載元</dt><dd>町田市</dd>" in _page(out, "machida00001") and "‹ 東京都の一覧へ" in _page(out, "machida00001")
 
 
 def test_meaningless_notes_are_not_shown(tmp_path: Path):
     out = _build(tmp_path)
-    assert "<dt>備考</dt>" not in _page(out, "notenone0001")
-    assert "<dt>備考</dt>" not in _page(out, "notewant0001")
-    assert "<dt>備考</dt><dd>首輪（赤）</dd>" in _page(out, "notereal0001")
+    assert "<dt>メモ</dt>" not in _page(out, "notenone0001")   # 2026-11-15: 項目名は「メモ」
+    assert "<dt>メモ</dt>" not in _page(out, "notewant0001")
+    assert "<dt>メモ</dt><dd>首輪（赤）</dd>" in _page(out, "notereal0001")
 
 
 def test_sex_and_breed_are_written_the_same_way(tmp_path: Path):
@@ -174,9 +175,9 @@ def test_colons_are_full_width_and_dates_are_not_spaced(tmp_path: Path):
     pref = (out / "pref" / "佐賀県" / "index.html").read_text(encoding="utf-8")
     page = _page(out, "machida00001")
     assert "時点：" in _text(index) and "時点:" not in _text(index)
-    assert "掲載元：" in _text(pref) and "掲載元:" not in _text(pref)
-    assert "データ確認日：" in _text(page) and "データ確認日:" not in _text(page)
-    assert "この情報は2026年11月13日に自治体のページから取得" in _text(page)
+    # 2026-11-15 UI 刷新: 県ページの掲載元の列挙とフッターのデータ確認日はやめた。日付は「…時点」で、空白を挟まない
+    assert "2026年11月13日時点" in _text(pref) and "時点:" not in _text(pref) and "日 時点" not in _text(pref)
+    assert "2026年11月13日時点の自治体公開情報です。" in _text(page) and "日 時点" not in _text(page)
     srcs = (out / "sources" / "index.html").read_text(encoding="utf-8")
     assert "2026年11月13日に確認した" in _text(srcs)
 

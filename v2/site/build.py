@@ -79,14 +79,13 @@ TWO_CIRCLES_SVG = ('<svg width="44" height="24" viewBox="0 0 44 24" aria-hidden=
                    '<circle cx="27" cy="12" r="10" fill="#6FAEBB" fill-opacity="0.8"/></svg>')
 
 SPECIES = {"dog": "犬", "cat": "猫", "other": "その他"}
-# 区分の呼び方は 2026-10-02 におまえさんが決めた（「収容」を使わず、飼い主さんが探している子の区分 lost を追加）
-KINDS = {"adoption": "里親募集", "sheltered": "保護中", "stray": "迷子", "lost": "探してます"}
-KIND_HELP = {
-    "adoption": "新しい家族を募集している子",
-    "sheltered": "自治体や市民に保護されている子",   # 千葉市・越谷市の「個人保護」は市民が保護している子（T518）
-    "stray": "飼い主さんが分からないまま保護されている子",
-    "lost": "飼い主さんが探している迷子の子",
-}
+# 区分の呼び方（2026-11-15 UI 刷新）: 収集の kind 4 つを、利用者の目的で「里親募集」と「迷子情報」の 2 つに分ける。
+# 迷子情報の中は「保護中」（sheltered・stray）と「飼い主が探してます」（lost）。指示書は「施設で保護中」だったが、
+# 千葉市・旭川市・越谷市・埼玉県の個人保護など市民が自宅で保護している子もいる（T518）ので、場所を断定しない「保護中」にした
+# （PR #126 の reviewer と Codex の指摘、2026-11-15 おまえさん決定）
+KINDS = {"adoption": "里親募集", "sheltered": "保護中", "stray": "保護中", "lost": "飼い主が探してます"}
+GROUPS = {"adopt": "里親募集", "missing": "迷子情報"}
+MISSING_SUB = {"sheltered": "shelter", "stray": "shelter", "lost": "lost"}   # 迷子情報の内訳の絞り込み
 # 個体ページの「すでに〜場合があります」は区分ごと（探してますの子に「譲渡・返還」とは書かない。2026-11-13 Codex #16）
 FINE_BY_KIND = {
     "adoption": "すでに譲渡先が決まっている場合があります。",
@@ -106,19 +105,19 @@ STATUS = {
     "link_only": "リンクのみ",
     "disabled": "停止中",
 }
-# 詳細ページに出す項目（取れているものだけ出す）
+# 詳細ページの「この子の情報」に出す項目（この順で、取れているものだけ）。名前は見出し、大きさは出さない（2026-11-15 UI 刷新）
 FIELDS = [
-    ("name", "名前"),
-    ("sex", "性別"),
-    ("age", "年齢・生年月日"),
     ("breed", "種類"),
     ("color", "毛色"),
-    ("size", "大きさ"),
-    ("management_no", "管理番号"),
+    ("sex", "性別"),
+    ("age", "年齢"),
     ("shelter_date", "保護日"),
-    ("location", "保護場所・発見場所"),
-    ("note", "備考"),
+    ("location", "保護・発見場所"),
+    ("management_no", "管理番号"),
+    ("note", "メモ"),
 ]
+# 表に出しても意味の無い値（「性別: 不明」「毛色: -」）
+EMPTY_VALS = {"", "-", "ー", "不明", "不詳", "その他", "なし", "無", "無し"}
 PREF_ORDER = [
     "北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県",
     "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県",
@@ -129,6 +128,19 @@ PREF_ORDER = [
     "福岡県", "佐賀県", "長崎県", "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県",
 ]
 PREF_INDEX = {p: i for i, p in enumerate(PREF_ORDER)}
+# トップのタイルと都道府県ページの近隣県バーの地方ブロック（この順で並べる。関東は東京から）
+REGIONS: list[tuple[str, list[str]]] = [
+    ("北海道・東北", ["北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県"]),
+    ("関東", ["東京都", "神奈川県", "埼玉県", "千葉県", "茨城県", "栃木県", "群馬県"]),
+    ("中部", ["新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県", "静岡県", "愛知県"]),
+    ("近畿", ["三重県", "滋賀県", "京都府", "大阪府", "兵庫県", "奈良県", "和歌山県"]),
+    ("中国・四国", ["鳥取県", "島根県", "岡山県", "広島県", "山口県", "徳島県", "香川県", "愛媛県", "高知県"]),
+    ("九州・沖縄", ["福岡県", "佐賀県", "長崎県", "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県"]),
+]
+REGION_OF = {p: name for name, prefs in REGIONS for p in prefs}
+# 掲載元の建物のアイコン（カードの掲載元の頭）
+ICO_ORG = ('<svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" '
+           'stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.5 14h11M3.5 14V6.5l4.5-3 4.5 3V14M6.5 14v-3.5h3V14M6.5 7.5h3"/></svg>')
 ID_RE = re.compile(r"[A-Za-z0-9_-]{1,64}")
 
 
@@ -458,9 +470,60 @@ def shorten(s: Any, n: int) -> str:
     return s if len(s) <= n else s[: n - 1] + "…"
 
 
+# ---------------------------------------------------------------- 2026-11-15 UI 刷新: カードと区分
+
+def kind_group(a: dict[str, Any]) -> str:
+    """adopt（里親募集）| missing（迷子情報）。"""
+    return "adopt" if a.get("kind") == "adoption" else "missing"
+
+
+def pref_short(p: str) -> str:
+    """タイル・近隣県の表示名。北海道はそのまま、それ以外は末尾の都・府・県を落とす（「東京」「青森」）。"""
+    return p if p == "北海道" else re.sub(r"[都府県]$", "", p)
+
+
+def card_title(a: dict[str, Any]) -> str:
+    """カードと個体ページの見出し。名前があれば名前、無ければ「名無しの犬」「名無しの猫」「名無しの動物」。
+    飼い主が探してますの子は飼い主には名前があるはずなので「迷子の犬」（PR #126 Codex 7、2026-11-15 おまえさん決定）。
+    毛色や管理番号は混ぜない（性別・年齢・種類は下の小さなバッジにある）。<title> は検索結果で見分けられるよう headline() のまま。"""
+    name = disp_name(a)
+    if name and name not in EMPTY_VALS:
+        return name
+    noun = SPECIES[species_key(a)] if species_key(a) in ("dog", "cat") else "動物"
+    return f"迷子の{noun}" if a.get("kind") == "lost" else f"名無しの{noun}"
+
+
+_ATTR_SEX = re.compile(r"(?:去勢|不妊|避妊)?(オス|メス|雄|雌|おす|めす|♂|♀)")
+_ATTR_SEX_DONE = re.compile(r"[、・,\s]*(?:去勢|不妊|避妊)?(?:手術)?(?:済み?|スミ|ずみ)$")   # 「オス、去勢済み」「メス・不妊済み」
+
+
+def attr_sex(v: Any) -> str:
+    """カードの性別バッジ。かっこ書きや手術の注記を外して オス・メス だけ。複数頭の欄（「メス:4匹 オス:2匹」）や「不明」は出さない。"""
+    s = re.sub(r"\s*[(（].*$", "", str(v or "")).strip()
+    m = _ATTR_SEX.fullmatch(_ATTR_SEX_DONE.sub("", s))
+    return _SEX_WORDS.get(m.group(1), m.group(1)) if m else ""
+
+
+def card_attrs(a: dict[str, Any]) -> list[str]:
+    """カードの小さなバッジ。性別 → 年齢 → 種類 の順で、あるものだけ（最大 3 つ）。毛色・大きさは出さない。"""
+    breed = _breed_parts(a)[0]   # 雑種の言い換え済み。種別・性別・「不明」だけの欄は空、かっこ書きは外す
+    age = card_age(a)
+    return [v for v in (attr_sex(a.get("sex")), age, breed) if v not in EMPTY_VALS]   # 「不詳」「なし」等は出さない（#126 Codex 6）
+
+
+def card_note(a: dict[str, Any]) -> str:
+    """カードのメモ抜粋。「無」「募集中」等の意味の無い値は出さない。長い文は詰める（表示は CSS で 2 行に切る）。"""
+    note = disp_value("note", a.get("note"))
+    return "" if note in EMPTY_VALS else shorten(note, 120)
+
+
 # ---------------------------------------------------------------- page shell
 
 GA4_ID_RE = re.compile(r"G-[A-Z0-9]{4,20}")
+
+# JS が動かないとき: タブ・絞り込みのボタンは効かないので隠し、初めのタブ以外で隠していたカードも全部出す（PR #126 reviewer F-03）
+NOSCRIPT_CSS = ("\n<noscript><style>.card[hidden]{display:grid!important}"
+                ".tablist,.sub-seg,.filter-row,.view-bar{display:none!important}</style></noscript>")
 
 
 def ga4_id(cfg: dict[str, Any]) -> str:
@@ -479,8 +542,7 @@ def ga4_head(cfg: dict[str, Any]) -> str:
 
 
 def page(cfg: dict[str, Any], *, title: str, desc: str, path: str, body: str,
-         og_image: str = "", og_type: str = "website", extra_head: str = "", body_attrs: str = "",
-         data_date: str = "") -> str:
+         og_image: str = "", og_type: str = "website", extra_head: str = "", body_attrs: str = "") -> str:
     site = esc(cfg["site_name"])
     base = cfg["base_url"].rstrip("/")
     url = esc(base + path)
@@ -490,7 +552,9 @@ def page(cfg: dict[str, Any], *, title: str, desc: str, path: str, body: str,
     full_title = esc(title) if title == cfg["site_name"] else f"{esc(title)}｜{site}"
     tagline = esc(cfg.get("tagline") or "")
     tagline_html = f'<span class="tagline">{tagline}</span>' if tagline else ""
-    repo = safe_url(cfg.get("repo_url")) or DEFAULT_CFG["repo_url"]
+    # フッター（2026-11-15 UI 刷新）: リンクは 3 つ。「運営への問い合わせ」は取り下げ・訂正の窓口（about）。フッターで「取り下げ」と
+    # 書いて不要な削除依頼を誘わず、動物の相談先（掲載元の自治体）と取り違えないように「運営への」と付ける（PR #126 Codex 8）。
+    # 著作権の主張（All Rights Reserved）は付けない（自治体情報のまとめのため）
     return f"""<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -509,7 +573,7 @@ def page(cfg: dict[str, Any], *, title: str, desc: str, path: str, body: str,
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="stylesheet" href="/style.css">{extra_head}{ga4_head(cfg)}
+<link rel="stylesheet" href="/style.css">{NOSCRIPT_CSS}{extra_head}{ga4_head(cfg)}
 </head>
 <body{body_attrs}>
 <header class="site-head">
@@ -522,9 +586,9 @@ def page(cfg: dict[str, Any], *, title: str, desc: str, path: str, body: str,
 {body}
 </main>
 <footer class="site-foot">
-<div class="foot-brand"><img src="/brand/oneco-mark.svg" width="28" height="28" alt="" loading="lazy"><span>ふたつの円は、犬のポムと猫のビリー。<a href="/about/">このサイトについて</a></span></div>
-<p>掲載しているのは各自治体が公開している情報です。{f'データ確認日：{esc(fmt_date(data_date))}。' if data_date else ''}最新の状況は自治体のページ・電話でご確認ください。</p>
-<p><a href="/sources/">情報源の一覧</a> ・ <a href="/about/#takedown">取り下げ・訂正の依頼</a> ・ <a href="{esc(repo)}" rel="noopener" target="_blank">GitHub</a></p>
+<nav class="foot-links" aria-label="サイトの案内"><a href="/about/">このサイトについて</a><a href="/sources/">情報源の一覧</a><a href="/about/#takedown">運営への問い合わせ</a></nav>
+<p class="foot-note">掲載情報は各自治体の公開データに基づきます。<br>最新の状況は掲載元のページ・電話でご確認ください。</p>
+<div class="foot-brand"><img src="/brand/oneco-mark.svg" width="18" height="18" alt="" loading="lazy"><span>{site}</span></div>
 </footer>
 </body>
 </html>
@@ -533,207 +597,272 @@ def page(cfg: dict[str, Any], *, title: str, desc: str, path: str, body: str,
 
 # ---------------------------------------------------------------- partials
 
-def placeholder(a: dict[str, Any] | None = None) -> str:
+def placeholder(a: dict[str, Any] | None = None, *, small: bool = False, button_url: str = "") -> str:
     """写真が無い子の枠。絵は CSS（.ph の疑似要素）だけで描く。写真を止めている掲載元（T630: 許諾待ち・不可）の子は
-    掲載元には写真があるので「写真はありません」とは書かない。それ以外も、取れなかっただけかもしれないので「無い」とは言い切らない（Codex #22）。"""
-    msg = "写真は自治体のページで見られます" if a and a.get("_photo_withheld") else "写真は自治体のページでご確認ください"
+    掲載元には写真があるので「写真はありません」とは書かない。それ以外も、取れなかっただけかもしれないので「無い」とは言い切らない（Codex #22）。
+    small は一覧の小さな枠（96px）用に改行を入れた短い文。button_url があれば「自治体のページで写真を見る」ボタンを添える（個体ページ）。"""
+    withheld = bool(a and a.get("_photo_withheld"))
+    msg = "写真は自治体のページで見られます" if withheld else "写真は自治体のページでご確認ください"
+    shown = ("写真は自治体の<br>ページで見られます" if withheld else "写真は掲載元で<br>ご確認ください") if small else esc(msg)
     sp = species_key(a) if a else "none"
     cls = f"ph ph-{sp}" if sp in ("dog", "cat") else "ph"   # 犬・猫はシルエット、それ以外は肉球（2026-11-13）
-    return f'<div class="{cls}" role="img" aria-label="{msg}"><span>{msg}</span></div>'
+    if button_url:   # ボタン（リンク）を含むので role="img" にしない
+        return (f'<div class="{cls}"><span>{shown}</span><a class="ph-btn" href="{esc(button_url)}" rel="noopener" '
+                f'target="_blank">自治体のページで写真を見る ↗</a></div>')
+    return f'<div class="{cls}" role="img" aria-label="{msg}"><span>{shown}</span></div>'
 
 
-def media(a: dict[str, Any], *, big: bool = False) -> str:
+def photo_box(a: dict[str, Any], *, big: bool = False) -> str:
+    """一覧の写真枠（.thumb）か、個体ページの写真枠（.detail-media）。写真は切り抜かず全体を出す（T625）。"""
+    cls = "detail-media" if big else "thumb"
     img = safe_url(a.get("image_url"))
     if not img:
-        return f'<div class="media">{placeholder(a)}</div>'
-    # カードはリンクの中の見出し・下の行・自治体名で読めるので、写真は飾り（alt=""）。同じ語を 4 回読み上げない（agy ⑦）
+        src = safe_url(a.get("source_url")) if big and a.get("_photo_withheld") else ""   # 写真を見たい人がすぐ掲載元へ行けるように
+        return f'<div class="{cls}">{placeholder(a, small=not big, button_url=src)}</div>'
+    # カードはリンクの中の見出し・バッジ・自治体名で読めるので、写真は飾り（alt=""）。同じ語を何度も読み上げない（agy ⑦）
     alt = esc(photo_alt(a)) if big else ""
     attrs = 'loading="eager" fetchpriority="high"' if big else 'loading="lazy"'
     # 自治体サイトの写真を直接表示する。取れなかったときは JS でプレースホルダに差し替える
-    return (f'<div class="media"><img src="{esc(img)}" alt="{alt}" referrerpolicy="no-referrer" {attrs} '
-            f'onerror="this.parentNode.classList.add(\'noimg\');this.remove()">{placeholder()}</div>')
+    return (f'<div class="{cls}"><img src="{esc(img)}" alt="{alt}" referrerpolicy="no-referrer" {attrs} '
+            f'onerror="this.parentNode.classList.add(\'noimg\');this.remove()">{placeholder(small=not big)}</div>')
 
 
 def badges(a: dict[str, Any]) -> str:
+    """区分のバッジ、続けて種別のバッジ（種別なしの子は区分だけ）。"""
     sp, kd = species_key(a), str(a.get("kind") or "")
-    sp_html = f'<span class="badge sp-{esc(sp)}">{esc(species_label(a))}</span>' if species_label(a) else ""   # 種別なしの子はバッジなし
-    return sp_html + f'<span class="badge kd-{esc(kd)}">{esc(kind_label(a))}</span>'
+    sp_html = f'<span class="badge sp-{esc(sp)}">{esc(species_label(a))}</span>' if species_label(a) else ""
+    return f'<div class="card-badges"><span class="badge kd-{esc(kd)}">{esc(kind_label(a))}</span>{sp_html}</div>'
 
 
-def card(a: dict[str, Any]) -> str:
-    sub = subline(a)
-    sub_html = f'<p class="sub">{esc(sub)}</p>' if sub else ""
-    return f"""<a class="card" href="{esc(animal_path(a['id']))}" data-species="{esc(species_key(a))}" data-kind="{esc(a.get('kind') or '')}">
-{media(a)}
-<div class="card-body">
-<div class="badges">{badges(a)}</div>
-<h3>{esc(headline(a))}</h3>
-{sub_html}
-<p class="muni">{esc(a.get('municipality'))}</p>
-</div>
-</a>"""
-
-
-def filter_bar(name: str, options: list[tuple[str, str]], label: str) -> str:
-    btns = "".join(
-        f'<button type="button" data-filter="{esc(name)}" data-value="{esc(v)}" aria-pressed="{"true" if v == "all" else "false"}">{esc(lb)}</button>'
-        for v, lb in options)
-    return f'<div class="chips" role="group" aria-label="{esc(label)}">{btns}</div>'
-
-
-def species_options(c: Counter[str]) -> list[tuple[str, str]]:
-    """種別の絞り込み。犬猫以外と種類の記載なしの子がいれば「その他」も出す（agy ⑤）。"""
-    opts = [("all", "すべて"), ("dog", "犬"), ("cat", "猫")]
-    return [*opts, ("other", "その他")] if c["other"] + c["none"] else opts
-
-
-def species_counts(c: Counter[str], *, bold: bool) -> str:
-    """「犬 30 頭 ・ 猫 67 頭 ・ その他の動物 2 頭 ・ 種類の記載なし 1 頭」（統計の行）。"""
-    def n(k: str) -> str:
-        return f"<b>{c[k]}</b>" if bold else str(c[k])
-    parts = [f"犬 {n('dog')} 頭", f"猫 {n('cat')} 頭"]
-    parts += [f"その他の動物 {n('other')} 頭"] if c["other"] else []
-    parts += [f"{NO_SPECIES} {n('none')} 頭"] if c["none"] else []
-    return " ・ ".join(parts)
+def card(a: dict[str, Any], *, hidden: bool = False) -> str:
+    """一覧のカード。日付・場所・大きさ・管理番号は出さない（個体ページの表にある）。"""
+    sub = MISSING_SUB.get(str(a.get("kind")), "")
+    sub_attr = f' data-sub="{sub}"' if sub else ""
+    hidden_attr = " hidden" if hidden else ""
+    attrs = "".join(f'<span class="attr">{esc(v)}</span>' for v in card_attrs(a))
+    note = card_note(a)
+    return (f'<a class="card" href="{esc(animal_path(a["id"]))}" data-species="{esc(species_key(a))}" data-kind="{esc(a.get("kind") or "")}" '
+            f'data-group="{kind_group(a)}"{sub_attr}{hidden_attr}>\n'
+            f'{photo_box(a)}\n<div class="card-main">\n{badges(a)}\n<h3 class="card-title">{esc(card_title(a))}</h3>\n'
+            + (f'<div class="attr-list">{attrs}</div>\n' if attrs else "")
+            + f'<p class="card-muni">{ICO_ORG}<span>{esc(a.get("municipality"))}</span></p>\n'
+            + (f'<p class="card-note">{esc(note)}</p>\n' if note else "")
+            + "</div>\n</a>\n")
 
 
 # ---------------------------------------------------------------- pages
 
 def build_index(cfg: dict[str, Any], data: dict[str, Any], animals: list[dict[str, Any]]) -> str:
-    by_pref: dict[str, Counter[str]] = {}
+    """トップ（2026-11-15 UI 刷新）: 地域から探す前提の見出し、区分の 3 タブ、地方ブロックごとの 47 都道府県タイル。
+    今日 0 頭の県も隠さず薄く出す（0 なのか対象外なのか分かる。Codex #10）。種別の絞り込みは都道府県ページで行う。"""
+    cnt: dict[str, Counter[str]] = {}
     for a in animals:
-        c = by_pref.setdefault(str(a.get("prefecture") or "不明"), Counter())
-        c[species_key(a)] += 1
-        c["total"] += 1
-    total = Counter(species_key(a) for a in animals)
-    ok_sources = sum(1 for s in data.get("sources", []) if s.get("status") == "ok")
-    rows = []
-    for p in sorted(by_pref, key=pref_key):
-        c = by_pref[p]
-        rows.append(
-            f'<li data-pref="{esc(p)}" data-dog="{c["dog"]}" data-cat="{c["cat"]}" data-other="{c["other"] + c["none"]}" data-total="{c["total"]}">'
-            f'<a href="{esc(pref_path(p))}"><span class="pref">{esc(p)}</span>'
-            f'<span class="cnt"><b class="n">{c["total"]}</b> 頭</span></a></li>')
-    # 今日 1 頭もいない県は一覧から消えるので、0 なのか対象外なのか分かるように名前を出す（Codex #10。島根県）
-    empty_prefs = [p for p in PREF_ORDER if p not in by_pref]
-    missing = (f'<p class="hint">本日の掲載が無い都道府県：{esc("、".join(empty_prefs))}'
-               f'（確認の状況は<a href="/sources/">情報源の一覧</a>にあります）</p>\n' if rows and empty_prefs else "")
-    body = f"""<section class="intro">
-<h1>保護犬・保護猫を、自治体から探す</h1>
-<p>{esc(cfg['site_name'])} は、全国の自治体（動物愛護センター・保健所など）が公開している保護犬・保護猫の情報を 1 か所にまとめたサイトです。毎日それぞれの自治体のページを確認し、その日に掲載されている子を出典つきで載せています。気になる子がいたら、掲載元の自治体に直接ご連絡ください。</p>
-<p class="stats">{esc(fmt_date(data.get('date')))}時点：{species_counts(total, bold=True)}（{len(by_pref)} 都道府県・{ok_sources} 自治体ページ）</p>
+        c = cnt.setdefault(str(a.get("prefecture")), Counter())
+        c["all"] += 1
+        c[kind_group(a)] += 1
+    sp = Counter(species_key(a) for a in animals)
+    n_adopt = sum(1 for a in animals if kind_group(a) == "adopt")
+    rest = sp["other"] + sp["none"]   # 犬猫以外 + 種類の記載なし
+    stats = f"犬 <b>{sp['dog']}</b> ・ 猫 <b>{sp['cat']}</b>" + (f" ・ その他 <b>{rest}</b>" if rest else "")
+    extra = sorted((p for p in cnt if p not in PREF_INDEX), key=pref_key)   # 都道府県名でない値（収集側の誤り）も行き先を残す
+    def tile(p: str) -> str:
+        n = cnt.get(p, Counter())
+        return (f'<a class="pref-tile{"" if n["all"] else " is-zero"}" href="{esc(pref_path(p))}" data-pref="{esc(p)}" '
+                f'data-all="{n["all"]}" data-adopt="{n["adopt"]}" data-missing="{n["missing"]}">'
+                f'<span class="pref-name">{esc(pref_short(p))}</span><span class="pref-num"><b class="n">{n["all"]}</b>頭</span></a>')
+
+    groups = []
+    for name, prefs in [*REGIONS, *([("その他", extra)] if extra else [])]:
+        tiles = "".join(tile(p) for p in prefs)
+        groups.append(f'<section class="region-group"><h2 class="region-title">{esc(name)}</h2><div class="pref-grid">{tiles}</div></section>')
+    tab_btns = "\n".join(
+        f'<button type="button" class="tab-btn" data-top-tab="{k}" aria-pressed="{"true" if k == "all" else "false"}">{label} <span class="tab-cnt">{n}</span></button>'
+        for k, label, n in (("all", "すべて", len(animals)), ("adopt", GROUPS["adopt"], n_adopt), ("missing", GROUPS["missing"], len(animals) - n_adopt)))
+    body = f"""<section class="hero">
+<h1>お住まいの地域の保護動物を探す</h1>
+<p>保護犬・保護猫をはじめ、地域ごとの里親募集と迷子情報を毎日更新しています。</p>
+<p class="hero-stats">{esc(fmt_date(data.get('date')))}時点：{stats}</p>
 </section>
-<section>
-<h2>都道府県から探す</h2>
-{filter_bar('species', species_options(total), '動物の種類')}
-<ul class="pref-list" id="pref-list">
-{chr(10).join(rows) if rows else '<li class="empty">本日の掲載はありません。</li>'}
-</ul>
-{missing}<p class="hint">区分の意味：{'。'.join(f'{esc(KINDS[k])}＝{esc(KIND_HELP[k])}' for k in KINDS)}。</p>
-</section>
-<script>
-(function(){{
-  var list=document.getElementById('pref-list');
-  var btns=document.querySelectorAll('[data-filter="species"]');
-  function apply(v){{
-    btns.forEach(function(b){{b.setAttribute('aria-pressed',b.dataset.value===v?'true':'false');}});
-    list.querySelectorAll('li[data-pref]').forEach(function(li){{
-      var n=Number(li.dataset[v==='all'?'total':v]||0);
-      li.querySelector('.n').textContent=n;
-      li.hidden=n===0;
-      var a=li.querySelector('a');
-      a.search=v==='all'?'':'?species='+v;
-    }});
-  }}
-  btns.forEach(function(b){{b.addEventListener('click',function(){{apply(b.dataset.value);}});}});
-}})();
-</script>"""
-    return page(cfg, title=cfg["site_name"], path="/", body=body, data_date=str(data.get("date") or ""),
-                desc="全国の自治体が公開している保護犬・保護猫の情報を、都道府県ごとに 1 か所で探せます。毎日更新、出典つき。")
+<a class="resume-box" id="resume" href="/" hidden><span><small>前回見た地域</small><strong id="resume-name"></strong></span><span class="resume-arrow" aria-hidden="true">›</span></a>
+<div class="tablist" role="group" aria-label="表示する区分">
+{tab_btns}
+</div>
+{chr(10).join(groups)}
+<script>{INDEX_JS}</script>"""
+    return page(cfg, title=cfg["site_name"], path="/", body=body,
+                desc="全国の自治体が公開している保護犬・保護猫の情報を、都道府県ごとに 1 か所で探せます。里親募集と迷子情報を毎日更新、出典つき。")
 
 
+# トップのタブ: タイルの頭数とリンク先の ?tab= を切り替える。前回見た県（都道府県ページが localStorage に残す）があれば近道を出す
+INDEX_JS = """
+(function(){
+  var tabs=document.querySelectorAll('button[data-top-tab]');
+  var tiles=document.querySelectorAll('a.pref-tile');
+  var resume=document.getElementById('resume');
+  var last='';
+  try{last=localStorage.getItem('oneco_last_pref')||'';}catch(e){}
+  if(!Array.prototype.some.call(tiles,function(t){return t.dataset.pref===last;}))last='';
+  function query(tab){return tab==='all'?'':'?tab='+encodeURIComponent(tab);}
+  function apply(tab){
+    tabs.forEach(function(b){b.setAttribute('aria-pressed',b.dataset.topTab===tab?'true':'false');});
+    tiles.forEach(function(t){
+      var n=Number(t.dataset[tab]||0);
+      t.querySelector('.n').textContent=n;
+      t.classList.toggle('is-zero',n===0);
+      t.search=query(tab);
+    });
+    if(last)resume.href='/pref/'+encodeURIComponent(last)+'/'+query(tab);
+  }
+  if(last){document.getElementById('resume-name').textContent=last+'の一覧を開く';resume.hidden=false;apply('all');}
+  tabs.forEach(function(b){b.addEventListener('click',function(){apply(b.dataset.topTab);});});
+})();
+"""
+
+# 都道府県ページの絞り込み。カードはページに全部あり、表示だけ切り替える（data.json を読まない。2026-11-09）。
+# 状態（目的のタブ・迷子の内訳・種別・列数）は sessionStorage に残し、個体ページの「‹ ○○の一覧へ」で戻ったときに戻す。
+# URL にも replaceState で書く（共有・ブラウザの戻る用）。URL に tab があればそちらを優先する。
+# URL の値はボタンの値と比べるだけで、セレクタや HTML には入れない（#124 reviewer G-01）
 PREF_JS = """
 (function(){
-  var grid=document.getElementById('grid');
-  var count=document.getElementById('count');
-  var empty=document.getElementById('empty');
+  var list=document.getElementById('list'),count=document.getElementById('count'),empty=document.getElementById('empty'),sub=document.getElementById('sub');
+  var cards=Array.prototype.slice.call(list.querySelectorAll('a.card'));
+  var pref=document.body.getAttribute('data-pref')||'';
+  var KEY='oneco_pref_state',VKEY='oneco_view';
+  var state={tab:list.getAttribute('data-default-tab')||'adopt',sub:'all',sp:'all',view:'list'};
+  function btns(k){return Array.prototype.slice.call(document.querySelectorAll('button[data-'+k+']'));}
+  function known(k){return btns(k).some(function(b){return b.dataset[k]===state[k];});}
+  try{localStorage.setItem('oneco_last_pref',pref);}catch(e){}
   var q=new URLSearchParams(location.search);
-  var state={species:q.get('species')||'all',kind:q.get('kind')||'all'};
-  function known(k){return Array.prototype.some.call(document.querySelectorAll('[data-filter="'+k+'"]'),function(b){return b.dataset.value===state[k];});}
-  if(!known('species'))state.species='all';
-  if(!known('kind'))state.kind='all';
-  function spOk(sp){return state.species==='all'||sp===state.species||(state.species==='other'&&sp==='none');}
-  function match(sp,kd){return spOk(sp)&&(state.kind==='all'||kd===state.kind);}
-  function syncButtons(){document.querySelectorAll('[data-filter]').forEach(function(b){b.setAttribute('aria-pressed',state[b.dataset.filter]===b.dataset.value?'true':'false');});}
+  var KIND={adoption:'adopt/all',sheltered:'missing/shelter',stray:'missing/shelter',lost:'missing/lost'};   // 旧 URL の ?kind=（#126 Codex 1）
+  var tab=q.get('tab'),sub0=q.get('sub'),kd=q.get('kind');
+  if(!tab&&kd&&Object.prototype.hasOwnProperty.call(KIND,kd)){tab=KIND[kd].split('/')[0];sub0=KIND[kd].split('/')[1];}
+  try{
+    state.view=sessionStorage.getItem(VKEY)||state.view;
+    var s=JSON.parse(sessionStorage.getItem(KEY)||'null');
+    if(!tab&&s&&s.pref===pref){state.tab=s.tab;state.sub=s.sub;state.sp=s.sp;}
+  }catch(e){}
+  if(tab){state.tab=tab;state.sub=sub0||'all';state.sp=q.get('species')||'all';}
+  else if(q.get('species')){state.sp=q.get('species');}
+  if(q.get('view'))state.view=q.get('view');
   function apply(){
-    syncButtons();var n=0;
-    grid.querySelectorAll('.card').forEach(function(c){var s=match(c.dataset.species,c.dataset.kind);c.hidden=!s;if(s)n++;});
+    if(!known('tab'))state.tab=list.getAttribute('data-default-tab')||'adopt';
+    if(state.tab!=='missing'||!known('sub'))state.sub='all';
+    var hasOther=cards.some(function(c){return c.dataset.group===state.tab&&(c.dataset.species==='other'||c.dataset.species==='none');});
+    if(!known('sp')||(state.sp==='other'&&!hasOther))state.sp='all';
+    if(state.view!=='grid')state.view='list';
+    ['tab','sub','sp','view'].forEach(function(k){btns(k).forEach(function(b){b.setAttribute('aria-pressed',b.dataset[k]===state[k]?'true':'false');});});
+    if(sub)sub.hidden=state.tab!=='missing';
+    btns('sp').forEach(function(b){if(b.dataset.sp==='other')b.hidden=!hasOther;});
+    var n=0;
+    cards.forEach(function(c){
+      var sp=c.dataset.species;
+      var ok=c.dataset.group===state.tab&&(state.sub==='all'||c.dataset.sub===state.sub)&&(state.sp==='all'||sp===state.sp||(state.sp==='other'&&sp==='none'));
+      c.hidden=!ok;if(ok)n++;
+    });
     count.textContent=n;empty.hidden=n!==0;
-    var p=new URLSearchParams();if(state.species!=='all')p.set('species',state.species);if(state.kind!=='all')p.set('kind',state.kind);
-    var qs=p.toString();history.replaceState(null,'',location.pathname+(qs?'?'+qs:''));
+    list.className=(state.view==='grid'?'animal-grid':'animal-list')+(state.sp==='all'?'':' sp-filtered');
+    document.querySelectorAll('a.neighbor-chip').forEach(function(a){a.search='?tab='+encodeURIComponent(state.tab);});
+    try{sessionStorage.setItem(KEY,JSON.stringify({pref:pref,tab:state.tab,sub:state.sub,sp:state.sp}));sessionStorage.setItem(VKEY,state.view);}catch(e){}
+    var p=new URLSearchParams(location.search);   // utm_ などの他のクエリとハッシュは残す（GA4 の流入元。#126 Codex）
+    ['tab','sub','species','view','kind'].forEach(function(k){p.delete(k);});
+    p.set('tab',state.tab);
+    if(state.sub!=='all')p.set('sub',state.sub);
+    if(state.sp!=='all')p.set('species',state.sp);
+    if(state.view!=='list')p.set('view',state.view);
+    history.replaceState(history.state,'',location.pathname+'?'+p.toString()+location.hash);
   }
-  document.querySelectorAll('[data-filter]').forEach(function(b){b.addEventListener('click',function(){state[b.dataset.filter]=b.dataset.value;apply();});});
-  if(state.species!=='all'||state.kind!=='all')apply();
+  ['tab','sub','sp','view'].forEach(function(k){btns(k).forEach(function(b){b.addEventListener('click',function(){state[k]=b.dataset[k];if(k==='tab')state.sub='all';apply();});});});
+  apply();
 })();
 """
 
 
+def _pressed(on: bool) -> str:
+    return "true" if on else "false"
+
+
 def build_pref(cfg: dict[str, Any], data: dict[str, Any], pref: str, animals: list[dict[str, Any]]) -> str:
+    """都道府県ページ（2026-11-15 UI 刷新）。0 頭の県も作る。初めは里親募集のタブ（里親募集が 0 頭で迷子情報があれば迷子情報）。"""
     c = Counter(species_key(a) for a in animals)
-    munis = sorted({str(a.get("municipality") or "") for a in animals})
-    cards = "\n".join(card(a) for a in animals)
+    n_adopt = sum(1 for a in animals if kind_group(a) == "adopt")
+    n_missing = len(animals) - n_adopt
+    tab = "missing" if n_adopt == 0 and n_missing else "adopt"
+    shown = [a for a in animals if kind_group(a) == tab]
+    other_in_tab = any(species_key(a) in ("other", "none") for a in shown)
+    region = REGION_OF.get(pref)
+    neighbors = ""
+    if region:
+        chips = "".join(
+            (f'<a class="neighbor-chip active" href="{esc(pref_path(p))}" aria-current="page">' if p == pref
+             else f'<a class="neighbor-chip" href="{esc(pref_path(p))}">') + f"{esc(pref_short(p))}</a>"
+            for p in dict(REGIONS)[region])
+        neighbors = f'<nav class="neighbor-bar" aria-label="{esc(region)}の都道府県"><span class="neighbor-label">{esc(region)}</span>{chips}</nav>\n'
+    tabs = "".join(
+        f'<button type="button" class="tab-btn" data-tab="{k}" aria-pressed="{_pressed(k == tab)}">{GROUPS[k]} <span class="tab-cnt">{n}</span></button>'
+        for k, n in (("adopt", n_adopt), ("missing", n_missing)))
+    sub_seg = ""
+    if any(a.get("kind") == "lost" for a in animals):   # 飼い主が探してます がいる県だけ、迷子情報の内訳を選べる
+        sub_btns = "".join(f'<button type="button" class="sub-seg-btn" data-sub="{k}" aria-pressed="{_pressed(k == "all")}">{label}</button>'
+                           for k, label in (("all", "すべて"), ("shelter", KINDS["sheltered"]), ("lost", KINDS["lost"])))
+        sub_seg = f'<div class="sub-seg" id="sub" role="group" aria-label="迷子情報の内訳"{"" if tab == "missing" else " hidden"}>{sub_btns}</div>\n'
+    sp_opts = [("all", "すべて"), ("dog", "犬"), ("cat", "猫")]
+    if c["other"] + c["none"]:   # 犬猫以外と種類の記載なしの子は「その他」で絞れる（agy ⑤）。開いているタブにいなければ隠す
+        sp_opts.append(("other", "その他"))
+    sp_btns = "".join(f'<button type="button" class="chip-btn" data-sp="{k}" aria-pressed="{_pressed(k == "all")}"'
+                      f'{" hidden" if k == "other" and not other_in_tab else ""}>{label}</button>' for k, label in sp_opts)
+    cards = "".join(card(a, hidden=kind_group(a) != tab) for a in animals)
     # 説明文で「（ほか 56 頭）」と書いても何の子か分からない（agy ④）ので名指しする
     rest_desc = (f"・その他の動物 {c['other']} 頭" if c["other"] else "") + (f"・{NO_SPECIES} {c['none']} 頭" if c["none"] else "")
-    body = f"""<nav class="crumbs"><a href="/">都道府県</a> › <span>{esc(pref)}</span></nav>
-<h1>{esc(pref)}の保護犬・保護猫</h1>
-<p class="stats">{esc(fmt_date(data.get('date')))}時点：{species_counts(c, bold=False)}。掲載元：{esc('、'.join(munis))}</p>
-<div class="filters">
-{filter_bar('species', species_options(c), '動物の種類')}
-{filter_bar('kind', [('all', 'すべての区分'), *KINDS.items()], '掲載の区分')}
-</div>
-<p class="count" aria-live="polite"><b id="count">{len(animals)}</b> 頭</p>
-<div class="grid" id="grid">
-{cards}
-</div>
-<p class="empty" id="empty" hidden>この条件に当てはまる掲載はありません。</p>
+    body = f"""<nav class="crumbs"><a class="back-link" href="/">‹ 地域を選ぶ</a><span class="date-note">{esc(fmt_date(data.get('date')))}時点</span></nav>
+<h1>{esc(pref)}</h1>
+{neighbors}<div class="tablist" role="group" aria-label="目的の切り替え">{tabs}</div>
+{sub_seg}<div class="filter-row"><div class="chips" role="group" aria-label="動物の種類">{sp_btns}</div></div>
+<div class="view-bar"><span aria-live="polite">該当 <b id="count">{len(shown)}</b> 頭</span><div class="view-toggle" role="group" aria-label="表示の切り替え"><button type="button" data-view="list" aria-pressed="true">1列表示</button><button type="button" data-view="grid" aria-pressed="false">2列表示</button></div></div>
+<div class="animal-list" id="list" data-default-tab="{tab}">
+{cards}</div>
+<div class="empty-box" id="empty"{"" if not shown else " hidden"}>現在掲載されている子はありません。自治体の公式ページに掲載がある場合もあるため、<a href="/sources/#{esc(quote(pref))}">情報源の一覧</a>もあわせてご確認ください。</div>
 <script>{PREF_JS}</script>"""
-    return page(cfg, title=f"{pref}の保護犬・保護猫", path=pref_path(pref), body=body,
-                body_attrs=f' data-pref="{esc(pref)}"', data_date=str(data.get("date") or ""),
-                desc=f"{pref}の自治体が{fmt_date(data.get('date'))}に公開している保護犬 {c['dog']} 頭・保護猫 {c['cat']} 頭{rest_desc}の一覧。出典つき。")
+    return page(cfg, title=f"{pref}の保護犬・保護猫", path=pref_path(pref), body=body, body_attrs=f' data-pref="{esc(pref)}"',
+                desc=f"{pref}の自治体が{fmt_date(data.get('date'))}に公開している保護犬 {c['dog']} 頭・保護猫 {c['cat']} 頭{rest_desc}の一覧。里親募集と迷子情報。出典つき。")
 
 
 def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -> str:
+    """個体ページ（2026-11-15 UI 刷新）: 写真 → バッジと見出し → この子の情報 → 掲載元・所在地 → 連絡の枠。
+    枠の外に日付と「すでに〜場合があります」。広告（迎える準備）はその下で、里親募集の子だけ。"""
     pref = str(a.get("prefecture") or "")
     muni = str(a.get("municipality") or "")
     src = safe_url(a.get("source_url"))
+    kind = str(a.get("kind") or "")
+    labels = FIELD_LABELS_BY_KIND.get(kind, {})
     rows = []
-    labels = FIELD_LABELS_BY_KIND.get(str(a.get("kind")), {})
     for key, label in FIELDS:
         v = disp_field(a, key)
-        if not v:
+        if v in EMPTY_VALS:
             continue
         rows.append(f"<div><dt>{esc(labels.get(key, label))}</dt><dd>{esc(v)}</dd></div>")
     phone = str(a.get("phone") or "").strip()
     addr = str(a.get("address") or "").strip()
-    contact = [f"<div><dt>自治体</dt><dd>{esc(muni)}</dd></div>"]
+    tel = tel_href(phone) if phone else ""
     # contact_scope=operator（県のまとめページ等）は掲載元の運営元の連絡先で、子がいる収容先そのものではない → 「問い合わせ先」と出す（T616）
     operator = str(a.get("contact_scope") or "facility") == "operator"
-    phone_label, addr_label = ("問い合わせ先", "問い合わせ先の所在地") if operator else ("電話", "所在地")
-    if phone:
-        href = tel_href(phone)
-        contact.append(f'<div><dt>{phone_label}</dt><dd><a href="{esc(href)}">{esc(phone)}</a></dd></div>' if href
-                       else f"<div><dt>{phone_label}</dt><dd>{esc(phone)}</dd></div>")
+    contact = [f"<div><dt>掲載元</dt><dd>{esc(muni)}</dd></div>"]
     if addr:
-        contact.append(f"<div><dt>{addr_label}</dt><dd>{esc(addr)}</dd></div>")
+        contact.append(f"<div><dt>{'問い合わせ先の所在地' if operator else '所在地'}</dt><dd>{esc(addr)}</dd></div>")
     if not phone:
-        contact.append("<div><dt>電話</dt><dd>電話番号は自治体のページでご確認ください。</dd></div>")
+        contact.append("<div><dt>電話</dt><dd>自治体のページでご確認ください</dd></div>")
+    elif not tel:   # 数字の無い電話の欄（電話をかけるボタンにできない）は表に出す
+        contact.append(f"<div><dt>{'問い合わせ先' if operator else '電話'}</dt><dd>{esc(phone)}</dd></div>")
     # 県のまとめページの運営元の住所を、子のいる場所と思って訪ねないように（掲載元に無いことは断定しない）
     operator_note = ('<p class="fine">この連絡先は掲載元ページの運営窓口です。子がいる場所とは限りません。訪ねる前に、電話か自治体のページでご確認ください。</p>\n'
                      if operator and (phone or addr) else "")
-    cta = (f'<a class="cta" href="{esc(src)}" rel="noopener" target="_blank">自治体のページで詳細を見る<small>{esc(muni)}</small></a>'
-           if src else f'<p class="cta cta-none">元ページの URL が取れていません。{esc(muni)}にお問い合わせください。</p>')
+    lead = "お迎えのご相談は掲載元の自治体へ" if kind == "adoption" else "お心当たりのある方は掲載元へご連絡ください"
+    actions = [f'<p class="action-lead">{lead}</p>']
+    if tel:
+        actions.append(f'<a class="btn-primary" href="{esc(tel)}">{"問い合わせ先 " if operator else ""}{esc(phone)} に電話する</a>')
+    actions.append(f'<a class="btn-secondary" href="{esc(src)}" rel="noopener" target="_blank">自治体の公式ページを見る ↗</a>' if src
+                   else f'<p class="action-none">元ページの URL が取れていません。{esc(muni)}にお問い合わせください。</p>')
     # 「迎える準備」枠（広告）は里親募集の子だけ。保護中・迷子・探してます の子は飼い主の元に帰るかもしれない（T506）
-    aff = (cfg.get("affiliate") or []) if a.get("kind") == "adoption" else []
+    aff = (cfg.get("affiliate") or []) if kind == "adoption" else []
     aff_items = []
     for it in aff:
         if not isinstance(it, dict):
@@ -750,54 +879,44 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
         beacon_url = safe_url(it.get("beacon"))
         beacon = f'<img border="0" width="1" height="1" src="{esc(beacon_url)}" alt="">' if beacon_url else ""
         aff_items.append(f'<li><a href="{esc(u)}" rel="sponsored nofollow noopener" target="_blank">{esc(t)}</a>{note}{beacon}</li>')
-    aff_html = (f'<aside class="prep"><h2>迎える準備</h2><p>迎えたあとに使うものの広告です。収入はサイトの運営費に充てます。</p><ul>{"".join(aff_items)}</ul></aside>'
+    aff_html = (f'<aside class="prep"><h2>迎える準備</h2><p>迎えたあとに使うものの広告です。収入はサイトの運営費に充てます。</p><ul>{"".join(aff_items)}</ul></aside>\n'
                 if aff_items else "")
     # 広告を載せるページは、広告であることをファーストビュー（写真より上）に出す（T629・A8 の提携条件・ステマ規制）
-    pr_html = ('<p class="pr-note"><span>PR</span>このページはアフィリエイト広告を利用しています（ページ下の「迎える準備」枠）。</p>'
+    pr_html = ('<p class="pr-note"><span>PR</span>このページはアフィリエイト広告を利用しています（ページ下の「迎える準備」枠）。</p>\n'
                if aff_items else "")
-    # 問い合わせのときに伝えるもの。サイト内の ID は自治体に通じないので出さない（Codex #15）。管理番号が無ければ実際に載っている日付・場所
-    mgmt = str(a.get("management_no") or "").strip()
-    if mgmt:
-        ask = f"自治体にお問い合わせのときは、管理番号「{esc(mgmt)}」をお伝えください。"
-    else:
-        have = [w for k, w in (("shelter_date", labels.get("shelter_date", "保護日")), ("location", "場所")) if disp_value(k, a.get(k))]
-        ask = (f"自治体にお問い合わせのときは、このページの{'と'.join(have)}をお伝えください。" if have
-               else "自治体にお問い合わせのときは、このページに載っている特徴をお伝えください。" if rows else "")
-    ask_html = f'<p class="fine">{ask}</p>' if ask else ""
-    desc = (f"飼い主さんが{kind_phrase(a)}。{muni}が{fmt_date(data.get('date'))}時点で公開している情報です。" if a.get("kind") == "lost"
+    desc = (f"飼い主さんが{kind_phrase(a)}。{muni}が{fmt_date(data.get('date'))}時点で公開している情報です。" if kind == "lost"
             else f"{muni}が{fmt_date(data.get('date'))}時点で公開している{kind_phrase(a)}。")
     if subline(a):
         desc += subline(a).rstrip("。") + "。"   # 下の行が「…思われます。」で終わると「。。」になる（agy ⑥）
     note = disp_value("note", a.get("note"))   # 本文で出さない備考（「無」「有」）は説明文にも出さない（Codex #17）
     if note:
         desc += shorten(note, 80)
-    body = f"""<nav class="crumbs"><a href="/">都道府県</a> › <a href="{esc(pref_path(pref))}">{esc(pref)}</a> › <span>{esc(headline(a))}</span></nav>
-{pr_html}<article class="detail" data-id="{esc(a['id'])}">
-{media(a, big=True)}
+    body = f"""<nav class="crumbs"><a class="back-link" href="{esc(pref_path(pref))}">‹ {esc(pref)}の一覧へ</a></nav>
+{pr_html}<article class="detail-box" data-id="{esc(a['id'])}">
+{photo_box(a, big=True)}
 <div class="detail-body">
-<div class="badges">{badges(a)}</div>
-<h1>{esc(headline(a))}</h1>
-<p class="muni">{esc(muni) if pref in muni else f"{esc(muni)}（{esc(pref)}）"}</p>
-<p class="kind-help">{esc(KIND_HELP.get(str(a.get('kind')), ''))}</p>
-{cta}
-<h2>基本情報</h2>
+{badges(a)}
+<h1 class="detail-title">{esc(card_title(a))}</h1>
+<h2 class="detail-sec">この子の情報</h2>
 <dl class="facts">
 {chr(10).join(rows) if rows else '<div><dd>詳しい情報は自治体のページでご確認ください。</dd></div>'}
 </dl>
-<h2>連絡先</h2>
+<h2 class="detail-sec">掲載元・所在地</h2>
 <dl class="facts">
 {chr(10).join(contact)}
 </dl>
-{operator_note}<p class="fine">この情報は{esc(fmt_date(data.get('date')))}に自治体のページから取得したものです。{FINE_BY_KIND.get(str(a.get('kind')), '')}</p>
-{ask_html}
+{operator_note}<div class="action-card">
+{chr(10).join(actions)}
+</div>
 </div>
 </article>
+<p class="detail-fine">{esc(fmt_date(data.get('date')))}時点の自治体公開情報です。<br>{FINE_BY_KIND.get(kind, '')}</p>
 {aff_html}"""
-    # 何も分からない子は見出し「種類の記載なし」だけでは何のページか分からないので、タイトルには区分を足す（#124 F-06）
-    lead = "飼い主さんが探している動物" if a.get("kind") == "lost" else f"{kind_label(a)}の動物"   # 「探してますの動物」とはしない（#124 G-03）
-    title_head = f"{lead}・{headline(a)}" if not disp_name(a) and _headline_parts(a)[1] == "none" else headline(a)
+    # タイトル（検索結果・タブ）は見分けがつくよう品種と性別（headline）。何も分からない子は区分を足す（#124 F-06）
+    lead_t = "飼い主さんが探している動物" if kind == "lost" else f"{kind_label(a)}の動物"   # 「探してますの動物」とはしない（#124 G-03）
+    title_head = f"{lead_t}・{headline(a)}" if not disp_name(a) and _headline_parts(a)[1] == "none" else headline(a)
     return page(cfg, title=f"{title_head}｜{muni}", path=animal_path(a["id"]), body=body, og_type="article",
-                og_image=safe_url(a.get("image_url")), data_date=str(data.get("date") or ""), desc=shorten(desc, 160))
+                og_image=safe_url(a.get("image_url")), desc=shorten(desc, 160))
 
 
 def source_species(s: dict[str, Any]) -> str:
@@ -851,7 +970,7 @@ def build_sources(cfg: dict[str, Any], data: dict[str, Any]) -> str:
     body = f"""<h1>情報源（自治体ページ）の一覧</h1>
 <p>{esc(fmt_date(data.get('date')))}に確認した自治体ページ {len(sources)} 件の状況です（{summary}）。「本日は読めませんでした」のページは、接続できなかったり、ページの作りが変わったりして読み取れなかったものです。リンク先で直接ご確認ください。</p>
 {chr(10).join(sections) if sections else '<p class="empty">情報源がありません。</p>'}"""
-    return page(cfg, title="情報源の一覧", path="/sources/", body=body, data_date=str(data.get("date") or ""),
+    return page(cfg, title="情報源の一覧", path="/sources/", body=body,
                 desc="oneco が毎日確認している自治体の保護犬・保護猫ページの一覧と、本日の確認状況。")
 
 
@@ -887,7 +1006,6 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
     n_pref = len({str(s.get("prefecture")) for s in srcs if s.get("prefecture")})
     reach = f"{n_pref} 都道府県の {n_src} ページのうち {n_read} ページを毎日読み取り、{n_link} ページはリンクだけを載せています" \
         if n_link else f"{n_pref} 都道府県の {n_src} ページを毎日読み取っています"
-    kinds = "・".join(f"{esc(KINDS[k])}（{esc(KIND_HELP[k])}）" for k in KINDS)
     email = str(cfg.get("contact_email") or "").strip()
     if not re.fullmatch(r"[^@\s<>\"']+@[^@\s<>\"']+\.[^@\s<>\"']+", email):
         email = ""
@@ -912,7 +1030,7 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
 <section>
 <h2>{site} とは</h2>
 <p>{site} は、全国の自治体（動物愛護センター・保健所・市区町村）が公開している保護犬・保護猫の情報を、出典を明示して 1 か所に集めた、個人運営のサイトです。自治体のページに載っていない情報（保護団体や個人の里親募集など）は扱いません。</p>
-<p>載せている子は 4 つに分けています：{kinds}。「探してます」は、飼い主さんが自分の迷子を探している告知のうち、自治体のページに載っているものです。犬猫以外の動物も、自治体のページにあれば載せています。自治体のページで犬か猫か分からない子は、「{NO_SPECIES}」として載せています（絞り込みでは「その他」に出ます）。</p>
+<p>載せている子は、探す目的で「里親募集」（新しい家族を募集している子）と「迷子情報」に分けています。迷子情報は、「保護中」（自治体の施設や、市民の方に保護されている子）と「飼い主が探してます」（飼い主さんが自分の迷子を探している告知のうち、自治体のページに載っているもの）の 2 つです。犬猫以外の動物も、自治体のページにあれば載せています。自治体のページで犬か猫か分からない子は、種別を付けずに載せています（絞り込みでは「その他」に出ます）。</p>
 <p>いま、{reach}。載っているのは、その日に自治体のページに出ている子です。内容は自治体のページの記載どおりなので、最新とは限りません。気になる子がいたら、掲載元の自治体に直接ご連絡ください。</p>
 </section>
 <section>
@@ -951,7 +1069,7 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
 <ul>
 <li>掲載するのは自治体の公開ページに載っている情報だけです。写真・項目は元ページのまま、電話番号と所在地は自治体の公式情報から転記しています。</li>
 <li>毎日、各自治体のページを確認して、その日に載っている子を載せます。個体を追跡したり、過去の情報を残したりはしません。</li>
-<li>すべての子に「自治体のページで詳細を見る」リンクを付けています。譲渡の申し込みや迷子の問い合わせは、必ず自治体に直接行ってください。{site} は仲介をしません。</li>
+<li>すべての子に「自治体の公式ページを見る」ボタンを付けています。譲渡の申し込みや迷子の問い合わせは、必ず自治体に直接行ってください。{site} は仲介をしません。</li>
 <li>読み取りに失敗した自治体は<a href="/sources/">情報源の一覧</a>に「本日は読めませんでした」と表示し、元ページへのリンクを残します。</li>
 </ul>
 </section>
@@ -974,7 +1092,7 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
 <p>掲載内容によって生じた損害について、運営者は責任を負いかねます。</p>
 </section>
 </article>"""
-    return page(cfg, title="このサイトについて", path="/about/", body=body, data_date=str(data.get("date") or ""),
+    return page(cfg, title="このサイトについて", path="/about/", body=body,
                 desc=f"{cfg['site_name']} の名前の由来（犬のポムと猫のビリー）、運営者、運営方針、掲載の取り下げ・訂正の窓口について。")
 
 
@@ -1002,87 +1120,159 @@ def build_robots(cfg: dict[str, Any]) -> str:
 CSS = """
 /* 配色は旧サイト frontend/app/globals.css の WCAG AA パレットを引き継ぐ:
    primary #0369a1（白地 7.21:1）/ #075985（hover）、文字 #1f2937 / #5b6775、focus #3b82f6。
-   ブランドの 2 色（コーラル #E8826E = 犬のポム、ブルーグリーン #6FAEBB = 猫のビリー）は
-   犬・猫のバッジと about ページの飾りに使う。区分（里親募集・保護中・迷子）は旧サイトの緑・青・琥珀の淡色、探してます は淡い紫 */
-:root{--bg:#fcfbf9;--card:#fff;--ink:#1f2937;--mute:#5b6775;--line:#e5e7eb;--accent:#0369a1;--accent-dark:#075985;--accent-ink:#fff;--accent-50:#f0f9ff;--accent-100:#e0f2fe;--coral:#E8826E;--teal:#6FAEBB;--focus:#3b82f6;--dog:#fdeae4;--dog-ink:#9a3a26;--cat:#e4f1f4;--cat-ink:#21606c;--adopt:#d1fae5;--adopt-ink:#065f46;--shelter:#e0f2fe;--shelter-ink:#075985;--stray:#fef3c7;--stray-ink:#92400e;--lost:#ede9fe;--lost-ink:#5b21b6;--ph:#b3c0cc}
+   ブランドの 2 色（コーラル #E8826E = 犬のポム、ブルーグリーン #6FAEBB = 猫のビリー）は about ページの飾りに使う。
+   2026-11-15 UI 刷新（agy と作った試作プレビュー）: 幅 860px、区分は 里親募集 = 緑・保護中 = 青・飼い主が探してます = オレンジ */
+:root{--bg:#fcfbf9;--card:#fff;--ink:#1f2937;--mute:#5b6775;--line:#e5e7eb;--accent:#0369a1;--accent-dark:#075985;--accent-soft:#f0f9ff;--accent-line:#bae6fd;--focus:#3b82f6;--coral:#E8826E;--teal:#6FAEBB;--dog:#fdeae4;--dog-ink:#9a3a26;--cat:#e4f1f4;--cat-ink:#21606c;--adopt:#d1fae5;--adopt-ink:#065f46;--shelter:#e0f2fe;--shelter-ink:#075985;--lost:#ffedd5;--lost-ink:#9a3412;--ph:#b3c0cc}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",Meiryo,sans-serif;line-height:1.6;font-size:16px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",Meiryo,sans-serif;line-height:1.6;font-size:16px;padding-bottom:env(safe-area-inset-bottom,0px)}
 a{color:var(--accent)}
+button{font-family:inherit}
 :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 img{max-width:100%;display:block}
 h1{font-size:1.4rem;margin:.2em 0 .5em;line-height:1.35}
 h2{font-size:1.1rem;margin:1.6em 0 .5em}
 h3{font-size:1rem;margin:0}
 p{margin:.4em 0}
-code{font-size:.85em;background:#eef1f4;padding:.1em .3em;border-radius:4px}
-.wrap{max-width:1040px;margin:0 auto;padding:16px}
-.site-head{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.94);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
-.site-head-in{max-width:1040px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.brand{display:flex;align-items:center;gap:10px;min-width:0;color:var(--ink);text-decoration:none;border-radius:6px}
-.brand .mark{flex:none;width:34px;height:34px}
-.brand .wordmark{flex:none;width:99px;height:22px;display:block}
-.brand .tagline{font-size:.8rem;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-left:2px}
+.wrap{max-width:860px;margin:0 auto;padding:16px}
+.site-head{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.94);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.site-head-in{max-width:860px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0;min-height:44px;color:var(--ink);text-decoration:none;border-radius:6px}
+.brand .mark{flex:none;width:32px;height:32px}
+.brand .wordmark{flex:none;width:88px;height:20px;display:block}
+.brand .tagline{font-size:.75rem;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-left:2px}
 @media (max-width:640px){.brand .tagline{display:none}}
 .nav{display:flex;gap:14px;flex-wrap:wrap;font-size:.9rem}
 .nav a{color:var(--mute);text-decoration:none;padding:4px 2px;border-radius:4px}
 .nav a:hover{color:var(--accent);text-decoration:underline}
 @media (max-width:520px){.site-head-in{flex-wrap:wrap;padding:8px 16px}.nav{flex:1 1 100%;gap:16px}}
-.site-foot{max-width:1040px;margin:32px auto 0;padding:16px;color:var(--mute);font-size:.85rem;border-top:1px solid var(--line)}
-.foot-brand{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.foot-brand img{flex:none}
-.crumbs{font-size:.85rem;color:var(--mute);margin-bottom:8px;overflow-wrap:anywhere}
-.intro p{max-width:70ch}
-.stats{color:var(--mute);font-size:.95rem}
+.site-foot{max-width:860px;margin:28px auto 0;padding:18px 16px;color:var(--mute);font-size:.82rem;border-top:1px solid var(--line);line-height:1.6}
+.foot-links{display:flex;flex-wrap:wrap;gap:6px 14px;margin-bottom:10px;font-size:.8rem}
+.foot-links a{color:var(--accent);text-decoration:none;font-weight:500}
+.foot-links a:hover{text-decoration:underline}
+.foot-note{font-size:.78rem;line-height:1.6;margin:0 0 12px}
+.foot-brand{display:flex;align-items:center;gap:6px;font-size:.78rem}
+.foot-brand img{flex:none;width:18px;height:18px}
 .hint,.fine{color:var(--mute);font-size:.85rem}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
-.chips button{appearance:none;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:6px 14px;font-size:.9rem;cursor:pointer;min-height:36px}
-.chips button[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
-.filters{display:flex;flex-direction:column;gap:2px}
-.count{margin:8px 0;color:var(--mute)}
-.pref-list{list-style:none;padding:0;margin:8px 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
-.pref-list li a{display:flex;justify-content:space-between;align-items:baseline;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;text-decoration:none;color:var(--ink);min-height:48px}
-.pref-list li a:hover{border-color:var(--accent)}
-.pref-list .pref{font-weight:600}
-.pref-list .cnt{color:var(--mute);font-size:.9rem;white-space:nowrap}
-.pref-list .cnt b{color:var(--accent);font-size:1.1rem}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
-@media (min-width:480px){.grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}}
-.card{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;text-decoration:none;color:var(--ink)}
-.card:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(0,0,0,.06)}
-.card-body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px}
-.card h3{font-size:.98rem;line-height:1.35}
-.card .sub{font-size:.85rem;color:var(--mute);margin:0;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
-.card .muni{font-size:.8rem;color:var(--mute);margin:0}
-.badges{display:flex;gap:6px;flex-wrap:wrap}
-.badge{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:999px;background:#eef1f4;color:var(--ink);line-height:1.5}
-.badge.sp-dog{background:var(--dog);color:var(--dog-ink)}.badge.sp-cat{background:var(--cat);color:var(--cat-ink)}
-.badge.kd-adoption{background:var(--adopt);color:var(--adopt-ink)}.badge.kd-sheltered{background:var(--shelter);color:var(--shelter-ink)}.badge.kd-stray{background:var(--stray);color:var(--stray-ink)}.badge.kd-lost{background:var(--lost);color:var(--lost-ink)}
-.media{position:relative;aspect-ratio:4/3;background:#e9edf1;overflow:hidden;container-type:inline-size}
-.media img{width:100%;height:100%;object-fit:contain}
-.media img+.ph{display:none}
-.media.noimg .ph{display:flex}
-.ph{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6%;background:linear-gradient(160deg,#e8edf2,#d3dbe3);color:#6b7a88;font-size:clamp(9px,7cqw,30px)}
-.ph span{font-size:max(13px,.5em);letter-spacing:.05em;text-align:center;padding:0 8px;line-height:1.4}
+.empty{color:var(--mute)}
+/* トップ */
+.hero{margin-bottom:14px}
+.hero h1{font-size:1.28rem;line-height:1.35;margin:0 0 6px}
+.hero p{font-size:.88rem;color:var(--mute);line-height:1.5;margin:0}
+.hero .hero-stats{margin-top:6px;font-size:.8rem}
+.resume-box{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--accent-soft);border:1px solid var(--accent-line);border-radius:12px;padding:10px 14px;margin-bottom:16px;text-decoration:none;color:var(--ink);min-height:52px}
+.resume-box small{display:block;font-size:12px;color:var(--accent-dark);font-weight:600}
+.resume-box strong{font-size:1rem}
+.resume-arrow{font-size:1.1rem;color:var(--accent);font-weight:700;flex:none}
+.tablist{display:flex;border-bottom:1px solid var(--line);margin-bottom:12px;overflow-x:auto;scrollbar-width:none}
+.tablist::-webkit-scrollbar{display:none}
+.tab-btn{appearance:none;background:none;border:none;cursor:pointer;flex:1 1 auto;min-width:0;min-height:46px;padding:10px 6px;font-size:.9rem;font-weight:600;color:var(--mute);position:relative;display:inline-flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap}
+@media (min-width:480px){.tab-btn{padding:10px 12px;font-size:.95rem;gap:6px}}
+.tab-btn[aria-pressed="true"]{color:var(--accent)}
+.tab-btn[aria-pressed="true"]::after{content:"";position:absolute;left:0;right:0;bottom:0;border-bottom:3px solid var(--accent)}
+.tab-cnt{font-size:.75rem;font-weight:600;background:#eef1f4;color:var(--mute);padding:1px 6px;border-radius:999px}
+.tab-btn[aria-pressed="true"] .tab-cnt{background:var(--accent-soft);color:var(--accent-dark)}
+.region-group{margin-bottom:18px}
+.region-title{font-size:.82rem;color:var(--mute);font-weight:700;margin:0 0 8px;letter-spacing:.03em}
+.pref-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:8px}
+.pref-tile{display:flex;align-items:center;justify-content:space-between;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:48px;text-decoration:none;color:var(--ink)}
+.pref-tile:hover{border-color:var(--accent)}
+.pref-tile.is-zero{background:#f6f7f8;border-style:dashed}
+.pref-tile.is-zero .pref-name{color:var(--mute);font-weight:500}
+.pref-tile.is-zero .pref-num b{color:var(--mute)}
+.pref-name{font-weight:600;font-size:.95rem}
+.pref-num{font-size:.85rem;color:var(--mute);white-space:nowrap}
+.pref-num b{color:var(--accent);font-size:1rem}
+/* 都道府県ページ */
+.crumbs{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;overflow-wrap:anywhere}
+.back-link{display:inline-flex;align-items:center;gap:4px;font-size:.9rem;font-weight:600;text-decoration:none;color:var(--accent);min-height:44px;padding-right:8px}
+.date-note{font-size:.8rem;color:var(--mute);white-space:nowrap}
+.crumbs+h1{font-size:1.35rem;margin:0 0 8px}
+.neighbor-bar{display:flex;align-items:center;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;scrollbar-width:none}
+.neighbor-bar::-webkit-scrollbar{display:none}
+.neighbor-label{font-size:.78rem;color:var(--mute);white-space:nowrap;flex:none;margin-right:2px}
+.neighbor-chip{flex:none;text-decoration:none;font-size:.82rem;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:999px;padding:5px 12px;min-height:42px;display:inline-flex;align-items:center}
+.neighbor-chip.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.sub-seg{display:flex;gap:3px;padding:3px;background:#eef2f5;border-radius:10px;margin-bottom:10px}
+.sub-seg-btn{appearance:none;border:none;background:transparent;color:var(--mute);font-size:clamp(.74rem,3.3vw,.82rem);font-weight:500;padding:7px 8px;border-radius:8px;cursor:pointer;flex:1 1 auto;min-width:0;white-space:nowrap;text-align:center;min-height:42px}
+.sub-seg-btn[aria-pressed="true"]{background:#fff;color:var(--accent-dark);font-weight:700;box-shadow:0 1px 2px rgba(15,23,42,.08)}
+.filter-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip-btn{appearance:none;background:#fff;border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:6px 14px;font-size:.86rem;cursor:pointer;min-height:42px;display:inline-flex;align-items:center}
+.chip-btn[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+.view-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;font-size:.88rem;color:var(--mute)}
+.view-bar b{color:var(--ink)}
+.view-toggle{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
+.view-toggle button{appearance:none;border:none;background:none;padding:5px 12px;font-size:.8rem;color:var(--mute);cursor:pointer;min-height:42px}
+.view-toggle button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent-dark);font-weight:600}
+.empty-box{text-align:center;padding:28px 16px;background:#fff;border:1px solid var(--line);border-radius:12px;color:var(--mute);font-size:.92rem;line-height:1.7}
+/* バッジ */
+.card-badges{display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-width:0}
+.badge{display:inline-flex;align-items:center;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;line-height:1.4;white-space:nowrap;background:#eef1f4;color:var(--ink)}
+.badge.kd-adoption{background:var(--adopt);color:var(--adopt-ink)}
+.badge.kd-sheltered,.badge.kd-stray{background:var(--shelter);color:var(--shelter-ink)}
+.badge.kd-lost{background:var(--lost);color:var(--lost-ink)}
+.badge.sp-dog{background:var(--dog);color:var(--dog-ink)}.badge.sp-cat{background:var(--cat);color:var(--cat-ink)}.badge.sp-other{background:#eef1f4;color:var(--ink)}
+.sp-filtered .badge.sp-dog,.sp-filtered .badge.sp-cat,.sp-filtered .badge.sp-other{display:none}
+/* カード: 1 列（写真が左） */
+.animal-list{display:flex;flex-direction:column;gap:10px}
+.card{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;align-items:start;text-decoration:none;color:var(--ink)}
+@media (min-width:560px){.card{grid-template-columns:120px minmax(0,1fr);padding:12px}}
+.card:hover{border-color:var(--accent)}
+.thumb{position:relative;width:96px;height:96px;border-radius:8px;background:#e9edf1;overflow:hidden;container-type:inline-size}
+@media (min-width:560px){.thumb{width:120px;height:104px}}
+.thumb img{width:100%;height:100%;object-fit:contain}
+.card-main{min-width:0;display:flex;flex-direction:column;gap:4px}
+.card-title{font-size:.98rem;font-weight:700;line-height:1.3;overflow-wrap:anywhere}
+.attr-list{display:flex;flex-wrap:wrap;gap:4px;margin:1px 0}
+.attr{display:inline-flex;align-items:center;font-size:12px;color:#334155;background:#f1f5f9;border-radius:5px;padding:1px 7px;line-height:1.45;overflow-wrap:anywhere}
+.card-muni{display:flex;align-items:flex-start;gap:5px;line-height:1.4;font-size:.8rem;color:var(--mute);margin:0}
+.ico{width:14px;height:14px;flex:none;margin-top:2px;color:var(--mute)}
+.card-note{font-size:.8rem;color:var(--mute);background:#f8fafc;border-radius:6px;padding:4px 8px;margin:2px 0 0;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+/* カード: 2 列（スマホ 2 列・600px 以上 3 列。写真が上） */
+.animal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (min-width:600px){.animal-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.animal-grid .card{grid-template-columns:1fr;padding:0;overflow:hidden;gap:0}
+.animal-grid .thumb{width:100%;height:auto;aspect-ratio:4/3;border-radius:0}
+.animal-grid .card-main{padding:8px 10px 10px;gap:3px}
+.animal-grid .card-title{font-size:.9rem}
+.animal-grid .attr{font-size:11px;padding:1px 5px}
+.animal-grid .card-muni{font-size:.76rem}
+.animal-grid .card-note{display:none}
+/* 写真が無いときの枠（犬・猫はシルエット、それ以外は肉球。絵は ::before / ::after） */
+.thumb img+.ph,.detail-media img+.ph{display:none}
+.thumb.noimg .ph,.detail-media.noimg .ph{display:flex}
+.ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 2px 6%;background:linear-gradient(160deg,#e8edf2,#d3dbe3);color:#5b6775;font-size:clamp(9px,7cqw,30px);text-align:center}
+.ph span{position:relative;letter-spacing:0;line-height:1.3}
+.thumb .ph span{font-size:10px}
+.animal-grid .thumb .ph span{font-size:12px}
+.detail-media .ph span{font-size:13px;padding:0 8px}
 .ph::before{content:"";position:absolute;left:50%;top:50%;width:2.8em;height:2.4em;margin:-.7em 0 0 -1.4em;background:var(--ph);border-radius:50%/55% 55% 45% 45%}
 .ph::after{content:"";position:absolute;left:50%;top:50%;width:5em;height:2.2em;margin:-2.5em 0 0 -2.5em;background:radial-gradient(circle at .6em 1.6em,var(--ph) .55em,transparent .6em),radial-gradient(circle at 1.9em .6em,var(--ph) .6em,transparent .65em),radial-gradient(circle at 3.1em .6em,var(--ph) .6em,transparent .65em),radial-gradient(circle at 4.4em 1.6em,var(--ph) .55em,transparent .6em)}
-.detail{display:grid;gap:16px;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
-@media (min-width:720px){.detail{grid-template-columns:minmax(0,5fr) minmax(0,6fr)}.detail .media{aspect-ratio:auto;min-height:320px;height:100%}}
-.detail .media{border-radius:0}
-.detail-body{padding:4px 16px 16px}
-@media (min-width:720px){.detail-body{padding:20px 20px 20px 4px}}
-.detail h1{font-size:1.45rem}
-.detail .muni{color:var(--mute);margin:0}
-.kind-help{color:var(--mute);font-size:.9rem}
-.facts{margin:0;display:grid;gap:6px}
-.facts>div{display:grid;grid-template-columns:7.5em 1fr;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);align-items:baseline}
-@media (max-width:480px){.facts>div{grid-template-columns:1fr;gap:2px}}
-.facts dt{color:var(--mute);font-size:.9rem}
+.ph-btn{position:relative;z-index:1;margin-top:10px;padding:7px 14px;border-radius:999px;background:#fff;color:var(--accent-dark);border:1px solid var(--accent-line);font-size:12.5px;font-weight:600;text-decoration:none;min-height:42px;display:inline-flex;align-items:center}
+/* 個体ページ */
+.detail-media{position:relative;aspect-ratio:4/3;max-height:360px;width:100%;background:#e9edf1;overflow:hidden;container-type:inline-size}
+.detail-media img{width:100%;height:100%;object-fit:contain}
+.detail-box{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.detail-body{padding:16px}
+.detail-title{font-size:1.35rem;margin:8px 0 4px;overflow-wrap:anywhere}
+.detail-sec{margin:20px 0 0;font-size:.98rem;color:var(--ink)}
+.detail-title+.detail-sec{margin-top:12px}
+.facts{margin:6px 0 0;display:grid}
+.facts>div{display:grid;grid-template-columns:7.5em 1fr;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:.92rem;align-items:baseline}
+.facts>div:last-child{border-bottom:none}
+@media (max-width:360px){.facts>div{grid-template-columns:1fr;gap:2px}}
+.facts dt{color:var(--mute);font-size:.85rem}
 .facts dd{margin:0;overflow-wrap:anywhere;white-space:pre-line}
+.action-card{background:var(--accent-soft);border:1px solid var(--accent-line);border-radius:12px;padding:12px 14px;margin-top:20px;display:flex;flex-direction:column;gap:8px}
+.action-lead{font-size:.85rem;font-weight:700;color:var(--accent-dark);margin:0}
+.btn-primary{display:flex;align-items:center;justify-content:center;gap:6px;background:var(--accent);color:#fff;text-decoration:none;font-weight:700;border-radius:10px;padding:12px 16px;min-height:48px;text-align:center}
+.btn-primary:hover{background:var(--accent-dark)}
+.btn-secondary{display:flex;align-items:center;justify-content:center;gap:6px;background:#fff;color:var(--accent-dark);border:1px solid var(--accent-line);text-decoration:none;font-weight:600;border-radius:10px;padding:10px 14px;min-height:44px;text-align:center}
+.action-none{margin:0;font-size:.9rem}
+.detail-fine{margin:12px 4px 0;font-size:.78rem;color:var(--mute);line-height:1.5;text-align:center}
 .cta{display:block;background:var(--accent);color:#fff;text-decoration:none;text-align:center;font-weight:700;font-size:1.05rem;padding:14px 16px;border-radius:12px;margin:14px 0}
-.cta small{display:block;font-weight:400;font-size:.8rem;opacity:.85;margin-top:2px}
 .cta:hover{background:var(--accent-dark)}
-.cta-none{background:#eef1f4;color:var(--ink);font-weight:400;font-size:.95rem}
 .pr-note{margin:0 0 10px;font-size:.85rem;color:var(--mute)}
 .pr-note span{display:inline-block;font-weight:700;font-size:.75rem;color:var(--ink);border:1px solid var(--mute);border-radius:4px;padding:0 6px;margin-right:6px}
 .prep{margin-top:20px;background:#fffaf0;border:1px solid #f0e2c2;border-radius:14px;padding:12px 16px}
@@ -1091,6 +1281,7 @@ code{font-size:.85em;background:#eef1f4;padding:.1em .3em;border-radius:4px}
 .prep li{margin:.3em 0}
 .prep small{display:block;color:var(--mute)}
 .prep img{position:absolute}
+/* 情報源・about */
 .src-list{list-style:none;padding:0;margin:0 0 8px;display:grid;gap:8px}
 .src{display:grid;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 @media (min-width:720px){.src{grid-template-columns:2fr 1.5fr 1.2fr auto;align-items:center;gap:12px}}
@@ -1100,7 +1291,6 @@ code{font-size:.85em;background:#eef1f4;padding:.1em .3em;border-radius:4px}
 .src.st-failed .src-status,.src.st-ambiguous_empty .src-status{color:#b91c1c}
 .src.st-ok .src-status b{color:var(--accent)}
 .src-link{font-size:.9rem}
-.empty{color:var(--mute)}
 .about{max-width:72ch;overflow:clip;padding:0 2px}
 .about p{line-height:1.8}
 .about h2{margin-top:2em}
@@ -1213,11 +1403,12 @@ def build_site(data: dict[str, Any], cfg: dict[str, Any], out: Path, data_path: 
     by_pref: dict[str, list[dict[str, Any]]] = {}
     for a in animals:
         by_pref.setdefault(str(a["prefecture"]), []).append(a)
-    prefs = sorted(by_pref, key=pref_key)
+    # 都道府県ページは今日 0 頭の県も含めて 47 すべて作る（トップのタイルから 404 にならない。2026-11-15 UI 刷新）
+    prefs = sorted({*PREF_ORDER, *by_pref}, key=pref_key)
 
     write(out, "index.html", build_index(cfg, data, animals))
     for p in prefs:
-        write(out, f"pref/{p}/index.html", build_pref(cfg, data, p, by_pref[p]))
+        write(out, f"pref/{p}/index.html", build_pref(cfg, data, p, by_pref.get(p, [])))
     for a in animals:
         write(out, f"animals/{a['id']}/index.html", build_animal(cfg, data, a))
     write(out, "sources/index.html", build_sources(cfg, data))
@@ -1233,7 +1424,7 @@ def build_site(data: dict[str, Any], cfg: dict[str, Any], out: Path, data_path: 
     else:
         write(out, "data.json", json.dumps(data, ensure_ascii=False, indent=1))
     write(out, MARKER, f"{datetime.now().isoformat(timespec='seconds')} {data.get('date', '')}\n")
-    return {"animals": len(animals), "prefectures": len(prefs), "sources": len(data.get("sources", [])), "skipped": skipped}
+    return {"animals": len(animals), "prefectures": len(by_pref), "sources": len(data.get("sources", [])), "skipped": skipped}
 
 
 def merge_registry_photo(data: dict[str, Any], registry: Path) -> dict[str, Any]:
