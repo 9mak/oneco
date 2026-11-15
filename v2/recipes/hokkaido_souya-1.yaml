@@ -1,10 +1,24 @@
-# 北海道 宗谷総合振興局 犬猫の新しい飼い主募集（/hk/kks/bosyuu.html）。
-# 2026-11-07 W006（PR #104 の公開ゲート）: link_only をやめて 0 頭を読む。
-# h3「～飼い主募集中の犬猫情報～（ネットワーク事業）」の下に、保健所・支所ごとの頭数の p が 4 つ（稚内保健所 ：0 / 浜頓別地域保健支所 ：0 / 利尻地域保健支所 ：0 / 道北センター（北見市）：0。名前と「：」の間の全角空白の数は不揃い）。4 つとも 0 の日だけ 0 頭にするため、「：0」とその次の名前をつなげた 3 つの文で 4 つの 0 を確かめる。
-# 「犬猫の新しい飼い主さがしノート」の節は飼い主個人の掲載（保健所にはいない）なので読まない。
-# rows は今のページに無い物を指す。子が載った日の作りは未確認なので、読めない作りを推測で読まない。
-# 0 頭にするのは下の文が全部そろった日だけ。どれか 1 つでも消えれば（子が載った・作りが変わった）0 頭にならず failed で通知される。
-rows: "article.w006-souya-1-item"
+# proposal: run の日付 2026-11-15・元の失敗理由 0 頭で empty_text も無い（行 0・捨てた 0）・取れた頭数 3・採用条件は次の行（人が差分を見て recipes/ へ反映する。今日の HTML は <slug>.today.html）
+# 採用条件: 合格 a 必須項目・b 重複・c 行数・v1 見出し語・v2 日付・v3 現行の指定を保つ / 飛ばした d 回帰（保存 HTML なし）・v4 旧新比較（旧レシピが読めた保存ページが無い） / 回帰未確認 / 半自動の対象外（旧新の比較ができていない。draft のまま人が見る）
+# agy note: ネットワーク事業の一覧表（article.body table tr）を 1 頭として読むように rows を修正し、row_filter で見出し行（詳細情報）を除外しました。NO.・種類・性別・年齢・毛色・性格・収容場所・詳細PDFリンクを抽出し、種類欄から犬猫を判定する species 設定を追加しました（0 頭判定の empty_text_all は維持）。
+# 北海道 宗谷総合振興局 犬猫の新しい飼い主募集（ネットワーク事業）。
+# ネットワーク事業の一覧表の各データ行（article.body table tr）を 1 頭とみなし、先頭の見出し行は row_filter で除外する。
+# 飼い主さがしノート事業（保健所にはいない）は表を使わないため対象外。4 機関すべてが「：0」のときだけ empty_text_all で 0 頭とする。
+rows: "article.body table tr"
+row_filter:
+  text_lacks: ["詳細情報"]
+fields:
+  management_no: "td:nth-of-type(1)"
+  species: "td:nth-of-type(2)"
+  sex: "td:nth-of-type(3)"
+  age: "td:nth-of-type(4)"
+  color: "td:nth-of-type(5)"
+  note: "td:nth-of-type(6)"
+  location: "td:nth-of-type(8)"
+  detail: {selector: "td:nth-of-type(9) a", attr: "href"}
+species:
+  from: field
+  map: {"犬": dog, "イヌ": dog, "いぬ": dog, "猫": cat, "ネコ": cat, "ねこ": cat}
 empty_text_all:
   - "：0 浜頓別地域保健支所"
   - "：0 利尻地域保健支所"
