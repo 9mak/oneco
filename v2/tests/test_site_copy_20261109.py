@@ -61,18 +61,19 @@ def test_nameless_lost_animal_reads_naturally(tmp_path: Path):
     # 2026-11-13: 見出しは品種と性別になった（区分はバッジにある。test_site_copy_20261113.py）。説明文は区分で呼ぶまま
     for id_, word in (("lostdog00001", "探している犬"), ("lostother001", "探している動物"), ("lostnone0001", "探している子")):
         h = _page(out, id_)
-        assert "<h1>雑種（オス）</h1>" in h
+        # 2026-11-15 UI 刷新: 見出しは名前か「名無しの犬」。タイトル（検索結果・タブ）は品種と性別のまま
+        assert f'<h1 class="detail-title">名無しの{"犬" if id_ == "lostdog00001" else "動物"}</h1>' in h
         assert re.search(r"<title>雑種（オス）｜", h)
         desc = re.search(r'<meta name="description" content="([^"]*)"', h).group(1)
         assert desc.startswith(f"飼い主さんが{word}。") and "時点で公開している情報です。" in desc
         assert "探してますの" not in h
-        assert ">探してます<" in h      # 区分のバッジの呼び方は変えない
+        assert ">飼い主が探してます<" in h      # 区分のバッジ（2026-11-15 UI 刷新）
 
 
 def test_other_species_is_called_animal_in_sentences(tmp_path: Path):
     h = _page(_build(tmp_path), "shelother001")
     desc = re.search(r'<meta name="description" content="([^"]*)"', h).group(1)
-    assert "公開している保護中の動物。" in desc and "保護中のその他" not in h   # 2026-11-13: 見出しは品種と性別になったので説明文で見る
+    assert "公開している施設で保護中の動物。" in desc and "保護中のその他" not in h   # 2026-11-15: 区分の呼び方は「施設で保護中」   # 2026-11-13: 見出しは品種と性別になったので説明文で見る
 
 
 def test_operator_address_warns_against_visiting_only_for_operator(tmp_path: Path):
@@ -87,12 +88,13 @@ def test_page_says_id_is_internal_and_what_to_tell_the_municipality(tmp_path: Pa
     h = _page(_build(tmp_path), "facility0001")
     # 2026-11-13 夜: サイト内 ID は自治体に通じないので出さない。伝えるもの（管理番号か、載っている日付・場所）だけ案内する
     assert "このサイトの中だけの番号" not in h and "<code>facility0001</code>" not in h
-    assert "自治体にお問い合わせのときは、" in h and "をお伝えください。" in h
+    # 2026-11-15 UI 刷新: 伝えるもの（管理番号・日付・場所）は「この子の情報」の表にあるので、別の案内文は置かない
+    assert "<dt>保護・発見場所</dt><dd>多久市東多久町</dd>" in h
 
 
 def test_missing_phone_row_is_labelled_phone_under_contact_heading(tmp_path: Path):
     h = _page(_build(tmp_path), "nophone00001")
-    assert "<dt>電話</dt><dd>電話番号は自治体のページでご確認ください。</dd>" in h
+    assert "<dt>電話</dt><dd>自治体のページでご確認ください</dd>" in h
     assert "<dt>連絡先</dt>" not in h
 
 
@@ -104,10 +106,9 @@ def test_about_wording(tmp_path: Path):
 
 def test_pref_filter_does_not_fetch_data_json_and_toggles_rendered_cards(tmp_path: Path):
     out = _build(tmp_path)
-    pref = next(p for p in out.rglob("index.html") if "の保護犬・保護猫</h1>" in p.read_text(encoding="utf-8"))
-    h = pref.read_text(encoding="utf-8")
+    h = (out / "pref" / "佐賀県" / "index.html").read_text(encoding="utf-8")
     assert "/data.json" not in h and "fetch(" not in h
-    assert "c.hidden=!s" in h
+    assert "c.hidden=" in h
     # ページのカードは 里親募集→保護中→迷子→探してます の順
     kinds = re.findall(r'class="card"[^>]*data-kind="(\w+)"', h)
     order = {"adoption": 0, "sheltered": 1, "stray": 2, "lost": 3}

@@ -66,7 +66,7 @@ def test_generates_index_animals_sitemap(built):
         h = _read(page)
         assert a["id"] in h
         assert a["municipality"] in h
-        assert "自治体のページで詳細を見る" in h
+        assert "自治体の公式ページを見る" in h   # 2026-11-15 UI 刷新: 連絡の枠のボタン
         assert 'property="og:title"' in h
     sitemap = _read(out / "sitemap.xml")
     for a in data["animals"]:
@@ -86,8 +86,9 @@ def test_generates_index_animals_sitemap(built):
 def test_index_counts_per_prefecture(built):
     _, _, out = built
     index = _read(out / "index.html")
-    assert 'data-pref="徳島県"' in index and 'data-dog="20"' in index
-    assert 'data-pref="佐賀県"' in index and 'data-dog="2"' in index
+    # 2026-11-15 UI 刷新: トップのタイルは区分のタブごとの頭数（すべて・里親募集・迷子情報）
+    assert 'data-pref="徳島県" data-all="20" data-adopt="20" data-missing="0"' in index
+    assert 'data-pref="佐賀県" data-all="2" data-adopt="0" data-missing="2"' in index
 
 
 def test_pref_page_lists_only_that_prefecture(built):
@@ -137,7 +138,8 @@ def test_html_is_escaped_and_unsafe_urls_dropped(tmp_path: Path):
     assert "A&amp;B &lt;市&gt;" in h
     assert "javascript:" not in h
     # 県ページ・トップの見出しも通る
-    assert "&lt;市&gt;" in _read(out / "pref" / "徳島県" / "index.html")
+    pref = _read(out / "pref" / "徳島県" / "index.html")
+    assert "&lt;市&gt;" in pref and "<script>alert(1)</script>" not in pref   # 一覧のカード（掲載元・メモ）も通る
 
 
 def test_placeholder_when_no_image(tmp_path: Path):
@@ -239,7 +241,7 @@ def test_brand_assets_copied_and_logo_in_header(built):
     assert 'aria-label="oneco"' in index and 'class="wordmark"' in index
     assert 'rel="icon" href="/favicon.ico"' in index and 'rel="apple-touch-icon"' in index
     assert 'property="og:image" content="https://oneco.pages.dev/brand/oneco-avatar-512.png"' in index   # 写真の無いページの OG 画像
-    assert "ふたつの円は、犬のポムと猫のビリー" in index   # フッター
+    assert '<div class="foot-brand"><img src="/brand/oneco-mark.svg" width="18" height="18"' in index   # フッター（2026-11-15: マークと名前だけ。由来は about）
     css = _read(out / "style.css")
     assert "#0369a1" in css and "#075985" in css     # 旧サイトの primary
     assert "#E8826E" in css and "#6FAEBB" in css     # ブランド 2 色
@@ -303,15 +305,14 @@ def test_lost_kind_is_labelled_and_filterable(tmp_path: Path):
     data["animals"].append(a)
     out = tmp_path / "dist"
     _load_build().build_site(data, CONFIG, out)
+    # 2026-11-15 UI 刷新: 探してます は「迷子情報」タブの「飼い主が探してます」（内訳の絞り込みで選べる）
     pref = _read(out / "pref" / a["prefecture"] / "index.html")
-    assert "kd-lost" in pref and "探してます" in pref
-    assert "'lost'" in pref or '"lost"' in pref            # 絞り込みの選択肢と JS の表示名
-    assert "里親募集" in pref and "保護中" in pref and "収容中" not in pref and "譲渡対象" not in pref
+    assert '<span class="badge kd-lost">飼い主が探してます</span>' in pref
+    assert 'data-sub="lost"' in pref and "迷子情報" in pref
+    assert "里親募集" in pref and "施設で保護中" in pref and "収容中" not in pref and "譲渡対象" not in pref
     d = _read(out / "animals" / "lost00000001" / "index.html")
-    assert "探してます" in d and "飼い主さんが探している" in d
+    assert "飼い主が探してます" in d and "飼い主さんが探している" in d
     assert "いなくなった日" in d and "いなくなった場所" in d and "収容日" not in d
-    idx = _read(out / "index.html")
-    assert "探してます＝" in idx                              # 区分の意味のヒント
 
 
 def test_photos_are_not_cropped(built):
@@ -319,5 +320,6 @@ def test_photos_are_not_cropped(built):
     _data, _path, out = built
     css = _read(out / "style.css")
     assert "object-fit:cover" not in css
-    assert ".media img{" in css and "object-fit:contain" in css.split(".media img{", 1)[1].split("}", 1)[0]
+    for sel in (".thumb img{", ".detail-media img{"):   # 2026-11-15: 一覧の写真枠と個体ページの写真枠
+        assert sel in css and "object-fit:contain" in css.split(sel, 1)[1].split("}", 1)[0], sel
     assert ".photos img{" in css and "object-fit:contain" in css.split(".photos img{", 1)[1].split("}", 1)[0]

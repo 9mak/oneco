@@ -57,8 +57,8 @@ $PY -m collector propose [--dry-run]               # data/proposals の案を dr
       "prefecture": "徳島県",
       "phone": "088-636-6122",
       "address": "…",
-      "kind": "adoption",            // adoption=里親募集 sheltered=保護中 stray=迷子（飼い主不明のまま保護） lost=探してます（飼い主が探している迷子）
-      "species": "dog",              // dog | cat | other（犬猫以外） | null（種別なし: 自治体のページで犬か猫か決められない子。サイトでは犬・猫の絞り込みに出ない）
+      "kind": "adoption",            // adoption（里親募集） sheltered・stray（保護中・飼い主不明のまま保護） lost（飼い主が探している迷子）。サイトは adoption を「里親募集」、それ以外を「迷子情報」（施設で保護中・飼い主が探してます）に出す
+      "species": "dog",              // dog | cat | other（犬猫以外） | null（種別なし: 自治体のページで犬か猫か決められない子。サイトでは犬・猫の絞り込みに出ず「その他」に出る）
       "image_url": "https://…/photo2-1.JPG",   // 無いこともある（その場合 management_no か shelter_date がある）
       "source_url": "https://…",     // 個体ページがあればそれ、なければ一覧ページ
       "name": null, "sex": "メス", "age": null, "breed": null,

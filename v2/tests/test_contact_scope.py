@@ -80,9 +80,11 @@ def test_site_labels_operator_contact_as_inquiry(tmp_path: Path):
     _load_build().build_site(data, {"site_name": "oneco", "base_url": "https://oneco.pages.dev", "affiliate": []}, out)
 
     d = (out / "animals" / "operator0001" / "index.html").read_text(encoding="utf-8")
-    assert "<dt>問い合わせ先</dt>" in d and "03-3302-3507" in d
+    # 2026-11-15 UI 刷新: 電話番号は連絡の枠のボタンにだけ出す。運営窓口（operator）はボタンにも「問い合わせ先」と書く
+    assert '<a class="btn-primary" href="tel:0333023507">問い合わせ先 03-3302-3507 に電話する</a>' in d
     assert "<dt>問い合わせ先の所在地</dt>" in d and "八幡山" in d
-    assert "<dt>電話</dt>" not in d and "<dt>所在地</dt>" not in d
+    assert "<dt>所在地</dt>" not in d and "この連絡先は掲載元ページの運営窓口です" in d
     for aid in ("facility0001", "legacy000001"):
         f = (out / "animals" / aid / "index.html").read_text(encoding="utf-8")
-        assert "<dt>電話</dt>" in f and "<dt>所在地</dt>" in f and "問い合わせ先" not in f
+        assert '<a class="btn-primary" href="tel:0886212104">088-621-2104 に電話する</a>' in f
+        assert "<dt>所在地</dt>" in f and "問い合わせ先" not in f and "運営窓口" not in f

@@ -62,9 +62,10 @@ def test_things_that_are_not_names_are_not_used_as_the_name(kw, want):
 def test_detail_table_shows_the_cleaned_name(tmp_path: Path):
     out = _build(tmp_path, [_a(id="furusawa0001", name="犬 探しています(フルサワ)", note="・名前:あの ・首輪なし", kind="lost"),
                             _a(id="fukushima001", name="譲渡猫R7ねー35", management_no="R7ねー35")])
-    assert "<dt>名前</dt><dd>あの</dd>" in _page(out, "furusawa0001")
-    assert "探しています" not in _page(out, "furusawa0001").split("<dt>名前</dt>")[1][:40]
-    assert "<dt>名前</dt>" not in _page(out, "fukushima001")
+    # 2026-11-15 UI 刷新: 名前は表でなく見出しに出す
+    assert '<h1 class="detail-title">あの</h1>' in _page(out, "furusawa0001")
+    assert '<h1 class="detail-title">名無しの犬</h1>' in _page(out, "fukushima001")
+    assert "<dt>名前</dt>" not in _page(out, "furusawa0001") + _page(out, "fukushima001")
     assert "<dt>管理番号</dt><dd>R7ねー35</dd>" in _page(out, "fukushima001")
 
 
@@ -224,10 +225,10 @@ def test_fine_print_matches_the_kind(tmp_path: Path):
 def test_detail_does_not_talk_about_internal_things(tmp_path: Path):
     out = _build(tmp_path, [_a(id="mgmt00000001", management_no="26-0470"), _a(id="nomgmt000001", management_no=None)])
     h = _page(out, "mgmt00000001")
-    assert "取れている情報" not in h and "<h2>基本情報</h2>" in h
+    assert "取れている情報" not in h and '<h2 class="detail-sec">この子の情報</h2>' in h   # 2026-11-15 UI 刷新の見出し
     assert "<code>" not in h and "このサイトの中だけの番号" not in h
-    assert "管理番号「26-0470」をお伝えください" in _text(h)
-    assert "管理番号「" not in _text(_page(out, "nomgmt000001"))
+    assert "<dt>管理番号</dt><dd>26-0470</dd>" in h        # 問い合わせで伝える番号は表にある
+    assert "<dt>管理番号</dt>" not in _page(out, "nomgmt000001")
 
 
 def test_animal_with_no_fields_points_to_the_source_page(tmp_path: Path):
@@ -243,7 +244,7 @@ def test_meaningless_notes_stay_out_of_the_description_too(tmp_path: Path):
     out = _build(tmp_path, [_a(id="notemu000001", note="無"), _a(id="noteyu000001", note="有"),
                             _a(id="notedot00001", age="高齢と思われます。", note="温厚な性格です。")])
     assert not _desc(_page(out, "notemu000001")).endswith("無")
-    assert "<dt>備考</dt>" not in _page(out, "noteyu000001")
+    assert "<dt>メモ</dt>" not in _page(out, "noteyu000001")
     assert "。。" not in _desc(_page(out, "notedot00001"))
 
 
@@ -269,24 +270,27 @@ def test_pref_page_names_the_other_animals_and_offers_a_filter_for_them(tmp_path
     assert "ほか" not in _desc(h)
     assert "その他の動物 1 頭" in _desc(h) and "種類の記載なし 1 頭" in _desc(h)
     assert "犬猫の区別なし" not in h
-    assert 'data-value="other"' in h
+    # 2026-11-15 UI 刷新: 区分は目的のタブ、種別は「その他」まで選べる。空のときは情報源の一覧へ案内する
+    assert 'data-sp="other"' in h
     assert '<div class="chips" role="group" aria-label="動物の種類">' in h
-    assert '<div class="chips" role="group" aria-label="掲載の区分">' in h
+    assert '<div class="tablist" role="group" aria-label="目的の切り替え">' in h
     assert 'aria-live="polite"' in h
-    assert "この条件に当てはまる掲載はありません。" in h and "当てはまる子はいません" not in h
+    assert "現在掲載されている子はありません。" in h and "当てはまる子はいません" not in h
 
 
 def test_index_wording(tmp_path: Path):
+    # 2026-11-15 UI 刷新: 区分の意味の説明はタブに置き換え、種類の記載なしの子は「その他」に数える
     out = _build(tmp_path, [_a(id="none00000002", species=None, breed=None, color=None)])
     t = _text((out / "index.html").read_text(encoding="utf-8"))
-    assert "区分の意味：" in t and "区分の意味:" not in t
-    assert "飼い主が分からない" not in t and "飼い主さんが分からないまま保護されている子" in t
-    assert "犬猫の区別なし" not in t and "種類の記載なし" in t
+    assert "区分の意味" not in t and "時点：" in t and "時点:" not in t
+    assert "犬猫の区別なし" not in t and "その他 1" in t
 
 
 def test_index_lists_prefectures_with_nothing_today(tmp_path: Path):
-    t = _text((_build(tmp_path, []) / "index.html").read_text(encoding="utf-8"))
-    assert "本日の掲載が無い都道府県：" in t and "島根県" in t and "佐賀県、" not in t.split("本日の掲載が無い都道府県：")[1][:200]
+    # 2026-11-15 UI 刷新: 今日 0 頭の県も同じ位置にタイルを薄く出す（0 なのか対象外なのか分かる。Codex #10 の島根県）
+    soup = BeautifulSoup((_build(tmp_path, []) / "index.html").read_text(encoding="utf-8"), "lxml")
+    tile = soup.select_one('a.pref-tile[data-pref="島根県"]')
+    assert tile is not None and "is-zero" in tile["class"] and tile.select_one(".pref-name").get_text() == "島根"
 
 
 def test_sources_page_does_not_call_other_animal_pages_dogs_and_cats(tmp_path: Path):
@@ -311,7 +315,9 @@ def test_404_does_not_guess_why_the_page_is_gone(tmp_path: Path):
 
 def test_css_stacks_facts_on_narrow_screens_and_keeps_small_text_readable():
     css = B.CSS
-    assert "max(11px" not in css and ".ph span{font-size:max(13px" in css
+    # 2026-11-15 UI 刷新: 写真なしの枠の文字は、個体ページ 13px・一覧の 2 列 12px・1 列の小さな枠（96px）だけ 10px
+    assert "max(11px" not in css and ".detail-media .ph span{font-size:13px" in css
+    assert ".animal-grid .thumb .ph span{font-size:12px" in css and ".thumb .ph span{font-size:10px" in css
     assert re.search(r"@media \(max-width:\d+px\)\{\.facts>div\{grid-template-columns:1fr", css)
     assert "-webkit-line-clamp:2" in css
 
@@ -321,17 +327,17 @@ def test_title_of_an_animal_with_nothing_known_says_what_it_is(tmp_path: Path):
     nara = _a(id="nara00000002", name=None, species=None, breed=None, color=None, sex=None, kind="adoption", municipality="奈良市", prefecture="奈良県")
     h = _page(_build(tmp_path, [nara]), "nara00000002")
     assert "<title>里親募集の動物・種類の記載なし｜奈良市｜oneco</title>" in h
-    assert "<h1>種類の記載なし</h1>" in h
+    assert '<h1 class="detail-title">名無しの動物</h1>' in h   # 2026-11-15 UI 刷新の見出し
 
 
 def test_unknown_filter_in_the_url_falls_back_to_all():
     # 「その他」のボタンが無い県に ?species=other で来たら「すべて」に戻す（#124 reviewer F-10）
-    assert "data-value=\"'+state.species+'\"" in B.PREF_JS or "state.species='all'" in B.PREF_JS
+    assert "state.sp='all'" in B.PREF_JS
 
 
 def test_url_filter_values_are_not_put_into_a_selector():
     # ?species=a"b のような値でセレクタが壊れてスクリプトが止まらないように、ボタンの値と比べる（#124 reviewer G-01）
-    assert "[data-value=\"'+state" not in B.PREF_JS and "dataset.value===state[k]" in B.PREF_JS
+    assert "'+state" not in B.PREF_JS and "b.dataset[k]===state[k]" in B.PREF_JS
 
 
 def test_lost_animal_with_nothing_known_has_a_natural_title(tmp_path: Path):
