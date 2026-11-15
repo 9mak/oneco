@@ -61,8 +61,9 @@ def test_nameless_lost_animal_reads_naturally(tmp_path: Path):
     # 2026-11-13: 見出しは品種と性別になった（区分はバッジにある。test_site_copy_20261113.py）。説明文は区分で呼ぶまま
     for id_, word in (("lostdog00001", "探している犬"), ("lostother001", "探している動物"), ("lostnone0001", "探している子")):
         h = _page(out, id_)
-        # 2026-11-15 UI 刷新: 見出しは名前か「名無しの犬」。タイトル（検索結果・タブ）は品種と性別のまま
-        assert f'<h1 class="detail-title">名無しの{"犬" if id_ == "lostdog00001" else "動物"}</h1>' in h
+        # 2026-11-15 UI 刷新: 名前の無い「飼い主が探してます」の子の見出しは「迷子の犬」（飼い主には名前があるので「名無し」と言わない）。
+        # タイトル（検索結果・タブ）は品種と性別のまま
+        assert f'<h1 class="detail-title">迷子の{"犬" if id_ == "lostdog00001" else "動物"}</h1>' in h
         assert re.search(r"<title>雑種（オス）｜", h)
         desc = re.search(r'<meta name="description" content="([^"]*)"', h).group(1)
         assert desc.startswith(f"飼い主さんが{word}。") and "時点で公開している情報です。" in desc
@@ -73,7 +74,7 @@ def test_nameless_lost_animal_reads_naturally(tmp_path: Path):
 def test_other_species_is_called_animal_in_sentences(tmp_path: Path):
     h = _page(_build(tmp_path), "shelother001")
     desc = re.search(r'<meta name="description" content="([^"]*)"', h).group(1)
-    assert "公開している施設で保護中の動物。" in desc and "保護中のその他" not in h   # 2026-11-15: 区分の呼び方は「施設で保護中」   # 2026-11-13: 見出しは品種と性別になったので説明文で見る
+    assert "公開している保護中の動物。" in desc and "保護中のその他" not in h   # 2026-11-13: 見出しは品種と性別になったので説明文で見る
 
 
 def test_operator_address_warns_against_visiting_only_for_operator(tmp_path: Path):

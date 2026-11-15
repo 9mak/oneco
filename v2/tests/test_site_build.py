@@ -309,7 +309,7 @@ def test_lost_kind_is_labelled_and_filterable(tmp_path: Path):
     pref = _read(out / "pref" / a["prefecture"] / "index.html")
     assert '<span class="badge kd-lost">飼い主が探してます</span>' in pref
     assert 'data-sub="lost"' in pref and "迷子情報" in pref
-    assert "里親募集" in pref and "施設で保護中" in pref and "収容中" not in pref and "譲渡対象" not in pref
+    assert "里親募集" in pref and ">保護中<" in pref and "収容中" not in pref and "譲渡対象" not in pref
     d = _read(out / "animals" / "lost00000001" / "index.html")
     assert "飼い主が探してます" in d and "飼い主さんが探している" in d
     assert "いなくなった日" in d and "いなくなった場所" in d and "収容日" not in d

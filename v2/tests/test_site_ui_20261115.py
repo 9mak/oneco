@@ -1,9 +1,9 @@
 """UI 刷新（2026-11-15。agy と作った試作プレビューの UI・文言・動線を本番の build.py に移す。ネットワークなし）。
 
-- 区分は利用者の目的で 2 つ: 里親募集（adoption）と迷子情報（sheltered・stray・lost）。バッジは 里親募集・施設で保護中・飼い主が探してます
+- 区分は利用者の目的で 2 つ: 里親募集（adoption）と迷子情報（sheltered・stray・lost）。バッジは 里親募集・保護中・飼い主が探してます（保護中は市民が保護している子もいるので場所を断定しない）
 - トップ: 地域を探す見出し、3 タブ（すべて・里親募集・迷子情報）、地方ブロックごとの 47 都道府県タイル（0 頭は薄く出す）、前回見た地域
 - 都道府県ページは 0 頭の県も含めて 47 すべて作る。目的の 2 タブ・迷子の内訳・種別・1 列/2 列。状態は戻ったときに復元する
-- カード: 区分と種別のバッジ・名前（無ければ名無しの犬）・性別/年齢/種類・掲載元・メモ。日付・場所・大きさ・管理番号は出さない
+- カード: 区分と種別のバッジ・名前（無ければ名無しの犬。飼い主が探してますの子は迷子の犬）・性別/年齢/種類・掲載元・メモ。日付・場所・大きさ・管理番号は出さない
 - 個体ページ: この子の情報（固定順・大きさは出さない）→ 掲載元・所在地 → 連絡の枠。枠の外に日付の脚注
 - フッターは 3 リンク・2 行の注記・ブランドだけ（GitHub は外す）。幅は 860px
 """
@@ -78,8 +78,8 @@ def _text(html: str) -> str:
 # --- 区分 ----------------------------------------------------------------------------------------------------------
 @pytest.mark.parametrize("kind,label,group", [
     ("adoption", "里親募集", "adopt"),
-    ("sheltered", "施設で保護中", "missing"),
-    ("stray", "施設で保護中", "missing"),
+    ("sheltered", "保護中", "missing"),
+    ("stray", "保護中", "missing"),
     ("lost", "飼い主が探してます", "missing"),
 ])
 def test_kinds_are_shown_as_two_purposes(tmp_path: Path, kind: str, label: str, group: str):
@@ -88,6 +88,7 @@ def test_kinds_are_shown_as_two_purposes(tmp_path: Path, kind: str, label: str, 
     assert f'<span class="badge kd-{kind}">{label}</span>' in card
     assert f'data-group="{group}"' in card
     assert f'<span class="badge kd-{kind}">{label}</span>' in _animal(out, "kind00000001")
+    assert "施設で保護中" not in _pref(out) + _animal(out, "kind00000001")   # 市民が保護している子もいる（#126 reviewer F-01・Codex 3）
 
 
 def test_sort_order_is_kept_adoption_first(tmp_path: Path):
@@ -102,7 +103,7 @@ def test_card_shows_only_badges_title_attrs_source_and_note(tmp_path: Path):
     a = _a("card00000001", name=None, sex="オス(去勢済)", age="推定約5歳", breed="雑種(キジ白)", color="黒茶(長毛)", size="中",
            management_no="MN-0099", shelter_date="2026年11月1日", location="多久市東多久町", note="人なつこい子です")
     card = _card(_pref(_build(tmp_path, [a])), "card00000001")
-    assert '<div class="card-badges"><span class="badge kd-sheltered">施設で保護中</span><span class="badge sp-dog">犬</span></div>' in card
+    assert '<div class="card-badges"><span class="badge kd-sheltered">保護中</span><span class="badge sp-dog">犬</span></div>' in card
     assert '<h3 class="card-title">名無しの犬</h3>' in card
     assert '<div class="attr-list"><span class="attr">オス</span><span class="attr">推定約5歳</span><span class="attr">雑種</span></div>' in card
     assert re.search(r'<p class="card-muni"><svg class="ico"[^>]*>.*?</svg><span>佐賀県</span></p>', card, re.S)
@@ -127,6 +128,13 @@ def test_card_without_species_has_no_species_badge(tmp_path: Path):
     ({"name": "  ", "species": "dog"}, "名無しの犬"),
     ({"name": "犬 探しています(フルサワ)", "note": "・名前:あの"}, "あの"),        # 告知の見出しは名前にしない（#124）
     ({"name": "譲渡猫R7ねー35", "management_no": "R7ねー35", "species": "cat"}, "名無しの猫"),
+    # 飼い主が探してますの子には名前があるはずなので「名無し」と言わない（#126 Codex 7。2026-11-15 おまえさん決定）
+    ({"name": None, "species": "dog", "kind": "lost"}, "迷子の犬"),
+    ({"name": None, "species": "cat", "kind": "lost"}, "迷子の猫"),
+    ({"name": None, "species": "other", "kind": "lost"}, "迷子の動物"),
+    ({"name": None, "species": None, "kind": "lost"}, "迷子の動物"),
+    ({"name": "ポチ", "species": "dog", "kind": "lost"}, "ポチ"),
+    ({"name": None, "species": "dog", "kind": "stray"}, "名無しの犬"),
 ])
 def test_card_title_is_the_name_or_nameless_species(kw: dict[str, Any], want: str):
     assert B.card_title(_a("x", **kw)) == want
@@ -283,7 +291,7 @@ def test_pref_opens_missing_tab_when_no_adoption(tmp_path: Path):
 def test_missing_sub_filter_only_when_there_are_lost_reports(tmp_path: Path):
     with_lost = BeautifulSoup(_pref(_build(tmp_path / "a", [_a("shel00000001"), _a("lost00000001", kind="lost")])), "lxml")
     seg = with_lost.select_one(".sub-seg")
-    assert seg is not None and [b.get_text() for b in seg.select("button")] == ["すべて", "施設で保護中", "飼い主が探してます"]
+    assert seg is not None and [b.get_text() for b in seg.select("button")] == ["すべて", "保護中", "飼い主が探してます"]
     assert [b["data-sub"] for b in seg.select("button")] == ["all", "shelter", "lost"]
     cards = {c["href"].split("/")[2]: c for c in with_lost.select("a.card")}
     assert cards["shel00000001"]["data-sub"] == "shelter" and cards["lost00000001"]["data-sub"] == "lost"
@@ -376,7 +384,7 @@ def _dts(html: str, section: str) -> list[str]:
 def test_detail_header_and_back_link(tmp_path: Path):
     h = _animal(_build(tmp_path, [_a("dog000000001", **FULL)]), "dog000000001")
     assert f'<a class="back-link" href="/pref/{quote("佐賀県")}/">‹ 佐賀県の一覧へ</a>' in h
-    assert '<div class="card-badges"><span class="badge kd-sheltered">施設で保護中</span><span class="badge sp-dog">犬</span></div>' in h
+    assert '<div class="card-badges"><span class="badge kd-sheltered">保護中</span><span class="badge sp-dog">犬</span></div>' in h
     assert '<h1 class="detail-title">名無しの犬</h1>' in h
     assert 'class="muni"' not in h and "kind-help" not in h
 
@@ -465,7 +473,7 @@ def test_footer_has_three_links_a_two_line_note_and_the_brand(tmp_path: Path):
                 "sources/index.html", "404.html"):
         foot = BeautifulSoup(_read(out, rel), "lxml").select_one("footer.site-foot")
         links = [(a.get_text(), a["href"]) for a in foot.select(".foot-links a")]
-        assert links == [("このサイトについて", "/about/"), ("情報源の一覧", "/sources/"), ("お問い合わせ", "/about/#takedown")], rel
+        assert links == [("このサイトについて", "/about/"), ("情報源の一覧", "/sources/"), ("運営への問い合わせ", "/about/#takedown")], rel
         assert len(foot.select("a")) == 3, rel
         assert "github" not in str(foot).lower() and "取り下げ" not in foot.get_text(), rel
         assert "掲載情報は各自治体の公開データに基づきます。<br/>最新の状況は掲載元のページ・電話でご確認ください。" in str(foot.select_one(".foot-note"))
@@ -507,10 +515,10 @@ def test_css_width_and_colors():
 # --- about・情報源 ---------------------------------------------------------------------------------------------------
 def test_about_uses_the_new_category_names(tmp_path: Path):
     t = _text(_read(_build(tmp_path, [_a("dog000000001")]), "about/index.html"))
-    for w in ("「里親募集」", "「迷子情報」", "「施設で保護中」", "「飼い主が探してます」"):
+    for w in ("「里親募集」", "「迷子情報」", "「保護中」", "「飼い主が探してます」"):
         assert w in t, w
-    assert "4 つに分けています" not in t
-    assert "市民が保護している子も含みます" in t                      # 千葉市・越谷市の個人保護（T518）
+    assert "4 つに分けています" not in t and "施設で保護中" not in t
+    assert "「保護中」（自治体の施設や、市民の方に保護されている子）" in t   # 千葉市・越谷市などの市民保護（T518）
     assert "「自治体の公式ページを見る」" in t and "自治体のページで詳細を見る" not in t
 
 
@@ -518,5 +526,5 @@ def test_sources_page_uses_the_new_category_names(tmp_path: Path):
     srcs = [{**SAGA["sources"][0], "slug": f"s-{k}", "name": f"テスト{k}", "municipality": "テスト市", "kind": k}
             for k in ("adoption", "stray", "lost")]
     t = _text(_read(_build(tmp_path, [], srcs), "sources/index.html"))
-    assert "里親募集" in t and "施設で保護中" in t and "飼い主が探してます" in t
+    assert "里親募集" in t and "保護中" in t and "飼い主が探してます" in t and "施設で保護中" not in t
     assert " 迷子 " not in t and "探してます" not in t.replace("飼い主が探してます", "")   # 旧呼称（迷子・探してます）は残さない

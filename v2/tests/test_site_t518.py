@@ -60,15 +60,15 @@ def test_animal_page_without_species_has_no_species_badge_or_word(tmp_path: Path
     h = _read(out / "animals" / "nosp00000001" / "index.html")
     body = _main(h)
     assert 'class="badge sp-' not in body                       # 種別のバッジを出さない
-    assert '<span class="badge kd-sheltered">施設で保護中</span>' in body
+    assert '<span class="badge kd-sheltered">保護中</span>' in body
     # 2026-11-15 UI 刷新: 見出しは「名無しの動物」（種別の語は使わないまま）。タイトルは品種と性別
     assert '<h1 class="detail-title">名無しの動物</h1>' in body
     assert "その他" not in body and "None" not in h
     assert re.search(r'<title>雑種（オス）｜[^<]+｜oneco</title>', h)
     assert re.search(r'property="og:title" content="雑種（オス）｜', h)
     desc = re.search(r'<meta name="description" content="([^"]*)"', h).group(1)
-    assert "公開している施設で保護中の子。" in desc and "その他" not in desc
-    assert re.search(r'property="og:description" content="[^"]*施設で保護中の子。', h)
+    assert "公開している保護中の子。" in desc and "その他" not in desc
+    assert re.search(r'property="og:description" content="[^"]*保護中の子。', h)
     # 写真の alt も同じ見出し
     assert 'alt="雑種（オス）"' in body          # 種別なしの子は種別の語を足さない
 
@@ -118,6 +118,6 @@ def test_about_explains_animals_without_species(tmp_path: Path):
 
 # --- ② 保護中の説明 --------------------------------------------------------------------
 def test_sheltered_help_includes_citizens(tmp_path: Path):
-    # 2026-11-15 UI 刷新: バッジは「施設で保護中」になったが、市民が保護している子もいることは about で断る
+    # 2026-11-15 UI 刷新: バッジは場所を断定しない「保護中」（「施設で保護中」は市民保護の子に合わない。PR #126 reviewer・Codex）
     out = _build(tmp_path)
-    assert "「施設で保護中」（自治体の施設などに保護されている子。市民が保護している子も含みます）" in _read(out / "about" / "index.html")
+    assert "「保護中」（自治体の施設や、市民の方に保護されている子）" in _read(out / "about" / "index.html")

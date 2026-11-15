@@ -80,9 +80,10 @@ TWO_CIRCLES_SVG = ('<svg width="44" height="24" viewBox="0 0 44 24" aria-hidden=
 
 SPECIES = {"dog": "犬", "cat": "猫", "other": "その他"}
 # 区分の呼び方（2026-11-15 UI 刷新）: 収集の kind 4 つを、利用者の目的で「里親募集」と「迷子情報」の 2 つに分ける。
-# 迷子情報の中は「施設で保護中」（sheltered・stray）と「飼い主が探してます」（lost）。千葉市・越谷市の「個人保護」は
-# 市民が保護している子（T518）なので、about で「市民が保護している子も含みます」と断る
-KINDS = {"adoption": "里親募集", "sheltered": "施設で保護中", "stray": "施設で保護中", "lost": "飼い主が探してます"}
+# 迷子情報の中は「保護中」（sheltered・stray）と「飼い主が探してます」（lost）。指示書は「施設で保護中」だったが、
+# 千葉市・旭川市・越谷市・埼玉県の個人保護など市民が自宅で保護している子もいる（T518）ので、場所を断定しない「保護中」にした
+# （PR #126 の reviewer と Codex の指摘、2026-11-15 おまえさん決定）
+KINDS = {"adoption": "里親募集", "sheltered": "保護中", "stray": "保護中", "lost": "飼い主が探してます"}
 GROUPS = {"adopt": "里親募集", "missing": "迷子情報"}
 MISSING_SUB = {"sheltered": "shelter", "stray": "shelter", "lost": "lost"}   # 迷子情報の内訳の絞り込み
 # 個体ページの「すでに〜場合があります」は区分ごと（探してますの子に「譲渡・返還」とは書かない。2026-11-13 Codex #16）
@@ -483,11 +484,13 @@ def pref_short(p: str) -> str:
 
 def card_title(a: dict[str, Any]) -> str:
     """カードと個体ページの見出し。名前があれば名前、無ければ「名無しの犬」「名無しの猫」「名無しの動物」。
+    飼い主が探してますの子は飼い主には名前があるはずなので「迷子の犬」（PR #126 Codex 7、2026-11-15 おまえさん決定）。
     毛色や管理番号は混ぜない（性別・年齢・種類は下の小さなバッジにある）。<title> は検索結果で見分けられるよう headline() のまま。"""
     name = disp_name(a)
     if name and name not in EMPTY_VALS:
         return name
-    return f"名無しの{SPECIES[species_key(a)] if species_key(a) in ('dog', 'cat') else '動物'}"
+    noun = SPECIES[species_key(a)] if species_key(a) in ("dog", "cat") else "動物"
+    return f"迷子の{noun}" if a.get("kind") == "lost" else f"名無しの{noun}"
 
 
 _ATTR_SEX = re.compile(r"(?:去勢|不妊|避妊)?(オス|メス|雄|雌|おす|めす|♂|♀)")
@@ -549,8 +552,9 @@ def page(cfg: dict[str, Any], *, title: str, desc: str, path: str, body: str,
     full_title = esc(title) if title == cfg["site_name"] else f"{esc(title)}｜{site}"
     tagline = esc(cfg.get("tagline") or "")
     tagline_html = f'<span class="tagline">{tagline}</span>' if tagline else ""
-    # フッター（2026-11-15 UI 刷新）: リンクは 3 つ。「お問い合わせ」は取り下げ・訂正の窓口（about）だが、
-    # フッターで「取り下げ」と書いて不要な削除依頼を誘わない。著作権の主張（All Rights Reserved）は付けない（自治体情報のまとめのため）
+    # フッター（2026-11-15 UI 刷新）: リンクは 3 つ。「運営への問い合わせ」は取り下げ・訂正の窓口（about）。フッターで「取り下げ」と
+    # 書いて不要な削除依頼を誘わず、動物の相談先（掲載元の自治体）と取り違えないように「運営への」と付ける（PR #126 Codex 8）。
+    # 著作権の主張（All Rights Reserved）は付けない（自治体情報のまとめのため）
     return f"""<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -582,7 +586,7 @@ def page(cfg: dict[str, Any], *, title: str, desc: str, path: str, body: str,
 {body}
 </main>
 <footer class="site-foot">
-<nav class="foot-links" aria-label="サイトの案内"><a href="/about/">このサイトについて</a><a href="/sources/">情報源の一覧</a><a href="/about/#takedown">お問い合わせ</a></nav>
+<nav class="foot-links" aria-label="サイトの案内"><a href="/about/">このサイトについて</a><a href="/sources/">情報源の一覧</a><a href="/about/#takedown">運営への問い合わせ</a></nav>
 <p class="foot-note">掲載情報は各自治体の公開データに基づきます。<br>最新の状況は掲載元のページ・電話でご確認ください。</p>
 <div class="foot-brand"><img src="/brand/oneco-mark.svg" width="18" height="18" alt="" loading="lazy"><span>{site}</span></div>
 </footer>
@@ -799,7 +803,7 @@ def build_pref(cfg: dict[str, Any], data: dict[str, Any], pref: str, animals: li
     sub_seg = ""
     if any(a.get("kind") == "lost" for a in animals):   # 飼い主が探してます がいる県だけ、迷子情報の内訳を選べる
         sub_btns = "".join(f'<button type="button" class="sub-seg-btn" data-sub="{k}" aria-pressed="{_pressed(k == "all")}">{label}</button>'
-                           for k, label in (("all", "すべて"), ("shelter", "施設で保護中"), ("lost", "飼い主が探してます")))
+                           for k, label in (("all", "すべて"), ("shelter", KINDS["sheltered"]), ("lost", KINDS["lost"])))
         sub_seg = f'<div class="sub-seg" id="sub" role="group" aria-label="迷子情報の内訳"{"" if tab == "missing" else " hidden"}>{sub_btns}</div>\n'
     sp_opts = [("all", "すべて"), ("dog", "犬"), ("cat", "猫")]
     if c["other"] + c["none"]:   # 犬猫以外と種類の記載なしの子は「その他」で絞れる（agy ⑤）。開いているタブにいなければ隠す
@@ -1026,7 +1030,7 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
 <section>
 <h2>{site} とは</h2>
 <p>{site} は、全国の自治体（動物愛護センター・保健所・市区町村）が公開している保護犬・保護猫の情報を、出典を明示して 1 か所に集めた、個人運営のサイトです。自治体のページに載っていない情報（保護団体や個人の里親募集など）は扱いません。</p>
-<p>載せている子は、探す目的で「里親募集」（新しい家族を募集している子）と「迷子情報」に分けています。迷子情報は、「施設で保護中」（自治体の施設などに保護されている子。市民が保護している子も含みます）と「飼い主が探してます」（飼い主さんが自分の迷子を探している告知のうち、自治体のページに載っているもの）の 2 つです。犬猫以外の動物も、自治体のページにあれば載せています。自治体のページで犬か猫か分からない子は、種別を付けずに載せています（絞り込みでは「その他」に出ます）。</p>
+<p>載せている子は、探す目的で「里親募集」（新しい家族を募集している子）と「迷子情報」に分けています。迷子情報は、「保護中」（自治体の施設や、市民の方に保護されている子）と「飼い主が探してます」（飼い主さんが自分の迷子を探している告知のうち、自治体のページに載っているもの）の 2 つです。犬猫以外の動物も、自治体のページにあれば載せています。自治体のページで犬か猫か分からない子は、種別を付けずに載せています（絞り込みでは「その他」に出ます）。</p>
 <p>いま、{reach}。載っているのは、その日に自治体のページに出ている子です。内容は自治体のページの記載どおりなので、最新とは限りません。気になる子がいたら、掲載元の自治体に直接ご連絡ください。</p>
 </section>
 <section>
@@ -1117,7 +1121,7 @@ CSS = """
 /* 配色は旧サイト frontend/app/globals.css の WCAG AA パレットを引き継ぐ:
    primary #0369a1（白地 7.21:1）/ #075985（hover）、文字 #1f2937 / #5b6775、focus #3b82f6。
    ブランドの 2 色（コーラル #E8826E = 犬のポム、ブルーグリーン #6FAEBB = 猫のビリー）は about ページの飾りに使う。
-   2026-11-15 UI 刷新（agy と作った試作プレビュー）: 幅 860px、区分は 里親募集 = 緑・施設で保護中 = 青・飼い主が探してます = オレンジ */
+   2026-11-15 UI 刷新（agy と作った試作プレビュー）: 幅 860px、区分は 里親募集 = 緑・保護中 = 青・飼い主が探してます = オレンジ */
 :root{--bg:#fcfbf9;--card:#fff;--ink:#1f2937;--mute:#5b6775;--line:#e5e7eb;--accent:#0369a1;--accent-dark:#075985;--accent-soft:#f0f9ff;--accent-line:#bae6fd;--focus:#3b82f6;--coral:#E8826E;--teal:#6FAEBB;--dog:#fdeae4;--dog-ink:#9a3a26;--cat:#e4f1f4;--cat-ink:#21606c;--adopt:#d1fae5;--adopt-ink:#065f46;--shelter:#e0f2fe;--shelter-ink:#075985;--lost:#ffedd5;--lost-ink:#9a3412;--ph:#b3c0cc}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
