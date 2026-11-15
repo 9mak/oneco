@@ -140,6 +140,9 @@ def test_card_title_is_the_name_or_nameless_species(kw: dict[str, Any], want: st
     ({"sex": "♀", "age": "不明", "breed": "犬"}, ["メス"]),
     ({"sex": "メス:4匹 オス:2匹", "age": "10", "breed": "その他"}, []),           # 複数頭の欄・単位の無い数字・種別だけの品種は出さない
     ({"sex": "不明", "age": "2026年6月6日", "breed": "雑種(キジ白)"}, ["2026年6月6日生まれ", "雑種"]),
+    ({"sex": "オス", "age": None, "breed": "不詳"}, ["オス"]),                     # 品種にも無効値を当てる（#126 Codex 6）
+    ({"sex": "オス", "age": None, "breed": "なし"}, ["オス"]),
+    ({"sex": "オス", "age": None, "breed": "無し"}, ["オス"]),
 ])
 def test_card_attrs_are_sex_age_breed_in_this_order(kw: dict[str, Any], want: list[str]):
     assert B.card_attrs(_a("x", color="白", size="大", **kw)) == want
@@ -322,6 +325,20 @@ def test_view_bar_counts_and_toggles_one_or_two_columns(tmp_path: Path):
     assert ".animal-grid .card-note{display:none}" in css
 
 
+def test_old_kind_urls_open_the_matching_tab():
+    # 旧 URL（?kind=lost 等。旧ページの絞り込みが URL に書いていた）は、区分に合うタブと内訳で開く（#126 Codex 1）
+    js = B.PREF_JS
+    assert "adoption:'adopt/all',sheltered:'missing/shelter',stray:'missing/shelter',lost:'missing/lost'" in js
+    assert "Object.prototype.hasOwnProperty.call(KIND,kd)" in js
+
+
+def test_url_rewrite_keeps_other_params_and_the_hash():
+    # 初めに必ず replaceState するので、utm_ などの他のクエリとハッシュを消さない（GA4 の流入元が消えないように。#126 Codex）
+    js = B.PREF_JS
+    assert "['tab','sub','species','view','kind'].forEach(function(k){p.delete(k);})" in js
+    assert "history.replaceState(history.state,'',location.pathname+'?'+p.toString()+location.hash)" in js
+
+
 def test_unknown_tab_in_the_url_falls_back_to_the_default_tab():
     # ?tab=不正値 で来たら、サーバーが決めた初めのタブ（里親募集 0 頭なら迷子情報）に戻す（PR #126 reviewer F-02）
     assert "if(!known('tab'))state.tab=list.getAttribute('data-default-tab')||'adopt';" in B.PREF_JS
@@ -463,6 +480,19 @@ def test_header_keeps_brand_tagline_and_nav(tmp_path: Path):
     assert '<span class="tagline">全国の保護動物情報をひとつに</span>' in h
     nav = BeautifulSoup(h, "lxml").select_one("header .nav")
     assert [(a.get_text(), a["href"]) for a in nav.select("a")] == [("都道府県", "/"), ("情報源", "/sources/"), ("このサイトについて", "/about/")]
+
+
+def test_zero_tiles_are_dimmed_without_making_the_text_unreadable():
+    # 0 頭の県も押せるリンクなので、全体を半透明にせず（文字のコントラスト 2.7:1 になる）、背景と枠と文字色で区別する（#126 Codex 4）
+    rule = B.CSS.split(".pref-tile.is-zero{", 1)[1].split("}", 1)[0]
+    assert "opacity" not in rule and "background:" in rule and "dashed" in rule
+
+
+@pytest.mark.parametrize("sel", [".neighbor-chip{", ".ph-btn{", ".chip-btn{", ".sub-seg-btn{", ".view-toggle button{"])
+def test_tap_targets_are_at_least_42px(sel: str):
+    rule = B.CSS.split(sel, 1)[1].split("}", 1)[0]
+    m = re.search(r"min-height:(\d+)px", rule)
+    assert m and int(m.group(1)) >= 42, sel
 
 
 def test_css_width_and_colors():

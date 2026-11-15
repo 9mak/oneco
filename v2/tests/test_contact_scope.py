@@ -84,6 +84,7 @@ def test_site_labels_operator_contact_as_inquiry(tmp_path: Path):
     assert '<a class="btn-primary" href="tel:0333023507">問い合わせ先 03-3302-3507 に電話する</a>' in d
     assert "<dt>問い合わせ先の所在地</dt>" in d and "八幡山" in d
     assert "<dt>所在地</dt>" not in d and "この連絡先は掲載元ページの運営窓口です" in d
+    assert "<dt>電話</dt>" not in d and "<dt>問い合わせ先</dt>" not in d   # 電話は表に重ねて出さない（#126 Codex）
     for aid in ("facility0001", "legacy000001"):
         f = (out / "animals" / aid / "index.html").read_text(encoding="utf-8")
         assert '<a class="btn-primary" href="tel:0886212104">088-621-2104 に電話する</a>' in f

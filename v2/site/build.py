@@ -505,7 +505,7 @@ def card_attrs(a: dict[str, Any]) -> list[str]:
     """カードの小さなバッジ。性別 → 年齢 → 種類 の順で、あるものだけ（最大 3 つ）。毛色・大きさは出さない。"""
     breed = _breed_parts(a)[0]   # 雑種の言い換え済み。種別・性別・「不明」だけの欄は空、かっこ書きは外す
     age = card_age(a)
-    return [v for v in (attr_sex(a.get("sex")), "" if age in EMPTY_VALS else age, breed) if v]
+    return [v for v in (attr_sex(a.get("sex")), age, breed) if v not in EMPTY_VALS]   # 「不詳」「なし」等は出さない（#126 Codex 6）
 
 
 def card_note(a: dict[str, Any]) -> str:
@@ -729,12 +729,15 @@ PREF_JS = """
   function known(k){return btns(k).some(function(b){return b.dataset[k]===state[k];});}
   try{localStorage.setItem('oneco_last_pref',pref);}catch(e){}
   var q=new URLSearchParams(location.search);
+  var KIND={adoption:'adopt/all',sheltered:'missing/shelter',stray:'missing/shelter',lost:'missing/lost'};   // 旧 URL の ?kind=（#126 Codex 1）
+  var tab=q.get('tab'),sub0=q.get('sub'),kd=q.get('kind');
+  if(!tab&&kd&&Object.prototype.hasOwnProperty.call(KIND,kd)){tab=KIND[kd].split('/')[0];sub0=KIND[kd].split('/')[1];}
   try{
     state.view=sessionStorage.getItem(VKEY)||state.view;
     var s=JSON.parse(sessionStorage.getItem(KEY)||'null');
-    if(!q.get('tab')&&s&&s.pref===pref){state.tab=s.tab;state.sub=s.sub;state.sp=s.sp;}
+    if(!tab&&s&&s.pref===pref){state.tab=s.tab;state.sub=s.sub;state.sp=s.sp;}
   }catch(e){}
-  if(q.get('tab')){state.tab=q.get('tab');state.sub=q.get('sub')||'all';state.sp=q.get('species')||'all';}
+  if(tab){state.tab=tab;state.sub=sub0||'all';state.sp=q.get('species')||'all';}
   else if(q.get('species')){state.sp=q.get('species');}
   if(q.get('view'))state.view=q.get('view');
   function apply(){
@@ -756,11 +759,13 @@ PREF_JS = """
     list.className=(state.view==='grid'?'animal-grid':'animal-list')+(state.sp==='all'?'':' sp-filtered');
     document.querySelectorAll('a.neighbor-chip').forEach(function(a){a.search='?tab='+encodeURIComponent(state.tab);});
     try{sessionStorage.setItem(KEY,JSON.stringify({pref:pref,tab:state.tab,sub:state.sub,sp:state.sp}));sessionStorage.setItem(VKEY,state.view);}catch(e){}
-    var p=new URLSearchParams();p.set('tab',state.tab);
+    var p=new URLSearchParams(location.search);   // utm_ などの他のクエリとハッシュは残す（GA4 の流入元。#126 Codex）
+    ['tab','sub','species','view','kind'].forEach(function(k){p.delete(k);});
+    p.set('tab',state.tab);
     if(state.sub!=='all')p.set('sub',state.sub);
     if(state.sp!=='all')p.set('species',state.sp);
     if(state.view!=='list')p.set('view',state.view);
-    history.replaceState(null,'',location.pathname+'?'+p.toString());
+    history.replaceState(history.state,'',location.pathname+'?'+p.toString()+location.hash);
   }
   ['tab','sub','sp','view'].forEach(function(k){btns(k).forEach(function(b){b.addEventListener('click',function(){state[k]=b.dataset[k];if(k==='tab')state.sub='all';apply();});});});
   apply();
@@ -1168,7 +1173,9 @@ p{margin:.4em 0}
 .pref-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:8px}
 .pref-tile{display:flex;align-items:center;justify-content:space-between;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:48px;text-decoration:none;color:var(--ink)}
 .pref-tile:hover{border-color:var(--accent)}
-.pref-tile.is-zero{opacity:.45}
+.pref-tile.is-zero{background:#f6f7f8;border-style:dashed}
+.pref-tile.is-zero .pref-name{color:var(--mute);font-weight:500}
+.pref-tile.is-zero .pref-num b{color:var(--mute)}
 .pref-name{font-weight:600;font-size:.95rem}
 .pref-num{font-size:.85rem;color:var(--mute);white-space:nowrap}
 .pref-num b{color:var(--accent);font-size:1rem}
@@ -1180,7 +1187,7 @@ p{margin:.4em 0}
 .neighbor-bar{display:flex;align-items:center;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;scrollbar-width:none}
 .neighbor-bar::-webkit-scrollbar{display:none}
 .neighbor-label{font-size:.78rem;color:var(--mute);white-space:nowrap;flex:none;margin-right:2px}
-.neighbor-chip{flex:none;text-decoration:none;font-size:.82rem;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:999px;padding:5px 11px;min-height:36px;display:inline-flex;align-items:center}
+.neighbor-chip{flex:none;text-decoration:none;font-size:.82rem;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:999px;padding:5px 12px;min-height:42px;display:inline-flex;align-items:center}
 .neighbor-chip.active{background:var(--ink);color:#fff;border-color:var(--ink)}
 .sub-seg{display:flex;gap:3px;padding:3px;background:#eef2f5;border-radius:10px;margin-bottom:10px}
 .sub-seg-btn{appearance:none;border:none;background:transparent;color:var(--mute);font-size:clamp(.74rem,3.3vw,.82rem);font-weight:500;padding:7px 8px;border-radius:8px;cursor:pointer;flex:1 1 auto;min-width:0;white-space:nowrap;text-align:center;min-height:42px}
@@ -1238,7 +1245,7 @@ p{margin:.4em 0}
 .detail-media .ph span{font-size:13px;padding:0 8px}
 .ph::before{content:"";position:absolute;left:50%;top:50%;width:2.8em;height:2.4em;margin:-.7em 0 0 -1.4em;background:var(--ph);border-radius:50%/55% 55% 45% 45%}
 .ph::after{content:"";position:absolute;left:50%;top:50%;width:5em;height:2.2em;margin:-2.5em 0 0 -2.5em;background:radial-gradient(circle at .6em 1.6em,var(--ph) .55em,transparent .6em),radial-gradient(circle at 1.9em .6em,var(--ph) .6em,transparent .65em),radial-gradient(circle at 3.1em .6em,var(--ph) .6em,transparent .65em),radial-gradient(circle at 4.4em 1.6em,var(--ph) .55em,transparent .6em)}
-.ph-btn{position:relative;z-index:1;margin-top:10px;padding:7px 14px;border-radius:999px;background:#fff;color:var(--accent-dark);border:1px solid var(--accent-line);font-size:12.5px;font-weight:600;text-decoration:none;min-height:36px;display:inline-flex;align-items:center}
+.ph-btn{position:relative;z-index:1;margin-top:10px;padding:7px 14px;border-radius:999px;background:#fff;color:var(--accent-dark);border:1px solid var(--accent-line);font-size:12.5px;font-weight:600;text-decoration:none;min-height:42px;display:inline-flex;align-items:center}
 /* 個体ページ */
 .detail-media{position:relative;aspect-ratio:4/3;max-height:360px;width:100%;background:#e9edf1;overflow:hidden;container-type:inline-size}
 .detail-media img{width:100%;height:100%;object-fit:contain}
