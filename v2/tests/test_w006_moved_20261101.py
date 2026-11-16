@@ -43,8 +43,9 @@ def _collect(slug: str, pages: dict[str, str | bytes], status: dict[str, int] | 
 
     enabled は True に固定して読む。福岡の暫定 2 件は、元のサイトが再開したら台帳で enabled: false にして止める手順なので（台帳の note）、
     止めた後もレシピの試験が「無効」で落ちないようにする。台帳の enabled の値そのものは、旧 2 件が true のままであることだけを別の試験で見る。
+    mode も recipe に固定する。甲府市は 2026-11-16 の返事でリンクのみ（T630）になったが、レシピは許諾が変わったときのために残すので読めることを確かめ続ける。
     """
-    return collect_one(dataclasses.replace(SOURCES[slug], enabled=True), FakeFetcher(pages, status=status))
+    return collect_one(dataclasses.replace(SOURCES[slug], enabled=True, mode="recipe"), FakeFetcher(pages, status=status))
 
 
 def _res(c: Collected) -> Result:

@@ -19,7 +19,9 @@ FIX = Path(__file__).resolve().parent / "fixtures"
 # このテストが通るよう、似た台帳エントリから組み立てる（台帳に入った後は台帳のものを使う）。
 _FROM = {"city_matsumoto-6": "city_matsumoto-5", "city_matsumoto-7": "city_matsumoto-5", "city_matsumoto-8": "city_matsumoto-5",
          "city_matsumoto-9": "city_matsumoto-4", "city_shizuoka-1": "city_shizuoka-1",
-         "pref_nara-1": "pref_nara-1", "pref_nara-2": "pref_nara-2", "pref_nara-3": "pref_nara-3"}
+         "pref_nara-1": "pref_nara-1", "pref_nara-2": "pref_nara-2", "pref_nara-3": "pref_nara-3",
+         # 甲府市は 2026-11-16 の返事でリンクのみ（T630）。レシピは許諾が変わったときのために残し、読めることはここで確かめ続ける
+         "city_kofu-1": "city_kofu-1", "city_kofu-2": "city_kofu-2"}
 
 
 def _source(slug: str) -> Source:

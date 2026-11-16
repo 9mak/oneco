@@ -35,11 +35,8 @@ def test_collect_does_not_fetch(slug):
     assert collect_one(SOURCES[slug], _NoFetch()).status == "link_only"
 
 
-@pytest.mark.parametrize("slug", ["city_kofu-1", "city_kofu-2"])
-def test_kofu_photo_pending_until_reply(slug):
-    # 山梨県から甲府市は別運営と案内があり、甲府市にもお伺いを送る。返事まで写真は出さず文字とリンクは読む
-    s = SOURCES[slug]
-    assert (s.mode, s.photo) == ("recipe", "pending")
+# 甲府市（city_kofu-1・-2）は 11/12 にお伺いを送り返事まで pending にしていた。
+# 2026-11-16 の返事でリンクのみになったので test_registry_w006_t630_replies_1116.py へ移した。
 
 
 def test_ikutopia_is_unchanged():
