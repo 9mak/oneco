@@ -1,7 +1,8 @@
 """W006 T630: 岡山市（返事 2026-11-02「表示してよい」）と埼玉県（返事 2026-11-05 県庁 生活衛生課がとりまとめ）。
 
 埼玉県: 県内の収容動物の情報は写真を含め掲載して差し支えない（政令・中核市を除く）。
-個人保護の 8 件は、返事の「収容動物」に個人保護が入るか不明で県庁に確認中のため pending のまま。
+個人保護の 8 件は、返事の「収容動物」に個人保護が入るか不明で県庁に確認していた。
+2026-11-16 に個人保護も可と返事があり ok にした（test_registry_w006_t630_replies_1116.py）。
 """
 
 from pathlib import Path
@@ -43,7 +44,7 @@ def test_photo_ok(slug):
 
 
 @pytest.mark.parametrize("slug", SAITAMA_PENDING)
-def test_saitama_personal_stays_pending(slug):
+def test_saitama_personal_ok_after_1116_reply(slug):
     s = SOURCES[slug]
-    assert (s.mode, s.enabled, s.photo) == ("recipe", True, "pending")
-    assert "確認中" in NOTES[slug]
+    assert (s.mode, s.enabled, s.photo) == ("recipe", True, "ok")
+    assert "2026-11-16" in NOTES[slug]
