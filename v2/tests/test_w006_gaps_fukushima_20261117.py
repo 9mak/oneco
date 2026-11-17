@@ -100,6 +100,20 @@ def test_aizu_dog_reads_one_table():
     assert _hits(8, _today(8)) == []
 
 
+def test_aizu_dog_child_day_in_wayback_reads_two_and_never_zero():
+    html = _fx("w006_pref_fukushima-8_child_wb20261016.html")  # Wayback 2026-10-16: 「〇現在、譲渡犬の情報が2件あります。」
+    assert "譲渡犬の情報が2件あります" in html
+    c = _run(8, html)
+    assert c.status == "ok", c.error
+    assert len(c.result.animals) == 2 and all(a["management_no"] and a["name"] for a in c.result.animals)
+    assert _hits(8, html) == []
+
+
+def test_soso_dog_zero_template_in_wayback_is_empty_like_today():
+    # 相双支所の譲渡犬は Wayback 2025-07-06 も今日と同じ（セルが空の雛形の表だけ）で、0 頭として読む
+    assert _zero(_run(11, _fx("w006_pref_fukushima-11_zero_wb20250706.html")))
+
+
 def test_soso_cat_reads_seven_tables():
     c = _run(9, _today(9))
     assert c.status == "ok", c.error

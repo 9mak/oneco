@@ -75,6 +75,15 @@ def test_hiroshima_dog_reads_18_including_nested_div():
     assert _hits("pref_hiroshima-3", _today("pref_hiroshima-3")) == []
 
 
+def test_hiroshima_dog_child_day_in_wayback_reads_13_and_never_zero():
+    html = _fx("w006_pref_hiroshima-3_child_wb20260611.html")  # Wayback 2026-06-11（h2「管理番号：…」が 13）
+    assert html.count("<h2>管理番号") == 13
+    c = _run("pref_hiroshima-3", html)
+    assert c.status == "ok", c.error
+    assert len(c.result.animals) == 13 and len({a["management_no"] for a in c.result.animals}) == 13
+    assert _hits("pref_hiroshima-3", html) == []
+
+
 def test_hiroshima_cat_reads_6_and_notes_trial():
     c = _run("pref_hiroshima-4", _today("pref_hiroshima-4"))
     assert c.status == "ok", c.error
@@ -86,6 +95,14 @@ def test_hiroshima_cat_reads_6_and_notes_trial():
     # h2 に「※現在トライアル中です」が付いた子は載せて note に出す
     assert animals[-1]["note"] == "※現在トライアル中です。※最大2週間のトライアル可能"
     assert _hits("pref_hiroshima-4", _today("pref_hiroshima-4")) == []
+
+
+def test_hiroshima_cat_child_day_in_wayback_reads_two():
+    html = _fx("w006_pref_hiroshima-4_child_wb20260808.html")  # Wayback 2026-08-08（h2「管理番号：…」が 2）
+    assert html.count("<h2>管理番号") == 2
+    c = _run("pref_hiroshima-4", html)
+    assert c.status == "ok" and len(c.result.animals) == 2, c.error
+    assert _hits("pref_hiroshima-4", html) == []
 
 
 def test_osaka_dog_reads_three_with_section_in_note():
