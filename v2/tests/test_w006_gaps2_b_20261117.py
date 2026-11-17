@@ -74,17 +74,18 @@ def test_maebashi_lost_other_day_in_wayback():
     assert len(c.result.animals) == 13 and _by_species(c) == {"dog": 4, "cat": 9}
 
 
-def test_maebashi_sheltered_today_reads_8_cats_1_dog_and_1_lizard():
+def test_maebashi_sheltered_today_reads_8_cats_1_dog_and_drops_the_lizard_nobody_keeps():
     html = _fx("w006_city_maebashi-3_20261117.html")
+    assert "保護はしていない" in html   # トカゲ（A2026-08-02）は見かけただけで、誰も保護していない
     c = _run(MB_SHELTERED, html)
     assert c.status == "ok", c.error
     animals = c.result.animals
-    assert len(animals) == 10 and _by_species(c) == {"cat": 8, "dog": 1, "other": 1}
+    assert len(animals) == 9 and _by_species(c) == {"cat": 8, "dog": 1}
     first = animals[0]
     assert (first["management_no"], first["shelter_date"], first["location"], first["breed"], first["sex"], first["age"]) == (
         "A2026-11-02", "2026年10月中旬", "天川原町2丁目", "雑種(シャム系)", "オス", "成猫")
-    lizard = next(a for a in animals if a["species"] == "other")
-    assert lizard["management_no"] == "A2026-08-02" and "保護はしていない" in lizard["note"]
+    # kind が sheltered（保護中）なので、「保護はしていない」と書かれた行は載せない（#130 reviewer F-02）
+    assert all(a["management_no"] != "A2026-08-02" for a in animals)
     assert sum(1 for a in animals if a["image_url"]) == 2  # 写真があるのは 2 件
 
 
@@ -188,61 +189,67 @@ def test_tottori_registry():
     assert s.photo == "pending" and s.phone == "0857-26-7593" and s.url == SOURCES[TT_LOST].url and s.recipe_path.exists()  # 鳥取県の規約は転載要申請
 
 
-def test_tottori_lost_reads_this_fiscal_year_only():
+def _tt_numbers(html: str, head: str) -> list[str]:
+    """fixture の届け出の見出し（h4「問合番号M08-015」）から、頭が head の番号をページの順に拾う（レシピとは別に数える）。"""
+    soup = BeautifulSoup(html, "lxml")
+    out = []
+    for h in soup.select("div.BrowserItemList h4"):
+        t = h.get_text(" ", strip=True)
+        if t.startswith("問合番号" + head):
+            out.append(t.removeprefix("問合番号").strip())
+    return out
+
+
+def test_tottori_lost_reads_every_notice_the_prefecture_still_lists():
+    # おまえさん決定（2026-11-18）: 年度で絞らず、県が載せている届け出は全部出す（こちらで期間を決めない）
     html = _fx(TT_FX)
-    assert "M07-001" in html and "M06-01" in html and "M32-07" in html   # 令和7年度以前の古い届け出もページに残っている
     c = _run(TT_LOST, html)
     assert c.status == "ok", c.error
     animals = c.result.animals
-    assert [a["management_no"] for a in animals] == ["M08-015", "M08-013", "M08-012", "M08-008", "M08-006", "M08-005", "M08-004", "M08-003"]
-    assert all(a["species"] == "cat" for a in animals)
+    want = _tt_numbers(html, "M")
+    assert len(want) == 38 and "M07-001" in want and "M06-01" in want and "M32-07" in want
+    assert [a["management_no"] for a in animals] == want
+    assert {a["species"] for a in animals} <= {"cat", "dog", "other"}
     first = animals[0]
+    assert first["management_no"] == "M08-015"
     assert first["shelter_date"] == "令和8年10月17日" and first["location"].startswith("ラム") and "全体的にグレー" in first["note"]
     assert animals[3]["location"] == "博労町駅付近" and "みーちゃん" in animals[3]["note"]
 
 
-def test_tottori_sheltered_reads_this_fiscal_year_only():
-    c = _run(TT_SHELTERED, _fx(TT_FX))
+def test_tottori_sheltered_reads_every_notice_with_a_p_number():
+    html = _fx(TT_FX)
+    c = _run(TT_SHELTERED, html)
     assert c.status == "ok", c.error
     animals = c.result.animals
-    assert [a["management_no"] for a in animals] == ["P08-005", "P08-004", "P08-003", "P08-002"]
+    assert [a["management_no"] for a in animals] == ["P08-005", "P08-004", "P08-003", "P08-002", "P07-002", "P07-001", "P05-01", "P05-03", "P05-06"]
+    # 令和5年度以前の「問合番号05-04」は頭に P が無く、捜している（M）か保護している（P）かを番号で決められないので読まない（1 件だけ）
+    assert "問合番号05-04" in html and all(a["management_no"] != "05-04" for a in animals)
     assert animals[0]["location"] == "米子市米原" and animals[0]["shelter_date"] == "令和8年10月5日" and "1才くらい" in animals[0]["note"].replace("１", "1")
 
 
-def test_tottori_next_fiscal_year_and_older_layouts_still_read():
-    # 令和7年度が最新だった版（Wayback 2026-02）を、令和8年度の番号・見出しに置き換えて同じ作りで読めることを確かめる（年度が替わったときの再現）
-    html = _fx("w006_pref_tottori-2_child_wb20260215.html")
-    for a, b in (("M07-", "M08-"), ("P07-", "P08-"), ("令和7年度受付", "令和８年度受付"), ("令和７年度受付", "令和８年度受付")):
-        html = html.replace(a, b)
-    c = _run(TT_LOST, html)
-    assert c.status == "ok" and len(c.result.animals) == 9 and c.result.animals[0]["management_no"] == "M08-022", c.error
-    assert sum(1 for a in c.result.animals if a["species"] == "dog") == 3   # 犬 3（M08-014・004・003）
-    c = _run(TT_SHELTERED, html)
-    assert c.status == "ok" and [a["management_no"] for a in c.result.animals] == ["P08-002", "P08-001"], c.error
-    # 令和7年度の「保護しています」の節がまだ無かった版（Wayback 2025-11）は、番号を置き換えても保護は 0 頭として扱わず読めなかった扱い
-    html = _fx("w006_pref_tottori-2_child_wb20251112.html")
-    # （この版は令和7年度の最初の 5 件の問合番号が「07-018」のように M が付いていない。M が付いていない番号は読まない＝今は付いている。付かない日は読めなかった扱いにしたい）
-    for a, b in (("問合番号07-", "問合番号M08-"), ("M07-", "M08-"), ("令和7年度受付", "令和８年度受付"), ("令和７年度受付", "令和８年度受付")):
-        html = html.replace(a, b)
-    c = _run(TT_LOST, html)
-    assert c.status == "ok" and len(c.result.animals) == 8, c.error
-    assert not _zero(_run(TT_SHELTERED, html))   # 「保護しています（令和８年度受付）」の節が無い（まだ 1 件も届いていない）日は 0 頭と言い切らない
+def test_tottori_older_versions_read_the_same_way():
+    for name in ("w006_pref_tottori-2_child_wb20260215.html", "w006_pref_tottori-2_child_wb20251112.html"):
+        html = _fx(name)
+        c = _run(TT_LOST, html)
+        assert c.status == "ok" and [a["management_no"] for a in c.result.animals] == _tt_numbers(html, "M"), (name, c.error)
+        c = _run(TT_SHELTERED, html)
+        assert c.status == "ok" and [a["management_no"] for a in c.result.animals] == _tt_numbers(html, "P"), (name, c.error)
+    # 2025-11 の版は令和7年度の最初の 5 件が「問合番号07-018」のように M が付かない。番号で区分を決められないので読まない
+    assert "問合番号07-018" in _fx("w006_pref_tottori-2_child_wb20251112.html")
 
 
-def test_tottori_zero_when_the_section_is_there_and_has_no_notice():
-    # 0 頭の節は「保護しています（令和6年度受付）」の h4「現在、掲載情報はありません」の形（今日のページ）。
-    # 令和8年度の節（h2）は残し、届け出の h4（と表）を消して再現する（届け出の一覧は h2 とは別のブロックにあるので、h4 ごと消す）
-    for slug, section, prefix in ((TT_LOST, "捜しています（令和８年度受付）", "問合番号M08-"), (TT_SHELTERED, "保護しています（令和８年度受付）", "問合番号P08-")):
-        soup = BeautifulSoup(_fx(TT_FX), "lxml")
-        assert any(section in h.get_text() for h in soup.select("h2"))
-        for h4 in soup.select("h4"):
-            if prefix in h4.get_text():
-                h4.decompose()
+def test_tottori_zero_only_when_every_section_says_there_is_no_notice():
+    soup = BeautifulSoup(_fx(TT_FX), "lxml")
+    for h4 in soup.select("div.BrowserItemList h4"):
+        if "問合番号" in h4.get_text():
+            h4.decompose()
+    assert "現在、掲載情報はありません" in str(soup)
+    for slug in (TT_LOST, TT_SHELTERED):
         assert _zero(_run(slug, str(soup))), slug
-        # 令和8年度の節の見出しが無い日（作りが変わった）は 0 頭と言い切らない
-        assert not _zero(_run(slug, str(soup).replace(section, "掲載情報"))), slug
+        # 節の見出しが無い日（作りが変わった）は 0 頭と言い切らない
+        assert not _zero(_run(slug, str(soup).replace("しています（", "掲載（"))), slug
         # 問合番号の書き方が変わった日（届け出は残る）は 0 頭にしない
-        assert not _zero(_run(slug, _fx(TT_FX).replace("問合番号M08-", "問合 M08-").replace("問合番号P08-", "問合 P08-"))), slug
+        assert not _zero(_run(slug, _fx(TT_FX).replace("問合番号", "問合 "))), slug
 
 
 # --- 宮崎市 ---------------------------------------------------------------
@@ -259,28 +266,49 @@ def test_miyazaki_registry():
     assert SOURCES[MZ_SHELT_CAT].url.endswith("/protection/109685.html") and SOURCES[MZ_SHELT_DOG].url.endswith("/protection/51360.html")
 
 
-def test_miyazaki_lost_cats_today_read_only_this_years_notices():
+def _mz_numbers(html: str) -> list[str]:
+    """fixture の届け出の先頭（「迷子猫情報:20261111」等）から掲載番号を拾う（レシピとは別に数える）。"""
+    import re
+    soup = BeautifulSoup(html, "lxml")
+    out = []
+    for d in soup.select("article.body div.imgRTxtL, article.body div.imgTxtL"):
+        m = re.search(r"(?:迷子猫情報|迷子犬情報|猫保護情報|犬保護情報)\s*[:：]?\s*(\d{8})", d.get_text(" ", strip=True))
+        if m:
+            out.append(m.group(1))
+    return out
+
+
+def test_miyazaki_lost_cats_today_read_every_notice_the_city_still_lists():
+    # おまえさん決定（2026-11-18）: 掲載の年で絞らず、市が載せている届け出は全部出す（ページは最長 6 か月と書くが 2024 年の掲載も残る）
     html = _fx("w006_city_miyazaki-4_20261117.html")
-    assert "迷子猫情報:20250117" in html   # 2025 年の古い掲載（掲載期間は最長 6 か月とあるのに残っている）はページにある
+    assert "迷子猫情報:20250117" in html
     c = _run(MZ_LOST_CAT, html)
     assert c.status == "ok", c.error
     animals = c.result.animals
-    assert len(animals) == 19 and all(a["species"] == "cat" and a["management_no"].startswith("2026") for a in animals)
+    assert [a["management_no"][:8] for a in animals] == _mz_numbers(html) and len(animals) == 34
+    assert all(a["species"] == "cat" for a in animals) and "20250117" in [a["management_no"] for a in animals]
     first = animals[0]
     assert (first["management_no"], first["breed"], first["sex"], first["age"], first["shelter_date"], first["location"]) == (
         "20261111", "雑種", "メス", "老齢", "令和8年11月10日", "船塚2丁目")
     assert "首輪なし、名前はジジ" in first["note"] and "温和な性格です" in first["note"]
     assert animals[2]["location"] == "大字小松にある「ハートフルケア小松」付近"
-    assert len({a["id"] for a in animals}) == 19
+    assert len({a["id"] for a in animals}) == 34
+    # 2 段落目が「種類＋毛色」、3 段落目が「性別＋年齢」の届け出もある（#130 reviewer F-06）
+    gray = next(a for a in animals if a["management_no"] == "20260719")
+    assert (gray["sex"], gray["breed"]) == ("オス", "雑種")
+    # 掲載番号と種類が同じ段落にある届け出も、種類に番号を混ぜない
+    assert next(a for a in animals if a["management_no"] == "20260609")["breed"] == "雑種"
+    assert all(not a["breed"] or "情報" not in a["breed"] for a in animals)
 
 
-def test_miyazaki_lost_dogs_today_skip_the_notice_from_2025():
+def test_miyazaki_lost_dogs_today_read_the_notice_from_2025_too():
     html = _fx("w006_city_miyazaki-5_20261117.html")
     assert "迷子犬情報 20250704" in html
     c = _run(MZ_LOST_DOG, html)
     assert c.status == "ok", c.error
     animals = c.result.animals
-    assert [a["management_no"] for a in animals] == ["20261106", "20261007", "20261006"] and all(a["species"] == "dog" for a in animals)
+    # ページの「迷子の犬を探している方へお願い」の枠は届け出ではないので読まない
+    assert [a["management_no"] for a in animals] == ["20261106", "20261007", "20261006", "20250704"] and all(a["species"] == "dog" for a in animals)
     assert (animals[0]["breed"], animals[0]["sex"], animals[0]["age"], animals[0]["location"]) == (
         "トイ・プードル", "オス", "老齢", "宮崎市佐土原町下田島の「宮崎国際ゴルフ倶楽部」付近")
     assert animals[1]["shelter_date"] == "令和8年8月30日" and animals[2]["breed"] == "豆柴"
@@ -290,7 +318,11 @@ def test_miyazaki_sheltered_cats_today_read_this_years_ones_and_keep_the_wording
     c = _run(MZ_SHELT_CAT, _fx("w006_city_miyazaki-6_20261117.html"))
     assert c.status == "ok", c.error
     animals = c.result.animals
-    assert [a["management_no"] for a in animals] == ["20261105", "20260916", "20260820", "20260518", "20260306-2", "20260306-1", "20260302", "20260107"]
+    html = _fx("w006_city_miyazaki-6_20261117.html")
+    assert [(a["management_no"] or "")[:8] for a in animals] == _mz_numbers(html) and len(animals) == 12
+    # 1 つの届け出の 2 枚目の写真だけが入った枠（20260302 の 202603022.jpg）は 1 頭として読まない
+    assert "202603022.jpg" in html and all(a["management_no"] for a in animals)
+    assert [a["management_no"] for a in animals][:8] == ["20261105", "20260916", "20260820", "20260518", "20260306-2", "20260306-1", "20260302", "20260107"]
     assert all(a["species"] == "cat" for a in animals)
     first = animals[0]
     assert (first["sex"], first["age"], first["shelter_date"], first["location"]) == ("メス", "老齢", "令和8年11月2日", "宮崎市清武町今泉甲")
@@ -300,9 +332,20 @@ def test_miyazaki_sheltered_cats_today_read_this_years_ones_and_keep_the_wording
 def test_miyazaki_other_days_in_wayback():
     c = _run(MZ_LOST_CAT, _fx("w006_city_miyazaki-4_child_wb20260712.html"))
     assert c.status == "ok", c.error
-    assert [a["management_no"] for a in c.result.animals] == ["20260626", "20260605", "20260524", "20260524", "20260518", "20260329", "20260313"]
-    c = _run(MZ_SHELT_CAT, _fx("w006_city_miyazaki-6_child_wb20260513.html"))
-    assert c.status == "ok" and [a["management_no"] for a in c.result.animals] == ["20260306-2", "20260306-1", "20260302", "20260107"], c.error
+    html = _fx("w006_city_miyazaki-4_child_wb20260712.html")
+    numbered = [a for a in c.result.animals if a["management_no"]]
+    assert [a["management_no"][:8] for a in numbered] == _mz_numbers(html)
+    assert [a["management_no"] for a in numbered][:7] == ["20260626", "20260605", "20260524", "20260524", "20260518", "20260329", "20260313"]
+    # この版は 20260609・20260608 の掲載番号が枠の外にある。番号なしでも中身のある届け出として読む（写真だけの枠は読まない）
+    unnumbered = [a for a in c.result.animals if not a["management_no"]]
+    assert [(a["sex"], a["shelter_date"]) for a in unnumbered] == [("オス", "令和8年6月6日"), ("メス", "令和8年6月5日")]
+    # 先頭に空の段落がある届け出（20260329）も、種類と性別を取る
+    calico = next(a for a in c.result.animals if a["management_no"] == "20260329")
+    assert (calico["breed"], calico["sex"]) == ("雑種", "メス")
+    assert all(not a["breed"] or "情報" not in a["breed"] for a in c.result.animals)
+    html = _fx("w006_city_miyazaki-6_child_wb20260513.html")
+    c = _run(MZ_SHELT_CAT, html)
+    assert c.status == "ok" and [(a["management_no"] or "")[:8] for a in c.result.animals] == _mz_numbers(html), c.error
 
 
 def test_miyazaki_sheltered_dog_zero_days_in_wayback():
@@ -317,14 +360,9 @@ def test_miyazaki_sheltered_dog_zero_days_in_wayback():
         assert "現在、掲載情報はありません" not in body and "現在、掲載する" not in body, name
 
 
-def test_miyazaki_zero_sentence_gone_is_not_zero_and_all_old_notices_is_not_zero():
+def test_miyazaki_zero_sentence_gone_is_not_zero():
     html = _fx("w006_city_miyazaki-7_20261117.html").replace("現在、掲載情報はありません", "掲載状況")
     assert not _zero(_run(MZ_SHELT_DOG, html))
-    # 今年の届け出が 1 つも無く、去年の古い掲載だけが残る日は、0 頭と言い切らず読めなかった扱い（年を替える時期の目印）
-    html = _fx("w006_city_miyazaki-5_20261117.html")
-    for ymd in ("20261106", "20261007", "20261006"):
-        html = html.replace(ymd, "2025" + ymd[4:])
-    assert not _zero(_run(MZ_LOST_DOG, html))
 
 
 def test_funabashi_real_zero_day_and_a_later_day_in_wayback():

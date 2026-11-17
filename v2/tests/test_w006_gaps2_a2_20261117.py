@@ -92,7 +92,8 @@ OKH = "hokkaido_okhotsk-6"
 def test_okhotsk_registry():
     s = SOURCES[OKH]
     assert s.mode == "recipe" and s.enabled and s.kind == "adoption" and s.prefecture == "北海道" and s.species == "mixed"
-    assert s.phone == "0157-24-4171" and "北見市青葉町" in s.address and s.recipe_path.exists()
+    # 電話は譲渡の申込先（ページ本文の「申込みは環境生活課」）。おまえさん決定 2026-11-18（#130 reviewer F-07）
+    assert s.phone == "0152-41-0632" and "北見市青葉町" in s.address and s.recipe_path.exists()
     assert s.photo == "pending"  # 北海道は返事待ち・未依頼
 
 

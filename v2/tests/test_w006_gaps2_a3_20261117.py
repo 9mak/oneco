@@ -12,6 +12,7 @@
 import dataclasses
 from pathlib import Path
 
+import yaml
 from bs4 import BeautifulSoup
 from collector.extract import empty_hits
 from collector.fetch import FakeFetcher
@@ -121,13 +122,17 @@ MCH = "city_machida-5"
 
 def test_machida_registry():
     s = SOURCES[MCH]
-    assert s.mode == "recipe" and s.enabled and s.kind == "sheltered" and s.prefecture == "東京都" and s.species == "mixed"
+    # 2026-11-18 朝に syuyou.html が HTTP 404（市のナビからもリンクが消えた）。初日から毎晩 failed にしないため、戻るまで止める（#130 reviewer F-01）
+    assert s.mode == "recipe" and not s.enabled and s.kind == "sheltered" and s.prefecture == "東京都" and s.species == "mixed"
+    registry = yaml.safe_load((ROOT / "registry" / "sources.yaml").read_text(encoding="utf-8"))
+    entry = next(e for e in registry["sources"] if e["slug"] == MCH)
+    assert "404" in entry["note"]
     assert s.phone == "042-722-6727" and s.recipe_path.exists()
     assert s.url.endswith("/mayoi/syuyou.html")
 
 
 def test_machida_syuyou_today_is_a_different_cat_from_the_hogo_page():
-    c = _run(MCH, _fx("w006_city_machida-5_20261117.html"))
+    c = _run(MCH, _fx("w006_city_machida-5_20261117.html"), enabled=True)
     assert c.status == "ok", c.error
     assert len(c.result.animals) == 1
     a = c.result.animals[0]
@@ -140,10 +145,10 @@ def test_machida_syuyou_today_is_a_different_cat_from_the_hogo_page():
 
 
 def test_machida_syuyou_other_days_in_wayback():
-    c = _run(MCH, _fx("w006_city_machida-5_child_wb20221227.html"))
+    c = _run(MCH, _fx("w006_city_machida-5_child_wb20221227.html"), enabled=True)
     assert c.status == "ok", c.error
     assert [(x["species"], x["breed"]) for x in c.result.animals] == [("dog", "柴犬"), ("dog", "トイプードル")] and all(x["image_url"] for x in c.result.animals)
-    c = _run(MCH, _fx("w006_city_machida-5_child_wb20230322.html"))
+    c = _run(MCH, _fx("w006_city_machida-5_child_wb20230322.html"), enabled=True)
     assert c.status == "ok", c.error
     assert [(x["species"], x["breed"]) for x in c.result.animals] == [("cat", "アビシニアン")] and "移送されました" in c.result.animals[0]["note"]
 
@@ -151,7 +156,7 @@ def test_machida_syuyou_other_days_in_wayback():
 def test_machida_syuyou_zero_day_is_zero_by_its_sentence():
     html = _fx("w006_city_machida-5_zero_wb20220829.html")
     assert "移送された動物の情報はありません" in html
-    assert _zero(_run(MCH, html))
+    assert _zero(_run(MCH, html, enabled=True))
     for name in ("w006_city_machida-5_20261117.html", "w006_city_machida-5_child_wb20221227.html", "w006_city_machida-5_child_wb20230322.html"):
         assert "移送された動物の情報はありません" not in _fx(name), name   # 子のいる日には出ない
     assert _hits(MCH, _fx("w006_city_machida-5_zero_wb20220829.html")) != []
@@ -159,7 +164,7 @@ def test_machida_syuyou_zero_day_is_zero_by_its_sentence():
 
 def test_machida_syuyou_structure_change_is_not_zero():
     html = _fx("w006_city_machida-5_20261117.html").replace("性別：", "性：").replace("種類：", "種：")
-    c = _run(MCH, html)
+    c = _run(MCH, html, enabled=True)
     assert not _zero(c)
 
 

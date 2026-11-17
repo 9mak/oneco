@@ -205,6 +205,8 @@ def test_amagasaki_today_reads_7_cats_and_the_trial_dog():
     assert animals[0]["sex"] == "メス" and animals[0]["color"] == "白黒" and animals[0]["age"].startswith("7歳齢")
     assert all(a["image_url"] for a in animals) and len({a["id"] for a in animals}) == 8
     assert animals[7]["breed"] == "シーズー" and "トライアル中" in animals[7]["note"]
+    # 見出し「※トライアル中」はレオの写真の直前の h3 で、ルルの見出しは「7」（11/17・11/18 の実ページ）。ルルには付けない
+    assert "トライアル中" not in (animals[6]["note"] or "")
     assert "とっても甘えん坊" in animals[0]["note"]
     assert _hits(AMA, html) == []
 

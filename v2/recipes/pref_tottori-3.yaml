@@ -1,10 +1,10 @@
 # 鳥取県 ペットを「捜しています」・「保護しています」（243905.htm）のうち「保護しています」＝飼われていたと思われる迷い犬猫を保護し、本来の飼い主さんを探している県民からの情報（kind: sheltered。県の収容ではなく県民の保護）。
 # 作りは pref_tottori-2（捜しています）と同じ（h2 の年度の節 → a → h4「問合番号P08-005」→ div の表。表の列は種類・保護した時期・保護した場所・特徴・写真とコメント（PDF の「■」）・掲載年月日）。
-# 今の年度（問合番号 P08-）だけ読む。令和9年度は P09-、令和10年度は P10-。令和9年に入ったら P08- を外す。令和5年度以前の番号は「P05-01」のほか「05-04」（P が付かない）がある。
+# おまえさん決定（2026-11-18）: こちらで期間を決めず、掲載元が載せている届け出は全部出す（毎年直す作り込みはバグのもと）。番号の頭が P の届け出を全部読む。令和5年度以前の「05-04」は P が付かず区分を番号で決められないので読まない（1 件）。
 # 年度の節に 1 件も無い日は h2 の下に h4「現在、掲載情報はありません」が出る（令和6年度）。届け出が来るまで節そのものが無い版もある（Wayback 2025-11 は令和7年度の「保護しています」の節が無かった）。
-# 令和8年度の「保護しています」の節（h2）はあるが P08・P09・P10 の届け出が 1 つも無い日だけ 0 頭にする。節が無い日は 0 頭と言い切らない。
+# 「保護しています（…年度受付）」の節（h2）はあり、届け出の一覧の h4 が全部「現在、掲載情報はありません」の日だけ 0 頭にする。節が無い日は 0 頭と言い切らない。
 # 写真は PDF 内（■）で HTML に画像は無い。写真の規約は鳥取県が転載要申請なので photo: pending。
-rows: "h4:-soup-contains('問合番号P08-'), h4:-soup-contains('問合番号P09-'), h4:-soup-contains('問合番号P10-')"
+rows: "div.BrowserItemList h4:-soup-contains('問合番号P')"
 row_until: "h2, h4"
 fields:
   management_no: {selector: "h4", regex: "問合番号\\s*(\\S+)"}
@@ -17,5 +17,5 @@ species:
   map: {"犬": dog, "猫": cat}
   allow_other: true
 empty_absent:
-  page: "h2:-soup-contains('保護しています（令和８年度受付）'), h2:-soup-contains('保護しています（令和8年度受付）')"
-  none: "div.BrowserItemList h4:not(:-soup-contains('現在、掲載情報はありません')):not(:-soup-contains('問合番号M')):not(:-soup-contains('P07-')):not(:-soup-contains('P05-')):not(:-soup-contains('05-04')):not(:-soup-contains('M0')):not(:-soup-contains('M3')):not(:-soup-contains('07-0'))"
+  page: "h2:-soup-contains('保護しています（')"
+  none: "div.BrowserItemList h4:not(:-soup-contains('現在、掲載情報はありません'))"
