@@ -1,0 +1,16 @@
+# 福島県動物愛護センター（本所）の譲渡猫情報（joto-cat-miharu.html）。センターが飼い主を募集している猫。迷子（pref_fukushima-1〜5）とは別のページ。
+# h2「譲渡猫一覧」の下に、1 頭 1 行の一覧表（ニックネーム＋写真・種類・毛色・性別・推定年齢）があり、その下に 1 頭ずつの詳しい表（性格など）が続く。
+# 一覧の行（先頭のセルにページ内リンク #名前 と顔写真が入る）を 1 頭にして、種類・毛色・性別・推定年齢を読む。性格などの詳しい表は読まない。
+# 一覧は 2 つ以上の table に分かれる（div.detail_free ごと）が、行のセレクタは table をまたいで同じ。2026-11-17 は 19 頭（詳しい表の見出し a#… も 19 件）。
+# 0 頭の日の文言は未確認なので empty_text は置かない。0 頭は「一覧表の行も個体の写真も無い」ことで決める（行の読み方が崩れて写真が残る日は 0 頭にならず「読めなかった」）。
+rows: "div#main_body tr:has(> td a[href^='#'] img)"
+image: "img@src"
+fields:
+  name: {selector: "td:nth-of-type(1) a"}
+  breed: {selector: "td:nth-of-type(2)"}
+  color: {selector: "td:nth-of-type(3)"}
+  sex: {selector: "td:nth-of-type(4)"}
+  age: {selector: "td:nth-of-type(5)"}
+empty_absent:
+  page: "div#main_body h2:-soup-contains('譲渡猫一覧')"
+  none: "div#main_body a[href^='#'] img, div#main_body a[id]:has(> strong)"

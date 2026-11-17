@@ -8661,3 +8661,99 @@ sources:
   recipe: recipes/city_chiba-8.yaml
   enabled: true
   note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。千葉市動物保護指導センターの譲渡候補猫（子猫・成猫の 2 節）。city_chiba-7（譲渡犬）と同じ扱い。
+- slug: pref_fukushima-6
+  name: 福島県動物愛護センター本所（譲渡猫）
+  municipality: 福島県動物愛護センター本所
+  prefecture: 福島県
+  phone: 024-953-6400
+  address: 〒963-7732 福島県田村郡三春町大字上舞木字向田17番
+  url: https://www.pref.fukushima.lg.jp/sec/21620a/joto-cat-miharu.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.fukushima.lg.jp/sec/21620a/joto-cat-miharu.html"
+  verified_address_url: "https://www.pref.fukushima.lg.jp/sec/21620a/joto-cat-miharu.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_fukushima-6.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。福島県動物愛護センター（ハピまるふくしま）本所の譲渡猫。既存の福島県の 5 ページ（pref_fukushima-1〜5）は迷子だけだった。一覧表の 1 行（ニックネーム・写真・種類・毛色・性別・推定年齢）を 1 頭として読む。2026-11-17 時点で 19 頭。写真の規約は既存の福島県の迷子ページと同じ（無断転載禁止のみ）。
+- slug: pref_fukushima-7
+  name: 福島県動物愛護センター本所（譲渡犬）
+  municipality: 福島県動物愛護センター本所
+  prefecture: 福島県
+  phone: 024-953-6400
+  address: 〒963-7732 福島県田村郡三春町大字上舞木字向田17番
+  url: https://www.pref.fukushima.lg.jp/sec/21620a/joto-dog-miharu.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.fukushima.lg.jp/sec/21620a/joto-cat-miharu.html"
+  verified_address_url: "https://www.pref.fukushima.lg.jp/sec/21620a/joto-cat-miharu.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/pref_fukushima-7.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。本所の譲渡犬（pref_fukushima-6 と同じ作り）。2026-11-17 時点で 2 頭。
+- slug: pref_fukushima-8
+  name: 福島県動物愛護センター会津支所（譲渡犬）
+  municipality: 福島県動物愛護センター会津支所
+  prefecture: 福島県
+  phone: 0242-29-5517
+  address: 〒965-0807 会津若松市城東町5番12号（会津保健福祉事務所内）
+  url: https://www.pref.fukushima.lg.jp/sec/21621a/joto-dog-aizu.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.fukushima.lg.jp/sec/21621a/joto-dog-aizu.html"
+  verified_address_url: "https://www.pref.fukushima.lg.jp/sec/21621a/joto-dog-aizu.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/pref_fukushima-8.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。会津支所の譲渡犬。1 頭 1 表（管理番号・ニックネーム・種類・性別・推定年齢・性格等）。2026-11-17 時点で 1 頭（ラグナ）。
+- slug: pref_fukushima-9
+  name: 福島県動物愛護センター相双支所（譲渡猫）
+  municipality: 福島県動物愛護センター相双支所
+  prefecture: 福島県
+  phone: 0244-26-1351
+  address: 〒975-0031 南相馬市原町区錦町1丁目30番地（相双保健福祉事務所内）
+  url: https://www.pref.fukushima.lg.jp/sec/21622a/joto-cat-soso.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.fukushima.lg.jp/sec/21622a/joto-cat-soso.html"
+  verified_address_url: "https://www.pref.fukushima.lg.jp/sec/21622a/joto-cat-soso.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_fukushima-9.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。相双支所の譲渡猫。1 頭 1 表。2026-11-17 時点で 7 頭。
+- slug: pref_fukushima-10
+  name: 福島県動物愛護センター会津支所（譲渡猫）
+  municipality: 福島県動物愛護センター会津支所
+  prefecture: 福島県
+  phone: 0242-29-5517
+  address: 〒965-0807 会津若松市城東町5番12号（会津保健福祉事務所内）
+  url: https://www.pref.fukushima.lg.jp/sec/21621a/joto-cat-aizu.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.fukushima.lg.jp/sec/21621a/joto-dog-aizu.html"
+  verified_address_url: "https://www.pref.fukushima.lg.jp/sec/21621a/joto-dog-aizu.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_fukushima-10.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。会津支所の譲渡猫（仕様書の 4 ページには無かったが、同じ県の譲渡ページとして足した）。2026-11-17 時点は 0 頭（「〇現在、譲渡猫情報はありません。」）。猫が載った日の表の作りは未確認で、犬（-8）と同じと推測している。
+- slug: pref_fukushima-11
+  name: 福島県動物愛護センター相双支所（譲渡犬）
+  municipality: 福島県動物愛護センター相双支所
+  prefecture: 福島県
+  phone: 0244-26-1351
+  address: 〒975-0031 南相馬市原町区錦町1丁目30番地（相双保健福祉事務所内）
+  url: https://www.pref.fukushima.lg.jp/sec/21622a/joto-dog-soso.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.fukushima.lg.jp/sec/21622a/joto-cat-soso.html"
+  verified_address_url: "https://www.pref.fukushima.lg.jp/sec/21622a/joto-cat-soso.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/pref_fukushima-11.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。相双支所の譲渡犬（仕様書の 4 ページには無かったが、同じ県の譲渡ページとして足した）。2026-11-17 時点は 0 頭（セルが空の雛形の表だけで、0 頭の文言は無い）。犬が載った日の表の作りは未確認で、猫（-9）と同じと推測している。

@@ -1,0 +1,20 @@
+# 福島県動物愛護センター相双支所の譲渡猫情報（joto-cat-soso.html）。相双支所が飼い主を募集している猫。
+# h2「現在飼い主さんを募集している猫」の下に、1 頭 1 つの表。thead の 2 つ目の th に ニックネーム（うに　くん）と（管理番号）（20260806_01）が p 2 つで入り、
+# 写真（複数）と、種類・性別・推定年齢・体格・性格等・猫エイズ検査・猫白血病検査の行が続く。2026-11-17 は 7 頭。
+# 表の見出しの並びは会津支所（管理番号が先）と逆で、ニックネームが先。
+# 0 頭の日は同じ表の雛形（セルが空）が残る（相双支所の譲渡犬 pref_fukushima-11 の 2026-11-17 で確認）。0 頭は「表の中に写真が無い」ことで決める。
+rows: "div#main_body table:has(thead th)"
+row_filter:
+  text_has_any: ["管理番号"]
+image: "img@src"
+fields:
+  name: {selector: "thead th:nth-of-type(2) p:nth-of-type(1)"}
+  management_no: {selector: "thead th:nth-of-type(2) p:nth-of-type(2)", regex: "[（(]\\s*([^）)\\s]+)\\s*[）)]"}
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  age: {label: "推定年齢"}
+  size: {label: "体格"}
+  note: {label: "性格等"}
+empty_absent:
+  page: "div#main_body h2:-soup-contains('現在飼い主さんを募集している猫')"
+  none: "div#main_body table img"
