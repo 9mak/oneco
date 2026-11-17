@@ -27,6 +27,8 @@ OPERATOR_SLUGS = sorted([
     # 鹿児島県動物愛護ホームページ（2026-11-07 W006）: 個体ごとの問い合わせ先は各保健所。-2・-8（センター管理の譲渡対象）は facility
     "pref_kagoshima-1", "pref_kagoshima-3", "pref_kagoshima-4", "pref_kagoshima-5", "pref_kagoshima-6", "pref_kagoshima-7",
     "pref_kagoshima-9", "pref_kagoshima-10", "pref_kagoshima-11", "pref_kagoshima-12",
+    # 掲載漏れの棚卸し 2 回目（2026-11-17 W006 T640）: 高知県の迷子情報と、鳥取県の捜しています・保護しています（県のまとめページ）
+    "kochi_apc-2", "pref_tottori-2", "pref_tottori-3",
 ])
 
 
