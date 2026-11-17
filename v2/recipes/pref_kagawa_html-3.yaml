@@ -7,7 +7,7 @@
 # 0 頭の日（Wayback 2025-09・2026-03）は「現在、掲載情報はありません」が出るが、この文は子のいる日（2025-04）にも別の欄に出るので根拠にせず、
 # 枠（h2「西讃保健所で保護している迷い犬・迷い猫の情報一覧」）はあるが個体管理番号も写真も無い日を 0 頭にする。
 rows: "p:has(> strong:-soup-contains('個体管理番号')), h5:-soup-contains('個体管理番号')"
-row_until: "p:has(> strong:-soup-contains('個体管理番号')), h5, h2, ul:has(> li > strong)"
+row_until: "p:has(> strong:-soup-contains('個体管理番号')), h5, h2, ul:has(> li):has(strong)"  # soupsieve 4 の strict で :has() の中に子の連なりを書けない（#129 CI）
 row_filter:
   text_lacks: ["返還されました", "返還しました"]
 image: "img@src"
