@@ -1,0 +1,26 @@
+# 千葉市 新しい飼い主さんを待っている動物たちの情報（猫）（transfercats.html）。千葉市動物保護指導センターの譲渡候補猫。
+# city_chiba-7（譲渡犬）と同じ作り。h2「譲渡可能な猫たち」の下に h3「子猫」「成猫」の 2 節があり、どちらも h4「26082501（ナラ）」→ p 写真 → p 種類・毛色・性別・年齢・予防歴・猫エイズウイルス・コメント。
+# h4 を 1 頭の始まりにして、次の h2・h3・h4 の手前までをまとめる（子猫の節の最後の子の後ろにある注意書きの p は、フィールドを p ごとに指すので混ざらない）。
+# 先頭の h4「更新の履歴」は「種類：」が無いので捨てる。お見合いが決まった子は載せて note に出す（city_chiba-7 と同じ）。
+# 0 頭の日の文言は未確認なので empty_text は置かない。0 頭は「枠（h2 譲渡可能な猫たち）はあるが、動物の h4 も「種類：」の p も無い」ことで決める。
+rows: "div#contents_editable > h4"
+row_until: "h2, h3"
+row_filter:
+  text_has_any: ["種類："]
+  text_lacks: ["譲渡が決まりました", "譲渡されました"]
+image: "p > img@src"
+fields:
+  management_no: {selector: "h4", regex: "^\\s*(\\d{6,10})"}
+  name: {selector: "h4", regex: "[（(]([^）)]+)[）)]"}
+  breed: {regex: "種類[:：]\\s*(\\S+)"}
+  color: {regex: "毛色[:：]\\s*(\\S+)"}
+  sex: {regex: "性別[:：]\\s*(オス|メス)"}
+  age: {regex: "年齢[:：]\\s*(\\S+)"}
+  note:
+    join:
+      - {selector: "h4", regex: "(お見合い\\S*)"}
+      - {selector: "p:-soup-contains('コメント')", regex: "コメント[:：]\\s*(.+)"}
+    sep: "。"
+empty_absent:
+  page: "div#contents_editable h2:-soup-contains('譲渡可能な猫たち')"
+  none: "div#contents_editable h4:-soup-contains('（'), div#contents_editable p:-soup-contains('種類：')"

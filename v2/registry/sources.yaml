@@ -8565,3 +8565,99 @@ sources:
   enabled: true
   photo: pending
   note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。「保健所・センターからの保護猫情報」。保護犬（-9）と同じ扱い。2026-11-17 時点で 3 頭。0 頭の日は「0件中 0～0件目を表示」（Wayback 2024-12・2025-09）。
+- slug: pref_chiba-6
+  name: 千葉県動愛センター本所（飼い主募集中・成猫）
+  municipality: 千葉県動愛センター本所
+  prefecture: 千葉県
+  phone: 0476-93-5711
+  address: 〒286-0211 千葉県富里市御料709-1
+  url: https://www.pref.chiba.lg.jp/aigo/kainushi-bosyu-honsyo-neko.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.chiba.lg.jp/aigo/kainushi-bosyu-honsyo-neko.html"
+  verified_address_url: "https://www.pref.chiba.lg.jp/aigo/index.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_chiba-6.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。千葉県動物愛護センター本所が飼養している譲渡候補猫（成猫）。既存の収容（pref_chiba-1〜5）とは別のページ。個票は PDF だが、写真・番号・名前・年齢・性別は本文にあるので本文から読む。2026-11-17 時点で 13 頭（うち「予約あり」2 頭は note に出す）。0 頭の日は文言でなく「動物情報の PDF リンクも写真も無い」ことで決める。写真の規約は既存の千葉県の収容ページと同じ（無断転載禁止のみ）。
+- slug: pref_chiba-7
+  name: 千葉県動愛センター本所（飼い主募集中・成犬その他）
+  municipality: 千葉県動愛センター本所
+  prefecture: 千葉県
+  phone: 0476-93-5711
+  address: 〒286-0211 千葉県富里市御料709-1
+  url: https://www.pref.chiba.lg.jp/aigo/kainushi-bosyu-honsyo-inu.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.chiba.lg.jp/aigo/kainushi-bosyu-honsyo-neko.html"
+  verified_address_url: "https://www.pref.chiba.lg.jp/aigo/index.html"
+  kind: adoption
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_chiba-7.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。本所の譲渡候補犬（成犬）と、犬猫以外（その他）の 2 節。2026-11-17 時点は成犬 0 頭で、その他にカワラバト 1 羽が載る（種別は犬猫以外）。成犬 0 頭の文言「募集中の犬は0頭です」は、子のいる日（Wayback 2025-09・2026-03）に出ない。0 頭は文言でなく「動物情報の PDF リンクも写真も無い」ことで決める。
+- slug: pref_chiba-8
+  name: 千葉県動愛センター東葛飾支所（飼い主募集中・成猫その他）
+  municipality: 千葉県動愛センター東葛飾支所
+  prefecture: 千葉県
+  phone: 04-7191-0050
+  address: 〒277-0941 千葉県柏市高柳1018-6
+  url: https://www.pref.chiba.lg.jp/aigo/kainushi-bosyu-shisyo-neko.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.chiba.lg.jp/aigo/kainushi-bosyu-shisyo-neko.html"
+  verified_address_url: "https://www.pref.chiba.lg.jp/aigo/index.html"
+  kind: adoption
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_chiba-8.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。東葛飾支所の譲渡候補猫（成猫）と、犬猫以外（その他。2026-11-17 は「現在、募集はありません」）。h3「11月13日時点で19匹募集しています」と載せる頭数が合う（表 20 件のうち 1 件は「譲渡になりました」で載せない。トライアル中の 3 頭は note に出す）。
+- slug: pref_chiba-9
+  name: 千葉県動愛センター東葛飾支所（飼い主募集中・成犬）
+  municipality: 千葉県動愛センター東葛飾支所
+  prefecture: 千葉県
+  phone: 04-7191-0050
+  address: 〒277-0941 千葉県柏市高柳1018-6
+  url: https://www.pref.chiba.lg.jp/aigo/kainushi-bosyu-shisyo-inu.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.chiba.lg.jp/aigo/kainushi-bosyu-shisyo-neko.html"
+  verified_address_url: "https://www.pref.chiba.lg.jp/aigo/index.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/pref_chiba-9.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。東葛飾支所の譲渡候補犬（成犬）。2026-11-17 時点で 2 頭（h3「10月30日時点で2匹募集しています」と合う）。
+- slug: city_chiba-7
+  name: 千葉市（譲渡犬）
+  municipality: 千葉市
+  prefecture: 千葉県
+  phone: 043-258-7817
+  address: 千葉市稲毛区宮野木町445番地1
+  url: https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/transferdogs.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/transferdogs.html"
+  verified_address_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/transferdogs.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/city_chiba-7.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。千葉市動物保護指導センターの譲渡候補犬。既存の千葉市の 6 ページ（迷子・市民保護）とは別のページ。「お見合いが決まりました！」の子は、譲渡が決まったのではなく見学の約束が入った状態なので載せて note に出す（トライアル中と同じ扱い）。0 頭の日の文言は未確認で、0 頭は「枠はあるが動物の見出しも種類の行も無い」ことで決める。写真の規約は既存の千葉市のページと同じ（無断転載禁止のみ）。
+- slug: city_chiba-8
+  name: 千葉市（譲渡猫）
+  municipality: 千葉市
+  prefecture: 千葉県
+  phone: 043-258-7817
+  address: 千葉市稲毛区宮野木町445番地1
+  url: https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/transfercats.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/transferdogs.html"
+  verified_address_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/transferdogs.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/city_chiba-8.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。千葉市動物保護指導センターの譲渡候補猫（子猫・成猫の 2 節）。city_chiba-7（譲渡犬）と同じ扱い。
