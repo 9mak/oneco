@@ -16,4 +16,6 @@ fields:
   note: {label: "性格等"}
 empty_absent:
   page: "div#main_body h2:-soup-contains('現在飼い主さんを募集している犬')"
-  none: "div#main_body table img"
+  # 表の形に縛らない（#129 reviewer F-01）。子の写真は募集の見出しより後ろで、リンクの外にある。
+  # 見出しより前の画像と、見出しの後ろのリンクのアイコン（94948.png 等）は 0 頭の日にもある。
+  none: "div#main_body h2:-soup-contains('現在飼い主さんを募集している犬') ~ * img:not(a img)"
