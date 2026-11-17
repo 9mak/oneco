@@ -8968,3 +8968,19 @@ sources:
   recipe: recipes/city_naha-1.yaml
   enabled: true
   note: '掲載漏れの棚卸しで追加（2026-11-17 W006 T640 2 回目）。那覇市環境衛生課の「譲渡に関すること」。既存の那覇市のページ（city_naha_pdf。保護犬猫情報の PDF）とは別。ページの大半は譲渡の条件・流れの案内で、動物は「譲渡犬紹介」「譲渡猫紹介」の節にだけ載る（h3 名前 → 写真 → 名前・犬種・性別・推定年齢・体重・性格・特徴）。2026-11-17 時点で犬 6・猫 8。仕様は「譲渡犬紹介の節だけ」だったが、同じページ・同じ作りの「譲渡猫紹介」の節も読む（猫を落とすと掲載漏れが残る）。「名前：まこ（譲渡交渉中）」は載せて note に出す。0 頭の日の版は Wayback に無いので、枠はあるが動物の見出しも写真も無い日だけ 0 頭にする。写真の規約は既存の那覇市のページと同じ（無断転載禁止のみ）。'
+- slug: city_utsunomiya-2
+  name: 宇都宮市（譲渡犬・譲渡猫）
+  municipality: 宇都宮市
+  prefecture: 栃木県
+  phone: 028-626-1108
+  address: 〒321-0974 宇都宮市竹林町972
+  url: https://www.city.utsunomiya.lg.jp/kurashi/pet/pet/1005585.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.city.utsunomiya.lg.jp/kurashi/pet/pet/1005585.html"
+  verified_address_url: "https://www.city.utsunomiya.lg.jp/kurashi/pet/pet/1005585.html"
+  kind: adoption
+  species: mixed
+  mode: recipe
+  recipe: recipes/city_utsunomiya-2.yaml
+  enabled: true
+  note: '掲載漏れの棚卸しで追加（2026-11-17 W006 T640 2 回目）。宇都宮市保健所（動物愛護センター「宮わんにゃんパーク」）の譲渡動物情報。既存の宇都宮市のページ（city_utsunomiya。迷子犬・負傷猫）とは別。動物ごとに h3（譲渡猫・譲渡犬）→ 写真 → 愛称・種類・性別・年齢・体格・性格等。2026-11-17 時点で猫 1・犬 1。見出しの言い方と項目の区切りが日によって違う（Wayback 2025-02〜2026-07 の 6 版で確認）ので行の全文から読む。0 頭の日の版は Wayback に無いので、枠はあるが動物の見出しも写真も無い日だけ 0 頭にする。写真の規約は既存の宇都宮市のページと同じ（無断転載禁止のみ）。'

@@ -285,3 +285,65 @@ def test_naha_zero_only_when_the_frame_is_there_and_no_animal_is():
     assert not _zero(_run(NAHA, broken))
     # 枠の見出しが変わった日も 0 頭にしない
     assert not _zero(_run(NAHA, zero.replace("譲渡に関すること", "お知らせ")))
+
+
+# --- 宇都宮市 -------------------------------------------------------------
+UTSU = "city_utsunomiya-2"
+
+
+def test_utsunomiya_registry():
+    s = SOURCES[UTSU]
+    assert s.mode == "recipe" and s.enabled and s.kind == "adoption" and s.prefecture == "栃木県" and s.species == "mixed"
+    assert s.phone == "028-626-1108" and "竹林町" in s.address and s.recipe_path.exists()
+    assert s.photo == "ok"  # 宇都宮市の規約は無断転載禁止のみ
+
+
+def test_utsunomiya_today_reads_one_cat_and_one_dog():
+    html = _fx("w006_city_utsunomiya-2_20261117.html")
+    c = _run(UTSU, html)
+    assert c.status == "ok", c.error
+    animals = c.result.animals
+    assert [(a["species"], a["name"], a["breed"], a["sex"], a["age"], a["size"]) for a in animals] == [
+        ("cat", "のりお", "雑種", "オス", "およそ1~2才", "中"),
+        ("dog", "じゃがりこ", "雑種", "オス", "1才弱", "中")]
+    assert all(a["image_url"] for a in animals) and animals[0]["image_url"] != animals[1]["image_url"]
+    assert "ケンカがめちゃ弱い" in animals[0]["note"] and "無駄吠えせず" in animals[1]["note"]
+    assert _hits(UTSU, html) == []
+
+
+def test_utsunomiya_other_days_in_wayback_with_changing_headings():
+    # h3 が「譲渡猫（のりお）」「譲渡犬（愛称　ケンタ）」「譲渡猫14」「譲渡猫19・20」と日によって変わり、名前の書き方も変わる
+    c = _run(UTSU, _fx("w006_city_utsunomiya-2_child_wb20260314.html"))
+    assert c.status == "ok", c.error
+    assert [(a["species"], a["name"]) for a in c.result.animals] == [
+        ("cat", "くるん"), ("dog", "ケンタ"), ("dog", "ショウ"), ("dog", "ナトゥ")]
+    assert c.result.animals[1]["breed"] == "柴犬" and c.result.animals[2]["size"].startswith("大")
+    c = _run(UTSU, _fx("w006_city_utsunomiya-2_child_wb20260712.html"))
+    assert c.status == "ok", c.error
+    assert [(a["species"], a["name"]) for a in c.result.animals] == [("cat", "のりお"), ("dog", "ポロン")]
+    c = _run(UTSU, _fx("w006_city_utsunomiya-2_child_wb20250719.html"))
+    assert c.status == "ok", c.error
+    assert [a["species"] for a in c.result.animals] == ["cat", "cat", "cat", "dog"]
+    assert c.result.animals[2]["name"].startswith("ぷらむ") and c.result.animals[3]["name"].startswith("金太郎")
+    c = _run(UTSU, _fx("w006_city_utsunomiya-2_child_wb20250623.html"))
+    assert c.status == "ok", c.error
+    assert len(c.result.animals) == 5 and all(a["species"] == "cat" and a["image_url"] for a in c.result.animals)
+
+
+def test_utsunomiya_zero_only_when_the_frame_is_there_and_no_animal_is():
+    # 0 頭の日の版は Wayback に無い（2025-02〜2026-07 の 6 版はいずれも子がいる）。今日の保存ページから動物の見出し・写真・説明を消して再現する
+    soup = BeautifulSoup(_fx("w006_city_utsunomiya-2_20261117.html"), "lxml")
+    for h3 in soup.select("h3"):
+        if "譲渡猫" in h3.get_text() or "譲渡犬" in h3.get_text():
+            for sib in list(h3.find_next_siblings()):
+                if sib.name in ("h2", "h3"):
+                    break
+                sib.decompose()
+            h3.decompose()
+    zero = str(soup)
+    assert "譲渡動物情報" in zero and _zero(_run(UTSU, zero))
+    # 動物の見出しが h4 に変わった日（写真は残る）は 0 頭にしない
+    broken = _fx("w006_city_utsunomiya-2_20261117.html").replace("<h3>譲渡", "<h4>譲渡")
+    assert not _zero(_run(UTSU, broken))
+    # 枠の見出しが変わった日も 0 頭にしない
+    assert not _zero(_run(UTSU, zero.replace("譲渡動物情報", "お知らせ")))
