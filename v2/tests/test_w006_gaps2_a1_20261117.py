@@ -98,3 +98,86 @@ def test_fukuyama_structure_change_is_not_zero():
     assert not _zero(_run(FUK_CAT, html))
     html = _fx("w006_city_fukuyama-3_20261117.html").replace("里親募集の犬猫の情報", "里親募集の動物")
     assert not _zero(_run(FUK_DOG, html))
+
+
+# --- 水戸市 ---------------------------------------------------------------
+MITO_CAT, MITO_DOG = "city_mito-3", "city_mito-4"
+
+
+def test_mito_registry():
+    for slug, species in ((MITO_CAT, "cat"), (MITO_DOG, "dog")):
+        s = SOURCES[slug]
+        assert s.mode == "recipe" and s.enabled and s.kind == "adoption" and s.prefecture == "茨城県", slug
+        assert s.species == species and s.phone == "029-350-3800" and s.address, slug
+        assert s.photo == "ok", slug  # 水戸市の規約は無断転載禁止のみ
+        assert s.recipe_path.exists(), slug
+
+
+def test_mito_cat_today_reads_5_and_skips_the_adopted_one():
+    html = _fx("w006_city_mito-3_20261117.html")
+    assert "里親募集中の猫（子猫3頭、成猫2頭）" in html and "R8-23" in html
+    c = _run(MITO_CAT, html)
+    assert c.status == "ok", c.error
+    got = [(a["management_no"], a["name"]) for a in c.result.animals]
+    assert got == [("R8-29", "キキ"), ("R8-30", "ララ"), ("R8-20", "エーディー"), ("R6-43", "マル"), ("34", "しー")]
+    assert all(a["species"] == "cat" and a["image_url"] for a in c.result.animals)
+    assert c.result.animals[0]["sex"].startswith("オス") and c.result.animals[1]["sex"].startswith("メス")
+    assert len({a["id"] for a in c.result.animals}) == 5  # ページの「子猫3頭、成猫2頭」と合う
+    assert not any(a["name"] == "マオマオ" for a in c.result.animals)  # 「※譲渡が決まりました。」
+
+
+def test_mito_cat_two_cats_in_one_table_both_read():
+    # 1 つの表に 2 頭が横に並ぶ（キキ・ララ）。2 頭目が落ちず、写真がそれぞれの子の写真になる
+    c = _run(MITO_CAT, _fx("w006_city_mito-3_20261117.html"))
+    a, b = c.result.animals[0], c.result.animals[1]
+    assert a["image_url"] != b["image_url"] and a["id"] != b["id"]
+    assert "55130" in a["image_url"] and "55131" in b["image_url"]
+
+
+def test_mito_cat_other_days_in_wayback():
+    html = _fx("w006_city_mito-3_child_wb20260714.html")
+    c = _run(MITO_CAT, html)
+    assert c.status == "ok", c.error
+    assert [a["name"] for a in c.result.animals] == ["マル", "しー"]  # ページの「成猫2頭」
+    html = _fx("w006_city_mito-3_child_wb20260314.html")
+    c = _run(MITO_CAT, html)
+    assert c.status == "ok", c.error
+    names = [a["name"] for a in c.result.animals]
+    assert names[:3] == ["エリ", "はなお", "ロング"] and "マル" in names and "タマ" in names  # 2 頭 1 表（マル・タマ）の 2 頭目も読む
+    assert any("トライアル希望" in (a["note"] or "") for a in c.result.animals)
+
+
+def test_mito_dog_today_reads_one_and_skips_the_adopted_one():
+    html = _fx("w006_city_mito-4_20261117.html")
+    assert "里親募集中の犬（成犬1件）" in html
+    c = _run(MITO_DOG, html)
+    assert c.status == "ok", c.error
+    assert len(c.result.animals) == 1 and c.result.rows == 1  # R7-20 ごま（譲渡が決まりました）は行の段階で外れる
+    a = c.result.animals[0]
+    assert (a["management_no"], a["name"], a["breed"], a["color"], a["age"], a["species"]) == (
+        "R7-36", "ノンタ", "雑種", "薄茶", "推定6才", "dog")
+    assert a["sex"].startswith("メス") and a["image_url"]
+    assert _hits(MITO_DOG, html) == []
+
+
+def test_mito_dog_zero_day_in_wayback_is_zero_by_the_count_heading():
+    # 0 頭の日は「里親募集中の犬（0件）」の下に、譲渡が決まった子の表だけが残る
+    html = _fx("w006_city_mito-4_zero_wb20250730.html")
+    assert "里親募集中の犬（0件）" in html and "譲渡が決まりました" in html
+    assert _zero(_run(MITO_DOG, html))
+    assert "里親募集中の犬（0件）" not in _fx("w006_city_mito-4_20261117.html")  # 子のいる日には出ない
+
+
+def test_mito_zero_is_not_guessed_when_the_heading_changes():
+    html = _fx("w006_city_mito-4_zero_wb20250730.html").replace("（0件）", "")
+    assert not _zero(_run(MITO_DOG, html))
+    soup = BeautifulSoup(_fx("w006_city_mito-3_20261117.html"), "lxml")
+    # 猫の 0 頭の日の版は Wayback に無いので、今日の保存ページから譲渡が決まった子の表だけを残して犬と同じ見出し（0件）にして再現する
+    for t in soup.select("div#main_body table"):
+        if "譲渡が決まりました" not in t.get_text():
+            t.decompose()
+    for el in soup.find_all(string=lambda s: s and "里親募集中の猫（子猫3頭、成猫2頭）" in s):
+        el.replace_with("里親募集中の猫（0件）")
+    zero = str(soup)
+    assert _zero(_run(MITO_CAT, zero))
+    assert not _zero(_run(MITO_CAT, zero.replace("（0件）", "")))

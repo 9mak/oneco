@@ -8903,3 +8903,35 @@ sources:
   recipe: recipes/city_fukuyama-4.yaml
   enabled: true
   note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640 2 回目）。福山市動物愛護センターが里親を募集している猫。city_fukuyama-3（犬）と同じ作り。2026-11-17 時点は 0 頭（「現在、譲渡対象の猫はいません。」。この文は今日の版にだけあり、Wayback の 0 頭の日（2026-03〜06）には出ないので根拠にしない）。子のいる日は Wayback 2025-10-08（9 頭）・2025-11-13（4 頭）で確認した。
+- slug: city_mito-3
+  name: 水戸市（里親募集中の猫）
+  municipality: 水戸市
+  prefecture: 茨城県
+  phone: 029-350-3800
+  address: 水戸市河和田町999番地（動物愛護センター「あにまるっとみと」）
+  url: https://www.city.mito.lg.jp/site/doubutsuaigo/2039.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.city.mito.lg.jp/site/doubutsuaigo/2039.html"
+  verified_address_url: "https://www.city.mito.lg.jp/site/doubutsuaigo/2039.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/city_mito-3.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640 2 回目）。水戸市動物愛護センターが里親を募集している猫（愛護センター収容猫の譲渡）。既存の水戸市の 2 ページ（迷子ペット city_mito-1・収容中 -2）とは別。子猫の兄妹は 1 つの表に 2 頭が並ぶので転置表で読む（2 頭組は年齢などの共通の行が読めない）。2026-11-17 時点で 5 頭（見出し「子猫3頭、成猫2頭」と合う。「※譲渡が決まりました。」の 1 頭は載せない）。「※トライアル希望の方がいます。」は note に出す。0 頭の日の見出しは犬のページ（city_mito-4）の Wayback の「里親募集中の犬（0件）」から類推（猫の 0 頭の日の版は見つからない。違っても failed で通知されるだけ）。写真の規約は既存の水戸市のページと同じ（無断転載禁止のみ）。
+- slug: city_mito-4
+  name: 水戸市（里親募集中の犬）
+  municipality: 水戸市
+  prefecture: 茨城県
+  phone: 029-350-3800
+  address: 水戸市河和田町999番地（動物愛護センター「あにまるっとみと」）
+  url: https://www.city.mito.lg.jp/site/doubutsuaigo/2041.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.city.mito.lg.jp/site/doubutsuaigo/2041.html"
+  verified_address_url: "https://www.city.mito.lg.jp/site/doubutsuaigo/2041.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/city_mito-4.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640 2 回目）。水戸市動物愛護センターが里親を募集している犬（愛護センター収容犬の譲渡）。1 頭 = 1 つの表。2026-11-17 時点で 1 頭（R7-36 ノンタ。見出し「成犬1件」と合う。「※譲渡が決まりました。」の R7-20 は載せない）。0 頭の日は Wayback 2025-07-30 で見出しが「里親募集中の犬（0件）」になる（子のいる日には出ない）。
