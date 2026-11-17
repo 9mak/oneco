@@ -1,0 +1,10 @@
+# 山梨県動物愛護指導センター 譲渡対象の犬（/doubutsu/dog/index.html）。飼い主募集中（be_a_foster.html。譲渡の条件のページ）から入る一覧。
+# 2026-11-11 の返事（写真だけでなく文字の内容も載せないでほしい）に従い mode: link_only。このレシピは許諾が変わったときのために残す。一覧は読まない。
+# 1 頭 = div.menu_item。写真・「名前(管理番号)」のリンク（個体ページ）・ひとこと説明。名前は「ムラサメ（dog8-9-3）」のように括弧に管理番号が付く。
+rows: "div.menu_item"
+image: "img@src"
+fields:
+  name: {selector: "div.item_link_ttl a", regex: "^(.+?)\\s*[（(]"}
+  management_no: {selector: "div.item_link_ttl a", regex: "[（(]([^）)]+)[）)]"}
+  note: {selector: "div.item_link_txt"}
+  detail: {selector: "div.item_link_ttl a", attr: "href"}

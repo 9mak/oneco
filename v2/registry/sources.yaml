@@ -9097,3 +9097,84 @@ sources:
   enabled: true
   photo: ok
   note: '掲載漏れの棚卸しで追加（2026-11-17 W006 T640 2 回目）。新潟県動物愛護センターの「子猫の新しい飼い主を募集しています」（生後 6 か月未満。成猫は pref_niigata-2）。2026-11-17 時点は「子猫はいません」の画像だけで 0 頭（ミルクボランティアに預けている子猫は戻る時期が未定で、問い合わせにも答えられないとの案内）。子猫がいる日の作りは未確認だが、成猫のページと同じく情報が写真の中なら書ける情報が無いので、成猫のページと同じくリンクのみ（mode: link_only）。'
+- slug: pref_kagawa_html-2
+  name: 中讃保健福祉事務所（迷い犬・迷い猫の情報）
+  municipality: 中讃保健福祉事務所
+  prefecture: 香川県
+  phone: 0877-24-9964
+  address: 丸亀市土器町東八丁目526（中讃保健所）
+  url: https://www.pref.kagawa.lg.jp/chusanhoken/chusanhoken/inu-neko/maigo_info.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.kagawa.lg.jp/chusanhoken/chusanhoken/inu-neko/maigo_info.html"
+  verified_address_url: "https://www.pref.kagawa.lg.jp/chusanhoken/chusanhoken/inu-neko/maigo_info.html"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_kagawa_html-2.yaml
+  enabled: true
+  note: '要確認の棚卸しで追加（2026-11-17 W006 T640 2 回目）。中讃保健所で保護している迷い犬・迷い猫の情報一覧（HTML）。収容動物の PDF（pref_kagawa_pdf-2）とは別の一覧で、公開期間（収容日の翌日から 7 日間）を過ぎても保護が続いている子が載る（PDF の読み落としではない。西讃の pref_kagawa_html-3 と同じ関係）。2026-11-17 時点で 2 頭（2630306・2630301。2630327 は「飼い主さんに返還されました」で載せない）。0 頭の日の版は Wayback に無い（3 版とも子がいる）ので、枠はあるが個体管理番号も写真も無い日だけ 0 頭にする。'
+- slug: pref_kagawa_html-3
+  name: 西讃保健福祉事務所（迷い犬・迷い猫の情報）
+  municipality: 西讃保健福祉事務所
+  prefecture: 香川県
+  phone: 0875-25-4383
+  address: 観音寺市坂本町7丁目3番18号（西讃保健所）
+  url: https://www.pref.kagawa.lg.jp/seisanhoken/seisanhoken/doubutuaigo/maigo_info.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.kagawa.lg.jp/seisanhoken/seisanhoken/doubutuaigo/maigo_info.html"
+  verified_address_url: "https://www.pref.kagawa.lg.jp/seisanhoken/seisanhoken/doubutuaigo/maigo_info.html"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_kagawa_html-3.yaml
+  enabled: true
+  note: '要確認の棚卸しで追加（2026-11-17 W006 T640 2 回目）。西讃保健所で保護している迷い犬・迷い猫の情報一覧（HTML）。収容動物の PDF（pref_kagawa_pdf-3。公開期間は収容日の翌日から 7 日間の最新の収容動物）とは別の一覧で、公開期間を過ぎても保護が続いている子が載る。2026-11-17 の PDF は 2640152〜2640165 で、HTML の 2640145・2640144（11/5・11/4 収容）は 7 日たって PDF から外れた子なので、PDF の読み落としではなく足す。2026-11-17 時点で 5 頭（猫 1・犬 4）。「現在、掲載情報はありません」は 0 頭の日にも子のいる日にも出るので根拠にせず、枠はあるが個体管理番号も写真も無い日を 0 頭にする（Wayback 2025-09・2026-03 の 0 頭の日で確認）。'
+- slug: city_machida-5
+  name: 町田市（収容動物のお知らせ）
+  municipality: 町田市
+  prefecture: 東京都
+  phone: 042-722-6727
+  address: null
+  url: https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/syuyou.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/syuyou.html"
+  kind: sheltered
+  species: mixed
+  mode: recipe
+  recipe: recipes/city_machida-5.yaml
+  enabled: true
+  note: '要確認の棚卸しで追加（2026-11-17 W006 T640 2 回目）。町田市保健所が法令に基づいて収容している動物（迷子の犬と、瀕死の状態で見つかった犬・猫・いえうさぎ・にわとり・あひる）のお知らせ。保護情報（city_machida-1。hogo.html）とは別の子（2026-11-17 時点の猫 1 頭は 11/11 に町田市能ヶ谷4丁目で保護。保護情報の猫 2 頭は保護日 2025-09・2025-11 で場所も違う）。最終的には東京都動物愛護相談センターに移送される。写真は今の版には無い（2022-12 の版にはあった）。収容期間の日付は書き写しで保護日時と合わない日があるので取らない。0 頭の日は「…移送された動物の情報はありません。」（Wayback 2022-08）。'
+- slug: pref_yamanashi-7
+  name: 山梨県（譲渡対象の犬）
+  municipality: 山梨県
+  prefecture: 山梨県
+  phone: 055-273-5034
+  address: 〒409-3812 山梨県中央市乙黒1083(山梨県動物愛護指導センター)
+  url: https://www.pref.yamanashi.jp/doubutsu/dog/index.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.yamanashi.jp/doubutsu/dog/index.html"
+  verified_address_url: "https://www.pref.yamanashi.jp/doubutsu/dog/index.html"
+  kind: adoption
+  species: dog
+  mode: link_only
+  recipe: recipes/pref_yamanashi-7.yaml
+  enabled: true
+  photo: "no"
+  note: '要確認の棚卸しで追加（2026-11-17 W006 T640 2 回目）。山梨県「飼い主募集中」（be_a_foster.html）は譲渡の条件のページで、動物の一覧は「譲渡対象の犬」（このページ）と「譲渡対象の猫」（pref_yamanashi-8）。既存の 6 ページ（保護・迷子）には無かった。2026-11-11 山梨県動物愛護指導センターから、写真だけでなく文字の内容も載せないでほしいと返事（T630 の写真表示のお伺いへの回答。依頼は所管の衛生薬務課のフォームから送った）。一覧は読まず（写真も文字も転記しない）リンクだけを載せる。レシピは許諾が変わったときのために残す（2026-11-17 時点は 1 頭）。'
+- slug: pref_yamanashi-8
+  name: 山梨県（譲渡対象の猫）
+  municipality: 山梨県
+  prefecture: 山梨県
+  phone: 055-273-5034
+  address: 〒409-3812 山梨県中央市乙黒1083(山梨県動物愛護指導センター)
+  url: https://www.pref.yamanashi.jp/doubutsu/cats/index.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.yamanashi.jp/doubutsu/cats/index.html"
+  verified_address_url: "https://www.pref.yamanashi.jp/doubutsu/cats/index.html"
+  kind: adoption
+  species: cat
+  mode: link_only
+  recipe: recipes/pref_yamanashi-8.yaml
+  enabled: true
+  photo: "no"
+  note: '要確認の棚卸しで追加（2026-11-17 W006 T640 2 回目）。山梨県の譲渡対象の猫。pref_yamanashi-7（犬）と同じ扱い。2026-11-11 山梨県動物愛護指導センターから、写真だけでなく文字の内容も載せないでほしいと返事（T630）。リンクだけを載せる。レシピは許諾が変わったときのために残す（2026-11-17 時点は 3 頭）。'
