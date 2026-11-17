@@ -1,0 +1,28 @@
+# 宮崎市 市民の皆さんが迷子の猫を探しています（109681.html）。飼い主が探している迷子猫（kind: lost）。保護犬（city_miyazaki-1）・センター保護の飼い主募集（-2・-3）とは別のページ。
+# 1 件 = div.imgRTxtL（または div.imgTxtL）: 写真の div → p「迷子猫情報:20261111」（赤い strong）→ p「雑種、黒、メス、老齢、2キログラム」→ p（首輪・性格など）→ p「令和8年11月10日午前8時頃、船塚2丁目より行方不明です。」。
+# 掲載番号は掲載日（20261111 = 2026-11-11。同じ日に 2 件あると 20260524 が 2 つ並ぶ）。ページは掲載期間を最長 6 か月と書いているのに、2024 年の掲載まで残る（今日 34 件のうち 2026 年は 19 件）。
+# 古い掲載を「今探している」ように見せないため、掲載番号が 2026・2027 の件だけ読む（field_required。令和9年に入ったら 2026 を外す）。今年の件が 1 つも無い日は 0 頭にならず読めなかった扱い。
+# 飼い主が届けた迷子の写真は出さない（photo: no。町田の前例）。
+# 0 頭の日の文は猫のページの版が見つからない（保護している犬のページ city_miyazaki-7 の Wayback では「現在、掲載情報はありません」「※現在、掲載する犬の情報はありません」）ので、同じ言い方を猫の分も置く。子のいる日の版には出ない。
+rows: "article.body div.imgRTxtL, article.body div.imgTxtL"
+row_filter:
+  field_required: {management_no: ["2026", "2027"]}
+image: "img@src"
+fields:
+  management_no: {regex: "(?:迷子猫情報|迷子犬情報|猫保護情報|犬保護情報)\\s*[:：]?\\s*(\\d{8}(?:-\\d+)?)"}
+  breed: {selector: "p:nth-of-type(2)", regex: "^\\s*([^、,]+)"}
+  sex: {selector: "p:nth-of-type(2)", regex: "(オス|メス)"}
+  age: {selector: "p:nth-of-type(2)", regex: "(老齢|成齢|\\d+歳|\\d+(?:ヶ|か|カ)月|推定[^、,]+)"}
+  shelter_date: {regex: "(令和\\d+年\\d+月\\d+日)"}
+  location: {regex: "[、,]\\s*([^、,]+?)\\s*より行方不明"}
+  note:
+    join:
+      - {selector: "p:nth-of-type(2)"}
+      - {selector: "p:nth-of-type(3)"}
+      - {selector: "p:nth-of-type(4)"}
+      - {selector: "p:nth-of-type(5)"}
+      - {selector: "p:nth-of-type(6)"}
+    sep: " "
+empty_text:
+  - "現在、掲載情報はありません"
+  - "現在、掲載する猫の情報はありません"

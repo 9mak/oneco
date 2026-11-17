@@ -1,0 +1,24 @@
+# 鳥取県 ペットを「捜しています」・「保護しています」（243905.htm）のうち「捜しています」＝県民の家庭で飼われていて迷子・行方不明になっている動物の情報（kind: lost）。
+# 迷い犬猫の収容（県保健所の公示。pref_tottori。221001.htm）とは別のページ。「保護しています」（県民が保護している迷い犬猫）は pref_tottori-3。
+# 年度ごとに h2「捜しています（令和８年度受付）」「保護しています（令和８年度受付）」「…（令和7年度受付）」… の節が並び、届け出ごとに a（アンカー）→ h4「問合番号M08-015」→ div（表: 見出し行と 1 行。種類・いなくなった時期・いなくなった場所・特徴・写真とコメント（PDF へのリンク「■」）・掲載年月日）→ div（先頭にもどる）。
+# 古い届け出（令和7年度以前。2020 年からの 30 件余り）がページに残るので、今の年度（問合番号 M08-）だけ読む（高崎市と同じ「古い届け出を今探しているように見せない」）。
+# 令和9年度（2027-04〜）の番号は M09-、令和10年度は M10-（先に書いてある）。年度が替わって令和8年度の届け出が 0 になった後も M08- は載せたままになるので、令和9年に入ったら M08- を外す。
+# 写真は PDF 内（■）で HTML に画像は無い。飼い主が届けた迷子の写真は出さない（photo: no）。種類の欄は「猫」「犬」「鳥（インコ）」。鳥などは犬猫以外（other）。
+# 0 頭の判断: 令和8年度の「捜しています」の節（h2）はあるが M08・M09・M10 の届け出が 1 つも無い日だけ 0 頭にする。節が無い日は 0 頭と言い切らない（読めなかった通知）。
+#   「問合番号」の語や番号の書き方が変わった日を 0 頭にしないよう、none は届け出の一覧（div.BrowserItemList）の h4 のうち「0 件の文」と「既知の古い番号（M07-・M06-・M05-・M32-・M33-・P…・05-04）」以外を数える。
+# 令和7年度の最初の 5 件のように番号に M が付かない日（Wayback 2025-11 は「07-018」）があるが、M の付かない番号は読まない（none には数えるので、それだけの日は 0 頭にならず読めなかった扱いになる）。
+rows: "h4:-soup-contains('問合番号M08-'), h4:-soup-contains('問合番号M09-'), h4:-soup-contains('問合番号M10-')"
+row_until: "h2, h4"
+fields:
+  management_no: {selector: "h4", regex: "問合番号\\s*(\\S+)"}
+  species: {selector: "table tr:nth-of-type(2) > td:nth-of-type(1)"}
+  shelter_date: {selector: "table tr:nth-of-type(2) > td:nth-of-type(2)"}
+  location: {selector: "table tr:nth-of-type(2) > td:nth-of-type(3)"}
+  note: {selector: "table tr:nth-of-type(2) > td:nth-of-type(4)"}
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+  allow_other: true
+empty_absent:
+  page: "h2:-soup-contains('捜しています（令和８年度受付）'), h2:-soup-contains('捜しています（令和8年度受付）')"
+  none: "div.BrowserItemList h4:not(:-soup-contains('現在、掲載情報はありません')):not(:-soup-contains('問合番号P')):not(:-soup-contains('M07-')):not(:-soup-contains('M06-')):not(:-soup-contains('M05-')):not(:-soup-contains('M32-')):not(:-soup-contains('M33-')):not(:-soup-contains('P07-')):not(:-soup-contains('P05-')):not(:-soup-contains('05-04'))"

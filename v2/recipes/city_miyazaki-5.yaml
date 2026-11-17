@@ -1,0 +1,26 @@
+# 宮崎市 市民の皆さんが迷子の犬を探しています（57782.html）。飼い主が探している迷子犬（kind: lost）。city_miyazaki-4（猫）と同じ作り。
+# 「迷子犬情報 20261106」のように番号の前が空白（猫は「:」）。ページには 2025-07・2024 の古い掲載（今日は 20250704）も残るので、掲載番号が 2026・2027 の件だけ読む
+# （古い掲載を「今探している」ように見せない。令和9年に入ったら 2026 を外す）。今年の件が 1 つも無い日は 0 頭にならず読めなかった扱い。写真は出さない（photo: no）。
+# 犬の行方不明の文は「令和8年10月31日(土)の午後0時30分頃、宮崎市佐土原町下田島の「宮崎国際ゴルフ倶楽部」付近より行方不明です。」（曜日が付く）。
+rows: "article.body div.imgRTxtL, article.body div.imgTxtL"
+row_filter:
+  field_required: {management_no: ["2026", "2027"]}
+image: "img@src"
+fields:
+  management_no: {regex: "(?:迷子猫情報|迷子犬情報|猫保護情報|犬保護情報)\\s*[:：]?\\s*(\\d{8}(?:-\\d+)?)"}
+  breed: {selector: "p:nth-of-type(2)", regex: "^\\s*([^、,]+)"}
+  sex: {selector: "p:nth-of-type(2)", regex: "(オス|メス)"}
+  age: {selector: "p:nth-of-type(2)", regex: "(老齢|成齢|\\d+歳|\\d+(?:ヶ|か|カ)月|推定[^、,]+)"}
+  shelter_date: {regex: "(令和\\d+年\\d+月\\d+日)"}
+  location: {regex: "(?:頃|朝|昼|夕方|夜|晩|日(?:\\([^)]*\\))?)(?:の[^、,]{0,12}頃)?[、,]\\s*([^、,]+?)\\s*より行方不明"}
+  note:
+    join:
+      - {selector: "p:nth-of-type(2)"}
+      - {selector: "p:nth-of-type(3)"}
+      - {selector: "p:nth-of-type(4)"}
+      - {selector: "p:nth-of-type(5)"}
+      - {selector: "p:nth-of-type(6)"}
+    sep: " "
+empty_text:
+  - "現在、掲載情報はありません"
+  - "現在、掲載する犬の情報はありません"
