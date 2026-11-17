@@ -198,7 +198,7 @@ NARA2 = "https://www.city.nara.lg.jp/soshiki/97/10799.html"
 def test_nara_adoption_page_reads_photos_only():
     assert "city_nara-2" in SOURCES
     s = SOURCES["city_nara-2"]
-    assert s.url == NARA2 and s.kind == "adoption" and s.photo == "pending"
+    assert s.url == NARA2 and s.kind == "adoption" and s.photo == "ok"   # 2026-11-17 奈良市「表示してよい」（T630）
     animals = _animals("city_nara-2", _fx("w006c_city_nara-2_20261107.html"))
     assert len(animals) == 12
     urls = [a["image_url"] for a in animals]
