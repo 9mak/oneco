@@ -5,6 +5,7 @@
 #   pending  台帳への追加待ち（task: 受け持つタスク）。台帳に足したらこの行を消す（tests/test_discover_t518.py が確かめる）
 #   excluded 対象外（note: 理由）
 #   covered  別ドメインの slug で載せている（slugs: 台帳の slug。note: 理由）
+# ページ単位（collector discover --pages。T641）の確認済みは、下の pages: 節に URL ごとに持つ。
 # 「リンク集にあって台帳に無いドメイン」も「台帳にあってリンク集に無いドメイン」も同じ表に書く。
 domains:
   # --- リンク集にあって台帳に無いドメイン（2026-10-05 時点 48 件）
@@ -55,3 +56,32 @@ domains:
   fapscsite.com: {status: covered, slugs: [fapscsite-1, fapscsite-2, fapscsite-3], note: "リンク集は福井市（city.fukui.lg.jp）を指し、そこから案内される専用サイト（福井県動物愛護センターの公示・譲渡情報）"}
   ikutopia.com: {status: covered, slugs: [ikutopia-1], note: "リンク集は新潟市（city.niigata.lg.jp）を指し、その譲渡猫ページの「動物ふれあいセンター」の節から案内される別サイト（いくとぴあ食花）"}
   wannyan-musubi.pref.miyagi.jp: {status: covered, slugs: [wannyan_musubi_miyagi-1, wannyan_musubi_miyagi-2], note: "リンク集は宮城県（pref.miyagi.jp）を指し、その保健所の譲渡ページが「今後は本サイトに掲載」と案内する県の譲渡情報サイト（県の収容犬猫のみ）"}
+
+# --- discover --pages（ページ単位。T641）。キーは正規化した URL（スキーム・www・末尾の / と index.html を除き、クエリは残す。collector.discover.norm）
+# collector discover --pages --notify は、ここに無い候補だけを Discord に送る。status・note・slugs の意味は domains: と同じ。
+# 2026-11-17 の棚卸しで「載せない」と決めた市民の譲渡の掲示板と、動物の一覧が無い案内のハブ。
+pages:
+  city.miyazaki.miyazaki.jp/life/pet/protection/51367.html: {status: excluded, note: "宮崎市「市民の皆さんが猫の新しい飼い主を探しています」。飼えなくなった飼い主からの譲渡で、載せない（2026-11-17 決定）"}
+  city.miyazaki.miyazaki.jp/life/pet/protection/84989.html: {status: excluded, note: "宮崎市「市民の皆さんが犬の新しい飼い主を探しています」。飼えなくなった飼い主からの譲渡で、載せない（2026-11-17 決定）"}
+  pref.yamaguchi.lg.jp/site/doubutuaigo/206095.html: {status: excluded, note: "山口県「猫の飼い主募集（健康福祉センター経由）」。飼い主からの譲渡で載せない（2026-11-17 決定）"}
+  pref.yamaguchi.lg.jp/site/doubutuaigo/212824.html: {status: excluded, note: "山口県「犬の飼い主募集（健康福祉センター経由）」。飼い主からの譲渡で載せない（2026-11-17 決定）"}
+  pref.yamaguchi.lg.jp/site/doubutuaigo/134549.html: {status: excluded, note: "山口県「猫の飼い主募集（インターネット利用）」。飼い主からの譲渡で載せない（2026-11-17 決定）"}
+  pref.yamaguchi.lg.jp/site/doubutuaigo/10031.html: {status: excluded, note: "山口県「犬の飼い主募集（インターネット利用）」。飼い主からの譲渡で載せない（2026-11-17 決定）"}
+  pref.saitama.lg.jp/b0716/doubutu-kaikata-kainushisagashikeijiban-h.html: {status: excluded, note: "埼玉県「新しい飼い主さがし掲示板」本所管内。飼い主からの直接譲渡で載せない（2026-11-17 決定）"}
+  pref.saitama.lg.jp/b0716/doubutu-kaikata-kainushisagashikeijiban-m.html: {status: excluded, note: "埼玉県「新しい飼い主さがし掲示板」南支所管内。飼い主からの直接譲渡で載せない（2026-11-17 決定）"}
+  pref.saitama.lg.jp/b0716/doubutu-kaikata-kainushisagashikeijiban-1.html: {status: excluded, note: "埼玉県「新しい飼い主さがし掲示板」の入口。飼い主からの直接譲渡で載せない（2026-11-17 決定）"}
+  sorachi.pref.hokkaido.lg.jp/hk/kks/inunekonoteitirann.html: {status: excluded, note: "北海道 空知の「飼い主さがしノート」。市民から市民への譲渡で載せない（2026-11-17 決定）"}
+  ishikari.pref.hokkaido.lg.jp/hk/kks/kansei/kainusisagasinote-rist.html: {status: excluded, note: "北海道 石狩の「飼い主さがしノート」掲載情報。市民から市民への譲渡で載せない（2026-11-17 決定）"}
+  shiribeshi.pref.hokkaido.lg.jp/hk/kks/kainusisagasinote.html: {status: excluded, note: "北海道 後志の「飼い主さがしノート」閲覧ページ。市民から市民への譲渡で載せない（2026-11-17 決定）"}
+  tokachi.pref.hokkaido.lg.jp/hk/kks/noteeturan.html: {status: excluded, note: "北海道 十勝の「飼い主さがしノート」閲覧用ページ。市民から市民への譲渡で載せない（2026-11-17 決定）"}
+  kushiro.pref.hokkaido.lg.jp/hk/kks/174686.html: {status: excluded, note: "北海道 釧路の「飼い主さがしノート」。市民から市民への譲渡で載せない（2026-11-17 決定）"}
+  oshima.pref.hokkaido.lg.jp/hk/kks/inuneko2/inunekojouhou.html: {status: excluded, note: "北海道 渡島の「飼い主さがしノート」掲載情報。市民から市民への譲渡で載せない（2026-11-17 決定）"}
+  hiyama.pref.hokkaido.lg.jp/hk/kks/a0003/b0006/kainusisagasi/139915.html: {status: excluded, note: "北海道 檜山の「犬猫の新しい飼い主さがしノート」。市民から市民への譲渡で載せない（2026-11-17 決定）"}
+  rumoi.pref.hokkaido.lg.jp/hk/kks/atarashiikainushi/inunekoyuzuri.html: {status: excluded, note: "北海道 留萌の「犬猫の飼い主さがしノート」掲載情報。市民から市民への譲渡で載せない（2026-11-17 決定）"}
+  toyohashi-aikuru.jp/animal_category/forum-to-find-new-home-for-your-pets?animal_type=dog: {status: excluded, note: "豊橋市「市民の方から：飼い主募集掲示板」（犬）。市民間の譲渡で載せない（2026-11-17 決定）"}
+  toyohashi-aikuru.jp/animal_category/forum-to-find-new-home-for-your-pets?animal_type=cat: {status: excluded, note: "豊橋市「市民の方から：飼い主募集掲示板」（猫）。市民間の譲渡で載せない（2026-11-17 決定）"}
+  city.yamagata-yamagata.lg.jp/kurashi/pet/1006550/1005144.html: {status: excluded, note: "山形市「市民の方が新しい飼い主を探しています」。市民間の譲渡で載せない（2026-11-17 決定）"}
+  city.sendai.jp/kurashi/shizen/petto/hogodobutsu/note: {status: excluded, note: "仙台市「わんにゃん命のリレーノート（新しい飼い主さがし）」。市民間の譲渡で載せない（2026-11-17 決定）"}
+  city.otaru.lg.jp/docs/2020101100124: {status: excluded, note: "小樽市「小樽飼い主探しサポート」。市民間の譲渡で載せない（2026-11-17 決定）"}
+  city.sapporo.jp/inuneko/note/note.html: {status: excluded, note: "札幌市「飼い主さがしノート（市民から市民への直接譲渡支援）」。載せない（2026-11-17 決定）"}
+  pref.tottori.lg.jp/220718.htm: {status: excluded, note: "鳥取県「犬・猫の譲渡情報」。動物の一覧が無い案内のハブ（2026-11-17 確認。写真 5 枚・性別の記載なし）"}

@@ -1,4 +1,4 @@
-"""CLI: show / fetch / run / discover / notify / promote / repair / propose"""
+"""CLI: show / fetch / run / discover（--pages あり） / notify / promote / repair / propose"""
 
 from __future__ import annotations
 
@@ -129,6 +129,10 @@ def cmd_run(args: argparse.Namespace) -> int:
 
 
 def cmd_discover(args: argparse.Namespace) -> int:
+    if args.pages:
+        from .discover_pages import discover_pages
+
+        return discover_pages(depth=args.depth, notify=args.notify, out=Path(args.out) if args.out else None)
     from .discover import discover
 
     return discover(json_out=args.json, notify=args.notify)
@@ -220,6 +224,10 @@ def main(argv: list[str] | None = None) -> int:
     a = sub.add_parser("discover", help="環境省リンク集と台帳の差分（確認済みは registry/discover_known.yaml）")
     a.add_argument("--json", action="store_true")
     a.add_argument("--notify", action="store_true", help="確認済み一覧に無い差分があれば Discord へ 1 通（DISCORD_WEBHOOK_URL が無ければ表示だけ）")
+    a.add_argument("--pages", action="store_true",
+                   help="台帳のページ・親ディレクトリ・環境省リンク集のリンク先から 1〜2 段たどり、同じ自治体の別ページの掲載漏れと台帳のリンク切れを探す（月 1 回。T641）")
+    a.add_argument("--depth", type=int, choices=(1, 2), default=1, help="--pages: 何段たどるか（2 は候補ページからもう 1 段）")
+    a.add_argument("--out", help="--pages: 全件の JSON の出力先（既定は ONECO_LOG_DIR か v2/logs の discover-pages-<日付>.json）")
     a.set_defaults(fn=cmd_discover)
     a = sub.add_parser("notify", help="直近 report の異常を Discord へ")
     a.add_argument("--dry-run", action="store_true")

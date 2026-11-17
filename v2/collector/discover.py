@@ -13,10 +13,11 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urljoin, urlsplit, urlunsplit
 
 import httpx
 import yaml
@@ -45,6 +46,14 @@ class Known:
     note: str = ""                    # 理由・補足
     slugs: list[str] = field(default_factory=list)   # covered: 載せている slug
     task: str = ""                    # pending: 受け持つタスク（例 T519）
+
+
+@dataclass
+class KnownPage:
+    """pages: 節の 1 行（discover --pages の確認済みページ。T641）。"""
+    status: str                       # pending | excluded | covered
+    note: str = ""
+    slugs: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -95,6 +104,31 @@ def load_known(path: Path = KNOWN_PATH) -> dict[str, Known]:
             raise ValueError(f"{path.name}: {domain} の status が不正: {status}（{' / '.join(STATUSES)}）")
         out[domain] = Known(status=status, name=str(raw.get("name") or ""), note=str(raw.get("note") or ""),
                             slugs=list(raw.get("slugs") or []), task=str(raw.get("task") or ""))
+    return out
+
+
+def norm(url: str) -> str:
+    """URL の同一性の比べ方: スキーム・www・フラグメント・末尾の / と index.html を無視し、クエリは残す。
+    `host/path[?query]`（ルートは `host/`）。discover_known.yaml の pages: のキーもこの形。"""
+    p = urlsplit(url)
+    host = p.netloc.lower().removeprefix("www.")
+    path = re.sub(r"/(index\.(html?|php|aspx?))?$", "/", p.path or "/").rstrip("/") or "/"
+    return urlunsplit(("", host, path, p.query, "")).removeprefix("//")
+
+
+def load_known_pages(path: Path = KNOWN_PATH) -> dict[str, KnownPage]:
+    """pages: 節 → {正規化した URL: KnownPage}。節が無い・ファイルが無いなら空。キーは読み込み時にも norm にかける。"""
+    if not path.exists():
+        return {}
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    out: dict[str, KnownPage] = {}
+    for key, raw in (data.get("pages") or {}).items():
+        raw = raw or {}
+        status = raw.get("status")
+        if status not in STATUSES:
+            raise ValueError(f"{path.name}: pages の {key} の status が不正: {status}（{' / '.join(STATUSES)}）")
+        url = key if "://" in key else "https://" + key
+        out[norm(url)] = KnownPage(status=status, note=str(raw.get("note") or ""), slugs=list(raw.get("slugs") or []))
     return out
 
 
