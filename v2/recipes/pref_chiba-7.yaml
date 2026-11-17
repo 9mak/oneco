@@ -1,0 +1,27 @@
+# 千葉県動物愛護センター本所 飼い主募集中（成犬・その他）（kainushi-bosyu-honsyo-inu.html）。h2「成犬」「その他」の 2 節。
+# 2026-11-17 時点は成犬 0 頭（h3「11月16日時点で、募集中の犬は0頭です。」）で、「その他」にカワラバト 1 羽（【z26801】）が載る。
+# 台帳の species は mixed。節の見出し（h2）で決める: 「成犬」→犬、「その他」→犬猫以外（other）。
+# 0 頭の日の文言: 「N月N日時点で、募集中の犬は0頭です。」（Wayback 2026-07-17）、「現在、譲渡対象の動物はいません」（Wayback 2023-06・2025-05）。
+# どちらも子のいる日（Wayback 2025-09・2026-03、2026-11-17 の鳩）に出ない（tests/test_w006_gaps_chiba_20261117.py）。
+# 2026-03 の版は col2 の囲みが無く p が平らに並ぶ作りで、この rows では 0 行になる（その日は文言も出ないので「読めなかった」になる）。
+rows: "#tmp_contents div:is(.col2L, .col2R, .col3L, .col3M, .col3R)"
+row_filter:
+  text_has_any: ["【"]
+  text_lacks: ["譲渡になりました", "決まりました"]
+image: "img@src"
+fields:
+  management_no: {regex: "【([^】]+)】"}
+  name: {regex: "】\\s*(\\S+)"}
+  age: {regex: "年齢[:：]\\s*([^、，\\s]+)"}
+  sex: {regex: "性別[:：]\\s*(オス|メス|不明)"}
+  note: {regex: "(トライアル中です|予約あり)"}
+species:
+  from: heading
+  selector: "h2"
+  map: {"成犬": dog}
+  allow_other: true
+# 0 頭の根拠は文言でなく「動物情報（PDF）のリンクも col の中の写真も 1 つも無い」こと。page = h2（成犬・成猫の節の見出し。0 頭の日も出る枠）。
+# 行の読み方が崩れても動物情報の PDF リンクが残る日は 0 頭にならず「読めなかった」になる。
+empty_absent:
+  page: "#tmp_contents h2"
+  none: "#tmp_contents a.icon_pdf:-soup-contains('動物情報'), #tmp_contents div[class^='col'] img"

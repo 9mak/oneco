@@ -1,0 +1,27 @@
+# 千葉県動愛センター東葛飾支所 飼い主募集中（成猫・その他）（kainushi-bosyu-shisyo-neko.html）。h2「成猫」「その他」の 2 節。
+# h3「11月13日時点で19匹募集しています」の下に div.col3（col3L・col3M・col3R）で 1 頭ずつ、写真・「【c260813-1-4】ふぉー」・年齢と性別・動物情報（PDF）。
+# 「トライアル中です。」の子（2026-11-17 に 3 頭）は載せて note に出す。「譲渡になりました。」の子（c260520-1-2 にん）は載せない
+# （h3 の「19匹」は載せる 19 頭と合う: 表は 20 件、うち 1 件が譲渡済み）。「その他」は h3「現在、募集はありません」。
+# 台帳の species は mixed。節の見出しで決める: 「成猫」→猫、「その他」→犬猫以外（other）。
+# 0 頭の日の文言は猫の版が Wayback に無く未確認なので empty_text は置かない（行が取れない日は「読めなかった」）。
+rows: "#tmp_contents div:is(.col2L, .col2R, .col3L, .col3M, .col3R)"
+row_filter:
+  text_has_any: ["【"]
+  text_lacks: ["譲渡になりました", "決まりました"]
+image: "img@src"
+fields:
+  management_no: {regex: "【([^】]+)】"}
+  name: {regex: "】\\s*(\\S+)"}
+  age: {regex: "年齢[:：]\\s*([^、，\\s]+)"}
+  sex: {regex: "性別[:：]\\s*(オス|メス|不明)"}
+  note: {regex: "(トライアル中です|予約あり)"}
+species:
+  from: heading
+  selector: "h2"
+  map: {"成猫": cat}
+  allow_other: true
+# 0 頭の根拠は文言でなく「動物情報（PDF）のリンクも col の中の写真も 1 つも無い」こと。page = h2（成犬・成猫の節の見出し。0 頭の日も出る枠）。
+# 行の読み方が崩れても動物情報の PDF リンクが残る日は 0 頭にならず「読めなかった」になる。
+empty_absent:
+  page: "#tmp_contents h2"
+  none: "#tmp_contents a.icon_pdf:-soup-contains('動物情報'), #tmp_contents div[class^='col'] img"

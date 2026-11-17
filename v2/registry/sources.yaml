@@ -8541,3 +8541,333 @@ sources:
   enabled: true
   photo: pending
   note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。紋別保健所・遠軽支所の犬・猫情報ページのうち、迷い犬・猫の表（紋別・遠軽の犬と猫の 4 表。結合セルは無い単純な表）。2026-11-07 時点は紋別保健所の迷子の猫 1 行（令和8年11月5日に保健所の玄関前で保護、生後 1 ヶ月未満のキジトラ 2・グレートラ 1 の 3 頭）が載るので 1 件（頭数は note にそのまま入れる）。保管期限も note に載せる。子のいない表は「現在、迷い犬はいません。」「現在、迷子の猫はいません。」の行だけで、読まない。0 頭の日は全部の表がその行だけになり、動物の表にその行以外が無いときだけ 0 頭（empty_absent。この文は子のいる日も別の表に出るので empty_text にしない）。飼い主募集中の表は hokkaido_okhotsk-4（同じ URL）。写真の規約は未確認（photo: pending）。"
+- slug: kumamoto_doubutuaigo-9
+  name: 熊本県動物愛護センター（保護犬）
+  municipality: 熊本県動物愛護センター
+  prefecture: 熊本県
+  url: https://www.kumamoto-doubutuaigo.jp/animals/index/type_id:3/animal_id:1
+  kind: sheltered
+  species: dog
+  mode: recipe
+  recipe: recipes/kumamoto_doubutuaigo-9.yaml
+  enabled: true
+  photo: pending
+  note: '掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。「保健所・センターからの保護犬情報」。迷子でも譲渡対象でもないが、保健所やセンターで保護されている犬。既存の迷子（type_id:1）・譲渡（type_id:2）の 8 ページと同じテンプレートで、一覧に収容日・種類・性別・個体管理ナンバー・保健所・電話番号が揃う（電話・保健所は子ごとに出す）。2026-11-17 時点で 28 頭（20 件ずつ 2 ページ）。0 頭の日は「0件中 0～0件目を表示」（Wayback 2025-04）。写真は pending: 2026-11-13 の熊本県の許諾の返事は依頼した 8 ページ（センター・団体・個人の譲渡と迷子）についてで、type_id:3 のこのページは依頼に入れていなかった。熊本県へ改めて聞く（返事が来るまで写真を出さない）。'
+- slug: kumamoto_doubutuaigo-10
+  name: 熊本県動物愛護センター（保護猫）
+  municipality: 熊本県動物愛護センター
+  prefecture: 熊本県
+  url: https://www.kumamoto-doubutuaigo.jp/animals/index/type_id:3/animal_id:2
+  kind: sheltered
+  species: cat
+  mode: recipe
+  recipe: recipes/kumamoto_doubutuaigo-10.yaml
+  enabled: true
+  photo: pending
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。「保健所・センターからの保護猫情報」。保護犬（-9）と同じ扱い。2026-11-17 時点で 3 頭。0 頭の日は「0件中 0～0件目を表示」（Wayback 2024-12・2025-09）。
+- slug: pref_chiba-6
+  name: 千葉県動愛センター本所（飼い主募集中・成猫）
+  municipality: 千葉県動愛センター本所
+  prefecture: 千葉県
+  phone: 0476-93-5711
+  address: 〒286-0211 千葉県富里市御料709-1
+  url: https://www.pref.chiba.lg.jp/aigo/kainushi-bosyu-honsyo-neko.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.chiba.lg.jp/aigo/kainushi-bosyu-honsyo-neko.html"
+  verified_address_url: "https://www.pref.chiba.lg.jp/aigo/index.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_chiba-6.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。千葉県動物愛護センター本所が飼養している譲渡候補猫（成猫）。既存の収容（pref_chiba-1〜5）とは別のページ。個票は PDF だが、写真・番号・名前・年齢・性別は本文にあるので本文から読む。2026-11-17 時点で 13 頭（うち「予約あり」2 頭は note に出す）。0 頭の日は文言でなく「動物情報の PDF リンクも写真も無い」ことで決める。写真の規約は既存の千葉県の収容ページと同じ（無断転載禁止のみ）。
+- slug: pref_chiba-7
+  name: 千葉県動愛センター本所（飼い主募集中・成犬その他）
+  municipality: 千葉県動愛センター本所
+  prefecture: 千葉県
+  phone: 0476-93-5711
+  address: 〒286-0211 千葉県富里市御料709-1
+  url: https://www.pref.chiba.lg.jp/aigo/kainushi-bosyu-honsyo-inu.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.chiba.lg.jp/aigo/kainushi-bosyu-honsyo-neko.html"
+  verified_address_url: "https://www.pref.chiba.lg.jp/aigo/index.html"
+  kind: adoption
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_chiba-7.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。本所の譲渡候補犬（成犬）と、犬猫以外（その他）の 2 節。2026-11-17 時点は成犬 0 頭で、その他にカワラバト 1 羽が載る（種別は犬猫以外）。成犬 0 頭の文言「募集中の犬は0頭です」は、子のいる日（Wayback 2025-09・2026-03）に出ない。0 頭は文言でなく「動物情報の PDF リンクも写真も無い」ことで決める。
+- slug: pref_chiba-8
+  name: 千葉県動愛センター東葛飾支所（飼い主募集中・成猫その他）
+  municipality: 千葉県動愛センター東葛飾支所
+  prefecture: 千葉県
+  phone: 04-7191-0050
+  address: 〒277-0941 千葉県柏市高柳1018-6
+  url: https://www.pref.chiba.lg.jp/aigo/kainushi-bosyu-shisyo-neko.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.chiba.lg.jp/aigo/kainushi-bosyu-shisyo-neko.html"
+  verified_address_url: "https://www.pref.chiba.lg.jp/aigo/index.html"
+  kind: adoption
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_chiba-8.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。東葛飾支所の譲渡候補猫（成猫）と、犬猫以外（その他。2026-11-17 は「現在、募集はありません」）。h3「11月13日時点で19匹募集しています」と載せる頭数が合う（表 20 件のうち 1 件は「譲渡になりました」で載せない。トライアル中の 3 頭は note に出す）。
+- slug: pref_chiba-9
+  name: 千葉県動愛センター東葛飾支所（飼い主募集中・成犬）
+  municipality: 千葉県動愛センター東葛飾支所
+  prefecture: 千葉県
+  phone: 04-7191-0050
+  address: 〒277-0941 千葉県柏市高柳1018-6
+  url: https://www.pref.chiba.lg.jp/aigo/kainushi-bosyu-shisyo-inu.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.chiba.lg.jp/aigo/kainushi-bosyu-shisyo-neko.html"
+  verified_address_url: "https://www.pref.chiba.lg.jp/aigo/index.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/pref_chiba-9.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。東葛飾支所の譲渡候補犬（成犬）。2026-11-17 時点で 2 頭（h3「10月30日時点で2匹募集しています」と合う）。
+- slug: city_chiba-7
+  name: 千葉市（譲渡犬）
+  municipality: 千葉市
+  prefecture: 千葉県
+  phone: 043-258-7817
+  address: 千葉市稲毛区宮野木町445番地1
+  url: https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/transferdogs.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/transferdogs.html"
+  verified_address_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/transferdogs.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/city_chiba-7.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。千葉市動物保護指導センターの譲渡候補犬。既存の千葉市の 6 ページ（迷子・市民保護）とは別のページ。「お見合いが決まりました！」の子は、譲渡が決まったのではなく見学の約束が入った状態なので載せて note に出す（トライアル中と同じ扱い）。0 頭の日の文言は未確認で、0 頭は「枠はあるが動物の見出しも種類の行も無い」ことで決める。写真の規約は既存の千葉市のページと同じ（無断転載禁止のみ）。
+- slug: city_chiba-8
+  name: 千葉市（譲渡猫）
+  municipality: 千葉市
+  prefecture: 千葉県
+  phone: 043-258-7817
+  address: 千葉市稲毛区宮野木町445番地1
+  url: https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/transfercats.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/transferdogs.html"
+  verified_address_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/transferdogs.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/city_chiba-8.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。千葉市動物保護指導センターの譲渡候補猫（子猫・成猫の 2 節）。city_chiba-7（譲渡犬）と同じ扱い。
+- slug: pref_fukushima-6
+  name: 福島県動物愛護センター本所（譲渡猫）
+  municipality: 福島県動物愛護センター本所
+  prefecture: 福島県
+  phone: 024-953-6400
+  address: 〒963-7732 福島県田村郡三春町大字上舞木字向田17番
+  url: https://www.pref.fukushima.lg.jp/sec/21620a/joto-cat-miharu.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.fukushima.lg.jp/sec/21620a/joto-cat-miharu.html"
+  verified_address_url: "https://www.pref.fukushima.lg.jp/sec/21620a/joto-cat-miharu.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_fukushima-6.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。福島県動物愛護センター（ハピまるふくしま）本所の譲渡猫。既存の福島県の 5 ページ（pref_fukushima-1〜5）は迷子だけだった。一覧表の 1 行（ニックネーム・写真・種類・毛色・性別・推定年齢）を 1 頭として読む。2026-11-17 時点で 19 頭。写真の規約は既存の福島県の迷子ページと同じ（無断転載禁止のみ）。
+- slug: pref_fukushima-7
+  name: 福島県動物愛護センター本所（譲渡犬）
+  municipality: 福島県動物愛護センター本所
+  prefecture: 福島県
+  phone: 024-953-6400
+  address: 〒963-7732 福島県田村郡三春町大字上舞木字向田17番
+  url: https://www.pref.fukushima.lg.jp/sec/21620a/joto-dog-miharu.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.fukushima.lg.jp/sec/21620a/joto-cat-miharu.html"
+  verified_address_url: "https://www.pref.fukushima.lg.jp/sec/21620a/joto-cat-miharu.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/pref_fukushima-7.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。本所の譲渡犬（pref_fukushima-6 と同じ作り）。2026-11-17 時点で 2 頭。
+- slug: pref_fukushima-8
+  name: 福島県動物愛護センター会津支所（譲渡犬）
+  municipality: 福島県動物愛護センター会津支所
+  prefecture: 福島県
+  phone: 0242-29-5517
+  address: 〒965-0807 会津若松市城東町5番12号（会津保健福祉事務所内）
+  url: https://www.pref.fukushima.lg.jp/sec/21621a/joto-dog-aizu.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.fukushima.lg.jp/sec/21621a/joto-dog-aizu.html"
+  verified_address_url: "https://www.pref.fukushima.lg.jp/sec/21621a/joto-dog-aizu.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/pref_fukushima-8.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。会津支所の譲渡犬。1 頭 1 表（管理番号・ニックネーム・種類・性別・推定年齢・性格等）。2026-11-17 時点で 1 頭（ラグナ）。
+- slug: pref_fukushima-9
+  name: 福島県動物愛護センター相双支所（譲渡猫）
+  municipality: 福島県動物愛護センター相双支所
+  prefecture: 福島県
+  phone: 0244-26-1351
+  address: 〒975-0031 南相馬市原町区錦町1丁目30番地（相双保健福祉事務所内）
+  url: https://www.pref.fukushima.lg.jp/sec/21622a/joto-cat-soso.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.fukushima.lg.jp/sec/21622a/joto-cat-soso.html"
+  verified_address_url: "https://www.pref.fukushima.lg.jp/sec/21622a/joto-cat-soso.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_fukushima-9.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。相双支所の譲渡猫。1 頭 1 表。2026-11-17 時点で 7 頭。
+- slug: pref_fukushima-10
+  name: 福島県動物愛護センター会津支所（譲渡猫）
+  municipality: 福島県動物愛護センター会津支所
+  prefecture: 福島県
+  phone: 0242-29-5517
+  address: 〒965-0807 会津若松市城東町5番12号（会津保健福祉事務所内）
+  url: https://www.pref.fukushima.lg.jp/sec/21621a/joto-cat-aizu.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.fukushima.lg.jp/sec/21621a/joto-dog-aizu.html"
+  verified_address_url: "https://www.pref.fukushima.lg.jp/sec/21621a/joto-dog-aizu.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_fukushima-10.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。会津支所の譲渡猫（仕様書の 4 ページには無かったが、同じ県の譲渡ページとして足した）。2026-11-17 時点は 0 頭（「〇現在、譲渡猫情報はありません。」）。猫が載った日の表の作りは未確認で、犬（-8）と同じと推測している。
+- slug: pref_fukushima-11
+  name: 福島県動物愛護センター相双支所（譲渡犬）
+  municipality: 福島県動物愛護センター相双支所
+  prefecture: 福島県
+  phone: 0244-26-1351
+  address: 〒975-0031 南相馬市原町区錦町1丁目30番地（相双保健福祉事務所内）
+  url: https://www.pref.fukushima.lg.jp/sec/21622a/joto-dog-soso.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.fukushima.lg.jp/sec/21622a/joto-cat-soso.html"
+  verified_address_url: "https://www.pref.fukushima.lg.jp/sec/21622a/joto-cat-soso.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/pref_fukushima-11.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。相双支所の譲渡犬（仕様書の 4 ページには無かったが、同じ県の譲渡ページとして足した）。2026-11-17 時点は 0 頭（セルが空の雛形の表だけで、0 頭の文言は無い）。犬が載った日の表の作りは未確認で、猫（-9）と同じと推測している。
+- slug: pref_hiroshima-3
+  name: 広島県動物愛護センター（譲渡犬）
+  municipality: 広島県動物愛護センター
+  prefecture: 広島県
+  phone: 0848-60-8511
+  address: 〒729-0415 広島県三原市本郷町上北方字用倉山11352番
+  url: https://www.pref.hiroshima.lg.jp/site/apc/jouto-rebreed-dog-list.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.hiroshima.lg.jp/site/apc/jouto-rebreed-dog-list.html"
+  verified_address_url: "https://www.pref.hiroshima.lg.jp/site/apc/jouto-rebreed-dog-list.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/pref_hiroshima-3.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。広島県動物愛護センターが飼い主を募集している犬。既存の広島県の 2 ページ（pref_hiroshima-1・2）は迷い犬・迷い猫だけだった。h2「管理番号：…」→ 写真 → 性別・推定年齢などの作りは迷い犬と同じ。2026-11-17 時点で 18 頭。写真の規約は既存の広島県のページと同じ（無断転載禁止のみ）。0 頭の日の文言は未確認で、0 頭は「管理番号の見出しも個体の写真も無い」ことで決める。
+- slug: pref_hiroshima-4
+  name: 広島県動物愛護センター（譲渡猫）
+  municipality: 広島県動物愛護センター
+  prefecture: 広島県
+  phone: 0848-60-8511
+  address: 〒729-0415 広島県三原市本郷町上北方字用倉山11352番
+  url: https://www.pref.hiroshima.lg.jp/site/apc/jouto-rebreed-cat-list.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.hiroshima.lg.jp/site/apc/jouto-rebreed-dog-list.html"
+  verified_address_url: "https://www.pref.hiroshima.lg.jp/site/apc/jouto-rebreed-dog-list.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_hiroshima-4.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。広島県動物愛護センターが飼い主を募集している猫。譲渡犬（-3）と同じ作り。2026-11-17 時点で 6 頭（うち 1 頭は h2 に「※現在トライアル中です」が付き、note に出す）。
+- slug: pref_osaka_joto-1
+  name: 大阪府動物愛護管理センター（譲渡犬）
+  municipality: 大阪府動物愛護管理センター
+  prefecture: 大阪府
+  phone: 072-958-8212
+  address: 〒583-0862 羽曳野市尺度53-4
+  url: https://www.pref.osaka.lg.jp/o120200/doaicenter/doaicenter/jyoutoinu2.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.osaka.lg.jp/soshikikarasagasu/doaicenter/index.html"
+  verified_address_url: "https://www.pref.osaka.lg.jp/soshikikarasagasu/doaicenter/index.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/pref_osaka_joto-1.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。大阪府動物愛護管理センターが新しい飼い主を募集している犬。既存の大阪府の pref_osaka は迷い犬猫だけだった。区分（比較的飼いやすい犬・十分な知識や心構えが必要な犬・持続的なケアが必要な犬・現在トレーニング中の犬）の見出しを note の先頭に出す。2026-11-17 時点で 3 頭（うち 1 頭はトレーニング中）。区分ごとの「現在対象の犬はいません。」は子のいる日にも出るので 0 頭の根拠にしない。写真の規約は既存の大阪府のページと同じ（無断転載禁止のみ）。
+- slug: pref_osaka_joto-2
+  name: 大阪府動物愛護管理センター（譲渡猫）
+  municipality: 大阪府動物愛護管理センター
+  prefecture: 大阪府
+  phone: 072-958-8212
+  address: 〒583-0862 羽曳野市尺度53-4
+  url: https://www.pref.osaka.lg.jp/o120200/doaicenter/doaicenter/jyoutoneko.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.osaka.lg.jp/soshikikarasagasu/doaicenter/index.html"
+  verified_address_url: "https://www.pref.osaka.lg.jp/soshikikarasagasu/doaicenter/index.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_osaka_joto-2.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。大阪府動物愛護管理センターが新しい飼い主を募集している猫。個票は PDF（写真をクリックして開く）で、PDF は読まず、ページ本文の写真 1 枚を 1 頭として、見出しから性別（雄・雌）と年齢の区分（1歳齢以上・未満）だけ出す。名前・管理番号・毛色は PDF にしか無いので出さない。「令和8年11月24日から公開予定」のコーナン店舗の猫 2 頭は公開前なので今日は載せない（公開後は note に店舗の猫と出して載る）。2026-11-17 時点で 15 頭（写真 17 枚のうち公開予定の 2 枚を除く）。
+- slug: pref_osaka_joto-3
+  name: 大阪府動物愛護管理センター（譲渡・犬猫以外）
+  municipality: 大阪府動物愛護管理センター
+  prefecture: 大阪府
+  phone: 072-958-8212
+  address: 〒583-0862 羽曳野市尺度53-4
+  url: https://www.pref.osaka.lg.jp/o120200/doaicenter/doaicenter/jyoutoinunekoigai.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.osaka.lg.jp/soshikikarasagasu/doaicenter/index.html"
+  verified_address_url: "https://www.pref.osaka.lg.jp/soshikikarasagasu/doaicenter/index.html"
+  kind: adoption
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_osaka_joto-3.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。大阪府動物愛護管理センターが新しい飼い主を募集している犬猫以外の動物（2026-11-17 はウサギ）。種別は犬猫以外（other）で、種類は h2 の見出し（ウサギ）から出す。
+- slug: city_sapporo-3
+  name: 札幌市（譲渡犬）
+  municipality: 札幌市
+  prefecture: 北海道
+  phone: 011-736-6134
+  address: 〒060-0022 札幌市中央区北22条西15丁目3-6
+  url: https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/houkiken.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/houkiken.html"
+  verified_address_url: "https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/houkiken.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/city_sapporo-3.yaml
+  enabled: true
+  photo: pending
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。札幌市動物愛護管理センターで譲渡できる犬。既存の札幌市の 2 ページ（city_sapporo-1・2）は迷子だけだった。犬ごとに h2（管理番号）→ 表（写真・種類・性別・年齢・体格・愛称）。2026-11-17 時点は 0 頭（h2「AD081109-01は譲渡されました（11/13）」と空の雛形の表だけが残る。「現在いません」の文言は無い）。「譲渡されました」の子は載せない。犬が載った日の作りは Wayback 2026-05-18 で確認。写真は pending（札幌市は返事待ち・未依頼。新しいページの写真は改めて聞く）。
+- slug: city_sapporo-4
+  name: 札幌市（譲渡猫）
+  municipality: 札幌市
+  prefecture: 北海道
+  phone: 011-736-6134
+  address: 〒060-0022 札幌市中央区北22条西15丁目3-6
+  url: https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/jotoneko.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/houkiken.html"
+  verified_address_url: "https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/houkiken.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/city_sapporo-4.yaml
+  enabled: true
+  photo: pending
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。札幌市動物愛護管理センターで譲渡できる猫。h2 の区分（人に馴れている猫・あまり人に馴れていない猫…）の下に、h3「名前（管理番号） 年齢 性別」→ 写真 → 紹介文。2026-11-17 時点で 42 頭（ページの「譲渡可能な成猫の数 42匹」と合う）。「一時的に譲渡対象外の猫」の 1 頭は載せない。子猫は写真・詳細を載せない方針のページ。写真は pending（札幌市は返事待ち・未依頼）。

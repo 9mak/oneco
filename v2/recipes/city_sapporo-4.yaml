@@ -1,0 +1,26 @@
+# 札幌市 譲渡可能猫情報（jotoneko.html）。札幌市動物愛護管理センターで譲渡できる猫（迷子猫 city_sapporo-2 とは別のページ）。
+# h2 で 4 つの区分（人に馴れている猫・あまり人に馴れていない猫・まだセンターの環境に慣れていない猫・一時的に譲渡対象外の猫）に分かれ、1 頭ごとに
+# h3「ぷーあーる（AC080727-01） 9歳 去勢オス」→ p 写真（1〜2 枚）→ p 紹介文が並ぶ。h3 を 1 頭の始まりにして、次の h2・h3 の手前までをまとめる。
+# 「一時的に譲渡対象外の猫」の子（2026-11-17 に 1 頭）は載せない（h2 に「譲渡対象外」）。ページの「譲渡可能な成猫の数」42 匹は、それを除いた 42 頭と合う。
+# 子猫（譲渡可能子猫 0 匹）は写真・詳細を載せない方針のページで、行にならない。区分（h2）を note の先頭に出す（「あまり人に馴れていない猫」は見学のときの目安になる）。
+# 0 頭の日の文言は未確認なので empty_text は置かない。0 頭は「h3 の見出しも写真も無い」ことで決める。
+rows: "#tmp_contents h3"
+row_until: "h2, h3"
+row_filter:
+  field_required: {management_no: ["-"]}
+  field_lacks: {section: ["譲渡対象外"]}
+image: "img@src"
+fields:
+  section: {from: heading, selector: "h2"}
+  name: {selector: "h3", regex: "^(.+?)[（(]"}
+  management_no: {selector: "h3", regex: "[（(]([A-Za-z]{2}\\d{6}-\\d+)[）)]"}
+  age: {selector: "h3", regex: "[）)]\\s*(\\d+\\s*(?:歳|か月|ヶ月))"}
+  sex: {selector: "h3", regex: "(オス|メス)"}
+  note:
+    join:
+      - {from: heading, selector: "h2"}
+      - {selector: "p:not(:has(img))"}
+    sep: "。"
+empty_absent:
+  page: "#tmp_contents h1:-soup-contains('譲渡可能猫情報')"
+  none: "#tmp_contents h3:-soup-contains('（'), #tmp_contents h3 ~ p img"
