@@ -8757,3 +8757,83 @@ sources:
   recipe: recipes/pref_fukushima-11.yaml
   enabled: true
   note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。相双支所の譲渡犬（仕様書の 4 ページには無かったが、同じ県の譲渡ページとして足した）。2026-11-17 時点は 0 頭（セルが空の雛形の表だけで、0 頭の文言は無い）。犬が載った日の表の作りは未確認で、猫（-9）と同じと推測している。
+- slug: pref_hiroshima-3
+  name: 広島県動物愛護センター（譲渡犬）
+  municipality: 広島県動物愛護センター
+  prefecture: 広島県
+  phone: 0848-60-8511
+  address: 〒729-0415 広島県三原市本郷町上北方字用倉山11352番
+  url: https://www.pref.hiroshima.lg.jp/site/apc/jouto-rebreed-dog-list.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.hiroshima.lg.jp/site/apc/jouto-rebreed-dog-list.html"
+  verified_address_url: "https://www.pref.hiroshima.lg.jp/site/apc/jouto-rebreed-dog-list.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/pref_hiroshima-3.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。広島県動物愛護センターが飼い主を募集している犬。既存の広島県の 2 ページ（pref_hiroshima-1・2）は迷い犬・迷い猫だけだった。h2「管理番号：…」→ 写真 → 性別・推定年齢などの作りは迷い犬と同じ。2026-11-17 時点で 18 頭。写真の規約は既存の広島県のページと同じ（無断転載禁止のみ）。0 頭の日の文言は未確認で、0 頭は「管理番号の見出しも個体の写真も無い」ことで決める。
+- slug: pref_hiroshima-4
+  name: 広島県動物愛護センター（譲渡猫）
+  municipality: 広島県動物愛護センター
+  prefecture: 広島県
+  phone: 0848-60-8511
+  address: 〒729-0415 広島県三原市本郷町上北方字用倉山11352番
+  url: https://www.pref.hiroshima.lg.jp/site/apc/jouto-rebreed-cat-list.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.hiroshima.lg.jp/site/apc/jouto-rebreed-dog-list.html"
+  verified_address_url: "https://www.pref.hiroshima.lg.jp/site/apc/jouto-rebreed-dog-list.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_hiroshima-4.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。広島県動物愛護センターが飼い主を募集している猫。譲渡犬（-3）と同じ作り。2026-11-17 時点で 6 頭（うち 1 頭は h2 に「※現在トライアル中です」が付き、note に出す）。
+- slug: pref_osaka_joto-1
+  name: 大阪府動物愛護管理センター（譲渡犬）
+  municipality: 大阪府動物愛護管理センター
+  prefecture: 大阪府
+  phone: 072-958-8212
+  address: 〒583-0862 羽曳野市尺度53-4
+  url: https://www.pref.osaka.lg.jp/o120200/doaicenter/doaicenter/jyoutoinu2.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.osaka.lg.jp/soshikikarasagasu/doaicenter/index.html"
+  verified_address_url: "https://www.pref.osaka.lg.jp/soshikikarasagasu/doaicenter/index.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/pref_osaka_joto-1.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。大阪府動物愛護管理センターが新しい飼い主を募集している犬。既存の大阪府の pref_osaka は迷い犬猫だけだった。区分（比較的飼いやすい犬・十分な知識や心構えが必要な犬・持続的なケアが必要な犬・現在トレーニング中の犬）の見出しを note の先頭に出す。2026-11-17 時点で 3 頭（うち 1 頭はトレーニング中）。区分ごとの「現在対象の犬はいません。」は子のいる日にも出るので 0 頭の根拠にしない。写真の規約は既存の大阪府のページと同じ（無断転載禁止のみ）。
+- slug: pref_osaka_joto-2
+  name: 大阪府動物愛護管理センター（譲渡猫）
+  municipality: 大阪府動物愛護管理センター
+  prefecture: 大阪府
+  phone: 072-958-8212
+  address: 〒583-0862 羽曳野市尺度53-4
+  url: https://www.pref.osaka.lg.jp/o120200/doaicenter/doaicenter/jyoutoneko.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.osaka.lg.jp/soshikikarasagasu/doaicenter/index.html"
+  verified_address_url: "https://www.pref.osaka.lg.jp/soshikikarasagasu/doaicenter/index.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_osaka_joto-2.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。大阪府動物愛護管理センターが新しい飼い主を募集している猫。個票は PDF（写真をクリックして開く）で、PDF は読まず、ページ本文の写真 1 枚を 1 頭として、見出しから性別（雄・雌）と年齢の区分（1歳齢以上・未満）だけ出す。名前・管理番号・毛色は PDF にしか無いので出さない。「令和8年11月24日から公開予定」のコーナン店舗の猫 2 頭は公開前なので今日は載せない（公開後は note に店舗の猫と出して載る）。2026-11-17 時点で 15 頭（写真 17 枚のうち公開予定の 2 枚を除く）。
+- slug: pref_osaka_joto-3
+  name: 大阪府動物愛護管理センター（譲渡・犬猫以外）
+  municipality: 大阪府動物愛護管理センター
+  prefecture: 大阪府
+  phone: 072-958-8212
+  address: 〒583-0862 羽曳野市尺度53-4
+  url: https://www.pref.osaka.lg.jp/o120200/doaicenter/doaicenter/jyoutoinunekoigai.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.pref.osaka.lg.jp/soshikikarasagasu/doaicenter/index.html"
+  verified_address_url: "https://www.pref.osaka.lg.jp/soshikikarasagasu/doaicenter/index.html"
+  kind: adoption
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_osaka_joto-3.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。大阪府動物愛護管理センターが新しい飼い主を募集している犬猫以外の動物（2026-11-17 はウサギ）。種別は犬猫以外（other）で、種類は h2 の見出し（ウサギ）から出す。

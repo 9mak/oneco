@@ -1,0 +1,22 @@
+# 広島県動物愛護センター 譲渡猫一覧（jouto-rebreed-cat-list.html）。センターが飼い主を募集している猫（迷い猫 pref_hiroshima-2 とは別のページ）。
+# 譲渡犬（pref_hiroshima-3）と同じ作り: h2「管理番号：1HN20260034（114）」→ p 写真 → p（性別・推定年齢・検査・デビュー日…）。
+# 「管理番号：1HN20260092 (116)※現在トライアル中です」のように h2 に状態が付く子（2026-11-17 に 1 頭）は載せて note に出す（トライアル中は載せる方針。2026-10-07）。
+# 2026-11-17 は 6 頭。0 頭の日の文言は未確認なので empty_text は置かない。0 頭は「管理番号の見出しも個体の写真も無い」ことで決める。
+rows: "div.detail_free h2:-soup-contains('管理番号')"
+row_until: "h2"
+row_filter:
+  text_has_any: ["デビュー日", "フィラリア", "推定", "エイズ"]
+  text_lacks: ["譲渡が決まりました", "譲渡済"]
+image: "p > img@src"
+fields:
+  management_no: {selector: "h2", regex: "管理番号[:：]\\s*([0-9A-Za-z]+)"}
+  sex: {regex: "(雄|雌)"}
+  age: {regex: "(推定\\s*[0-9０-９.]+\\s*(?:歳|か月|ヶ月|カ月))"}
+  note:
+    join:
+      - {selector: "h2", regex: "(※現在トライアル中です)"}
+      - {regex: "(※(?:最大)?\\s*[2２]週間のトライアル\\s*(?:必須|可能))"}
+    sep: "。"
+empty_absent:
+  page: "div#main_header h1:-soup-contains('譲渡')"
+  none: "div#main_body h2:-soup-contains('管理番号'), div#main_body div.detail_free p > img"
