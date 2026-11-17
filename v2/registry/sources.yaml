@@ -8984,3 +8984,33 @@ sources:
   recipe: recipes/city_utsunomiya-2.yaml
   enabled: true
   note: '掲載漏れの棚卸しで追加（2026-11-17 W006 T640 2 回目）。宇都宮市保健所（動物愛護センター「宮わんにゃんパーク」）の譲渡動物情報。既存の宇都宮市のページ（city_utsunomiya。迷子犬・負傷猫）とは別。動物ごとに h3（譲渡猫・譲渡犬）→ 写真 → 愛称・種類・性別・年齢・体格・性格等。2026-11-17 時点で猫 1・犬 1。見出しの言い方と項目の区切りが日によって違う（Wayback 2025-02〜2026-07 の 6 版で確認）ので行の全文から読む。0 頭の日の版は Wayback に無いので、枠はあるが動物の見出しも写真も無い日だけ 0 頭にする。写真の規約は既存の宇都宮市のページと同じ（無断転載禁止のみ）。'
+- slug: city_higashiosaka-2
+  name: 東大阪市（新しい飼い主を探している犬）
+  municipality: 東大阪市
+  prefecture: 大阪府
+  phone: 072-963-6211
+  address: null
+  url: https://www.city.higashiosaka.lg.jp/0000008118.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.city.higashiosaka.lg.jp/0000005910.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/city_higashiosaka-2.yaml
+  enabled: true
+  note: '掲載漏れの棚卸しで追加（2026-11-17 W006 T640 2 回目）。東大阪市動物指導センターが新しい飼い主を募集している犬。既存の東大阪市のページ（city_higashiosaka。保護収容動物）とは別。ページの節は「募集中の犬(動物指導センター)」「募集中の犬(譲渡ボランティア)」（どちらもセンターが保護・収容した犬）と「犬の出会い広場」（市民間の仲介）で、出会い広場は載せない（おまえさん決定）。仕様は 1 つ目の節だけだったが、2 つ目の節も同じセンターの犬なので読む。2026-11-17 時点はセンター・ボランティアとも 0 頭（Wayback 2023-06〜2026-05 の 5 版も同じ）で、今日載っている犬 1（TD24-1）は出会い広場なので読まない。子のいる日の版が見つからないので、今日のページに HTML コメントで残っている個体のブロックの作りに合わせて読み方を決めた。0 頭は「現在、譲渡対象犬の情報はありません」「現在、ボランティア犬の情報はありません」の両方が出た日だけ。写真の規約は既存の東大阪市のページと同じ（無断転載禁止のみ）。'
+- slug: city_higashiosaka-3
+  name: 東大阪市（新しい飼い主を探している猫）
+  municipality: 東大阪市
+  prefecture: 大阪府
+  phone: 072-963-6211
+  address: null
+  url: https://www.city.higashiosaka.lg.jp/0000011324.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.city.higashiosaka.lg.jp/0000005910.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/city_higashiosaka-3.yaml
+  enabled: true
+  note: '掲載漏れの棚卸しで追加（2026-11-17 W006 T640 2 回目）。東大阪市動物指導センターが新しい飼い主を募集している猫。city_higashiosaka-2（犬）と同じ作り。ページの節は「募集中の猫(動物指導センター)」と「猫の出会い広場」（市民間の仲介。載せない）。2026-11-17 時点はセンター 0 頭（「現在、譲渡対象猫はいません。」。Wayback 2025-03 も同じ）で、載っている猫数頭は出会い広場なので読まない。子のいる日の版が見つからないので、今日のページに HTML コメントで残っている個体のブロックの作りに合わせた。写真の規約は既存の東大阪市のページと同じ（無断転載禁止のみ）。'

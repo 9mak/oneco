@@ -347,3 +347,78 @@ def test_utsunomiya_zero_only_when_the_frame_is_there_and_no_animal_is():
     assert not _zero(_run(UTSU, broken))
     # 枠の見出しが変わった日も 0 頭にしない
     assert not _zero(_run(UTSU, zero.replace("譲渡動物情報", "お知らせ")))
+
+
+# --- 東大阪市 -------------------------------------------------------------
+HO_DOG, HO_CAT = "city_higashiosaka-2", "city_higashiosaka-3"
+
+
+def _uncomment_center_blocks(html: str) -> str:
+    """今日のページは、センター・ボランティアの節の個体のブロックを HTML コメントの中に残し、「現在…の情報はありません」を出している。
+    センターの子がいる日の版（Wayback に見つからない）を、そのコメントを外し 0 頭の文を消して再現する。
+    市民間の仲介（出会い広場）のコメント（alt が「ゆずりたい犬」「譲りたい猫」）は外さない。"""
+    import re
+
+    def un(m):
+        inner = m.group(1)
+        return inner if ("譲渡対象犬の画像" in inner or "譲渡対象猫の画像" in inner) else m.group(0)
+
+    out = re.sub(r"<!--(.*?)-->", un, html, flags=re.S)
+    for s in ("現在、譲渡対象犬の情報はありません。", "現在、ボランティア犬の情報はありません。", "現在、譲渡対象猫はいません。"):
+        out = out.replace(s, "")
+    return out
+
+
+def test_higashiosaka_registry():
+    for slug, species in ((HO_DOG, "dog"), (HO_CAT, "cat")):
+        s = SOURCES[slug]
+        assert s.mode == "recipe" and s.enabled and s.kind == "adoption" and s.prefecture == "大阪府", slug
+        assert s.species == species and s.phone == "072-963-6211" and s.recipe_path.exists(), slug
+        assert s.photo == "ok", slug  # 東大阪市の規約は無断転載禁止のみ
+
+
+def test_higashiosaka_today_is_zero_and_never_reads_the_matching_board():
+    # 今日はセンターの犬も譲渡ボランティアの犬も 0 頭。1 頭載っているのは「犬の出会い広場」（市民間の仲介）で、載せない
+    html = _fx("w006_city_higashiosaka-2_20261117.html")
+    assert "TD24-1" in html and "現在、譲渡対象犬の情報はありません" in html
+    assert _zero(_run(HO_DOG, html))
+    html = _fx("w006_city_higashiosaka-3_20261117.html")
+    assert "TC230512-1" in html and "現在、譲渡対象猫はいません" in html
+    assert _zero(_run(HO_CAT, html))
+
+
+def test_higashiosaka_zero_days_in_wayback():
+    for name in ("w006_city_higashiosaka-2_zero_wb20231002.html", "w006_city_higashiosaka-2_zero_wb20251215.html",
+                 "w006_city_higashiosaka-2_zero_wb20260514.html"):
+        assert _zero(_run(HO_DOG, _fx(name))), name
+    assert _zero(_run(HO_CAT, _fx("w006_city_higashiosaka-3_zero_wb20250324.html")))
+
+
+def test_higashiosaka_center_and_volunteer_dogs_are_read_when_present():
+    html = _uncomment_center_blocks(_fx("w006_city_higashiosaka-2_20261117.html"))
+    assert "現在、譲渡対象犬の情報はありません" not in html and "TD24-1" in html
+    c = _run(HO_DOG, html)
+    assert c.status == "ok", c.error
+    nos = [a["management_no"] for a in c.result.animals]
+    assert nos == ["D21@@@-2", "D231010-1", "D190530-2"]  # 出会い広場の TD24-1（alt「ゆずりたい犬」）は読まない
+    by = {a["management_no"]: a for a in c.result.animals}
+    assert by["D231010-1"]["breed"] == "トイ・プードル" and by["D231010-1"]["sex"] == "オス(去勢)" and by["D231010-1"]["color"] == "茶"
+    assert by["D190530-2"]["breed"] == "シーズー" and "人懐っこく穏やか" in by["D190530-2"]["note"]
+    assert all(a["species"] == "dog" for a in c.result.animals)
+    assert by["D231010-1"]["image_url"] and by["D21@@@-2"]["image_url"] is None  # 写真なしの雛形（pic_noimage）は写真にしない
+
+
+def test_higashiosaka_center_cats_are_read_when_present():
+    html = _uncomment_center_blocks(_fx("w006_city_higashiosaka-3_20261117.html"))
+    assert "現在、譲渡対象猫はいません" not in html
+    c = _run(HO_CAT, html)
+    assert c.status == "ok", c.error
+    assert c.result.animals and all(a["species"] == "cat" and a["management_no"] for a in c.result.animals)
+    assert not any(a["management_no"].startswith("TC") for a in c.result.animals)  # 出会い広場（TC…）は読まない
+
+
+def test_higashiosaka_zero_sentence_gone_without_animals_is_not_zero():
+    html = _fx("w006_city_higashiosaka-2_20261117.html").replace("現在、譲渡対象犬の情報はありません。", "")
+    assert not _zero(_run(HO_DOG, html))   # 1 つの節の文だけが消えた（作りが変わった）日は 0 頭にしない
+    html = _fx("w006_city_higashiosaka-3_20261117.html").replace("現在、譲渡対象猫はいません。", "")
+    assert not _zero(_run(HO_CAT, html))
