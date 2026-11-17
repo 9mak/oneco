@@ -259,7 +259,7 @@ def test_naha_today_reads_6_dogs_and_8_cats_from_the_intro_sections_only():
     cats = animals[6:]
     assert cats[0]["breed"] is None and cats[0]["sex"] == "メス(不妊済み)"
     # 「名前：まこ（譲渡交渉中）」は載せて note に出す（トライアル中と同じ扱い）
-    mako = [a for a in cats if a["name"].startswith("まこ")][0]
+    mako = next(a for a in cats if a["name"].startswith("まこ"))
     assert "譲渡交渉中" in mako["note"]
     assert _hits(NAHA, html) == []
 
