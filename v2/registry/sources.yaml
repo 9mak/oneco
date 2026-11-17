@@ -8541,3 +8541,27 @@ sources:
   enabled: true
   photo: pending
   note: "環境省リンク集の北海道（振興局・保健所 40 余りへのリンク集）から追加（2026-11-07 W006）。紋別保健所・遠軽支所の犬・猫情報ページのうち、迷い犬・猫の表（紋別・遠軽の犬と猫の 4 表。結合セルは無い単純な表）。2026-11-07 時点は紋別保健所の迷子の猫 1 行（令和8年11月5日に保健所の玄関前で保護、生後 1 ヶ月未満のキジトラ 2・グレートラ 1 の 3 頭）が載るので 1 件（頭数は note にそのまま入れる）。保管期限も note に載せる。子のいない表は「現在、迷い犬はいません。」「現在、迷子の猫はいません。」の行だけで、読まない。0 頭の日は全部の表がその行だけになり、動物の表にその行以外が無いときだけ 0 頭（empty_absent。この文は子のいる日も別の表に出るので empty_text にしない）。飼い主募集中の表は hokkaido_okhotsk-4（同じ URL）。写真の規約は未確認（photo: pending）。"
+- slug: kumamoto_doubutuaigo-9
+  name: 熊本県動物愛護センター（保護犬）
+  municipality: 熊本県動物愛護センター
+  prefecture: 熊本県
+  url: https://www.kumamoto-doubutuaigo.jp/animals/index/type_id:3/animal_id:1
+  kind: sheltered
+  species: dog
+  mode: recipe
+  recipe: recipes/kumamoto_doubutuaigo-9.yaml
+  enabled: true
+  photo: pending
+  note: '掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。「保健所・センターからの保護犬情報」。迷子でも譲渡対象でもないが、保健所やセンターで保護されている犬。既存の迷子（type_id:1）・譲渡（type_id:2）の 8 ページと同じテンプレートで、一覧に収容日・種類・性別・個体管理ナンバー・保健所・電話番号が揃う（電話・保健所は子ごとに出す）。2026-11-17 時点で 28 頭（20 件ずつ 2 ページ）。0 頭の日は「0件中 0～0件目を表示」（Wayback 2025-04）。写真は pending: 2026-11-13 の熊本県の許諾の返事は依頼した 8 ページ（センター・団体・個人の譲渡と迷子）についてで、type_id:3 のこのページは依頼に入れていなかった。熊本県へ改めて聞く（返事が来るまで写真を出さない）。'
+- slug: kumamoto_doubutuaigo-10
+  name: 熊本県動物愛護センター（保護猫）
+  municipality: 熊本県動物愛護センター
+  prefecture: 熊本県
+  url: https://www.kumamoto-doubutuaigo.jp/animals/index/type_id:3/animal_id:2
+  kind: sheltered
+  species: cat
+  mode: recipe
+  recipe: recipes/kumamoto_doubutuaigo-10.yaml
+  enabled: true
+  photo: pending
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。「保健所・センターからの保護猫情報」。保護犬（-9）と同じ扱い。2026-11-17 時点で 3 頭。0 頭の日は「0件中 0～0件目を表示」（Wayback 2024-12・2025-09）。
