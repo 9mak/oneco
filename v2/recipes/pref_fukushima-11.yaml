@@ -1,7 +1,7 @@
 # 福島県動物愛護センター相双支所の譲渡犬情報（joto-dog-soso.html）。相双支所の譲渡猫（pref_fukushima-9）と同じテンプレート。
 # 2026-11-17 は 0 頭（掲載日 2026年8月24日更新）: h2「現在飼い主さんを募集している犬」の下に、セルが空の雛形の表だけが残り、「現在…ありません」の文言は無い。
 # 犬が載った日の読み方は未確認（猫の表と同じ作りと推測して書いている）。0 頭は「表の中に写真が無い」ことで決める。
-rows: "div#main_body table:has(thead th)"
+rows: "div#main_body table:has(> thead)"  # soupsieve 4 の strict で :has() の中に子孫セレクタを書けない（#129 CI）
 row_filter:
   text_has_any: ["管理番号"]
 image: "img@src"

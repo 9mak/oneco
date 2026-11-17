@@ -155,7 +155,7 @@ def test_structure_change_with_children_is_not_zero():
 def _strip_animals(html: str, n: int) -> str:
     soup = BeautifulSoup(html, "lxml")
     if n in (6, 7):
-        for tr in soup.select("div#main_body tr:has(> td a[href^='#'] img)"):
+        for tr in soup.select("div#main_body tr:has(a[href^='#']):has(img)"):  # レシピの rows と同じ（soupsieve 4 の strict）
             tr.decompose()
         for a in soup.select("div#main_body a[id]:has(> strong)"):
             a.decompose()
