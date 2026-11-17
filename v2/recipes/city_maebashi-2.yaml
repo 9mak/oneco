@@ -1,0 +1,32 @@
+# 前橋市 【行方不明一覧】飼い主が行方を捜している動物の情報一覧（11960.html）。市民が探している迷子（kind: lost）。保護犬（city_maebashi。9484.html）とは別のページ。
+# h2「行方不明情報【犬】」「行方不明情報【猫・その他】」の下に表が 1 つずつ（犬 6・猫その他 30 行。2026-11-17）。見出し行（th）の下に 1 行 = 1 頭（7 列）:
+#   1 列目「受付日 (受付番号)」: 2026年10月5日 (YD2026-10-01)  /  2 列目「行方不明日時 場所」: 2026年9月8日 午後 吉岡町漆原（時刻・午前午後・朝・夜が付く日がある）
+#   3 列目「動物種別 種類」: 犬 雑種(柴犬系)  /  4 列目「性別 年齢」  /  5 列目「毛色 首輪等」  /  6 列目 特徴  /  7 列目 備考。
+# 猫その他の表には鳥（セキセイインコ）なども載るので、犬・猫以外は犬猫以外（other）で載せる。表の先頭に値の無い空の行が 1 つ残る（動物とみなさず捨てる）。
+# 写真が付くのは一部の行。迷子の写真は飼い主が届けたものなので photo: no（台帳。町田の前例）。
+# 一覧の日付は 2026-06 の版も 2026-11 の版も「現在」の更新で、古い届け出の滞留はない（解決した行は消える）ので年での絞り込みはしない。
+# 0 頭の日の版は Wayback に見つからない。表の枠はあるが受付番号（(Y…）のある行も写真の行も無い日だけ 0 頭にする。
+rows: "table tbody tr:has(td:nth-child(7))"
+image: "img@src"
+fields:
+  management_no: {selector: "td:nth-child(1)", regex: "[（(]\\s*([A-Za-z]+\\d{4}(?:-\\d+)+)\\s*[）)]"}
+  shelter_date: {selector: "td:nth-child(2)", regex: "^\\s*(\\d{4}年\\d+月(?:\\d+日|[上中下]旬))"}
+  location: {selector: "td:nth-child(2)", regex: "^\\s*\\d{4}年\\d+月(?:\\d+日|[上中下]旬)\\s*(?:(?:午前中|午前|午後|朝|昼|夕方|夜|明朝|\\d+時(?:\\d+分)?|頃)\\s*)*(.+)$"}
+  species: {selector: "td:nth-child(3)", regex: "^\\s*(\\S+)"}
+  breed: {selector: "td:nth-child(3)", regex: "^\\s*\\S+\\s+(.+)$"}
+  sex: {selector: "td:nth-child(4)", regex: "^\\s*(\\S+)"}
+  age: {selector: "td:nth-child(4)", regex: "^\\s*\\S+\\s+(.+)$"}
+  color: {selector: "td:nth-child(5)", regex: "^\\s*(\\S+)"}
+  note:
+    join:
+      - {selector: "td:nth-child(6)"}
+      - {selector: "td:nth-child(5)", regex: "^\\s*\\S+\\s+(.+)$", prefix: "首輪等："}
+      - {selector: "td:nth-child(7)"}
+    sep: " "
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+  allow_other: true
+empty_absent:
+  page: "h1:-soup-contains('行方不明一覧')"
+  none: "table tbody tr:has(td:-soup-contains('(Y')), table tbody tr:has(img)"
