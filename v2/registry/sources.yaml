@@ -8871,3 +8871,35 @@ sources:
   enabled: true
   photo: pending
   note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。札幌市動物愛護管理センターで譲渡できる猫。h2 の区分（人に馴れている猫・あまり人に馴れていない猫…）の下に、h3「名前（管理番号） 年齢 性別」→ 写真 → 紹介文。2026-11-17 時点で 42 頭（ページの「譲渡可能な成猫の数 42匹」と合う）。「一時的に譲渡対象外の猫」の 1 頭は載せない。子猫は写真・詳細を載せない方針のページ。写真は pending（札幌市は返事待ち・未依頼）。
+- slug: city_fukuyama-3
+  name: 福山市（里親募集中の犬）
+  municipality: 福山市
+  prefecture: 広島県
+  phone: 084-970-1201
+  address: 〒720-1143 福山市駅家町下山守546番地14
+  url: https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/326010.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/326010.html"
+  verified_address_url: "https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/326010.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/city_fukuyama-3.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640 2 回目）。福山市動物愛護センターが里親を募集している犬。既存の福山市の 2 ページ（迷い犬 city_fukuyama-1・迷い猫 -2）とは別。1 頭 = 1 つの表（番号・愛称・性別・毛色・種類・推定年齢・「この犬について」）。2026-11-17 時点で 36 頭。0 頭の日は表ごと消えるので、文言でなく「ページの枠はあるが表も写真も無い」ことで決める。写真の規約は既存の福山市のページと同じ（無断転載禁止のみ）。
+- slug: city_fukuyama-4
+  name: 福山市（里親募集中の猫）
+  municipality: 福山市
+  prefecture: 広島県
+  phone: 084-970-1201
+  address: 〒720-1143 福山市駅家町下山守546番地14
+  url: https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/380139.html
+  verified_at: '2026-11-17'
+  verified_phone_url: "https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/380139.html"
+  verified_address_url: "https://www.city.fukuyama.hiroshima.jp/soshiki/dobutsuaigo/380139.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/city_fukuyama-4.yaml
+  enabled: true
+  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640 2 回目）。福山市動物愛護センターが里親を募集している猫。city_fukuyama-3（犬）と同じ作り。2026-11-17 時点は 0 頭（「現在、譲渡対象の猫はいません。」。この文は今日の版にだけあり、Wayback の 0 頭の日（2026-03〜06）には出ないので根拠にしない）。子のいる日は Wayback 2025-10-08（9 頭）・2025-11-13（4 頭）で確認した。
