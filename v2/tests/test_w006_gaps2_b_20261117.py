@@ -312,6 +312,12 @@ def test_miyazaki_lost_dogs_today_read_the_notice_from_2025_too():
     assert (animals[0]["breed"], animals[0]["sex"], animals[0]["age"], animals[0]["location"]) == (
         "トイ・プードル", "オス", "老齢", "宮崎市佐土原町下田島の「宮崎国際ゴルフ倶楽部」付近")
     assert animals[1]["shelter_date"] == "令和8年8月30日" and animals[2]["breed"] == "豆柴"
+    # 注意書きの枠（「迷子の犬を探している方へお願い」）にイラストが付いても 1 頭にしない（#130 再レビュー F-02）
+    soup = BeautifulSoup(html, "lxml")
+    box = next(d for d in soup.select("article.body div.imgRTxtL, article.body div.imgTxtL") if "探している方へお願い" in d.get_text())
+    box.insert(0, soup.new_tag("img", src="/fs/onegai_illust.png"))
+    c = _run(MZ_LOST_DOG, str(soup))
+    assert c.status == "ok" and [a["management_no"] for a in c.result.animals] == ["20261106", "20261007", "20261006", "20250704"], c.error
 
 
 def test_miyazaki_sheltered_cats_today_read_this_years_ones_and_keep_the_wording_of_a_citizen_keeping_it():
@@ -342,6 +348,8 @@ def test_miyazaki_other_days_in_wayback():
     # 先頭に空の段落がある届け出（20260329）も、種類と性別を取る
     calico = next(a for a in c.result.animals if a["management_no"] == "20260329")
     assert (calico["breed"], calico["sex"]) == ("雑種", "メス")
+    # 「…体重3キロ ピンクの首輪 宮崎市加納乙より行方不明です。」の所在地は直前の語だけ（#130 再レビュー F-03）
+    assert calico["location"] == "宮崎市加納乙"
     assert all(not a["breed"] or "情報" not in a["breed"] for a in c.result.animals)
     html = _fx("w006_city_miyazaki-6_child_wb20260513.html")
     c = _run(MZ_SHELT_CAT, html)

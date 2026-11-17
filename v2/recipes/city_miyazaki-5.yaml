@@ -5,6 +5,7 @@
 rows: "article.body div.imgRTxtL, article.body div.imgTxtL"
 row_filter:
   min_text_length: 10   # 1 つの届け出の 2 枚目以降の写真は文字の無い枠に入る（20260302 の 202603022.jpg）。それを 1 頭にしない
+  text_has_any: ["迷子猫情報", "迷子犬情報", "猫保護情報", "犬保護情報", "行方不明", "保護しています"]   # 届け出の枠だけ。注意書きの枠（「迷子の犬を探している方へお願い」）に絵が付いても 1 頭にしない（#130 再レビュー F-02）
 image: "img@src"
 fields:
   management_no: {regex: "(?:迷子猫情報|迷子犬情報|猫保護情報|犬保護情報)\\s*[:：]?\\s*(\\d{8}(?:-\\d+)?)"}

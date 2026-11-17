@@ -7,6 +7,7 @@
 rows: "article.body div.imgRTxtL, article.body div.imgTxtL"
 row_filter:
   min_text_length: 10   # 1 つの届け出の 2 枚目以降の写真は文字の無い枠に入る（20260302 の 202603022.jpg）。それを 1 頭にしない
+  text_has_any: ["迷子猫情報", "迷子犬情報", "猫保護情報", "犬保護情報", "行方不明", "保護しています"]   # 届け出の枠だけ。注意書きの枠（「迷子の犬を探している方へお願い」）に絵が付いても 1 頭にしない（#130 再レビュー F-02）
 image: "img@src"
 fields:
   management_no: {regex: "(?:迷子猫情報|迷子犬情報|猫保護情報|犬保護情報)\\s*[:：]?\\s*(\\d{8}(?:-\\d+)?)"}
@@ -14,7 +15,7 @@ fields:
   sex: {regex: "(オス|メス)"}   # 2 段落目に無く 3 段落目に「オス（去勢済み） 1才8ヶ月」と書く届け出もある（2026-11-17 迷子猫 20260719。#130 reviewer F-06）
   age: {selector: "p:nth-of-type(2)", regex: "(老齢|成齢|\\d+歳|\\d+(?:ヶ|か|カ)月|推定[^、,]+)"}
   shelter_date: {regex: "(令和\\d+年\\d+月\\d+日)"}
-  location: {regex: "[、,]\\s*([^、,]+?)\\s*より行方不明"}
+  location: {regex: "[、,\\s]\\s*([^、,\\s]+?)\\s*より行方不明"}   # 直前の語だけ（「…体重3キロ ピンクの首輪 宮崎市加納乙より」。#130 再レビュー F-03）
   note:
     join:
       - {selector: "p:nth-of-type(2)"}
