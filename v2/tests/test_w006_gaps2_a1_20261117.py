@@ -181,3 +181,107 @@ def test_mito_zero_is_not_guessed_when_the_heading_changes():
     zero = str(soup)
     assert _zero(_run(MITO_CAT, zero))
     assert not _zero(_run(MITO_CAT, zero.replace("（0件）", "")))
+
+
+# --- 尼崎市 ---------------------------------------------------------------
+AMA = "city_amagasaki-2"
+
+
+def test_amagasaki_registry():
+    s = SOURCES[AMA]
+    assert s.mode == "recipe" and s.enabled and s.kind == "adoption" and s.prefecture == "兵庫県" and s.species == "mixed"
+    assert s.phone == "06-6434-2233" and s.address and s.recipe_path.exists()
+    assert s.photo == "pending"  # 尼崎市は「コンテンツの使用は事前に問い合わせ」（10/29 の見直し）。新しいページも返事が来るまで pending
+
+
+def test_amagasaki_today_reads_7_cats_and_the_trial_dog():
+    html = _fx("w006_city_amagasaki-2_20261117.html")
+    c = _run(AMA, html)
+    assert c.status == "ok", c.error
+    animals = c.result.animals
+    names = [a["name"] for a in animals]
+    assert names[:7] == ["みど", "モカ", "あずさ", "りつ", "カヌレ", "ダイヤ", "ルル"] and names[7].startswith("レオ")
+    assert [a["species"] for a in animals] == ["cat"] * 7 + ["dog"]
+    assert animals[0]["sex"] == "メス" and animals[0]["color"] == "白黒" and animals[0]["age"].startswith("7歳齢")
+    assert all(a["image_url"] for a in animals) and len({a["id"] for a in animals}) == 8
+    assert animals[7]["breed"] == "シーズー" and "トライアル中" in animals[7]["note"]
+    assert "とっても甘えん坊" in animals[0]["note"]
+    assert _hits(AMA, html) == []
+
+
+def test_amagasaki_other_days_in_wayback():
+    c = _run(AMA, _fx("w006_city_amagasaki-2_child_wb20260920.html"))
+    assert c.status == "ok", c.error
+    assert len(c.result.animals) == 10 and sum(1 for a in c.result.animals if "トライアル中" in (a["note"] or "")) == 1
+    c = _run(AMA, _fx("w006_city_amagasaki-2_child_wb20260618.html"))
+    assert c.status == "ok", c.error
+    assert len(c.result.animals) == 10 and sum(1 for a in c.result.animals if "トライアル中" in (a["note"] or "")) == 3
+
+
+def test_amagasaki_zero_is_only_when_the_frame_is_there_and_no_animal_is():
+    # 0 頭の日の版は Wayback に無い（2026-06〜11 の 3 版はいずれも子がいる）。今日の保存ページから動物の表・写真・見出し番号を消して再現する
+    soup = BeautifulSoup(_fx("w006_city_amagasaki-2_20261117.html"), "lxml")
+    for el in soup.select("article table.w100, article p.imagecenter, article h3"):
+        el.decompose()
+    zero = str(soup)
+    assert _zero(_run(AMA, zero))
+    # 表の class が変わった日（見出し・写真は残る）は 0 頭にしない
+    broken = _fx("w006_city_amagasaki-2_20261117.html").replace('class="w100"', 'class="w90"')
+    assert not _zero(_run(AMA, broken))
+    # 見出しの語（枠）が変わった日も 0 頭にしない
+    assert not _zero(_run(AMA, zero.replace("新しい飼い主を探している", "")))
+
+
+# --- 那覇市 ---------------------------------------------------------------
+NAHA = "city_naha-1"
+
+
+def test_naha_registry():
+    s = SOURCES[NAHA]
+    assert s.mode == "recipe" and s.enabled and s.kind == "adoption" and s.prefecture == "沖縄県" and s.species == "mixed"
+    assert s.phone == "098-951-1530" and "南風原町" in s.address and s.recipe_path.exists()
+    assert s.photo == "ok"  # 那覇市の規約は無断転載禁止のみ
+
+
+def test_naha_today_reads_6_dogs_and_8_cats_from_the_intro_sections_only():
+    html = _fx("w006_city_naha-1_20261117.html")
+    c = _run(NAHA, html)
+    assert c.status == "ok", c.error
+    animals = c.result.animals
+    assert len(animals) == 14 and len({a["id"] for a in animals}) == 14 and all(a["image_url"] for a in animals)
+    assert [a["species"] for a in animals] == ["dog"] * 6 + ["cat"] * 8
+    names = [a["name"] for a in animals]
+    assert names[:6] == ["フーガ", "平次(へいじ)", "ボーノ", "仁(じん)", "リュウ", "ラナ"]  # 全角の括弧はエンジンが半角にそろえる
+    assert names[6:9] == ["ちよ", "ビジェ", "チャバ"]
+    first = animals[0]
+    assert (first["breed"], first["sex"], first["age"], first["size"]) == ("雑種", "オス(去勢済み)", "10歳", "約14kg")
+    assert "元気で遊ぶことが大好きです" in first["note"] and "写真撮影日" not in first["note"]
+    cats = animals[6:]
+    assert cats[0]["breed"] is None and cats[0]["sex"] == "メス(不妊済み)"
+    # 「名前：まこ（譲渡交渉中）」は載せて note に出す（トライアル中と同じ扱い）
+    mako = [a for a in cats if a["name"].startswith("まこ")][0]
+    assert "譲渡交渉中" in mako["note"]
+    assert _hits(NAHA, html) == []
+
+
+def test_naha_other_day_in_wayback_reads_5_dogs_and_6_cats():
+    html = _fx("w006_city_naha-1_child_wb20260219.html")
+    c = _run(NAHA, html)
+    assert c.status == "ok", c.error
+    assert [a["name"] for a in c.result.animals if a["species"] == "dog"] == ["ライム", "フーガ", "マルコ", "平次(へいじ)", "くるり"]
+    assert len([a for a in c.result.animals if a["species"] == "cat"]) == 6
+    assert _hits(NAHA, html) == []
+
+
+def test_naha_zero_only_when_the_frame_is_there_and_no_animal_is():
+    # 0 頭の日の版は Wayback に無い（2026-02 と今日だけ）。今日の保存ページから動物の見出し・写真を消して再現する
+    soup = BeautifulSoup(_fx("w006_city_naha-1_20261117.html"), "lxml")
+    for el in soup.select("div#voice h3, div#voice p.imagecenter"):
+        el.decompose()
+    zero = str(soup)
+    assert _zero(_run(NAHA, zero))
+    # 動物の見出しが h4 に変わった日（写真は残る）は 0 頭にしない
+    broken = _fx("w006_city_naha-1_20261117.html").replace("<h3>", "<h4>").replace("</h3>", "</h4>")
+    assert not _zero(_run(NAHA, broken))
+    # 枠の見出しが変わった日も 0 頭にしない
+    assert not _zero(_run(NAHA, zero.replace("譲渡に関すること", "お知らせ")))
