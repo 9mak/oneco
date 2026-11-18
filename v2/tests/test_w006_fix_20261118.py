@@ -277,6 +277,16 @@ def test_souya_heading_row_in_thead_does_not_drop_the_first_cat() -> None:
     assert [a["management_no"] for a in res.animals] == ["R8-1", "R8-2", "R8-3~6"]
 
 
+def test_souya_row_with_a_missing_cell_is_not_listed_with_a_wrong_place() -> None:
+    # 2 行目（R8-2）の公開期限のセルが欠けた日。8 列目がポスターのリンク文字になるので、その行は載せない（#133 reviewer R1）
+    soup = BeautifulSoup(_fx(SOUYA_CATS), "lxml")
+    cells = _souya_table_rows(soup)[2].find_all("td", recursive=False)
+    assert len(cells) == 9
+    cells[6].extract()
+    res = _run(SOUYA, str(soup))
+    assert [(a["management_no"], a["location"]) for a in res.animals] == [("R8-1", "稚内保健所"), ("R8-3~6", "稚内保健所")]
+
+
 def test_souya_note_row_is_not_an_animal() -> None:
     # 表の末尾に注記の行（列をまたぐ 1 セル）が足された日も、動物にしない
     soup = BeautifulSoup(_fx(SOUYA_CATS), "lxml")
