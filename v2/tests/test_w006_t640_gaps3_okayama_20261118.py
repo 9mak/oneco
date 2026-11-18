@@ -60,7 +60,7 @@ def test_dog_today_reads_30_dogs_and_skips_the_two_already_decided():
     by = {a["management_no"]: a for a in animals}
     # 括弧は半角にそろえる（エンジンの正規化）。2 つ目の節（譲渡に条件がある犬達・ZOOねるパークの犬たち・他の施設で訓練中）の子も読む。年齢・フィラリア・体重の書き方が違っても名前と性別は同じに取れる
     assert (by["1D2024171"]["name"], by["1D2024171"]["sex"], by["1D2024171"]["age"]) == ("サンドくん", "オス", "推定4才(令和8年現在)")
-    assert by["1D2025072"]["name"] == "エムちゃん" and "陽性" in by["1D2025072"]["note"]
+    assert by["1D2025072"]["name"] == "エムちゃん" and "フィラリア：陽性(治療中)" in by["1D2025072"]["note"] and "体重：約15キロほど" in by["1D2025072"]["note"]
     assert by["1D2024209"]["name"] == "乙(オト)くん" and by["R04030"]["name"] == "茶太くん"
     # 名前の欄が写真のブロックの中にあっても（お声かかり中の子）読み、お声かかり中は note に出す（トライアル中と同じ。載せて状況を出す）
     called = [a["management_no"] for a in animals if "お声かかり中" in (a.get("note") or "")]

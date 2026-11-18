@@ -26,8 +26,8 @@ fields:
   note:
     join:
       - {selector: "h3", regex: "(お声かかり中)"}
-      - {regex: "(体重[:：]\\s*\\S+)"}
-      - {regex: "(フィラリア\\S*[:：]\\s*\\S+)"}
+      - {regex: "体重[:：]\\s*(\\S+)", prefix: "体重："}
+      - {regex: "フィラリア[^:：\\s]*[:：]\\s*(\\S+)", prefix: "フィラリア："}
     sep: "。"
 empty_text:
   - "現在、譲渡対象の猫はいません"
