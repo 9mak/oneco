@@ -2,7 +2,8 @@
 
 - 都道府県ページの並びは、区分の順（里親募集 → 保護中 → 迷子 → 探してます）を保ったまま、同じ区分の中では写真のある子を先に出す
   （写真を止めている子は写真なしとして後ろ。元の並びは区分・写真の有無ごとに保つ）
-- 写真なしの枠の絵は、犬は犬・猫は猫のシルエット（それ以外は今の肉球）
+- 写真なしの枠の絵（犬・猫のシルエット、それ以外は肉球）は 2026-11-19 にロゴと同じ色の丸 2 つへ差し替えた。
+  その試験は test_site_ph_dots_20261119.py
 """
 from __future__ import annotations
 
@@ -69,16 +70,3 @@ def test_withheld_photos_count_as_no_photo(tmp_path: Path):
     sources = SAGA["sources"] + [{**SAGA["sources"][0], "slug": "pref_saga-pending", "photo": "pending"}]
     animals = [_a("withheld0001", kind="adoption", source="pref_saga-pending"), _a("shown0000001", kind="adoption")]
     assert _order(_build(tmp_path, animals, sources)) == ["shown0000001", "withheld0001"]
-
-
-def test_placeholder_shows_a_dog_or_cat_silhouette(tmp_path: Path):
-    out = _build(tmp_path, [_a("dognophoto01", species="dog", image_url=None), _a("catnophoto01", species="cat", image_url=None),
-                            _a("othnophoto01", species="other", image_url=None)])
-    assert 'class="ph ph-dog"' in (out / "animals" / "dognophoto01" / "index.html").read_text(encoding="utf-8")
-    assert 'class="ph ph-cat"' in (out / "animals" / "catnophoto01" / "index.html").read_text(encoding="utf-8")
-    oth = (out / "animals" / "othnophoto01" / "index.html").read_text(encoding="utf-8")
-    assert 'class="ph"' in oth and "ph-dog" not in oth and "ph-cat" not in oth
-    css = (out / "style.css").read_text(encoding="utf-8")
-    for sp in ("dog", "cat"):
-        assert re.search(rf'\.ph-{sp}::before\{{[^}}]*url\("data:image/svg\+xml,', css), sp
-        assert f".ph-{sp}::after" in css           # 肉球の指は消す

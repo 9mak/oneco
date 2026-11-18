@@ -597,19 +597,22 @@ def page(cfg: dict[str, Any], *, title: str, desc: str, path: str, body: str,
 
 # ---------------------------------------------------------------- partials
 
+# 写真なしの枠の絵（2026-11-19）: ロゴ「ふたつの円」を小さくした丸 2 つ（コーラル = 犬のポム、ブルーグリーン = 猫のビリー）。
+# agy と作った試作プレビューの .ph-dots。種別では変えない。飾りなので読み上げない
+PH_DOTS = '<div class="ph-dots" aria-hidden="true"><i></i><i></i></div>'
+
+
 def placeholder(a: dict[str, Any] | None = None, *, small: bool = False, button_url: str = "") -> str:
-    """写真が無い子の枠。絵は CSS（.ph の疑似要素）だけで描く。写真を止めている掲載元（T630: 許諾待ち・不可）の子は
+    """写真が無い子の枠。丸 2 つ（PH_DOTS）の下に文を置く。写真を止めている掲載元（T630: 許諾待ち・不可）の子は
     掲載元には写真があるので「写真はありません」とは書かない。それ以外も、取れなかっただけかもしれないので「無い」とは言い切らない（Codex #22）。
     small は一覧の小さな枠（96px）用に改行を入れた短い文。button_url があれば「自治体のページで写真を見る」ボタンを添える（個体ページ）。"""
     withheld = bool(a and a.get("_photo_withheld"))
     msg = "写真は自治体のページで見られます" if withheld else "写真は自治体のページでご確認ください"
     shown = ("写真は自治体の<br>ページで見られます" if withheld else "写真は掲載元で<br>ご確認ください") if small else esc(msg)
-    sp = species_key(a) if a else "none"
-    cls = f"ph ph-{sp}" if sp in ("dog", "cat") else "ph"   # 犬・猫はシルエット、それ以外は肉球（2026-11-13）
     if button_url:   # ボタン（リンク）を含むので role="img" にしない
-        return (f'<div class="{cls}"><span>{shown}</span><a class="ph-btn" href="{esc(button_url)}" rel="noopener" '
+        return (f'<div class="ph">{PH_DOTS}<span>{shown}</span><a class="ph-btn" href="{esc(button_url)}" rel="noopener" '
                 f'target="_blank">自治体のページで写真を見る ↗</a></div>')
-    return f'<div class="{cls}" role="img" aria-label="{msg}"><span>{shown}</span></div>'
+    return f'<div class="ph" role="img" aria-label="{msg}">{PH_DOTS}<span>{shown}</span></div>'
 
 
 def photo_box(a: dict[str, Any], *, big: bool = False) -> str:
@@ -1120,9 +1123,9 @@ def build_robots(cfg: dict[str, Any]) -> str:
 CSS = """
 /* 配色は旧サイト frontend/app/globals.css の WCAG AA パレットを引き継ぐ:
    primary #0369a1（白地 7.21:1）/ #075985（hover）、文字 #1f2937 / #5b6775、focus #3b82f6。
-   ブランドの 2 色（コーラル #E8826E = 犬のポム、ブルーグリーン #6FAEBB = 猫のビリー）は about ページの飾りに使う。
+   ブランドの 2 色（コーラル #E8826E = 犬のポム、ブルーグリーン #6FAEBB = 猫のビリー）は about ページの飾りと、写真なしの枠の丸 2 つに使う。
    2026-11-15 UI 刷新（agy と作った試作プレビュー）: 幅 860px、区分は 里親募集 = 緑・保護中 = 青・飼い主が探してます = オレンジ */
-:root{--bg:#fcfbf9;--card:#fff;--ink:#1f2937;--mute:#5b6775;--line:#e5e7eb;--accent:#0369a1;--accent-dark:#075985;--accent-soft:#f0f9ff;--accent-line:#bae6fd;--focus:#3b82f6;--coral:#E8826E;--teal:#6FAEBB;--dog:#fdeae4;--dog-ink:#9a3a26;--cat:#e4f1f4;--cat-ink:#21606c;--adopt:#d1fae5;--adopt-ink:#065f46;--shelter:#e0f2fe;--shelter-ink:#075985;--lost:#ffedd5;--lost-ink:#9a3412;--ph:#b3c0cc}
+:root{--bg:#fcfbf9;--card:#fff;--ink:#1f2937;--mute:#5b6775;--line:#e5e7eb;--accent:#0369a1;--accent-dark:#075985;--accent-soft:#f0f9ff;--accent-line:#bae6fd;--focus:#3b82f6;--coral:#E8826E;--teal:#6FAEBB;--dog:#fdeae4;--dog-ink:#9a3a26;--cat:#e4f1f4;--cat-ink:#21606c;--adopt:#d1fae5;--adopt-ink:#065f46;--shelter:#e0f2fe;--shelter-ink:#075985;--lost:#ffedd5;--lost-ink:#9a3412}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",Meiryo,sans-serif;line-height:1.6;font-size:16px;padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -1219,7 +1222,7 @@ p{margin:.4em 0}
 .card{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;align-items:start;text-decoration:none;color:var(--ink)}
 @media (min-width:560px){.card{grid-template-columns:120px minmax(0,1fr);padding:12px}}
 .card:hover{border-color:var(--accent)}
-.thumb{position:relative;width:96px;height:96px;border-radius:8px;background:#e9edf1;overflow:hidden;container-type:inline-size}
+.thumb{position:relative;width:96px;height:96px;border-radius:8px;background:#e9edf1;overflow:hidden}
 @media (min-width:560px){.thumb{width:120px;height:104px}}
 .thumb img{width:100%;height:100%;object-fit:contain}
 .card-main{min-width:0;display:flex;flex-direction:column;gap:4px}
@@ -1239,19 +1242,21 @@ p{margin:.4em 0}
 .animal-grid .attr{font-size:11px;padding:1px 5px}
 .animal-grid .card-muni{font-size:.76rem}
 .animal-grid .card-note{display:none}
-/* 写真が無いときの枠（犬・猫はシルエット、それ以外は肉球。絵は ::before / ::after） */
+/* 写真が無いときの枠（絵はロゴと同じ色の丸 2 つ .ph-dots。丸・文・ボタンをひとまとまりで中央に置く。種別では変えない） */
 .thumb img+.ph,.detail-media img+.ph{display:none}
 .thumb.noimg .ph,.detail-media.noimg .ph{display:flex}
-.ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 2px 6%;background:linear-gradient(160deg,#e8edf2,#d3dbe3);color:#5b6775;font-size:clamp(9px,7cqw,30px);text-align:center}
-.ph span{position:relative;letter-spacing:0;line-height:1.3}
+.ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 2px;background:linear-gradient(160deg,#e8edf2,#d3dbe3);color:#5b6775;text-align:center}
+.ph-dots{display:flex;margin-bottom:4px}
+.ph-dots i{display:block;width:14px;height:14px;border-radius:50%;opacity:.65}
+.ph-dots i:first-child{background:var(--coral);margin-right:-4px}
+.ph-dots i:last-child{background:var(--teal)}
+.ph span{letter-spacing:0;line-height:1.3}
 .thumb .ph span{font-size:10px}
 .animal-grid .thumb .ph span{font-size:12px}
 .detail-media .ph span{font-size:13px;padding:0 8px}
-.ph::before{content:"";position:absolute;left:50%;top:50%;width:2.8em;height:2.4em;margin:-.7em 0 0 -1.4em;background:var(--ph);border-radius:50%/55% 55% 45% 45%}
-.ph::after{content:"";position:absolute;left:50%;top:50%;width:5em;height:2.2em;margin:-2.5em 0 0 -2.5em;background:radial-gradient(circle at .6em 1.6em,var(--ph) .55em,transparent .6em),radial-gradient(circle at 1.9em .6em,var(--ph) .6em,transparent .65em),radial-gradient(circle at 3.1em .6em,var(--ph) .6em,transparent .65em),radial-gradient(circle at 4.4em 1.6em,var(--ph) .55em,transparent .6em)}
-.ph-btn{position:relative;z-index:1;margin-top:10px;padding:7px 14px;border-radius:999px;background:#fff;color:var(--accent-dark);border:1px solid var(--accent-line);font-size:12.5px;font-weight:600;text-decoration:none;min-height:42px;display:inline-flex;align-items:center}
+.ph-btn{margin-top:10px;padding:7px 14px;border-radius:999px;background:#fff;color:var(--accent-dark);border:1px solid var(--accent-line);font-size:12.5px;font-weight:600;text-decoration:none;min-height:42px;display:inline-flex;align-items:center}
 /* 個体ページ */
-.detail-media{position:relative;aspect-ratio:4/3;max-height:360px;width:100%;background:#e9edf1;overflow:hidden;container-type:inline-size}
+.detail-media{position:relative;aspect-ratio:4/3;max-height:360px;width:100%;background:#e9edf1;overflow:hidden}
 .detail-media img{width:100%;height:100%;object-fit:contain}
 .detail-box{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .detail-body{padding:16px}
@@ -1306,23 +1311,6 @@ p{margin:.4em 0}
 .two-circles{display:flex;justify-content:center;margin:28px 0 14px}
 [hidden]{display:none!important}
 """
-
-# 写真なしの枠の絵（2026-11-13）: 犬は垂れ耳とまるい鼻先、猫はとがった耳としっぽの、座った姿のシルエット。色は肉球と同じ #b3c0cc
-_PH_SVG = {
-    "dog": ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g fill="#b3c0cc">'
-            '<ellipse cx="50" cy="71" rx="19" ry="21"/><circle cx="50" cy="35" r="15"/><ellipse cx="50" cy="44" rx="8" ry="6.5"/>'
-            '<ellipse cx="35.5" cy="36" rx="5.5" ry="11" transform="rotate(18 35.5 36)"/>'
-            '<ellipse cx="64.5" cy="36" rx="5.5" ry="11" transform="rotate(-18 64.5 36)"/></g>'
-            '<path d="M66 84 Q84 80 80 64" fill="none" stroke="#b3c0cc" stroke-width="6" stroke-linecap="round"/></svg>'),
-    "cat": ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g fill="#b3c0cc">'
-            '<ellipse cx="50" cy="71" rx="18" ry="21"/><circle cx="50" cy="36" r="14"/>'
-            '<path d="M37 31 L39 15 L49 25 Z"/><path d="M63 31 L61 15 L51 25 Z"/></g>'
-            '<path d="M66 86 Q88 84 82 62" fill="none" stroke="#b3c0cc" stroke-width="5.5" stroke-linecap="round"/></svg>'),
-}
-CSS += "".join(
-    f'.ph-{sp}::before{{width:4.2em;height:4.2em;margin:-2.7em 0 0 -2.1em;border-radius:0;'
-    f'background:url("data:image/svg+xml,{quote(svg)}") center/contain no-repeat}}\n.ph-{sp}::after{{display:none}}\n'
-    for sp, svg in _PH_SVG.items())
 
 
 # ---------------------------------------------------------------- driver
