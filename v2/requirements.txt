@@ -1,6 +1,10 @@
-httpx
-beautifulsoup4
-lxml
-pyyaml
-pdfplumber
-playwright
+# 本番（ops/macos/install.sh が pip install -r で入れる）と CI（.github/workflows/v2-ci.yml が -c で同じ版に固定する）で同じ版を使う。
+# 2026-11-18 まで版の指定が無く、本番クローンは作った日の soupsieve 2.10、CI は毎回最新の 4.1.1 で、:has() の受け付け方が違っていた
+# （レシピは両方で確かめる必要があった。W006 T626・T644）。版を上げるときはここを直し、本番は install.sh を入れ直す。
+httpx==0.28.1
+beautifulsoup4==4.15.0
+soupsieve==4.1.1
+lxml==6.1.3
+pyyaml==6.0.3
+pdfplumber==0.11.10
+playwright==1.63.0

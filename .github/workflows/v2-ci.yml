@@ -29,7 +29,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install httpx beautifulsoup4 lxml pyyaml pdfplumber pytest
+      # 版は本番と同じ v2/requirements.txt に合わせる（-c は constraints。Playwright は入れないので -r ではなく名指しで入れる。W006 T644）
+      - run: pip install -c v2/requirements.txt httpx beautifulsoup4 lxml pyyaml pdfplumber pytest
       - run: python -m pytest -q
         working-directory: v2
 
@@ -54,6 +55,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install beautifulsoup4 lxml pyyaml pytest
+      - run: pip install -c v2/requirements.txt beautifulsoup4 lxml pyyaml pytest
       - run: python -m pytest -q tests/test_fixtures_pii_guard.py
         working-directory: v2
