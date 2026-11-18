@@ -8,7 +8,7 @@
 # 並ぶ（= 1 頭最大 1 組）。犬猫の別は直前の h2 見出しで決める。
 # 動物がいない組は値セルが空（&nbsp;）で管理番号も収容日も無く、写真も汎用プレースホルダ
 # （dog.png/cat.png/cat_1.png/inai.png/inu00.png/neko00.png/img_purpose_*.png 等、事務所ごとに
-# ファイル名が違う）。実写真は全て .jpg なので image.exclude で .png を一律除外する。
+# ファイル名が違う）。2026-11-16 までは実写真が全て .jpg で、.png を一律に除外していた（今の扱いは下の (4)）。
 # 2026-10-04 変更（2 点）:
 #  (1) 射水支所だけ div.col2 を使わず「写真の td + table.datatable の td」を並べた外側のレイアウト表で
 #      組んでいるため、rows が射水支所の犬・ねこを 1 件も拾えていなかった。外側の表も行に加えた。
@@ -30,7 +30,7 @@ rows: "div.col2, table:has(table.datatable)"
 image:
   selector: ":scope > div.col2L img, td:not(:has(table)) img@src"
   exclude:
-    - "/(?!\\d{8})[^/]*\\.png$"
+    - "(?:^|/)(?!\\d{8})[^/]*\\.png$"
 fields:
   management_no: {label: "管理番号"}
   shelter_date: {selector: "table.datatable", regex: "収容日\\s*((?:(?:令和|平成)\\s*\\d+|20\\d{2})\\s*年.*?\\d{1,2}\\s*月\\s*\\d{1,2}\\s*日)"}

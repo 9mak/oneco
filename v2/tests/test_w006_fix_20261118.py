@@ -192,6 +192,15 @@ def test_toyama_placeholder_png_is_not_a_photo(name: str) -> None:
     assert [(a["management_no"], a["image_url"]) for a in res.animals] == [("保護猫8-1", None)]
 
 
+@pytest.mark.parametrize("src", ["dog.png", "./cat.png", "../images/inai.png"])
+def test_toyama_placeholder_png_with_a_relative_path_is_not_a_photo(src: str) -> None:
+    # 仮画像の src が「/」で始まらない書き方でも写真にしない（#133 reviewer P5）
+    html = _swap(_fx(HIMI_CAT), "/images/14793/20261117cat1.png", src)
+    html = _swap(html, "/images/14793/20261117cat2.png", src)
+    res = _run(HIMI, html)
+    assert [(a["management_no"], a["image_url"]) for a in res.animals] == [("保護猫8-1", None)]
+
+
 # --- 北海道 宗谷総合振興局: ネットワーク事業の表に初めて子が載った -----------------------------------------------------
 def test_souya_reads_the_three_rows_of_the_network_table() -> None:
     c = _collect(SOUYA, _fx(SOUYA_CATS))
@@ -212,25 +221,73 @@ def test_souya_reads_the_three_rows_of_the_network_table() -> None:
 
 
 def test_souya_does_not_read_the_owners_note_section() -> None:
-    # 「飼い主さがしノート」の節は飼い主個人の掲載（保健所にはいない）。写真の p は行にしない
+    # 「飼い主さがしノート」の節は飼い主個人の掲載（保健所にはいない）。写真の p は行にしない。
+    # 行になるのはネットワーク事業の表の 4 行（見出し行 + 3 掲載）だけで、見出し行は動物にならない
     html = _fx(SOUYA_CATS)
     assert "あんみつ" in html
     res = _run(SOUYA, html)
-    assert res.rows == 3
+    assert res.rows == 4
+    assert [a["management_no"] for a in res.animals] == ["R8-1", "R8-2", "R8-3~6"]
+    assert [d.reason for d in res.dropped] == ["必須項目が読めない（species）"]
 
 
-def test_souya_shifted_columns_are_not_read_as_animals() -> None:
-    # 列が 1 つ増えて種類の列がずれた日は、種類が犬猫と読めないので 1 頭も載せず failed で通知する
-    soup = BeautifulSoup(_fx(SOUYA_CATS), "lxml")
+def _souya_table_rows(soup: BeautifulSoup) -> list:
     trs = soup.select("table:has(caption) tr")
     assert len(trs) == 4
-    for tr in trs:
+    return trs
+
+
+@pytest.mark.parametrize("at", [0, 3, 6, 7])
+def test_souya_inserted_column_is_not_read_with_shifted_values(at: int) -> None:
+    # 列が 1 つ増えた日（先頭・途中・収容場所の手前）。位置で読むので、ずれた値（収容場所に日付など）で載せず failed で通知する
+    soup = BeautifulSoup(_fx(SOUYA_CATS), "lxml")
+    for i, tr in enumerate(_souya_table_rows(soup)):
         td = soup.new_tag("td")
-        td.string = "新しい列"
-        tr.insert(0, td)
+        td.string = "体格" if i == 0 else "2026-12-01"
+        tr.insert(at, td)
     c = _collect(SOUYA, str(soup))
     assert c.status == "failed", c.status
     assert c.result is not None and c.result.animals == []
+
+
+def test_souya_swapped_columns_are_not_read() -> None:
+    # 年齢と毛色の列が入れ替わった日も、入れ替わった値のまま載せない
+    soup = BeautifulSoup(_fx(SOUYA_CATS), "lxml")
+    for tr in _souya_table_rows(soup):
+        tds = tr.find_all("td", recursive=False)
+        age, color = tds[3], tds[4]
+        color.extract()
+        age.insert_before(color)
+    c = _collect(SOUYA, str(soup))
+    assert c.status == "failed", c.status
+
+
+def test_souya_heading_row_in_thead_does_not_drop_the_first_cat() -> None:
+    # 見出し行だけ thead に包まれた日も、tbody の 1 行目（R8-1）を見出し扱いで落とさない
+    soup = BeautifulSoup(_fx(SOUYA_CATS), "lxml")
+    table = soup.select_one("table:has(caption)")
+    assert table is not None
+    head = _souya_table_rows(soup)[0].extract()
+    thead = soup.new_tag("thead")
+    thead.append(head)
+    tbody = table.find("tbody")
+    assert tbody is not None
+    tbody.insert_before(thead)
+    res = _run(SOUYA, str(soup))
+    assert [a["management_no"] for a in res.animals] == ["R8-1", "R8-2", "R8-3~6"]
+
+
+def test_souya_note_row_is_not_an_animal() -> None:
+    # 表の末尾に注記の行（列をまたぐ 1 セル）が足された日も、動物にしない
+    soup = BeautifulSoup(_fx(SOUYA_CATS), "lxml")
+    last = _souya_table_rows(soup)[-1]
+    row = soup.new_tag("tr")
+    td = soup.new_tag("td", attrs={"colspan": "9"})
+    td.string = "※見学は予約が必要です。犬猫の状態により公開を終えることがあります。"
+    row.append(td)
+    last.insert_after(row)
+    res = _run(SOUYA, str(soup))
+    assert [a["management_no"] for a in res.animals] == ["R8-1", "R8-2", "R8-3~6"]
 
 
 def test_souya_day_with_cats_has_no_zero_evidence() -> None:

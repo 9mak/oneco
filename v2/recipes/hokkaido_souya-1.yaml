@@ -8,9 +8,11 @@
 # 「R8-3～6」のように子猫 4 頭を 1 行にまとめた掲載は、掲載元のとおり 1 行のまま載せる（頭数の 6 と行数の 3 は合わない）。
 # 写真はポスターの PDF の中にしか無いので写真なし。管理番号「R8-1」は番号らしい形（2 桁以上の数字など）でなく、収容日の欄も無いので、
 # 個体ページの欄に掲載のページそのものを置いて動物として通す（松本市と同じ。元ページのリンクも掲載のページ）。
-# 見出し行は行にしない（tr:not(:first-child)）。種類の欄に犬・猫と書いていない行は動物にしない（field_required。列がずれた日に
-# 別の欄を種類と読んで載せず、1 頭も読めなければ failed で通知される）。
-rows: "div.ss-alignment:has(> h3:-soup-contains('ネットワーク事業')) + div.ss-alignment table tr:not(:first-child)"
+# 列は位置で読むので、読む 7 列の見出し（1 NO.・2 種類・3 性別・4 年齢・5 毛色・6 性格・8 収容場所）がその位置にある表だけを行にする
+# （rows の :has の並び）。列が増えた・減った・入れ替わった日は表ごと行にならず、1 頭も読めないので failed で通知される（ずれた値で載せない）。
+# 見出し行と、種類の欄に犬・猫と書いていない行は動物にしない（field_required）。
+# 公開期限の列（7）は 11/18 は全行が空欄で、読んでいない。期限を過ぎた行が残る運用かは未確認。
+rows: "div.ss-alignment:has(> h3:-soup-contains('ネットワーク事業')) + div.ss-alignment table:has(td:nth-child(1):-soup-contains('NO')):has(td:nth-child(2):-soup-contains('種類')):has(td:nth-child(3):-soup-contains('性別')):has(td:nth-child(4):-soup-contains('年齢')):has(td:nth-child(5):-soup-contains('毛色')):has(td:nth-child(6):-soup-contains('性格')):has(td:nth-child(8):-soup-contains('収容場所')) tr"
 row_filter:
   field_required: {species: ["犬", "猫"]}
 fields:
