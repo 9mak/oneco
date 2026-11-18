@@ -1,0 +1,23 @@
+# 鳥取県 ペットを「捜しています」・「保護しています」（243905.htm）のうち「捜しています」＝県民の家庭で飼われていて迷子・行方不明になっている動物の情報（kind: lost）。
+# 迷い犬猫の収容（県保健所の公示。pref_tottori。221001.htm）とは別のページ。「保護しています」（県民が保護している迷い犬猫）は pref_tottori-3。
+# 年度ごとに h2「捜しています（令和８年度受付）」「保護しています（令和８年度受付）」「…（令和7年度受付）」… の節が並び、届け出ごとに a（アンカー）→ h4「問合番号M08-015」→ div（表: 見出し行と 1 行。種類・いなくなった時期・いなくなった場所・特徴・写真とコメント（PDF へのリンク「■」）・掲載年月日）→ div（先頭にもどる）。
+# 古い届け出（令和7年度以前。2020 年からの 30 件余り）もページに残る。おまえさん決定（2026-11-18）: こちらで期間を決めず、掲載元が載せている届け出は全部出す（毎年直す作り込みはバグのもと）。
+# 届け出の一覧は年度の節（h2）の外にまとめて置かれるので、節では分けず、番号の頭で分ける（捜しています＝M、保護しています＝P）。
+# 写真は PDF 内（■）で HTML に画像は無い。飼い主が届けた迷子の写真は出さない（photo: no）。種類の欄は「猫」「犬」「鳥（インコ）」。鳥などは犬猫以外（other）。
+# 0 頭の判断: 「捜しています（…年度受付）」の節（h2）はあり、届け出の一覧の h4 が全部「現在、掲載情報はありません」の日だけ 0 頭にする。節が無い日・番号の書き方が変わった日は 0 頭と言い切らない。
+# 番号に M が付かない届け出（Wayback 2025-11 の「07-018」）は、捜している・保護しているを番号で決められないので読まない。
+rows: "div.BrowserItemList h4:-soup-contains('問合番号M')"
+row_until: "h2, h4"
+fields:
+  management_no: {selector: "h4", regex: "問合番号\\s*(\\S+)"}
+  species: {selector: "table tr:nth-of-type(2) > td:nth-of-type(1)"}
+  shelter_date: {selector: "table tr:nth-of-type(2) > td:nth-of-type(2)"}
+  location: {selector: "table tr:nth-of-type(2) > td:nth-of-type(3)"}
+  note: {selector: "table tr:nth-of-type(2) > td:nth-of-type(4)"}
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+  allow_other: true
+empty_absent:
+  page: "h2:-soup-contains('捜しています（'), h2:-soup-contains('探しています（')"
+  none: "div.BrowserItemList h4:not(:-soup-contains('現在、掲載情報はありません'))"

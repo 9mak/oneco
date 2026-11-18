@@ -1,0 +1,16 @@
+# 福山市動物愛護センター 里親募集中の猫情報（380139.html）。city_fukuyama-3（犬）と同じ作り（table summary="里親募集の犬猫の情報"）。
+# 2026-11-17 は 0 頭（「現在、譲渡対象の猫はいません。」）。子のいる日は Wayback 2025-10-08（9 頭）・2025-11-13（4 頭）で確認、
+# 0 頭の日は Wayback 2026-03〜06 に表も文言も無い版がある（今日の文言は子のいる日の版で確かめられないので根拠にしない）。
+rows: "table[summary*='里親募集の犬猫の情報']"
+image: "img@src"
+fields:
+  management_no: {regex: "番号[:：]\\s*(\\S+)"}
+  name: {regex: "愛称[:：]\\s*(\\S+)"}
+  sex: {regex: "性別[:：]\\s*(\\S+)"}
+  color: {regex: "毛色[:：]\\s*(\\S+)"}
+  breed: {regex: "種類[:：]\\s*(\\S+)"}
+  age: {regex: "推定年齢[:：]\\s*(\\S+)"}
+  note: {selector: "td:-soup-contains('この猫について')", regex: "この猫について[:：]\\s*(.+)"}
+empty_absent:
+  page: "h1:-soup-contains('里親募集中の猫情報')"
+  none: "div#main_body table, div#main_body img[src*='/uploaded/image/']"

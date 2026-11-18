@@ -1,0 +1,31 @@
+# 香川県 中讃保健福祉事務所 迷い犬・迷い猫の情報（/chusanhoken/chusanhoken/inu-neko/maigo_info.html）。中讃保健所の収容動物（PDF。pref_kagawa_pdf-2）とは別の一覧
+# （公開期間を過ぎても保護が続いている子。pref_kagawa_html-3 の西讃と同じ関係）。
+# 1 頭ごとに h5「個体管理番号：2630306」→ ul（li「保健所収容日：…」「保護された場所：…」「動物の種類：犬」「品種：…」「毛色：…」「性別：…」「年齢：…」「その他の特徴：…」「備考：…」）→ 写真の p。
+# h5 を 1 頭の始まりにして、次の h5・hr（ページ末の案内の手前の区切り）・h2 の手前までをまとめる。h5 の「【飼い主さんに返還されました（しました）】」の子は載せない。
+# 0 頭の日の版は Wayback に見つからない（2025-03〜2026-03 の 3 版はいずれも子がいる。「現在、掲載情報はありません」は子のいる日にも出る）ので、
+# 枠（h2「中讃保健所で保護している迷い犬・迷い猫の情報一覧」）はあるが個体管理番号も写真も無い日だけ 0 頭にする。
+rows: "h5:-soup-contains('個体管理番号')"
+row_until: "h5, hr, h2"
+row_filter:
+  text_lacks: ["返還されました", "返還しました"]
+image: "img@src"
+fields:
+  management_no: {regex: "個体管理番号\\s*[:：]?\\s*(\\d+)"}
+  shelter_date: {regex: "保健所収容日[:：]\\s*(\\S+)"}
+  location: {regex: "保護された場所[:：]\\s*(\\S+)"}
+  species: {regex: "動物の種類[:：]\\s*(\\S+)"}
+  breed: {regex: "品種[:：]\\s*(\\S+)"}
+  color: {regex: "毛色[:：]\\s*(\\S+)"}
+  sex: {regex: "性別[:：]\\s*(\\S+)"}
+  age: {regex: "年齢[:：]\\s*(\\S+)"}
+  note:
+    join:
+      - {regex: "その他の特徴[:：]\\s*(.+?)(?:\\s*備考[:：]|$)"}
+      - {regex: "(備考[:：].+)$"}
+    sep: " "
+species:
+  from: field
+  map: {"犬": dog, "猫": cat}
+empty_absent:
+  page: "h2:-soup-contains('保護している迷い犬・迷い猫の情報一覧')"
+  none: "h5:-soup-contains('個体管理番号'), img[src*='/images/374/']"
