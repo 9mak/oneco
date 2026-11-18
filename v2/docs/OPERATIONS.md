@@ -1,6 +1,6 @@
 # oneco v2 運用手順
 
-毎日 JST 0:05 に収集サーバー（手元の Mac の launchd。控えは VPS）が全自治体のページを読み、静的サイトを作り直して Cloudflare Workers（静的アセット）に置く。人がやるのは「通知が来た日に見る」「新しい自治体の通知（週 1 回・増減があるときだけ）が来たらセッションで台帳への追加を頼む」「撤去依頼が来たら台帳を 1 行直す」の 3 つ。
+毎日 JST 0:05 に収集サーバー（手元の Mac の launchd。控えは VPS）が全自治体のページを読み、静的サイトを作り直して Cloudflare Workers（静的アセット）に置く。人がやるのは「通知が来た日に見る」「新しい自治体の通知（週 1 回・増減があるときだけ）が来たらセッションで台帳への追加を頼む」「撤去依頼が来たら台帳を 1 行直す」の 3 つ。定期的にやることと期限のあるものは 7 節にまとめてある。
 
 公開 URL は `https://oneco.pet`（`site/config.json` の `base_url`。2026-11-08 に独自ドメインへ切り替え、W006 T073）。旧 URL `https://oneco.9mak-0x13.workers.dev` も同じ中身を配信し続ける（自治体への写真許諾の依頼メール〔T630〕に書いたので止めない・転送もしない。canonical は oneco.pet を指す）。
 
@@ -90,7 +90,7 @@ journalctl -u oneco-collect -f                 # ログ（/var/log/oneco/collect
 ### 1-3. Discord webhook
 
 通知用チャンネル → チャンネル設定 → 連携サービス → ウェブフック → 新しいウェブフック → URL をコピー。`DISCORD_WEBHOOK_URL`。
-試す: `DISCORD_WEBHOOK_URL=... /opt/oneco/.venv/bin/python -m collector notify`（直近の report に異常があれば送る。無ければ「異常なし。送らない」）。
+試す（Mac の本番クローン）: `cd ~/oneco-collect/v2 && ../.venv/bin/python -m collector notify --dry-run`（文面を出すだけ。`--dry-run` を外すと、直近の report に異常があれば送る。無ければ「異常なし。送らない」）。VPS は `/opt/oneco/.venv/bin/python -m collector notify`。
 
 ### 1-4. 死活監視（走らなかった日の検知）
 
@@ -128,14 +128,16 @@ AI は案を書くだけ。案は `collector propose` が draft PR にし、**�
 3. `collect.env` に `ONECO_GITHUB_TOKEN=$(security find-generic-password -a "$USER" -s oneco-repair-github-token -w)` を書く（collect.env は bash が `.` で読むので `$(…)` が使える。VPS は Keychain が無いので値を直書きし `chmod 600`）
 `ONECO_GITHUB_TOKEN` があるときだけ、`propose` はネットワークに出る git（clone / fetch / push）を環境変数から読む専用の credential helper で動かし（トークンは argv に出さない）、`gh` には `GH_TOKEN` として渡す。無ければ従来どおり（ログイン済みの gh と osxkeychain）。1 回の実行で作る PR は最大 5 件。`DISCORD_WEBHOOK_URL` があれば PR ごとに 1 行送る。
 
-### 1-6. 残っている手動作業（2026-10-01 時点・T506）
+### 1-6. 手動で済ませたこと・残っていること（2026-11-18 時点）
 
 | 項目 | やること | 反映先 |
 | --- | --- | --- |
 | 独自ドメイン | 済み（2026-11-08）。oneco.pet を Cloudflare Registrar で取得し（9mak.0x13 のアカウント、1 年・自動更新、期限 2027-11-08）、Worker oneco の Domains に Custom Domain として付けた。登録者メールの確認リンク（ICANN）を取得から 15 日以内に踏まないとドメインが止まる | `site/config.json` の `base_url`、`ops/wrangler.jsonc` の `routes`、`v2-deadman.yml` の `SITE`（W006 T073） |
-| アフィリエイト | Amazon アソシエイト等に申し込み、承認後にリンクを作る | `site/config.json` の `affiliate` に `{"title","url","note","species","beacon"}` を入れる（species は dog か cat かその一覧で、省略するとどの子にも出す。beacon は A8 の広告コードの計測用画像の URL で省略可）。その子に出す広告が無いページには枠も PR 表示も出ない。A8 は掲載後に管理画面の「広告掲載URL管理」から掲載 URL を提出する |
+| アフィリエイト | A8 の 2 件（モグワン・ONEKOSAMA OINUSAMA）を 2026-11-07 から掲載。審査中の 2 件（このこのごはん・GRANDS キャットフード）は提携が完了したら足す。A8 の管理画面の「広告掲載URL管理」への掲載 URL の提出は未（T629） | `site/config.json` の `affiliate` に `{"title","url","note","species","beacon"}` を入れる（species は dog か cat かその一覧で、省略するとどの子にも出す。beacon は A8 の広告コードの計測用画像の URL で省略可）。その子に出す広告が無いページには枠も PR 表示も出ない。A8 は掲載後に管理画面の「広告掲載URL管理」から掲載 URL を提出する |
 | 死活監視 | 不要（GitHub Actions の `v2-deadman.yml` が公開サイトの日付を毎朝見る。1-4） | Actions で v2 deadman が緑であること |
 | 検索と計測 | 済み（2026-11-08）。Search Console にドメインプロパティ oneco.pet（9mak.0x13。所有確認は Cloudflare DNS の TXT `google-site-verification=…`。消すと確認が外れる）を作り、`https://oneco.pet/sitemap.xml` を送信。GA4 は旧サイトのプロパティ oneco（properties/541319394、測定 ID G-KEE66C1E8B）を使い回し、ストリーム oneco-web の URL を oneco.pet に変えた | `site/config.json` の `ga4_id`（全ページの head に gtag.js、about に「アクセス解析」の節。空にすると両方消える）。旧 URL（workers.dev）でも同じタグが動き、Cookie はホストごとに別なので両方を見た人は 2 人に数えられる。GA4 のレポートは「ホスト名」で oneco.pet に絞って見る（旧 URL の分は自治体の担当者の閲覧が多い） |
+| 自動修復用の GitHub トークン | 未（T622）。1-5 の手順でトークンを発行して Keychain に入れ、`collect.env` の 1 行を有効にする。期限は 90 日 | `~/.config/oneco/collect.env` の `ONECO_GITHUB_TOKEN`。無い間は、ログイン済みの gh の資格情報で draft PR を作る |
+| 依存の版 | `requirements.txt` を変えたら、本番クローンはターミナルで `bash v2/ops/macos/install.sh` を入れ直す（夜間の収集は依存を入れ直さない） | `~/oneco-collect/.venv` |
 | 本番クローンの登録 | ターミナルで `bash v2/ops/macos/install.sh`（1-2a。`~/oneco-collect` を作って launchd の登録を入れ替える）→ `launchctl kickstart -k gui/$(id -u)/com.oneco.collect` で 1 回動かす | `~/oneco-collect/v2/logs/collect-<日付>.log` が毎日できること、サイトの日付が更新されること |
 
 ## 2. 毎日自動で起きること
@@ -172,7 +174,7 @@ Discord の文面はこの形:
 | `新たに読めなくなった自治体 N 件` | その自治体の子はサイトに出ていない（前日分も載せない。情報源の一覧に「自治体のページをご確認ください」と出る）。同じ顔ぶれの 2 日目以降は通知が来ない | 1 日目は放置でよい（自治体側の一時障害が多い）。サイトの情報源の一覧で数日続いていれば下の手順 |
 | `HTTP 404` / `HTTP 5xx` / `ConnectError` | ページ自体が無い・落ちている | ブラウザで URL を開く。移転していれば台帳の `url` を直す。掲載をやめたなら `mode: link_only` か `enabled: false` |
 | `robots.txt により拒否` | 自治体が bot を断っている | 読まない。`enabled: false` にして、必要なら電話で確認 |
-| `follow: '…' が見つからない` / `0 頭で empty_text も無い` | ページ構造が変わった。AI 修復も失敗している | VPS で `sudo -u oneco env $(sudo cat /etc/oneco/collect.env | xargs) /opt/oneco/.venv/bin/python -m collector repair <slug> --show` を手で回す。それでも駄目なら `collector show <slug>` と `collector fetch <url> --selectors` を見て `recipes/<slug>.yaml` を人が直す（書き方は `docs/RECIPE.md`） |
+| `follow: '…' が見つからない` / `0 頭で empty_text も無い` | ページ構造が変わった。AI 修復も失敗している | セッションで「読めなくなった自治体を直して」と頼む（Claude が実ページと保存ページで原因を確かめ、テスト → レビュー → PR → merge まで行う。例: #122・#133）。手で見るなら本番クローンで `cd ~/oneco-collect/v2 && ../.venv/bin/python -m collector show <slug>`・`collector fetch <url> --selectors`・`collector repair <slug> --show`（AI に案を書かせる）を回し、`recipes/<slug>.yaml` を直す（書き方は `docs/RECIPE.md`）。本当に 0 頭の日で書き方が新しいだけのことが多い（2026-11-06〜18 の 25 件中 12 件） |
 | `（AI がレシピ案を書いた（N 頭・data/proposals/<slug>.yaml））` | 読めなかった行に付く。案は書かれただけで `recipes/` は元のまま | 案の中身を見て、妥当なら `recipes/<slug>.yaml` に反映して commit。取り方が変（写真が広告、頭数が異常）なら捨てて人が直す |
 | `読めるようになった自治体 N 件` | 前日まで読めなかった自治体が読めた | 何もしない |
 | `引き続き読めない N 件` | 前日も読めなかった自治体の件数（一覧は出ない） | 何もしない。一覧は `data/report-<日付>.json` |
@@ -239,7 +241,7 @@ HTTP 200 で返ってきても、次のページは 0 頭にせず失敗（`取�
 - 人が確認した差分は `registry/discover_known.yaml` にドメインごとに書いてある。`status` は `pending`（台帳への追加待ち。`task` に受け持つタスク）・`excluded`（対象外。`note` に理由）・`covered`（別ドメインの slug で載せている。`slugs` と `note`）
 - 通知は一覧に無い差分（新しく増えた・消えた自治体）があるときだけ 1 通。一覧に足すか台帳に入れるまでは毎週届く（実行時の状態は持たず、一覧は repo の中だけ）
 - リンク集が取れない・80 ドメイン未満（ふだんは 130 前後。ページの形が変わった）ときは差分を出さず「環境省リンク集を読めなかった」を 1 通（日次収集の失敗には数えない）
-- 2026-10-05 時点の一覧: covered 13（東京都・愛知県・秋田県・滋賀県と、リンク集が県のページを指している専用サイト 9）・pending 43（台帳に無い自治体。T519）・excluded 1（環境省の動画）。北海道と大分県は保健所へのリンク集で、一部しか載せていないので pending
+- 一覧の今の内訳は `python -m collector discover` の表示で見る（2026-11-18 時点: covered 45・excluded 1・pending 0）
 
 手で見るとき（`--notify` を付けなければ送らない。`DISCORD_WEBHOOK_URL` が無ければ `--notify` でも表示だけ）:
 
@@ -277,14 +279,14 @@ cd v2   # 本番クローンなら ~/oneco-collect/v2
 2. レシピを作る。まず AI に書かせる: `python -m collector repair city_example-1 --show`（agy が必要。レシピが無い slug でも案が `data/proposals/<slug>.yaml` に出る。1 頭以上取れた時だけ。`python -m collector propose` で draft PR にして merge するか、手で `recipes/<slug>.yaml` へコピーする）。駄目なら `python -m collector fetch <url> --selectors` で表・リストの候補を見て `docs/RECIPE.md` の通り手で書く
 3. `python -m collector show city_example-1` で取れた行・捨てた行を確認。写真・性別・収容日が合っていること
 4. `python -m pytest tests -q`（台帳とレシピが読めることを確認するテストが入っている）
-5. commit → push → VPS で `git -C /opt/oneco pull`。翌日 0:00 から載る。すぐ載せたいなら `sudo systemctl start oneco-collect.service`
+5. commit → push → PR → main に merge。翌日 0:05 の収集から載る（Mac の本番クローンは毎晩 `git pull` する）。すぐ載せたいなら、ターミナルで `launchctl kickstart -k gui/$(id -u)/com.oneco.collect`（全ページを読み直すので約 20 分。VPS は `git -C /opt/oneco pull` のあと `sudo systemctl start oneco-collect.service`）
 6. discover の通知から足したなら、同じコミットで `registry/discover_known.yaml` のその行を消す（上の「通知が来たら」の 2）
 
 ## 5. 撤去依頼が来たら
 
-自治体から「掲載をやめてほしい」と来たら、`registry/sources.yaml` のその自治体のエントリを `enabled: false` にして push、VPS で `git pull`。翌日 0:00 の収集でその自治体の子は `latest.json` から消え、サイトも消える。その日のうちに消したいなら `sudo systemctl start oneco-collect.service` で即時に作り直す。
+自治体から「掲載をやめてほしい」と来たら、`registry/sources.yaml` のその自治体のエントリを `enabled: false` にして main に merge する。翌日 0:05 の収集でその自治体の子は `latest.json` から消え、サイトも消える。その日のうちに消したいなら、ターミナルで `launchctl kickstart -k gui/$(id -u)/com.oneco.collect` で作り直す（約 20 分。VPS は `git pull` のあと `sudo systemctl start oneco-collect.service`）。
 
-エントリを消さず `enabled: false` にするのは、二度と載せない記録を残すため。返信では「翌日 0:00 までに消えます」と伝える。
+エントリを消さず `enabled: false` にするのは、二度と載せない記録を残すため。返信では「翌日 0:05 の更新で消えます」と伝える。
 
 ## 6. 費用の見込み（概算・未検証）
 
@@ -299,6 +301,23 @@ cd v2   # 本番クローンなら ~/oneco-collect/v2
 | AI 修復（agy） | API 課金なし（Antigravity の既存契約の枠内） |
 | 独自ドメイン oneco.pet（Cloudflare Registrar。原価販売で更新も同額） | 年 $22.22（$20.20 + 消費税 10%。2026-11-08 の初回は約 3,520 円）。月あたり約 290 円 |
 | 合計（Mac で動かす場合） | 月約 290 円（ドメイン代だけ。ほかは既存契約の範囲） |
+
+## 7. 定期的にやること・期限のあるもの
+
+毎晩の収集・通知・公開は自動。人の手が要るのは次のものだけ。
+
+| いつ | 何を | 見る所 |
+| --- | --- | --- |
+| Discord に通知が来た日 | 読めなくなった自治体を直す（多くはセッションで頼めば済む）。掲載元の停止は待つ | 3 節 |
+| 月曜（通知が来た週だけ） | 環境省リンク集に増えた・消えた自治体を、台帳に足すか確認済み一覧に入れる | 4 節 |
+| 写真の許諾の返事が来た時 | 台帳の `photo` を直す PR（可なら外す・不可やリンクのみなら `"no"`・`link_only`） | `registry/sources.yaml` |
+| 撤去・訂正の依頼が来た時 | `enabled: false` か該当の項目を直して merge | 5 節 |
+| 90 日ごと | 自動修復用の GitHub トークンの再発行（T622 を設定した場合） | 1-5 |
+| 年 1 回・台帳の電話や所在地を触った時 | `ops/verify_registry.py` で元ページとの突合 | 下の「台帳の電話・所在地の突合」 |
+| 2027-11-08 まで | ドメイン oneco.pet の更新（Cloudflare Registrar の自動更新。支払い方法の期限切れに注意） | 1-6 |
+| deploy 失敗の通知が来た時 | `npx wrangler whoami` で OAuth 切れを確かめ、切れていれば `npx wrangler login` | 3 節 |
+| AI 修復が「未設定」「実行できない」と出た時 | 収集する Mac で agy のログインをやり直す | 1-5 |
+| Mac を長く止める前 | 収集は Mac が動いている日だけ。止まった日は公開が前日のままで、Discord に「夜間収集が今日は走っていません」が来る。長く止めるなら控え（1-2b の VPS）を用意する | 1-2 |
 
 ## 台帳の電話・所在地の突合: `ops/verify_registry.py`（W006 T616）
 
