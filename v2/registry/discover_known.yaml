@@ -5,6 +5,7 @@
 #   pending  台帳への追加待ち（task: 受け持つタスク）。台帳に足したらこの行を消す（tests/test_discover_t518.py が確かめる）
 #   excluded 対象外（note: 理由）
 #   covered  別ドメインの slug で載せている（slugs: 台帳の slug。note: 理由）
+# ページ単位（collector discover --pages。T641）の確認済みは、下の pages: 節に URL ごとに持つ。
 # 「リンク集にあって台帳に無いドメイン」も「台帳にあってリンク集に無いドメイン」も同じ表に書く。
 domains:
   # --- リンク集にあって台帳に無いドメイン（2026-10-05 時点 48 件）
@@ -55,3 +56,78 @@ domains:
   fapscsite.com: {status: covered, slugs: [fapscsite-1, fapscsite-2, fapscsite-3], note: "リンク集は福井市（city.fukui.lg.jp）を指し、そこから案内される専用サイト（福井県動物愛護センターの公示・譲渡情報）"}
   ikutopia.com: {status: covered, slugs: [ikutopia-1], note: "リンク集は新潟市（city.niigata.lg.jp）を指し、その譲渡猫ページの「動物ふれあいセンター」の節から案内される別サイト（いくとぴあ食花）"}
   wannyan-musubi.pref.miyagi.jp: {status: covered, slugs: [wannyan_musubi_miyagi-1, wannyan_musubi_miyagi-2], note: "リンク集は宮城県（pref.miyagi.jp）を指し、その保健所の譲渡ページが「今後は本サイトに掲載」と案内する県の譲渡情報サイト（県の収容犬猫のみ）"}
+
+# --- discover --pages（ページ単位。T641）。キーは正規化した URL（スキーム・www・末尾の / と index.html を除き、クエリは残す。collector.discover.norm）
+# collector discover --pages --notify は、ここに無い候補だけを Discord に送る。status・note・slugs の意味は domains: と同じ。
+# 2026-11-17 の棚卸しで「載せない」と決めた市民の譲渡の掲示板と、動物の一覧が無い案内のハブ。
+pages:
+  city.miyazaki.miyazaki.jp/life/pet/protection/51367.html: {status: excluded, note: "宮崎市「市民の皆さんが猫の新しい飼い主を探しています」。飼えなくなった飼い主からの譲渡で、載せない（2026-11-17 決定）"}
+  city.miyazaki.miyazaki.jp/life/pet/protection/84989.html: {status: excluded, note: "宮崎市「市民の皆さんが犬の新しい飼い主を探しています」。飼えなくなった飼い主からの譲渡で、載せない（2026-11-17 決定）"}
+  pref.yamaguchi.lg.jp/site/doubutuaigo/206095.html: {status: excluded, note: "山口県「猫の飼い主募集（健康福祉センター経由）」。飼い主からの譲渡で載せない（2026-11-17 決定）"}
+  pref.yamaguchi.lg.jp/site/doubutuaigo/212824.html: {status: excluded, note: "山口県「犬の飼い主募集（健康福祉センター経由）」。飼い主からの譲渡で載せない（2026-11-17 決定）"}
+  pref.yamaguchi.lg.jp/site/doubutuaigo/134549.html: {status: excluded, note: "山口県「猫の飼い主募集（インターネット利用）」。飼い主からの譲渡で載せない（2026-11-17 決定）"}
+  pref.yamaguchi.lg.jp/site/doubutuaigo/10031.html: {status: excluded, note: "山口県「犬の飼い主募集（インターネット利用）」。飼い主からの譲渡で載せない（2026-11-17 決定）"}
+  pref.saitama.lg.jp/b0716/doubutu-kaikata-kainushisagashikeijiban-h.html: {status: excluded, note: "埼玉県「新しい飼い主さがし掲示板」本所管内。飼い主からの直接譲渡で載せない（2026-11-17 決定）"}
+  pref.saitama.lg.jp/b0716/doubutu-kaikata-kainushisagashikeijiban-m.html: {status: excluded, note: "埼玉県「新しい飼い主さがし掲示板」南支所管内。飼い主からの直接譲渡で載せない（2026-11-17 決定）"}
+  pref.saitama.lg.jp/b0716/doubutu-kaikata-kainushisagashikeijiban-1.html: {status: excluded, note: "埼玉県「新しい飼い主さがし掲示板」の入口。飼い主からの直接譲渡で載せない（2026-11-17 決定）"}
+  sorachi.pref.hokkaido.lg.jp/hk/kks/inunekonoteitirann.html: {status: excluded, note: "北海道 空知の「飼い主さがしノート」。市民から市民への譲渡で載せない（2026-11-17 決定）"}
+  ishikari.pref.hokkaido.lg.jp/hk/kks/kansei/kainusisagasinote-rist.html: {status: excluded, note: "北海道 石狩の「飼い主さがしノート」掲載情報。市民から市民への譲渡で載せない（2026-11-17 決定）"}
+  shiribeshi.pref.hokkaido.lg.jp/hk/kks/kainusisagasinote.html: {status: excluded, note: "北海道 後志の「飼い主さがしノート」閲覧ページ。市民から市民への譲渡で載せない（2026-11-17 決定）"}
+  tokachi.pref.hokkaido.lg.jp/hk/kks/noteeturan.html: {status: excluded, note: "北海道 十勝の「飼い主さがしノート」閲覧用ページ。市民から市民への譲渡で載せない（2026-11-17 決定）"}
+  kushiro.pref.hokkaido.lg.jp/hk/kks/174686.html: {status: excluded, note: "北海道 釧路の「飼い主さがしノート」。市民から市民への譲渡で載せない（2026-11-17 決定）"}
+  oshima.pref.hokkaido.lg.jp/hk/kks/inuneko2/inunekojouhou.html: {status: excluded, note: "北海道 渡島の「飼い主さがしノート」掲載情報。市民から市民への譲渡で載せない（2026-11-17 決定）"}
+  hiyama.pref.hokkaido.lg.jp/hk/kks/a0003/b0006/kainusisagasi/139915.html: {status: excluded, note: "北海道 檜山の「犬猫の新しい飼い主さがしノート」。市民から市民への譲渡で載せない（2026-11-17 決定）"}
+  rumoi.pref.hokkaido.lg.jp/hk/kks/atarashiikainushi/inunekoyuzuri.html: {status: excluded, note: "北海道 留萌の「犬猫の飼い主さがしノート」掲載情報。市民から市民への譲渡で載せない（2026-11-17 決定）"}
+  toyohashi-aikuru.jp/animal_category/forum-to-find-new-home-for-your-pets?animal_type=dog: {status: excluded, note: "豊橋市「市民の方から：飼い主募集掲示板」（犬）。市民間の譲渡で載せない（2026-11-17 決定）"}
+  toyohashi-aikuru.jp/animal_category/forum-to-find-new-home-for-your-pets?animal_type=cat: {status: excluded, note: "豊橋市「市民の方から：飼い主募集掲示板」（猫）。市民間の譲渡で載せない（2026-11-17 決定）"}
+  city.yamagata-yamagata.lg.jp/kurashi/pet/1006550/1005144.html: {status: excluded, note: "山形市「市民の方が新しい飼い主を探しています」。市民間の譲渡で載せない（2026-11-17 決定）"}
+  city.sendai.jp/kurashi/shizen/petto/hogodobutsu/note: {status: excluded, note: "仙台市「わんにゃん命のリレーノート（新しい飼い主さがし）」。市民間の譲渡で載せない（2026-11-17 決定）"}
+  city.otaru.lg.jp/docs/2020101100124: {status: excluded, note: "小樽市「小樽飼い主探しサポート」。市民間の譲渡で載せない（2026-11-17 決定）"}
+  city.sapporo.jp/inuneko/note/note.html: {status: excluded, note: "札幌市「飼い主さがしノート（市民から市民への直接譲渡支援）」。載せない（2026-11-17 決定）"}
+  pref.tottori.lg.jp/220718.htm: {status: excluded, note: "鳥取県「犬・猫の譲渡情報」。動物の一覧が無い案内のハブ（2026-11-17 確認。写真 5 枚・性別の記載なし）"}
+  # 2026-11-18 の試運転（1 段・起点 789・取得 1,271・通知対象 38）で仕分けた 35 件。残り 3 件（千葉市 育成中の子猫・岩手県 中部保健所の迷子・高知 アニマルステーション）は台帳に足す（T640 3 回目）。
+  # covered = 同じ子を別の URL から既に読んでいる。excluded = 自治体が収容している子の一覧ではない。pending = 足し方の判断待ち。
+  pref.tottori.lg.jp/item/1373183.htm: {status: covered, slugs: [pref_tottori-2, pref_tottori-3], note: "鳥取県「保護しています（令和5年度以前受付分）」。243905.htm と同じ一覧の年度別の入口で、同じ子を 243905 から読んでいる（2026-11-18 試運転。問合番号 M08-015 が公開データにある）"}
+  pref.tottori.lg.jp/module/671865.htm: {status: covered, slugs: [pref_tottori-2, pref_tottori-3], note: "鳥取県「保護しています（令和7年度受付）」。243905.htm と同じ一覧（2026-11-18 試運転）"}
+  pref.tottori.lg.jp/module/677932.htm: {status: covered, slugs: [pref_tottori-2, pref_tottori-3], note: "鳥取県「保護しています（令和８年度受付）」。243905.htm と同じ一覧（2026-11-18 試運転）"}
+  city.maebashi.gunma.jp/soshiki/kenko/eiseikensa/gyomu/1/1/1/9485.html: {status: covered, slugs: [city_maebashi-2], note: "前橋市【行方不明一覧】の別の URL。同じ一覧を kurashi_tetsuzuki/1/1/1/11960.html から読んでいる（2026-11-18 試運転。YD2026-10-01 が公開データにある）"}
+  hug-u.pet/applicant_u501666.html: {status: excluded, note: "名古屋市動物愛護センターの譲渡猫が載る外部の民間サイト「ハグー」。足さない（2026-11-17 #130 で報告のみと決定）（2026-11-18 試運転）"}
+  city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/search.html: {status: excluded, note: "町田市「ペットの行方不明情報」の 1 ページ版。更新日が 2026-06-01 のまま止まった古いページで、今の公開データの子（city_machida-2〜4 の 120 頭）は 1 頭も載っていない。今の一覧は pet_fumei/search_dog・search_cat・search_sonota の 3 ページ（2026-11-18 試運転・#131 レビュー Q7）"}
+  nyantomo.jp/%e9%87%8c%e8%a6%aa%e3%81%ab%e3%81%aa%e3%82%8a%e3%81%9f%e3%81%84-2: {status: excluded, note: "ニャン友ねっとわーく北海道「里親になりたい」。NPO のサイトの案内ページ（台帳の nyantomo は函館どうなん動物愛護センターのページだけ）（2026-11-18 試運転）"}
+  city.takasaki.gunma.jp/docs/2014011900189: {status: covered, slugs: [city_takasaki-4], note: "高崎市「一般の方が保護している動物一覧（猫、その他）」の旧 URL（ページID 3988）。page/3988.html から読んでいる（2026-11-18 試運転）"}
+  city.kumamoto.jp/doubutuaigo/list03629.html: {status: pending, note: "熊本市「愛護センターからの譲渡」（全 45 件。後日談の記事・種別の欄なし・古い掲載が混ざる）。#129 で判断保留。足し方はオーナーの判断待ち（T640）"}
+  nyantomo.jp/2023/08/29/noraneko-satooya: {status: excluded, note: "ニャン友ねっとわーく北海道の記事（譲渡の条件）。動物の一覧ではない（2026-11-18 試運転）"}
+  city.kawagoe.saitama.jp/kurashi/s-kankyo/1002982/1002989/1022867.html: {status: excluded, note: "川越市「飼い主のいない猫との付き合い方」。啓発のページで動物の一覧ではない（2026-11-18 試運転）"}
+  animal-net.pref.nagasaki.jp/hogoform: {status: excluded, note: "ながさき犬猫ネット「保護している動物登録フォーム」。登録フォーム（2026-11-18 試運転）"}
+  animal-net.pref.nagasaki.jp/maigoform: {status: excluded, note: "ながさき犬猫ネット「行方不明の動物登録フォーム」。登録フォーム（2026-11-18 試運転）"}
+  docs.google.com/forms/d/e/1FAIpQLScGB-lUOqykd0MILsAmJXpjL7hzStCwTBGdvbv_fME3yYwuWw/viewform: {status: excluded, note: "札幌市の迷子動物届出フォーム（Google フォーム）（2026-11-18 試運転）"}
+  city.ichinomiya.aichi.jp/hokenjo/hoken-eisei/1044007/1000182/1063949.html: {status: excluded, note: "一宮市「飼い主のいない子猫を見つけた」。案内のページ（2026-11-18 試運転）"}
+  city.shimonoseki.lg.jp/soshiki/52/1824.html: {status: excluded, note: "下関市「飼い主のいない猫と地域との共生事業」。事業の案内（2026-11-18 試運転）"}
+  douaicenter.jp/other-animal/list: {status: covered, slugs: [spec_douaicenter-7, spec_douaicenter-8, spec_douaicenter-9, spec_douaicenter-10, spec_douaicenter-11, spec_douaicenter-12], note: "旭川市あにまある「ペット探しています / 保護しています」の全種別の一覧。犬・猫・その他の 3 ページ（other-animal/list/dog・cat・other）から読んでいる（2026-11-18 試運転）"}
+  city.akashi.lg.jp/kankyou/dobutsu/info/yougokaisetsu.html: {status: excluded, note: "明石市「飼い主のいない猫によるトラブルを解決するため」。用語の説明（2026-11-18 試運転）"}
+  city.shimonoseki.lg.jp/soshiki/52/1809.html: {status: excluded, note: "下関市「飼い主のいない猫の世話をしている方へ」。案内のページ（2026-11-18 試運転）"}
+  douai.pref.tochigi.lg.jp/work/%e3%80%8e%e9%87%8c%e3%81%b8%e3%81%ae%e4%be%bf%e3%82%8a%e3%80%8f%e6%96%b0%e3%81%97%e3%81%84%e9%a3%bc%e3%81%84%e4%b8%bb%e3%81%95%e3%82%93%e3%81%8b%e3%82%89%e3%81%ae%e8%bf%91%e6%b3%81%e5%a0%b1%e5%91%8a: {status: excluded, note: "栃木県動物愛護指導センター『里への便り』。譲渡後の近況報告で、今いる子の一覧ではない（2026-11-18 試運転）"}
+  city.hachioji.tokyo.jp/kurashi/hoken/007/001/001/p002914.html: {status: excluded, note: "八王子市「飼い主のいない猫（野良猫）対策」。案内のページ（2026-11-18 試運転）"}
+  city.maebashi.gunma.jp/soshiki/kenko/eiseikensa/gyomu/1/1/1/9486.html: {status: covered, slugs: [city_maebashi-3], note: "前橋市【市民保護一覧】の別の URL。同じ一覧を kurashi_tetsuzuki/1/1/1/11961.html から読んでいる（2026-11-18 試運転。A2026-11-02 が公開データにある）"}
+  city.utsunomiya.lg.jp/kurashi/pet/pet/1005581.html: {status: excluded, note: "宇都宮市「大切なペットを迷子にさせないで！！」。啓発のページ（2026-11-18 試運転）"}
+  pref.osaka.lg.jp/o120200/doaicenter/doaicenter/zyotonituite.html: {status: excluded, note: "大阪府「動物の譲渡の流れと必要な書類について」。手続きの案内（2026-11-18 試運転）"}
+  city.sagamihara.kanagawa.jp/kosodate/kenko/1026628/pet/1019993.html: {status: excluded, note: "相模原市「譲渡面接会（市民から猫を譲り受ける場合の情報）」。市民からの譲渡の会の案内（2026-11-18 試運転）"}
+  city.takasaki.gunma.jp/docs/2014011900196: {status: covered, slugs: [city_takasaki-3], note: "高崎市「一般の方が保護している動物一覧（犬）」の旧 URL（ページID 3987）。page/3987.html から読んでいる（2026-11-18 試運転）"}
+  city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/060_transfer.html: {status: excluded, note: "千葉市「犬・猫の譲渡」。入口のページ（犬・猫の一覧は city_chiba-7・-8）（2026-11-18 試運転）"}
+  city.himeji.lg.jp/kurashi/0000001495.html: {status: excluded, note: "姫路市「猫の譲渡について」。手続きの案内で一覧なし（2026-11-18 試運転）"}
+  city.himeji.lg.jp/kurashi/0000028694.html: {status: excluded, note: "姫路市「飼い主のいない猫の適正管理」。案内のページ（2026-11-18 試運転）"}
+  city.koriyama.lg.jp/soshiki/74/7192.html: {status: excluded, note: "郡山市「犬・猫の譲渡を希望される方へ」。手続きの案内で一覧なし（2026-11-18 試運転）"}
+  city.maebashi.gunma.jp/soshiki/kenko/eiseikensa/gyomu/1/1/3/4126.html: {status: excluded, note: "前橋市「犬・猫の譲渡事業」。手続きの案内（猫の一覧は kurashi_tetsuzuki/1/1/3/18316.html）（2026-11-18 試運転）"}
+  city.suita.osaka.jp/kurashi/1018501/1018506/1018507/1015346.html: {status: excluded, note: "吹田市「動物の譲渡（新しい飼い主希望者募集）」。事前申込制の案内で一覧なし（2026-11-18 試運転）"}
+  city.toyota.aichi.jp/sumaikankyo/pet/pet/1073801/1003691.html: {status: excluded, note: "豊田市「犬猫の譲渡」。個別の譲渡と譲渡会の案内で一覧なし（2026-11-18 試運転）"}
+  pref.akita.lg.jp/pages/archive/84484: {status: excluded, note: "秋田県「飼い主のわからない猫について」。案内のページ（2026-11-18 試運転）"}
+  pref.nara.lg.jp/n070/3371.html: {status: excluded, note: "奈良県「動物の譲渡」。講習会・手続きの案内で一覧なし（2026-11-18 試運転）"}
+  kumamoto-doubutuaigo.jp/animals/info: {status: excluded, note: "熊本県動物愛護ホームページ「お知らせ」の一覧（譲渡しました・返還しましたの報告）。2 段たどると報告の個別ページが毎月候補に出るので、入口ごと外す（2026-11-18 試運転）"}
+  # 2026-11-18 2 回目（除外条件を直した後の 1 段。新しく開いた候補 190・通知対象 10）で増えた 7 件
+  "kumamoto-doubutuaigo.jp/animals/index/type_id:1": {status: excluded, note: "熊本県動物愛護ホームページで animal_id を付けない URL。4 つとも中身は同じトップページ（迷い犬・迷い猫・譲渡犬・譲渡猫・保護犬・保護猫の新着）で、台帳は animal_id 付きの一覧（kumamoto_doubutuaigo-1〜10）を読んでいる（2026-11-18 試運転。保存した 4 ページが同一なのを確認）"}
+  "kumamoto-doubutuaigo.jp/animals/index/type_id:2": {status: excluded, note: "熊本県動物愛護ホームページで animal_id を付けない URL。4 つとも中身は同じトップページ（迷い犬・迷い猫・譲渡犬・譲渡猫・保護犬・保護猫の新着）で、台帳は animal_id 付きの一覧（kumamoto_doubutuaigo-1〜10）を読んでいる（2026-11-18 試運転。保存した 4 ページが同一なのを確認）"}
+  "kumamoto-doubutuaigo.jp/animals/index/type_id:3": {status: excluded, note: "熊本県動物愛護ホームページで animal_id を付けない URL。4 つとも中身は同じトップページ（迷い犬・迷い猫・譲渡犬・譲渡猫・保護犬・保護猫の新着）で、台帳は animal_id 付きの一覧（kumamoto_doubutuaigo-1〜10）を読んでいる（2026-11-18 試運転。保存した 4 ページが同一なのを確認）"}
+  "kumamoto-doubutuaigo.jp/animals/group/type_id:2": {status: excluded, note: "熊本県動物愛護ホームページで animal_id を付けない URL。4 つとも中身は同じトップページ（迷い犬・迷い猫・譲渡犬・譲渡猫・保護犬・保護猫の新着）で、台帳は animal_id 付きの一覧（kumamoto_doubutuaigo-1〜10）を読んでいる（2026-11-18 試運転。保存した 4 ページが同一なのを確認）"}
+  fapscsite.com/information_animal/info_animal_kind/adoptable: {status: covered, slugs: [fapscsite-3], note: "福井県動物愛護センター「情報掲載の動物」の飼い主募集だけの絞り込み。同じ一覧を information_animal/ から読んでいる（2026-11-18 試運転）"}
+  pref.osaka.lg.jp/doaicenter/doaicenter/jyoutoinu2.html: {status: covered, slugs: [pref_osaka_joto-1], note: "大阪府「譲渡犬情報」の古いパス（環境省リンク集の大阪市の欄から。http）。同じページを o120200/doaicenter/doaicenter/jyoutoinu2.html から読んでいる（2026-11-18 試運転）"}
+  aniwel-pref.okinawa/animals/form/missing: {status: excluded, note: "沖縄県動物愛護管理センター「行方不明の登録」。登録フォーム（2026-11-18 試運転）"}
