@@ -124,10 +124,10 @@ pages:
   pref.nara.lg.jp/n070/3371.html: {status: excluded, note: "奈良県「動物の譲渡」。講習会・手続きの案内で一覧なし（2026-11-18 試運転）"}
   kumamoto-doubutuaigo.jp/animals/info: {status: excluded, note: "熊本県動物愛護ホームページ「お知らせ」の一覧（譲渡しました・返還しましたの報告）。2 段たどると報告の個別ページが毎月候補に出るので、入口ごと外す（2026-11-18 試運転）"}
   # 2026-11-18 2 回目（除外条件を直した後の 1 段。新しく開いた候補 190・通知対象 10）で増えた 7 件
-  "kumamoto-doubutuaigo.jp/animals/index/type_id:1": {status: covered, slugs: [kumamoto_doubutuaigo-7, kumamoto_doubutuaigo-8], note: "熊本県動物愛護ホームページの迷子の一覧（犬猫まとめ）。台帳は animal_id:1（犬）・animal_id:2（猫）に分けて同じ子を読んでいる（2026-11-18 試運転）"}
-  "kumamoto-doubutuaigo.jp/animals/index/type_id:2": {status: covered, slugs: [kumamoto_doubutuaigo-1, kumamoto_doubutuaigo-2], note: "熊本県動物愛護ホームページの譲渡の一覧（犬猫まとめ）。台帳は animal_id:1・animal_id:2 に分けて同じ子を読んでいる（2026-11-18 試運転）"}
-  "kumamoto-doubutuaigo.jp/animals/index/type_id:3": {status: covered, slugs: [kumamoto_doubutuaigo-9, kumamoto_doubutuaigo-10], note: "熊本県動物愛護ホームページの保護の一覧（犬猫まとめ）。台帳は animal_id:1・animal_id:2 に分けて同じ子を読んでいる（2026-11-18 試運転）"}
-  "kumamoto-doubutuaigo.jp/animals/group/type_id:2": {status: covered, slugs: [kumamoto_doubutuaigo-3, kumamoto_doubutuaigo-4], note: "熊本県動物愛護ホームページの団体譲渡の一覧（犬猫まとめ）。台帳は animal_id:1・animal_id:2 に分けて同じ子を読んでいる（2026-11-18 試運転）"}
+  "kumamoto-doubutuaigo.jp/animals/index/type_id:1": {status: excluded, note: "熊本県動物愛護ホームページで animal_id を付けない URL。4 つとも中身は同じトップページ（迷い犬・迷い猫・譲渡犬・譲渡猫・保護犬・保護猫の新着）で、台帳は animal_id 付きの一覧（kumamoto_doubutuaigo-1〜10）を読んでいる（2026-11-18 試運転。保存した 4 ページが同一なのを確認）"}
+  "kumamoto-doubutuaigo.jp/animals/index/type_id:2": {status: excluded, note: "熊本県動物愛護ホームページで animal_id を付けない URL。4 つとも中身は同じトップページ（迷い犬・迷い猫・譲渡犬・譲渡猫・保護犬・保護猫の新着）で、台帳は animal_id 付きの一覧（kumamoto_doubutuaigo-1〜10）を読んでいる（2026-11-18 試運転。保存した 4 ページが同一なのを確認）"}
+  "kumamoto-doubutuaigo.jp/animals/index/type_id:3": {status: excluded, note: "熊本県動物愛護ホームページで animal_id を付けない URL。4 つとも中身は同じトップページ（迷い犬・迷い猫・譲渡犬・譲渡猫・保護犬・保護猫の新着）で、台帳は animal_id 付きの一覧（kumamoto_doubutuaigo-1〜10）を読んでいる（2026-11-18 試運転。保存した 4 ページが同一なのを確認）"}
+  "kumamoto-doubutuaigo.jp/animals/group/type_id:2": {status: excluded, note: "熊本県動物愛護ホームページで animal_id を付けない URL。4 つとも中身は同じトップページ（迷い犬・迷い猫・譲渡犬・譲渡猫・保護犬・保護猫の新着）で、台帳は animal_id 付きの一覧（kumamoto_doubutuaigo-1〜10）を読んでいる（2026-11-18 試運転。保存した 4 ページが同一なのを確認）"}
   fapscsite.com/information_animal/info_animal_kind/adoptable: {status: covered, slugs: [fapscsite-3], note: "福井県動物愛護センター「情報掲載の動物」の飼い主募集だけの絞り込み。同じ一覧を information_animal/ から読んでいる（2026-11-18 試運転）"}
   pref.osaka.lg.jp/doaicenter/doaicenter/jyoutoinu2.html: {status: covered, slugs: [pref_osaka_joto-1], note: "大阪府「譲渡犬情報」の古いパス（環境省リンク集の大阪市の欄から。http）。同じページを o120200/doaicenter/doaicenter/jyoutoinu2.html から読んでいる（2026-11-18 試運転）"}
   aniwel-pref.okinawa/animals/form/missing: {status: excluded, note: "沖縄県動物愛護管理センター「行方不明の登録」。登録フォーム（2026-11-18 試運転）"}

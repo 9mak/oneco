@@ -544,3 +544,23 @@ def test_message_says_truncation_before_the_lists(tmp_path):
     msg = message(res)
     assert msg is not None
     assert msg.split("\n")[1].startswith("取得数が上限")
+
+
+def test_candidate_whose_url_the_http_client_rejects_does_not_stop_the_run(tmp_path):
+    # 再レビュー A1: httpx.InvalidURL（ポートが数字でない URL など）は ValueError でも httpx.HTTPError でもない。
+    # その 1 件を開けなかった扱いにして続ける（落ちると、同じリンクがページにある限り毎月の確認が全部できない）
+    import httpx
+
+    seed = "https://a.jp/x/z.html"
+    bad = "https://a.jp:abc/list"
+    pages = {seed: _html([(bad, "譲渡犬"), ("https://a.jp/new.html", "譲渡犬の一覧")]), "https://a.jp/new.html": _html([], LIST4)}
+
+    class Rejecting(FakeFetcher):
+        def get(self, url, *args, **kwargs):
+            if url == bad:
+                raise httpx.InvalidURL("Invalid port: 'abc'")
+            return super().get(url, *args, **kwargs)
+
+    res, _ = _run(pages, [_src("a-1", seed)], tmp_path, fetcher=Rejecting(pages))
+    assert [t["url"] for t in res.targets] == ["https://a.jp/new.html"]
+    assert res.unopened == 1

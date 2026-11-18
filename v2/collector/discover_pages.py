@@ -157,10 +157,10 @@ class _Crawler:
     def _one(self, url: str) -> PageInfo | None:
         if not self._reserve():
             return None
-        fetcher = self._fetcher(urlsplit(url).netloc.lower())
         try:
+            fetcher = self._fetcher(urlsplit(url).netloc.lower())
             page = fetcher.get(url)
-        except READ_ERRORS as e:
+        except Exception as e:   # READ_ERRORS のほか、httpx.InvalidURL（ポートが数字でない URL など。ValueError でも HTTPError でもない）も 1 件の失敗にとどめる
             info = getattr(e, "info", None)
             moved = ""
             if info is not None and info.kind == "redirect":
