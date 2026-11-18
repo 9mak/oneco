@@ -9374,3 +9374,75 @@ sources:
   enabled: true
   photo: ok
   note: '掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目）。岡山市保健所の譲渡猫情報一覧。city_okayama-2（譲渡犬）と同じ作り・同じ扱い。2026-11-18 時点で 3 頭（うち 1 頭はお声かかり中）。0 頭の日は「現在、譲渡対象の猫はいません」「現在、譲渡対象猫はいません」「現在譲渡者募集中の猫はいません」のどれかが出る（Wayback 2024-02・2025-04・2025-08 の 3 版で確認。子のいる日の版 2023-03・2026-11 には出ない）。'
+- slug: kochi_apc-3
+  name: 高知県中央・中村小動物管理センター（アニマルステーション 迷子の猫を探している）
+  municipality: 高知県中央・中村小動物管理センター
+  prefecture: 高知県
+  phone: 088-831-7939
+  address: 〒780-8021 高知県高知市孕東町56-2（高知県中央小動物管理センター。中村小動物管理センターは別所在地）
+  contact_scope: operator
+  url: https://kochi-apc.com/category/maigo-sagasu-neko/
+  verified_at: '2026-11-18'
+  verified_phone_url: "https://kochi-apc.com/category/maigo-sagasu-neko/"
+  verified_address_url: "https://kochi-apc.com/category/maigo-sagasu-neko/"
+  kind: lost
+  species: cat
+  mode: recipe
+  recipe: recipes/kochi_apc_board.yaml
+  enabled: true
+  photo: "no"
+  note: '県のまとめページ。掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目。市民の掲示板のうち迷子）。アニマルステーション（市民が登録する掲示板）の「迷子の猫を探している」＝飼い主が探している迷子猫。2026-11-18 時点で 3 件。飼い主が届けた迷子の写真は出さない（photo: no。町田の前例。おまえさん 2026-11-10「迷子の写真だけは出さなければいい」）。一覧のカードの管理番号・仮名・種類・性別だけを読み、投稿した市民の住所が出る個体ページは辿らない（元ページのリンクは個体ページ）。「猫を譲りたい人」（飼えなくなった飼い主からの譲渡）は載せない。0 頭の日の版は Wayback に無いので、一覧の枠はあるが譲渡でないカードが 1 つも無い日だけ 0 頭にする（犬の区分 kochi_apc-4 が今日その作りで空）。'
+- slug: kochi_apc-4
+  name: 高知県中央・中村小動物管理センター（アニマルステーション 迷子の犬を探している）
+  municipality: 高知県中央・中村小動物管理センター
+  prefecture: 高知県
+  phone: 088-831-7939
+  address: 〒780-8021 高知県高知市孕東町56-2（高知県中央小動物管理センター。中村小動物管理センターは別所在地）
+  contact_scope: operator
+  url: https://kochi-apc.com/category/maigo-sagasu-inu/
+  verified_at: '2026-11-18'
+  verified_phone_url: "https://kochi-apc.com/category/maigo-sagasu-inu/"
+  verified_address_url: "https://kochi-apc.com/category/maigo-sagasu-inu/"
+  kind: lost
+  species: dog
+  mode: recipe
+  recipe: recipes/kochi_apc_board.yaml
+  enabled: true
+  photo: "no"
+  note: '県のまとめページ。掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目。市民の掲示板のうち迷子）。「迷子の犬を探している」（猫の kochi_apc-3 と同じ作り・同じ扱い）。アニマルステーションのトップ（/animalstation/）は猫の 3 区分しかリンクしていないが、犬の区分のページ（/category/maigo-sagasu-inu/）は存在し、2026-11-18 時点は 0 頭（カードの無い空の一覧）。'
+- slug: kochi_apc-5
+  name: 高知県中央・中村小動物管理センター（アニマルステーション 迷子の猫を保護している）
+  municipality: 高知県中央・中村小動物管理センター
+  prefecture: 高知県
+  phone: 088-831-7939
+  address: 〒780-8021 高知県高知市孕東町56-2（高知県中央小動物管理センター。中村小動物管理センターは別所在地）
+  contact_scope: operator
+  url: https://kochi-apc.com/category/maigo-hogo-neko/
+  verified_at: '2026-11-18'
+  verified_phone_url: "https://kochi-apc.com/category/maigo-hogo-neko/"
+  verified_address_url: "https://kochi-apc.com/category/maigo-hogo-neko/"
+  kind: sheltered
+  species: cat
+  mode: recipe
+  recipe: recipes/kochi_apc_board.yaml
+  enabled: true
+  photo: pending
+  note: '県のまとめページ。掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目。市民の掲示板のうち迷子）。「迷子の猫を保護している」＝市民が保護している迷子猫（施設で保護中ではない。区分は sheltered で、施設の収容とは別に扱う。千葉市・旭川の市民保護と同じ）。写真は kochi_apc（譲渡）と同じ pending（返事待ち。新しいページの写真は改めて聞く）。2026-11-18 時点で一覧に 1 件（08J05）あるが、「猫を譲りたい人」の区分も付いた譲渡の投稿（管理番号の J は譲渡）なので載せず、今日は 0 頭。譲渡の区分が付かない保護の投稿が出た日から載る。0 頭の日の版は Wayback に無いので、一覧の枠はあるが譲渡でないカードが 1 つも無い日だけ 0 頭にする。'
+- slug: kochi_apc-6
+  name: 高知県中央・中村小動物管理センター（アニマルステーション 迷子の犬を保護している）
+  municipality: 高知県中央・中村小動物管理センター
+  prefecture: 高知県
+  phone: 088-831-7939
+  address: 〒780-8021 高知県高知市孕東町56-2（高知県中央小動物管理センター。中村小動物管理センターは別所在地）
+  contact_scope: operator
+  url: https://kochi-apc.com/category/maigo-hogo-inu/
+  verified_at: '2026-11-18'
+  verified_phone_url: "https://kochi-apc.com/category/maigo-hogo-inu/"
+  verified_address_url: "https://kochi-apc.com/category/maigo-hogo-inu/"
+  kind: sheltered
+  species: dog
+  mode: recipe
+  recipe: recipes/kochi_apc_board.yaml
+  enabled: true
+  photo: pending
+  note: '県のまとめページ。掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目。市民の掲示板のうち迷子）。「迷子の犬を保護している」（猫の kochi_apc-5 と同じ作り・同じ扱い）。トップは猫の区分しかリンクしていないが犬の区分のページは存在し、2026-11-18 時点は 0 頭（カードの無い空の一覧）。'
