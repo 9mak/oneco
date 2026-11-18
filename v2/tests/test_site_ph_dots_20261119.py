@@ -112,7 +112,8 @@ def test_fallback_for_a_photo_that_fails_to_load_has_the_dots_too(tmp_path: Path
     out = _build(tmp_path, [_a("photo0000001")])
     for html, box in ((_animal(out, "photo0000001"), ".detail-media"), (_card(out, "photo0000001"), ".thumb")):
         frame = BeautifulSoup(html, "lxml").select_one(box)
-        assert frame is not None and frame.select_one("img") is not None, box
+        img = frame.select_one("img") if frame is not None else None
+        assert img is not None and "classList.add('noimg')" in str(img.get("onerror") or ""), box
         assert frame.select_one("img + .ph > .ph-dots") is not None, box   # 読み込めなかったときに出す枠（onerror）
 
 
@@ -130,9 +131,16 @@ def test_css_draws_the_dots_in_the_two_logo_colours():
 
 def test_css_centres_the_dots_and_the_words_in_the_frame():
     ph = _rule("\n.ph{")
-    for decl in ("display:flex", "flex-direction:column", "align-items:center", "justify-content:center"):
+    for decl in ("position:absolute", "inset:0",   # 写真の枠（.thumb・.detail-media）いっぱいに重ねる
+                 "display:flex", "flex-direction:column", "align-items:center", "justify-content:center"):
         assert decl in ph, decl
     assert "background:linear-gradient(160deg,#e8edf2,#d3dbe3)" in ph and "color:#5b6775" in ph   # 枠と文字の色は変えない
+
+
+def test_css_shows_the_frame_only_without_a_photo_or_when_it_failed_to_load():
+    # 写真があるあいだは隠し、読み込めなかったとき（onerror が .noimg を付ける）だけ出す（#137 reviewer F-2）
+    assert ".thumb img+.ph,.detail-media img+.ph{display:none}" in B.CSS
+    assert ".thumb.noimg .ph,.detail-media.noimg .ph{display:flex}" in B.CSS
 
 
 def test_css_no_longer_has_the_silhouettes_or_the_paw(tmp_path: Path):
