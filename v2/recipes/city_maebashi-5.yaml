@@ -1,0 +1,30 @@
+# 前橋市 犬の飼い主を募集しています（kurashi_tetsuzuki/1/1/3/18317.html）。前橋市保健所の譲渡犬。猫（city_maebashi-4）と同じ作りで、2 段目の並びだけ違う。
+# 掲載漏れの棚卸し（2026-11-18 W006 T640 3 回目）。2026-11-18 は 1 頭（D2026-004 マヨ）。
+# 1 頭 = caption が管理番号（D2026-004）の表 1 つ。1 行目 仮名・犬種・ワクチン歴等／2 行目 性別・毛色（猫ページは毛色・性別）／3 行目 推定年齢・性格／4 行目 備考欄／5 行目 犬の画像。
+#   位置読みなので、性別の欄が オス・メス でない行は載せない（猫のページの並びに変わった日にずれた値で載せない）。雛形の表（caption「管理番号」）・年度別の頭数の表は行にしない。
+# 0 頭の日（Wayback 2025-03・2026-04 で確認）は、動物の表が無く、2025-03 は h2 が「飼い主を募集している犬の一覧【現在は譲渡対象犬はいません】」、2026-04 は見出しそのままで決まった子の表
+#   （caption「譲渡決定」・「譲渡が決まりました」）だけが残る。0 文言に頼らず、枠（h2「飼い主を募集している犬の一覧」）はあるが、管理番号の caption も写真（決まった子の表の写真を除く）も無い日だけ 0 頭にする。
+# 写真は pending（前橋市は事前相談が要るホスト）。
+rows: "div.wysiwyg table:has(> caption:-soup-contains('-'))"
+row_filter:
+  text_lacks: ["譲渡が決まりました"]
+  field_required: {sex: ["オス", "メス"]}
+image: "img@src"
+# 写真のファイル名は載せ替えで変わる（同じ管理番号 C2026-057 の猫が 2026-09-23 は vgaten.jpg、2026-11-18 は vga2026-06-10amagawaooshimamachikuroosu5.jpg）ので、ID は管理番号から作る（写真由来だと載せ替えのたびに別の子に見える）。
+id_by_management_no: ["D2"]
+fields:
+  management_no: {selector: "caption", regex: "^\\s*([A-Z]\\d{4}-\\d+)\\s*$"}
+  name: {selector: "tr:nth-child(1) > td:nth-child(1)"}
+  breed: {selector: "tr:nth-child(1) > td:nth-child(2)"}
+  sex: {selector: "tr:nth-child(2) > td:nth-child(1)"}
+  color: {selector: "tr:nth-child(2) > td:nth-child(2)"}
+  age: {selector: "tr:nth-child(3) > td:nth-child(1)"}
+  note:
+    join:
+      - {selector: "tr:nth-child(3) > td:nth-child(2)", prefix: "性格："}
+      - {selector: "tr:nth-child(1) > td:nth-child(3)", prefix: "ワクチン歴等："}
+      - {selector: "tr:nth-child(4) > td:nth-child(1)"}
+    sep: " "
+empty_absent:
+  page: "h2:-soup-contains('飼い主を募集している犬の一覧')"
+  none: "div.wysiwyg table:not(:has(> caption:-soup-contains('譲渡決定'))) img, div.wysiwyg table > caption:-soup-contains('-')"
