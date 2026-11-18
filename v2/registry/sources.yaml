@@ -9340,3 +9340,37 @@ sources:
   recipe: recipes/city_miyazaki-7.yaml
   enabled: true
   note: '掲載漏れの棚卸しで追加（2026-11-17 W006 T640 2 回目。市民の掲示板のうち迷子）。「市民の皆さんが迷子の犬を保護しています」（仕様の「犬の保護しています」ページ）。2026-11-17 時点は 0 頭（「・現在、掲載情報はありません。」。Wayback 2024-07〜2026-07 の版も 0 頭）。子のいる日の作りは猫（city_miyazaki-6）と同じと考えて同じ読み方にした（未確認）。0 頭の文は子のいる日の版（猫・迷子の犬のページ）には出ない。'
+- slug: city_okayama-2
+  name: 岡山市（譲渡犬）
+  municipality: 岡山市
+  prefecture: 岡山県
+  phone: 086-803-1259
+  address: 〒700-8546 岡山市北区鹿田町一丁目1番1号
+  url: https://www.city.okayama.jp/kurashi/0000016441.html
+  verified_at: '2026-11-18'
+  verified_phone_url: "https://www.city.okayama.jp/kurashi/0000016441.html"
+  verified_address_url: "https://www.city.okayama.jp/kurashi/0000016441.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/city_okayama_joto.yaml
+  enabled: true
+  photo: ok
+  note: '掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目）。岡山市保健所の譲渡犬情報一覧（保護動物の city_okayama とは別のページ）。2026-11-18 時点で 30 頭（子犬・「譲渡に条件がある犬達」・ZOOねるパークの犬たち・他の施設で訓練中の犬を含む。「譲渡が決まりました」の 2 頭は見出しだけで載せない）。「お声かかり中です」（申し込みが入っている子）は載せて note に出す（トライアル中と同じ扱い）。写真は既存の city_okayama と同じ ok（2026-11-02〜05 に岡山市から写真の表示は可の返事）。0 頭の日の版は Wayback に無い（保存の 6 版 2021-02〜2025-12 はどれも子がいる日）ので、枠はあるが動物の見出し・欄・写真が 1 つも無い日だけ 0 頭にする。仕様の親ページ 0000016464 は「保護犬情報一覧」（譲渡犬の情報ではない）なので足さない。'
+- slug: city_okayama-3
+  name: 岡山市（譲渡猫）
+  municipality: 岡山市
+  prefecture: 岡山県
+  phone: 086-803-1259
+  address: 〒700-8546 岡山市北区鹿田町一丁目1番1号
+  url: https://www.city.okayama.jp/kurashi/0000016404.html
+  verified_at: '2026-11-18'
+  verified_phone_url: "https://www.city.okayama.jp/kurashi/0000016441.html"
+  verified_address_url: "https://www.city.okayama.jp/kurashi/0000016441.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/city_okayama_joto.yaml
+  enabled: true
+  photo: ok
+  note: '掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目）。岡山市保健所の譲渡猫情報一覧。city_okayama-2（譲渡犬）と同じ作り・同じ扱い。2026-11-18 時点で 3 頭（うち 1 頭はお声かかり中）。0 頭の日は「現在、譲渡対象の猫はいません」「現在、譲渡対象猫はいません」「現在譲渡者募集中の猫はいません」のどれかが出る（Wayback 2024-02・2025-04・2025-08 の 3 版で確認。子のいる日の版 2023-03・2026-11 には出ない）。'
