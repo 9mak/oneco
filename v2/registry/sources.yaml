@@ -9508,3 +9508,19 @@ sources:
   enabled: true
   photo: pending
   note: '掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目）。前橋市保健所の譲渡犬（「犬の飼い主を募集しています」）。仕様の親ページ（4126.html「犬・猫の譲渡事業」）は案内で一覧は無く、犬の一覧はこのページ。2026-11-18 時点で 1 頭（D2026-004）。猫（city_maebashi-4）と同じ作りで 2 段目の並びだけ違う（犬は性別・毛色）。写真は pending（事前相談が要るホスト）。0 頭の日は Wayback 2025-03（見出しが「…の一覧【現在は譲渡対象犬はいません】」）・2026-04（決まった子の表だけが残る）に実物がある。文言に頼らず、枠はあるが管理番号の caption も写真も無い日だけ 0 頭にする。ID は管理番号から作る（city_maebashi-4 と同じ）。'
+- slug: city_akita-4
+  name: 秋田市保健所（譲渡制度に登録されている犬猫）
+  municipality: 秋田市保健所
+  prefecture: 秋田県
+  phone: 018-883-1182
+  address: 〒010-0976 秋田県秋田市八橋南一丁目8-3
+  url: https://www.city.akita.lg.jp/kurashi/pet/1005363/1012582.html
+  verified_at: '2026-11-18'
+  verified_phone_url: "https://www.city.akita.lg.jp/kurashi/pet/1005363/1012582.html"
+  verified_address_url: "https://www.city.akita.lg.jp/kurashi/pet/1005363/1012582.html"
+  kind: adoption
+  species: mixed
+  mode: recipe
+  recipe: recipes/city_akita-4.yaml
+  enabled: true
+  note: '掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目）。「犬・猫の譲渡制度」に登録されている動物のご案内（秋田市保健所の収容動物。公示の city_akita-1・迷子の -2・市民保護の -3 とは別のページ）。2026-11-18 時点で犬 0・猫 5（所有者不明の仔猫として収容した子など）。「犬・ねこの飼い主紹介制度」（1012580。飼い主からの譲渡）は載せない。写真は既存の city_akita-1〜3 と同じ（未指定＝ok）。犬の節の 0 頭の文は猫がいる日にも出るので、犬・猫の両方の節の 0 頭の文がそろった日だけ 0 頭にする（Wayback 2026-03 の犬猫とも「…はいません。」の日で確認。猫のいる日の版 2025-11・2026-11 には猫の文が出ない）。2021-04・2023-03・2025-11 は動物の見出しが h3・欄のラベルが無い別の作りで、今のレシピでは読めず failed で通知される。'
