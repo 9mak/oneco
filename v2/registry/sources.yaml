@@ -9524,3 +9524,19 @@ sources:
   recipe: recipes/city_akita-4.yaml
   enabled: true
   note: '掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目）。「犬・猫の譲渡制度」に登録されている動物のご案内（秋田市保健所の収容動物。公示の city_akita-1・迷子の -2・市民保護の -3 とは別のページ）。2026-11-18 時点で犬 0・猫 5（所有者不明の仔猫として収容した子など）。「犬・ねこの飼い主紹介制度」（1012580。飼い主からの譲渡）は載せない。写真は既存の city_akita-1〜3 と同じ（未指定＝ok）。犬の節の 0 頭の文は猫がいる日にも出るので、犬・猫の両方の節の 0 頭の文がそろった日だけ 0 頭にする（Wayback 2026-03 の犬猫とも「…はいません。」の日で確認。猫のいる日の版 2025-11・2026-11 には猫の文が出ない）。2021-04・2023-03・2025-11 は動物の見出しが h3・欄のラベルが無い別の作りで、今のレシピでは読めず failed で通知される。'
+- slug: city_chiba-9
+  name: 千葉市（育成中の子猫）
+  municipality: 千葉市
+  prefecture: 千葉県
+  phone: 043-258-7817
+  address: 千葉市稲毛区宮野木町445番地1
+  url: https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/koneko-jyouto.html
+  verified_at: '2026-11-18'
+  verified_phone_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/koneko-jyouto.html"
+  verified_address_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/koneko-jyouto.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/city_chiba-9.yaml
+  enabled: true
+  note: '掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目）。千葉市動物保護指導センターの「育成中の子猫を譲渡します」（お見合い会・受け渡しの日程つきの譲渡候補子猫。譲渡猫の city_chiba-8 とは別のページ）。2026-11-18 時点で 2 頭（26102201・26092501。名前の欄は無い）。既存の transfercats.html（city_chiba-8）の 18 頭に同じ子（管理番号・写真）はいないことを 2026-11-17 の保存ページと 2026-11-18 の実ページで確かめた。写真の規約は既存の千葉市のページと同じ（無断転載禁止のみ）で photo: ok。0 頭の日（お見合い会の無い期間）は、h2「対象の子猫」の下に h4 が &nbsp;・欄が全部空の雛形が 1 つ残る（Wayback 2025-02・2026-03 で確認）ので、枠はあるが数字の入った h4 も子猫の写真も無い日を 0 頭にする。2024-07 の版は見出しが「24060603　お見合いが決まりました！」（写真なし）で、お見合いが決まった子は載せて note に出す（city_chiba-7・-8 と同じ）。'
