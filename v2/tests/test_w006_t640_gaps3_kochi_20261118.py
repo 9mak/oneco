@@ -61,7 +61,9 @@ def test_registry():
 
 def test_fixtures_hold_no_private_address_of_the_citizens():
     # 個体ページには「提供者住所」（投稿した市民の住所）が出る。一覧だけを読み、個体ページは辿らない・fixture にも入れない
-    for name in FXN.values():
+    names = sorted(p.name for p in FIX.glob("w006_kochi_apc-[3456]_*.html"))
+    assert len(names) >= 11 and set(FXN.values()) <= set(names)
+    for name in names:
         assert "提供者住所" not in _fx(name), name
 
 
@@ -69,11 +71,14 @@ def test_lost_cats_today_reads_3_cards_and_the_photo_only_where_there_is_one():
     c = _run(SAGASU_NEKO, _fx(FXN[SAGASU_NEKO]))
     assert c.status == "ok", c.error
     animals = c.result.animals
-    assert [(a["management_no"], a["name"], a["breed"], a["sex"]) for a in animals] == [
-        ("08M04", "ララ", "雑種", "オス・去勢済み"),
-        ("08M03", "るい", "雑種", "メス・不妊済み"),
-        ("08M02", "らん", "雑種", "メス・不妊済み"),
+    # 管理番号は市民の掲示板の番号で、同じ番号が 2 件に付く日がある（Wayback 2025-03 の 06M22）。写真の無い子の ID が衝突して 1 件が消えないよう、管理番号の項目にせず note に出す
+    # （ID は写真、なければ個体ページの URL から作る）
+    assert [(a["name"], a["breed"], a["sex"], a["note"]) for a in animals] == [
+        ("ララ", "雑種", "オス・去勢済み", "管理番号：08M04"),
+        ("るい", "雑種", "メス・不妊済み", "管理番号：08M03"),
+        ("らん", "雑種", "メス・不妊済み", "管理番号：08M02"),
     ]
+    assert all(not a.get("management_no") for a in animals)
     assert all(a["species"] == "cat" for a in animals) and len({a["id"] for a in animals}) == 3
     assert animals[0]["image_url"] == "https://kochi-apc.com/wp-content/uploads/2026/10/IMG_3804.jpeg"
     assert not animals[1]["image_url"] and not animals[2]["image_url"]   # 「写真がありません」の仮画像（no-image.png）は写真にしない
@@ -98,7 +103,46 @@ def test_shelter_cat_tagged_only_as_found_is_listed():
         a.decompose()
     c = _run(HOGO_NEKO, str(soup).replace("猫を譲りたい人", ""))
     assert c.status == "ok", c.error
-    assert [(a["management_no"], a["name"], a["sex"], a["species"]) for a in c.result.animals] == [("08J05", "るか", "オス", "cat")]
+    assert [(a["note"], a["name"], a["sex"], a["species"]) for a in c.result.animals] == [("管理番号：08J05", "るか", "オス", "cat")]
+
+
+def test_other_days_in_wayback_lost_cats_and_shelter_cats():
+    # 探している猫 2025-03: 7 件。管理番号 06M22 が「mn」と「ちゃー」の 2 件に付く（管理番号の項目にしないので、どちらも載る）
+    c = _run(SAGASU_NEKO, _fx("w006_kochi_apc-3_wb20250317.html"))
+    assert c.status == "ok", c.error
+    assert [a["note"] for a in c.result.animals] == [f"管理番号：{n}" for n in ("06M24", "06M22", "06M22", "06M21", "06M20", "06M19", "06M18")]
+    assert [a["name"] for a in c.result.animals if a["note"] == "管理番号：06M22"] == ["mn", "ちゃー"]
+    assert len({a["id"] for a in c.result.animals}) == 7
+    # 保護している猫 2025-09: 譲渡の区分が付かない投稿（管理番号 M）。今日の 08J05（管理番号 J・猫を譲りたい人の区分つき）とは違い、載せる
+    c = _run(HOGO_NEKO, _fx("w006_kochi_apc-5_wb20250911.html"))
+    assert c.status == "ok", c.error
+    assert [(a["note"], a["sex"], a["species"]) for a in c.result.animals] == [("管理番号：07M06", "メス", "cat")]
+    assert c.result.animals[0]["image_url"] == "https://kochi-apc.com/wp-content/uploads/2025/08/1000015079.jpg"
+
+
+def test_lost_dogs_in_wayback_the_dog_category_exists_and_has_had_dogs():
+    # 犬の区分は今日 0 頭だが、実在するページで犬が載った日がある。2025-07 は 2 件（1 件は管理番号が空）・2026-02 は 1 件
+    c = _run(SAGASU_INU, _fx("w006_kochi_apc-4_wb20250717.html"))
+    assert c.status == "ok", c.error
+    assert [(a["name"], a["sex"], a["species"], a.get("note")) for a in c.result.animals] == [
+        ("しんたろう", "オス", "dog", None), ("あんこ", "メス", "dog", "管理番号：06M03")]
+    assert len({a["id"] for a in c.result.animals}) == 2
+    c = _run(SAGASU_INU, _fx("w006_kochi_apc-4_wb20260215.html"))
+    assert c.status == "ok" and [(a["name"], a["note"]) for a in c.result.animals] == [("あずき", "管理番号：07M03")]
+    assert c.result.animals[0]["breed"].startswith("雑種(父親シュナウザー")
+    assert _zero(_run(SAGASU_INU, _fx("w006_kochi_apc-4_wb20260610.html")))
+
+
+def test_zero_days_in_wayback_are_the_empty_list():
+    # 探している猫 2026-06・保護している猫 2026-01 は、一覧にカードが 1 件も無い 0 頭の日の実物（今日の犬の 2 区分と同じ空の ul.animal-card-item）
+    for slug, name in ((SAGASU_NEKO, "w006_kochi_apc-3_wb20260610.html"), (HOGO_NEKO, "w006_kochi_apc-5_wb20260114.html")):
+        html = _fx(name)
+        assert 'class="unit"' not in html and "animal-card-item" in html, name
+        c = _run(slug, html)
+        assert _zero(c) and c.result.empty_evidence == "empty_absent", (name, c.status, c.error)
+    # 子のいる日に 0 頭の根拠は成り立たない
+    for slug, name in ((SAGASU_NEKO, "w006_kochi_apc-3_wb20250317.html"), (HOGO_NEKO, "w006_kochi_apc-5_wb20250911.html")):
+        assert _run(slug, _fx(name)).result.empty_confirmed is False, name
 
 
 def test_dogs_today_are_zero_because_the_list_is_empty():
@@ -137,7 +181,7 @@ def test_next_page_of_the_list_is_followed():
     soup.select_one("div.animal-card").insert_after(nav)
     p1 = str(soup)
     assert "nextpostslink" in p1
-    p2 = html.replace("08M04", "08M09").replace("08M03", "08M08").replace("08M02", "08M07").replace("IMG_3804", "IMG_9999")
+    p2 = html.replace("08M04", "08M09").replace("08M03", "08M08").replace("08M02", "08M07").replace("IMG_3804", "IMG_9999").replace("/28487/", "/38487/").replace("/5640/", "/6640/").replace("/5638/", "/6638/")
     c = _run(SAGASU_NEKO, p1, {"https://kochi-apc.com/category/maigo-sagasu-neko/page/2/": p2})
     assert c.status == "ok", c.error
-    assert sorted(a["management_no"] for a in c.result.animals) == ["08M02", "08M03", "08M04", "08M07", "08M08", "08M09"]
+    assert sorted(a["note"] for a in c.result.animals) == ["管理番号：08M02", "管理番号：08M03", "管理番号：08M04", "管理番号：08M07", "管理番号：08M08", "管理番号：08M09"]
