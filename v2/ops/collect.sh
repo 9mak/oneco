@@ -3,7 +3,8 @@
 #
 #   run（全ページ収集）→ notify（異常があれば Discord）→ propose（AI のレシピ案を draft PR に。ONECO_AI_REPAIR=1 のみ）→ build（静的サイト）→ Cloudflare Workers（静的アセット）へ deploy
 #   →（月曜だけ）discover（環境省リンク集と台帳の差分。確認済み一覧に無い差分があれば Discord）
-#   → 全部成功したら HEALTHCHECK_URL へ ping。discover の成否は「全部成功」に数えない。
+#   →（毎月最初の月曜＝JST の 1〜7 日の月曜だけ）discover --pages（台帳のページから 1 段たどった掲載漏れ・台帳のリンク切れ。あれば Discord）
+#   → 全部成功したら HEALTHCHECK_URL へ ping。discover・discover --pages の成否は「全部成功」に数えない。
 #
 # 収集の二重起動は run 自身が state/collect.lock（flock）で防ぐ。取れなければ run が exit 3 で終わり、ここでは run の失敗として扱う。
 # どこかで失敗しても途中で止めず最後まで進み、最後に 0（全部成功）か 1（どれかが失敗）を返す。
@@ -108,6 +109,21 @@ if [ "$(TZ=Asia/Tokyo date +%u)" = "1" ]; then
   fi
 else
   echo "== discover: 月曜だけ（今日は飛ばす）"
+fi
+
+# 5-2. 毎月最初の月曜（JST の月曜かつ 1〜7 日）: 同じ自治体の別ページの掲載漏れとリンク切れ（collector discover --pages --notify。W006 T641）
+#    起点約 740 ページ＋候補を開くので数十分かかる（ホストごと 1.5 秒間隔）。registry/discover_known.yaml の pages: に無い候補かリンク切れがあるときだけ
+#    Discord に 1 通。discover と同じく失敗しても日次収集の失敗に数えない（step を使わず rc を変えない）
+if [ "$(TZ=Asia/Tokyo date +%u)" = "1" ] && [ "$(TZ=Asia/Tokyo date +%d)" -le 7 ]; then
+  echo "== [$(date '+%H:%M:%S')] discover --pages（月 1 回）"
+  if "$PY" -m collector discover --pages --notify; then
+    echo "-- discover_pages: ok"
+  else
+    discover_pages_code=$?
+    echo "-- discover_pages: 失敗 (exit ${discover_pages_code}) 日次収集の失敗には数えない"
+  fi
+else
+  echo "== discover --pages: 毎月最初の月曜だけ（今日は飛ばす）"
 fi
 
 # 5a. 0 頭の根拠が「子のいた日の保存ページ」にも当たるレシピの監査（W006 T631）。当たる slug の集合が前回と変わった日だけ

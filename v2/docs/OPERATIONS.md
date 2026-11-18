@@ -151,6 +151,7 @@ AI は案を書くだけ。案は `collector propose` が draft PR にし、**�
 3. `site/build.py` — `data/latest.json` から `site/dist/` を作る
 4. `wrangler deploy`（`ops/wrangler.jsonc`）— `site/dist/` を Cloudflare Workers の静的アセットへ
 5. **月曜（JST）だけ** `collector discover --notify` — 環境省リンク集と台帳の差分のうち、確認済み一覧（`registry/discover_known.yaml`）に無いもの（新しく増えた・消えた自治体）があるときだけ Discord に 1 通（4 節）。成否は「全部成功」に数えない（失敗しても rc・healthcheck・「失敗した工程」通知に影響しない）
+   - **毎月最初の月曜（JST の月曜かつ 1〜7 日）だけ**、その後に `collector discover --pages --notify`（4 節の「ページ単位」）。同じく成否は数えない
 6. 全部成功したら `HEALTHCHECK_URL` へ ping
 7. 収集と公開が終わった後に `ops/audit_empty.py --notify`（W006 T631）。0 頭の根拠（`empty_text`・`empty_text_all`・`empty_text_each`・`empty_selector`・`empty_absent`）が、**子がいた日の保存ページ**（`data/last_ok/<slug>/`。今のレシピで 1 頭以上取れるもの）にも成立する slug を探す。empty は ok と同じ扱いで通知も AI 修復も止まるので、そういう slug は行の読み方が崩れた日に通知なしで「本日は 0 頭」と出る。当たる slug の集合が前回（`data/audit_empty_state.json`）と変わった日だけ Discord に 1 通。送れなかった日は記録せず翌日また送る。失敗しても収集全体の成否・healthcheck には数えない。手で見るときは `PYTHONPATH=v2 python v2/ops/audit_empty.py --data v2/data [--slug 接頭辞] [--json]`（出力: slug・根拠の種類・当たった文言か要素・当たった文書の URL・出現回数）。render の slug は保存ページが無く、保存に無い URL を辿る slug（移転直後など）は当てられないので、どちらも対象外（件数は標準エラーに出る）。直し方は RECIPE.md「空のとき」の `empty_text_all`
 
@@ -247,6 +248,25 @@ HTTP 200 で返ってきても、次のページは 0 頭にせず失敗（`取�
 cd v2   # 本番クローンなら ~/oneco-collect/v2
 ../.venv/bin/python -m collector discover          # 差分を状態つきで表示（[未確認] が通知の対象）
 ../.venv/bin/python -m collector discover --json   # unknown_new / unknown_gone / known / stale
+```
+
+### ページ単位: `collector discover --pages`（同じ自治体の別ページの掲載漏れ・台帳のリンク切れ。W006 T641）
+
+上の `discover` はドメイン単位なので、ドメインが台帳にある自治体の別ページ（譲渡・保護中・迷子）の抜けは出ない（2026-11-17 の手作業の棚卸しで 19 自治体）。それを固定スクリプトにしたもの（`collector/discover_pages.py`。LLM・有料 API は使わない。台帳は変えず、候補を知らせるだけ）。`ops/collect.sh` が毎月最初の月曜に `--pages --notify` を走らせる。
+
+- 起点: 台帳の全エントリの URL（enabled・recipe / link_only を問わない）・その親ディレクトリ・環境省リンク集のリンク先（約 740 ページ）
+- 候補: 起点のリンクのうち、リンク文字が `KW`（譲渡・里親・保護・収容・迷子など）に当たり `NG`（講習・様式・イベントなど）に当たらないもの。台帳の URL・`data/latest.json` の `source_url`（その URL かその下）・レシピ本文にその URL がそのまま書かれているもの・URL の末尾がページ ID らしい形（数字 4 桁以上を含む。`1020659.html` など）でレシピ本文に出てくるもの・`discover_known.yaml` の `pages:` にあるものは除く（`index.html`・`neko.html` のような一般的な末尾は、ほかの自治体のレシピにも出てくるので外さない）。pdf・xlsx・画像・env.go.jp・youtube は開かない
+- 採点: 候補を開いて性別の語（オス・メス…）が 4 以上で、かつ「台帳のページからだけ来て、リンク文字が全部個体番号風」でないものが通知の対象（`SEX_MIN`）
+- リンク切れ: 台帳の URL が HTTP 404・410、または別ホストへの転送で終わったもの（接続失敗・robots 拒否・5xx は数えない）。移転なら台帳の `url` を直す
+- 礼儀: ホストごと 1.5 秒以上の間隔・robots 遵守・ホストをまたいだ並列は 8 本まで・1 回の取得は 5,000 件まで（超えたら打ち切って通知に書く）
+- 通知は、`pages:` に無い新しい候補・リンク切れ・打ち切りのどれかがあるときだけ 1 通（並びは 打ち切り → リンク切れ → 候補。文字数の上限に入らない行は丸ごと省き、省いた行数を最後に書く。全件は `--out` の JSON）。途中で落ちた月は「discover --pages が途中で失敗した」を 1 通送る（日次収集の失敗には数えない）。確認したページは `registry/discover_known.yaml` の `pages:` に `{status: pending|excluded|covered, note: 理由, slugs?: [...]}` で足すと止まる（キーは正規化した URL = スキーム・www・末尾の `/` と `index.html` を除き、クエリは残す。`collector.discover.norm`）。状態は持たない
+- 2026-11-18 の試運転（実サイト・通知なし）: 1 段は起点 789・取得 1,271・224 秒で通知の対象 38 件。内訳は、台帳に無い子の一覧 3（千葉市の育成中の子猫・岩手県 中部保健所の迷子・高知の掲示板）、足し方の判断待ち 1（熊本市の譲渡）、同じ子を別の URL から既に読んでいる 9、子の一覧でない 25（啓発・手続きの案内・登録フォーム・外部の民間サイト）。後ろの 35 件は `pages:` に入れてある
+- 2 段（`--depth 2`）は取得が 237 件・140 秒増え、通知の対象が 51 件増えた。1 段では出ない子の一覧が 4（さいたま市・岡山市・前橋市・秋田市の譲渡ページ）、残りは外部の民間サイトの個別ページ 24・お知らせの個別ページ 12・案内など 11。月 1 回の自動は 1 段のまま。2 段は、掲載漏れを疑ったときに手で回して `--out` の JSON を見る。2 段を自動にする前に決めること: `pages:` に入れた案内のページの先はたどらなくなる（前橋市の譲渡事業の案内を入れると、その先の猫の一覧は 2 段でも出ない）／外部のサイトと個別ページが毎回候補に出る
+
+```bash
+../.venv/bin/python -m collector discover --pages                 # 表示と JSON（既定は $ONECO_LOG_DIR か logs/ の discover-pages-<日付>.json）だけ
+../.venv/bin/python -m collector discover --pages --depth 2       # 候補ページからもう 1 段たどる（取得数が増える）
+../.venv/bin/python -m collector discover --pages --notify --out /tmp/x.json
 ```
 
 ### 通知が来たら

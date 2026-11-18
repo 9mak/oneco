@@ -37,6 +37,7 @@ $PY -m collector run --only pref_saga             # slug の前方一致で絞�
 $PY site/build.py                                  # data/latest.json → site/dist/（-m site.build は標準ライブラリの site と衝突して使えない）
 $PY -m collector discover                          # 環境省リンク集と台帳の差分（確認済みは registry/discover_known.yaml）
 $PY -m collector discover --notify                 # 確認済み一覧に無い差分があれば Discord へ（collect.sh が月曜だけ実行）
+$PY -m collector discover --pages [--depth 2] [--notify]   # 同じ自治体の別ページの掲載漏れ・台帳のリンク切れ（collect.sh が毎月最初の月曜だけ実行）
 $PY -m collector notify                            # 直近の report を見て異常があれば Discord へ
 $PY -m collector repair <slug>                     # 読めなくなった slug のレシピ案を agy に書かせ data/proposals/<slug>.yaml に保存（recipes/ は書き換えない。agy 必須）
 $PY -m collector propose [--dry-run]               # data/proposals の案を draft PR にする（merge はオーナー。採れば翌日の収集から本番）
