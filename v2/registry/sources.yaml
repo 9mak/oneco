@@ -9446,3 +9446,33 @@ sources:
   enabled: true
   photo: pending
   note: '県のまとめページ。掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目。市民の掲示板のうち迷子）。「迷子の犬を保護している」（猫の kochi_apc-5 と同じ作り・同じ扱い）。トップは猫の区分しかリンクしていないが犬の区分のページは存在し、2026-11-18 時点は 0 頭（カードの無い空の一覧）。'
+- slug: city_saitama-3
+  name: さいたま市（譲渡猫）
+  municipality: さいたま市
+  prefecture: 埼玉県
+  phone: 048-840-4150
+  address: null
+  url: https://www.city.saitama.lg.jp/008/004/003/005/jyoutonekonosyoukai.html
+  verified_at: '2026-11-18'
+  verified_phone_url: "https://www.city.saitama.lg.jp/008/004/003/005/jyoutonekonosyoukai.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/city_saitama-3.yaml
+  enabled: true
+  note: '掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目）。さいたま市動物愛護ふれあいセンターの譲渡猫の紹介（保護猫の city_saitama-2 とは別のページ）。2026-11-18 時点で 19 頭（「子猫はおりますが掲載していません」の注記があり、子猫は載っていない）。「トライアル中！」（2 頭）は載せて note に出し、「飼い主さんが決まりました」の子は載せない。写真は既存の city_saitama-1・-2 と同じ（未指定＝ok）。手書きの HTML で書き方が頭ごとに違い、譲渡No.18（てつ）だけは写真の並びが崩れていて写真が付かない。作りは日で変わる（Wayback 2025 年は表・2026-03 から div の並び）ので、読めない作りの日は 0 頭と言わず failed で通知する。0 頭の日の版は Wayback に無い（保存の 4 版はどれも猫がいる日）ので、枠はあるが名前の欄・譲渡No・写真のリンクが無い日だけ 0 頭にする。'
+- slug: city_saitama-4
+  name: さいたま市（譲渡犬）
+  municipality: さいたま市
+  prefecture: 埼玉県
+  phone: 048-840-4150
+  address: null
+  url: https://www.city.saitama.lg.jp/008/004/003/005/jyoutokensyoukai.html
+  verified_at: '2026-11-18'
+  verified_phone_url: "https://www.city.saitama.lg.jp/008/004/003/005/jyoutokensyoukai.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/city_saitama-4.yaml
+  enabled: true
+  note: '掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目）。さいたま市動物愛護ふれあいセンターの譲渡犬の紹介（保護犬の city_saitama-1 とは別のページ）。仕様の親ページ p007933 は「犬・猫の譲渡について」の手続きの案内で犬の一覧は無く、犬の一覧はこのページ。2026-11-18 時点で 3 頭（うち 1 頭はトライアル中）。トライアル中・トライアル予定ありは載せて note に出し、「飼い主さんが決まりました」の子は載せない。写真は既存の city_saitama-1・-2 と同じ（未指定＝ok）。0 頭の日は「現在、掲載可能な譲渡対象犬はいません。」（Wayback 2024-04 の版で確認。犬のいる日 2024-11・2025-03・2026-11 には出ない）。2024-11・2025-03 は見出し・写真・名前が 1 つの p の別の作りで、今のレシピでは読めない（2024-11 は failed で通知。2025-03 は今の作りの 1 頭だけ読み、古い作りの頭は取り違えを避けて読まない。動物が載っているので 0 頭とは言わない）。'

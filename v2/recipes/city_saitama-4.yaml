@@ -1,0 +1,35 @@
+# さいたま市 譲渡犬の紹介（jyoutokensyoukai.html）。動物愛護ふれあいセンターの譲渡犬。台帳の city_saitama-1（保護犬。迷子）とは別のページ。
+# 掲載漏れの棚卸し（2026-11-18 W006 T640 3 回目）。仕様の親ページ p007933（犬・猫の譲渡について）は手続きの案内で犬の一覧は無く、犬の一覧はこのページ。2026-11-18 は 3 頭。
+# 今日の作り: p「譲渡No.1」（トライアル中・飼い主さんが決まりました等の印が付く。同じ p に写真）→ p「名前：…<br>犬種：…<br>性別：…<br>体格：…<br>体重：…<br>年齢：…<br>性格：…<br>健康状態等：…」。
+#   1 頭の始まりを名前の p にし、写真は直前の兄弟（見出しの p）から取る。項目は p の文字から regex で取る。
+# 印（トライアル中・トライアル予定あり・飼い主さんが決まりました）は見出しの p にあり、行の外なので、行より前にある直近の「譲渡No」の p から取って note の材料にする。
+#   トライアルの子は載せて note に出し、「飼い主さんが決まりました」の子は載せない（field_lacks で落とす）。今日は決まった子はいない（Wayback 2025-03 には 3 頭いた）。
+# 作りは日で変わる: Wayback 2024-11・2025-03 は見出し・写真・名前が 1 つの p に入る作り。その p は「譲渡No」を含むので text_lacks で行にせず、1 頭も読めない日は failed で通知する
+#   （前の頭の印が次の頭に付く取り違えを避ける。この作りの日は動物が載っているので 0 頭とは言わない）。2025-03 のように作りが混ざる日は、今の作りの頭（その日は No.7 ニナ）だけ読む。
+# 0 頭: 「現在、掲載可能な譲渡対象犬はいません。」（Wayback 2024-04 に出る 0 頭の日の文。犬のいる日 2024-11・2025-03・2026-11 には出ない）。
+#   文が変わった日に備え、枠（h2 ～譲渡対象犬～）はあるが、名前の欄・譲渡No・写真のリンクが 1 つも無い日も 0 頭にする。
+rows: "div.wysiwyg_area p:-soup-contains-own('名前：')"
+row_filter:
+  text_lacks: ["譲渡No"]
+  field_lacks: {note: ["飼い主さんが決まりました", "譲渡が決まりました"]}
+image: {selector: "img@src", scope: self_or_prev_siblings, stop_at: row}
+fields:
+  management_no: {from: heading, selector: "p:-soup-contains-own('譲渡No')", regex: "(譲渡No\\.?\\s*\\d+)"}
+  detail: {selector: "span.__none__", default: "https://www.city.saitama.lg.jp/008/004/003/005/jyoutokensyoukai.html"}
+  name: {regex: "名前[:：]\\s*(\\S+)"}
+  breed: {regex: "犬種[:：]\\s*(\\S+)"}
+  sex: {regex: "性別[:：]\\s*(\\S+)"}
+  size: {regex: "体格[:：]\\s*(\\S+)"}
+  age: {regex: "年齢[^:：]*[:：]\\s*(\\S+)"}
+  note:
+    join:
+      - {from: heading, selector: "p:-soup-contains-own('譲渡No')", regex: "(トライアル(?:中|予定あり))"}
+      - {from: heading, selector: "p:-soup-contains-own('譲渡No')", regex: "(飼い主さんが決まりました|譲渡が決まりました)"}
+      - {regex: "性格[:：]\\s*(.+?)(?=\\s+健康状態等[:：]|$)"}
+      - {regex: "健康状態等[:：]\\s*(.+)"}
+    sep: " "
+empty_text:
+  - "現在、掲載可能な譲渡対象犬はいません"
+empty_absent:
+  page: "div.wysiwyg_area h2:-soup-contains('譲渡対象犬')"
+  none: "div.wysiwyg_area :-soup-contains-own('名前：'), div.wysiwyg_area :-soup-contains-own('譲渡No'), div.wysiwyg_area a[href*='_d/img/']"
