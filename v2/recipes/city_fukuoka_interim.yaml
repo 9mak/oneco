@@ -45,6 +45,10 @@ fields:
   status: {label: "状況"}   # 除外判定用（animals には出ない）
   location: {label: "収容場所"}
   note: {label: "備考"}
+# 2026-11-18: 猫ページに初めて 0 頭の日の文が出た（h2「収容猫一覧」の下の div.f_parallel2 に、strong > span の
+#   「現在、センターに収容されている猫はいません。」だけ）。犬と同じく文言だけを根拠にせず、その文の入った div.f_parallel2 があり、
+#   ページのどの div.f_parallel2 にも li・写真・表が無い日だけ 0 頭にする（文を残したまま子の枠が足された日は 0 頭にしない）。
+#   手編集のページで文を包むタグは日によって変わりうるので、猫の文は包むタグを問わず div.f_parallel2 の中にあればよい。
 empty_absent:
-  page: "div.f_parallel2 p:-soup-contains('飼い主不明の迷い犬はセンターに収容されていません')"
+  page: "div.f_parallel2 p:-soup-contains('飼い主不明の迷い犬はセンターに収容されていません'), div.f_parallel2:-soup-contains('センターに収容されている猫はいません')"
   none: "div.f_parallel2 li, div.f_parallel2 img, div.f_parallel2 table"
