@@ -29,6 +29,8 @@ OPERATOR_SLUGS = sorted([
     "pref_kagoshima-9", "pref_kagoshima-10", "pref_kagoshima-11", "pref_kagoshima-12",
     # 掲載漏れの棚卸し 2 回目（2026-11-17 W006 T640）: 高知県の迷子情報と、鳥取県の捜しています・保護しています（県のまとめページ）
     "kochi_apc-2", "pref_tottori-2", "pref_tottori-3",
+    # 掲載漏れの棚卸し 3 回目（2026-11-18 W006 T640）: 高知県アニマルステーション（市民の掲示板）の迷子 4 区分
+    "kochi_apc-3", "kochi_apc-4", "kochi_apc-5", "kochi_apc-6",
 ])
 
 
