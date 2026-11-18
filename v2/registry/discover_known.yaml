@@ -85,3 +85,41 @@ pages:
   city.otaru.lg.jp/docs/2020101100124: {status: excluded, note: "小樽市「小樽飼い主探しサポート」。市民間の譲渡で載せない（2026-11-17 決定）"}
   city.sapporo.jp/inuneko/note/note.html: {status: excluded, note: "札幌市「飼い主さがしノート（市民から市民への直接譲渡支援）」。載せない（2026-11-17 決定）"}
   pref.tottori.lg.jp/220718.htm: {status: excluded, note: "鳥取県「犬・猫の譲渡情報」。動物の一覧が無い案内のハブ（2026-11-17 確認。写真 5 枚・性別の記載なし）"}
+  # 2026-11-18 の試運転（1 段・起点 789・取得 1,271・通知対象 38）で仕分けた 35 件。残り 3 件（千葉市 育成中の子猫・岩手県 中部保健所の迷子・高知 アニマルステーション）は台帳に足す（T640 3 回目）。
+  # covered = 同じ子を別の URL から既に読んでいる。excluded = 自治体が収容している子の一覧ではない。pending = 足し方の判断待ち。
+  pref.tottori.lg.jp/item/1373183.htm: {status: covered, slugs: [pref_tottori-2, pref_tottori-3], note: "鳥取県「保護しています（令和5年度以前受付分）」。243905.htm と同じ一覧の年度別の入口で、同じ子を 243905 から読んでいる（2026-11-18 試運転。問合番号 M08-015 が公開データにある）"}
+  pref.tottori.lg.jp/module/671865.htm: {status: covered, slugs: [pref_tottori-2, pref_tottori-3], note: "鳥取県「保護しています（令和7年度受付）」。243905.htm と同じ一覧（2026-11-18 試運転）"}
+  pref.tottori.lg.jp/module/677932.htm: {status: covered, slugs: [pref_tottori-2, pref_tottori-3], note: "鳥取県「保護しています（令和８年度受付）」。243905.htm と同じ一覧（2026-11-18 試運転）"}
+  city.maebashi.gunma.jp/soshiki/kenko/eiseikensa/gyomu/1/1/1/9485.html: {status: covered, slugs: [city_maebashi-2], note: "前橋市【行方不明一覧】の別の URL。同じ一覧を kurashi_tetsuzuki/1/1/1/11960.html から読んでいる（2026-11-18 試運転。YD2026-10-01 が公開データにある）"}
+  hug-u.pet/applicant_u501666.html: {status: excluded, note: "名古屋市動物愛護センターの譲渡猫が載る外部の民間サイト「ハグー」。足さない（2026-11-17 #130 で報告のみと決定）（2026-11-18 試運転）"}
+  city.machida.tokyo.jp/iryo/hokenjo/pet/mayoi/search.html: {status: covered, slugs: [city_machida-2, city_machida-3, city_machida-4], note: "町田市「ペットの行方不明情報」の 1 ページ版（更新日 2026-06-01 のまま）。今の一覧は pet_fumei/search_dog・search_cat・search_sonota の 3 ページ（2026-11-18 試運転）"}
+  nyantomo.jp/%e9%87%8c%e8%a6%aa%e3%81%ab%e3%81%aa%e3%82%8a%e3%81%9f%e3%81%84-2: {status: excluded, note: "ニャン友ねっとわーく北海道「里親になりたい」。NPO のサイトの案内ページ（台帳の nyantomo は函館どうなん動物愛護センターのページだけ）（2026-11-18 試運転）"}
+  city.takasaki.gunma.jp/docs/2014011900189: {status: covered, slugs: [city_takasaki-4], note: "高崎市「一般の方が保護している動物一覧（猫、その他）」の旧 URL（ページID 3988）。page/3988.html から読んでいる（2026-11-18 試運転）"}
+  city.kumamoto.jp/doubutuaigo/list03629.html: {status: pending, note: "熊本市「愛護センターからの譲渡」（全 45 件。後日談の記事・種別の欄なし・古い掲載が混ざる）。#129 で判断保留。足し方はオーナーの判断待ち（T640）"}
+  nyantomo.jp/2023/08/29/noraneko-satooya: {status: excluded, note: "ニャン友ねっとわーく北海道の記事（譲渡の条件）。動物の一覧ではない（2026-11-18 試運転）"}
+  city.kawagoe.saitama.jp/kurashi/s-kankyo/1002982/1002989/1022867.html: {status: excluded, note: "川越市「飼い主のいない猫との付き合い方」。啓発のページで動物の一覧ではない（2026-11-18 試運転）"}
+  animal-net.pref.nagasaki.jp/hogoform: {status: excluded, note: "ながさき犬猫ネット「保護している動物登録フォーム」。登録フォーム（2026-11-18 試運転）"}
+  animal-net.pref.nagasaki.jp/maigoform: {status: excluded, note: "ながさき犬猫ネット「行方不明の動物登録フォーム」。登録フォーム（2026-11-18 試運転）"}
+  docs.google.com/forms/d/e/1FAIpQLScGB-lUOqykd0MILsAmJXpjL7hzStCwTBGdvbv_fME3yYwuWw/viewform: {status: excluded, note: "札幌市の迷子動物届出フォーム（Google フォーム）（2026-11-18 試運転）"}
+  city.ichinomiya.aichi.jp/hokenjo/hoken-eisei/1044007/1000182/1063949.html: {status: excluded, note: "一宮市「飼い主のいない子猫を見つけた」。案内のページ（2026-11-18 試運転）"}
+  city.shimonoseki.lg.jp/soshiki/52/1824.html: {status: excluded, note: "下関市「飼い主のいない猫と地域との共生事業」。事業の案内（2026-11-18 試運転）"}
+  douaicenter.jp/other-animal/list: {status: covered, slugs: [spec_douaicenter-7, spec_douaicenter-8, spec_douaicenter-9, spec_douaicenter-10, spec_douaicenter-11, spec_douaicenter-12], note: "旭川市あにまある「ペット探しています / 保護しています」の全種別の一覧。犬・猫・その他の 3 ページ（other-animal/list/dog・cat・other）から読んでいる（2026-11-18 試運転）"}
+  city.akashi.lg.jp/kankyou/dobutsu/info/yougokaisetsu.html: {status: excluded, note: "明石市「飼い主のいない猫によるトラブルを解決するため」。用語の説明（2026-11-18 試運転）"}
+  city.shimonoseki.lg.jp/soshiki/52/1809.html: {status: excluded, note: "下関市「飼い主のいない猫の世話をしている方へ」。案内のページ（2026-11-18 試運転）"}
+  douai.pref.tochigi.lg.jp/work/%e3%80%8e%e9%87%8c%e3%81%b8%e3%81%ae%e4%be%bf%e3%82%8a%e3%80%8f%e6%96%b0%e3%81%97%e3%81%84%e9%a3%bc%e3%81%84%e4%b8%bb%e3%81%95%e3%82%93%e3%81%8b%e3%82%89%e3%81%ae%e8%bf%91%e6%b3%81%e5%a0%b1%e5%91%8a: {status: excluded, note: "栃木県動物愛護指導センター『里への便り』。譲渡後の近況報告で、今いる子の一覧ではない（2026-11-18 試運転）"}
+  city.hachioji.tokyo.jp/kurashi/hoken/007/001/001/p002914.html: {status: excluded, note: "八王子市「飼い主のいない猫（野良猫）対策」。案内のページ（2026-11-18 試運転）"}
+  city.maebashi.gunma.jp/soshiki/kenko/eiseikensa/gyomu/1/1/1/9486.html: {status: covered, slugs: [city_maebashi-3], note: "前橋市【市民保護一覧】の別の URL。同じ一覧を kurashi_tetsuzuki/1/1/1/11961.html から読んでいる（2026-11-18 試運転。A2026-11-02 が公開データにある）"}
+  city.utsunomiya.lg.jp/kurashi/pet/pet/1005581.html: {status: excluded, note: "宇都宮市「大切なペットを迷子にさせないで！！」。啓発のページ（2026-11-18 試運転）"}
+  pref.osaka.lg.jp/o120200/doaicenter/doaicenter/zyotonituite.html: {status: excluded, note: "大阪府「動物の譲渡の流れと必要な書類について」。手続きの案内（2026-11-18 試運転）"}
+  city.sagamihara.kanagawa.jp/kosodate/kenko/1026628/pet/1019993.html: {status: excluded, note: "相模原市「譲渡面接会（市民から猫を譲り受ける場合の情報）」。市民からの譲渡の会の案内（2026-11-18 試運転）"}
+  city.takasaki.gunma.jp/docs/2014011900196: {status: covered, slugs: [city_takasaki-3], note: "高崎市「一般の方が保護している動物一覧（犬）」の旧 URL（ページID 3987）。page/3987.html から読んでいる（2026-11-18 試運転）"}
+  city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/060_transfer.html: {status: excluded, note: "千葉市「犬・猫の譲渡」。入口のページ（犬・猫の一覧は city_chiba-7・-8）（2026-11-18 試運転）"}
+  city.himeji.lg.jp/kurashi/0000001495.html: {status: excluded, note: "姫路市「猫の譲渡について」。手続きの案内で一覧なし（2026-11-18 試運転）"}
+  city.himeji.lg.jp/kurashi/0000028694.html: {status: excluded, note: "姫路市「飼い主のいない猫の適正管理」。案内のページ（2026-11-18 試運転）"}
+  city.koriyama.lg.jp/soshiki/74/7192.html: {status: excluded, note: "郡山市「犬・猫の譲渡を希望される方へ」。手続きの案内で一覧なし（2026-11-18 試運転）"}
+  city.maebashi.gunma.jp/soshiki/kenko/eiseikensa/gyomu/1/1/3/4126.html: {status: excluded, note: "前橋市「犬・猫の譲渡事業」。手続きの案内（猫の一覧は kurashi_tetsuzuki/1/1/3/18316.html）（2026-11-18 試運転）"}
+  city.suita.osaka.jp/kurashi/1018501/1018506/1018507/1015346.html: {status: excluded, note: "吹田市「動物の譲渡（新しい飼い主希望者募集）」。事前申込制の案内で一覧なし（2026-11-18 試運転）"}
+  city.toyota.aichi.jp/sumaikankyo/pet/pet/1073801/1003691.html: {status: excluded, note: "豊田市「犬猫の譲渡」。個別の譲渡と譲渡会の案内で一覧なし（2026-11-18 試運転）"}
+  pref.akita.lg.jp/pages/archive/84484: {status: excluded, note: "秋田県「飼い主のわからない猫について」。案内のページ（2026-11-18 試運転）"}
+  pref.nara.lg.jp/n070/3371.html: {status: excluded, note: "奈良県「動物の譲渡」。講習会・手続きの案内で一覧なし（2026-11-18 試運転）"}
+  kumamoto-doubutuaigo.jp/animals/info: {status: excluded, note: "熊本県動物愛護ホームページ「お知らせ」の一覧（譲渡しました・返還しましたの報告）。2 段たどると報告の個別ページが毎月候補に出るので、入口ごと外す（2026-11-18 試運転）"}
