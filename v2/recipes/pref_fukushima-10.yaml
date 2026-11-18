@@ -1,0 +1,19 @@
+# 福島県動物愛護センター会津支所の譲渡猫情報（joto-cat-aizu.html）。会津支所の譲渡犬（pref_fukushima-8）と同じテンプレート。
+# 2026-11-17 は 0 頭: h2「現在飼い主さんを募集している猫」の下に「〇現在、譲渡猫情報はありません。」と、セルが空の雛形の表（thead なし）が残る。
+# 猫が載った日の読み方は未確認（Wayback に版があれば tests/test_w006_gaps_fukushima_20261117.py で確かめる）。犬（-8）と同じ表の作りと推測して書いている。
+# 0 頭は文言でなく「表の中に写真が無い」ことで決める。子のいる日に行の読み方が崩れても写真は残るので 0 頭にならず「読めなかった」になる。
+rows: "div#main_body table:has(> thead)"  # soupsieve 4 の strict で :has() の中に子孫セレクタを書けない（#129 CI）
+row_filter:
+  text_has_any: ["管理番号"]
+image: "img@src"
+fields:
+  management_no: {selector: "thead th:nth-of-type(2) p:nth-of-type(1)"}
+  name: {selector: "thead th:nth-of-type(2) p:nth-of-type(2)"}
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  age: {label: "推定年月"}
+  note: {label: "性格"}
+empty_absent:
+  page: "div#main_body h2:-soup-contains('現在飼い主さんを募集している猫')"
+  # 表の形に縛らない（#129 reviewer F-01・F-03。pref_fukushima-8 と同じ）。子の写真は募集の見出しより後ろで、リンクの外にある。
+  none: "div#main_body h2:-soup-contains('現在飼い主さんを募集している猫') ~ * img:not(a img)"

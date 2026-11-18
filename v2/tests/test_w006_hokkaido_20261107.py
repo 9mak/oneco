@@ -35,7 +35,7 @@ def _nos(c: Collected, key: str = "management_no") -> list[str | None]:
 
 
 def test_registry_all_pending_photo_and_modes():
-    assert len(HOKKAIDO) == 41  # 2026-11-07 の指摘で檜山 -2 と紋別 -5 を足した（もとは 39）
+    assert len(HOKKAIDO) == 42  # 2026-11-07 の指摘で檜山 -2 と紋別 -5 を足した（もとは 39）。2026-11-17 T640 2 回目で北見の飼い主募集中 okhotsk-6 を足した
     for slug, s in HOKKAIDO.items():
         assert s.prefecture == "北海道" and s.photo == "pending" and s.enabled, slug
         assert s.phone and s.address and s.url.startswith("https://www."), slug
@@ -48,7 +48,7 @@ def test_registry_all_pending_photo_and_modes():
         "hokkaido_ishikari-1", "hokkaido_ishikari-2", "hokkaido_ishikari-3", "hokkaido_kamikawa-1",
         "hokkaido_kamikawa-3", "hokkaido_kamikawa-4", "hokkaido_kushiro-1", "hokkaido_kushiro-2", "hokkaido_nemuro-1",
         "hokkaido_nemuro-2", "hokkaido_okhotsk-1", "hokkaido_okhotsk-2", "hokkaido_okhotsk-3", "hokkaido_okhotsk-4",
-        "hokkaido_okhotsk-5", "hokkaido_oshima-1", "hokkaido_oshima-2", "hokkaido_oshima-3", "hokkaido_rumoi-1",
+        "hokkaido_okhotsk-5", "hokkaido_okhotsk-6", "hokkaido_oshima-1", "hokkaido_oshima-2", "hokkaido_oshima-3", "hokkaido_rumoi-1",
         "hokkaido_shiribeshi-1", "hokkaido_shiribeshi-2", "hokkaido_sorachi-1", "hokkaido_sorachi-4",
         "hokkaido_souya-1", "hokkaido_souya-2", "hokkaido_tokachi-1", "hokkaido_tokachi-2",
     ]

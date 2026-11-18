@@ -1,0 +1,24 @@
+# 広島県動物愛護センター 譲渡犬一覧（jouto-rebreed-dog-list.html）。センターが飼い主を募集している犬（迷い犬 pref_hiroshima-1 とは別のページ）。
+# div.detail_free の中に、1 頭ごとに h2「管理番号：1HD20260132（109）」→ p 写真（alt に名前）→ p（性別・推定年齢・フィラリア検査・デビュー日・トライアルの案内）が並ぶ。
+# 1 頭分が div で入れ子になることがある（2026-11-17 は 5 頭目の「1HD20260143」の後ろの div に残りが入る）が、h2 を 1 頭の始まりにして次の h2 の手前までをまとめる
+# 作り（row_until）は迷い犬（pref_hiroshima-1）と同じで、入れ子でも兄弟でも読める。写真は p の直下の img。
+# 管理番号の後ろの（109）はケージ・掲載の番号で管理番号ではないので取らない。「※２週間のトライアル必須／可能」は note に出す。
+# 0 頭の日の文言は未確認なので empty_text は置かない。0 頭は「管理番号の見出しも個体の写真も無い」ことで決める。
+rows: "div.detail_free h2:-soup-contains('管理番号')"
+row_until: "h2"
+row_filter:
+  text_has_any: ["デビュー日", "フィラリア", "推定"]
+  text_lacks: ["譲渡が決まりました", "譲渡済"]
+image: "p > img@src"
+fields:
+  management_no: {selector: "h2", regex: "管理番号[:：]\\s*([0-9A-Za-z]+)"}
+  sex: {regex: "(雄|雌)"}
+  age: {regex: "(推定\\s*[0-9０-９.]+\\s*(?:歳|か月|ヶ月|カ月))"}
+  note:
+    join:
+      - {selector: "h2", regex: "(※現在トライアル中です)"}
+      - {regex: "(※(?:最大)?\\s*[2２]週間のトライアル\\s*(?:必須|可能))"}
+    sep: "。"
+empty_absent:
+  page: "div#main_header h1:-soup-contains('譲渡')"
+  none: "div#main_body h2:-soup-contains('管理番号'), div#main_body div.detail_free p > img"

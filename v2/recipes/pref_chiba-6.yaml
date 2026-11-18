@@ -1,0 +1,22 @@
+# 千葉県動物愛護センター本所 飼い主募集中（成猫）（kainushi-bosyu-honsyo-neko.html）。センターが飼養している譲渡候補猫。
+# h2「成猫」の下に、div.col2 の左右（col2L・col2R）に 1 頭ずつ、写真・「【c26042】カン」・「年齢：推定4歳、性別：オス(去勢済み)」・動物情報（PDF）が並ぶ。
+# 個票は PDF だが、写真・番号・名前・年齢・性別は本文にあるので PDF は読まない（個体の「元ページ」は入口のページ）。
+# 「予約あり」「トライアル中です。」の子は募集中の表に残っているので載せて、状態を note に出す（トライアル中は載せる方針。2026-10-07）。
+# 「譲渡になりました」の子は載せない。
+# 2026-11-17 時点で 13 頭。0 頭の日の文言は猫の版が Wayback に取れず未確認なので empty_text は置かない（行が取れない日は「読めなかった」）。
+rows: "#tmp_contents div:is(.col2L, .col2R, .col3L, .col3M, .col3R)"
+row_filter:
+  text_has_any: ["【"]
+  text_lacks: ["譲渡になりました", "決まりました"]
+image: "img@src"
+fields:
+  management_no: {regex: "【([^】]+)】"}
+  name: {regex: "】\\s*(\\S+)"}
+  age: {regex: "年齢[:：]\\s*([^、，\\s]+)"}
+  sex: {regex: "性別[:：]\\s*(オス|メス|不明)"}
+  note: {regex: "(トライアル中です|予約あり)"}
+# 0 頭の根拠は文言でなく「動物情報（PDF）のリンクも col の中の写真も 1 つも無い」こと。page = h2（成犬・成猫の節の見出し。0 頭の日も出る枠）。
+# 行の読み方が崩れても動物情報の PDF リンクが残る日は 0 頭にならず「読めなかった」になる。
+empty_absent:
+  page: "#tmp_contents h2"
+  none: "#tmp_contents a.icon_pdf:-soup-contains('動物情報'), #tmp_contents div[class^='col'] img"

@@ -1,0 +1,25 @@
+# 尼崎市動物愛護センター 新しい飼い主を探している保健所収容動物について（1017176.html）。収容動物（city_amagasaki）・返還対象とは別のページ。
+# h2「動物の一覧」の下に、動物ごとに h3（番号 1・2…、トライアル中の子は「※トライアル中」）→ p.imagecenter の写真 → table.w100（名前・性別・（種類）・毛色・推定年齢・性格・備考）が並ぶ。
+# 写真は表の直前の p.imagecenter（prev_siblings で前の表の手前まで遡る）。トライアル中の子は名前に「（トライアル中）」が付くので載せて note にも出す。
+# 犬猫の別は表に欄が無い。猫は備考に「猫エイズウイルス」「猫白血病ウイルス」、犬は「フィラリア」「狂犬病ワクチン」と出る（種類の欄は犬だけ。2026-11-17 は猫 7・犬 1）。
+# 備考に出なければ種別なし（無理に決めない）。
+# 0 頭の日の版は Wayback に見つからない（2026-06〜11 の 3 版はいずれも子がいる）。文言は分からないので、枠（h1）はあるが動物の表・写真・番号見出しが 1 つも無い日だけ 0 頭にする。
+rows: "article table.w100:has(th:-soup-contains('名前'))"
+image: {selector: "p.imagecenter img@src", scope: prev_siblings}
+fields:
+  name: {label: "名前"}
+  sex: {label: "性別"}
+  breed: {label: "種類"}
+  color: {label: "毛色"}
+  age: {label: "推定年齢"}
+  note:
+    join:
+      - {regex: "(トライアル中)"}
+      - {label: "性格"}
+    sep: "。"
+species:
+  from: text
+  map: {"猫エイズ": cat, "猫白血病": cat, "フィラリア": dog, "狂犬病": dog}
+empty_absent:
+  page: "article h1:-soup-contains('新しい飼い主を探している')"
+  none: "article table.w100, article p.imagecenter, article h3"

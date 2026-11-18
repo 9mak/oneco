@@ -1,0 +1,26 @@
+# 大阪府動物愛護管理センター 譲渡犬情報（jyoutoinu2.html）。センターが新しい飼い主を募集している犬（迷い犬猫 pref_osaka とは別のページ）。
+# h3 で 4 つの区分（比較的飼いやすい犬・十分な知識や心構えが必要な犬・持続的なケアが必要な犬・現在トレーニング中の犬）に分かれ、1 頭 = 1 つの table.datatable。
+# 表は左のセルに写真（複数）、右に 管理番号（「26-00132（センターネーム：てんしん）」）・種類・毛色・性別・推定年齢・体重・アピールポイント・撮影年月日。
+# 区分の見出し（h3）を note の先頭に出す（「現在トレーニング中の犬」はマッチング・譲渡がトレーニング終了後になるので、載せたうえで区分を見せる）。
+# 区分が空のときは「現在対象の犬はいません。」と出るが、それは子のいる日にも出る（2026-11-17 も出ている）ので 0 頭の根拠にしない。
+# 0 頭は「表（table.datatable）も個体の写真も無い」ことで決める。
+rows: "#tmp_contents table.datatable"
+row_filter:
+  text_has_any: ["管理番号"]
+image: "img@src"
+fields:
+  management_no: {label: "管理番号", regex: "(\\d{2}-\\d{4,6})"}
+  name: {label: "管理番号", regex: "センターネーム[:：]\\s*([^）)]+)"}
+  breed: {label: "種類"}
+  color: {label: "毛色"}
+  sex: {label: "性別"}
+  age: {label: "推定年齢"}
+  size: {label: "体重"}
+  note:
+    join:
+      - {from: heading, selector: "h3"}
+      - {label: "アピールポイント"}
+    sep: "。"
+empty_absent:
+  page: "#tmp_contents h1:-soup-contains('譲渡犬情報')"
+  none: "#tmp_contents table.datatable, #tmp_contents img[src*='/images/1443/']"

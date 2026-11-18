@@ -1,0 +1,15 @@
+# 福島県動物愛護センター（本所）の譲渡犬情報（joto-dog-miharu.html）。pref_fukushima-6（本所の譲渡猫）と同じ作り。
+# h2「譲渡犬一覧」の下の一覧表（ニックネーム＋写真・種類・毛色・性別・推定年齢）の 1 行 = 1 頭。2026-11-17 は 2 頭（カイリ・グーフィー）。
+# 一覧の最後の行「注） システムの都合により…」は写真のリンクが無いので行にならない。
+# 0 頭の日の文言は未確認なので empty_text は置かない。0 頭は「一覧表の行も個体の写真も無い」ことで決める。
+rows: "div#main_body tr:has(a[href^='#']):has(img)"  # soupsieve 4 の strict で :has() の中に子孫セレクタを書けない（#129 CI）
+image: "img@src"
+fields:
+  name: {selector: "td:nth-of-type(1) a"}
+  breed: {selector: "td:nth-of-type(2)"}
+  color: {selector: "td:nth-of-type(3)"}
+  sex: {selector: "td:nth-of-type(4)"}
+  age: {selector: "td:nth-of-type(5)"}
+empty_absent:
+  page: "div#main_body h2:-soup-contains('譲渡犬一覧')"
+  none: "div#main_body a[href^='#'] img, div#main_body a[id]:has(> strong)"

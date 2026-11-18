@@ -166,7 +166,9 @@ def test_titles_and_alts_do_not_nest_parentheses(tmp_path: Path):
 def test_only_kumamoto_recipes_read_a_phone_per_animal():
     # 子ごとの電話を読むのは熊本県動物愛護センターだけ。三重（mie_dakc）は運営元の電話・所在地の組なので読まない（#123 F-01）
     have = sorted(p.stem for p in (ROOT / "recipes").glob("*.yaml") if re.search(r"(?m)^  phone:", p.read_text(encoding="utf-8")))
-    assert have == ["kumamoto_doubutuaigo-1", "kumamoto_doubutuaigo-2", "kumamoto_doubutuaigo-7", "kumamoto_doubutuaigo-8"]
+    # -9・-10 は 2026-11-17 に足した保護犬・保護猫（type_id:3）。同じテンプレートなので子ごとの電話を読む
+    assert have == ["kumamoto_doubutuaigo-1", "kumamoto_doubutuaigo-10", "kumamoto_doubutuaigo-2", "kumamoto_doubutuaigo-7",
+                    "kumamoto_doubutuaigo-8", "kumamoto_doubutuaigo-9"]
 
 
 def test_colons_are_full_width_and_dates_are_not_spaced(tmp_path: Path):

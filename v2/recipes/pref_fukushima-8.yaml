@@ -1,0 +1,21 @@
+# 福島県動物愛護センター会津支所の譲渡犬情報（joto-dog-aizu.html）。会津支所が飼い主を募集している犬。
+# h2「現在飼い主さんを募集している犬」の下に、1 頭 1 つの表。thead の 2 つ目の th に 管理番号（26-11-01）とニックネーム（ラグナ）が p 2 つで入り、
+# 写真（複数）と、種類・性別・推定年齢・性格等・フィラリア検査の行が続く。「〇現在、譲渡犬の情報が1件あります。」（2026-11-17）。
+# 0 頭の日は同じ表の雛形（セルが空）が残る（会津支所の譲渡猫の 0 頭の日で確認）。0 頭は「表の中に写真が無い」ことで決める。
+# 子のいる日（2026-11-17）は表に写真があるので 0 頭にならない。
+rows: "div#main_body table:has(> thead)"  # soupsieve 4 の strict で :has() の中に子孫セレクタを書けない（#129 CI）
+row_filter:
+  text_has_any: ["管理番号"]
+image: "img@src"
+fields:
+  management_no: {selector: "thead th:nth-of-type(2) p:nth-of-type(1)"}
+  name: {selector: "thead th:nth-of-type(2) p:nth-of-type(2)"}
+  breed: {label: "種類"}
+  sex: {label: "性別"}
+  age: {label: "推定年齢"}
+  note: {label: "性格等"}
+empty_absent:
+  page: "div#main_body h2:-soup-contains('現在飼い主さんを募集している犬')"
+  # 表の形に縛らない（#129 reviewer F-01）。子の写真は募集の見出しより後ろで、リンクの外にある。
+  # 見出しより前の画像と、見出しの後ろのリンクのアイコン（94948.png 等）は 0 頭の日にもある。
+  none: "div#main_body h2:-soup-contains('現在飼い主さんを募集している犬') ~ * img:not(a img)"

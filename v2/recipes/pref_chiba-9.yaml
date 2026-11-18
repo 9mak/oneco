@@ -1,0 +1,19 @@
+# 千葉県動愛センター東葛飾支所 飼い主募集中（成犬）（kainushi-bosyu-shisyo-inu.html）。h2「成犬」の下に、h3「10月30日時点で2匹募集しています」と
+# 1 頭ずつの写真・「【d260930-1-1】てんしん」・「年齢:14歳程度、性別：オス(去勢済み)」・動物情報（PDF）が div.col3 に並ぶ。2026-11-17 時点で 2 頭。
+# 年齢の「年齢:」は半角コロンの子がいる（猫の本所は全角）。0 頭の日の文言は未確認なので empty_text は置かない（行が取れない日は「読めなかった」）。
+rows: "#tmp_contents div:is(.col2L, .col2R, .col3L, .col3M, .col3R)"
+row_filter:
+  text_has_any: ["【"]
+  text_lacks: ["譲渡になりました", "決まりました"]
+image: "img@src"
+fields:
+  management_no: {regex: "【([^】]+)】"}
+  name: {regex: "】\\s*(\\S+)"}
+  age: {regex: "年齢[:：]\\s*([^、，\\s]+)"}
+  sex: {regex: "性別[:：]\\s*(オス|メス|不明)"}
+  note: {regex: "(トライアル中です|予約あり)"}
+# 0 頭の根拠は文言でなく「動物情報（PDF）のリンクも col の中の写真も 1 つも無い」こと。page = h2（成犬・成猫の節の見出し。0 頭の日も出る枠）。
+# 行の読み方が崩れても動物情報の PDF リンクが残る日は 0 頭にならず「読めなかった」になる。
+empty_absent:
+  page: "#tmp_contents h2"
+  none: "#tmp_contents a.icon_pdf:-soup-contains('動物情報'), #tmp_contents div[class^='col'] img"
