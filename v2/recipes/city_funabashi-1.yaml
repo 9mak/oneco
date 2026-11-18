@@ -1,6 +1,6 @@
 # 船橋市（収容犬猫）: div.boxEntryFreeform 内の単一 table。
 # ヘッダ行 + データ行（1行=1頭）。列: 番号/収容年月日/公示満了日/収容場所/動物種/種類/毛色/性別/体格/備考/写真。
-# 写真が無い個体も多く management_no（番号列, 例 N260928-01）で動物判定させる。0頭時はヘッダ行のみ残り自動で0頭になる。
+# 写真が無い個体も多く management_no（番号列, 例 N260928-01）で動物判定させる。0 頭の根拠は下の empty_text と empty_absent。
 rows: "div.boxEntryFreeform table tr"
 image: "img@src"
 fields:
@@ -18,3 +18,9 @@ species:
   map: {"犬": dog, "猫": cat}
 # 2026-10-22: 0 頭の日の文言が表の下の「※現在公示中の動物はいません。」になった（表は見出し行だけ）。
 empty_text: ["現在いません", "収容している犬・猫はいません", "該当する犬・猫はいません", "現在公示中の動物はいません"]
+# 2026-11-18: 0 頭の日に文が出ず、表が見出し行（th「番号・収容年月日・公示満了日…」）だけの日があった（11/17 は犬 1 頭、11/18 は見出し行だけ）。
+# 見出しに「公示」の th がある表に、値のセル（td）も写真も 2 行目も 1 つも無い日だけ 0 頭にする。
+# 表が無い・見出しが変わった（作り替え）・読めない行が 1 つでもある日は 0 頭にせず、読めなかった日として通知される。
+empty_absent:
+  page: "div.boxEntryFreeform table th:-soup-contains('公示')"
+  none: "div.boxEntryFreeform table td, div.boxEntryFreeform table img, div.boxEntryFreeform table tr + tr"

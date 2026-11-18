@@ -8,7 +8,7 @@
 # 並ぶ（= 1 頭最大 1 組）。犬猫の別は直前の h2 見出しで決める。
 # 動物がいない組は値セルが空（&nbsp;）で管理番号も収容日も無く、写真も汎用プレースホルダ
 # （dog.png/cat.png/cat_1.png/inai.png/inu00.png/neko00.png/img_purpose_*.png 等、事務所ごとに
-# ファイル名が違う）。実写真は全て .jpg なので image.exclude で .png を一律除外する。
+# ファイル名が違う）。2026-11-16 までは実写真が全て .jpg で、.png を一律に除外していた（今の扱いは下の (4)）。
 # 2026-10-04 変更（2 点）:
 #  (1) 射水支所だけ div.col2 を使わず「写真の td + table.datatable の td」を並べた外側のレイアウト表で
 #      組んでいるため、rows が射水支所の犬・ねこを 1 件も拾えていなかった。外側の表も行に加えた。
@@ -20,14 +20,20 @@
 #      まで丸ごと飲み込む。猫だけいる日に犬の行が猫の写真・収容日を拾って幻の「犬」を作るため、
 #      写真は行の直下の col2L（または射水の写真 td）に限り、収容日・備考は行内の最初の table.datatable
 #      の文字だけから取る。
+# 2026-11-18 変更（2 点。氷見支所の猫 1 頭が載らず、小矢部支所の猫が写真なしで載っていた）:
+#  (4) 写真が .png で載るようになった（氷見 20261117cat1.png・小矢部 20261117a.png）。「いません」の仮画像は 11/18 の 8 ページで
+#      dog.png / cat.png / cat_1.png / inai.png / inu00.png / neko00.png と、ページ下の img_purpose_0N.png。
+#      .png は、名前が日付（数字 8 桁）で始まるものだけ写真にし、それ以外は今までどおり全部捨てる（知らない名前の仮画像を写真にしない）。
+#  (5) 収容日が西暦（氷見 2026年11月17日）でも読む。「収容日」のすぐ後ろが年で始まるときだけで、空欄の日に後ろの「掲載期間」の日付は取らない。
+#      氷見の管理番号「保護猫8-1」は番号らしい形（2 桁以上の数字など）でないので、収容日が読めないと写真の無い日は子が載らない。
 rows: "div.col2, table:has(table.datatable)"
 image:
   selector: ":scope > div.col2L img, td:not(:has(table)) img@src"
   exclude:
-    - "\\.png$"
+    - "(?:^|/)(?!\\d{8})[^/]*\\.png$"
 fields:
   management_no: {label: "管理番号"}
-  shelter_date: {selector: "table.datatable", regex: "収容日\\s*((?:令和|平成)\\s*\\d+\\s*年.*?\\d{1,2}\\s*月\\s*\\d{1,2}\\s*日)"}
+  shelter_date: {selector: "table.datatable", regex: "収容日\\s*((?:(?:令和|平成)\\s*\\d+|20\\d{2})\\s*年.*?\\d{1,2}\\s*月\\s*\\d{1,2}\\s*日)"}
   location: {label: "収容場所"}
   breed: {label: "種類"}
   size: {label: "大きさ"}
