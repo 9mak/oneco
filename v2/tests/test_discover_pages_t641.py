@@ -460,3 +460,87 @@ def test_repo_known_pages_shape_and_domains_untouched():
     assert "city.miyazaki.miyazaki.jp/life/pet/protection/84989.html" in pages
     assert len(load_known()) >= 40          # 既存の domains: 節は読める
     assert len(load_known_pages()) == len(pages)
+
+
+# --- #131 の独立レビュー（2026-11-18）の指摘 --------------------------------------------------------
+
+def test_malformed_href_on_a_page_does_not_stop_the_run(tmp_path):
+    # Q1: 起点のページに壊れたリンク（urljoin が ValueError を出す「http://[bad」）が 1 つあっても、そのリンクを飛ばして続ける。
+    # 落ちると月 1 回の実行が丸ごと止まり、同じページがある限り毎月止まる
+    seed = "https://a.jp/x/z.html"
+    pages = {seed: '<html><body><a href="http://[bad">譲渡</a><a href="https://a.jp/new.html">譲渡犬の一覧</a></body></html>',
+             "https://a.jp/new.html": _html([], LIST4)}
+    res, _ = _run(pages, [_src("a-1", seed)], tmp_path)
+    assert [t["url"] for t in res.targets] == ["https://a.jp/new.html"]
+
+
+def test_unexpected_failure_is_reported_to_discord(tmp_path, monkeypatch, post):
+    # Q1: 想定していない落ち方をした月は、Discord に 1 通送る（黙って機能しなくなるのを防ぐ）。日次収集の失敗には数えない
+    monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://example.invalid/hook")
+    kw = _setup(tmp_path)
+
+    def boom():
+        raise RuntimeError("壊れた")
+
+    kw["fetcher_factory"] = boom
+    assert discover_pages(notify=True, **kw) == 1
+    assert len(post.sent) == 1
+    assert "失敗" in post.sent[0] and "RuntimeError" in post.sent[0]
+
+
+def test_unexpected_failure_without_notify_raises(tmp_path):
+    kw = _setup(tmp_path)
+
+    def boom():
+        raise RuntimeError("壊れた")
+
+    kw["fetcher_factory"] = boom
+    with pytest.raises(RuntimeError):
+        discover_pages(notify=False, **kw)
+
+
+def test_recipe_text_excludes_only_id_like_tails_or_the_whole_url(tmp_path):
+    # Q2: レシピ本文の部分一致で外すのは、数字 4 桁以上を含む末尾（ページ ID）だけ。index.html・neko.html・animal のような
+    # 一般的な末尾は、ほかの自治体のレシピやコメントにも出てくるので外さない（本物の掲載漏れを黙って外さない）。
+    # レシピに URL がそのまま書いてあるページは、末尾の形に関係なく外す
+    seed = "https://a.jp/x/z.html"
+    links = [("https://a.jp/pet/index.html", "譲渡犬"), ("https://a.jp/pet/neko.html", "譲渡猫"), ("https://a.jp/pet/animal", "保護動物"),
+             ("https://a.jp/pet/1020659.html", "迷子情報"), ("https://a.jp/pet/jouto.html", "譲渡の一覧")]
+    pages = {seed: _html(links), **{u: _html([], LIST4) for u, _ in links}}
+    recipes = {"other.yaml": "# 一覧は https://b.jp/list/index.html の形式\n"
+                             "follow_all: \"a[href*='neko.html'], a[href*='animal'], a[href*='1020659']\"\n"
+                             "urls: [\"https://www.a.jp/pet/jouto.html\"]\n"}
+    res, _ = _run(pages, [_src("a-1", seed)], tmp_path, recipes=recipes)
+    assert sorted(c["url"] for c in res.candidates) == ["https://a.jp/pet/animal", "https://a.jp/pet/index.html", "https://a.jp/pet/neko.html"]
+
+
+def test_message_puts_broken_links_first_and_never_cuts_a_line(tmp_path):
+    # Q3: 候補が多い月でも、リンク切れ（台帳の URL の壊れ）は全部載り、行の途中で切れず、省いた行数が分かる
+    seed = "https://a.jp/x/z.html"
+    title = "長い題名" * 20
+    links = [(f"https://a.jp/list/c{i}", f"譲渡犬の一覧{i}") for i in range(40)]
+    body = f"<html><head><title>{title}</title></head><body><p>{LIST4}</p></body></html>"
+    pages = {seed: _html(links), **{u: body for u, _ in links}}
+    gone = [_src(f"b-{i}", f"https://a.jp/gone/{i}.html?kind=1&species=2&very_long_query_parameter_name_for_the_test=value{i}") for i in range(9)]
+    sources = [_src("a-1", seed), *gone]
+    res, _ = _run(pages, sources, tmp_path, status={s.url: 404 for s in gone})
+    assert len(res.targets) == 40 and len(res.broken) == 9
+    msg = message(res)
+    assert msg is not None and len(msg) <= dp.NOTIFY_MAX_CHARS
+    assert all(f"b-{i} " in msg for i in range(9))
+    assert msg.index("リンク切れ（") < msg.index("候補（")
+    whole = {f"- b-{i} {s.url}（HTTP 404）" for i, s in enumerate(gone)}
+    lines = msg.split("\n")
+    assert whole <= set(lines)                                    # リンク切れの行は 1 行も欠けず、途中で切れていない
+    assert lines[-1].startswith("（") and "省いた" in lines[-1]   # 上限で省いた行があることを最後の行で知らせる
+
+
+def test_message_says_truncation_before_the_lists(tmp_path):
+    seed = "https://a.jp/x/z.html"
+    links = [(f"https://a.jp/list/c{i}", f"譲渡犬の一覧{i}") for i in range(6)]
+    pages = {seed: _html(links), **{u: _html([], LIST4) for u, _ in links}}
+    res, _ = _run(pages, [_src("a-1", seed)], tmp_path, max_fetches=3)
+    assert res.truncated
+    msg = message(res)
+    assert msg is not None
+    assert msg.split("\n")[1].startswith("取得数が上限")

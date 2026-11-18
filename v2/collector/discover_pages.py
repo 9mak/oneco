@@ -42,6 +42,8 @@ MAX_FETCHES = 5000       # 1 回の実行の取得数の上限（環境省ペー
 SEX_MIN = 4              # 性別の語（オス・メス…）がこの数以上なら「子の一覧らしい」
 NOTIFY_MAX_ITEMS = 10    # 通知に載せる候補・リンク切れそれぞれの最大件数
 NOTIFY_MAX_CHARS = 1900  # Discord の上限（2000）より少し下
+NOTIFY_TITLE_CHARS = 40  # 候補 1 行に出すページの題名の長さ
+NOTIFY_TAIL_ROOM = 60    # 「上限で残り N 行を省いた」の 1 行のために空けておく文字数
 
 LATEST_PATH = ROOT / "data" / "latest.json"
 RECIPES_DIR = ROOT / "recipes"
@@ -84,7 +86,10 @@ def _soup(html: str) -> BeautifulSoup:
 def links_of(html: str, base: str) -> list[tuple[str, str]]:
     out = []
     for a in _soup(html).select("a[href]"):
-        href = urljoin(base, a["href"].strip())
+        try:
+            href = urljoin(base, str(a["href"]).strip())
+        except ValueError:
+            continue   # 壊れたリンク（「http://[bad」は urljoin が ValueError）。1 つのために全体を止めない
         if href.startswith(("http://", "https://")):
             out.append((href.split("#")[0], a.get_text(" ", strip=True)[:80]))
     return out
@@ -166,7 +171,10 @@ class _Crawler:
                             gone_status=(info.status or 0) if gone and info is not None else 0)
         html = page.html or ""
         moved = _host(page.final_url) if _host(page.final_url) != _host(url) else ""
-        return PageInfo(final_url=page.final_url, links=links_of(html, page.final_url), score=score(html), moved_to=moved)
+        try:
+            return PageInfo(final_url=page.final_url, links=links_of(html, page.final_url), score=score(html), moved_to=moved)
+        except Exception as e:   # 1 ページの読み解きの失敗（想定外の HTML）で月 1 回の実行を止めない
+            return PageInfo(final_url=page.final_url, error=f"{type(e).__name__}: {str(e)[:120]}", moved_to=moved)
 
     def _run_host(self, urls: list[str]) -> None:
         for u in urls:
@@ -218,6 +226,22 @@ def _recipe_texts(recipes_dir: Path) -> list[str]:
     return [p.read_text(encoding="utf-8") for p in sorted(recipes_dir.glob("*.yaml"))]
 
 
+_URL_IN_TEXT = re.compile(r"https?://[^\s\"'<>）)、。]+")
+_ID_LIKE = re.compile(r"\d{4}")   # ページ ID らしい末尾（1020659.html・0000016441.html・p013242.html）
+
+
+def _recipe_urls(texts: list[str]) -> set[str]:
+    """レシピ本文にそのまま書かれている URL（steps の url・urls・コメント）を norm にかけたもの。"""
+    out: set[str] = set()
+    for t in texts:
+        for u in _URL_IN_TEXT.findall(t):
+            try:
+                out.add(norm(u))
+            except ValueError:
+                continue
+    return out
+
+
 def find_pages(*, depth: int = 1, fetcher_factory: Callable[[], Fetcher] | None = None,
                sources: list[Source] | None = None, known_path: Path = KNOWN_PATH, latest_path: Path = LATEST_PATH,
                recipes_dir: Path = RECIPES_DIR, max_fetches: int = MAX_FETCHES, workers: int = MAX_WORKERS) -> PagesResult:
@@ -245,15 +269,20 @@ def find_pages(*, depth: int = 1, fetcher_factory: Callable[[], Fetcher] | None 
     ledger = {norm(s.url) for s in sources}
     live = _latest_norms(latest_path)
     recipes = _recipe_texts(recipes_dir)
+    recipe_urls = _recipe_urls(recipes)
     known = set(load_known_pages(known_path))
 
     def excluded(n: str, href: str) -> bool:
-        if n in ledger or n in known:
+        if n in ledger or n in known or n in recipe_urls:
             return True
         if any(k == n or k.startswith(n.rstrip("/") + "/") for k in live):
             return True
+        # レシピが follow で開くページ（a[href*='1020659'] のように末尾だけ書く）。部分一致で外すのはページ ID らしい末尾（数字 4 桁以上）
+        # だけ。index.html・neko.html・animal のような一般的な末尾は、ほかの自治体のレシピやコメントにも出てくるので外さない
+        # （2026-11-18 #131 のレビュー: 実レシピでは index.html が 23 本・animal が 66 本に当たり、本物の掲載漏れを黙って外していた）
         tail = urlsplit(href).path.rstrip("/").rsplit("/", 1)[-1]
-        return len(tail) > 4 and any(tail in t for t in recipes)
+        stem = re.sub(r"\.[A-Za-z0-9]{1,5}$", "", tail)   # 拡張子を除く（レシピは a[href*='1020659'] のように拡張子なしでも書く）
+        return len(stem) > 4 and bool(_ID_LIKE.search(stem)) and any(stem in t for t in recipes)
 
     cands: dict[str, dict[str, Any]] = {}
 
@@ -311,22 +340,32 @@ def message(res: PagesResult) -> str | None:
     """新しい候補・リンク切れ・取得上限での打ち切りのどれかがあるときだけ。無ければ None（送らない）。"""
     if not res.targets and not res.broken and not res.truncated:
         return None
+    # 並べる順は、打ち切り → リンク切れ（台帳の URL の壊れ。公開中のリンクが切れている）→ 候補。文字数の上限では行の途中で切らず、
+    # 入らない行は丸ごと省いて、省いた行数を最後に書く（2026-11-18 の試運転では 1900 文字で切れ、リンク切れ 9 件のうち 4 件が消えた）
     lines = [f"掲載漏れの候補 {len(res.targets)} 件・リンク切れ {len(res.broken)} 件（月 1 回の discover --pages）"]
-    if res.targets:
-        lines.append("候補（子の一覧らしいページ。台帳に足すか、v2/registry/discover_known.yaml の pages: に足すと止まる）")
-        for r in res.targets[:NOTIFY_MAX_ITEMS]:
-            lines.append(f"- {r['title'] or '(題名なし)'} {r['url']} 性別{r['sex']}・日付{r['date']}・写真{r['photos']}")
-        if len(res.targets) > NOTIFY_MAX_ITEMS:
-            lines.append(f"- ほか {len(res.targets) - NOTIFY_MAX_ITEMS} 件（--out の JSON に全件）")
+    if res.truncated:
+        lines.append(f"取得数が上限 {MAX_FETCHES} 件に達したので途中で打ち切った（起点 {len(res.seeds)} 件）")
     if res.broken:
         lines.append("リンク切れ（台帳の URL。移転なら台帳の url を直す）")
         for b in res.broken[:NOTIFY_MAX_ITEMS]:
             lines.append(f"- {b['slug']} {b['url']}（{b['reason']}）")
         if len(res.broken) > NOTIFY_MAX_ITEMS:
             lines.append(f"- ほか {len(res.broken) - NOTIFY_MAX_ITEMS} 件")
-    if res.truncated:
-        lines.append(f"取得数が上限 {MAX_FETCHES} 件に達したので途中で打ち切った（起点 {len(res.seeds)} 件）")
-    return "\n".join(lines)[:NOTIFY_MAX_CHARS]
+    if res.targets:
+        lines.append("候補（子の一覧らしいページ。台帳に足すか、v2/registry/discover_known.yaml の pages: に足すと止まる）")
+        for r in res.targets[:NOTIFY_MAX_ITEMS]:
+            lines.append(f"- {(r['title'] or '(題名なし)')[:NOTIFY_TITLE_CHARS]} {r['url']} 性別{r['sex']}・日付{r['date']}・写真{r['photos']}")
+        if len(res.targets) > NOTIFY_MAX_ITEMS:
+            lines.append(f"- ほか {len(res.targets) - NOTIFY_MAX_ITEMS} 件（--out の JSON に全件）")
+    out: list[str] = []
+    used = 0
+    for i, line in enumerate(lines):
+        if used + len(line) + 1 > NOTIFY_MAX_CHARS - NOTIFY_TAIL_ROOM:
+            out.append(f"（文字数の上限で残り {len(lines) - i} 行を省いた。全件は --out の JSON）")
+            break
+        out.append(line)
+        used += len(line) + 1
+    return "\n".join(out)
 
 
 def _default_out() -> Path:
@@ -340,9 +379,17 @@ def discover_pages(*, depth: int = 1, notify: bool = False, out: Path | None = N
                    fetcher_factory: Callable[[], Fetcher] | None = None, sources: list[Source] | None = None,
                    known_path: Path = KNOWN_PATH, latest_path: Path = LATEST_PATH, recipes_dir: Path = RECIPES_DIR,
                    max_fetches: int = MAX_FETCHES) -> int:
-    """0 = 実行できた（通知の有無は問わない）、1 = Discord に送れなかった。"""
-    res = find_pages(depth=depth, fetcher_factory=fetcher_factory, sources=sources, known_path=known_path,
-                     latest_path=latest_path, recipes_dir=recipes_dir, max_fetches=max_fetches)
+    """0 = 実行できた（通知の有無は問わない）、1 = Discord に送れなかった、または途中で落ちた（--notify のとき。落ちたことを Discord に送る）。"""
+    try:
+        res = find_pages(depth=depth, fetcher_factory=fetcher_factory, sources=sources, known_path=known_path,
+                         latest_path=latest_path, recipes_dir=recipes_dir, max_fetches=max_fetches)
+    except Exception as e:   # 月 1 回の実行が黙って機能しなくなるのを防ぐ（collect.sh は失敗を日次の失敗に数えない）
+        if not notify:
+            raise
+        print(f"discover --pages が途中で失敗した: {type(e).__name__}: {e}")
+        _send(f"discover --pages（月 1 回の掲載漏れ・リンク切れの確認）が途中で失敗した: {type(e).__name__}: {str(e)[:300]}\n"
+              "今月の確認はできていない。日次収集と公開には影響しない。logs/collect-<日付>.log を見る")
+        return 1
     out_path = out or _default_out()
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(res.to_json(), ensure_ascii=False, indent=1), encoding="utf-8")
