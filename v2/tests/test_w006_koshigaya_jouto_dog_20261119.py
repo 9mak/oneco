@@ -150,8 +150,8 @@ def test_decided_day_with_renamed_table_headings_is_not_a_zero():
 
 
 def test_dog_without_the_decided_mark_is_listed():
-    # 決まった印が無い日の R8-06 は載る（印の語で除外していて、番号の h3 そのものを落としていない）
-    html = _swap(_fx(TODAY), "◆譲渡先が決定しました！", "◆見学受付中")
+    # 決まった印（先頭が「◆」の行・「決まりました」「決定」の行）が無い日の R8-06 は載る（印で除外していて、番号の h3 そのものを落としていない）
+    html = _swap(_fx(TODAY), "◆譲渡先が決定しました！", "見学受付中")
     c = _single(html)
     assert c.status == "ok", (c.status, c.error)
     (a,) = c.result.animals
@@ -164,3 +164,21 @@ def test_prose_mentioning_a_decision_does_not_hide_a_dog():
     c = _single(html)
     assert c.status == "ok", (c.status, c.error)
     assert [a["management_no"] for a in c.result.animals] == ["009"]
+
+
+@pytest.mark.parametrize("mark", ["◆譲渡が成立しました！", "◆お見合い中です", "◆トライアル中", "◆譲渡先が決まりました"])
+def test_any_diamond_line_marks_a_dog_that_is_no_longer_offered(mark):
+    # 「◆」は fixture 全部（今日と Wayback）で決定済みの印にしか使われていない。言い方が変わっても、「◆」で始まる印の行がある子は載せず、0 頭と確定する
+    html = _swap(_fx(TODAY), "◆譲渡先が決定しました！", mark)
+    c = _single(html)
+    assert c.status == "empty", (c.status, c.error)
+    assert c.result is not None and c.result.animals == []
+    assert c.result.empty_evidence == "all_excluded+container"
+
+
+def test_decision_mark_without_a_diamond_and_with_unknown_words_lists_the_dog():
+    # 「◆」が無く、知っている言い方（決まりました・決定）でもない印は読めない。決定済みの子が載る（0 頭とは言わない側）
+    html = _swap(_fx(TODAY), "◆譲渡先が決定しました！", "譲渡が成立しました！")
+    c = _single(html)
+    assert c.status == "ok", (c.status, c.error)
+    assert [a["management_no"] for a in c.result.animals] == ["R8-06"]

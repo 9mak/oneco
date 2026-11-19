@@ -99,7 +99,7 @@ def test_today_is_a_confirmed_zero_decided_one_and_store_one():
     assert c.result.ambiguous_empty is False
     reasons = {d.text.split()[0]: d.reason for d in c.result.dropped}   # R8-38 テルは決定済み、R8-35 ぐらは店舗にいる子
     assert set(reasons) == {"R8-38", "R8-35"}
-    assert "決定" in reasons["R8-38"] and "越谷市にはおりません" in reasons["R8-35"]
+    assert "◆" in reasons["R8-38"] and "越谷市にはおりません" in reasons["R8-35"]
     assert _hits(_fx(TODAY)) == []   # 枠だけの根拠ではない（ぐらの h3 が残る）
 
 
@@ -210,9 +210,9 @@ def test_removed_day_with_a_photo_left_is_not_a_zero():
     assert _single(html).status not in ("ok", "empty")
 
 
-def test_decided_day_with_a_changed_mark_lists_the_cats_not_a_zero():
-    # 決まった印の言い方が変わった日は、決定済みの子が載る（0 頭と言わない側）
-    html = _swap(_fx(ZERO_2025_11), "◆譲渡先が決定しました！", "◆お引き渡し済みです")
+def test_decided_day_with_a_mark_without_a_diamond_lists_the_cats_not_a_zero():
+    # 「◆」が無く、知っている言い方（決まりました・決定）でもない印は読めない。決定済みの子が載る（0 頭と言わない側）
+    html = _swap(_fx(ZERO_2025_11), "◆譲渡先が決定しました！", "お引き渡し済みです")
     c = _single(html)
     assert c.status == "ok", (c.status, c.error)
     assert len(c.result.animals) == 5
@@ -230,3 +230,40 @@ def test_cat_with_only_a_prose_decision_word_is_listed():
     c = _single(html)
     assert c.status == "ok", (c.status, c.error)
     assert [a["management_no"] for a in c.result.animals] == ["008"]
+
+
+@pytest.mark.parametrize("mark", ["◆譲渡が成立しました！", "◆お見合い中です", "◆トライアル中"])
+def test_any_diamond_line_marks_a_cat_that_is_no_longer_offered(mark):
+    # 「◆」は fixture 全部（今日と Wayback）で決定済みの印にしか使われていない（◆譲渡先が決定しました！ ◆譲渡が決定しました ◆譲渡決定！…）。
+    # 言い方が変わっても、「◆」で始まる印の行がある子は載せない
+    html = _swap(_fx(ZERO_2025_11), "◆譲渡先が決定しました！", mark)
+    c = _single(html)
+    assert c.status == "empty", (c.status, c.error)
+    assert c.result is not None and c.result.animals == [] and len(c.result.dropped) == 5
+
+
+STORE_SENTENCE = "越谷市にはおりませんので、店舗へ直接お問い合わせください。"
+
+
+@pytest.mark.parametrize("replacement", [
+    "",                                  # (a) 文ごと無い
+    "店舗までご連絡ください。",            # (b) 言い方が変わった
+    "店舗に直接ご連絡ください。",          # (c) 言い方が変わった
+])
+def test_store_cat_is_left_out_even_if_the_store_sentence_changes_or_is_gone(replacement):
+    # 行に残る「ぐらは現在、「ペテモライフハウスピアシティ稲毛海岸」にて里親さん募集中！」（店舗名・「にて里親さん募集中」）も店舗の子の目印
+    html = _swap(_fx(TODAY), STORE_SENTENCE, replacement)
+    assert "ライフハウス" in html
+    c = _single(html)
+    assert c.status == "empty", (c.status, c.error)
+    assert c.result is not None and c.result.animals == []
+    assert c.result.empty_evidence == "all_excluded+container" and c.result.ambiguous_empty is False
+    assert {d.text.split()[0] for d in c.result.dropped} == {"R8-38", "R8-35"}
+
+
+def test_store_name_alone_is_enough_to_leave_a_cat_out_among_cats_in_the_city():
+    html = _swap(_fx(CHILD_2026_06), "まずはビジュが気になるだけでもいいので、ご連絡ください！",
+                 "まずはビジュが気になるだけでもいいので、ご連絡ください！<br/>ネコモライフハウス幕張新都心にいます。")
+    c = _single(html)
+    assert c.status == "ok", (c.status, c.error)
+    assert [a["management_no"] for a in c.result.animals] == ["R8-19", "R8-16", "R8-15", "R8-13", "R8-11", "R8-10", "R8-09", "R8-06"]
