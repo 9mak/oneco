@@ -92,3 +92,22 @@ def test_about_discloses_analytics_and_how_to_opt_out(tmp_path: Path) -> None:
 def test_production_config_uses_the_oneco_property() -> None:
     cfg = json.loads((ROOT / "site" / "config.json").read_text(encoding="utf-8"))
     assert cfg["ga4_id"] == "G-KEE66C1E8B"
+
+
+def test_animal_page_emits_click_events_and_attrs_only_when_ga4_is_set(tmp_path: Path) -> None:
+    with_ga = _build(tmp_path / "on", {**CONFIG, "ga4_id": GA})
+    animal_on = with_ga["animals/dog000000001/index.html"]
+    for ev in ("external_link_click", "contact_phone_click", "affiliate_click"):
+        assert ev in animal_on
+    assert 'data-pref="徳島県"' in animal_on
+    assert 'data-kind="adoption"' in animal_on
+    assert 'data-species="dog"' in animal_on
+    # トップや about には個体用のクリック計測スクリプトを出さない
+    assert "external_link_click" not in with_ga["index.html"]
+    assert "external_link_click" not in with_ga["about/index.html"]
+
+    without_ga = _build(tmp_path / "off", dict(CONFIG))
+    animal_off = without_ga["animals/dog000000001/index.html"]
+    assert "external_link_click" not in animal_off
+    assert "contact_phone_click" not in animal_off
+    assert "affiliate_click" not in animal_off
