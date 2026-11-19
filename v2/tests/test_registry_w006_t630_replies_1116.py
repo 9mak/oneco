@@ -61,8 +61,9 @@ def test_collect_does_not_fetch(slug):
 
 
 @pytest.mark.parametrize("slug", ["city_koshigaya-1", "city_koshigaya-2"])
-def test_koshigaya_shuuyou_stays_pending(slug):
-    # 返事は「保健所収容動物の譲渡」のページについてで、台帳のこのページには触れていない
+def test_koshigaya_shuuyou_was_confirmed_on_1117(slug):
+    # 11/16 の返事は「保健所収容動物の譲渡」のページについてで、台帳のこのページには触れていなかった（その時点は pending）。
+    # 11/17 にこのページも可と返事が来たので写真を出す（test_registry_w006_t630_replies_1119.py）
     s = SOURCES[slug]
-    assert (s.mode, s.enabled, s.photo) == ("recipe", True, "pending")
-    assert "確認中" in NOTES[slug]
+    assert (s.mode, s.enabled, s.photo) == ("recipe", True, "ok")
+    assert "2026-11-17" in NOTES[slug]
