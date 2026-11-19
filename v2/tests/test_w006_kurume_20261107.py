@@ -6,6 +6,7 @@ city_kurume-2（犬・猫の譲渡）: h3「譲渡犬猫番号…」の下に写
   0 頭の日は「現在、譲渡対象の犬猫はおりません。」（Wayback 2026-03-11）。子のいる日（今日・Wayback 2021-08-14）には出ない。
 """
 
+from dataclasses import replace
 from pathlib import Path
 
 from bs4 import BeautifulSoup
@@ -36,7 +37,8 @@ def _fx(name: str) -> str:
 
 
 def _single(slug: str, html: str) -> Collected:
-    return collect_one(SOURCES[slug], FakeFetcher({SOURCES[slug].url: html}))
+    # 2026-11-18 の返事で台帳はリンクのみになった。レシピは許諾が変わったときのために残すので、mode を recipe にして読み続ける
+    return collect_one(replace(SOURCES[slug], mode="recipe"), FakeFetcher({SOURCES[slug].url: html}))
 
 
 def _hits(slug: str, html: str):
@@ -51,9 +53,10 @@ def _zero(c: Collected) -> bool:
 def test_registry_entries():
     for slug, kind in (("city_kurume-1", "stray"), ("city_kurume-2", "adoption")):
         s = SOURCES[slug]
-        assert s.mode == "recipe" and s.kind == kind and s.prefecture == "福岡県"
+        assert s.kind == kind and s.prefecture == "福岡県"
         assert s.phone == "0942-30-1500"
-        assert s.photo == "pending"  # 写真の規約は未確認
+        # 2026-11-18 久留米市から「写真等の転載はしないでください」と返事 → リンクのみ（test_registry_w006_t630_replies_1119.py）
+        assert (s.mode, s.photo) == ("link_only", "no")
 
 
 def test_stray_zero_day_is_empty():
