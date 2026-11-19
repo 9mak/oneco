@@ -6,7 +6,9 @@
 
 2026-11-18: みやざきドッグ愛ランドは「サイトリニューアル準備につき、仮サイトにて情報をお届けしております」の 1 ページだけになり、
 一覧の 6 URL（/modules/addon_module/?…）は HTTP 404（discover --pages の試運転で検出）。リンク先を、仮サイトを案内しているトップページにした。
-電話は一覧ページのフッターにあったもので、今の掲載元ページ（トップ）には無いので載せない（T628「掲載元ページで確認できたものだけ」）。
+電話は一覧ページのフッターにあったもので、トップページの HTML 本体には無いので載せない（T628「掲載元ページで確認できたものだけ」）。
+2026-11-19（#134 reviewer）: トップに埋め込まれた仮サイト（別ホストの wixsite.com）には同じ番号が載っている。ops/verify_registry.py は
+同じホストのページしか確かめないので載せないままにし、note の理由を実態どおりに直した（リンクのみの掲載元の電話はサイトに出ない）。
 """
 
 from pathlib import Path
@@ -36,10 +38,11 @@ def test_miyazaki_six_lists_are_link_only_with_matching_kind_and_species():
         assert (s.mode, s.kind, s.species, s.enabled) == ("link_only", kind, species, True), slug
         # 一覧の URL は 404。仮サイトを案内しているトップページへ送る（リニューアルが済んだら一覧の URL に戻す）
         assert s.url == MIYAZAKI_TOP, slug
-        # 電話も所在地も、今の掲載元ページ（トップ）に無いので載せない（2026-10-18 T628「推測で足さない」）
+        # 電話も所在地も、トップページの HTML 本体に無いので載せない（2026-10-18 T628「推測で足さない」。仮サイトの中にはある）
         assert s.phone is None and s.address is None, slug
         assert s.recipe is None, slug   # 読まないのでレシピは無い
         assert "2026-11-18" in NOTES[slug] and "HTTP 404" in NOTES[slug], slug   # いつ・なぜ変えたかを note に残す
+        assert "仮サイト" in NOTES[slug] and "今の掲載元ページ（トップ）には無い" not in NOTES[slug], slug   # 表示では仮サイトに番号がある（事実と違う理由を書かない）
 
 
 def test_kagoshima_pref_indexes_are_read_since_20261107():
