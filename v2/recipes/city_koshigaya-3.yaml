@@ -1,0 +1,37 @@
+# 越谷市 保健所収容犬の譲渡（pet/jouto/20150909092350779.html）。city_koshigaya-4（猫）と同じ作り。2026-11-19 W006 T630。
+# 動物 1 頭 = h3（管理番号）→（決まった子は「◆譲渡先が決定しました！」の行）→ 写真 → 表（見出し行と値の行）→ 紹介文。
+# 表の作りは日によって違う: 見出しが thead の th・tbody の td・値が thead の 2 行目、列は 仮名・種類・性別・毛色・年齢・備考（手術は 去勢手術・避妊手術・不妊手術・手術）。
+# header_row: true で見出しの語の列を同じ表の次の行から読む（city_koshigaya-1 と同じ。tests/test_w006_koshigaya_jouto_dog_20261119.py）。
+# 行の始まりは h2「譲渡動物情報」より後ろの h3。前の h3（書類・その他）と、h2 の後ろの h3「店舗情報」（猫のページ）は表（種類）が無いので落とす。
+rows: "div#tmp_honbun div.h2bg:-soup-contains('譲渡動物情報') ~ h3"
+row_until: "h2"
+row_filter:
+  text_has_any: ["種類"]
+  # 決まった子は載せない。印の言い方は日で違う（「◆譲渡先が決定しました！」「新しい飼い主が決まりました！」「◆譲渡決定！…」「◆譲渡が決定しました」）。
+  # 紹介文の「決定」を拾わないよう、印の行（行の先頭が 譲渡先・譲渡・新しい飼い主・里親さん で始まるもの）だけを note に読んで除外する。
+  # 行ごと捨てずに項目で除外するので、全部が決定済みの日は「全行除外」の 0 頭（表の見出しが読めた日だけ）になる。
+  field_lacks: {note: ["決まりました", "決定"]}
+fields:
+  management_no: {selector: "h3", regex: "^(?!0+$)(\\S+)$"}
+  name: {label: "仮名", header_row: true}
+  breed: {label: "種類", header_row: true}
+  sex: {label: "性別", header_row: true}
+  color: {label: "毛色", header_row: true}
+  age: {label: "年齢", header_row: true}
+  note:
+    join:
+      - {selector: "p:-soup-contains('決まりました', '決定')", regex: "^[◆\\s]*((?:新しい飼い主|里親さん|譲渡先|譲渡)\\S*(?:決まりました|決定)\\S*)"}
+      - {label: ["去勢手術", "避妊手術", "不妊手術", "手術"], header_row: true, regex: "(\\S*(?:去勢|避妊)\\S*)"}
+      - {label: "備考", header_row: true}
+    sep: "。"
+image: "img@src"
+# 0 頭の根拠は 2 通りで、どちらも文言でなく作り。title・h1 の「情報:0頭」は更新を忘れうるので使わない。
+#  1) 決定済みの子だけが残る日（今日の R8-06・Wayback 2023-03 の 4 頭）: 行が 1 つ以上あり全部が field_lacks（決まった印）で除外され、枠 empty_container が残る日（エンジンの all_excluded+container）。
+#     印が読めない行は動物として載るので、子のいる日には成立しない。表の見出しの語が変わった日は rows の row_filter（種類）で行が取れず、0 頭にならず failed
+#  2) 番号（数字を含む h3）も写真も無い空の雛形だけが残る日（Wayback 2025-06。h3 は空・表の値も空）: empty_absent
+#     page = h2「譲渡動物情報」の枠、none = h2 の後ろの数字を含む h3（R8-06・009）と、写真（pet/jouto/images/）。
+#     子のいる日（Wayback 2024-09・2025-02）にも、決定済みの h3 が残る日にも成立しない。枠が無い日・旧 CMS の作り（Wayback 2022-08）は成立せず failed
+empty_absent:
+  page: "div#tmp_honbun h2:-soup-contains('譲渡動物情報')"
+  none: "div#tmp_honbun div.h2bg:-soup-contains('譲渡動物情報') ~ h3:-soup-contains-own('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'), div#tmp_honbun img[src*='/pet/jouto/images/']"
+empty_container: "div#tmp_honbun div.h2bg:-soup-contains('譲渡動物情報')"

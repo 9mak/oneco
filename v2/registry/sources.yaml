@@ -1235,6 +1235,22 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+- slug: city_koshigaya-3
+  name: 越谷市（保健所収容犬の譲渡）
+  municipality: 越谷市
+  prefecture: 埼玉県
+  phone: 048-969-8511
+  address: null
+  url: https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/jouto/20150909092350779.html
+  verified_at: '2026-11-19'
+  verified_phone_url: "https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/jouto/20150909092350779.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/city_koshigaya-3.yaml
+  enabled: true
+  photo: ok
+  note: "2026-11-19 W006 T630: 越谷市動物管理センターの 11/16（保健所収容動物の譲渡のページは市の収容動物なので、リンクや写真を使ってよい）・11/17（譲渡ページの広告つきの掲載も、写真等を載せてよい）の返事を受けて追加。h3（管理番号）→ 写真 → 表（仮名・種類・性別・毛色・年齢・備考）。「譲渡先が決定しました」「新しい飼い主が決まりました」の子は載せない。0 頭の根拠は文言でなく作り（全部の行に「決まった」印があり h2「譲渡動物情報」の枠が残る日、または番号も写真も無い空の雛形だけの日）。同じ階層の新しい飼い主探し掲示板（飼い主からの譲渡）・譲渡団体の紹介は載せない。"
 - slug: city_koshigaya_kojin
   name: 越谷市（個人保護犬猫）
   municipality: 越谷市
