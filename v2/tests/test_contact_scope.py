@@ -29,6 +29,8 @@ OPERATOR_SLUGS = sorted([
     "pref_kagoshima-9", "pref_kagoshima-10", "pref_kagoshima-11", "pref_kagoshima-12",
     # 掲載漏れの棚卸し 2 回目（2026-11-17 W006 T640）: 高知県の迷子情報と、鳥取県の捜しています・保護しています（県のまとめページ）
     "kochi_apc-2", "pref_tottori-2", "pref_tottori-3",
+    # 越谷市の譲渡の猫（2026-11-19 W006 T630）: 市と協定のある店舗（千葉市）にいる子が同じページに載る。電話・住所は動物管理センターのもの
+    "city_koshigaya-4",
 ])
 
 
