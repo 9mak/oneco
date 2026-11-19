@@ -1235,6 +1235,38 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+- slug: city_koshigaya-3
+  name: 越谷市（保健所収容犬の譲渡）
+  municipality: 越谷市
+  prefecture: 埼玉県
+  phone: 048-969-8511
+  address: null
+  url: https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/jouto/20150909092350779.html
+  verified_at: '2026-11-19'
+  verified_phone_url: "https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/jouto/20150909092350779.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/city_koshigaya-3.yaml
+  enabled: true
+  photo: ok
+  note: "2026-11-19 W006 T630: 越谷市動物管理センターの 11/16（保健所収容動物の譲渡のページは市の収容動物なので、リンクや写真を使ってよい）・11/17（譲渡ページの広告つきの掲載も、写真等を載せてよい）の返事を受けて追加。h3（管理番号）→ 写真 → 表（仮名・種類・性別・毛色・年齢・備考）。「譲渡先が決定しました」「新しい飼い主が決まりました」の子は載せない。0 頭の根拠は文言でなく作り（全部の行に「決まった」印があり h2「譲渡動物情報」の枠が残る日、または番号も写真も無い空の雛形だけの日）。同じ階層の新しい飼い主探し掲示板（飼い主からの譲渡）・譲渡団体の紹介は載せない。"
+- slug: city_koshigaya-4
+  name: 越谷市（保健所収容猫の譲渡）
+  municipality: 越谷市
+  prefecture: 埼玉県
+  phone: 048-969-8511
+  address: null
+  url: https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/jouto/nekojyouto.html
+  verified_at: '2026-11-19'
+  verified_phone_url: "https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/jouto/nekojyouto.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/city_koshigaya-4.yaml
+  enabled: true
+  photo: ok
+  note: "2026-11-19 W006 T630: 越谷市動物管理センターの 11/16・11/17 の返事（city_koshigaya-3 の note 参照）を受けて追加。h3（管理番号）→ 写真 → 表（仮名・種類・性別・毛色・年齢・手術・備考）。「譲渡先が決定しました」「新しい飼い主が決まりました」の子は載せない。市と協定のあるイオンペットの店舗（千葉市のライフハウス）にいる子（2026-11-19 は R8-35 ぐら）は、ページが「越谷市にはおりませんので、店舗へ直接お問い合わせください」と書き、台帳の電話（動物管理センター）では問い合わせ先が誤りになるので載せない（店舗の電話・所在地を出す作りにするかはオーナーの判断待ち）。載るのは市の動物管理センターにいる子だけで、city_koshigaya-1・-2 と同じ扱い（contact_scope は facility・address は null）。0 頭の根拠は文言でなく作り（全部の行が「決まった」印か店舗の子で、枠が残る日。または子の h3・写真が全部消えた日）。"
 - slug: city_koshigaya_kojin
   name: 越谷市（個人保護犬猫）
   municipality: 越谷市

@@ -70,6 +70,7 @@ pages:
   pref.saitama.lg.jp/b0716/doubutu-kaikata-kainushisagashikeijiban-h.html: {status: excluded, note: "埼玉県「新しい飼い主さがし掲示板」本所管内。飼い主からの直接譲渡で載せない（2026-11-17 決定）"}
   pref.saitama.lg.jp/b0716/doubutu-kaikata-kainushisagashikeijiban-m.html: {status: excluded, note: "埼玉県「新しい飼い主さがし掲示板」南支所管内。飼い主からの直接譲渡で載せない（2026-11-17 決定）"}
   pref.saitama.lg.jp/b0716/doubutu-kaikata-kainushisagashikeijiban-1.html: {status: excluded, note: "埼玉県「新しい飼い主さがし掲示板」の入口。飼い主からの直接譲渡で載せない（2026-11-17 決定）"}
+  city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/jouto/keijiban.html: {status: excluded, note: "越谷市「新しい飼い主探し掲示板」。飼えなくなった飼い主からの譲渡の掲示板で載せない（2026-11-17 決定「市民の掲示板は迷子だけ・飼い主からの譲渡は載せない」。2026-11-19 T630）"}
   sorachi.pref.hokkaido.lg.jp/hk/kks/inunekonoteitirann.html: {status: excluded, note: "北海道 空知の「飼い主さがしノート」。市民から市民への譲渡で載せない（2026-11-17 決定）"}
   ishikari.pref.hokkaido.lg.jp/hk/kks/kansei/kainusisagasinote-rist.html: {status: excluded, note: "北海道 石狩の「飼い主さがしノート」掲載情報。市民から市民への譲渡で載せない（2026-11-17 決定）"}
   shiribeshi.pref.hokkaido.lg.jp/hk/kks/kainusisagasinote.html: {status: excluded, note: "北海道 後志の「飼い主さがしノート」閲覧ページ。市民から市民への譲渡で載せない（2026-11-17 決定）"}
