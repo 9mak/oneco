@@ -1,19 +1,21 @@
 # さいたま市（保護犬） — 単一ページに動物カードが並ぶ single_page 形式。
-# 1 頭 = p「管理番号 R08-8」→ p 写真 → ul 属性リスト（収容日… 備考）。1 頭目は div.wysiwyg_area 直下に平らに並び、
+# 1 頭 = 「管理番号 R08-8」→ p 写真 → ul 属性リスト（収容日… 備考）。1 頭目は div.wysiwyg_area 直下に平らに並び、
 # 2 頭目以降は div に包まれていることがある（崩れ方がページごとに違う）。
-# 「管理番号」の p を 1 頭の始まりにし、row_until で次の見出し h2（返還申請について）までをまとめる（T517）。
-# 次の始まり（管理番号の p を含む div）の手前で自動的に止まるので、div に包まれた 2 頭目以降にも同じ作りで効く。
-# 在庫 0 件でも全項目が空の「管理番号 R08-」だけの雛形カード（div でラップ）が常に 1 枚残る（写真 alt="作成用（要保存）" が目印）。
+# 「管理番号」の要素を 1 頭の始まりにし、row_until で次の見出し h2（返還申請について）までをまとめる（T517）。
+# 次の始まり（管理番号の要素を含む div）の手前で自動的に止まるので、div に包まれた 2 頭目以降にも同じ作りで効く。
+# 2026-11-19: 管理番号が p ではなく div > span に入る日（R08-17。11/18 収容）に行が取れず、0 頭と出ていた。
+# 始まりを「自分の文字に『管理番号』を持つ要素」（タグを問わない。p・span・div）にした。
+# 在庫 0 件でも全項目が空の「管理番号 R08-」だけの雛形カード（div でラップ）が常に 1 枚残る（写真の alt は「作成用（要保存）」「作業用」など日で揺れる）。
 # 空欄は「収容日： 」の直後が即スペースになるので、row_filter.text_lacks で落とす。
 # 管理番号は写真の alt（例: R8-8）から取る（ページ本文は R08-8 と 0 が入る表記。ID の安定のため今までの表記を維持）。
-rows: "div.wysiwyg_area p:-soup-contains('管理番号')"
+rows: "div.wysiwyg_area :-soup-contains-own('管理番号')"
 row_until: "h2"
 row_filter:
   text_lacks: ["収容日： "]
 image:
-  selector: "img:not([alt*='作成用'])@src"
+  selector: "img:not([alt*='作成用']):not([alt*='作業'])@src"
 fields:
-  management_no: {selector: "img:not([alt*='作成用'])", attr: "alt", regex: "[A-Za-z]?\\d+-\\d+"}
+  management_no: {selector: "img:not([alt*='作成用']):not([alt*='作業'])", attr: "alt", regex: "[A-Za-z]?\\d+-\\d+"}
   shelter_date: {label: "収容日"}
   location: {label: "収容場所"}
   breed: {label: "種類"}
@@ -22,7 +24,11 @@ fields:
   size: {label: "体格"}
   age: {label: "推定年齢"}
   note: {label: "備考"}
-empty_text:
-  - "管理番号 R08-"
-  - "管理番号 R07-"
-  - "管理番号 R09-"
+# 0 頭の日も空の雛形カード「管理番号 R08-」が残る（年度で変わる。Wayback 2025-07 は R07-）が、子のいる日にも末尾に残り、
+# 本物の「管理番号 R08-17」もこの文字を含む。2026-11-19: 「管理番号 R0N-」を empty_text に並べるのをやめ、city_saitama-2（T631）と同じ empty_absent にした。
+# page = 先頭の見出し h2「迷子の犬を保護しています」（0 頭の日も子のいる日も出る枠）、
+# none = 管理番号の後ろに「-数字」が付いた文（R08-17。雛形は「R08-」で数字が無い）と、値の入った収容日（「収容日：令和…」。雛形は「収容日：」だけ）。
+# タグを指定しない（p でも span でも li でも）ので、カードの作りが変わって行が取れない日も、管理番号か収容日が残っていれば 0 頭にならず failed で通知される。
+empty_absent:
+  page: "div.wysiwyg_area h2:-soup-contains('迷子の犬を保護しています')"
+  none: "div.wysiwyg_area :-soup-contains-own('管理番号'):-soup-contains-own('-0', '-1', '-2', '-3', '-4', '-5', '-6', '-7', '-8', '-9'), div.wysiwyg_area :-soup-contains-own('収容日：令和', '収容日：平成', '収容日：20', '収容日：R', '収容日：H')"
