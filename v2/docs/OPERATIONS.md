@@ -166,7 +166,7 @@ Discord の文面はこの形:
 読めなかった自治体 2 件
 - 徳島県動物愛護管理センター（譲渡犬）: follow: 'iframe#animalFrame@src' が見つからない (https://…)（AI 修復に失敗: 新レシピでも 0 頭（行 3・捨てた 3））
 - 佐賀県（保護犬猫）: HTTP 404: https://…
-（公開 812 頭・成功 198 ページ）
+（公開 2689 頭・成功 443 ページ）
 ```
 
 | 行 | 意味 | やること |
@@ -278,13 +278,13 @@ cd v2   # 本番クローンなら ~/oneco-collect/v2
    ```
 2. レシピを作る。まず AI に書かせる: `python -m collector repair city_example-1 --show`（agy が必要。レシピが無い slug でも案が `data/proposals/<slug>.yaml` に出る。1 頭以上取れた時だけ。`python -m collector propose` で draft PR にして merge するか、手で `recipes/<slug>.yaml` へコピーする）。駄目なら `python -m collector fetch <url> --selectors` で表・リストの候補を見て `docs/RECIPE.md` の通り手で書く
 3. `python -m collector show city_example-1` で取れた行・捨てた行を確認。写真・性別・収容日が合っていること
-4. `python -m pytest tests -q`（台帳とレシピが読めることを確認するテストが入っている）
-5. commit → push → PR → main に merge。翌日 0:05 の収集から載る（Mac の本番クローンは毎晩 `git pull` する）。すぐ載せたいなら、ターミナルで `launchctl kickstart -k gui/$(id -u)/com.oneco.collect`（全ページを読み直すので約 20 分。VPS は `git -C /opt/oneco pull` のあと `sudo systemctl start oneco-collect.service`）
+4. `python -m pytest tests -q`（台帳とレシピが読めることを確認するテストが入っている。開発用の checkout の venv で回す。本番クローン `~/oneco-collect` の venv には pytest を入れていない）
+5. commit → push → PR → main に merge。翌日 0:05 の収集から載る（Mac の本番クローンは毎晩 `git pull` する）。すぐ載せたいなら、ターミナルで `launchctl kickstart -k gui/$(id -u)/com.oneco.collect`（全ページを読み直すので約 25 分。`-k` は動いている収集を止めて最初からやり直すので、毎晩 0:05 からの収集が終わるまで（0:35 ごろ）は叩かずに待つ。VPS は `git -C /opt/oneco pull` のあと `sudo systemctl start oneco-collect.service`）
 6. discover の通知から足したなら、同じコミットで `registry/discover_known.yaml` のその行を消す（上の「通知が来たら」の 2）
 
 ## 5. 撤去依頼が来たら
 
-自治体から「掲載をやめてほしい」と来たら、`registry/sources.yaml` のその自治体のエントリを `enabled: false` にして main に merge する。翌日 0:05 の収集でその自治体の子は `latest.json` から消え、サイトも消える。その日のうちに消したいなら、ターミナルで `launchctl kickstart -k gui/$(id -u)/com.oneco.collect` で作り直す（約 20 分。VPS は `git pull` のあと `sudo systemctl start oneco-collect.service`）。
+自治体から「掲載をやめてほしい」と来たら、`registry/sources.yaml` のその自治体のエントリを `enabled: false` にして main に merge する。翌日 0:05 の収集でその自治体の子は `latest.json` から消え、サイトも消える。その日のうちに消したいなら、ターミナルで `launchctl kickstart -k gui/$(id -u)/com.oneco.collect` で作り直す（約 25 分。毎晩 0:05 からの収集の最中は、終わるのを待ってから叩く。VPS は `git pull` のあと `sudo systemctl start oneco-collect.service`）。
 
 エントリを消さず `enabled: false` にするのは、二度と載せない記録を残すため。返信では「翌日 0:05 の更新で消えます」と伝える。
 
