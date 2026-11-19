@@ -5,6 +5,7 @@ F-02: 紋別・遠軽支所のページは結合セルの無い単純な 7 つ�
 """
 
 import re
+from dataclasses import replace
 from pathlib import Path
 
 from collector.fetch import FakeFetcher
@@ -25,7 +26,8 @@ def _run(slug: str, fixture: str, mutate=None) -> Collected:
     html = (FIX / fixture).read_text(encoding="utf-8")
     if mutate:
         html = mutate(html)
-    return collect_one(SOURCES[slug], FakeFetcher({SOURCES[slug].url: html}))
+    # 久留米市は 2026-11-18 の返事で台帳がリンクのみになった。レシピは残すので、mode を recipe にして読み続ける
+    return collect_one(replace(SOURCES[slug], mode="recipe"), FakeFetcher({SOURCES[slug].url: html}))
 
 
 def _no_stray(h: str) -> str:

@@ -1,0 +1,33 @@
+# さいたま市 譲渡猫の紹介（jyoutonekonosyoukai.html）。動物愛護ふれあいセンターの譲渡猫。台帳の city_saitama-1・-2（保護犬・保護猫。迷子）とは別のページ。
+# 掲載漏れの棚卸し（2026-11-18 W006 T640 3 回目）。2026-11-18 は 19 頭（子猫は「掲載していません」の注記だけで載っていない）。
+# 手書きの HTML で、1 頭は「譲渡No.N（見出し）→ 写真の div → 名前・性別・年齢・毛色・特徴の欄」。欄は div ごとに 1 項目のことが多いが、div に <br> で 2 項目入る（性別と年齢・毛色と特徴）、
+#   名前から特徴までが 1 つの p に入る（No.17 さくら・No.19 ピア）、名前の p が div に包まれ写真の div が包みの外にある（No.18 てつ）など、頭ごとに書き方が違う。
+#   そこで 1 頭の始まりを「名前：」の欄（div か p）にし、次の見出し（譲渡No の strong）か写真の div/p の手前までを 1 頭分にまとめる。項目は行の文字から regex で取る（書き方が違っても同じに読める）。
+#   写真は名前の欄より前の兄弟（前の頭の名前の欄まで遡る）から取る。No.18 てつだけは名前の p が包みの先頭で兄弟が無く、写真が付かない（名前・性別・年齢・毛色・特徴は読める）。
+# 「譲渡No.7　トライアル中！」は見出し（strong）に書く。トライアル中・トライアル予定ありは載せて note に出し、「飼い主さんが決まりました」の子は載せない（見出しの文字を note の材料にして field_lacks で落とす。
+#   見出しは行の外なので、行より前にある直近の「譲渡No」の見出しから取る。次の頭に見出しが無いと前の頭の印を引き継ぐが、今日は 19 頭とも見出しがある）。
+# 管理番号はページの書き方のまま「譲渡No.18」（掲載の通し番号で、頭が減ると変わりうる。ID は写真から作るので影響しない）。
+# 作りは日で変わる: Wayback 2025-02・2025-07 は表（名前・写真・「1 性別 2 年齢 3 毛色など 4 特徴」の列）、2026-03 から div の並び。表の日は名前の欄が無く 1 頭も読めない（猫は載っているので 0 頭とは言わず failed）。
+# 0 頭の日の版は Wayback に無い（保存の 4 版はどれも猫がいる日）。枠（h2 新しい飼い主さんを募集しています）はあるが、名前の欄・譲渡No の見出し・写真のリンクが 1 つも無い日だけ 0 頭にする。
+rows: "div.wysiwyg_area div:-soup-contains-own('名前：'), div.wysiwyg_area p:-soup-contains-own('名前：')"
+# （:has の中に子孫の組み合わせ「> a > img」を書くと CI の soupsieve 4.1 が strict で拒否する（本番の 2.10 は通す）ので、:has(img) と書く）
+row_until: "h2, div:has(> strong:-soup-contains('譲渡No')), p:has(> strong:-soup-contains('譲渡No')), div:has(img), p:has(img)"
+row_filter:
+  field_lacks: {note: ["飼い主さんが決まりました", "譲渡が決まりました"]}
+image: {selector: "img@src", scope: self_or_prev_siblings, stop_at: row}
+fields:
+  management_no: {from: heading, selector: "strong:-soup-contains('譲渡No')", regex: "(譲渡No\\.?\\s*\\d+)"}
+  detail: {selector: "span.__none__", default: "https://www.city.saitama.lg.jp/008/004/003/005/jyoutonekonosyoukai.html"}
+  name: {regex: "名前[:：]\\s*(\\S+)"}
+  sex: {regex: "性別[:：]\\s*(\\S+)"}
+  age: {regex: "年齢[:：]\\s*(\\S+)"}
+  color: {regex: "毛色(?:など)?[:：]\\s*(.+?)(?=\\s+特徴[:：]|$)"}
+  note:
+    join:
+      - {from: heading, selector: "strong:-soup-contains('譲渡No')", regex: "(トライアル(?:中|予定あり))"}
+      - {from: heading, selector: "strong:-soup-contains('譲渡No')", regex: "(飼い主さんが決まりました|譲渡が決まりました)"}
+      - {regex: "特徴[:：]\\s*(.+)"}
+    sep: "。"
+empty_absent:
+  page: "div.wysiwyg_area h2:-soup-contains('新しい飼い主さんを募集しています')"
+  none: "div.wysiwyg_area :-soup-contains-own('名前：'), div.wysiwyg_area strong:-soup-contains('譲渡No'), div.wysiwyg_area a[href*='_d/img/']"

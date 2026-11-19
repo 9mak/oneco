@@ -4,12 +4,12 @@
 - h3 が div（img-area）に包まれる子（Wayback 2026-06 の R8-06）も読む。ページ自身の頭数（title「情報:N頭」）と読めた頭数が一致することを、子のいる 6 つの日で押さえる
   （最初に h2 の後ろの兄弟の h3 だけを始まりにしていて、R8-06 が落ちて 9 頭のところ 8 頭だった）
 - 市と協定のあるイオンペットの店舗（千葉市）にいる子（今日の R8-35 ぐら）は、紹介文の後ろに「越谷市にはおりませんので、店舗へ直接お問い合わせください」と出る。
-  その文を備考（メモ）の先頭に載せ、台帳は contact_scope: operator（個体ページに「子がいる場所とは限りません」）にした
+  掲載元が問い合わせ先を店舗と書いていて、台帳の電話（動物管理センター）は誤りになるので載せない（決定済みと同じ「除外」。店舗の電話・住所を出す作りにするかはオーナーの判断待ち）。
+  今日は「決定済み 1・店舗 1 で、載せる子 0」の日で、全行除外の 0 頭（failed や ambiguous_empty にならない）。
 0 頭の根拠は文言でなく作り（決定済みの行だけの日 = Wayback 2025-11、子の h3・写真が全部消えた日）。
   2025-11 の「ただいま、譲渡募集中の猫ちゃんはいません。」は根拠にしない（レシピに empty_text を置かない）。
 """
 
-import importlib.util
 import re
 import unicodedata
 from pathlib import Path
@@ -28,14 +28,14 @@ SOURCES = {s.slug: s for s in load_sources(ROOT / "registry" / "sources.yaml")}
 SLUG = "city_koshigaya-4"
 IMG = "https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/jouto/images/"
 
-TODAY = "w006_city_koshigaya-4_child_20261119.html"            # R8-35 ぐら（店舗にいる）と、決定済みの R8-38。title は「情報:１頭」
+TODAY = "w006_city_koshigaya-4_child_20261119.html"            # R8-35 ぐら（店舗にいる）と、決定済みの R8-38。title は「情報:１頭」（店舗の子を数えている）
 ZERO_2025_11 = "w006_city_koshigaya-4_zero_wb20251107.html"    # 決定済みの 5 頭だけ。「ただいま、譲渡募集中の猫ちゃんはいません。」
 CHILD_2026_06 = "w006_city_koshigaya-4_child_wb20260605.html"  # 9 頭（R8-06 は h3 が div に包まれる）
 CHILD_2025_04 = "w006_city_koshigaya-4_child_wb20250422.html"  # 14 頭（番号が 2 桁・仮名なし・先頭に h3「はじめに」）
 CHILD_2025_01 = "w006_city_koshigaya-4_child_wb20250125.html"  # 036 だけが募集中、決定済み 9 頭
 CHILD_2024_06 = "w006_city_koshigaya-4_child_wb20240622.html"  # 008 の 1 頭
 OLD_2022_10 = "w006_city_koshigaya-4_old_wb20221028.html"      # 4 頭（049・048・007・006）。決定済みの h3 に class が無い
-CHILD_DAYS = [TODAY, CHILD_2026_06, CHILD_2025_04, CHILD_2025_01, CHILD_2024_06, OLD_2022_10]
+CHILD_DAYS = [CHILD_2026_06, CHILD_2025_04, CHILD_2025_01, CHILD_2024_06, OLD_2022_10]
 
 
 def _fx(name: str) -> str:
@@ -80,49 +80,50 @@ def _without_animals(html: str) -> str:
     return str(soup)
 
 
-def _load_site_build():
-    spec = importlib.util.spec_from_file_location("oneco_site_build_koshigaya", ROOT / "site" / "build.py")
-    mod = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None
-    spec.loader.exec_module(mod)
-    return mod
-
-
 def test_registry_entry():
     s = SOURCES[SLUG]
     assert (s.mode, s.kind, s.species, s.enabled) == ("recipe", "adoption", "cat", True)
     assert (s.municipality, s.prefecture, s.phone) == ("越谷市", "埼玉県", "048-969-8511")
     assert s.url == "https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/jouto/nekojyouto.html"
     assert s.photo == "ok"
-    assert s.contact_scope == "operator"   # 同じページに、店舗にいて問い合わせ先が店舗の子が載る
-    assert s.address == "埼玉県越谷市増森一丁目5番地1"   # ページ下の「このページに関するお問い合わせ」（動物管理センター）
-    # 所在地はページに市名なしの町名＋番地（増森一丁目5番地1）でしか出ないので、ops/verify_registry.py は full 一致にならず verified_* を書き戻さない
+    # city_koshigaya-1・-2 と同じ扱い: 載るのは市の動物管理センターにいる子だけ（contact_scope は facility）。住所は null（ページに市名なしの町名しか無い）
+    assert s.contact_scope == "facility" and s.address is None
+    assert s.verified_at and s.verified_phone_url
 
 
-def test_today_reads_the_cat_at_the_store_and_skips_the_decided_one():
+def test_today_is_a_confirmed_zero_decided_one_and_store_one():
     c = _single(_fx(TODAY))
-    assert c.status == "ok", c.error
-    assert c.result is not None
-    (a,) = c.result.animals   # R8-38 テルは「譲渡先が決定しました！」。「店舗情報」の h3 は動物でない
-    assert (a["management_no"], a["name"], a["breed"], a["sex"], a["color"], a["age"], a["species"]) == (
-        "R8-35", "ぐら", "雑種", "めす", "茶トラ", "推定2歳", "cat")
-    assert a["image_url"] == IMG + "gura2.jpg"
-    assert a["kind"] == "adoption" and a["contact_scope"] == "operator" and a["phone"] == "048-969-8511"
-    # 備考の先頭に、店舗にいて問い合わせ先が店舗であることが載る（その後ろに手術・備考）
-    assert a["note"].startswith("ぐらは現在、「ペテモライフハウスピアシティ稲毛海岸」にて里親さん募集中")
-    assert "越谷市にはおりませんので、店舗へ直接お問い合わせください。避妊済。FIV/FeLV陰性" in a["note"]
-    assert a["note"].count("お問い合わせください") == 1
+    assert c.status == "empty", (c.status, c.error)
+    assert c.result is not None and c.result.animals == []
+    assert c.result.empty_evidence == "all_excluded+container"
+    assert c.result.ambiguous_empty is False
+    reasons = {d.text.split()[0]: d.reason for d in c.result.dropped}   # R8-38 テルは決定済み、R8-35 ぐらは店舗にいる子
+    assert set(reasons) == {"R8-38", "R8-35"}
+    assert "決定" in reasons["R8-38"] and "越谷市にはおりません" in reasons["R8-35"]
+    assert _hits(_fx(TODAY)) == []   # 枠だけの根拠ではない（ぐらの h3 が残る）
 
 
-def test_store_cat_page_says_the_contact_may_not_be_where_the_cat_is():
-    c = _single(_fx(TODAY))
-    assert c.result is not None
-    (a,) = c.result.animals
-    html = _load_site_build().build_animal({**_load_site_build().DEFAULT_CFG, "affiliate": []}, {"date": "2026-11-19"}, a)
-    assert "店舗へ直接お問い合わせください" in html
-    assert "子がいる場所とは限りません" in html
-    assert "問い合わせ先の所在地" in html and "埼玉県越谷市増森一丁目5番地1" in html
-    assert "問い合わせ先 048-969-8511" in html
+def test_store_cat_is_left_out_among_cats_in_the_city():
+    # 2026-06 の 9 頭のうち R8-20 に店舗の文を足した合成。市にいる 8 頭だけが載る
+    html = _swap(_fx(CHILD_2026_06), "まずはビジュが気になるだけでもいいので、ご連絡ください！",
+                 "まずはビジュが気になるだけでもいいので、ご連絡ください！<br/>けいは現在、「ペテモライフハウスピアシティ稲毛海岸」にて里親さん募集中！<br/>越谷市にはおりませんので、店舗へ直接お問い合わせください。")
+    c = _single(html)
+    assert c.status == "ok", (c.status, c.error)
+    assert [a["management_no"] for a in c.result.animals] == ["R8-19", "R8-16", "R8-15", "R8-13", "R8-11", "R8-10", "R8-09", "R8-06"]
+    assert [d.text.split()[0] for d in c.result.dropped] == ["R8-20"]
+
+
+def test_store_wording_alone_is_enough_to_leave_a_cat_out():
+    html = _swap(_fx(CHILD_2024_06), "同期の仲間たちがみんな卒業し", "店舗へ直接お問い合わせください。同期の仲間たちがみんな卒業し")
+    c = _single(html)
+    assert c.status == "empty", (c.status, c.error)   # 1 頭しかいない日に、その 1 頭が店舗の子なら載せる子 0
+
+
+def test_cats_without_the_store_wording_are_listed_as_before():
+    for name, n in ((CHILD_2026_06, 9), (CHILD_2025_04, 14), (CHILD_2025_01, 1), (CHILD_2024_06, 1), (OLD_2022_10, 4)):
+        c = _single(_fx(name))
+        assert c.status == "ok" and len(c.result.animals) == n, name
+        assert not any("店舗" in d.reason or "越谷市にはおりません" in d.reason for d in c.result.dropped), name
 
 
 @pytest.mark.parametrize("name", CHILD_DAYS)
