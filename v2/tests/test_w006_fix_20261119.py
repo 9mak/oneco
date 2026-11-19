@@ -152,3 +152,33 @@ def test_okayama_unknown_article_is_not_a_zero():
 def test_okayama_without_the_article_list_is_not_a_zero():
     html = _swap(_fx(OKA_ZERO), "category_end", "category_gone")
     assert _single(OKAYAMA, html).status != "empty"
+
+
+# --- 群馬県動物愛護センター東部支所（保護犬） ------------------------------------------------------------------------
+# 11/19 14:13 の手動収集で「0 頭で empty_text も無い」。「収容情報」の節に担当者が手で書く 0 頭の文が
+# 「現在、保護している犬はいません。」に変わった（これまでは 保管期間中の犬はおりません・保管期間中の動物はおりません・
+# 保護している動物はいません）。実ページに子はいない。子のいる日（10/27 の管理番号 26-123）には出ない文なので empty_text に足す。
+GUNMA2 = "pref_gunma-2"
+GUNMA2_ZERO = "w006_pref_gunma-2_zero_20261119.html"
+GUNMA2_DOG = "w006_pref_gunma-2_1dog_20261027.html"
+
+
+def test_gunma_east_new_zero_sentence_confirms_zero():
+    c = _single(GUNMA2, _fx(GUNMA2_ZERO))
+    assert c.status == "empty", (c.status, c.error)
+    assert _res(c).animals == [] and _res(c).empty_evidence == "empty_text"
+
+
+def test_gunma_east_new_zero_sentence_is_absent_on_the_day_with_a_dog():
+    html = _fx(GUNMA2_DOG)
+    assert "保護している犬はいません" not in html
+    assert _hits(GUNMA2, SOURCES[GUNMA2].url, html) == []
+    c = _single(GUNMA2, html)
+    assert c.status == "ok", c.error
+    assert [a["management_no"] for a in _res(c).animals] == ["26-123"]
+
+
+def test_gunma_east_without_any_zero_sentence_is_not_zero():
+    # また別の言い方に変わった日は、0 頭にせず failed で通知される
+    html = _swap(_fx(GUNMA2_ZERO), "現在、保護している犬はいません。", "お知らせ")
+    assert _single(GUNMA2, html).status == "failed"
