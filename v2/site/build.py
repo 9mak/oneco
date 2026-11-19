@@ -953,7 +953,9 @@ def build_sources(cfg: dict[str, Any], data: dict[str, Any]) -> str:
                 if str(s.get("photo") or "ok") == "pending":
                     res += "（写真は許諾の返事待ちのため出していません）"
                 elif str(s.get("photo") or "ok") == "no":
-                    res += "（写真は自治体の意向で出していません）"
+                    # 飼い主が探している迷子（lost）のページは、自治体の返事ではなくこちらの決まりで写真を出していない
+                    # （飼い主の方が届け出た写真と思われるため。町田市 -2〜-4 ほか）。自治体の意向とは書かない（T652）
+                    res += "（写真は出していません）" if str(s.get("kind")) == "lost" else "（写真は自治体の意向で出していません）"
             elif status == "link_only":
                 res = "このページは一覧を読み取らず、リンクだけ載せています"
             else:
