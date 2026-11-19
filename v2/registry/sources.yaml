@@ -9340,3 +9340,219 @@ sources:
   recipe: recipes/city_miyazaki-7.yaml
   enabled: true
   note: '掲載漏れの棚卸しで追加（2026-11-17 W006 T640 2 回目。市民の掲示板のうち迷子）。「市民の皆さんが迷子の犬を保護しています」（仕様の「犬の保護しています」ページ）。2026-11-17 時点は 0 頭（「・現在、掲載情報はありません。」。Wayback 2024-07〜2026-07 の版も 0 頭）。子のいる日の作りは猫（city_miyazaki-6）と同じと考えて同じ読み方にした（未確認）。0 頭の文は子のいる日の版（猫・迷子の犬のページ）には出ない。'
+- slug: city_okayama-2
+  name: 岡山市（譲渡犬）
+  municipality: 岡山市
+  prefecture: 岡山県
+  phone: 086-803-1259
+  address: 〒700-8546 岡山市北区鹿田町一丁目1番1号
+  url: https://www.city.okayama.jp/kurashi/0000016441.html
+  verified_at: '2026-11-18'
+  verified_phone_url: "https://www.city.okayama.jp/kurashi/0000016441.html"
+  verified_address_url: "https://www.city.okayama.jp/kurashi/0000016441.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/city_okayama_joto.yaml
+  enabled: true
+  photo: ok
+  note: '掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目）。岡山市保健所の譲渡犬情報一覧（保護動物の city_okayama とは別のページ）。2026-11-18 時点で 30 頭（子犬・「譲渡に条件がある犬達」・ZOOねるパークの犬たち・他の施設で訓練中の犬を含む。「譲渡が決まりました」の 2 頭は見出しだけで載せない）。「お声かかり中です」（申し込みが入っている子）は載せて note に出す（トライアル中と同じ扱い）。写真は既存の city_okayama と同じ ok（2026-11-02〜05 に岡山市から写真の表示は可の返事）。0 頭の日の版は Wayback に無い（保存の 6 版 2021-02〜2025-12 はどれも子がいる日）ので、枠はあるが動物の見出し・欄・写真が 1 つも無い日だけ 0 頭にする。仕様の親ページ 0000016464 は「保護犬情報一覧」（譲渡犬の情報ではない）なので足さない。'
+- slug: city_okayama-3
+  name: 岡山市（譲渡猫）
+  municipality: 岡山市
+  prefecture: 岡山県
+  phone: 086-803-1259
+  address: 〒700-8546 岡山市北区鹿田町一丁目1番1号
+  url: https://www.city.okayama.jp/kurashi/0000016404.html
+  verified_at: '2026-11-18'
+  verified_phone_url: "https://www.city.okayama.jp/kurashi/0000016441.html"
+  verified_address_url: "https://www.city.okayama.jp/kurashi/0000016441.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/city_okayama_joto.yaml
+  enabled: true
+  photo: ok
+  note: '掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目）。岡山市保健所の譲渡猫情報一覧。city_okayama-2（譲渡犬）と同じ作り・同じ扱い。2026-11-18 時点で 3 頭（うち 1 頭はお声かかり中）。0 頭の日は「現在、譲渡対象の猫はいません」「現在、譲渡対象猫はいません」「現在譲渡者募集中の猫はいません」のどれかが出る（Wayback 2024-02・2025-04・2025-08 の 3 版で確認。子のいる日の版 2023-03・2026-11 には出ない）。'
+- slug: kochi_apc-3
+  name: 高知県中央・中村小動物管理センター（アニマルステーション 迷子の猫を探している）
+  municipality: 高知県中央・中村小動物管理センター
+  prefecture: 高知県
+  phone: 088-831-7939
+  address: 〒780-8021 高知県高知市孕東町56-2（高知県中央小動物管理センター。中村小動物管理センターは別所在地）
+  contact_scope: operator
+  url: https://kochi-apc.com/category/maigo-sagasu-neko/
+  verified_at: '2026-11-18'
+  verified_phone_url: "https://kochi-apc.com/category/maigo-sagasu-neko/"
+  verified_address_url: "https://kochi-apc.com/category/maigo-sagasu-neko/"
+  kind: lost
+  species: cat
+  mode: recipe
+  recipe: recipes/kochi_apc_board.yaml
+  enabled: true
+  photo: "no"
+  note: '県のまとめページ。掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目。市民の掲示板のうち迷子）。アニマルステーション（市民が登録する掲示板）の「迷子の猫を探している」＝飼い主が探している迷子猫。2026-11-18 時点で 3 件。飼い主が届けた迷子の写真は出さない（photo: no。町田の前例。おまえさん 2026-11-10「迷子の写真だけは出さなければいい」）。一覧のカードの管理番号・仮名・種類・性別だけを読み、投稿した市民の住所が出る個体ページは辿らない（元ページのリンクは個体ページ）。「猫を譲りたい人」（飼えなくなった飼い主からの譲渡）は載せない。0 頭の日は Wayback 2026-06-10 に実物がある（カードの無い空の一覧。子のいる日は 2025-03 の 7 件など）ので、一覧の枠はあるが譲渡でないカードが 1 つも無い日を 0 頭にする（犬の区分 kochi_apc-4 は今日その作りで空）。管理番号（08M04 等）は同じ番号が 2 件に付く日がある（2025-03 の 06M22）ので項目にせず note に出し、ID は写真・個体ページの URL から作る。'
+- slug: kochi_apc-4
+  name: 高知県中央・中村小動物管理センター（アニマルステーション 迷子の犬を探している）
+  municipality: 高知県中央・中村小動物管理センター
+  prefecture: 高知県
+  phone: 088-831-7939
+  address: 〒780-8021 高知県高知市孕東町56-2（高知県中央小動物管理センター。中村小動物管理センターは別所在地）
+  contact_scope: operator
+  url: https://kochi-apc.com/category/maigo-sagasu-inu/
+  verified_at: '2026-11-18'
+  verified_phone_url: "https://kochi-apc.com/category/maigo-sagasu-inu/"
+  verified_address_url: "https://kochi-apc.com/category/maigo-sagasu-inu/"
+  kind: lost
+  species: dog
+  mode: recipe
+  recipe: recipes/kochi_apc_board.yaml
+  enabled: true
+  photo: "no"
+  note: '県のまとめページ。掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目。市民の掲示板のうち迷子）。「迷子の犬を探している」（猫の kochi_apc-3 と同じ作り・同じ扱い）。アニマルステーションのトップ（/animalstation/）は猫の 3 区分しかリンクしていないが、犬の区分のページ（/category/maigo-sagasu-inu/）は存在し、2026-11-18 時点は 0 頭（カードの無い空の一覧）。'
+- slug: kochi_apc-5
+  name: 高知県中央・中村小動物管理センター（アニマルステーション 迷子の猫を保護している）
+  municipality: 高知県中央・中村小動物管理センター
+  prefecture: 高知県
+  phone: 088-831-7939
+  address: 〒780-8021 高知県高知市孕東町56-2（高知県中央小動物管理センター。中村小動物管理センターは別所在地）
+  contact_scope: operator
+  url: https://kochi-apc.com/category/maigo-hogo-neko/
+  verified_at: '2026-11-18'
+  verified_phone_url: "https://kochi-apc.com/category/maigo-hogo-neko/"
+  verified_address_url: "https://kochi-apc.com/category/maigo-hogo-neko/"
+  kind: sheltered
+  species: cat
+  mode: recipe
+  recipe: recipes/kochi_apc_board.yaml
+  enabled: true
+  photo: pending
+  note: '県のまとめページ。掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目。市民の掲示板のうち迷子）。「迷子の猫を保護している」＝市民が保護している迷子猫（施設で保護中ではない。区分は sheltered で、施設の収容とは別に扱う。千葉市・旭川の市民保護と同じ）。写真は kochi_apc（譲渡）と同じ pending（返事待ち。新しいページの写真は改めて聞く）。2026-11-18 時点で一覧に 1 件（08J05）あるが、「猫を譲りたい人」の区分も付いた譲渡の投稿（管理番号の J は譲渡）なので載せず、今日は 0 頭。譲渡の区分が付かない保護の投稿は載る（Wayback 2025-09 の 07M06 は管理番号 M・譲渡の区分なし）。0 頭の日は Wayback 2026-01-14 に実物がある（カードの無い空の一覧）ので、一覧の枠はあるが譲渡でないカードが 1 つも無い日を 0 頭にする。'
+- slug: kochi_apc-6
+  name: 高知県中央・中村小動物管理センター（アニマルステーション 迷子の犬を保護している）
+  municipality: 高知県中央・中村小動物管理センター
+  prefecture: 高知県
+  phone: 088-831-7939
+  address: 〒780-8021 高知県高知市孕東町56-2（高知県中央小動物管理センター。中村小動物管理センターは別所在地）
+  contact_scope: operator
+  url: https://kochi-apc.com/category/maigo-hogo-inu/
+  verified_at: '2026-11-18'
+  verified_phone_url: "https://kochi-apc.com/category/maigo-hogo-inu/"
+  verified_address_url: "https://kochi-apc.com/category/maigo-hogo-inu/"
+  kind: sheltered
+  species: dog
+  mode: recipe
+  recipe: recipes/kochi_apc_board.yaml
+  enabled: true
+  photo: pending
+  note: '県のまとめページ。掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目。市民の掲示板のうち迷子）。「迷子の犬を保護している」（猫の kochi_apc-5 と同じ作り・同じ扱い）。トップは猫の区分しかリンクしていないが犬の区分のページは存在し、2026-11-18 時点は 0 頭（カードの無い空の一覧）。'
+- slug: city_saitama-3
+  name: さいたま市（譲渡猫）
+  municipality: さいたま市
+  prefecture: 埼玉県
+  phone: 048-840-4150
+  address: null
+  url: https://www.city.saitama.lg.jp/008/004/003/005/jyoutonekonosyoukai.html
+  verified_at: '2026-11-18'
+  verified_phone_url: "https://www.city.saitama.lg.jp/008/004/003/005/jyoutonekonosyoukai.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/city_saitama-3.yaml
+  enabled: true
+  note: '掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目）。さいたま市動物愛護ふれあいセンターの譲渡猫の紹介（保護猫の city_saitama-2 とは別のページ）。2026-11-18 時点で 19 頭（「子猫はおりますが掲載していません」の注記があり、子猫は載っていない）。「トライアル中！」（2 頭）は載せて note に出し、「飼い主さんが決まりました」の子は載せない。写真は既存の city_saitama-1・-2 と同じ（未指定＝ok）。手書きの HTML で書き方が頭ごとに違い、譲渡No.18（てつ）だけは写真の並びが崩れていて写真が付かない。作りは日で変わる（Wayback 2025 年は表・2026-03 から div の並び）ので、読めない作りの日は 0 頭と言わず failed で通知する。0 頭の日の版は Wayback に無い（保存の 4 版はどれも猫がいる日）ので、枠はあるが名前の欄・譲渡No・写真のリンクが無い日だけ 0 頭にする。'
+- slug: city_saitama-4
+  name: さいたま市（譲渡犬）
+  municipality: さいたま市
+  prefecture: 埼玉県
+  phone: 048-840-4150
+  address: null
+  url: https://www.city.saitama.lg.jp/008/004/003/005/jyoutokensyoukai.html
+  verified_at: '2026-11-18'
+  verified_phone_url: "https://www.city.saitama.lg.jp/008/004/003/005/jyoutokensyoukai.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/city_saitama-4.yaml
+  enabled: true
+  note: '掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目）。さいたま市動物愛護ふれあいセンターの譲渡犬の紹介（保護犬の city_saitama-1 とは別のページ）。仕様の親ページ p007933 は「犬・猫の譲渡について」の手続きの案内で犬の一覧は無く、犬の一覧はこのページ。2026-11-18 時点で 3 頭（うち 1 頭はトライアル中）。トライアル中・トライアル予定ありは載せて note に出し、「飼い主さんが決まりました」の子は載せない。写真は既存の city_saitama-1・-2 と同じ（未指定＝ok）。0 頭の日は「現在、掲載可能な譲渡対象犬はいません。」（Wayback 2024-04 の版で確認。犬のいる日 2024-11・2025-03・2026-11 には出ない）。2024-11・2025-03 は見出し・写真・名前が 1 つの p の別の作りで、今のレシピでは読めない（2024-11 は failed で通知。2025-03 は今の作りの 1 頭だけ読み、古い作りの頭は取り違えを避けて読まない。動物が載っているので 0 頭とは言わない）。'
+- slug: city_maebashi-4
+  name: 前橋市（飼い主を募集している猫）
+  municipality: 前橋市
+  prefecture: 群馬県
+  phone: 027-220-5777
+  address: null
+  url: https://www.city.maebashi.gunma.jp/kurashi_tetsuzuki/1/1/3/18316.html
+  verified_at: '2026-11-18'
+  verified_phone_url: "https://www.city.maebashi.gunma.jp/kurashi_tetsuzuki/1/1/3/18316.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/city_maebashi-4.yaml
+  enabled: true
+  photo: pending
+  note: '掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目）。前橋市保健所の譲渡猫（「猫の飼い主を募集しています」。保護犬の city_maebashi・市民の掲示板の -2・-3 とは別のページ）。2026-11-18 時点で 14 頭。写真は pending（前橋市は規約が転載要申請の事前相談が要るホスト。新しいページの写真は改めて聞く。返事が来るまで出さない）。1 頭 = caption が管理番号の表 1 つで、見出しの無い位置読み（性別の欄が オス・メス でない行は載せず、並びが入れ替わった日は failed で通知）。決まった子の表（caption「譲渡決定♪」。今日も 1 つ残る）は載せない。0 頭の日は Wayback 2025-05 に実物がある（動物の表が無く、見出しが「…の一覧※現在はいません」）。文言に頼らず、枠はあるが管理番号の caption も写真も無い日だけ 0 頭にする。ID は管理番号から作る（同じ管理番号の猫の写真ファイル名が 2026-09 から 2026-11 で変わった）。2019 年の版は別の作りで読めず failed になる。'
+- slug: city_maebashi-5
+  name: 前橋市（飼い主を募集している犬）
+  municipality: 前橋市
+  prefecture: 群馬県
+  phone: 027-220-5777
+  address: null
+  url: https://www.city.maebashi.gunma.jp/kurashi_tetsuzuki/1/1/3/18317.html
+  verified_at: '2026-11-18'
+  verified_phone_url: "https://www.city.maebashi.gunma.jp/kurashi_tetsuzuki/1/1/3/18317.html"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/city_maebashi-5.yaml
+  enabled: true
+  photo: pending
+  note: '掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目）。前橋市保健所の譲渡犬（「犬の飼い主を募集しています」）。仕様の親ページ（4126.html「犬・猫の譲渡事業」）は案内で一覧は無く、犬の一覧はこのページ。2026-11-18 時点で 1 頭（D2026-004）。猫（city_maebashi-4）と同じ作りで 2 段目の並びだけ違う（犬は性別・毛色）。写真は pending（事前相談が要るホスト）。0 頭の日は Wayback 2025-03（見出しが「…の一覧【現在は譲渡対象犬はいません】」）・2026-04（決まった子の表だけが残る）に実物がある。文言に頼らず、枠はあるが管理番号の caption も写真も無い日だけ 0 頭にする。ID は管理番号から作る（city_maebashi-4 と同じ）。'
+- slug: city_akita-4
+  name: 秋田市保健所（譲渡制度に登録されている犬猫）
+  municipality: 秋田市保健所
+  prefecture: 秋田県
+  phone: 018-883-1182
+  address: 〒010-0976 秋田県秋田市八橋南一丁目8-3
+  url: https://www.city.akita.lg.jp/kurashi/pet/1005363/1012582.html
+  verified_at: '2026-11-18'
+  verified_phone_url: "https://www.city.akita.lg.jp/kurashi/pet/1005363/1012582.html"
+  verified_address_url: "https://www.city.akita.lg.jp/kurashi/pet/1005363/1012582.html"
+  kind: adoption
+  species: mixed
+  mode: recipe
+  recipe: recipes/city_akita-4.yaml
+  enabled: true
+  note: '掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目）。「犬・猫の譲渡制度」に登録されている動物のご案内（秋田市保健所の収容動物。公示の city_akita-1・迷子の -2・市民保護の -3 とは別のページ）。2026-11-18 時点で犬 0・猫 5（所有者不明の仔猫として収容した子など）。「犬・ねこの飼い主紹介制度」（1012580。飼い主からの譲渡）は載せない。写真は既存の city_akita-1〜3 と同じ（未指定＝ok）。犬の節の 0 頭の文は猫がいる日にも出るので、犬・猫の両方の節の 0 頭の文がそろった日だけ 0 頭にする（Wayback 2026-03 の犬猫とも「…はいません。」の日で確認。猫のいる日の版 2025-11・2026-11 には猫の文が出ない）。2021-04・2023-03・2025-11 は動物の見出しが h3・欄のラベルが無い別の作りで、今のレシピでは読めず failed で通知される。'
+- slug: city_chiba-9
+  name: 千葉市（育成中の子猫）
+  municipality: 千葉市
+  prefecture: 千葉県
+  phone: 043-258-7817
+  address: 千葉市稲毛区宮野木町445番地1
+  url: https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/koneko-jyouto.html
+  verified_at: '2026-11-18'
+  verified_phone_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/koneko-jyouto.html"
+  verified_address_url: "https://www.city.chiba.jp/hokenfukushi/iryoeisei/seikatsueisei/dobutsuhogo/koneko-jyouto.html"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/city_chiba-9.yaml
+  enabled: true
+  note: '掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目）。千葉市動物保護指導センターの「育成中の子猫を譲渡します」（お見合い会・受け渡しの日程つきの譲渡候補子猫。譲渡猫の city_chiba-8 とは別のページ）。2026-11-18 時点で 2 頭（26102201・26092501。名前の欄は無い）。既存の transfercats.html（city_chiba-8）の 18 頭に同じ子（管理番号・写真）はいないことを 2026-11-17 の保存ページと 2026-11-18 の実ページで確かめた。写真の規約は既存の千葉市のページと同じ（無断転載禁止のみ）で photo: ok。0 頭の日（お見合い会の無い期間）は、h2「対象の子猫」の下に h4 が &nbsp;・欄が全部空の雛形が 1 つ残る（Wayback 2025-02・2026-03 で確認）ので、枠はあるが数字の入った h4 も子猫の写真も無い日を 0 頭にする。2024-07 の版は見出しが「24060603　お見合いが決まりました！」（写真なし）で、お見合いが決まった子は載せて note に出す（city_chiba-7・-8 と同じ）。'
+- slug: pref_iwate_chubu-2
+  name: 岩手県（中部保健所 保護犬猫・迷子）
+  municipality: 中部保健所
+  prefecture: 岩手県
+  phone: 0198-41-3276
+  address: 〒025-0075 岩手県花巻市花城町1-41
+  url: https://www.pref.iwate.jp/kennan/hana_hoken/1013542/1020659.html
+  verified_at: '2026-11-18'
+  verified_phone_url: "https://www.pref.iwate.jp/kennan/hana_hoken/1013542/1020659.html"
+  verified_address_url: "https://www.pref.iwate.jp/kennan/hana_hoken/1013542/1020659.html"
+  kind: stray
+  species: mixed
+  mode: recipe
+  recipe: recipes/pref_iwate_chubu-2.yaml
+  enabled: true
+  note: '掲載漏れの棚卸しで追加（2026-11-18 W006 T640 3 回目）。pref_iwate_chubu（譲渡）は索引から同じページ（1020659）も開くが、rows が【譲渡】の節だけなので、迷子の子が載っていなかった。県の他の保健所（県央 pref_iwate_kennan-2・大船渡・宮古）に合わせて迷子の節を別 slug にした。2026-11-18 時点で 4 頭（犬 2・猫 2。収容期限は R8年11月18〜26日）。収容期限を過ぎた行も、ページが外すまで載せる（期限で絞らない）。電話・所在地はページ末尾の問い合わせ先（花巻保健福祉環境センター・中部保健所）。写真は既存の pref_iwate_chubu と同じ（未指定＝ok）。見出しは日で変わる（2022・2024-04 は h3【保護】、2025-10 は h2【保護】で動物種の欄が無い）が、どの版も同じ行（見出しの次の p.imageright の次の p）として読める（Wayback 5 版で確認）。0 頭の日（2020-11・2026-02）は 0 頭の文が出ず案内の p だけになるので、枠（h1）はあるが写真も管理番号の p も無い日を 0 頭にする。'
