@@ -59,7 +59,8 @@ def _run(slug: str, html: str) -> Result:
 
 
 def _collect(slug: str, html: str) -> Collected:
-    src = dataclasses.replace(SOURCES[slug], enabled=True)
+    # 福岡市は 2026-11-19 の返事で台帳がリンクのみ（T630）。レシピは残すので mode を recipe にして読み続ける
+    src = dataclasses.replace(SOURCES[slug], enabled=True, mode="recipe")
     return collect_one(src, FakeFetcher({src.url: html}))
 
 
