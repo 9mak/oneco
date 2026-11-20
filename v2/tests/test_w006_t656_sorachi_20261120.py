@@ -6,7 +6,6 @@ row_split でこの 1 行を 1 頭ずつに分け、決定印は「方に引取�
 """
 
 import re
-from dataclasses import replace
 from pathlib import Path
 
 from collector.fetch import FakeFetcher
