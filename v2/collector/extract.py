@@ -439,6 +439,8 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
             mgmt = f.get("management_no")
             if img_raw and mgmt and any(mgmt.startswith(p) for p in recipe.id_by_management_no):
                 aid = make_id(source, None, f, detail=source_url if dv else None)   # 写真を共有する子の ID を並び順に依らず固定する
+            if row.split and f.get("name"):
+                aid = make_id(source, None, f, detail=source_url if dv else None)   # 1 枚の写真を共有する子（箇条書きの 1 行 1 頭）は名前から。並び順・先頭の子が消えても ID が動かない
             if recipe.unique_management_no and mgmt and mgmt in seen_mgmt_nos:
                 # 上が最新で、下に同じ番号の古い掲載が残るページ（鹿児島市 No.260039 の退院前の掲載）。写真の有無で ID が別になり下の行が別の子に見えていた
                 res.dropped.append(Dropped("同じ管理番号の行が既にある", row.text()[:80]))

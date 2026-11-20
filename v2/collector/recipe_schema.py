@@ -318,6 +318,8 @@ def validate_recipe_dict(raw: dict[str, Any], source_url: str) -> list[str]:
         c.err("encoding: 40 文字以内の文字列でない")
     if raw.get("rows_regex") is not None:
         c.regex("rows_regex", raw["rows_regex"])
+    if raw.get("row_split") is not None:
+        c.regex("row_split", raw["row_split"])
     for key in ("url", "base_url"):
         if raw.get(key) is not None:
             c.url(key, raw[key])
