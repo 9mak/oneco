@@ -39,7 +39,7 @@ OUTAGE_MIN_RATIO = 0.10
 # 落ちているサイトに 1 ホスト数十件のリクエストを送り続けて遅くなる・迷惑をかけるのを避ける。
 BREAKER_TRIP = 3
 # report の行のうち、通知と state のための内部の印。公開する latest.json・animals-*.json の sources には入れない
-INTERNAL_ROW_KEYS = frozenset({"quarantine_started", "empty_fp", "empty_changed"})
+INTERNAL_ROW_KEYS = frozenset({"quarantine_started", "empty_fp", "empty_changed", "contacts_masked"})
 
 
 def outage(report: list[dict[str, Any]]) -> bool:
@@ -347,6 +347,8 @@ def _run_locked(sources: list[Source], date: str, out_dir: Path, fetcher: Fetche
                "skipped": [t.removeprefix("skip ") for t in trace if t.startswith("skip ")]}
         if status == "empty" and c.empty_fp:
             row["empty_fp"] = c.empty_fp
+        if res and getattr(res, "contacts_masked", 0):
+            row["contacts_masked"] = res.contacts_masked   # 個人の携帯・メールを置き換えた件数（W006 T656）
         report.append(row)
         events.append({"run_id": run_id, "slug": s.slug, "host": (info or {}).get("host") or host, "status": status,
                        "kind": (info or {}).get("kind"), "http_status": (info or {}).get("status"), "seconds": secs,
