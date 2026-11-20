@@ -42,7 +42,8 @@ def _run(slug: str, html: str) -> Result:
 
 def _collect(slug: str, pages: dict[str, str | bytes], redirects: dict[str, str] | None = None,
              status: dict[str, int] | None = None) -> Collected:
-    return collect_one(dataclasses.replace(SOURCES[slug], enabled=True), FakeFetcher(pages, redirects=redirects, status=status))
+    # 福岡市は 2026-11-19 の返事で台帳がリンクのみ（T630）。レシピは残すので mode を recipe にして読み続ける
+    return collect_one(dataclasses.replace(SOURCES[slug], enabled=True, mode="recipe"), FakeFetcher(pages, redirects=redirects, status=status))
 
 
 def _res(c: Collected) -> Result:
