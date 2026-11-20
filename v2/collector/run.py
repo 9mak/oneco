@@ -128,13 +128,10 @@ def _empty_fp(recipe: Recipe, docs: list[Any], visited: list[Any] | None, slug: 
 _CHILDREN = re.compile(r"(?:follow_all|pdf_links) → (\d+) 件")
 
 
-_GONE_IN_MESSAGE = re.compile(r"HTTP (?:404|410): ")
-
-
 def _is_gone(e: FetchError) -> bool:
-    """失敗の本体が HTTP 404・410 か。全部失敗の例外（recipe.py の _raise_if_all_failed）は子の ErrorInfo を持たず
-    other になるので、page_gone（info か先頭一致）に加えて、メッセージに入った子の失敗理由も見る。"""
-    return page_gone(e) or bool(_GONE_IN_MESSAGE.search(str(e)))
+    """失敗の本体が HTTP 404・410 か（page_gone）。全部失敗の例外（recipe.py の _raise_if_all_failed）は最初に失敗した子の
+    ErrorInfo を持つので、メッセージを正規表現で読む必要は無い。"""
+    return page_gone(e)
 
 
 def _all_children_gone(trace: list[str], error: FetchError) -> bool:
