@@ -8,13 +8,14 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import httpx
 
 from .run import DATA_DIR, outage
-from .state import FAILING, GOOD, STATE_DIR, load_state
+from .state import FAILING, GOOD, JST, STATE_DIR, load_state
 
 
 class WebhookMissingError(RuntimeError):
@@ -82,16 +83,24 @@ def send_discord(msg: str) -> None:
     httpx.post(url, json={"content": msg}, timeout=15).raise_for_status()
 
 
-def notify(dry_run: bool = False, data_dir: Path = DATA_DIR, state_dir: Path = STATE_DIR) -> int:
-    reports = sorted(data_dir.glob("report-20??-??-??.json"))
-    if not reports:
-        print("report が無い")
+def _today_jst() -> str:
+    return datetime.now(JST).strftime("%Y-%m-%d")
+
+
+def notify(dry_run: bool = False, data_dir: Path = DATA_DIR, state_dir: Path = STATE_DIR, date: str | None = None) -> int:
+    """date（既定は JST の今日）の report を読んで送る。その日の report が無いとき（収集が途中で止まった日）は、前日の内容を
+    送り直さず、何も送らずに理由を表示して 1 で終わる。run の失敗は collect.sh が末尾で 1 通送り、公開サイトの日付が古いままなら
+    v2-deadman.yml も送るので、ここで送ると同じ日に 3 通になる（W006 T656）。"""
+    date = date or _today_jst()
+    path = data_dir / f"report-{date}.json"
+    if not path.exists():
+        print(f"本日（{date}）の report がありません（収集が途中で止まった可能性）。前日までの内容は送らない")
         return 1
-    report = json.loads(reports[-1].read_text(encoding="utf-8"))
+    report = json.loads(path.read_text(encoding="utf-8"))
     state = load_state(state_dir)
     msg = build_message(report, state)
     if msg is None:
-        print(f"{reports[-1].name}: 通知するものなし。送らない")
+        print(f"{path.name}: 通知するものなし。送らない")
         return 0
     print(msg)
     if dry_run:

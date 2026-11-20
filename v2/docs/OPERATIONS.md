@@ -90,7 +90,7 @@ journalctl -u oneco-collect -f                 # ログ（/var/log/oneco/collect
 ### 1-3. Discord webhook
 
 通知用チャンネル → チャンネル設定 → 連携サービス → ウェブフック → 新しいウェブフック → URL をコピー。`DISCORD_WEBHOOK_URL`。
-試す（Mac の本番クローン）: `cd ~/oneco-collect/v2 && ../.venv/bin/python -m collector notify --dry-run`（文面を出すだけ。`--dry-run` を外すと、直近の report に異常があれば送る。無ければ「異常なし。送らない」）。VPS は `/opt/oneco/.venv/bin/python -m collector notify`。
+試す（Mac の本番クローン）: `cd ~/oneco-collect/v2 && ../.venv/bin/python -m collector notify --dry-run`（文面を出すだけ。`--dry-run` を外すと、今日（JST。`--date YYYY-MM-DD` で変えられる）の report に異常があれば送る。異常が無ければ「通知するものなし。送らない」。今日の report が無い日は前日の内容を送り直さず、何も送らずに exit 1）。VPS は `/opt/oneco/.venv/bin/python -m collector notify`。
 
 ### 1-4. 死活監視（走らなかった日の検知）
 
