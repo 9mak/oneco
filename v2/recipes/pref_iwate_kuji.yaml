@@ -4,9 +4,15 @@
 # 2026-10-04: 行を写真の p.imageleft から説明文の p（h2【譲渡】+ 写真 p の直後）に変え、写真は直前の兄弟から取る
 # （image.scope: prev_siblings, stop_at: row）。愛称・毛色・性別・年齢・備考が取れる。
 # ページの行は全て【譲渡】の節なので台帳 kind は adoption。種別は台帳の species: cat 固定。
+# 2026-11-20 T656: 決まった子は見出しで外す。h2「【譲渡】新しい飼い主さんが決定しました」の下の子が載っていた（さら・我愛羅(ガーラ)・グリード）。
+#   見出しは行の前の直近の h2（section）で見る。行の文には「決定」と書かれないので、行の文では外せない（宮古 pref_iwate_miyako の「【御報告】」と同じ読み方）。
+#   行としては残すので、写真の遡り（stop_at: row）は決まった子の行で止まり、残った子に決まった子の写真が付かない。
 rows: "h2:-soup-contains('【譲渡】') + p.imageleft + p"
+row_filter:
+  field_lacks: {section: ["決定", "決まりました"]}
 image: {selector: "p.imageleft img@src", scope: prev_siblings, stop_at: row}
 fields:
+  section: {from: heading, selector: "h2"}   # 除外判定用（animals には出ない）
   name: {label: "愛称"}
   color: {label: "毛色"}
   sex: {label: "性別"}
