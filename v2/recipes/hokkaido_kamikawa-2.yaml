@@ -19,7 +19,6 @@ fields:
   color: {selector: ":scope > :nth-child(5)"}
   species: {selector: ":scope > :nth-child(2)"}
   location: {selector: ":scope > :nth-child(8) p:nth-child(1)", regex: "^((?:上川|名寄|富良野)保健所|環境生活課)"}
-  phone: {selector: ":scope > :nth-child(8)", regex: "(0\\d{1,4}-\\d{1,4}-\\d{3,4})"}
   note:
     join:
       - {selector: ":scope > :nth-child(7)"}
