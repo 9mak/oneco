@@ -192,7 +192,7 @@ def _repair_phase(sources: list[Source], report: list[dict[str, Any]], events: l
             sha = _entry_sha(fetcher, s.url)
             reason = reason_for(sha)
         if reason:
-            row["repair"] = repair_gate.SKIP_NOTES[reason]
+            row["repair"] = repair_gate.skip_note(reason, http_status)
             ev["repair_skip"] = reason
             _record_skip(out_dir, date, run_id, s.slug, reason, err, sha)
             log.info("%-28s %s", s.slug, row["repair"])
