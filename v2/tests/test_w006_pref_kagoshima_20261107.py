@@ -22,7 +22,12 @@ from collector.run import collect_one
 
 ROOT = Path(__file__).resolve().parent.parent
 FIX = Path(__file__).resolve().parent / "fixtures"
-SOURCES = {s.slug: s for s in load_sources(ROOT / "registry" / "sources.yaml")}
+# -11・-12 は 2026-11-21 の決定（T630）で台帳がリンクのみ・写真なしになった。レシピは残してあり、読めることはここで確かめ続ける
+_LINK_ONLY_NOW = {"pref_kagoshima-11", "pref_kagoshima-12"}
+SOURCES = {
+    s.slug: (dataclasses.replace(s, mode="recipe") if s.slug in _LINK_ONLY_NOW else s)
+    for s in load_sources(ROOT / "registry" / "sources.yaml")
+}
 RAW_NOTES = {r["slug"]: r.get("note") for r in yaml.safe_load((ROOT / "registry" / "sources.yaml").read_text(encoding="utf-8"))["sources"]}
 HOST = "http://dogcat.pref.kagoshima.jp"
 LOST_ACTION = f"{HOST}/Search/Search_lost"
@@ -112,8 +117,8 @@ def test_paging_follows_next_until_last_page():
     assert calls[1][1]["act"] == "next" and calls[1][1]["__RequestVerificationToken"] == "TOKEN-KEISAI-P1"
     assert calls[1][1]["jouto_kubun"] == "keisai" and calls[1][1]["search_type"] == "cat"
     assert calls[2][1]["act"] == "next" and calls[2][1]["__RequestVerificationToken"] == "TOKEN-KEISAI-P2"
-    # 写真は pending（T630 の許諾待ち）、問い合わせ先は個体の備考へ
-    assert SOURCES["pref_kagoshima-12"].photo == "pending"
+    # 写真は no（2026-11-21 の決定でリンクのみ・写真なし。T630）、問い合わせ先は個体の備考へ
+    assert SOURCES["pref_kagoshima-12"].photo == "no"
 
 
 # --- fail-closed ---------------------------------------------------------------
@@ -327,7 +332,8 @@ def test_registry_entries(slug):
     kind, species, entry = EXPECT[slug]
     s = SOURCES[slug]
     assert (s.kind, s.species, s.url) == (kind, species, entry)
-    assert (s.mode, s.enabled, s.photo) == ("recipe", True, "pending")
+    # -11・-12 の台帳は link_only・photo no（mode はこの試験だけ recipe に戻して読んでいる）
+    assert (s.mode, s.enabled, s.photo) == ("recipe", True, "no" if slug in _LINK_ONLY_NOW else "pending")
     assert s.phone == "0995-44-6301" and s.address and "霧島市隼人町小田1493-1" in s.address
     note = RAW_NOTES[slug]
     assert note and "link_only" not in note and "読めない" not in note and "2026-11-07" in note

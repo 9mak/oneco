@@ -5,6 +5,7 @@
 fixture は test_w006_pref_kagoshima_20261107.py と同じ（2026-11-07 の実ページ）。
 """
 
+import dataclasses
 from pathlib import Path
 
 import pytest
@@ -15,7 +16,12 @@ from collector.run import collect_one
 
 ROOT = Path(__file__).resolve().parent.parent
 FIX = Path(__file__).resolve().parent / "fixtures"
-SOURCES = {s.slug: s for s in load_sources(ROOT / "registry" / "sources.yaml")}
+# -11・-12 は 2026-11-21 の決定（T630）で台帳がリンクのみになった。レシピは残してあり、読めることはここで確かめ続ける
+_LINK_ONLY_NOW = {"pref_kagoshima-11", "pref_kagoshima-12"}
+SOURCES = {
+    s.slug: (dataclasses.replace(s, mode="recipe") if s.slug in _LINK_ONLY_NOW else s)
+    for s in load_sources(ROOT / "registry" / "sources.yaml")
+}
 HOST = "http://dogcat.pref.kagoshima.jp"
 LOST_ACTION = f"{HOST}/Search/Search_lost"
 JOUTO_ACTION = f"{HOST}/Search/Search_jouto"
