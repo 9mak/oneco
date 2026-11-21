@@ -6,6 +6,7 @@
 子が載らない日・作りが変わった日は 0 行で「読めなかった」になる（偽の 0 頭を出さない側）。
 """
 
+from dataclasses import replace
 from pathlib import Path
 
 from collector.fetch import FakeFetcher
@@ -26,7 +27,8 @@ def _run(slug: str, fixture: str, mutate=None) -> Collected:
     html = _fx(fixture)
     if mutate:
         html = mutate(html)
-    return collect_one(SOURCES[slug], FakeFetcher({SOURCES[slug].url: html}))
+    # 北海道は 2026-11-20 の返事で道のサイトの掲載元が全部リンクのみになった（T630）。レシピは残すので mode を recipe にして読み続ける
+    return collect_one(replace(SOURCES[slug], mode="recipe"), FakeFetcher({SOURCES[slug].url: html}))
 
 
 def _nos(c: Collected, key: str = "management_no") -> list[str | None]:
@@ -36,13 +38,15 @@ def _nos(c: Collected, key: str = "management_no") -> list[str | None]:
 
 def test_registry_all_pending_photo_and_modes():
     assert len(HOKKAIDO) == 42  # 2026-11-07 の指摘で檜山 -2 と紋別 -5 を足した（もとは 39）。2026-11-17 T640 2 回目で北見の飼い主募集中 okhotsk-6 を足した
+    # 2026-11-20 の北海道の返事（文章・画像の転載は不可）で、全部 link_only・photo no になった（T630）。
+    # レシピは許諾が変わったときのために残すので、レシピを持つ 33 件の顔ぶれは変わらない
     for slug, s in HOKKAIDO.items():
-        assert s.prefecture == "北海道" and s.photo == "pending" and s.enabled, slug
+        assert s.prefecture == "北海道" and s.photo == "no" and s.enabled, slug
         assert s.phone and s.address and s.url.startswith("https://www."), slug
-        assert (s.mode == "recipe") == bool(s.recipe), slug
-        if s.mode == "recipe":
+        assert s.mode == "link_only", slug
+        if s.recipe:
             assert s.recipe_path.exists(), slug
-    recipes = sorted(k for k, v in HOKKAIDO.items() if v.mode == "recipe")
+    recipes = sorted(k for k, v in HOKKAIDO.items() if v.recipe)
     assert recipes == [
         "hokkaido_hidaka-1", "hokkaido_hidaka-2", "hokkaido_hiyama-1", "hokkaido_iburi-1", "hokkaido_iburi-3",
         "hokkaido_ishikari-1", "hokkaido_ishikari-2", "hokkaido_ishikari-3", "hokkaido_kamikawa-1",
