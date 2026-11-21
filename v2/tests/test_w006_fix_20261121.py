@@ -126,6 +126,42 @@ def test_hiroshima_2_cat_page_reads_the_same_new_form():
     assert (a["management_no"], a["sex"], a["shelter_date"], a["location"]) == ("1HD20260255", "雌", "令和8年11月10日", "尾道市因島土生町")
 
 
+# --- 9. 倉敷市: note が「特徴」の最初の空白で切れる ----------------------------------------------------------------------
+KU_URL = "https://www.city.kurashiki.okayama.jp/kurashi/pet/1013042/1028461.html"
+KU_FX = "w006_city_kurashiki_1028461_20261121.html"
+
+
+def _kurashiki(html: str) -> list[dict]:
+    from bs4 import BeautifulSoup
+    recipe = Recipe.load(ROOT / "recipes" / "city_kurashiki.yaml")
+    docs = [Doc(url=KU_URL, html=html, soup=BeautifulSoup(html, "lxml"))]
+    return build(SOURCES["city_kurashiki"], recipe, docs, docs).animals
+
+
+def test_kurashiki_note_keeps_the_whole_feature_line():
+    (a,) = _kurashiki(_fx(KU_FX))
+    assert a["note"] == "首輪なし 右後肢負傷"
+    assert (a["management_no"], a["species"], a["breed"], a["color"], a["sex"], a["location"]) == ("1028461", "dog", "雑種", "茶", "メス", "児島通生")
+
+
+def test_kurashiki_place_breed_and_color_with_a_space_are_not_cut():
+    html = _fx(KU_FX)
+    for old, new in (("<li>保護場所：児島通生</li>", "<li>保護場所：児島 通生　付近</li>"),
+                     ("<li>種類：雑種</li>", "<li>種類：雑種（柴　系）</li>"),
+                     ("<li>毛色：茶</li>", "<li>毛色：茶　白</li>")):
+        assert old in html
+        html = html.replace(old, new)
+    (a,) = _kurashiki(html)
+    assert (a["location"], a["breed"], a["color"]) == ("児島 通生 付近", "雑種(柴 系)", "茶 白")
+
+
+def test_kurashiki_two_animals_on_one_page_are_still_split():
+    html = _fx("w006c_kurashiki_1028185_20261107.html")
+    (a,) = _kurashiki(html)
+    assert (a["sex"], a["color"]) == ("メス、オス", "白茶、茶色")
+    assert a["note"] and a["location"]
+
+
 # --- 8. 仙台市アニパル -3: K26097 の性別が「白茶」、毛色が「避妊雌」（掲載元の書き間違い） ---------------------------------------------
 SD_FX = "w006_city_sendai-3_20261121.html"
 
