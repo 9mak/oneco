@@ -1703,7 +1703,7 @@ sources:
     list_link_pattern: null
     pdf_link_pattern: null
 - slug: city_miyazaki-1
-  name: 宮崎市（保護犬）
+  name: 宮崎市（保護犬・猫）
   municipality: 宮崎市
   prefecture: 宮崎県
   phone: 0985-85-6011
@@ -1712,10 +1712,11 @@ sources:
   verified_at: '2026-10-15'
   verified_phone_url: "https://www.city.miyazaki.miyazaki.jp/life/pet/protection/109676.html"
   kind: sheltered
-  species: dog
+  species: mixed
   mode: recipe
   recipe: recipes/city_miyazaki-1.yaml
   enabled: true
+  note: 'T656 直し 2 回目（2026-11-21）: 「令和8年11月15日保護分（猫・雑種）」のように猫の記事も並ぶのに、台帳が species: dog で猫 3 頭が犬になっていた。species を mixed にして記事の「犬の種類」「猫の種類」の語から決め、名前も保護犬・猫にした。備考が「保護番号 第2号104」の次の行（「頚部外傷、左半身麻痺」）にある日は、保護番号の後ろを備考にする。'
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_miyazaki.py
     requires_js: false

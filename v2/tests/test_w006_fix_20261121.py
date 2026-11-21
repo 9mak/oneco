@@ -52,3 +52,38 @@ def test_funabashi_4_reads_columns_by_header_after_the_species_column_was_added(
         ("cat", "ブリティッシュショートヘアー", "ブラウンティックドタビー", "オス", "小"),
         ("cat", "ペルシャ", "茶", "オス", "小")]
     assert "MC装着" in animals[1]["note"] and animals[1]["note"].endswith("届出日：令和8年11月4日")
+
+
+# --- 2. 宮崎市 -1: 「令和8年11月15日保護分（猫・雑種）」の猫が dog になっていた ------------------------------------------
+MZ_BASE = "https://www.city.miyazaki.miyazaki.jp/life/pet/protection/"
+MZ_CATS = ("419466", "419500", "419672")
+MZ_DOG = "419730"
+
+
+def _miyazaki1(overrides: dict[str, str] | None = None) -> Collected:
+    ids = (*MZ_CATS, MZ_DOG)
+    index = "<html><body><ul>" + "".join(f'<li><a href="/life/pet/protection/{i}.html">記事{i}保護分</a></li>' for i in ids) + "</ul></body></html>"
+    pages = {SOURCES["city_miyazaki-1"].url: index}
+    for i in ids:
+        pages[f"{MZ_BASE}{i}.html"] = (overrides or {}).get(i) or _fx(f"w006_city_miyazaki-1_{i}_20261121.html")
+    return collect_one(SOURCES["city_miyazaki-1"], FakeFetcher(pages))
+
+
+def test_miyazaki_1_reads_cats_as_cats_and_keeps_the_note_after_the_protection_number():
+    animals = _animals(_miyazaki1())
+    by_no = {a["management_no"]: a for a in animals}
+    assert [a["species"] for a in animals] == ["cat", "cat", "cat", "dog"]
+    cat = by_no["第2号104"]
+    assert (cat["breed"], cat["color"], cat["sex"], cat["note"]) == ("雑種", "キジ白", "メス", "頚部外傷、左半身麻痺")
+    assert by_no["第2号105"]["note"] == "頚部外傷" and by_no["第2号107"]["note"] == "外傷、左前肢骨折"
+    dog = by_no["第3号58"]
+    assert (dog["breed"], dog["color"], dog["note"]) == ("柴犬", "黒茶", None)   # 備考が保護番号だけの犬は note なし（管理番号と二重にしない）
+
+
+def test_miyazaki_1_a_real_note_before_the_protection_number_is_still_the_note():
+    html = _fx(f"w006_city_miyazaki-1_{MZ_DOG}_20261121.html")
+    assert "<p>保護番号　第3号58</p>" in html
+    swapped = html.replace("<p>保護番号　第3号58</p>", "<p>人なつこい</p>\n<p>保護番号　第3号58</p>")
+    animals = _animals(_miyazaki1({MZ_DOG: swapped}))
+    dog = next(a for a in animals if a["species"] == "dog")
+    assert (dog["management_no"], dog["note"]) == ("第3号58", "人なつこい")
