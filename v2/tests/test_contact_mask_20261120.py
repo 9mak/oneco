@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import re
 from pathlib import Path
 
@@ -20,7 +21,12 @@ from collector.run import collect_one
 
 ROOT = Path(__file__).resolve().parent.parent
 FIX = Path(__file__).resolve().parent / "fixtures"
-SOURCES = {s.slug: s for s in load_sources(ROOT / "registry" / "sources.yaml")}
+# 長崎犬猫ネット -2 は 2026-11-21 の決定（T630）で台帳がリンクのみになった。レシピは残してあり、読めることはここで確かめ続ける
+_LINK_ONLY_NOW = {"animal_net_nagasaki-2"}
+SOURCES = {
+    s.slug: (dataclasses.replace(s, mode="recipe") if s.slug in _LINK_ONLY_NOW else s)
+    for s in load_sources(ROOT / "registry" / "sources.yaml")
+}
 NAG = "https://animal-net.pref.nagasaki.jp"
 REAL_MOBILE = re.compile(r"(?<![0-9])0[5789]0[-‐−\s.]?[0-9]{4}[-‐−\s.]?[0-9]{4}(?![0-9])")
 REAL_MAIL = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+")
