@@ -126,6 +126,23 @@ def test_hiroshima_2_cat_page_reads_the_same_new_form():
     assert (a["management_no"], a["sex"], a["shelter_date"], a["location"]) == ("1HD20260255", "雌", "令和8年11月10日", "尾道市因島土生町")
 
 
+# --- 12. 鳥取県 -3: 問合番号 05-04（番号に P が付かない）が載っていない ----------------------------------------------------------
+TT_FX = "w006_pref_tottori-3_20261121.html"
+
+
+def test_tottori_3_reads_the_notice_without_a_p_in_its_number_by_its_section():
+    by = {a["management_no"]: a for a in _animals(_run("pref_tottori-3", _fx(TT_FX)))}
+    assert list(by) == ["P08-005", "P08-004", "P08-003", "P08-002", "P07-002", "P07-001", "P05-01", "P05-03", "05-04", "P05-06"]
+    a = by["05-04"]
+    assert a["species"] == "cat" and a["shelter_date"] == "R6年1月7日" and a["location"].startswith("鳥取市青谷町青谷")
+
+
+def test_tottori_2_lost_does_not_pick_up_the_notice_of_the_sheltered_section():
+    animals = _animals(_run("pref_tottori-2", _fx(TT_FX)))
+    nos = [a["management_no"] for a in animals]
+    assert "05-04" not in nos and not any(n.startswith("P") for n in nos) and len(nos) == 38
+
+
 # --- 11. 八戸市 -1: クサガメの species が空 ----------------------------------------------------------------------------------
 def test_hachinohe_1_a_turtle_is_other():
     (a,) = _animals(_run("city_hachinohe-1", _fx("w006_city_hachinohe-1_20261121.html")))

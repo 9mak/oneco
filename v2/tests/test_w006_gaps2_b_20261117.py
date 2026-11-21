@@ -200,6 +200,20 @@ def _tt_numbers(html: str, head: str) -> list[str]:
     return out
 
 
+def _tt_section_numbers(html: str, section: str) -> list[str]:
+    """h2 の見出しが section で始まる節にある届け出（h4「問合番号…」）の番号を、ページの順に拾う（レシピとは別に数える）。"""
+    soup = BeautifulSoup(html, "lxml")
+    out: list[str] = []
+    current = ""
+    for el in soup.find_all(["h2", "h4"]):
+        text = el.get_text(" ", strip=True)
+        if el.name == "h2":
+            current = text
+        elif text.startswith("問合番号") and current.startswith(section):
+            out.append(text.removeprefix("問合番号").strip())
+    return out
+
+
 def test_tottori_lost_reads_every_notice_the_prefecture_still_lists():
     # おまえさん決定（2026-11-18）: 年度で絞らず、県が載せている届け出は全部出す（こちらで期間を決めない）
     html = _fx(TT_FX)
@@ -221,9 +235,9 @@ def test_tottori_sheltered_reads_every_notice_with_a_p_number():
     c = _run(TT_SHELTERED, html)
     assert c.status == "ok", c.error
     animals = c.result.animals
-    assert [a["management_no"] for a in animals] == ["P08-005", "P08-004", "P08-003", "P08-002", "P07-002", "P07-001", "P05-01", "P05-03", "P05-06"]
-    # 令和5年度以前の「問合番号05-04」は頭に P が無く、捜している（M）か保護している（P）かを番号で決められないので読まない（1 件だけ）
-    assert "問合番号05-04" in html and all(a["management_no"] != "05-04" for a in animals)
+    # 2026-11-21（T656 直し 2 回目）: 届け出は番号の頭の文字でなく、いる節（保護しています）で選ぶ。令和5年度以前の節の「05-04」（P が付かない）も読む
+    assert [a["management_no"] for a in animals] == ["P08-005", "P08-004", "P08-003", "P08-002", "P07-002", "P07-001", "P05-01", "P05-03", "05-04", "P05-06"]
+    assert "問合番号05-04" in html and any(a["management_no"] == "05-04" for a in animals)
     assert animals[0]["location"] == "米子市米原" and animals[0]["shelter_date"] == "令和8年10月5日" and "1才くらい" in animals[0]["note"].replace("１", "1")
 
 
@@ -233,7 +247,8 @@ def test_tottori_older_versions_read_the_same_way():
         c = _run(TT_LOST, html)
         assert c.status == "ok" and [a["management_no"] for a in c.result.animals] == _tt_numbers(html, "M"), (name, c.error)
         c = _run(TT_SHELTERED, html)
-        assert c.status == "ok" and [a["management_no"] for a in c.result.animals] == _tt_numbers(html, "P"), (name, c.error)
+        # 「保護しています」の節の届け出は全部（2026-11-21 から。番号に P が付かない 05-04 も）。「捜しています」の節の届け出は読まない
+        assert c.status == "ok" and [a["management_no"] for a in c.result.animals] == _tt_section_numbers(html, "保護しています"), (name, c.error)
     # 2025-11 の版は令和7年度の最初の 5 件が「問合番号07-018」のように M が付かない。番号で区分を決められないので読まない
     assert "問合番号07-018" in _fx("w006_pref_tottori-2_child_wb20251112.html")
 
