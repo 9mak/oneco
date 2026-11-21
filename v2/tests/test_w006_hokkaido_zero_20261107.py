@@ -9,6 +9,7 @@ fixture は 2026-11-07 に保存した実ページ（Wayback で子のいた版�
 - 子のいた日の Wayback 版は empty にならない
 """
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -53,7 +54,8 @@ def _fx(slug: str) -> str:
 
 
 def _run(slug: str, html: str):
-    s = SOURCES[f"hokkaido_{slug}"]
+    # 北海道は 2026-11-20 の返事で道のサイトの掲載元が全部リンクのみになった（T630）。レシピは残すので mode を recipe にして読み続ける
+    s = replace(SOURCES[f"hokkaido_{slug}"], mode="recipe")
     return collect_one(s, FakeFetcher({s.url: html}))
 
 
@@ -86,11 +88,12 @@ def _mutations(html: str, phrase: str, repl: str, each: bool):
         yield str(soup)
 
 
-def test_registry_is_recipe_for_every_zero_slug():
+def test_registry_keeps_the_recipe_for_every_zero_slug():
+    # 2026-11-20 の北海道の返事（文章・画像の転載は不可）でリンクのみ・写真なし（T630）。レシピは許諾が変わったときのために残す
     for slug in ZERO_ALL:
         s = SOURCES[f"hokkaido_{slug}"]
-        assert s.mode == "recipe", slug
-        assert s.photo == "pending"
+        assert s.mode == "link_only" and s.recipe_path.exists(), slug
+        assert s.photo == "no"
 
 
 @pytest.mark.parametrize("slug", ZERO_ALL)

@@ -5,6 +5,7 @@
 - 北海道 北見の飼い主募集中（hokkaido_okhotsk-6）・栃木県の飼い主募集中の犬たち（リンクのみ）・新潟県の猫の募集（リンクのみ）。
 """
 
+from dataclasses import replace
 from pathlib import Path
 
 from bs4 import BeautifulSoup
@@ -22,7 +23,8 @@ def _fx(name: str) -> str:
 
 
 def _run(slug: str, html: str) -> Collected:
-    return collect_one(SOURCES[slug], FakeFetcher({SOURCES[slug].url: html}))
+    # 北海道は 2026-11-20 の返事で道のサイトの掲載元が全部リンクのみになった（T630）。レシピは残すので mode を recipe にして読み続ける
+    return collect_one(replace(SOURCES[slug], mode="recipe"), FakeFetcher({SOURCES[slug].url: html}))
 
 
 def _zero(c: Collected) -> bool:
@@ -91,10 +93,11 @@ OKH = "hokkaido_okhotsk-6"
 
 def test_okhotsk_registry():
     s = SOURCES[OKH]
-    assert s.mode == "recipe" and s.enabled and s.kind == "adoption" and s.prefecture == "北海道" and s.species == "mixed"
+    # 2026-11-20 の北海道の返事（文章・画像の転載は不可）でリンクのみ・写真なし（T630）。レシピは残す
+    assert s.mode == "link_only" and s.photo == "no" and s.enabled and s.kind == "adoption" and s.prefecture == "北海道" and s.species == "mixed"
     # 電話は譲渡の申込先（ページ本文の「申込みは環境生活課」）。おまえさん決定 2026-11-18（#130 reviewer F-07）
     assert s.phone == "0152-41-0632" and "北見市青葉町" in s.address and s.recipe_path.exists()
-    assert s.photo == "pending"  # 北海道は返事待ち・未依頼
+    assert s.photo == "no"  # 2026-11-20 の北海道の返事で写真も文字も載せない（T630）
 
 
 def test_okhotsk_today_reads_the_one_dog():

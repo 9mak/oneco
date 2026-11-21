@@ -41,7 +41,8 @@ def _no_adopt(h: str) -> str:
 def test_hiyama_moved_page_is_added_as_link_only():
     s = SOURCES["hokkaido_hiyama-2"]
     assert s.url == "https://www.hiyama.pref.hokkaido.lg.jp/hk/kks/a0003/b0006/kainusisagasi/139924.html"
-    assert s.mode == "link_only" and s.photo == "pending" and s.enabled and s.prefecture == "北海道"
+    # photo は 2026-11-20 の北海道の返事（文章・画像の転載は不可）で "no"（T630）
+    assert s.mode == "link_only" and s.photo == "no" and s.enabled and s.prefecture == "北海道"
     assert s.phone == "0139-52-6491"
     raw = (ROOT / "registry" / "sources.yaml").read_text(encoding="utf-8")
     assert "台帳に足さない" not in raw and "139924.html" in raw
