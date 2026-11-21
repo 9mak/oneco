@@ -4371,7 +4371,7 @@ sources:
   prefecture: 茨城県
   phone: null
   address: null
-  note: "2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
+  note: "2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない） T656 直し 2 回目（2026-11-21）。返還済みの印「おうちに帰れたワン！」の文字が PDF で崩れる（雑種帰れた犬ワ猫種ン！）と除けず、26-0835 が 11/20 まで載っていたので、崩れても残る「帰れた」を捨てる印にした。"
   url: https://www.pref.ibaraki.jp/hokenfukushi/doshise/hogo/kouji.html
   kind: stray
   species: mixed
@@ -4398,7 +4398,7 @@ sources:
   recipe: recipes/pref_ibaraki_pdf-3.yaml
   enabled: true
   photo: pending
-  note: "2026-10-04 追加。成犬・成猫の PDF（pdf-1）に入っていない子犬・子猫が収容日ごとの koinu*.pdf にだけ載る（当日 9 頭）。2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
+  note: "2026-10-04 追加。成犬・成猫の PDF（pdf-1）に入っていない子犬・子猫が収容日ごとの koinu*.pdf にだけ載る（当日 9 頭）。2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない） T656 直し 2 回目（2026-11-21）。pref_ibaraki_pdf-2 と同じ形式なので、返還済みの印を崩れても残る「帰れた」に直した。"
 - slug: animal_net_nagasaki-1
   name: 長崎犬猫ネット（保健所収容）
   municipality: 長崎犬猫ネット

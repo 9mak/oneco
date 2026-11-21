@@ -126,6 +126,29 @@ def test_hiroshima_2_cat_page_reads_the_same_new_form():
     assert (a["management_no"], a["sex"], a["shelter_date"], a["location"]) == ("1HD20260255", "雌", "令和8年11月10日", "尾道市因島土生町")
 
 
+# --- 5. 茨城県 PDF -2・-3: 「おうちに帰れたワン！」の返還済みの子（26-0835）が載っていた ----------------------------------------
+IB_PDF = "https://www.pref.ibaraki.jp/hokenfukushi/doshise/hogo/documents/kouhyou1111.pdf"
+
+
+def _ibaraki(slug: str, text: str):
+    recipe = Recipe.load(ROOT / "recipes" / f"{slug}.yaml")
+    return build(SOURCES[slug], recipe, [Doc(url=IB_PDF, pdf_text=text, pdf_tables=[])]).animals
+
+
+def test_ibaraki_pdf_drops_the_returned_dog_whose_banner_text_is_broken():
+    text = _fx("w006_pref_ibaraki_pdf-2_returned_wb20261119.txt")   # 11/19 の公表 PDF（掲載元にはもう無い）。バナーの文字が「雑種帰れた犬ワ猫種ン！」と崩れる
+    assert "26-0835" in text and "帰れた犬ワ猫種ン" in text and "帰れたワン" not in text
+    for slug in ("pref_ibaraki_pdf-2", "pref_ibaraki_pdf-3"):   # -3 は同じ形式の PDF（子犬・子猫）。同じ本文で確かめる
+        animals = _ibaraki(slug, text)
+        assert [a["management_no"] for a in animals] == ["26-0834"], slug
+        assert (animals[0]["species"], animals[0]["breed"], animals[0]["location"]) == ("dog", "雑種", "笠間市平町")
+
+
+def test_ibaraki_pdf_keeps_a_dog_without_the_banner():
+    text = _fx("w006_pref_ibaraki_pdf-2_returned_wb20261119.txt").replace("雑種帰れた犬ワ猫種ン！", "雑種 犬猫種")
+    assert [a["management_no"] for a in _ibaraki("pref_ibaraki_pdf-2", text)] == ["26-0834", "26-0835"]
+
+
 # --- 4. 一宮市 -1: PDF の保護場所が折り返す（「一宮市」/「今伊勢町」/「宮後」の 3 行）と、品種・毛色・性別が空になる ---------------------
 IC_PDF = "https://www.city.ichinomiya.aichi.jp/_res/projects/default_project/_page_/001/036/506/1109sagasicyuu.pdf"
 IC_HEAD = "番号 写 真 保護日 保護場所 種類 毛色 性別 成犬・子犬 首輪等\n"
