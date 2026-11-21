@@ -126,6 +126,47 @@ def test_hiroshima_2_cat_page_reads_the_same_new_form():
     assert (a["management_no"], a["sex"], a["shelter_date"], a["location"]) == ("1HD20260255", "雌", "令和8年11月10日", "尾道市因島土生町")
 
 
+# --- 10. 宮崎市 -4〜-7: 迷子・保護の場所が空になる書き方と、掲載番号の 9 桁 --------------------------------------------------------
+def _miyazaki(slug: str, html: str) -> list[dict]:
+    return _animals(_run(slug, html))
+
+
+def test_miyazaki_4_lost_cat_place_after_the_time_and_nine_digit_listing_number():
+    animals = _miyazaki("city_miyazaki-4", _fx("w006_city_miyazaki-4_20261121.html"))
+    by = {a["management_no"]: a for a in animals}
+    assert len(animals) == 34
+    assert by["20260719"]["location"] == "本郷北方のちびっこ広場周辺"
+    assert "202502212" in by and by["202502212"]["location"] == "宮崎市橘通東5丁目(宮銀本店近く)"   # 9 桁の番号が 8 桁に切れていた（20250221 と同じ番号が 2 頭）
+    assert by["20250221"]["location"] == "宮崎市細江"
+    assert len({a["id"] for a in animals}) == 34   # 20260524 は掲載元が同じ番号を 2 頭に付けている（別の届け出）。ID は写真から決まり別になる
+    assert sum(1 for a in animals if a["management_no"] == "20260524") == 2
+    assert [a["location"] for a in animals if not a.get("location")] == []   # 今日の迷子猫に場所が空の子は残らない
+
+
+def test_miyazaki_5_lost_dog_place_after_a_time_range():
+    by = {a["management_no"]: a for a in _miyazaki("city_miyazaki-5", _fx("w006_city_miyazaki-5_20261121.html"))}
+    assert by["20250704"]["location"] == "吉村町西田甲"      # 「夕方から夜にかけて、吉村町西田甲より行方不明です」
+    assert by["20261006"]["location"] == "宮崎市大字赤江" and by["20261007"]["location"] == "宮崎市大字鏡洲"
+
+
+def test_miyazaki_6_sheltered_cat_place_before_de_hogo():
+    by = {a["management_no"]: a for a in _miyazaki("city_miyazaki-6", _fx("w006_city_miyazaki-6_20261121.html"))}
+    assert by["20260107"]["location"] == "宮崎市柳丸町"      # 「令和7年12月23日、宮崎市柳丸町で保護しました」
+    assert by["20250804"]["location"] == "清武町木原付近"    # 「令和7年6月上旬から、清武町木原付近で保護してます」
+    assert by["20250725"]["location"] == "大島町"           # 「令和7年7月23日から、大島町で保護しています」
+    assert by["20261105"]["location"] == "宮崎市清武町今泉甲"   # 従来の「より、…で保護」
+
+
+def test_miyazaki_7_sheltered_dog_place_before_de_hogo():
+    html = ('<html><body><article class="body"><div class="imgRTxtL clearfix"><div><img src="/fs/1/2/3/_/a.jpg"/></div>'
+            "<p>犬保護情報20261120</p><p>柴犬、茶、オス、成齢</p><p>令和8年11月18日、宮崎市大字有田で保護しました。</p></div>"
+            '<div class="imgRTxtL clearfix"><div><img src="/fs/1/2/3/_/b.jpg"/></div>'
+            "<p>犬保護情報202611212</p><p>雑種、白、メス</p><p>令和8年11月20日から、清武町木原付近で保護しています。</p></div></article></body></html>")
+    a, b = _miyazaki("city_miyazaki-7", html)
+    assert (a["management_no"], a["location"]) == ("20261120", "宮崎市大字有田")
+    assert (b["management_no"], b["location"]) == ("202611212", "清武町木原付近")
+
+
 # --- 9. 倉敷市: note が「特徴」の最初の空白で切れる ----------------------------------------------------------------------
 KU_URL = "https://www.city.kurashiki.okayama.jp/kurashi/pet/1013042/1028461.html"
 KU_FX = "w006_city_kurashiki_1028461_20261121.html"
