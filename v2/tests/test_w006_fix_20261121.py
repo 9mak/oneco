@@ -126,6 +126,20 @@ def test_hiroshima_2_cat_page_reads_the_same_new_form():
     assert (a["management_no"], a["sex"], a["shelter_date"], a["location"]) == ("1HD20260255", "雌", "令和8年11月10日", "尾道市因島土生町")
 
 
+# --- 11. 八戸市 -1: クサガメの species が空 ----------------------------------------------------------------------------------
+def test_hachinohe_1_a_turtle_is_other():
+    (a,) = _animals(_run("city_hachinohe-1", _fx("w006_city_hachinohe-1_20261121.html")))
+    assert (a["breed"], a["species"], a["color"]) == ("クサガメ", "other", "黒")
+
+
+def test_hachinohe_1_cats_dogs_and_other_turtle_words():
+    html = _fx("w006_city_hachinohe-1_20261121.html")
+    assert "クサガメ" in html
+    for word, species in (("猫", "cat"), ("犬", "dog"), ("イシガメ", "other"), ("ミドリガメ", "other"), ("かめ", "other")):
+        (a,) = _animals(_run("city_hachinohe-1", html.replace("クサガメ", word)))
+        assert a["species"] == species, word
+
+
 # --- 10. 宮崎市 -4〜-7: 迷子・保護の場所が空になる書き方と、掲載番号の 9 桁 --------------------------------------------------------
 def _miyazaki(slug: str, html: str) -> list[dict]:
     return _animals(_run(slug, html))
