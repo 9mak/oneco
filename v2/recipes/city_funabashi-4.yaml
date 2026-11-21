@@ -1,5 +1,5 @@
 # 船橋市 動物愛護指導センターに寄せられた迷子・保護動物情報（p015893.html）のうち、「迷子動物一覧」＝飼い主さんが探している迷子動物（kind: lost）。
-# city_funabashi-3（個人等が保護している動物）と同じページ・同じ 8 列の表（届出日・迷子になった日と場所・種類・毛色・性別・体格・備考・画像）。caption で表を選ぶ。
+# city_funabashi-3（個人等が保護している動物）と同じページ・同じ 9 列の表（届出日・迷子になった日と場所・動物種・種類・毛色・性別・体格・備考・画像。2026-11-21 に動物種が増えた。それまでは 8 列）。caption で表を選ぶ。
 # 飼い主が届けた迷子の写真は出さない（photo: no。町田の前例）。迷子になった日だけで場所の無い行もある（location は空）。犬猫以外（インコ・うさぎなど）は other。種類の欄が「雑種」だけの行は、毛色の語（キジトラ・三毛など猫だけ・犬だけの語）で決め、決まらなければ種別なし。
 # 0 頭の日の版は Wayback に見つからない。caption「迷子動物一覧」の表はあるが動物の行が 1 つも無い日（「ありません」を含む行を除く）だけ 0 頭にする。
 rows: "table:has(caption:-soup-contains('迷子動物一覧')) tr:has(td)"
@@ -7,14 +7,19 @@ image: "img@src"
 fields:
   shelter_date: {selector: "td:nth-child(2)", regex: "^\\s*(令和\\d+年\\d+月\\d+日)"}
   location: {selector: "td:nth-child(2)", regex: "令和\\d+年\\d+月\\d+日\\s*(.+)$"}
-  species: {selector: "td:nth-child(3)"}
-  breed: {selector: "td:nth-child(3)", regex: "^(?!(?:犬|猫)$)(.+)$"}   # 種類の欄に「雑種」「ベンガル」のように品種だけが書かれる日がある（犬猫の別は色などから推す）
-  color: {selector: "td:nth-child(4)"}
-  sex: {selector: "td:nth-child(5)"}
-  size: {selector: "td:nth-child(6)"}
+  # 列は見出しの語で読む（2026-11-21: 表に「動物種」列が増え、位置で読むと性別の欄に毛色が入った。T656 直し 2 回目）。
+  # 動物種の列が無い古い版は「種類」の列に犬猫の別か品種が書かれる（「動物種」が無ければ「種類」を species にも読む）
+  species: {label: ["動物種", "種類"], header_row: true}
+  breed:
+    join:
+      - {label: "種類", header_row: true, if_header: "動物種"}   # 動物種の列がある表（今）: 種類の列は品種（空欄の行がある）
+      - {label: "種類", header_row: true, unless_header: "動物種", regex: "^(?!(?:犬|猫)$)(.+)$"}   # 動物種の列が無い表（古い版）: 種類の欄に「雑種」「ベンガル」のように品種だけが書かれる日がある（犬猫の別は色などから推す）
+  color: {label: "毛色", header_row: true}
+  sex: {label: "性別", header_row: true}
+  size: {label: "体格", header_row: true}
   note:
     join:
-      - {selector: "td:nth-child(7)"}
+      - {label: "備考", header_row: true}
       - {selector: "td:nth-child(1)", regex: "^\\s*(令和\\d+年\\d+月\\d+日)", prefix: "届出日："}
     sep: " "
 species:
