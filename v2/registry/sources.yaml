@@ -2331,7 +2331,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_hiroshima-1.yaml
   enabled: true
-  note: 所在地は動物愛護センターの代表連絡先（ページ本文に明記）。2026-10-05 に address の括弧書きのメモをここへ移した（公開ページの所在地に出ていた）
+  note: 所在地は動物愛護センターの代表連絡先（ページ本文に明記）。2026-10-05 に address の括弧書きのメモをここへ移した（公開ページの所在地に出ていた） T656 直し 2 回目（2026-11-21）。11/10 の 1 頭の属性が「センター収容日：<日付>。<場所>で<月日>に保護されました。搬入時、…」の書き方で、場所が「保護されました。搬入時、…」になっていたので、この形を読み、場所が「保護」「搬入」で始まるときは捨てるようにした。
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_hiroshima.py
     requires_js: false
@@ -2353,7 +2353,7 @@ sources:
   mode: recipe
   recipe: recipes/pref_hiroshima-2.yaml
   enabled: true
-  note: 所在地は動物愛護センターの代表連絡先（犬のページと同じ施設・同じ表記）。2026-10-05 に address の括弧書きのメモをここへ移した
+  note: 所在地は動物愛護センターの代表連絡先（犬のページと同じ施設・同じ表記）。2026-10-05 に address の括弧書きのメモをここへ移した T656 直し 2 回目（2026-11-21）。迷い犬（pref_hiroshima-1）と同じ新しい書き方（センター収容日：<日付>。<場所>で<月日>に保護されました）を読めるようにした（今日は 0 頭で実例なし）。
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/pref_hiroshima.py
     requires_js: false

@@ -87,3 +87,38 @@ def test_miyazaki_1_a_real_note_before_the_protection_number_is_still_the_note()
     animals = _animals(_miyazaki1({MZ_DOG: swapped}))
     dog = next(a for a in animals if a["species"] == "dog")
     assert (dog["management_no"], dog["note"]) == ("第3号58", "人なつこい")
+
+
+# --- 3. 広島県 -1・-2: 「センター収容日：<日付>。<場所>で<月日>に保護されました。」の書き方 ----------------------------------
+HS_FX = "w006_pref_hiroshima-1_20261121.html"
+HS_OLD = "センター収容日：令和8年11月10日。尾道市因島土生町で11月９日に保護されました。"
+
+
+def test_hiroshima_1_location_is_the_place_not_the_sentence_after_it():
+    (a,) = _animals(_run("pref_hiroshima-1", _fx(HS_FX)))
+    assert (a["management_no"], a["breed"], a["sex"], a["shelter_date"]) == ("1HD20260255", "雑種", "雄", "令和8年11月10日")
+    assert a["location"] == "尾道市因島土生町"
+    assert a["note"] == "搬入時、首輪とリードが着いていました。"
+
+
+def test_hiroshima_1_older_forms_still_read_the_place():
+    html = _fx(HS_FX)
+    assert HS_OLD in html
+    for text, place in (
+        ("センター収容日：令和8年10月30日に世羅郡世羅町で保護されました。", "世羅郡世羅町"),               # 10/31 の書き方
+        ("センターに収容された日：令和8年10月30日<br/>保護された状況：世羅郡世羅町で保護されました。", "世羅郡世羅町"),   # 従来の 2 行
+        ("センターに収容された日：令和8年10月30日<br/>保護された状況：令和8年10月29日に世羅郡世羅町で発見されました。", "世羅郡世羅町")):
+        (a,) = _animals(_run("pref_hiroshima-1", html.replace(HS_OLD, text)))
+        assert a["location"] == place, text
+
+
+def test_hiroshima_1_a_value_starting_with_hogo_or_hanso_is_not_a_place():
+    html = _fx(HS_FX)
+    (a,) = _animals(_run("pref_hiroshima-1", html.replace(HS_OLD, "センター収容日：令和8年11月10日に保護されました。")))
+    assert a.get("location") is None
+
+
+def test_hiroshima_2_cat_page_reads_the_same_new_form():
+    html = _fx(HS_FX).replace("迷い犬", "迷い猫").replace("雑種、推定12歳、雄", "雑種、推定2歳、雌")
+    (a,) = _animals(_run("pref_hiroshima-2", html))
+    assert (a["management_no"], a["sex"], a["shelter_date"], a["location"]) == ("1HD20260255", "雌", "令和8年11月10日", "尾道市因島土生町")
