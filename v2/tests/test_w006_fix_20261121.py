@@ -5,7 +5,9 @@ fixture は 2026-11-21 に取った実ページ（script・style を落とした
 
 from pathlib import Path
 
+from collector.extract import build
 from collector.fetch import FakeFetcher
+from collector.recipe import Doc, Recipe
 from collector.registry import load_sources
 from collector.run import Collected, collect_one
 
@@ -122,3 +124,41 @@ def test_hiroshima_2_cat_page_reads_the_same_new_form():
     html = _fx(HS_FX).replace("迷い犬", "迷い猫").replace("雑種、推定12歳、雄", "雑種、推定2歳、雌")
     (a,) = _animals(_run("pref_hiroshima-2", html))
     assert (a["management_no"], a["sex"], a["shelter_date"], a["location"]) == ("1HD20260255", "雌", "令和8年11月10日", "尾道市因島土生町")
+
+
+# --- 4. 一宮市 -1: PDF の保護場所が折り返す（「一宮市」/「今伊勢町」/「宮後」の 3 行）と、品種・毛色・性別が空になる ---------------------
+IC_PDF = "https://www.city.ichinomiya.aichi.jp/_res/projects/default_project/_page_/001/036/506/1109sagasicyuu.pdf"
+IC_HEAD = "番号 写 真 保護日 保護場所 種類 毛色 性別 成犬・子犬 首輪等\n"
+
+
+def _ichinomiya(text: str):
+    recipe = Recipe.load(ROOT / "recipes" / "city_ichinomiya-1.yaml")
+    return build(SOURCES["city_ichinomiya-1"], recipe, [Doc(url=IC_PDF, pdf_text=text, pdf_tables=[])]).animals
+
+
+def test_ichinomiya_1_joins_the_wrapped_place_and_reads_breed_color_sex_from_the_sex_word():
+    (a,) = _ichinomiya(_fx("w006_city_ichinomiya-1_pdf_20261109.txt"))
+    assert {k: a.get(k) for k in ("species", "management_no", "shelter_date", "location", "breed", "color", "sex", "age", "note")} == {
+        "species": "dog", "management_no": "1 2026.11.9", "shelter_date": "2026.11.9", "location": "今伊勢町宮後",
+        "breed": "シー・ズー", "color": "白・薄茶", "sex": "めす", "age": "成犬", "note": "なし"}
+
+
+def test_ichinomiya_1_the_place_split_before_and_after_the_number_line_is_joined():
+    # Wayback 2022-05 の PDF の折り返し（日付の行の前に「浅井町小日比」、後ろに「野」）を再現した合成。日付の行に場所の語が無い
+    text = IC_HEAD + "浅井町小日比\n1 2022.5.9 雑種 キジ白 オス 成猫 無\n野\n飼い主の方を探しています。\nご連絡ください。"
+    (a,) = _ichinomiya(text)
+    assert (a["location"], a["breed"], a["color"], a["sex"], a["species"]) == ("浅井町小日比野", "雑種", "キジ白", "オス", "cat")
+
+
+def test_ichinomiya_1_two_rows_each_take_their_own_wrapped_lines():
+    text = (IC_HEAD + "一宮市\n1 2026.11.9 今伊勢町 シー・ズー 白・薄茶 めす 成犬 なし\n宮後\n"
+            "一宮市\n2 2026.11.9 浅井町 雑種 黒 おす 成犬 青首輪\n小日比野\n飼い主の方を探しています。\nお心当たりのある方は一宮市動物愛護事務所まで\nご連絡ください。")
+    a, b = _ichinomiya(text)
+    assert (a["location"], a["breed"], a["management_no"]) == ("今伊勢町宮後", "シー・ズー", "1 2026.11.9")
+    assert (b["location"], b["breed"], b["color"], b["sex"], b["management_no"]) == ("浅井町小日比野", "雑種", "黒", "おす", "2 2026.11.9")
+
+
+def test_ichinomiya_1_a_row_without_a_wrapped_line_does_not_take_the_page_notice_as_its_place():
+    text = IC_HEAD + "1 2026.11.9 今伊勢町 シー・ズー 白・薄茶 めす 成犬 なし\n飼い主の方を探しています。\nご連絡ください。"
+    (a,) = _ichinomiya(text)
+    assert a["location"] == "今伊勢町"
