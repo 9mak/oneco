@@ -21,7 +21,6 @@ from bs4 import BeautifulSoup
 from collector.discover import load_known
 from collector.extract import Result
 from collector.fetch import FakeFetcher, Page, validate_response
-from collector.notify import build_message
 from collector.registry import load_sources
 from collector.run import Collected, collect_one
 
@@ -169,11 +168,8 @@ def test_kofu_both_domains_are_known_to_discover():
 # --- 福岡市（わんにゃんよかネット停止中の暫定ページ） -------------------------------------------------------------------
 FUKUOKA_DOG = "https://www.city.fukuoka.lg.jp/hofuku/dobutsukanri/life/doghoused-.html"
 FUKUOKA_CAT = "https://www.city.fukuoka.lg.jp/hofuku/dobutsukanri/life/cathoused.html"
-WANNYAN_DOG = "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/index?type_id=1&sorting_id=4"
-WANNYAN_CAT = "https://www.wannyan.city.fukuoka.lg.jp/yokanet/animal/animal_posts/index?type_id=2&sorting_id=4"
 DOG_PAGE = "w006_city_fukuoka_doghoused_20261031.html"       # 犬 d1877（状況 返還済）の 1 件だけ。いま収容中の子は 0
 CAT_PAGE = "w006_city_fukuoka_cathoused_20261031.html"       # 猫 ｃ1937（状況 死亡）の 1 件だけ
-WANNYAN_503 = "w006_wannyan_fukuoka_503_20261031.html"       # 停止中の画面（HTTP 503・Retry-After 3600）
 INTERIM = {"city_fukuoka_interim-1": (FUKUOKA_DOG, DOG_PAGE), "city_fukuoka_interim-2": (FUKUOKA_CAT, CAT_PAGE)}
 
 
@@ -191,39 +187,13 @@ def _ledger_notes() -> dict[str, str]:
     return {e["slug"]: e.get("note", "") for e in entries}
 
 
-def test_fukuoka_interim_entries_are_added_and_the_wannyan_entries_stay_on_the_old_host():
+def test_fukuoka_interim_entries_keep_their_recipe():
     d, c = SOURCES["city_fukuoka_interim-1"], SOURCES["city_fukuoka_interim-2"]
-    # 暫定 2 件の enabled はここで固定しない（元のサイトが再開したら、まず enabled: false にして二重掲載を止める手順が台帳の note にある）
-    assert (d.url, d.species, d.kind, d.mode) == (FUKUOKA_DOG, "dog", "sheltered", "recipe")
-    assert (c.url, c.species, c.kind, c.mode) == (FUKUOKA_CAT, "cat", "sheltered", "recipe")
+    # 2026-11-19 の返事で台帳はリンクのみ（mode は link_only）。レシピは許諾が変わったときのために残すので、url と recipe だけ見る。
+    # わんにゃんよかネットは閉鎖したので、旧 2 件（wannyan_fukuoka-1・-2）は台帳から消えた
+    assert (d.url, d.species, d.kind) == (FUKUOKA_DOG, "dog", "sheltered")
+    assert (c.url, c.species, c.kind) == (FUKUOKA_CAT, "cat", "sheltered")
     assert d.recipe == c.recipe and d.recipe_path.exists()
-    # 元の 2 件は旧 URL・旧レシピのまま有効（毎晩旧ホストを見るので、再開した日に「読めるようになった自治体」が出る）。これは止めない
-    w1, w2 = SOURCES["wannyan_fukuoka-1"], SOURCES["wannyan_fukuoka-2"]
-    assert (w1.url, w1.enabled, w1.mode, w1.recipe) == (WANNYAN_DOG, True, "recipe", "recipes/wannyan_fukuoka-1.yaml")
-    assert (w2.url, w2.enabled, w2.mode, w2.recipe) == (WANNYAN_CAT, True, "recipe", "recipes/wannyan_fukuoka-2.yaml")
-
-
-def test_fukuoka_notes_say_how_to_notice_the_return_and_how_to_stop():
-    # reviewer F-02: 再開の合図は 2 つ（Discord の「読めるようになった」と、wannyan_fukuoka-1 のエラーが HTTP 503 でなくなること）。
-    # 再開を見つけたら、まず暫定 2 件を enabled: false にして二重掲載を即日止め、削除はその後。暫定ページ上部の「更新日」が止まったままなら暫定側を止める目安。
-    # 4 件のどの note を読んでも手順が分かるように、同じ手順を 4 件に書く
-    notes = _ledger_notes()
-    for slug in ("wannyan_fukuoka-1", "wannyan_fukuoka-2", "city_fukuoka_interim-1", "city_fukuoka_interim-2"):
-        note = notes[slug]
-        assert "読めるようになった自治体" in note, slug
-        assert "HTTP 503" in note and "wannyan_fukuoka-1" in note, slug
-        assert "enabled: false" in note and "削除はその後" in note, slug
-        assert "更新日" in note, slug
-        assert "city_fukuoka_interim-1・-2" in note, slug
-    assert "台帳から消す" in notes["city_fukuoka_interim-1"] and "revert" in notes["city_fukuoka_interim-1"]
-
-
-def test_fukuoka_notes_say_what_to_do_when_the_citys_zero_day_wording_shows_up():
-    # reviewer F-06: 市のページが 0 頭の日（ブロックが 1 つも無い日）の文言は未確認。出たらその日のページを保存して empty_text を足す
-    # 犬のページ（-1）は 2026-11-06 に文言を確認して empty_absent を置いた（#93）。猫のページ（-2）は未確認のまま
-    notes = _ledger_notes()
-    assert "ブロックが 1 つも無い日" in notes["city_fukuoka_interim-2"] and "empty_text を足す" in notes["city_fukuoka_interim-2"]
-    assert "その日のページを保存して empty_absent か empty_text を直す" in notes["city_fukuoka_interim-1"]
 
 
 def test_fukuoka_note_cites_the_date_and_url_of_the_link_clause_check():
@@ -272,29 +242,7 @@ def test_fukuoka_blocks_that_cannot_be_read_are_not_zero():
     assert c.status == "failed" and _res(c).animals == []
 
 
-def test_fukuoka_wannyan_maintenance_screen_is_a_failure_so_the_old_entries_watch_for_the_return():
-    html = _fx(WANNYAN_503)
-    assert "メンテナンス中" in _text(html)
-    for slug, url in (("wannyan_fukuoka-1", WANNYAN_DOG), ("wannyan_fukuoka-2", WANNYAN_CAT)):
-        c = _collect(slug, {url: html}, status={url: 503})
-        assert c.status == "failed"
-        assert c.error_info is not None and (c.error_info["kind"], c.error_info["status"]) == ("http", 503)
-
-
-def test_fukuoka_the_return_of_the_old_entries_is_reported_the_next_morning():
-    # 旧 2 件が前日 failed・今日 ok になった日の通知（run の report と state の形）。interim の 2 件はその間ずっと ok のまま
-    names = {s: SOURCES[s].name for s in ("wannyan_fukuoka-1", "wannyan_fukuoka-2", "city_fukuoka_interim-1")}
-    report = [{"slug": "wannyan_fukuoka-1", "name": names["wannyan_fukuoka-1"], "status": "ok", "count": 3, "error": None},
-              {"slug": "wannyan_fukuoka-2", "name": names["wannyan_fukuoka-2"], "status": "empty", "count": 0, "error": None},
-              {"slug": "city_fukuoka_interim-1", "name": names["city_fukuoka_interim-1"], "status": "empty", "count": 0, "error": None}]
-    state = {"sources": {"wannyan_fukuoka-1": {"prev_status": "failed"}, "wannyan_fukuoka-2": {"prev_status": "failed"},
-                         "city_fukuoka_interim-1": {"prev_status": "empty"}}}
-    msg = build_message(report, state)
-    assert msg is not None and "読めるようになった自治体 2 件" in msg
-    assert names["wannyan_fukuoka-1"] in msg and names["wannyan_fukuoka-2"] in msg and names["city_fukuoka_interim-1"] not in msg
-
-
 def test_fukuoka_discover_knows_the_citys_own_domain():
     k = load_known()["city.fukuoka.lg.jp"]
     assert k.status == "covered" and k.slugs == ["city_fukuoka_interim-1", "city_fukuoka_interim-2"]
-    assert "wannyan" in k.note       # リンク集が指すのは wannyan.city.fukuoka.lg.jp。台帳の元の 2 件がそのドメインのまま
+    assert "wannyan" in k.note       # リンク集が指すのは wannyan.city.fukuoka.lg.jp（閉鎖済み）
