@@ -141,7 +141,7 @@ def cmd_discover(args: argparse.Namespace) -> int:
 def cmd_notify(args: argparse.Namespace) -> int:
     from .notify import notify
 
-    return notify(dry_run=args.dry_run)
+    return notify(dry_run=args.dry_run, date=args.date)
 
 
 def cmd_promote(args: argparse.Namespace) -> int:
@@ -229,8 +229,9 @@ def main(argv: list[str] | None = None) -> int:
     a.add_argument("--depth", type=int, choices=(1, 2), default=1, help="--pages: 何段たどるか（2 は候補ページからもう 1 段）")
     a.add_argument("--out", help="--pages: 全件の JSON の出力先（既定は ONECO_LOG_DIR か v2/logs の discover-pages-<日付>.json）")
     a.set_defaults(fn=cmd_discover)
-    a = sub.add_parser("notify", help="直近 report の異常を Discord へ")
+    a = sub.add_parser("notify", help="今日（JST）の report の異常を Discord へ。今日の report が無ければ送らず 1 で終わる")
     a.add_argument("--dry-run", action="store_true")
+    a.add_argument("--date", help="YYYY-MM-DD（既定は JST の今日。run に --date を渡した日の通知をやり直すとき）")
     a.set_defaults(fn=cmd_notify)
     a = sub.add_parser("promote", help="animals-<date>.json を latest.json に戻す（回線断などで据え置かれた日を確認のうえ公開）")
     a.add_argument("--date", required=True, help="YYYY-MM-DD")

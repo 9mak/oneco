@@ -8,7 +8,8 @@ empty は ok と同じ扱いで、通知も AI 修復も止まる。子のいる
 照合の範囲と判定は build と同じ関数（collector.extract.empty_hits）を使う。別実装はしない。
 empty_container と全行除外の根拠は、行が取れている日には成立しないので対象外。
 
---notify: 当たる slug の集合が前回（data/audit_empty_state.json）と変わった日だけ Discord に 1 通。
+--notify: 当たる slug の集合が前回（data/audit_empty_state.json）と変わった日に Discord に 1 通。同じ顔ぶれが続く間も、月曜（JST）だけは
+          1 件以上当たっていればもう 1 通（直さないまま放置されないように。W006 T656）。
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ import json
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import httpx
@@ -96,44 +97,63 @@ def load_items(slug_prefix: str | None = None) -> list[tuple[Source, Recipe]]:
 
 
 # --- 通知 --------------------------------------------------------------------
-def _load_prev(state_path: Path) -> set[str]:
+def _load_state(state_path: Path) -> dict[str, object]:
     try:
-        return set(json.loads(state_path.read_text(encoding="utf-8")).get("slugs") or [])
-    except (OSError, ValueError, AttributeError):
-        return set()
+        raw = json.loads(state_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return raw if isinstance(raw, dict) else {}
+
+
+def _load_prev(state_path: Path) -> set[str]:
+    return set(_load_state(state_path).get("slugs") or [])  # type: ignore[call-overload]
 
 
 def notify_if_changed(
-    findings: list[Finding], state_path: Path, send: Callable[[str], None]
+    findings: list[Finding],
+    state_path: Path,
+    send: Callable[[str], None],
+    today: date | None = None,
 ) -> bool:
-    """当たる slug の集合が前回と変わったときだけ send を呼ぶ。送れなかった（send が例外）日は state を書かない。"""
+    """当たる slug の集合が前回と変わった日に send を呼ぶ。集合が同じでも、月曜（JST）は 1 件以上当たっていれば 1 通送る
+    （直さないまま放置されるのを防ぐ。W006 T656）。同じ日は 1 通まで（state の notified に最後に送った日を持つ）。
+    送れなかった（send が例外）日は state を書かない。"""
+    today = today or datetime.now(JST).date()
     now = {f.slug for f in findings}
-    prev = _load_prev(state_path)
-    if now != prev:
+    state = _load_state(state_path)
+    prev = set(state.get("slugs") or [])  # type: ignore[call-overload]
+    notified = state.get("notified")
+    changed = now != prev
+    reminder = not changed and bool(now) and today.weekday() == 0 and notified != today.isoformat()
+    if changed or reminder:
         added, removed = sorted(now - prev), sorted(prev - now)
-        lines = [
-            f"oneco 0 頭の根拠の監査: 子のいた日の保存ページにも 0 頭の根拠が当たる slug が {len(now)} 件"
-            f"（前回 {len(prev)} 件・増 {len(added)}・減 {len(removed)}）。行の読み方が崩れても通知なしで「本日は 0 頭」になる"
-        ]
-        if added:
-            lines.append("増えた: " + "・".join(added))
-        if removed:
-            lines.append("解消: " + "・".join(removed))
+        if changed:
+            lines = [
+                f"oneco 0 頭の根拠の監査: 子のいた日の保存ページにも 0 頭の根拠が当たる slug が {len(now)} 件"
+                f"（前回 {len(prev)} 件・増 {len(added)}・減 {len(removed)}）。行の読み方が崩れても通知なしで「本日は 0 頭」になる"
+            ]
+            if added:
+                lines.append("増えた: " + "・".join(added))
+            if removed:
+                lines.append("解消: " + "・".join(removed))
+        else:
+            lines = [
+                f"oneco 0 頭の根拠の監査（月曜の再通知）: 前回と同じ {len(now)} 件が、まだ直っていない。"
+                "子のいた日の保存ページにも 0 頭の根拠が当たるので、行の読み方が崩れても通知なしで「本日は 0 頭」になる"
+            ]
         seen: set[str] = set()
         for f in findings:  # 現在当たっている slug を 1 行ずつ（最初の根拠だけ）
             if f.slug not in seen:
                 seen.add(f.slug)
                 lines.append(f"- {f.slug}: {f.kind}「{f.detail[:40]}」×{f.count}")
         send("\n".join(lines)[:1900])
+        notified = today.isoformat()
     state_path.parent.mkdir(parents=True, exist_ok=True)
-    state_path.write_text(
-        json.dumps(
-            {"date": datetime.now(JST).strftime("%Y-%m-%d"), "slugs": sorted(now)},
-            ensure_ascii=False,
-        ),
-        encoding="utf-8",
-    )
-    return now != prev
+    out: dict[str, object] = {"date": today.isoformat(), "slugs": sorted(now)}
+    if notified:
+        out["notified"] = notified
+    state_path.write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
+    return changed or reminder
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -146,7 +166,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument(
         "--notify",
         action="store_true",
-        help="当たる slug の集合が前回と変わったときだけ Discord に送る",
+        help="当たる slug の集合が前回と変わったとき、と、同じ顔ぶれが続いても月曜（JST）に Discord へ送る",
     )
     a = ap.parse_args(argv)
     res = audit(a.data, load_items(a.slug))

@@ -13,6 +13,7 @@ AI 修復の試行 198 回（2026-10-16〜11-05 の実績）のうち、半分�
   once_a_day      同じ slug は 1 日 1 回まで
   quarantined     同じ失敗の指紋で 3 回試して直らない。入口ページ・コード・RECIPE.md が変わるまで呼ばない
   entry_gone      入口 URL そのものが 404・410（レシピでは直せない）
+  entry_blocked   入口 URL そのものが 401・403（サイト側がアクセスを拒否している。レシピでは直せない。W006 T656）
   children_gone   follow_all / pdf_links で辿った子が全部 404（掲載期限切れで市が個別ページだけ消す日）
 """
 
@@ -57,6 +58,15 @@ SKIP_NOTES = {
     "entry_gone": "AI 修復はしない（入口ページが 404 で、レシピでは直せない）",
     "children_gone": "AI 修復はしない（辿った子ページがすべて 404。掲載期限切れなどで市が個別ページだけ消した日）",
 }
+
+
+def skip_note(reason: str, status: int | None = None) -> str:
+    """呼ばなかった理由の表示用の文。entry_blocked は原因（HTTP 401・403）が分かる形にする。"""
+    if reason == "entry_blocked":
+        return f"AI 修復はしない（サイト側でアクセスが制限されています（HTTP {status}）。レシピでは直せない）"
+    return SKIP_NOTES[reason]
+
+
 QUARANTINE_NOTE = (
     "AI 修復を隔離した（同じ失敗で 3 回試して直らない。入口ページかコードが変わるまで呼ばない）"
 )
@@ -134,6 +144,17 @@ def entry_gone(info: dict[str, Any] | None, entry_url: str) -> bool:
     )
 
 
+def entry_blocked(info: dict[str, Any] | None, entry_url: str) -> bool:
+    """入口 URL 自身の 401・403。サイト側の拒否（ログイン要求・アクセス制限）で、入口の本文が取れないので指紋も作れず、
+    「同じ失敗で 3 回」の記録（record_attempt）にも乗らない。毎日・同日に何度も呼んでしまうのを、ここで止める。"""
+    return (
+        bool(info)
+        and info.get("kind") == "http"
+        and info.get("status") in (401, 403)
+        and info.get("url") == entry_url
+    )
+
+
 def skip_reason(
     state: dict[str, Any],
     slug: str,
@@ -151,6 +172,8 @@ def skip_reason(
         return "children_gone"
     if entry_gone(info, entry_url):
         return "entry_gone"
+    if entry_blocked(info, entry_url):
+        return "entry_blocked"
     if host and host in state.get("repair_hosts", {}):
         return "host_suspect"
     r = state.get("sources", {}).get(slug, {}).get("repair")

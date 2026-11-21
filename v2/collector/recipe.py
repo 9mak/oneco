@@ -454,7 +454,7 @@ class Executor:
             sel, attr = parse_sel(step["follow_all"])
             limit = int(step.get("max", 200))
             tried = 0
-            failed: list[str] = []
+            failed: list[tuple[str, FetchError]] = []
             for d in docs:
                 seen: set[str] = set()
                 hrefs = [_attr(el, attr) for el in (d.soup.select(sel) if d.soup else [])]
@@ -503,7 +503,7 @@ class Executor:
             sel, attr = parse_sel(step["pdf_links"])
             limit = int(step.get("max", 50))
             tried = 0
-            failed = []
+            failed = []   # list[tuple[str, FetchError]]
             for d in docs:
                 seen = set()
                 for el in d.soup.select(sel) if d.soup else []:
@@ -593,7 +593,7 @@ class Executor:
                 break
         return out
 
-    def _child(self, step: dict[str, Any], url: str, failed: list[str], fetch: Callable[[], T]) -> T | None:
+    def _child(self, step: dict[str, Any], url: str, failed: list[tuple[str, FetchError]], fetch: Callable[[], T]) -> T | None:
         """follow_all / pdf_links の子 1 本を取る。step に skip_errors: true があり、失敗が「ページが無い」
         （HTTP 404・410）なら、その 1 本だけ捨てて trace に残し、None を返す（群馬県・岐阜県: 一覧に
         消えた個別ページへのリンクが残り、1 本の 404 で slug 全体が落ちていた）。サーバーエラー・接続失敗は
@@ -603,16 +603,16 @@ class Executor:
         except FetchError as e:
             if not step.get("skip_errors") or not page_gone(e):
                 raise
-            failed.append(f"{url}: {e}")
+            failed.append((f"{url}: {e}", e))
             self.trace.append(f"skip {url}: {e}")
             return None
 
     @staticmethod
-    def _raise_if_all_failed(kind: str, tried: int, failed: list[str]) -> None:
+    def _raise_if_all_failed(kind: str, tried: int, failed: list[tuple[str, FetchError]]) -> None:
         """skip_errors で捨てた結果、辿ろうとした子が全部失敗していたら従来どおり失敗にする（全部 404 の日を 0 頭扱いにしない）。"""
         if tried and len(failed) == tried:
-            raise FetchError(f"{kind}: 辿った {tried} 本がすべて取得に失敗（{failed[0]}）",
-                             getattr(failed[0], "info", None) if failed and isinstance(failed[0], FetchError) else None)
+            first_msg, first = failed[0]
+            raise FetchError(f"{kind}: 辿った {tried} 本がすべて取得に失敗（{first_msg}）", first.info)   # 最初に失敗した子の理由を引き継ぐ
 
 
 def _json_values(obj: Any, path: str) -> list[Any]:

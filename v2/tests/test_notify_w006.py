@@ -81,8 +81,8 @@ def test_notify_reads_state_but_never_writes(tmp_path, monkeypatch):
     class _R:
         def raise_for_status(self): ...
     monkeypatch.setattr(nt.httpx, "post", lambda url, json, timeout: posted.append(json) or _R())
-    assert nt.notify(dry_run=True, data_dir=data, state_dir=sd) == 0 and not posted
-    assert nt.notify(data_dir=data, state_dir=sd) == 0 and len(posted) == 1
+    assert nt.notify(dry_run=True, data_dir=data, state_dir=sd, date="2026-10-02") == 0 and not posted
+    assert nt.notify(data_dir=data, state_dir=sd, date="2026-10-02") == 0 and len(posted) == 1
     assert (sd / "sources.json").read_text(encoding="utf-8") == before
 
 
