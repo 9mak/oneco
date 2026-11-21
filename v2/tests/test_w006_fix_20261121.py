@@ -126,6 +126,33 @@ def test_hiroshima_2_cat_page_reads_the_same_new_form():
     assert (a["management_no"], a["sex"], a["shelter_date"], a["location"]) == ("1HD20260255", "雌", "令和8年11月10日", "尾道市因島土生町")
 
 
+# --- 6. 鹿児島県 -2・-8・-9・-10: 「※新しい飼い主さんが決まりました」の 26D0219 が載っていた ------------------------------------
+KG_FX = "w006_pref_kagoshima-9_20261121.html"   # 保健所・動物管理所の譲渡対象犬（1 ページ目）。-2・-8・-10 も同じ行の作り
+
+
+def _kagoshima(slug: str, html: str):
+    recipe = Recipe.load(ROOT / "recipes" / f"{slug}.yaml")
+    from bs4 import BeautifulSoup
+    return build(SOURCES[slug], recipe, [Doc(url=SOURCES[slug].url, html=html, soup=BeautifulSoup(html, "lxml"))]).animals
+
+
+def test_kagoshima_drops_the_dog_whose_new_owner_is_decided():
+    html = _fx(KG_FX)
+    assert "※新しい飼い主さんが決まりました" in html
+    for slug in ("pref_kagoshima-2", "pref_kagoshima-8", "pref_kagoshima-9", "pref_kagoshima-10"):
+        nos = [a["management_no"] for a in _kagoshima(slug, html)]
+        assert "26D0219" not in nos and len(nos) >= 5, slug
+    assert "26D0219" in [a["management_no"] for a in _kagoshima("pref_kagoshima-9", html.replace("※新しい飼い主さんが決まりました", "※"))]
+
+
+def test_kagoshima_keeps_rows_that_only_say_a_new_owner_will_be_decided_later():
+    html = _fx(KG_FX)
+    kept = _kagoshima("pref_kagoshima-9", html.replace("※新しい飼い主さんが決まりました", "※里親さんが決まりましたら、掲載を終了します"))
+    assert "26D0219" in [a["management_no"] for a in kept]
+    kept = _kagoshima("pref_kagoshima-9", html.replace("※新しい飼い主さんが決まりました", "※譲渡が決まりましたら掲載を終了します"))
+    assert "26D0219" in [a["management_no"] for a in kept]
+
+
 # --- 5. 茨城県 PDF -2・-3: 「おうちに帰れたワン！」の返還済みの子（26-0835）が載っていた ----------------------------------------
 IB_PDF = "https://www.pref.ibaraki.jp/hokenfukushi/doshise/hogo/documents/kouhyou1111.pdf"
 
