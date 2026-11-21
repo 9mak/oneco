@@ -126,6 +126,33 @@ def test_hiroshima_2_cat_page_reads_the_same_new_form():
     assert (a["management_no"], a["sex"], a["shelter_date"], a["location"]) == ("1HD20260255", "雌", "令和8年11月10日", "尾道市因島土生町")
 
 
+# --- 7. 長崎犬猫ネット -1: 里親募集のページなのに sheltered・収容場所が空の子の場所が「問い合わせ先」になる ----------------------------------
+NAG = "https://animal-net.pref.nagasaki.jp"
+
+
+def _nagasaki1(detail: str) -> Collected:
+    lst = '<html><body><div class="list-area"><a href="/animal/no-20198/">No.20198</a></div></body></html>'
+    none = '<html><body><div class="list-area"><p>投稿がありません</p></div></body></html>'
+    pages = {f"{NAG}/syuuyou/?animal-type=dog": lst, f"{NAG}/syuuyou/?animal-type=cat": none,
+             f"{NAG}/syuuyou/?animal-type=others": none, f"{NAG}/animal/no-20198/": detail}
+    return collect_one(SOURCES["animal_net_nagasaki-1"], FakeFetcher(pages))
+
+
+def test_nagasaki_1_is_an_adoption_list_and_an_empty_place_is_not_the_contact_heading():
+    s = SOURCES["animal_net_nagasaki-1"]
+    assert s.kind == "adoption" and "募集中一覧" in s.name and "保健所収容" in s.name
+    (a,) = _animals(_nagasaki1(_fx("w006_animal_net_nagasaki-1_no20198_20261121.html")))
+    assert (a["management_no"], a["species"], a["breed"], a["sex"], a["color"], a["size"]) == ("20198", "dog", "ミックス(雑種)", "オス", "白黒", "小")
+    assert a.get("location") is None and a.get("shelter_date") is None   # 収容場所・収容日は空欄。「問い合わせ先」を場所にしない
+
+
+def test_nagasaki_1_a_real_place_is_still_read():
+    html = _fx("w006_animal_net_nagasaki-1_no20198_20261121.html")
+    assert "<p>収容場所</p>\n<p></p>" in html
+    (a,) = _animals(_nagasaki1(html.replace("<p>収容場所</p>\n<p></p>", "<p>収容場所</p>\n<p>長崎市</p>")))
+    assert a["location"] == "長崎市"
+
+
 # --- 6. 鹿児島県 -2・-8・-9・-10: 「※新しい飼い主さんが決まりました」の 26D0219 が載っていた ------------------------------------
 KG_FX = "w006_pref_kagoshima-9_20261121.html"   # 保健所・動物管理所の譲渡対象犬（1 ページ目）。-2・-8・-10 も同じ行の作り
 

@@ -4400,7 +4400,7 @@ sources:
   photo: pending
   note: "2026-10-04 追加。成犬・成猫の PDF（pdf-1）に入っていない子犬・子猫が収容日ごとの koinu*.pdf にだけ載る（当日 9 頭）。2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない） T656 直し 2 回目（2026-11-21）。pref_ibaraki_pdf-2 と同じ形式なので、返還済みの印を崩れても残る「帰れた」に直した。"
 - slug: animal_net_nagasaki-1
-  name: 長崎犬猫ネット（保健所収容）
+  name: 長崎犬猫ネット（募集中一覧・保健所収容）
   municipality: 長崎犬猫ネット
   prefecture: 長崎県
   phone: 095-895-2364
@@ -4410,8 +4410,8 @@ sources:
   verified_at: '2026-10-15'
   verified_phone_url: "https://animal-net.pref.nagasaki.jp/syuuyou"
   verified_address_url: "https://animal-net.pref.nagasaki.jp/syuuyou"
-  note: "県のまとめページ。個体の収容先（保健所）は別のことがある"
-  kind: sheltered
+  note: "県のまとめページ。個体の収容先（保健所）は別のことがある。T656 直し 2 回目（2026-11-21）。ページは保健所に収容された子の里親募集（「終生の里親を募集します」。収容日・収容場所の欄は空のことが多い）なのに区分が sheltered だったので adoption にし、名前を募集中一覧に寄せた（長崎県への 11/11 のお伺いで「里親募集（譲渡）として載せている子のページにも広告が出ます」と伝えてある）。収容場所が空の子の場所に次の見出し「問い合わせ先」が入るのも直した。"
+  kind: adoption
   species: mixed
   mode: recipe
   recipe: recipes/animal_net_nagasaki-1.yaml
