@@ -6,6 +6,7 @@ row_split でこの 1 行を 1 頭ずつに分け、決定印は「方に引取�
 """
 
 import re
+from dataclasses import replace
 from pathlib import Path
 
 from collector.fetch import FakeFetcher
@@ -23,7 +24,8 @@ def _run(fixture: str, mutate=None) -> Collected:
     html = (FIX / fixture).read_text(encoding="utf-8")
     if mutate:
         html = mutate(html)
-    return collect_one(SOURCES["hokkaido_sorachi-1"], FakeFetcher({SOURCES["hokkaido_sorachi-1"].url: html}))
+    # 台帳は #147 で link_only。レシピは許諾が変わったときのため mode を recipe にして読み続ける
+    return collect_one(replace(SOURCES["hokkaido_sorachi-1"], mode="recipe"), FakeFetcher({SOURCES["hokkaido_sorachi-1"].url: html}))
 
 
 def test_takigawa_two_bullet_cats_are_read_one_each():

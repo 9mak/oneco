@@ -5,6 +5,7 @@
 """
 
 import re
+from dataclasses import replace
 from pathlib import Path
 
 from collector.fetch import FakeFetcher
@@ -14,7 +15,7 @@ from collector.run import Collected, collect_one
 ROOT = Path(__file__).resolve().parent.parent
 FIX = Path(__file__).resolve().parent / "fixtures"
 SOURCES = {s.slug: s for s in load_sources(ROOT / "registry" / "sources.yaml")}
-S = SOURCES["hokkaido_kamikawa-2"]
+S = replace(SOURCES["hokkaido_kamikawa-2"], mode="recipe")  # 台帳は #147 で link_only。レシピは許諾が変わったときのため読み続ける
 LIVE = "w006_hokkaido_kamikawa-2_20261120.html"
 ZERO = ["w006_hokkaido_kamikawa-2_zero_wb20251107.html", "w006_hokkaido_kamikawa-2_zero_wb20260208.html"]
 EXPIRED = "w006_hokkaido_kamikawa-2_expired_wb20260206.html"
@@ -28,9 +29,11 @@ def _run(fixture: str, mutate=None) -> Collected:
     return collect_one(S, FakeFetcher({S.url: html}))
 
 
-def test_registry_is_recipe_with_pending_photo():
-    assert S.mode == "recipe" and S.recipe == "recipes/hokkaido_kamikawa-2.yaml" and S.recipe_path.exists()
-    assert S.photo == "pending" and S.kind == "adoption" and S.enabled
+def test_registry_is_link_only_with_recipe_kept():
+    # #147（北海道の返事）で link_only・photo no。レシピは許諾が変わったときのために残す
+    r = SOURCES["hokkaido_kamikawa-2"]
+    assert r.mode == "link_only" and r.recipe == "recipes/hokkaido_kamikawa-2.yaml" and r.recipe_path.exists()
+    assert r.photo == "no" and r.kind == "adoption" and r.enabled
 
 
 def test_three_cats_in_the_table():

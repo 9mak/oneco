@@ -126,8 +126,8 @@ else
   echo "== discover --pages: 毎月最初の月曜だけ（今日は飛ばす）"
 fi
 
-# 5a. 0 頭の根拠が「子のいた日の保存ページ」にも当たるレシピの監査（W006 T631）。当たる slug の集合が前回と変わった日だけ
-#     Discord に 1 通。discover と同じく、失敗しても日次収集の失敗に数えない（step を使わず rc を変えない）
+# 5a. 0 頭の根拠が「子のいた日の保存ページ」にも当たるレシピの監査（W006 T631）。当たる slug の集合が前回と変わった日と、
+#     同じ顔ぶれが続く間の月曜（JST）に Discord へ 1 通。discover と同じく、失敗しても日次収集の失敗に数えない（step を使わず rc を変えない）
 if "$PY" "$V2_DIR/ops/audit_empty.py" --data "$V2_DIR/data" --notify; then
   echo "-- audit_empty: ok"
 else

@@ -90,7 +90,7 @@ journalctl -u oneco-collect -f                 # ログ（/var/log/oneco/collect
 ### 1-3. Discord webhook
 
 通知用チャンネル → チャンネル設定 → 連携サービス → ウェブフック → 新しいウェブフック → URL をコピー。`DISCORD_WEBHOOK_URL`。
-試す（Mac の本番クローン）: `cd ~/oneco-collect/v2 && ../.venv/bin/python -m collector notify --dry-run`（文面を出すだけ。`--dry-run` を外すと、直近の report に異常があれば送る。無ければ「異常なし。送らない」）。VPS は `/opt/oneco/.venv/bin/python -m collector notify`。
+試す（Mac の本番クローン）: `cd ~/oneco-collect/v2 && ../.venv/bin/python -m collector notify --dry-run`（文面を出すだけ。`--dry-run` を外すと、今日（JST。`--date YYYY-MM-DD` で変えられる）の report に異常があれば送る。異常が無ければ「通知するものなし。送らない」。今日の report が無い日は前日の内容を送り直さず、何も送らずに exit 1）。VPS は `/opt/oneco/.venv/bin/python -m collector notify`。
 
 ### 1-4. 死活監視（走らなかった日の検知）
 
@@ -155,7 +155,7 @@ AI は案を書くだけ。案は `collector propose` が draft PR にし、**�
 5. **月曜（JST）だけ** `collector discover --notify` — 環境省リンク集と台帳の差分のうち、確認済み一覧（`registry/discover_known.yaml`）に無いもの（新しく増えた・消えた自治体）があるときだけ Discord に 1 通（4 節）。成否は「全部成功」に数えない（失敗しても rc・healthcheck・「失敗した工程」通知に影響しない）
    - **毎月最初の月曜（JST の月曜かつ 1〜7 日）だけ**、その後に `collector discover --pages --notify`（4 節の「ページ単位」）。同じく成否は数えない
 6. 全部成功したら `HEALTHCHECK_URL` へ ping
-7. 収集と公開が終わった後に `ops/audit_empty.py --notify`（W006 T631）。0 頭の根拠（`empty_text`・`empty_text_all`・`empty_text_each`・`empty_selector`・`empty_absent`）が、**子がいた日の保存ページ**（`data/last_ok/<slug>/`。今のレシピで 1 頭以上取れるもの）にも成立する slug を探す。empty は ok と同じ扱いで通知も AI 修復も止まるので、そういう slug は行の読み方が崩れた日に通知なしで「本日は 0 頭」と出る。当たる slug の集合が前回（`data/audit_empty_state.json`）と変わった日だけ Discord に 1 通。送れなかった日は記録せず翌日また送る。失敗しても収集全体の成否・healthcheck には数えない。手で見るときは `PYTHONPATH=v2 python v2/ops/audit_empty.py --data v2/data [--slug 接頭辞] [--json]`（出力: slug・根拠の種類・当たった文言か要素・当たった文書の URL・出現回数）。render の slug は保存ページが無く、保存に無い URL を辿る slug（移転直後など）は当てられないので、どちらも対象外（件数は標準エラーに出る）。直し方は RECIPE.md「空のとき」の `empty_text_all`
+7. 収集と公開が終わった後に `ops/audit_empty.py --notify`（W006 T631）。0 頭の根拠（`empty_text`・`empty_text_all`・`empty_text_each`・`empty_selector`・`empty_absent`）が、**子がいた日の保存ページ**（`data/last_ok/<slug>/`。今のレシピで 1 頭以上取れるもの）にも成立する slug を探す。empty は ok と同じ扱いで通知も AI 修復も止まるので、そういう slug は行の読み方が崩れた日に通知なしで「本日は 0 頭」と出る。当たる slug の集合が前回（`data/audit_empty_state.json`）と変わった日に Discord に 1 通。同じ顔ぶれが続く間も、月曜（JST）だけは 1 件以上当たっていればもう 1 通（「月曜の再通知」。同じ日は 1 通まで。`audit_empty_state.json` の `notified` に最後に送った日を持つ。W006 T656）。送れなかった日は記録せず翌日また送る。失敗しても収集全体の成否・healthcheck には数えない。手で見るときは `PYTHONPATH=v2 python v2/ops/audit_empty.py --data v2/data [--slug 接頭辞] [--json]`（出力: slug・根拠の種類・当たった文言か要素・当たった文書の URL・出現回数）。render の slug は保存ページが無く、保存に無い URL を辿る slug（移転直後など）は当てられないので、どちらも対象外（件数は標準エラーに出る）。直し方は RECIPE.md「空のとき」の `empty_text_all`
 
 途中で失敗しても止まらない。収集が全滅した日でも `data/latest.json` は前日のものが残っているので、サイトは「昨日のまま」出続ける（落ちない）。
 
@@ -199,6 +199,7 @@ Discord の文面はこの形:
   - 1 日 1 回（`once_a_day`）: 同じ slug は 1 日 1 回まで（手で収集し直した日も）
   - 隔離（`quarantined`）: 失敗の指紋（error_info の kind・status と入口ページ本文の sha256）が同じまま 3 回試して直らなければ隔離し、呼ばない。隔離した日だけ Discord に「AI 修復を隔離した自治体」と出る。解除: 入口ページの本文が変わった、AI 修復に関わるコード（`ai_repair.py` `extract.py` `recipe.py` `recipe_schema.py` `fetch.py` `repair_schema.json`）か `docs/RECIPE.md` が変わった、読めるようになった。agy が答えなかった日と、案を書けた日は 3 回に数えない。slug ごとの状態は `sources[slug].repair`（手で解除するなら該当 slug の `repair` を消す）
   - 入口が 404・410（`entry_gone`）と、辿った子が全部 404（`children_gone`。掲載期限切れで市が個別ページだけ消す日）: レシピでは直せないので呼ばない。子の 1 本だけが 404 の日は `skip_errors` で直せるので呼ぶ
+  - 入口が 401・403（`entry_blocked`。W006 T656。新潟市いくとぴあ ikutopia-1 は 2026-11-19 からサイト全体が HTTP 401）: サイト側の拒否でレシピでは直せず、入口の本文も取れないので指紋が作れず隔離にも乗らない。呼ばずに、通知には「サイト側でアクセスが制限されています（HTTP 401）」と出す。子だけの 401・403 は呼ぶ
   - render（Playwright）でも HTTP 404・410 を取得失敗にする（高松市は移転後も 404 の殻を描画し続け、「0 頭で empty_text も無い」に見えていた）
 - 読めない日（failed、および 0 頭に見えるが確定できない `ambiguous_empty`。全行除外なのに見出しの項目名もコンテナも合わない）は、その自治体の子は 1 頭も載らず、「情報源の一覧」に「本日は読めませんでした。自治体のページをご確認ください」と出る。前回分は保持しない（実サイトでは譲渡・返還済みかもしれないため）。`ambiguous_empty` は「取得失敗」と区別する診断用に status 名だけ report・state・events に残る
 - 翌日の probe で遮断を閉じる条件は「接続系エラーか 5xx でない」こと。parser 失敗や 404 はサイトが生きている証拠なので閉じて残りを通常どおり読む（同一ホストに複数レシピがある自治体で 1 本の崩れが全部を止めない）

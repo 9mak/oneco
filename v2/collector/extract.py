@@ -52,6 +52,25 @@ _INFER_CAT = (
 _INFER_FIELDS = ("breed", "color")   # 保護場所（柴田町）や備考（「子犬 4 頭授乳中」）は見ない
 
 
+# 個人の連絡先（携帯・IP 電話とメール）は公開しない（W006 T656 付随・2026-11-20）。個人・ボランティアの掲示（長崎犬猫ネット 一般譲渡）の
+# 備考に「TEL:090-…」「メール:…@gmail.com」が載っていた。台帳の決まり（松本市は個人の連絡先を取り込まない・富山市 -2 はリンクのみ）に合わせ、
+# 行から作る文字の項目で置き換える。固定電話・フリーダイヤル（自治体・保健所）は消さない。全角の数字・記号も同じに扱う。
+CONTACT_REDACTED = "（連絡先は掲載元のページでご確認ください）"
+_D = "[0-9０-９]"
+_SEP = "[-‐‑–—−－ー\\s.．]?"
+_MOBILE = re.compile(rf"(?<!{_D})[0０][5789５-９][0０]{_SEP}{_D}{{4}}{_SEP}{_D}{{4}}(?!{_D})")
+_EMAIL = re.compile(r"[A-Za-z0-9._%+\-]+\s*(?:[@＠]|\(a\)|\[at\]|\(at\))\s*[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)+", re.I)
+
+
+def mask_contacts(text: str | None) -> tuple[str | None, int]:
+    """文字列の中の携帯・IP 電話（070・080・090・050）とメールを CONTACT_REDACTED に置き換える。(置き換えた後の文字列, 件数)。"""
+    if not text:
+        return text, 0
+    out, n1 = _MOBILE.subn(CONTACT_REDACTED, text)
+    out, n2 = _EMAIL.subn(CONTACT_REDACTED, out)
+    return out, n1 + n2
+
+
 @dataclass
 class Dropped:
     reason: str
@@ -68,6 +87,7 @@ class Result:
     empty_evidence: str | None = None    # 0 頭を確定した根拠: empty_selector / empty_absent / empty_text / all_excluded+headings / all_excluded+container
     ambiguous_empty: bool = False        # 全行除外だが肯定的な証拠が無く、0 頭とも読み取り失敗とも言い切れない（W006 T605）
     ambiguous_reason: str | None = None
+    contacts_masked: int = 0             # 個人の携帯・メールを置き換えた件数（mask_contacts。report に残す）
     detail_ids: set[str] = field(default_factory=set)   # 個体ページ URL（detail）だけを根拠に動物とみなした行も含め、detail を持つ動物の id（採用条件 a が参照）
 
 
@@ -473,7 +493,8 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
                 "source_url": source_url,
             }
             for k in FIELD_NAMES:
-                animal[k] = f.get(k)
+                animal[k], n = mask_contacts(f.get(k))   # ID は上で決め済み（置き換えで ID が変わらない）
+                res.contacts_masked += n
             # レシピの phone 項目: 子ごとに収容先の電話が載る掲載元（熊本県動愛の各保健所）は、読めた子だけその電話を出す。
             # 読めなければ台帳の値のまま（T628: 電話は掲載元ページにあるものだけ。子の行の電話も掲載元ページの値）
             if f.get("phone"):

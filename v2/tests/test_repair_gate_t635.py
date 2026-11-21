@@ -367,3 +367,46 @@ def test_context_hash_changes_with_recipe_doc(tmp_path, monkeypatch):
     h1 = repair_gate.context_hash()
     doc.write_text("b", encoding="utf-8")
     assert repair_gate.context_hash() != h1
+
+
+# --- 入口が 401・403（W006 T656 付随・項目 3。ikutopia-1 は 2026-11-19 からサイト全体が HTTP 401）----------------
+@pytest.mark.parametrize("code", [401, 403])
+def test_entry_401_403_does_not_call_ai_and_says_why(day, code):
+    srcs = [_src("a1")]
+    day.plan = {"a1": _fail("http", code, url=srcs[0].url)}
+    rows = day.run(srcs, "2026-11-01")
+    assert day.calls == []
+    assert f"サイト側でアクセスが制限されています（HTTP {code}）" in rows["a1"]["repair"]
+    assert "AI 修復に失敗" not in rows["a1"]["repair"]
+
+
+def test_entry_401_stays_skipped_on_later_runs_and_same_day_reruns(day):
+    srcs = [_src("a1")]
+    day.plan = {"a1": _fail("http", 401, url=srcs[0].url)}
+    for d, hms in (("2026-11-01", "00:05:00"), ("2026-11-01", "16:04:00"), ("2026-11-02", "00:05:00")):
+        rows = day.run(srcs, d, hms=hms)
+        assert day.calls == [] and "HTTP 401" in rows["a1"]["repair"]
+
+
+def test_entry_401_note_reaches_the_notification(day):
+    from collector.notify import build_message
+
+    srcs = [_src("a1")]
+    day.plan = {"a1": _fail("http", 401, url=srcs[0].url)}
+    rows = day.run(srcs, "2026-11-01")
+    msg = build_message([rows["a1"]], {})
+    assert msg is not None and "サイト側でアクセスが制限されています（HTTP 401）" in msg
+
+
+def test_child_401_403_still_calls_ai(day):
+    srcs = [_src("a1")]
+    day.plan = {"a1": _fail("http", 403, url="https://a.jp/a1/child1")}   # 入口は取れている。子だけ拒否される作りはレシピで直せる余地がある
+    day.run(srcs, "2026-11-01")
+    assert day.calls == ["a1"]
+
+
+def test_entry_other_http_errors_are_unchanged(day):
+    srcs = [_src("a1")]
+    day.plan = {"a1": _fail("http", 429, url=srcs[0].url)}
+    day.run(srcs, "2026-11-01")
+    assert day.calls == ["a1"]

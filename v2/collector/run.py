@@ -39,7 +39,7 @@ OUTAGE_MIN_RATIO = 0.10
 # 落ちているサイトに 1 ホスト数十件のリクエストを送り続けて遅くなる・迷惑をかけるのを避ける。
 BREAKER_TRIP = 3
 # report の行のうち、通知と state のための内部の印。公開する latest.json・animals-*.json の sources には入れない
-INTERNAL_ROW_KEYS = frozenset({"quarantine_started", "empty_fp", "empty_changed"})
+INTERNAL_ROW_KEYS = frozenset({"quarantine_started", "empty_fp", "empty_changed", "contacts_masked"})
 
 
 def outage(report: list[dict[str, Any]]) -> bool:
@@ -128,13 +128,10 @@ def _empty_fp(recipe: Recipe, docs: list[Any], visited: list[Any] | None, slug: 
 _CHILDREN = re.compile(r"(?:follow_all|pdf_links) → (\d+) 件")
 
 
-_GONE_IN_MESSAGE = re.compile(r"HTTP (?:404|410): ")
-
-
 def _is_gone(e: FetchError) -> bool:
-    """失敗の本体が HTTP 404・410 か。全部失敗の例外（recipe.py の _raise_if_all_failed）は子の ErrorInfo を持たず
-    other になるので、page_gone（info か先頭一致）に加えて、メッセージに入った子の失敗理由も見る。"""
-    return page_gone(e) or bool(_GONE_IN_MESSAGE.search(str(e)))
+    """失敗の本体が HTTP 404・410 か（page_gone）。全部失敗の例外（recipe.py の _raise_if_all_failed）は最初に失敗した子の
+    ErrorInfo を持つので、メッセージを正規表現で読む必要は無い。"""
+    return page_gone(e)
 
 
 def _all_children_gone(trace: list[str], error: FetchError) -> bool:
@@ -192,7 +189,7 @@ def _repair_phase(sources: list[Source], report: list[dict[str, Any]], events: l
             sha = _entry_sha(fetcher, s.url)
             reason = reason_for(sha)
         if reason:
-            row["repair"] = repair_gate.SKIP_NOTES[reason]
+            row["repair"] = repair_gate.skip_note(reason, http_status)
             ev["repair_skip"] = reason
             _record_skip(out_dir, date, run_id, s.slug, reason, err, sha)
             log.info("%-28s %s", s.slug, row["repair"])
@@ -347,6 +344,8 @@ def _run_locked(sources: list[Source], date: str, out_dir: Path, fetcher: Fetche
                "skipped": [t.removeprefix("skip ") for t in trace if t.startswith("skip ")]}
         if status == "empty" and c.empty_fp:
             row["empty_fp"] = c.empty_fp
+        if res and getattr(res, "contacts_masked", 0):
+            row["contacts_masked"] = res.contacts_masked   # 個人の携帯・メールを置き換えた件数（W006 T656）
         report.append(row)
         events.append({"run_id": run_id, "slug": s.slug, "host": (info or {}).get("host") or host, "status": status,
                        "kind": (info or {}).get("kind"), "http_status": (info or {}).get("status"), "seconds": secs,

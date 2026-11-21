@@ -154,6 +154,13 @@ def _has_substance(text: str) -> bool:
     return bool(_TAG.sub("", body).strip())
 
 
+def _is_pdf_response(content: bytes, ctype: str, url: str) -> bool:
+    """PDF として読む応答か（Page.html を None にする条件。Executor は html が None のときだけ PDF 文書にする）。
+    Content-Type は大文字（Application/PDF）もあり、URL は ".pdf?v=2" のようにクエリが付くことがあるので、小文字にして path で見る。
+    PDF の先頭の印（%PDF-）があれば、Content-Type と URL に依らず PDF。"""
+    return "pdf" in ctype.lower() or urlsplit(url).path.lower().endswith(".pdf") or content.startswith(b"%PDF-")
+
+
 def _check(page: Page, phase: str = "fetch") -> tuple[ErrorInfo, str] | None:
     """問題があれば (ErrorInfo, 理由)。無ければ None。"""
     def bad(kind: str, reason: str) -> tuple[ErrorInfo, str]:
@@ -250,9 +257,7 @@ class Fetcher:
             raise FetchError(f"HTTP {r.status_code}: {url}",
                              ErrorInfo("http", status=r.status_code, host=host_of(url), url=url, attempt=attempt))
         ctype = r.headers.get("content-type", "")
-        html = None
-        if "pdf" not in ctype and not url.lower().endswith(".pdf"):
-            html = decode(r.content, r.charset_encoding, encoding)
+        html = None if _is_pdf_response(r.content, ctype, url) else decode(r.content, r.charset_encoding, encoding)
         page = Page(url, str(r.url), r.status_code, r.content, html, ctype)
         _raise_if_unreadable(page)
         self.cache[key] = page
@@ -270,7 +275,7 @@ class Fetcher:
             raise FetchError(f"HTTP {r.status_code}: {url}",
                              ErrorInfo("http", status=r.status_code, host=host_of(url), url=url, attempt=attempt))
         ctype = r.headers.get("content-type", "")
-        html = None if "pdf" in ctype else decode(r.content, r.charset_encoding, encoding)
+        html = None if _is_pdf_response(r.content, ctype, url) else decode(r.content, r.charset_encoding, encoding)
         page = Page(url, str(r.url), r.status_code, r.content, html, ctype)
         _raise_if_unreadable(page)
         return page
@@ -356,9 +361,10 @@ class Fetcher:
 
                     page.on("response", _on_response)
                 resp = page.goto(url, wait_until="networkidle", timeout=60000)
-                # 404・410 のページは本文があっても取得失敗にする。高松市は移転後、404 の殻を描画し続けて
-                # 「0 頭で empty_text も無い」と見分けがつかなかった（2026-11-01）。get と同じ ErrorInfo にする
-                if resp is not None and resp.status in (404, 410):
+                # HTTP エラー（4xx・5xx）のページは本文があっても取得失敗にする。高松市は移転後、404 の殻を描画し続けて
+                # 「0 頭で empty_text も無い」と見分けがつかなかった（2026-11-01）。403・5xx も同じ（W006 T656。status 200 の成功として
+                # 返すと、ホスト遮断・AI 修復の入口判定に乗らず parser 失敗になる）。get と同じ ErrorInfo にする
+                if resp is not None and resp.status >= 400:
                     raise FetchError(f"HTTP {resp.status}: {url}",
                                      ErrorInfo("http", status=resp.status, host=host_of(url), url=url, phase="render"))
                 if wait_for:

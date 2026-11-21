@@ -3,6 +3,7 @@
 行末に「新しい飼い主さんが決まりました！」（青い太字）が付いた行は決まった子。11/19 は 振興局3158、11/20 は 石狩58-3 に付き、載っていた。
 """
 
+from dataclasses import replace
 from pathlib import Path
 
 from collector.fetch import FakeFetcher
@@ -21,7 +22,7 @@ def _run(mutate=None) -> Collected:
     html = (FIX / LIVE).read_text(encoding="utf-8")
     if mutate:
         html = mutate(html)
-    s = SOURCES["hokkaido_ishikari-2"]
+    s = replace(SOURCES["hokkaido_ishikari-2"], mode="recipe")  # 台帳は #147 で link_only。レシピは読み続ける
     return collect_one(s, FakeFetcher({s.url: html}))
 
 

@@ -4,6 +4,7 @@
 その後ろに、2 頭のチラシの見方を説明する画像（alt「R8犬6-7説明用」）が並び、3 頭目の犬として載っていた。
 """
 
+from dataclasses import replace
 from pathlib import Path
 
 from collector.fetch import FakeFetcher
@@ -20,7 +21,7 @@ def _run(mutate=None) -> Collected:
     html = (FIX / LIVE).read_text(encoding="utf-8")
     if mutate:
         html = mutate(html)
-    s = SOURCES["hokkaido_hidaka-1"]
+    s = replace(SOURCES["hokkaido_hidaka-1"], mode="recipe")  # 台帳は #147 で link_only。レシピは許諾が変わったときのため読み続ける
     return collect_one(s, FakeFetcher({s.url: html}))
 
 
@@ -36,6 +37,6 @@ def test_explanation_image_is_not_a_dog():
 def test_flyers_still_read_without_the_explanation():
     # 説明用の画像が無い日（11/13 の保存ページ）も 2 頭のまま
     c = _run(lambda h: h)
-    older = collect_one(SOURCES["hokkaido_hidaka-1"], FakeFetcher({SOURCES["hokkaido_hidaka-1"].url: (FIX / "w006_hokkaido_hidaka-1_20261113.html").read_text(encoding="utf-8")}))
+    older = collect_one(replace(SOURCES["hokkaido_hidaka-1"], mode="recipe"), FakeFetcher({SOURCES["hokkaido_hidaka-1"].url: (FIX / "w006_hokkaido_hidaka-1_20261113.html").read_text(encoding="utf-8")}))
     assert older.status == "ok", older.error
     assert len(older.result.animals) == 2 and len(c.result.animals) == 2
