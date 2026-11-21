@@ -541,6 +541,22 @@ def ga4_head(cfg: dict[str, Any]) -> str:
             f"gtag('js', new Date());gtag('config', '{gid}');</script>")
 
 
+# 個体ページの到達・相談行動を GA4 へ送る（ga4_id があるときだけ出力。gtag 未読込でも dataLayer へ積まれる）
+GA4_CLICK_JS = """(function(){
+  var b=document.querySelector('.detail-box');
+  if(!b||typeof gtag!=='function')return;
+  var base={prefecture:b.dataset.pref||'',animal_id:b.dataset.id||'',kind:b.dataset.kind||'',species:b.dataset.species||''};
+  document.addEventListener('click',function(e){
+    var a=e.target&&e.target.closest?e.target.closest('a'):null;
+    if(!a)return;
+    var p=Object.assign({},base);
+    if(a.classList.contains('btn-secondary')||a.classList.contains('ph-btn')){p.link_url=a.href;gtag('event','external_link_click',p);}
+    else if(a.classList.contains('btn-primary')&&(a.getAttribute('href')||'').indexOf('tel:')===0){gtag('event','contact_phone_click',p);}
+    else if(a.closest('.prep')){p.link_title=(a.textContent||'').trim();gtag('event','affiliate_click',p);}
+  });
+})();"""
+
+
 def page(cfg: dict[str, Any], *, title: str, desc: str, path: str, body: str,
          og_image: str = "", og_type: str = "website", extra_head: str = "", body_attrs: str = "") -> str:
     site = esc(cfg["site_name"])
@@ -894,8 +910,9 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
     note = disp_value("note", a.get("note"))   # 本文で出さない備考（「無」「有」）は説明文にも出さない（Codex #17）
     if note:
         desc += shorten(note, 80)
+    ga4_click = f"<script>{GA4_CLICK_JS}</script>" if ga4_id(cfg) else ""
     body = f"""<nav class="crumbs"><a class="back-link" href="{esc(pref_path(pref))}">‹ {esc(pref)}の一覧へ</a></nav>
-{pr_html}<article class="detail-box" data-id="{esc(a['id'])}">
+{pr_html}<article class="detail-box" data-id="{esc(a['id'])}" data-pref="{esc(pref)}" data-kind="{esc(kind)}" data-species="{esc(species_key(a))}">
 {photo_box(a, big=True)}
 <div class="detail-body">
 {badges(a)}
@@ -914,7 +931,7 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
 </div>
 </article>
 <p class="detail-fine">{esc(fmt_date(data.get('date')))}時点の自治体公開情報です。<br>{FINE_BY_KIND.get(kind, '')}</p>
-{aff_html}"""
+{aff_html}{ga4_click}"""
     # タイトル（検索結果・タブ）は見分けがつくよう品種と性別（headline）。何も分からない子は区分を足す（#124 F-06）
     lead_t = "飼い主さんが探している動物" if kind == "lost" else f"{kind_label(a)}の動物"   # 「探してますの動物」とはしない（#124 G-03）
     title_head = f"{lead_t}・{headline(a)}" if not disp_name(a) and _headline_parts(a)[1] == "none" else headline(a)
@@ -1027,6 +1044,7 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
         analytics = """<section>
 <h2>アクセス解析</h2>
 <p>どのページがよく見られているかを知ってサイトを良くするため、Google アナリティクスを使っています。ページを開くと、Google LLC に閲覧の情報（見たページ、おおよその地域、使っている端末など）が送られます。Google アナリティクスは、端末を見分けるために Cookie を使います。名前や連絡先など、サイト側であなたを直接特定できる情報は集めておらず、Google にも送っていません。送られた情報は Google のポリシーに沿って扱われます（<a href="https://policies.google.com/technologies/partner-sites?hl=ja" rel="noopener" target="_blank">Google のサービスを使うサイトやアプリから収集した情報の Google による使用</a>）。</p>
+<p>個別の子のページでは、「自治体の公式ページを見る」などの公式ページへのボタン、電話のボタン、「迎える準備」枠の広告リンクを押したときにも、どのボタンを押したか、その子の種別（犬・猫などの種類と、里親募集・迷子などの区分）、都道府県、子の管理番号を Google アナリティクスに送ります。電話番号は送りません。</p>
 <p>パソコンのブラウザでは、<a href="https://tools.google.com/dlpage/gaoptout?hl=ja" rel="noopener" target="_blank">Google アナリティクス オプトアウト アドオン</a>で送信を止められます。ブラウザで Cookie を無効にすると、集められる情報を減らせます。</p>
 </section>
 """
