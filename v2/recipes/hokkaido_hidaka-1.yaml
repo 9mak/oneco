@@ -8,7 +8,9 @@
 #   種別は alt の「犬」「猫」、場所は直前の h3（○静内保健所）。
 #   行はリンクで包んだ画像（p > a:has(> img)。:has の中に結合子を 2 つ並べると CI の soupsieve が拒む）。種別（alt の犬・猫）が読めない画像
 #   （ポスター・バナー等）は動物にしない（field_required。全部がそうなら 0 頭にせず failed。reviewer F-02）。
-rows: "article.body p > a:has(> img)"
+# 2026-11-20 T656: チラシ 2 枚の後ろに、見方を説明する画像（alt「R8犬6-7説明用」）が並び、3 頭目の犬として載っていた（本文は「犬が２頭」）。
+# alt に「説明用」を含む画像は動物のチラシでないので行にしない（alt の犬・猫の字は説明用にも付くので、field_required では外れない）。
+rows: "article.body p > a:has(> img:not([alt*='説明用']))"
 row_filter:
   field_required: {species: ["犬", "猫"]}
 image: "img@src"

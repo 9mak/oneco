@@ -74,6 +74,7 @@ class Recipe:
     urls: list[str] = field(default_factory=list)   # 入口を複数にする（url の代わりに全部開き、steps は全部の入口に適用）。長崎犬猫ネット: 一覧の ?animal-type=dog|cat|others
     transpose: str | None = None    # 転置表（1 列 = 1 頭）の table セレクタ。指定時は rows の代わりに列を行にする
     row_until: str | None = None    # 指定時は rows の要素を 1 頭の始まりとし、後ろの兄弟要素を次の始まりかこの要素の手前までまとめて 1 行にする
+    row_split: str | None = None    # row_until でまとめた行を、この正規表現の位置で 1 頭ずつに分ける（空の一致でもよい）。最初の断片（写真・導入文）は全頭に付く。箇条書き「・まめ　メス　黒」の 1 行 1 頭（空知 滝川）。分けた行の ID は名前から作る
     id_by_management_no: list[str] = field(default_factory=list)   # 同じ写真を共有する子のうち、この管理番号（前方一致）の行は写真でなく管理番号から ID を作る。先に載った子が消えても残った子の ID が写真由来（消えた子の ID）に移らないよう、先頭の子以外を固定する
     unique_management_no: bool = False   # 同じ管理番号の行が 2 つ以上あるとき、先の行だけ採る（上が最新で下に古い掲載が残るページ。鹿児島市 保護犬）。写真の有無で ID が別になるので「同じ ID」の判定では重なりを捨てられない
     source_url: str | None = None   # PDF の子の元ページリンク。既定は入口ページ（日次で差し替わる PDF は翌日 404 になる）。"doc" で PDF そのもの
@@ -204,6 +205,7 @@ class Row:
     cells: dict[str, str] | None = None     # PDF 表の行（見出し名 → 値、"0","1".. も入れる）
     chunk: str | None = None                # PDF テキストの 1 頭分
     anchor: Tag | None = None               # row_until でまとめた行の、元の文書上の始まりの要素（el は複製なので位置を持たない）
+    split: bool = False                     # row_split で 1 頭ずつに分けた行（ID は写真でなく名前から作る）
 
     @property
     def origin(self) -> Tag | None:
@@ -644,6 +646,8 @@ def extract_rows(recipe: Recipe, doc: Doc) -> list[Row]:
         rows = _transposed_rows(recipe, doc)
     elif recipe.row_until:
         rows = _grouped_rows(recipe, doc)
+        if recipe.row_split:
+            rows = _split_rows(recipe, rows)
     else:
         rows = [Row(doc=doc, el=el) for el in doc.soup.select(recipe.rows)]
     return _filter_rows(recipe, rows)
@@ -731,6 +735,33 @@ def _grouped_rows(recipe: Recipe, doc: Doc) -> list[Row]:
             cur = parent
         rows.append(Row(doc=doc, el=holder, anchor=start))
     return rows
+
+
+def _split_rows(recipe: Recipe, rows: list[Row]) -> list[Row]:
+    """row_split: まとめた行の HTML を正規表現の位置で切り、最初の断片（写真・導入文）を足して 1 頭 1 行にする。
+
+    切れ目が無い行（箇条書きの無い日・別の節）はそのまま。断片は閉じていない要素を含むので、
+    HTML として読み直して（lxml が閉じる）行にする。
+    """
+    pat = re.compile(recipe.row_split or "")
+    out: list[Row] = []
+    for row in rows:
+        if row.el is None:
+            out.append(row)
+            continue
+        parts = pat.split(str(row.el))
+        if len(parts) < 2:
+            out.append(row)
+            continue
+        head, items = parts[0], parts[1:]
+        for item in items:
+            if not item.strip():
+                continue
+            frag = BeautifulSoup(head + item, "lxml").select_one("div.grouped")
+            if frag is None:
+                continue
+            out.append(Row(doc=row.doc, el=frag, anchor=row.anchor, split=True))
+    return out
 
 
 def _before_cut(sib: Tag, start_ids: set[int], row_until: str) -> Tag | None:

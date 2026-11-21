@@ -7,9 +7,15 @@
 # 行 = 「管理番号：」を含む p（全個体に管理番号があり欠落なし）。
 # R8-9-3 は R8-9-2 と同じ写真。R8-9-2 が消えても ID が写真由来（R8-9-2 の ID）に移らないよう管理番号から ID を作る（公開ゲート F-02）
 id_by_management_no: ["R8-9-3"]
+# 2026-11-20 T656: 決まった子は見出しで外す。h2「【決定】譲渡が決まりました！」の下の子が載っていた（R8-9-4 ソラくん・R8-9-5 リクちゃん）。
+#   見出しは行の前の直近の h2（section）で見る。行の文には「決定」と書かれないので、行の文では外せない（宮古 pref_iwate_miyako の「【御報告】」と同じ読み方）。
+#   行としては残すので、写真の遡り（stop_at: row）は決まった子の行で止まり、残った子に決まった子の写真が付かない。
 rows: "p:-soup-contains('管理番号：')"
+row_filter:
+  field_lacks: {section: ["決定", "決まりました"]}   # 「【譲渡調整中】…（受付一時停止）」は募集中の見出しなので載せる
 image: {selector: "h2 + p.imagecenter img@src", scope: prev_siblings, stop_at: row}   # 2026-10-04: 行も写真も p なので前の行まで遡る
 fields:
+  section: {from: heading, selector: "h2"}   # 除外判定用（animals には出ない）
   management_no: {label: "管理番号"}
   name: {label: "愛称"}
   location: {label: "保護された場所"}

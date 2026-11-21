@@ -4,8 +4,10 @@
 # 子のいない表は「現在、新しい飼い主さんを探している犬はいません」「現在、新しい飼い主さんを募集している猫はいません」「現在、飼い主を募集している猫はいません」と日によって言い方が変わり
 # （Wayback 2024-08〜2026-07 の 6 版）、犬の表が「新しい飼い主さんが見つかりました！」の行だけの日（2024-08）もあるので、文言でなく「募集中の行（いません・決まりました・見つかりました を含まない行）が 1 つも無い」ことで 0 頭を決める。
 # none は h3 の後ろの表の行（見出し語「特徴など」に頼らない。表の見出しの語が変わった日を 0 頭にしない）。
+# 2026-11-20 T656: 迷子の表（hokkaido_okhotsk-5）で「いません」を含むセルのある行ごと外して子が消えたので、こちらも同じ書き方をやめた。
+# 行は全部読み、子のいない行は写真も管理番号も無いので動物の条件で落ちる。none も「いません」の語でなく、子のいる行（写真・性別・「No.」の番号のどれかがある行）で決める。
 # 「新しい飼い主さんが決まりました！」の行（Wayback 2026-07 の兄弟 4 頭のうち 3 頭）は載せない。
-rows: "table:has(td:-soup-contains('特徴など')) tr:nth-child(n+2):not(:has(td:-soup-contains('いません')))"
+rows: "table:has(td:-soup-contains('特徴など')) tr:nth-child(n+2)"
 row_filter:
   text_lacks: ["決まりました", "見つかりました"]
 image: "img@src"
@@ -24,4 +26,4 @@ species:
   map: {"犬": dog, "猫": cat}
 empty_absent:
   page: "h3:-soup-contains('飼い主募集中の犬')"
-  none: "h3:-soup-contains('飼い主募集中の') ~ table tr:nth-child(n+2):not(:has(td:-soup-contains('いません'))):not(:has(td:-soup-contains('決まりました'))):not(:has(td:-soup-contains('見つかりました')))"
+  none: "h3:-soup-contains('飼い主募集中の') ~ table tr:nth-child(n+2):is(:has(img), :has(td:nth-child(2):-soup-contains('ス')), :has(td:nth-child(2):-soup-contains('不明')), :has(td:nth-child(4):-soup-contains('No'))):not(:has(td:-soup-contains('決まりました'))):not(:has(td:-soup-contains('見つかりました')))"
