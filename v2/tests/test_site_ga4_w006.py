@@ -111,3 +111,11 @@ def test_animal_page_emits_click_events_and_attrs_only_when_ga4_is_set(tmp_path:
     assert "external_link_click" not in animal_off
     assert "contact_phone_click" not in animal_off
     assert "affiliate_click" not in animal_off
+
+
+def test_about_discloses_the_click_events_sent_from_animal_pages(tmp_path: Path) -> None:
+    about = _build(tmp_path, {**CONFIG, "ga4_id": GA})["about/index.html"]
+    # 個体ページのボタンを押したとき、押したボタン・その子の種別・都道府県を GA4 へ送ることを説明する
+    for word in ("公式ページ", "電話", "広告", "どのボタン", "種別", "都道府県"):
+        assert word in about, word
+    assert "電話番号は送" in about  # 番号そのものは送らないことも明記

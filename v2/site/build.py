@@ -1044,6 +1044,7 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
         analytics = """<section>
 <h2>アクセス解析</h2>
 <p>どのページがよく見られているかを知ってサイトを良くするため、Google アナリティクスを使っています。ページを開くと、Google LLC に閲覧の情報（見たページ、おおよその地域、使っている端末など）が送られます。Google アナリティクスは、端末を見分けるために Cookie を使います。名前や連絡先など、サイト側であなたを直接特定できる情報は集めておらず、Google にも送っていません。送られた情報は Google のポリシーに沿って扱われます（<a href="https://policies.google.com/technologies/partner-sites?hl=ja" rel="noopener" target="_blank">Google のサービスを使うサイトやアプリから収集した情報の Google による使用</a>）。</p>
+<p>個別の子のページでは、「自治体の公式ページを見る」などの公式ページへのボタン、電話のボタン、「迎える準備」枠の広告リンクを押したときにも、どのボタンを押したか、その子の種別（犬・猫など）、都道府県、子の管理番号を Google アナリティクスに送ります。電話番号は送りません。</p>
 <p>パソコンのブラウザでは、<a href="https://tools.google.com/dlpage/gaoptout?hl=ja" rel="noopener" target="_blank">Google アナリティクス オプトアウト アドオン</a>で送信を止められます。ブラウザで Cookie を無効にすると、集められる情報を減らせます。</p>
 </section>
 """
