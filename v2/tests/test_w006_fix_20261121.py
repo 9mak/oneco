@@ -126,6 +126,28 @@ def test_hiroshima_2_cat_page_reads_the_same_new_form():
     assert (a["management_no"], a["sex"], a["shelter_date"], a["location"]) == ("1HD20260255", "雌", "令和8年11月10日", "尾道市因島土生町")
 
 
+# --- 8. 仙台市アニパル -3: K26097 の性別が「白茶」、毛色が「避妊雌」（掲載元の書き間違い） ---------------------------------------------
+SD_FX = "w006_city_sendai-3_20261121.html"
+
+
+def test_sendai_3_swaps_the_sex_and_color_that_the_page_wrote_the_wrong_way_round():
+    animals = _run("city_sendai-3", _fx(SD_FX))
+    by = {a["management_no"]: a for a in _animals(animals)}
+    assert len(by) == 7
+    assert (by["K26097"]["sex"], by["K26097"]["color"]) == ("避妊雌", "白茶")
+    assert [(a["sex"], a["color"]) for k, a in by.items() if k != "K26097"] == [
+        ("去勢雄", "キジ白"), ("去勢雄", "黒白"), ("避妊雌", "サビ"), ("避妊雌", "キジ白"), ("去勢雄", "黒"), ("去勢雄", "キジ白")]
+
+
+def test_sendai_3_rows_written_the_right_way_round_are_unchanged():
+    html = _fx(SD_FX)
+    td = '<td style="text-align: center;">'
+    assert f"{td}白茶</td>\n{td}避妊雌</td>" in html
+    fixed = html.replace(f"{td}白茶</td>\n{td}避妊雌</td>", f"{td}避妊雌</td>\n{td}白茶</td>")
+    by = {a["management_no"]: a for a in _animals(_run("city_sendai-3", fixed))}
+    assert (by["K26097"]["sex"], by["K26097"]["color"]) == ("避妊雌", "白茶")
+
+
 # --- 7. 長崎犬猫ネット -1: 里親募集のページなのに sheltered・収容場所が空の子の場所が「問い合わせ先」になる ----------------------------------
 NAG = "https://animal-net.pref.nagasaki.jp"
 

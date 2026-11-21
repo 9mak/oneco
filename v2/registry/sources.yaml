@@ -1702,6 +1702,7 @@ sources:
     pdf: false
     list_link_pattern: null
     pdf_link_pattern: null
+  note: 'T656 直し 2 回目（2026-11-21）。K26097 だけ掲載元が性別と毛色の欄を書き違えていた（性別「白茶」・毛色「避妊雌」）ので、性別の語が入っている欄を性別、入っていない欄を毛色にした。掲載元への連絡は判断待ち。'
 - slug: city_miyazaki-1
   name: 宮崎市（保護犬・猫）
   municipality: 宮崎市
