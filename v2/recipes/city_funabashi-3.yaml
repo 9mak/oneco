@@ -2,7 +2,7 @@
 # センターに収容されている動物ではない（収容は city_funabashi-1。p013242.html）。施設で保護中と出さないよう、台帳の kind は sheltered のまま note と名前で市民保護と分かるようにする
 # （既存の千葉市・旭川の市民保護と同じ扱い）。情報公開期間は届出日から約 1 か月。
 # 同じページに「迷子動物一覧」（飼い主が探している迷子。city_funabashi-4）の表もある。caption で表を選ぶ。
-# 表は 8 列: 届出日・保護日および保護した場所（日付と場所が br 区切り）・種類・毛色・性別・体格・備考・画像（画像は一部の行）。
+# 表は 9 列（2026-11-21 に「動物種」が増えた。それまでは 8 列で動物種が無く、種類の欄に犬猫の別か品種）: 届出日・保護日および保護した場所（日付と場所が br 区切り）・動物種・種類・毛色・性別・体格・備考・画像（画像は一部の行）。
 # 写真の規約は CC BY・無断転載禁止（photo: ok。台帳）。IDは写真があれば写真から、無ければ収容日から作るので、写真も無く同じ日の子が 2 頭並ぶと 2 頭目が落ちる（2025-07・2026-05 の版では起きていない）。
 # 0 頭の日は Wayback 2025-02 に見つかった: caption「保護動物一覧」の表が見出し行だけで動物の行が無い（同じ日に迷子動物一覧は 5 件ある）。表はあるが動物の行が 1 つも無い日（「ありません」を含む行を除く）だけ 0 頭にする。
 rows: "table:has(caption:-soup-contains('保護動物一覧')) tr:has(td)"
@@ -10,14 +10,19 @@ image: "img@src"
 fields:
   shelter_date: {selector: "td:nth-child(2)", regex: "^\\s*(令和\\d+年\\d+月\\d+日)"}
   location: {selector: "td:nth-child(2)", regex: "令和\\d+年\\d+月\\d+日\\s*(.+)$"}
-  species: {selector: "td:nth-child(3)"}
-  breed: {selector: "td:nth-child(3)", regex: "^(?!(?:犬|猫)$)(.+)$"}   # 種類の欄に「雑種」「ベンガル」のように品種だけが書かれる日がある（犬猫の別は色などから推す）
-  color: {selector: "td:nth-child(4)"}
-  sex: {selector: "td:nth-child(5)"}
-  size: {selector: "td:nth-child(6)"}
+  # 列は見出しの語で読む（2026-11-21: 表に「動物種」列が増え、位置で読むと性別の欄に毛色が入った。T656 直し 2 回目）。
+  # 動物種の列が無い古い版は「種類」の列に犬猫の別か品種が書かれる（「動物種」が無ければ「種類」を species にも読む）
+  species: {label: ["動物種", "種類"], header_row: true}
+  breed:
+    join:
+      - {label: "種類", header_row: true, if_header: "動物種"}   # 動物種の列がある表（今）: 種類の列は品種（空欄の行がある）
+      - {label: "種類", header_row: true, unless_header: "動物種", regex: "^(?!(?:犬|猫)$)(.+)$"}   # 動物種の列が無い表（古い版）: 種類の欄に「雑種」「ベンガル」のように品種だけが書かれる日がある（犬猫の別は色などから推す）
+  color: {label: "毛色", header_row: true}
+  sex: {label: "性別", header_row: true}
+  size: {label: "体格", header_row: true}
   note:
     join:
-      - {selector: "td:nth-child(7)"}
+      - {label: "備考", header_row: true}
       - {selector: "td:nth-child(1)", regex: "^\\s*(令和\\d+年\\d+月\\d+日)", prefix: "届出日："}
     sep: " "
 species:

@@ -5,8 +5,16 @@ rows: "table.datatable tr"
 image: "img@src"
 fields:
   management_no: {selector: "td:nth-of-type(1)"}
-  sex: {selector: "td:nth-of-type(3)"}
-  color: {selector: "td:nth-of-type(4)"}
+  # 2026-11-21（T656 直し 2 回目）: K26097 だけ性別の欄が「白茶」、毛色の欄が「避妊雌」と掲載元が書き違えていた。性別の語（雄|雌|オス|メス|不明）が入っている方を性別、入っていない方を毛色にする
+  #   （普通の行は 3 列目だけ・4 列目だけがそれぞれ当たり、どちらか 1 つだけが値になる）
+  sex:
+    join:
+      - {selector: "td:nth-of-type(3)", regex: "^(.*(?:雄|雌|オス|メス|不明).*)$"}
+      - {selector: "td:nth-of-type(4)", regex: "^(.*(?:雄|雌|オス|メス|不明).*)$"}
+  color:
+    join:
+      - {selector: "td:nth-of-type(4)", regex: "^((?:(?!雄|雌|オス|メス|不明).)+)$"}
+      - {selector: "td:nth-of-type(3)", regex: "^((?:(?!雄|雌|オス|メス|不明).)+)$"}
   note: {selector: "td:nth-of-type(5)"}
 empty_text:
   - "現在、譲渡可能な子猫はいません"

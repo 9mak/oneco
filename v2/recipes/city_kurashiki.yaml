@@ -8,6 +8,8 @@
 # 共通ナビの 03_purpose アイコンと newwin 等のテンプレート画像は除外）。挿絵 runaway.gif と、負傷で画像掲載を見合わせる代替画像 keisaimiawase.jpg（水色地の「画像掲載を見合わせています」）は除外。
 # 2026-10-04 alt='写真' 始まりだけだと alt='ねこ' の実写真（1027913）を取りこぼし、keisaimiawase.jpg（代替画像）を写真として載せていたので、src 基準＋除外に変更（実写真 5→8 頭、代替画像 1→0）。
 # 2026-10-05 夕方: 一覧に残った個別ページ 1 本（1027993.html）が 404 になり、slug 全体が failed になった。404 の子だけ捨てる（skip_errors）。
+# 2026-11-21（T656 直し 2 回目）: 保護場所・種類・毛色・特徴は <li>項目名：値</li> の 1 行ごとに読む。label では最初の空白（全角を含む）で値が切れ、
+#   「特徴：首輪なし　右後肢負傷」の note が「首輪なし」だけになっていた（1028461）。li の文字全体から項目名の後ろを取る。
 steps:
   - follow_all: "ul.listlink.clearfix a@href"
     skip_errors: true
@@ -17,14 +19,14 @@ fields:
   management_no: {selector: "span.idnumber", regex: "(\\d+)"}
   shelter_date: {selector: "h1", regex: "(令和\\s*\\d+\\s*年\\s*\\d+\\s*月\\s*\\d+\\s*日)"}
   species: {selector: "h1", regex: "(犬|猫)"}
-  location: {label: "保護場所"}
-  breed: {label: "種類"}
+  location: {selector: "li:-soup-contains('保護場所：')", regex: "^保護場所[:：]\\s*(.+)$"}
+  breed: {selector: "li:-soup-contains('種類：')", regex: "^種類[:：]\\s*(.+)$"}
   # 2 匹が 1 ページに載る日（1028185「性別および毛色：メス（白茶）、オス（茶色）」）は、性別と毛色を 1 つの行から 1 匹目・2 匹目の順に読む。
   # 同じ値が 2 つ並ぶとつなぐ時に 1 つになる（「メス、メス」は「メス」）。毛色の label は「性別および毛色：メス…」の行も拾うので、
   # 値が性別で始まるときは取らない（長い文には当たらないよう 40 字までに絞る。label が見つからない日に本文全体を取らないため）
   sex: {join: [{label: "性別"}, {regex: "性別および毛色[:：]\\s*(メス|オス)"}, {regex: "性別および毛色[:：][^、]*、\\s*(メス|オス)"}], sep: "、"}
-  color: {join: [{label: "毛色", regex: "^(?!メス|オス)(.{1,40})$"}, {regex: "性別および毛色[:：]\\s*(?:メス|オス)[（(]([^）)]+)[）)]"}, {regex: "性別および毛色[:：][^、]*、\\s*(?:メス|オス)[（(]([^）)]+)[）)]"}], sep: "、"}
-  note: {label: "特徴"}
+  color: {join: [{selector: "li:-soup-contains('毛色：')", regex: "^毛色[:：]\\s*(?!メス|オス)(.{1,40})$"}, {regex: "性別および毛色[:：]\\s*(?:メス|オス)[（(]([^）)]+)[）)]"}, {regex: "性別および毛色[:：][^、]*、\\s*(?:メス|オス)[（(]([^）)]+)[）)]"}], sep: "、"}
+  note: {selector: "li:-soup-contains('特徴：')", regex: "^特徴[:：]\\s*(.+)$"}
 species:
   from: field
   map: {"犬": dog, "猫": cat}

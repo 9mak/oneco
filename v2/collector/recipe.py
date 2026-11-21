@@ -978,6 +978,17 @@ def _header_row_value(el: Tag, label: str) -> str | None:
         cells = trs[pos + 1].find_all(["th", "td"], recursive=False)
         if idx < len(cells):
             return _text(cells[idx])
+    if el.name == "tr":
+        # 行そのものが値の行（rows: "table tr:has(td)"）のとき: 同じ表の見出し行（th）で label と一致する列を、この行から読む
+        # （船橋市 -3・-4。表に「動物種」列が増えて列の位置が 1 つずれた）。見出しが無い・一致しない表は None
+        table = el.find_parent("table")
+        kids = el.find_all(["th", "td"], recursive=False)
+        for head in (t for t in table.find_all("tr") if t.find_parent("table") is table) if table is not None else ():
+            if head is el:
+                break
+            idx = next((i for i, c in enumerate(head.find_all(["th", "td"], recursive=False)) if c.name == "th" and visible_text(c).strip(_LABEL_PUNCT) == label), None)
+            if idx is not None:
+                return _text(kids[idx]) if idx < len(kids) else None
     return None
 
 

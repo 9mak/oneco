@@ -27,6 +27,8 @@ species:
     "いぬ": dog
     "カメ": other
     "亀": other
+    "ガメ": other     # クサガメ・イシガメ・ミドリガメ（2026-11-21: クサガメの species が空だった。T656 直し 2 回目）
+    "かめ": other
     "ウサギ": other
     "うさぎ": other
     "インコ": other
