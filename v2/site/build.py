@@ -1361,6 +1361,31 @@ def strip_photos(data: dict[str, Any]) -> dict[str, Any]:
     return {**data, "animals": animals}
 
 
+LINK_ONLY_PRIVATE_KEYS = ("phone", "address", "verified_phone_url", "verified_address_url")
+
+
+def strip_link_only_contacts(data: dict[str, Any]) -> dict[str, Any]:
+    """公開する data.json から、リンクのみの掲載元（台帳 mode か収集の status が link_only）の電話・所在地を外す。
+
+    リンクのみは、自治体から文章や画像の転載を断られた（久留米市・福岡市・北海道）か、個人の掲載などで、
+    ページには名前とリンクしか出していない。data.json にだけ台帳の電話・所在地が残っていたので外す（2026-11-21 T630）。
+    外すものが無ければ data をそのまま返す（呼び出し側は元のファイルをコピーできる）。
+    """
+    srcs = data.get("sources")
+    if not isinstance(srcs, list):
+        return data
+    out: list[Any] = []
+    changed = False
+    for s in srcs:
+        if (isinstance(s, dict) and "link_only" in (s.get("mode"), s.get("status"))
+                and any(s.get(k) is not None for k in LINK_ONLY_PRIVATE_KEYS)):
+            out.append({**s, **dict.fromkeys(LINK_ONLY_PRIVATE_KEYS)})
+            changed = True
+        else:
+            out.append(s)
+    return {**data, "sources": out} if changed else data
+
+
 def build_site(data: dict[str, Any], cfg: dict[str, Any], out: Path, data_path: Path | None = None) -> dict[str, int]:
     """data（animals JSON の中身）から out/ を生成。data_path があれば data.json はそのファイルのコピー。
     写真を出さない掲載元（台帳 photo が ok 以外）があるときは image_url を落とした data を書く。"""
@@ -1409,10 +1434,11 @@ def build_site(data: dict[str, Any], cfg: dict[str, Any], out: Path, data_path: 
     write(out, "style.css", CSS.strip() + "\n")
     if STATIC_DIR.is_dir():
         shutil.copytree(STATIC_DIR, out, dirs_exist_ok=True)
-    if data_path is not None:
+    public = strip_link_only_contacts(data)
+    if data_path is not None and public is data:
         shutil.copyfile(data_path, out / "data.json")
     else:
-        write(out, "data.json", json.dumps(data, ensure_ascii=False, indent=1))
+        write(out, "data.json", json.dumps(public, ensure_ascii=False, indent=1))
     write(out, MARKER, f"{datetime.now().isoformat(timespec='seconds')} {data.get('date', '')}\n")
     return {"animals": len(animals), "prefectures": len(by_pref), "sources": len(data.get("sources", [])), "skipped": skipped}
 
