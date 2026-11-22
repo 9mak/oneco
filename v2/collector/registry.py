@@ -30,7 +30,9 @@ class Source:
     mode: str = "recipe"       # recipe | link_only
     recipe: str | None = None
     enabled: bool = True
-    photo: str = "ok"          # ok | pending（写真表示の許諾を自治体に申請中。返事が来るまで写真を出さない）| no（不可の返事）。T630
+    # ok（規約で二次利用可か、自治体の可の返事がある。根拠を note に書く）| pending（確認が取れていない。お伺いの前も返事待ちも。写真を出さない）
+    # | no（不可の返事・こちらの決まり）。T630。既定は pending（2026-11-22 POLICY.md 方針 1・2: 確認の取れていない写真は出さない）
+    photo: str = "pending"
     legacy: dict[str, Any] = field(default_factory=dict)
 
     @property
