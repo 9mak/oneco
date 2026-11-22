@@ -1,7 +1,7 @@
 """W006 T640 掲載漏れ 2 回目 B: 市民の掲示板のうち迷子（2026-11-17・ネットワークなし）。
 
 おまえさん決定: 飼い主が探している迷子（lost）と、市民が保護している迷子（sheltered）は載せる。飼えなくなった飼い主からの譲渡（新しい飼い主さがし・出会い広場など）は載せない。
-- 写真: lost は飼い主が届けた写真なので photo: no（町田の前例）。sheltered は千葉市・旭川の前例どおりホストの規約で決める（無断転載禁止だけなら ok・事前相談が要るホストは pending）。
+- 写真: lost は飼い主が届けた写真なので photo: no（町田の前例）。sheltered は千葉市・旭川の前例どおりホストの規約で決める（無断転載禁止だけなら ok・事前相談が要るホストは pending）。2026-11-22 POLICY.md 方針 1・2 で、規約で可か可の返事があるものだけ ok、それ以外は pending に変わった（lost の no は方針 5 の別の直しで扱う）。
 - 前橋市（行方不明一覧 lost・市民保護一覧 sheltered）・鳥取県（捜しています lost・保護しています sheltered）・船橋市（個人等で保護している動物 sheltered と、同じページの迷子動物 lost）・
   宮崎市（迷子の猫・犬を探しています lost・迷子の猫・犬を保護しています sheltered）。
 """
@@ -118,7 +118,7 @@ FN_FX = "w006_city_funabashi-3_20261117.html"   # 1 つのページに保護動�
 def test_funabashi_registry():
     s = SOURCES[FN_SHELTERED]
     assert (s.mode, s.enabled, s.kind, s.species, s.prefecture) == ("recipe", True, "sheltered", "mixed", "千葉県")
-    assert s.photo == "ok" and s.phone == "047-435-3916" and "潮見町" in s.address and s.recipe_path.exists()  # CC BY・無断転載禁止
+    assert s.photo == "pending" and s.phone == "047-435-3916" and "潮見町" in s.address and s.recipe_path.exists()  # CC BY・無断転載禁止（2026-11-22 方針 1・2: 可の返事も規約の可も無いので、確認が取れるまで出さない）
     s = SOURCES[FN_LOST]
     assert (s.mode, s.enabled, s.kind, s.species, s.prefecture) == ("recipe", True, "lost", "mixed", "千葉県")
     assert s.photo == "no" and s.phone == "047-435-3916" and s.url == SOURCES[FN_SHELTERED].url and s.recipe_path.exists()
@@ -273,7 +273,7 @@ MZ_LOST_CAT, MZ_LOST_DOG, MZ_SHELT_CAT, MZ_SHELT_DOG = "city_miyazaki-4", "city_
 
 def test_miyazaki_registry():
     for slug, kind, species, photo in ((MZ_LOST_CAT, "lost", "cat", "no"), (MZ_LOST_DOG, "lost", "dog", "no"),
-                                       (MZ_SHELT_CAT, "sheltered", "cat", "ok"), (MZ_SHELT_DOG, "sheltered", "dog", "ok")):
+                                       (MZ_SHELT_CAT, "sheltered", "cat", "pending"), (MZ_SHELT_DOG, "sheltered", "dog", "pending")):
         s = SOURCES[slug]
         assert (s.mode, s.enabled, s.kind, s.species, s.prefecture) == ("recipe", True, kind, species, "宮崎県"), slug
         assert s.photo == photo and s.phone == "0985-85-6011" and s.recipe_path.exists(), slug  # 宮崎市の規約は無断転載禁止のみ。lost の写真は出さない

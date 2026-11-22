@@ -41,7 +41,7 @@ def test_akita_registry():
     s = SOURCES[AKITA]
     assert (s.url, s.kind, s.species, s.mode, s.enabled) == (AKITA_URL, "adoption", "mixed", "recipe", True)
     assert (s.municipality, s.prefecture, s.phone) == ("秋田市保健所", "秋田県", "018-883-1182")
-    assert s.photo == "ok" and s.recipe_path.exists()   # 既存の city_akita-1〜3 と同じ（未指定＝ok）
+    assert s.photo == "pending" and s.recipe_path.exists()   # 未指定は pending（2026-11-22 方針 1・2: 可の返事も規約の可も無いので、確認が取れるまで出さない）
 
 
 def test_akita_today_reads_5_cats_and_the_dog_section_is_empty():

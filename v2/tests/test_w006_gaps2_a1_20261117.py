@@ -44,7 +44,7 @@ def test_fukuyama_registry():
         s = SOURCES[slug]
         assert s.mode == "recipe" and s.enabled and s.kind == "adoption" and s.prefecture == "広島県", slug
         assert s.species == species and s.phone == "084-970-1201" and s.address, slug
-        assert s.photo == "ok", slug  # 福山市の規約は無断転載禁止のみ（T630 の規約確認）
+        assert s.photo == "pending", slug  # 福山市の規約は無断転載禁止のみ（T630 の規約確認）（2026-11-22 方針 1・2: 可の返事も規約の可も無いので、確認が取れるまで出さない）
         assert s.recipe_path.exists(), slug
 
 
@@ -109,7 +109,7 @@ def test_mito_registry():
         s = SOURCES[slug]
         assert s.mode == "recipe" and s.enabled and s.kind == "adoption" and s.prefecture == "茨城県", slug
         assert s.species == species and s.phone == "029-350-3800" and s.address, slug
-        assert s.photo == "ok", slug  # 水戸市の規約は無断転載禁止のみ
+        assert s.photo == "pending", slug  # 水戸市の規約は無断転載禁止のみ（2026-11-22 方針 1・2: 可の返事も規約の可も無いので、確認が取れるまで出さない）
         assert s.recipe_path.exists(), slug
 
 
@@ -242,7 +242,7 @@ def test_naha_registry():
     s = SOURCES[NAHA]
     assert s.mode == "recipe" and s.enabled and s.kind == "adoption" and s.prefecture == "沖縄県" and s.species == "mixed"
     assert s.phone == "098-951-1530" and "南風原町" in s.address and s.recipe_path.exists()
-    assert s.photo == "ok"  # 那覇市の規約は無断転載禁止のみ
+    assert s.photo == "pending"  # 那覇市の規約は無断転載禁止のみ（2026-11-22 方針 1・2: 可の返事も規約の可も無いので、確認が取れるまで出さない）
 
 
 def test_naha_today_reads_6_dogs_and_8_cats_from_the_intro_sections_only():
@@ -297,7 +297,7 @@ def test_utsunomiya_registry():
     s = SOURCES[UTSU]
     assert s.mode == "recipe" and s.enabled and s.kind == "adoption" and s.prefecture == "栃木県" and s.species == "mixed"
     assert s.phone == "028-626-1108" and "竹林町" in s.address and s.recipe_path.exists()
-    assert s.photo == "ok"  # 宇都宮市の規約は無断転載禁止のみ
+    assert s.photo == "pending"  # 宇都宮市の規約は無断転載禁止のみ（2026-11-22 方針 1・2: 可の返事も規約の可も無いので、確認が取れるまで出さない）
 
 
 def test_utsunomiya_today_reads_one_cat_and_one_dog():
@@ -376,7 +376,7 @@ def test_higashiosaka_registry():
         s = SOURCES[slug]
         assert s.mode == "recipe" and s.enabled and s.kind == "adoption" and s.prefecture == "大阪府", slug
         assert s.species == species and s.phone == "072-963-6211" and s.recipe_path.exists(), slug
-        assert s.photo == "ok", slug  # 東大阪市の規約は無断転載禁止のみ
+        assert s.photo == "pending", slug  # 東大阪市の規約は無断転載禁止のみ（2026-11-22 方針 1・2: 可の返事も規約の可も無いので、確認が取れるまで出さない）
 
 
 def test_higashiosaka_today_is_zero_and_never_reads_the_matching_board():

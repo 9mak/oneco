@@ -17,5 +17,5 @@ def test_photo_ok(slug):
 
 def test_iwate_prefecture_page_is_untouched():
     # URL に /morioka/ を含むが県央保健所のページで、盛岡市の返事の対象ではない
-    assert SOURCES["pref_iwate_kennan"].photo == "ok"
+    assert SOURCES["pref_iwate_kennan"].photo == "pending"  # 盛岡市の可は県のページに及ばない（2026-11-22 方針 1・2: 可の返事も規約の可も無いので、確認が取れるまで出さない）
     assert SOURCES["pref_iwate_kennan"].municipality != "盛岡市保健所"

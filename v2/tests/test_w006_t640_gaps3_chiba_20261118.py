@@ -39,7 +39,7 @@ def test_chiba_registry():
     s = SOURCES[CHIBA]
     assert (s.url, s.kind, s.species, s.mode, s.enabled) == (CHIBA_URL, "adoption", "cat", "recipe", True)
     assert (s.municipality, s.prefecture, s.phone) == ("千葉市", "千葉県", "043-258-7817")
-    assert s.photo == "ok" and s.recipe_path.exists()   # 既存の千葉市のページと同じ（無断転載禁止のみ）
+    assert s.photo == "pending" and s.recipe_path.exists()   # 無断転載禁止のみ（2026-11-22 方針 1・2: 可の返事も規約の可も無いので、確認が取れるまで出さない）
 
 
 def test_chiba_today_reads_2_kittens_and_none_is_on_the_transfercats_page():
