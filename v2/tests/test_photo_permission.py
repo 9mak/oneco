@@ -52,8 +52,18 @@ def test_registry_photo_defaults_to_pending_and_accepts_ok(tmp_path: Path):
     assert srcs["b"].photo == "ok"
 
 
-# 台帳で photo: ok にしてよい根拠（note に書く）: 自治体の可の返事、規約の判定、POLICY.md の決定（岡山市の譲渡 2 ページは方針 43）
-OK_BASIS = re.compile(r"返事|規約で二次利用可|方針 ?43")
+# 台帳で photo: ok にしてよい根拠（note に書く）: 自治体の可の返事、規約の判定、POLICY.md の決定（岡山市の譲渡 2 ページは方針 43）。
+# 「返事待ち」「返事が無い」「返事が来るまで」「返事は無い」「返事を待つ」は根拠にならない（11/22 reviewer）
+OK_BASIS = re.compile(r"返事(?!待ち|が無|がな|が来|は無|はな|を待)|規約で二次利用可|方針 ?43")
+
+
+def test_ok_basis_does_not_accept_waiting_or_missing_replies():
+    assert OK_BASIS.search("2026-11-17 奈良市から「表示してよい」と返事")
+    assert OK_BASIS.search("富山県の返事（連絡先は厚生センターのものに）を受けて")
+    assert OK_BASIS.search("規約で二次利用可（神戸市）")
+    assert OK_BASIS.search("POLICY.md 方針 43")
+    for note in ("11/12 にお伺い。返事待ち", "返事が無いので追伸", "返事が来るまで止める", "まだ返事は無い", "返事を待つ"):
+        assert not OK_BASIS.search(note), note
 
 
 def test_real_registry_photo_ok_has_basis_in_note():
@@ -61,6 +71,23 @@ def test_real_registry_photo_ok_has_basis_in_note():
     raw = yaml.safe_load((ROOT / "registry" / "sources.yaml").read_text(encoding="utf-8"))["sources"]
     no_basis = [s["slug"] for s in raw if str(s.get("photo")) == "ok" and not OK_BASIS.search(str(s.get("note") or ""))]
     assert no_basis == []
+
+
+def test_site_without_registry_treats_source_without_photo_as_pending(tmp_path: Path):
+    """方針 1・2: data の sources に photo が無いとき（T630 より前の収集や、台帳から消えた掲載元）は、
+    --registry なしで組み立てても写真を出さない（data 側の既定も pending。11/22 reviewer）。"""
+    data = _data()
+    for s in data["sources"]:
+        s.pop("photo", None)
+    saga = next(a for a in data["animals"] if a["source"].startswith("pref_saga") and a.get("image_url"))
+    out = tmp_path / "dist"
+    _load_build().build_site(data, CONFIG, out)
+    h = (out / "animals" / saga["id"] / "index.html").read_text(encoding="utf-8")
+    assert saga["image_url"] not in h
+    dj = json.loads((out / "data.json").read_text(encoding="utf-8"))
+    assert not any(a.get("image_url") for a in dj["animals"])
+    srcs = (out / "sources" / "index.html").read_text(encoding="utf-8")
+    assert "写真は自治体の確認が取れるまで出していません" in srcs
 
 
 def test_real_registry_photo_decisions_20261122():

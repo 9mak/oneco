@@ -455,6 +455,7 @@
    "phone": null,
    "address": null,
    "mode": "recipe",
+   "photo": "ok",
    "recipe": "recipes/douai_tokushima-2.yaml",
    "enabled": true,
    "status": "ok",

@@ -419,7 +419,7 @@ sources:
   recipe: recipes/city_kobe.yaml
   enabled: true
   photo: ok
-  note: "2026-11-22 規約で二次利用可（神戸市ウェブサイト利用規約。政府標準利用規約 2.0 準拠で、出典を書けば複製・公衆送信を自由に、商用も可。T655 の規約の判定で「聞かなくてよい」）。POLICY.md 方針 1 で写真を出す"
+  note: "2026-11-22 規約で二次利用可（神戸市ウェブサイト利用規約。政府標準利用規約 2.0 準拠で、出典を書けば複製・公衆送信を自由に、商用も可。T655 の規約の判定で「聞かなくてよい」）。POLICY.md 方針 1 で写真を出す。条件は出典の記載（oneco は子ごとに掲載元の名前と元ページへのリンクを出している）。収容動物のページそのものに別の利用ルールの表示が無いかは未確認（11/22 は 0 頭。写真が載り始めたら確かめる）"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_kobe.py
     requires_js: false
