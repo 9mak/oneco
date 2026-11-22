@@ -37,7 +37,8 @@ def _source(slug: str, mode: str, status: str, phone: str, address: str) -> dict
     return {"slug": slug, "name": f"テスト（{slug}）", "municipality": "テスト市", "prefecture": "徳島県",
             "url": f"https://example.lg.jp/{slug}", "mode": mode, "status": status, "count": 1 if status == "ok" else 0,
             "phone": phone, "address": address,
-            "verified_phone_url": f"https://example.lg.jp/{slug}", "verified_address_url": f"https://example.lg.jp/{slug}"}
+            "verified_phone_url": f"https://example.lg.jp/{slug}", "verified_address_url": f"https://example.lg.jp/{slug}",
+            "photo": "ok"}  # 収集は台帳の photo を必ず書く（書いていなければ pending。2026-11-22 方針 1・2）
 
 
 def _data() -> dict[str, Any]:

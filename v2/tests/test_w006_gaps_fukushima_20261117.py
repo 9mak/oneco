@@ -53,7 +53,7 @@ def test_registry_entries():
         s = SOURCES[f"pref_fukushima-{n}"]
         assert s.mode == "recipe" and s.enabled and s.kind == "adoption" and s.prefecture == "福島県", n
         assert s.species == species and s.phone == phone and s.address, n
-        assert s.photo == "ok", n  # 既存の福島県の掲載元と同じ（規約は無断転載禁止のみ）
+        assert s.photo == "pending", n  # 規約は無断転載禁止のみ（2026-11-22 方針 1・2: 可の返事も規約の可も無いので、確認が取れるまで出さない）
         assert s.contact_scope == "facility", n
         assert s.url.startswith("https://www.pref.fukushima.lg.jp/sec/2162"), n
 

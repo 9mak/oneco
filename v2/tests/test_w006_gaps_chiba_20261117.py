@@ -62,7 +62,7 @@ def test_registry_entries():
         s = SOURCES[slug]
         assert s.mode == "recipe" and s.enabled and s.kind == "adoption" and s.prefecture == "千葉県", slug
         assert s.species == species and s.phone == phone, slug
-        assert s.photo == "ok", slug  # 既存の同じホスト（pref.chiba.lg.jp・city.chiba.jp）の掲載元と同じ（規約は無断転載禁止のみ）
+        assert s.photo == "pending", slug  # 規約は無断転載禁止のみ（2026-11-22 方針 1・2: 可の返事も規約の可も無いので、確認が取れるまで出さない）
         assert s.contact_scope == "facility", slug
         assert s.recipe_path.exists(), slug
 

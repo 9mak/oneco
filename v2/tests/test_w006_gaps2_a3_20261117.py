@@ -53,7 +53,7 @@ def test_kagawa_registry():
         assert s.mode == "recipe" and s.enabled and s.kind == "stray" and s.prefecture == "香川県" and s.species == "mixed", slug
         assert s.phone == phone and name in s.municipality and s.recipe_path.exists(), slug
         assert s.url.endswith("/maigo_info.html"), slug
-        assert s.photo == "ok", slug  # 香川県の規約は無断転載禁止のみ（既存の pref_kagawa と同じ）
+        assert s.photo == "pending", slug  # 香川県の規約は無断転載禁止のみ（2026-11-22 方針 1・2: 可の返事も規約の可も無いので、確認が取れるまで出さない）
 
 
 def test_kagawa_seisan_html_has_the_animals_the_pdf_no_longer_shows():

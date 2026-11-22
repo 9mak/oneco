@@ -40,7 +40,7 @@ def test_registry():
         s = SOURCES[slug]
         assert (s.url, s.kind, s.species, s.mode, s.enabled) == (url, "adoption", species, "recipe", True)
         assert (s.municipality, s.prefecture, s.phone) == ("さいたま市", "埼玉県", "048-840-4150")
-        assert s.photo == "ok"   # 既存の city_saitama-1・-2 と同じ（未指定＝ok）
+        assert s.photo == "pending"   # 未指定は pending（2026-11-22 方針 1・2: 可の返事も規約の可も無いので、確認が取れるまで出さない）
         assert s.recipe_path.exists()
 
 

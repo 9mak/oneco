@@ -59,6 +59,7 @@
    "phone": "0952-30-1350",
    "address": null,
    "mode": "recipe",
+   "photo": "ok",
    "recipe": "recipes/pref_saga-1.yaml",
    "enabled": true,
    "status": "ok",

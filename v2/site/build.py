@@ -619,7 +619,7 @@ PH_DOTS = '<div class="ph-dots" aria-hidden="true"><i></i><i></i></div>'
 
 
 def placeholder(a: dict[str, Any] | None = None, *, small: bool = False, button_url: str = "") -> str:
-    """写真が無い子の枠。丸 2 つ（PH_DOTS）の下に文を置く。写真を止めている掲載元（T630: 許諾待ち・不可）の子は
+    """写真が無い子の枠。丸 2 つ（PH_DOTS）の下に文を置く。写真を止めている掲載元（T630: 確認が取れるまで出さない・不可）の子は
     掲載元には写真があるので「写真はありません」とは書かない。それ以外も、取れなかっただけかもしれないので「無い」とは言い切らない（Codex #22）。
     small は一覧の小さな枠（96px）用に改行を入れた短い文。button_url があれば「自治体のページで写真を見る」ボタンを添える（個体ページ）。"""
     withheld = bool(a and a.get("_photo_withheld"))
@@ -967,9 +967,10 @@ def build_sources(cfg: dict[str, Any], data: dict[str, Any]) -> str:
             sp = source_species(s)
             if status == "ok":
                 res = f'<b>{int(s.get("count") or 0)} 頭</b>'
-                if str(s.get("photo") or "ok") == "pending":
-                    res += "（写真は許諾の返事待ちのため出していません）"
-                elif str(s.get("photo") or "ok") == "no":
+                if str(s.get("photo") or "pending") == "pending":
+                    # まだお伺いしていない自治体もあるので「返事待ち」とは書かない（2026-11-22 方針 1・2）
+                    res += "（写真は自治体の確認が取れるまで出していません）"
+                elif str(s.get("photo") or "pending") == "no":
                     # 飼い主が探している迷子（lost）のページは、自治体の返事ではなくこちらの決まりで写真を出していない
                     # （飼い主の方が届け出た写真と思われるため。町田市 -2〜-4 ほか）。自治体の意向とは書かない（T652）
                     res += "（写真は出していません）" if str(s.get("kind")) == "lost" else "（写真は自治体の意向で出していません）"
@@ -1364,9 +1365,10 @@ def write(out: Path, rel: str, text: str) -> None:
 
 
 def no_photo_sources(data: dict[str, Any]) -> set[str]:
-    """写真を出さない掲載元の slug（台帳 photo が ok 以外。T630: 許諾の返事待ち・不可）。"""
+    """写真を出さない掲載元の slug（台帳 photo が ok 以外。T630: 確認が取れるまで出さない・不可）。
+    photo が無い掲載元（T630 より前の収集・台帳から消えた掲載元）も出さない（2026-11-22 方針 1・2）。"""
     return {str(s.get("slug")) for s in data.get("sources", [])
-            if isinstance(s, dict) and str(s.get("photo") or "ok") != "ok"}
+            if isinstance(s, dict) and str(s.get("photo") or "pending") != "ok"}
 
 
 def strip_photos(data: dict[str, Any]) -> dict[str, Any]:
@@ -1409,7 +1411,7 @@ def build_site(data: dict[str, Any], cfg: dict[str, Any], out: Path, data_path: 
     写真を出さない掲載元（台帳 photo が ok 以外）があるときは image_url を落とした data を書く。"""
     cfg = {**DEFAULT_CFG, **cfg}
     prepare_out(out)
-    # 掲載元には写真があるが、許諾待ち・不可で止めている子（枠に「写真は自治体のページで見られます」と出す）
+    # 掲載元には写真があるが、確認が取れるまで・不可で止めている子（枠に「写真は自治体のページで見られます」と出す）
     hidden = no_photo_sources(data)
     withheld = {str(a.get("id")) for a in data.get("animals", [])
                 if isinstance(a, dict) and a.get("source") in hidden and a.get("image_url")}
@@ -1463,11 +1465,12 @@ def build_site(data: dict[str, Any], cfg: dict[str, Any], out: Path, data_path: 
 
 def merge_registry_photo(data: dict[str, Any], registry: Path) -> dict[str, Any]:
     """台帳（sources.yaml）の photo を slug ごとに data["sources"] へ合流させる。
-    収集時の台帳に photo が無かった日のデータでも、今の台帳の判断で写真を止められるようにする（T630）。"""
+    収集時の台帳に photo が無かった日のデータでも、今の台帳の判断で写真を止められるようにする（T630）。
+    台帳に photo を書いていない掲載元は pending（collector.registry.Source の既定と同じ。2026-11-22 方針 1・2）。"""
     import yaml  # 収集側の依存。build 単体では使わないのでここで読む
 
     reg = yaml.safe_load(registry.read_text(encoding="utf-8")) or {}
-    photo = {str(s.get("slug")): str(s.get("photo") or "ok") for s in reg.get("sources", []) if isinstance(s, dict)}
+    photo = {str(s.get("slug")): str(s.get("photo") or "pending") for s in reg.get("sources", []) if isinstance(s, dict)}
     if not photo:
         return data
     sources = [({**s, "photo": photo[str(s.get("slug"))]} if isinstance(s, dict) and str(s.get("slug")) in photo else s)
@@ -1500,7 +1503,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT, help="出力先（既定: site/dist）")
     ap.add_argument("--config", type=Path, default=DEFAULT_CONFIG, help="設定（既定: site/config.json）")
     ap.add_argument("--registry", type=Path, default=None,
-                    help="台帳 sources.yaml。渡すと photo（ok | pending | no）を合流させ、ok 以外の掲載元の写真を出さない")
+                    help="台帳 sources.yaml。渡すと photo（ok | pending | no。書いていなければ pending）を合流させ、ok 以外の掲載元の写真を出さない")
     args = ap.parse_args(argv)
     n = build(args.data, args.out, args.config, registry=args.registry)
     print(f"{args.out}: {n['animals']} 頭・{n['prefectures']} 都道府県・情報源 {n['sources']} 件"

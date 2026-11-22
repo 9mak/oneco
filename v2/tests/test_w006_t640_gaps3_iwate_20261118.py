@@ -39,7 +39,7 @@ def test_iwate_registry():
     s = SOURCES[IWATE]
     assert (s.url, s.kind, s.species, s.mode, s.enabled) == (IWATE_URL, "stray", "mixed", "recipe", True)
     assert (s.municipality, s.prefecture, s.phone) == ("中部保健所", "岩手県", "0198-41-3276")
-    assert s.photo == "ok" and s.recipe_path.exists()   # 既存の pref_iwate_chubu と同じ（未指定＝ok）
+    assert s.photo == "pending" and s.recipe_path.exists()   # 未指定は pending（2026-11-22 方針 1・2: 可の返事も規約の可も無いので、確認が取れるまで出さない）
 
 
 def test_iwate_today_reads_the_4_stray_animals_the_adoption_slug_does_not_read():
