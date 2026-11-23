@@ -447,7 +447,7 @@ def test_photo_button_only_for_withheld_photos_with_a_source(tmp_path: Path):
     assert w is not None and w["href"] == BASE["source_url"] and w.get_text() == "自治体のページで写真を見る ↗"
     assert "ph-btn" not in _animal(out, "withheld0002") and "ph-btn" not in _animal(out, "nophoto00001")
     card = _card(_pref(out), "withheld0001")
-    assert 'aria-label="写真は自治体のページで見られます"' in card and "写真は自治体の<br>ページで見られます" in card
+    assert 'aria-label="写真は自治体のページでご確認ください"' in card and "写真は自治体の<br>ページでご確認<br>ください" in card
 
 
 def test_detail_media_is_contained_not_cropped():

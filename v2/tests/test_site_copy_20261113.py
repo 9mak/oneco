@@ -2,7 +2,7 @@
 
 - 名前の無い子の見出し: バッジに「犬」「里親募集」があるのに見出しも「里親募集の犬」だった → 品種と性別（「ミニチュア・シュナウザー（オス）」）。
   品種が分からなければ毛色と種別（「茶白の猫（メス）」）、それも無ければ種別（「犬（オス）」）。下の行は見出しと重ねない
-- 許諾待ち・不可で写真を止めている子は「写真はありません」ではなく「写真は自治体のページで見られます」
+- 許諾待ち・不可で写真を止めている子は「写真はありません」ではなく「写真は自治体のページでご確認ください」
 - 表記ゆれ: 性別の 雄・雌・おす・めす → オス・メス、品種の 雑・MIX・ミックス(雑種) 等 → 雑種
 - 自治体名に県名が入っているときは後ろに（県名）を重ねない（「愛知県動物愛護センター（わんにゃんナビ）（愛知県）」）
 - 備考が「無」「募集中」だけの子は備考を出さない
@@ -123,12 +123,13 @@ def _text(html: str) -> str:
 def test_withheld_photo_says_the_photo_is_on_the_source_page(tmp_path: Path):
     out = _build(tmp_path)
     w = _page(out, "withheld0001")
-    assert "写真は自治体のページで見られます" in w and "写真はありません" not in w
+    assert "写真は自治体のページでご確認ください" in w and "写真はありません" not in w and "見られます" not in w
     n = _page(out, "nophoto00001")
-    assert "写真は自治体のページでご確認ください" in n and "写真は自治体のページで見られます" not in n   # 無いとは言い切らない（test_site_review_20261113.py）
+    assert "写真は自治体のページでご確認ください" in n and "見られます" not in n   # 無いとは言い切らない（test_site_review_20261113.py）
     # 一覧のカードも同じ
     pref = (out / "pref" / "佐賀県" / "index.html").read_text(encoding="utf-8")
-    assert "写真は自治体のページで見られます" in pref
+    assert "写真は自治体の<br>ページでご確認<br>ください" in pref
+    assert "見られます" not in pref and "掲載元で" not in pref
     # data.json には内部の印を出さず、写真の URL も出さない
     data = json.loads((out / "data.json").read_text(encoding="utf-8"))
     w_row = next(a for a in data["animals"] if a["id"] == "withheld0001")
