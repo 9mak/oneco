@@ -40,11 +40,9 @@ def _build(slug: str, html: str):
 # --- 青森市 -------------------------------------------------------------------------
 def test_aomori_reads_unnamed_post_cats_and_the_note_before_breed():
     res = _build("city_aomori-1", _fx("aomori1_20260205"))
-    assert len(res.animals) == 12
-    tuna = res.animals[0]
-    assert (tuna["name"], tuna["management_no"], tuna["breed"], tuna["color"]) == ("ツナ", "R07-62", "MIX", "パステルサビ")
-    assert tuna["note"] == "※体調不良のため、譲渡お見合い中止"
-    unnamed = res.animals[3]    # ワンニャン里親探しポスト: span.imgtitle が「R7-207」だけ（「」が無い）
+    assert len(res.animals) == 11   # 「ツナ」(R07-62) は譲渡お見合い中止なので載せない（2026-11-23・POLICY.md 方針 22）
+    assert "R07-62" not in [a["management_no"] for a in res.animals]
+    unnamed = res.animals[2]    # ワンニャン里親探しポスト: span.imgtitle が「R7-207」だけ（「」が無い）
     assert unnamed["name"] is None and unnamed["management_no"] == "R7-207"
     assert (unnamed["breed"], unnamed["color"], unnamed["sex"], unnamed["age"]) == ("MIX", "キジトラ", "メス", "令和7年7月生まれ")
     assert all(a["species"] == "cat" and a["image_url"] for a in res.animals)
