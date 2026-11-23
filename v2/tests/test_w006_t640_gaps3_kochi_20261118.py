@@ -1,9 +1,9 @@
 """W006 T640 掲載漏れ 3 回目 B: 高知県中央・中村小動物管理センター アニマルステーション（市民の掲示板）のうち迷子の 4 区分（2026-11-18・ネットワークなし）。
 
-おまえさん決定: 飼い主が探している迷子（lost）と市民が保護している迷子（sheltered）は載せる。飼えなくなった飼い主からの譲渡（「猫を譲りたい人」）は載せない。
+おまえさん決定: 飼い主が探している迷子（lost）と市民が保護している迷子（sheltered）は載せる。飼えなくなった飼い主からの譲渡（「猫を譲りたい人」だけの投稿）は載せない。
 - 区分ごとの一覧: category/maigo-sagasu-neko（猫を探している）・maigo-sagasu-inu（犬を探している）・maigo-hogo-neko（猫を保護している）・maigo-hogo-inu（犬を保護している）。
 - 一覧のカード（li.unit）に管理番号・仮名・種類・性別と区分のリンクが出る。個体ページには「提供者住所」（市民の住所）が出るので辿らない。
-- 「迷子の猫を保護している」の今日の 1 件（08J05）は「猫を譲りたい人」の区分も付いた譲渡の投稿なので載せない。
+- 「迷子の猫を保護している」の今日の 1 件（08J05）は「猫を譲りたい人」の区分も付いているが、保護している区分の一覧にあるので載せる（POLICY.md 方針 6・7。2026-11-23）。
 - 犬の 2 区分は今日 0 頭（カードの無い一覧）。
 """
 
@@ -86,18 +86,39 @@ def test_lost_cats_today_reads_3_cards_and_the_photo_only_where_there_is_one():
     assert [a["source_url"] for a in animals] == ["https://kochi-apc.com/28487/", "https://kochi-apc.com/5640/", "https://kochi-apc.com/5638/"]
 
 
-def test_shelter_cat_that_is_also_tagged_as_a_give_away_post_is_not_listed_and_the_day_is_zero():
+def test_shelter_cat_that_is_also_tagged_as_a_give_away_post_is_listed_because_the_page_is_the_found_category():
+    # POLICY.md 方針 6・7: 市民が保護している子もほかの子と同じに載せる。「迷子の猫を保護している」の一覧にある投稿は、
+    # 「猫を譲りたい人」の区分が一緒に付いていても載せる（今日の 08J05）
     html = _fx(FXN[HOGO_NEKO])
     assert "08J05" in html and "猫を譲りたい人" in html   # 区分が「猫を譲りたい人」と「迷子の猫を保護している」の両方
     c = _run(HOGO_NEKO, html)
-    assert _zero(c), (c.status, c.error)
-    assert c.result.empty_evidence == "empty_absent"
+    assert c.status == "ok", (c.status, c.error)
+    assert [(a["note"], a["name"], a["breed"], a["sex"], a["species"], a["source_url"]) for a in c.result.animals] == [
+        ("管理番号：08J05", "るか", "雑種", "オス", "cat", "https://kochi-apc.com/5392/")]
+    assert not c.result.animals[0]["image_url"]   # 「写真がありません」の仮画像
+
+
+def test_give_away_only_post_is_never_read_on_any_of_the_four_pages():
+    # 飼い主の手放しだけの投稿（「譲りたい人」だけの区分。方針 41 でリンクのみ）は、保護の区分が付かなければ載せない
+    html = _fx(FXN[HOGO_NEKO])
+    soup = BeautifulSoup(html, "lxml")
+    for a in soup.select("li.unit a.maigo-hogo-neko"):
+        a.decompose()
+    c = _run(HOGO_NEKO, str(soup))
+    assert _zero(c) and c.result.empty_evidence == "empty_absent", (c.status, c.error)
+    # 探している区分の一覧に混ざった「譲りたい人」の投稿も、これまでどおり載せない（猫を探している 3 件に 1 件足す）
+    card = BeautifulSoup(html, "lxml").select_one("li.unit")
+    for a in card.select("a.maigo-hogo-neko"):
+        a.decompose()
+    lost = BeautifulSoup(_fx(FXN[SAGASU_NEKO]), "lxml")
+    lost.select_one("ul.animal-card-item").append(card)
+    c = _run(SAGASU_NEKO, str(lost))
+    assert c.status == "ok" and [a["note"] for a in c.result.animals] == ["管理番号：08M04", "管理番号：08M03", "管理番号：08M02"]
 
 
 def test_shelter_cat_tagged_only_as_found_is_listed():
-    # 譲渡の区分が付かない投稿（市民が保護している迷子だけ）は載せる。今日の 08J05 から譲渡の区分を外して再現する
+    # 譲渡の区分が付かない投稿（市民が保護している迷子だけ）も載せる。今日の 08J05 から譲渡の区分を外して再現する
     html = _fx(FXN[HOGO_NEKO])
-    assert html.count("猫を譲りたい人") >= 1
     soup = BeautifulSoup(html, "lxml")
     for a in soup.select("li.unit a.yuzuru-neko"):
         a.decompose()
