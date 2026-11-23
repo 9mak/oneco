@@ -94,38 +94,46 @@ def test_resident_protected_cats_and_others_get_other_for_birds_and_turtles():
     assert cat["image_url"] == SITE + "/uploaded/image/69115.jpg"
 
 
-def test_lost_dogs_keep_only_this_year_and_take_the_call_name():
+def test_lost_dogs_keep_every_row_the_page_still_lists_and_take_the_call_name():
+    # 方針 31: 掲載元が載せているかぎり載せる（受付の年で切らない）。fixture は 2026-10-06 の実ページで 46 行（2024 年 10 月から）
     res = _run("city_takasaki-5", _fixture(5))
-    assert len(res.animals) == 17
+    assert len(res.animals) == 46
     assert all(a["kind"] == "lost" and a["species"] == "dog" for a in res.animals)
     first = res.animals[0]
     assert _pick(first, "management_no", "name", "shelter_date", "location", "breed", "sex", "size", "age") == {
         "management_no": "2026-22", "name": "りま", "shelter_date": "令和8年9月8日", "location": "北群馬郡吉岡町漆原", "breed": "柴", "sex": "オス", "size": "中型", "age": "15才"}
-    # 受付が令和7年までの古い届け出（2024 年 10 月から残る）は載せない（2025‐48 は 2025-10-28 受付）。受付が令和8年で行方不明が令和7年の行は載せる
-    numbers = [a["management_no"] for a in res.animals]
-    assert not any(n.replace("‐", "-") == "2025-48" for n in numbers) and "2025-69" in numbers   # 2025-69 は 2026-03-16 受付
+    numbers = [a["management_no"].replace("‐", "-") for a in res.animals]
+    assert "2025-48" in numbers and "2025-69" in numbers and len(set(numbers)) == 46
+    # 受付が令和7年以前の行も、日付・場所・項目が 1 行ぶんずれずに読める（2025-48 は 2025-10-28 受付）
+    old = next(a for a in res.animals if a["management_no"].replace("‐", "-") == "2025-48")
+    assert old["shelter_date"].startswith("令和7年") and old["location"] and old["breed"] and old["sex"].startswith(("オス", "メス"))
     assert next(a for a in res.animals if a["management_no"] == "2026-4")["shelter_date"] == "令和7年10月18日"
     # 行方不明が日付の幅で書かれた行（令和8年8月7日～13日）は初日と場所を取る
     wide = next(a for a in res.animals if a["management_no"] == "2026-13")
     assert wide["shelter_date"] == "令和8年8月7日" and wide["location"] == "渋川、高崎周辺"
 
 
-def test_lost_cats_and_others_keep_this_year_and_birds_are_other():
+def test_lost_cats_and_others_keep_every_row_and_birds_are_other():
     res = _run("city_takasaki-6", _fixture(6))
-    assert len(res.animals) == 39
+    assert len(res.animals) == 131
     by = {a["management_no"]: a for a in res.animals}
     assert by["2026-56"]["species"] == "cat" and by["2026-56"]["name"] == "リュウ"
     assert by["2026-55"]["species"] == "other" and by["2026-55"]["breed"] == "セキセイインコ"
-    assert "2024" not in " ".join(a["management_no"] for a in res.animals)
+    assert any(n.startswith("2024") for n in by)
+    assert all(a["shelter_date"] and a["management_no"] for a in res.animals)
 
 
-def test_lost_pages_old_year_rows_are_dropped_by_the_filter_and_a_new_year_row_would_be_kept():
+def test_lost_pages_have_no_year_filter_and_the_header_row_is_not_an_animal():
+    for n in (5, 6):
+        assert not (Recipe.load(ROOT / "recipes" / f"city_takasaki-{n}.yaml").row_filter or {}).get("text_has_any")
     html = _fixture(5)
     res = _run("city_takasaki-5", html)
+    assert len(res.animals) == 46
+    # 受付が令和7年だけの日（年を書き換えて再現）も 0 行にならず、全行を読む
     old = _run("city_takasaki-5", html.replace("令和8年", "令和7年"))
-    assert len(res.animals) == 17 and old.animals == [] and not old.empty_confirmed
-    new = _run("city_takasaki-5", html.replace("令和8年", "令和9年"))
-    assert len(new.animals) == 17
+    assert len(old.animals) == 46
+    # 見出しの行（th だけ）は子に数えない
+    assert all(a["management_no"] for a in res.animals) and "受付日時" not in " ".join(a["management_no"] for a in res.animals)
 
 
 def test_adoption_dogs_and_cats_read_name_photo_detail_and_birth_month():
@@ -138,3 +146,15 @@ def test_adoption_dogs_and_cats_read_name_photo_detail_and_birth_month():
     cats = _run("city_takasaki-8", _fixture(8))
     assert len(cats.animals) == 11 and cats.animals[0]["name"] == "モッチー" and cats.animals[0]["species"] == "cat"
     assert all(a["image_url"] and a["source_url"].startswith(SITE + "/page/") for a in cats.animals)
+
+
+def test_lost_row_whose_age_cell_holds_only_an_age_does_not_put_it_in_the_sex():
+    # 実ページ（2026-11-23）のアヒル 2 行は 4 列目が「5か月齢」だけ。性別・体格は書かれていないので、年齢だけ取る
+    html = _fixture(6)
+    cell = BeautifulSoup(html, "lxml").select("tr:has(td)")[0].select("td")[3]
+    html = html.replace(str(cell), "<td>5か月齢</td>", 1)
+    assert "<td>5か月齢</td>" in html
+    first = _run("city_takasaki-6", html).animals[0]
+    assert first["sex"] is None and first["size"] is None and first["age"] == "5か月齢"
+    normal = _run("city_takasaki-6", _fixture(6)).animals[0]
+    assert normal["sex"] and normal["size"] and normal["age"]
