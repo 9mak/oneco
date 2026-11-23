@@ -250,8 +250,8 @@ def test_naha_today_reads_6_dogs_and_8_cats_from_the_intro_sections_only():
     c = _run(NAHA, html)
     assert c.status == "ok", c.error
     animals = c.result.animals
-    assert len(animals) == 14 and len({a["id"] for a in animals}) == 14 and all(a["image_url"] for a in animals)
-    assert [a["species"] for a in animals] == ["dog"] * 6 + ["cat"] * 8
+    assert len(animals) == 13 and len({a["id"] for a in animals}) == 13 and all(a["image_url"] for a in animals)
+    assert [a["species"] for a in animals] == ["dog"] * 6 + ["cat"] * 7   # まこは写真の枠が「譲渡されました」の画像なので載せない（2026-11-23）
     names = [a["name"] for a in animals]
     assert names[:6] == ["フーガ", "平次(へいじ)", "ボーノ", "仁(じん)", "リュウ", "ラナ"]  # 全角の括弧はエンジンが半角にそろえる
     assert names[6:9] == ["ちよ", "ビジェ", "チャバ"]
@@ -260,9 +260,8 @@ def test_naha_today_reads_6_dogs_and_8_cats_from_the_intro_sections_only():
     assert "元気で遊ぶことが大好きです" in first["note"] and "写真撮影日" not in first["note"]
     cats = animals[6:]
     assert cats[0]["breed"] is None and cats[0]["sex"] == "メス(不妊済み)"
-    # 「名前：まこ（譲渡交渉中）」は載せて note に出す（トライアル中と同じ扱い）
-    mako = next(a for a in cats if a["name"].startswith("まこ"))
-    assert "譲渡交渉中" in mako["note"]
+    # 「名前：まこ（譲渡交渉中）」は写真の枠が「譲渡されました」の画像に差し替わっているので載せない
+    assert not any(a["name"].startswith("まこ") for a in cats)
     assert _hits(NAHA, html) == []
 
 
