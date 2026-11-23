@@ -44,7 +44,7 @@ def test_machida_lost_pages_show_photos_again(slug: str) -> None:
 def test_owner_photo_pages_are_pending_not_no(slug: str) -> None:
     assert SOURCES[slug].photo == "pending"
     n = _note(slug)
-    assert "確認が取れるまで出さない" in n and "方針 5" in n
+    assert "確認が取れるまで出さない" in n and "方針 5" in n and "自治体に改めて聞く" in n
     assert "photo: no" not in n and "町田市 -2〜-4 と同じ扱い" not in n and "町田の前例" not in n
 
 

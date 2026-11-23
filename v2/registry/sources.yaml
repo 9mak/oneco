@@ -1234,7 +1234,7 @@ sources:
   phone: 048-969-8511
   address: null
   url: https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/jouto/keijiban.html
-  verified_at: '2026-11-23'
+  verified_at: '2026-11-24'
   verified_phone_url: "https://www.city.koshigaya.saitama.jp/kurashi_shisei/fukushi/hokenjo/pet/jouto/keijiban.html"
   kind: adoption
   species: mixed
@@ -9283,7 +9283,7 @@ sources:
   recipe: recipes/city_miyazaki-5.yaml
   enabled: true
   photo: pending
-  note: '掲載漏れの棚卸しで追加（2026-11-17 W006 T640 2 回目。市民の掲示板のうち迷子）。「市民の皆さんが迷子の犬を探しています」＝市民（飼い主）が探している迷子犬の掲載。2026-11-17 時点で 4 件（2025-07 の掲載を含む）。city_miyazaki-4（猫）と同じ扱い（年で絞らず全部読む（おまえさん決定 2026-11-18: こちらで期間を決めない）。写真は確認が取れるまで出さない）。2026-11-22 POLICY.md 方針 5 により、飼い主の写真だからという理由では止めない（photo は pending）。 T656 直し 2 回目（2026-11-21）。場所が空になる書き方（時刻の後ろに場所だけ・「夕方から夜にかけて、…より行方不明」・「令和7年12月23日、…で保護」）を読み、掲載番号の 9 桁（202502212）が 8 桁に切れるのを直した。'
+  note: '掲載漏れの棚卸しで追加（2026-11-17 W006 T640 2 回目。市民の掲示板のうち迷子）。「市民の皆さんが迷子の犬を探しています」＝市民（飼い主）が探している迷子犬の掲載。2026-11-17 時点で 4 件（2025-07 の掲載を含む）。city_miyazaki-4（猫）と同じ扱い（年で絞らず全部読む（おまえさん決定 2026-11-18: こちらで期間を決めない）。写真は確認が取れるまで出さない）。2026-11-22 おまえさん決定（POLICY.md 方針 5）により、飼い主の写真だからという理由では写真を止めない。自治体の可の返事がまだ無いので、確認が取れるまで出さない（photo は pending）。迷子の写真は自治体に改めて聞く（T630）。 T656 直し 2 回目（2026-11-21）。場所が空になる書き方（時刻の後ろに場所だけ・「夕方から夜にかけて、…より行方不明」・「令和7年12月23日、…で保護」）を読み、掲載番号の 9 桁（202502212）が 8 桁に切れるのを直した。'
 - slug: city_miyazaki-6
   name: 宮崎市（市民が保護している迷子の猫）
   municipality: 宮崎市
