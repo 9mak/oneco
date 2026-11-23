@@ -60,9 +60,9 @@ def test_kurume_collect_does_not_fetch(slug):
 
 
 @pytest.mark.parametrize("slug", ASAHIKAWA_LOST)
-def test_asahikawa_lost_pages_never_show_photos(slug):
+def test_asahikawa_lost_pages_stay_pending_until_confirmed(slug):
     s = SOURCES[slug]
-    assert (s.mode, s.enabled, s.kind, s.photo) == ("recipe", True, "lost", "no")
+    assert (s.mode, s.enabled, s.kind, s.photo) == ("recipe", True, "lost", "pending")
     assert "2026-11-19" in NOTES[slug] and "T630" in NOTES[slug]
 
 

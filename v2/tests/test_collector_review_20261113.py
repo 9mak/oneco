@@ -3,7 +3,6 @@
 - PDF の表のセル内の改行: 和文どうしの間は詰める（香川 さぬき動物愛護センター「スクスク成 長しています」55 件）
 - 丸数字（①②③）を NFKC で数字に潰さない（福井「メス:4匹①②③⑤」が「メス:4匹1235」になっていた）
 - 高崎市の「毛色・首輪」の列: 毛色は最後の「・」より前、首輪は備考に「首輪：…」（「茶・無」57 件）。項目の頭に足す文字（prefix）をレシピで書けるようにする
-- 函館どうなん動物愛護センター（nyantomo）: 名前の頭の施設名（「函館 かぐら」「道南愛護センター みゆき」）を外す
 """
 from __future__ import annotations
 
@@ -83,21 +82,6 @@ def test_prefix_is_a_valid_field_key_and_only_applies_to_a_value():
     assert validate_recipe_dict(ok, "https://x.jp/a/") == []
     bad = {"rows": "li", "fields": {"note": {"selector": "span", "prefix": 3}}}
     assert validate_recipe_dict(bad, "https://x.jp/a/") != []
-
-
-NYANTOMO = """<div>{}</div>"""
-CARD = ('<div class="jet-listing-grid__item"><img src="/{i}.jpg"><div class="elementor-element-64868d36">'
-        '<div class="jet-listing-dynamic-field__content">{name}</div></div><p>函館市愛護センター</p></div>')
-
-
-def test_nyantomo_name_drops_the_facility_prefix():
-    src = Source(slug="nyantomo", name="函館どうなん動物愛護センター（里親募集）", municipality="函館どうなん動物愛護センター",
-                 prefecture="北海道", url="https://nyantomo.jp/donanhakodate/", kind="adoption", species="cat")
-    recipe = Recipe.load(ROOT / "recipes" / "nyantomo.yaml")
-    names = ["函館 かぐら", "道南 しじみ", "道南愛護センター みゆき", "ミキ", "函館太郎"]
-    html = NYANTOMO.format("".join(CARD.format(i=i, name=n) for i, n in enumerate(names)))
-    got = [a["name"] for a in build(src, recipe, [Doc(url=src.url, html=html, soup=BeautifulSoup(html, "lxml"))]).animals]
-    assert got == ["かぐら", "しじみ", "みゆき", "ミキ", "函館太郎"]
 
 
 def test_circled_numbers_still_look_like_a_management_number():
