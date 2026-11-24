@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 from bs4 import BeautifulSoup
-from collector.extract import build
+from collector.extract import build, empty_hits
 from collector.recipe import Doc, Recipe
 from collector.registry import load_sources
 
@@ -49,7 +49,8 @@ SAPPORO1_ZERO = [
 def test_sapporo_1_zero_days_in_every_observed_wording_are_zero(name):
     res = _run(SAPPORO1, _fx(name))
     assert res.animals == []
-    assert res.empty_confirmed and res.empty_evidence == "empty_text"
+    # 2026-11-25: 見出しの文は子のいる日にも出うるので、文でなく empty_absent（見出しの文＋直後の表に写真が無い）で確定する
+    assert res.empty_confirmed and res.empty_evidence == "empty_absent"
 
 
 def test_sapporo_1_today_zero_page_has_the_empty_template_row_that_is_dropped():
@@ -73,23 +74,19 @@ def test_sapporo_1_last_ok_day_is_read_as_before():
     assert res.animals[0]["management_no"].lower().endswith("d081026-01")
 
 
-def test_sapporo_1_day_with_a_dog_never_shows_a_zero_sentence():
-    # 子のいる日に 0 頭の文言が出ないこと（出ると、子がいるのに行の読み方が崩れた日が 0 頭に見える）
+def test_sapporo_1_day_with_a_dog_has_no_zero_evidence():
+    # 子のいる日に 0 頭の根拠が成立しないこと（成立すると、子がいるのに行の読み方が崩れた日が 0 頭に見える）。
+    # 2026-11-25 以降は見出しの文が子のいる日にも出うるので、文の有無でなく根拠（empty_hits）で見る（test_w006_fix_20261125.py）
     html = _fx("w006_city_sapporo-1_last_ok_20261105.html")
-    recipe = Recipe.load(ROOT / "recipes" / f"{SAPPORO1}.yaml")
-    text = _text(html)
-    assert recipe.empty_text and all(t not in text for t in recipe.empty_text)
+    assert empty_hits(Recipe.load(ROOT / "recipes" / f"{SAPPORO1}.yaml"), [Doc(url="https://example.jp/", html=html, soup=BeautifulSoup(html, "lxml"))]) == []
 
 
-def test_sapporo_1_empty_text_keeps_only_sentences_seen_on_the_real_page():
-    # 以前は猫ページからの類推で一度もページに出ていない文を並べていた。実ページで見た文だけにする
+def test_sapporo_1_zero_wordings_are_in_the_heading_check_not_empty_text():
     recipe = Recipe.load(ROOT / "recipes" / f"{SAPPORO1}.yaml")
-    assert set(recipe.empty_text) == {
-        "迷子収容犬はいません",
-        "現在迷子犬は収容されていません",
-        "現在、迷子犬は収容されていません",
-        "現在、迷子収容犬はいません",
-    }
+    assert not recipe.empty_text
+    page = recipe.empty_absent["page"]
+    for s in ("迷子収容犬はいません", "現在迷子犬は収容されていません", "現在、迷子犬は収容されていません", "現在、迷子収容犬はいません"):
+        assert s in page
 
 
 # --- 広島県 迷い猫（pref_hiroshima-2） ----------------------------------------------------------------------------------
