@@ -3258,11 +3258,11 @@ sources:
   url: https://www.kumamoto-doubutuaigo.jp/post_animals/index/type_id:2/animal_id:1
   kind: adoption
   species: dog
-  mode: recipe
+  mode: link_only
+  photo: "no"
   recipe: recipes/kumamoto_doubutuaigo-5.yaml
   enabled: true
-  photo: ok
-  note: "2026-11-13 熊本県（健康福祉部 健康危機管理課 動物愛護班）から写真は表示してよいと返事（T630 の写真表示のお伺いへの回答。センター・団体・個人の譲渡と迷子の 8 ページとも依頼に入れ、団体や個人が投稿した写真についても尋ねたうえで条件なし）。"
+  note: "2026-11-13 熊本県（健康福祉部 健康危機管理課 動物愛護班）から写真は表示してよいと返事（T630 の写真表示のお伺いへの回答。センター・団体・個人の譲渡と迷子の 8 ページとも依頼に入れ、団体や個人が投稿した写真についても尋ねたうえで条件なし）。 2026-11-24 おまえさん決定により、保護された子と飼い主の手放しの掲載が同じページに混ざり、掲載ごとに見分けられないためリンクのみ（POLICY.md 方針 41）。"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/kumamoto_doubutuaigo.py
     requires_js: false
@@ -3278,11 +3278,11 @@ sources:
   url: https://www.kumamoto-doubutuaigo.jp/post_animals/index/type_id:2/animal_id:2
   kind: adoption
   species: cat
-  mode: recipe
+  mode: link_only
+  photo: "no"
   recipe: recipes/kumamoto_doubutuaigo-6.yaml
   enabled: true
-  photo: ok
-  note: "2026-11-13 熊本県（健康福祉部 健康危機管理課 動物愛護班）から写真は表示してよいと返事（T630 の写真表示のお伺いへの回答。センター・団体・個人の譲渡と迷子の 8 ページとも依頼に入れ、団体や個人が投稿した写真についても尋ねたうえで条件なし）。"
+  note: "2026-11-13 熊本県（健康福祉部 健康危機管理課 動物愛護班）から写真は表示してよいと返事（T630 の写真表示のお伺いへの回答。センター・団体・個人の譲渡と迷子の 8 ページとも依頼に入れ、団体や個人が投稿した写真についても尋ねたうえで条件なし）。 2026-11-24 おまえさん決定により、保護された子と飼い主の手放しの掲載が同じページに混ざり、掲載ごとに見分けられないためリンクのみ（POLICY.md 方針 41）。"
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/kumamoto_doubutuaigo.py
     requires_js: false
@@ -5326,10 +5326,11 @@ sources:
   verified_address_url: "https://www.city.aomori.aomori.jp/kurashi_kankyo/kankyo/1002067/1009227.html"
   kind: adoption
   species: mixed
-  mode: recipe
+  mode: link_only
+  photo: "no"
   recipe: recipes/city_aomori-1.yaml
   enabled: true
-  note: 環境省リンク集から追加（2026-10-05 T519）。リンク集のリンク先（迷い犬・猫等の情報 1009080）は city_aomori-2。このページは青森市がお世話している動物と「ワンニャン里親探しポスト」（飼い主さんが里親を探している動物）の両方を載せる。「新しい飼い主さんが決まりました」の子は載せない。詳細情報は PNG の個体シートで、個体ページは無い。
+  note: 環境省リンク集から追加（2026-10-05 T519）。リンク集のリンク先（迷い犬・猫等の情報 1009080）は city_aomori-2。このページは青森市がお世話している動物と「ワンニャン里親探しポスト」（飼い主さんが里親を探している動物）の両方を載せる。「新しい飼い主さんが決まりました」の子は載せない。詳細情報は PNG の個体シートで、個体ページは無い。 2026-11-24 おまえさん決定により、保護された子と飼い主の手放しの掲載が同じページに混ざり、掲載ごとに見分けられないためリンクのみ（POLICY.md 方針 41）。
 - slug: city_aomori-2
   name: 青森市保健所（迷い犬・猫等の情報）
   municipality: 青森市保健所
@@ -7534,10 +7535,11 @@ sources:
   verified_address_url: "https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html"
   kind: adoption
   species: dog
-  mode: recipe
+  mode: link_only
+  photo: "no"
   recipe: recipes/city_matsumoto-4.yaml
   enabled: true
-  note: 環境省リンク集から追加（2026-10-05 T519）。保健所の譲渡対象犬と個人・ボランティアの譲渡対象犬が同じページに載る。2026-10-07 は保健所の 1 頭（掲載 2025-11-17）で個人は 0 頭。動物の見出しは日によって h3 と h4 があり、動物かどうかは表の見出し「犬の情報」で決める。1 掲載に複数頭がまとまる「譲渡犬No.5-2（7頭）」は個体が PDF の一覧なので 1 件として載る（掲載のとおり）。1 掲載に犬が 2 頭並ぶ表（2024-10 の No.6-1）は 1 頭目をこの slug、2 頭目を city_matsumoto-9 が読む。「譲渡されました」の印がある子は載せない。個人の犬が載った日の形は未確認（猫と同じ形と推測）。Wayback 2022-04〜2026-08 の 14 版で確認。
+  note: 環境省リンク集から追加（2026-10-05 T519）。保健所の譲渡対象犬と個人・ボランティアの譲渡対象犬が同じページに載る。2026-10-07 は保健所の 1 頭（掲載 2025-11-17）で個人は 0 頭。動物の見出しは日によって h3 と h4 があり、動物かどうかは表の見出し「犬の情報」で決める。1 掲載に複数頭がまとまる「譲渡犬No.5-2（7頭）」は個体が PDF の一覧なので 1 件として載る（掲載のとおり）。1 掲載に犬が 2 頭並ぶ表（2024-10 の No.6-1）は 1 頭目をこの slug、2 頭目を city_matsumoto-9 が読む。「譲渡されました」の印がある子は載せない。個人の犬が載った日の形は未確認（猫と同じ形と推測）。Wayback 2022-04〜2026-08 の 14 版で確認。 2026-11-24 おまえさん決定により、保護された子と飼い主の手放しの掲載が同じページに混ざり、掲載ごとに見分けられないためリンクのみ（POLICY.md 方針 41）。
 - slug: city_matsumoto-5
   name: 松本市（新しい飼い主を探している猫）
   municipality: 松本市保健所
@@ -7550,10 +7552,11 @@ sources:
   verified_address_url: "https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html"
   kind: adoption
   species: cat
-  mode: recipe
+  mode: link_only
+  photo: "no"
   recipe: recipes/city_matsumoto-5.yaml
   enabled: true
-  note: 環境省リンク集から追加（2026-10-05 T519）。保健所の譲渡猫（2026-10-07 は 0 頭）と個人・ボランティアの譲渡猫（5 掲載・10 頭）が同じページに載る。掲載者の名前・電話番号は取り込まない。1 掲載に猫が複数並ぶ表（表は 1 行 = 1 項目で猫ごとに列が増える）は、列ごとに 1 頭目 = この slug、2〜4 頭目 = city_matsumoto-6・-7・-8 が読む（収集器が 1 つの表から複数の動物を取れないため。写真は猫の数と写真の数が同じ掲載だけ列順で付け、違う掲載は誤った猫の写真を載せないよう写真なし）。保健所の猫が載った日の形は未確認（犬と同じ h4 の形と推測）。Wayback 2022-04〜2026-05 の 11 版で確認。
+  note: 環境省リンク集から追加（2026-10-05 T519）。保健所の譲渡猫（2026-10-07 は 0 頭）と個人・ボランティアの譲渡猫（5 掲載・10 頭）が同じページに載る。掲載者の名前・電話番号は取り込まない。1 掲載に猫が複数並ぶ表（表は 1 行 = 1 項目で猫ごとに列が増える）は、列ごとに 1 頭目 = この slug、2〜4 頭目 = city_matsumoto-6・-7・-8 が読む（収集器が 1 つの表から複数の動物を取れないため。写真は猫の数と写真の数が同じ掲載だけ列順で付け、違う掲載は誤った猫の写真を載せないよう写真なし）。保健所の猫が載った日の形は未確認（犬と同じ h4 の形と推測）。Wayback 2022-04〜2026-05 の 11 版で確認。 2026-11-24 おまえさん決定により、保護された子と飼い主の手放しの掲載が同じページに混ざり、掲載ごとに見分けられないためリンクのみ（POLICY.md 方針 41）。
 - slug: city_gifu-1
   name: 岐阜市（迷い犬猫情報）
   municipality: 岐阜市
@@ -7712,10 +7715,11 @@ sources:
   verified_address_url: "https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html"
   kind: adoption
   species: cat
-  mode: recipe
+  mode: link_only
+  photo: "no"
   recipe: recipes/city_matsumoto-6.yaml
   enabled: true
-  note: 環境省リンク集から追加（2026-10-05 T519）。city_matsumoto-5 と同じページ（1534）で、1 つの掲載に猫が複数並ぶ表の 2 頭目だけを読む（表の行の 3 つ目のセル）。2 頭目が無い掲載は捨てる。そのセルが 1 つも無い日は 0 頭で確定。管理番号は 1 頭目と同じ掲載の番号。個人の連絡先は取り込まない。
+  note: 環境省リンク集から追加（2026-10-05 T519）。city_matsumoto-5 と同じページ（1534）で、1 つの掲載に猫が複数並ぶ表の 2 頭目だけを読む（表の行の 3 つ目のセル）。2 頭目が無い掲載は捨てる。そのセルが 1 つも無い日は 0 頭で確定。管理番号は 1 頭目と同じ掲載の番号。個人の連絡先は取り込まない。 2026-11-24 おまえさん決定により、保護された子と飼い主の手放しの掲載が同じページに混ざり、掲載ごとに見分けられないためリンクのみ（POLICY.md 方針 41）。
 - slug: city_matsumoto-7
   name: 松本市（新しい飼い主を探している猫・同じ掲載の 3 頭目）
   municipality: 松本市保健所
@@ -7728,10 +7732,11 @@ sources:
   verified_address_url: "https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html"
   kind: adoption
   species: cat
-  mode: recipe
+  mode: link_only
+  photo: "no"
   recipe: recipes/city_matsumoto-7.yaml
   enabled: true
-  note: 環境省リンク集から追加（2026-10-05 T519）。city_matsumoto-5 と同じページ（1534）で、1 つの掲載に猫が複数並ぶ表の 3 頭目だけを読む（表の行の 4 つ目のセル）。3 頭目が無い掲載は捨てる。そのセルが 1 つも無い日は 0 頭で確定。管理番号は 1 頭目と同じ掲載の番号。個人の連絡先は取り込まない。
+  note: 環境省リンク集から追加（2026-10-05 T519）。city_matsumoto-5 と同じページ（1534）で、1 つの掲載に猫が複数並ぶ表の 3 頭目だけを読む（表の行の 4 つ目のセル）。3 頭目が無い掲載は捨てる。そのセルが 1 つも無い日は 0 頭で確定。管理番号は 1 頭目と同じ掲載の番号。個人の連絡先は取り込まない。 2026-11-24 おまえさん決定により、保護された子と飼い主の手放しの掲載が同じページに混ざり、掲載ごとに見分けられないためリンクのみ（POLICY.md 方針 41）。
 - slug: city_matsumoto-8
   name: 松本市（新しい飼い主を探している猫・同じ掲載の 4 頭目）
   municipality: 松本市保健所
@@ -7744,10 +7749,11 @@ sources:
   verified_address_url: "https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html"
   kind: adoption
   species: cat
-  mode: recipe
+  mode: link_only
+  photo: "no"
   recipe: recipes/city_matsumoto-8.yaml
   enabled: true
-  note: 環境省リンク集から追加（2026-10-05 T519）。city_matsumoto-5 と同じページ（1534）で、1 つの掲載に猫が複数並ぶ表の 4 頭目だけを読む（表の行の 5 つ目のセル）。4 頭目が無い掲載は捨てる。そのセルが 1 つも無い日は 0 頭で確定。管理番号は 1 頭目と同じ掲載の番号。個人の連絡先は取り込まない。
+  note: 環境省リンク集から追加（2026-10-05 T519）。city_matsumoto-5 と同じページ（1534）で、1 つの掲載に猫が複数並ぶ表の 4 頭目だけを読む（表の行の 5 つ目のセル）。4 頭目が無い掲載は捨てる。そのセルが 1 つも無い日は 0 頭で確定。管理番号は 1 頭目と同じ掲載の番号。個人の連絡先は取り込まない。 2026-11-24 おまえさん決定により、保護された子と飼い主の手放しの掲載が同じページに混ざり、掲載ごとに見分けられないためリンクのみ（POLICY.md 方針 41）。
 - slug: city_matsumoto-9
   name: 松本市（新しい飼い主を探している犬・同じ掲載の 2 頭目）
   municipality: 松本市保健所
@@ -7760,10 +7766,11 @@ sources:
   verified_address_url: "https://www.city.matsumoto.nagano.jp/soshiki/231/1532.html"
   kind: adoption
   species: dog
-  mode: recipe
+  mode: link_only
+  photo: "no"
   recipe: recipes/city_matsumoto-9.yaml
   enabled: true
-  note: 環境省リンク集から追加（2026-10-05 T519）。city_matsumoto-4 と同じページ（1529）で、1 つの掲載に犬が 2 頭並ぶ表の 2 頭目だけを読む（Wayback 2024-10-07 の No.6-1 に実在。2026-10-07 時点のページには無いので 0 頭）。2 頭に写真 3 枚でどの写真がどの犬か決められないため写真は付けない。「譲渡されました」の印がある子は載せない。
+  note: 環境省リンク集から追加（2026-10-05 T519）。city_matsumoto-4 と同じページ（1529）で、1 つの掲載に犬が 2 頭並ぶ表の 2 頭目だけを読む（Wayback 2024-10-07 の No.6-1 に実在。2026-10-07 時点のページには無いので 0 頭）。2 頭に写真 3 枚でどの写真がどの犬か決められないため写真は付けない。「譲渡されました」の印がある子は載せない。 2026-11-24 おまえさん決定により、保護された子と飼い主の手放しの掲載が同じページに混ざり、掲載ごとに見分けられないためリンクのみ（POLICY.md 方針 41）。
 - slug: city_sagamihara-1
   name: 相模原市（譲渡対象猫）
   municipality: 相模原市保健所 動物愛護センター準備室

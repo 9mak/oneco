@@ -40,7 +40,12 @@ def test_counts():
     assert len(KUMAMOTO) == 8 and len(SAITAMA_PERSONAL) == 8
 
 
-@pytest.mark.parametrize("slug", KUMAMOTO + SAITAMA_PERSONAL)
+# 熊本県 -5・-6（個人譲渡）は 2026-11-24 の決定（POLICY.md 方針 41。保護された子と個人の手放しが同じページ）でリンクのみ・写真なし。
+# 11/13 の可の返事の記録は note に残してあり、test_registry_w006_mixed_linkonly_1124.py で確かめる
+KUMAMOTO_PHOTO_OK = [s for s in KUMAMOTO if s not in ("kumamoto_doubutuaigo-5", "kumamoto_doubutuaigo-6")]
+
+
+@pytest.mark.parametrize("slug", KUMAMOTO_PHOTO_OK + SAITAMA_PERSONAL)
 def test_photo_ok(slug):
     s = SOURCES[slug]
     assert (s.mode, s.enabled, s.photo) == ("recipe", True, "ok")
