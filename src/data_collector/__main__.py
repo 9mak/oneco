@@ -8,6 +8,7 @@ import re
 import signal
 import sys
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -51,6 +52,7 @@ from .llm.providers.base import LlmProvider
 from .llm.providers.groq_provider import GroqProvider
 from .llm.robots_checker import RobotsChecker
 from .orchestration.collector_service import CollectorService
+from .services.archive_service import ArchiveService
 
 # rule-based 100% 運用 (project_extraction_strategy.md)。LLM 経路の fallback
 # 用にプロバイダ層は残すが、現状 Groq のみ。Anthropic は採算化後に再評価する。
@@ -853,6 +855,100 @@ def _send_run_summary_alert(
             logger.warning(f"never-populated alert 抑制記録に失敗: {e}")
 
 
+def _archive_job_enabled() -> bool:
+    """T428: 保持期間 (RETENTION_DAYS, 既定 180 日) を過ぎた卒業個体
+    (adopted / returned) を animals_archive へ退避するジョブのゲート。
+
+    既定は無効 (dry-run: 対象件数をログに出すだけで行を動かさない)。
+    ArchiveService.run_archive_job は 2026-09-19 時点で一度も本番で動いて
+    おらず、退避は元テーブルからの DELETE を伴う (animal_status_history は
+    ON DELETE CASCADE で道連れになる) ため、T106 / T422 と同じく候補を
+    1〜2 run 眺めてから deploy-collector.yml の宣言 env で有効化する。
+    有効化は gcloud の手変更ではなく必ずワークフローに書く (T432)。
+    """
+    return os.environ.get("ONECO_ARCHIVE_JOB_ENABLED", "false").lower() == "true"
+
+
+@dataclass(frozen=True)
+class ArchiveStepSummary:
+    """run_archive_job の要約 (ログとテスト用)"""
+
+    enabled: bool
+    candidates: int
+    archived: int
+    errors: int
+
+
+def run_archive_job(
+    db_connection: DatabaseConnection | None,
+    logger: logging.Logger,
+    *,
+    enabled: bool,
+) -> ArchiveStepSummary | None:
+    """全サイトの収集と prune が終わった後に 1 回だけ呼ぶ (T428)。
+
+    T427 で adopted / returned が prune で消えなくなったため、保持期間を
+    過ぎた卒業個体は誰かが animals_archive へ退避しない限り animals に
+    無期限に溜まる。/archive (T412 / T414) は animals_archive を読むので、
+    この配線が「卒業した子たち」の公開の前提になる。
+
+    best-effort: 失敗しても収集パイプラインは止めない (None を返す)。
+    DB 未設定 (検証モード) でも None。
+    """
+    if db_connection is None:
+        logger.info("卒業個体アーカイブ: DATABASE_URL 未設定のためスキップ")
+        return None
+
+    # サイト毎の保存と同じ理由で、asyncio.run ごとにエンジンを使い捨てる
+    # (collector_service._save_via_db_connection のコメント参照)。
+    settings = db_connection.settings
+
+    async def _run() -> ArchiveStepSummary:
+        from .infrastructure.database.archive_repository import ArchiveRepository
+        from .infrastructure.database.repository import AnimalRepository
+
+        db = DatabaseConnection(settings=settings)
+        try:
+            async with db.get_session() as session:
+                service = ArchiveService(
+                    animal_repository=AnimalRepository(session),
+                    archive_repository=ArchiveRepository(session),
+                )
+                candidates = await service.get_archivable_count()
+                if not enabled:
+                    return ArchiveStepSummary(
+                        enabled=False, candidates=candidates, archived=0, errors=0
+                    )
+                result = await service.run_archive_job()
+                return ArchiveStepSummary(
+                    enabled=True,
+                    candidates=candidates,
+                    archived=result.success_count,
+                    errors=result.error_count,
+                )
+        finally:
+            await db.close()
+
+    try:
+        summary = asyncio.run(_run())
+    except Exception as e:
+        logger.warning(f"卒業個体アーカイブ失敗 (収集は続行): {e}")
+        return None
+
+    if summary.enabled:
+        logger.info(
+            f"卒業個体アーカイブ: 対象 {summary.candidates} 件 → "
+            f"退避 {summary.archived} 件, エラー {summary.errors} 件 "
+            "[ONECO_ARCHIVE_JOB_ENABLED=true]"
+        )
+    else:
+        logger.info(
+            f"卒業個体アーカイブ: 無効 (dry-run) 対象 {summary.candidates} 件は退避しない "
+            "[ONECO_ARCHIVE_JOB_ENABLED]"
+        )
+    return summary
+
+
 def main():
     """
     CLI エントリーポイント
@@ -1058,6 +1154,10 @@ def main():
                         f"({len(zero_count_sites)}/{total_sites} サイト)"
                     )
                     success = False
+
+            # 卒業個体のアーカイブ退避 (T428)。全サイトの収集と prune が終わった
+            # この位置で 1 回だけ。既定は dry-run (件数ログのみ)。
+            run_archive_job(db_connection, logger, enabled=_archive_job_enabled())
 
             # フィールド欠損率ドリフト検知 (自己修復ループ Phase 1)。
             # 今 run の snapshot を読み、各サイトについて location/age_months
