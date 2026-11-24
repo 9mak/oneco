@@ -103,6 +103,7 @@ export default {
     if (request.method !== "POST") {
       return new Response("Method Not Allowed", { status: 405, headers: { Allow: "POST" } });
     }
+    // content-length が無い（chunked）送信では、この上限は効かない。Cloudflare 側の本文上限と、readFields の欄ごとの長さの検査に任せる（message 4000 字ほか）
     const len = Number(request.headers.get("content-length") || 0);
     if (len > MAX_BODY_BYTES) return redirect("/contact/error/");
     let form;

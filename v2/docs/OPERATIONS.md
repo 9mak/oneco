@@ -315,7 +315,8 @@ POLICY.md「API サーバーを持たない」の唯一の例外。公開ペー�
 
 ### Cloudflare 側の設定（deploy の前に 1 回。済んでいないと夜の deploy が失敗するおそれがある）
 
-1. 送信元と宛先: ダッシュボードで oneco.pet のゾーンを開き、Email Routing を有効にして、宛先アドレス `9mak.org@gmail.com` を追加する。Cloudflare から届く確認メールのリンクを開いて確認済みにする（`wrangler.jsonc` の `send_email` は確認済みの宛先にしか送れない）。送信元は `contact@oneco.pet`（Email Routing を有効にしたドメインのアドレス）
+1. 宛先: ダッシュボードで oneco.pet のゾーンを開き、Email Routing を有効にして、宛先アドレス `9mak.org@gmail.com` を追加する。Cloudflare から届く確認メールのリンクを開いて確認済みにする（`wrangler.jsonc` の `send_email` は確認済みの宛先にしか送れない）
+1b. 送信元（Email Sending への登録。Email Routing とは別の手順）: Cloudflare の公式ドキュメントでは、送信元アドレスは Email Service に登録（onboard）したドメインのものでなければならない。ダッシュボードの Compute → Email Service → Email Sending → Onboard Domain で oneco.pet を登録する。登録すると `cf-bounce` サブドメインに MX・SPF・DKIM・DMARC の DNS レコードが足される。oneco.pet の DNS を Cloudflare で持っていれば自動で追加される。DNS の画面でこれらが入っていること、Email Sending の画面で oneco.pet が確認済み（verified）になっていることを確かめる。済んでいないと、試し送りが `E_SENDER_NOT_VERIFIED`（送信元が未確認）で失敗し、利用者には `/contact/error/` が出る。送信元は `contact@oneco.pet`（登録したドメインのアドレス）
 2. Turnstile: ダッシュボード → Turnstile → ウィジェットを追加。ホスト名は `oneco.pet` と `workers.dev`（旧 URL の `oneco.<サブドメイン>.workers.dev` でも動かすなら）。モードは Managed。発行された site key（公開してよい値）を `site/config.json` の `turnstile_sitekey` に入れ、secret key を Worker に渡す: `npx wrangler secret put TURNSTILE_SECRET --config v2/ops/wrangler.jsonc`（値は標準入力に貼る。表示・コミットしない）
 3. 確認: `npx wrangler deploy --dry-run --config v2/ops/wrangler.jsonc` が通ること。本番に出したら https://oneco.pet/contact/ から 1 通送り、`9mak.org@gmail.com` に `[oneco] お問い合わせ` が届くことを確かめる（迷惑メールに入る場合は「迷惑メールではない」にする）
 
