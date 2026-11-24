@@ -62,7 +62,7 @@ class Recipe:
     empty_text_entries: list[str] = field(default_factory=list)   # 入口の文書（steps で辿る前の ?animal-type=… 等の一覧）の「全部」が、この文のどれかを出したときだけ 0 頭（入口を複数にした一覧の 1 本が空の文を出すのは子がいる日も同じなので、empty_text にできない。W006 監査 B 班）。extract.empty_hits で照合
     empty_text_all: list[str] = field(default_factory=list)   # 列挙した 0 頭の文が全部出たときだけ 0 頭（複数の節があるページ。W006 T631）。extract.build で照合
     empty_selector: list[str] = field(default_factory=list)   # 0 頭の日に空になる一覧の器（文言が出ないサイト用）。extract.build で照合
-    empty_absent: dict[str, str] = field(default_factory=dict)   # {page, none}: 0 頭の日に器ごと消えるサイト用。extract.build で照合
+    empty_absent: dict[str, str] = field(default_factory=dict)   # {page, none, live_row?, live_until?}: 0 頭の日に器ごと消えるサイト用。extract.build で照合
     empty_container: str | None = None   # rows が単一段のとき、全行除外の 0 頭を確定する根拠にする一覧の器（W006 T605）。extract.build で照合
     encoding: str | None = None
     max_pages: int = 20

@@ -59,7 +59,8 @@ def _okayama() -> Collected:
     return _collect("city_okayama", {
         OKAYAMA.url: _fx("w006a_city_okayama_index_20261107.html"),
         OKA_DOG: _fx("w006a_city_okayama_dog_20261107.html"),
-    })   # 保護猫情報一覧・保護犬情報一覧は辿らない（辿ると FakeFetcher に無い URL で失敗する）
+        "https://www.city.okayama.jp/kurashi/0000016464.html": _fx("w006_t653_city_okayama_list_20261124.html"),
+    })   # 保護猫情報一覧は辿らない（辿ると FakeFetcher に無い URL で失敗する）。保護犬情報一覧の表は 2026-11-24（T653）から辿るが動物にはしない
 
 
 def test_okayama_does_not_follow_the_cat_list_and_gives_only_the_dog_page():

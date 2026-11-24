@@ -120,16 +120,22 @@ OKA_ZERO = "w006_city_okayama_index_zero_20261119.html"    # 保護猫情報一�
 OKA_CHILD = "w006_city_okayama_index_child_20261118.html"  # 上の 3 本＋「1D2026074保護犬個別情報」
 OKA_DOG_URL = "https://www.city.okayama.jp/kurashi/0000086918.html"
 OKA_DOG = "w006_city_okayama_dog_20261118.html"
+OKA_LIST_URL = "https://www.city.okayama.jp/kurashi/0000016464.html"   # 保護犬情報一覧（2026-11-24 から辿る。T653）
+OKA_LIST = "w006_t653_city_okayama_list_20261124.html"
+
+
+def _oka_list(deadline: str) -> str:
+    return _swap(_fx(OKA_LIST), "令和8年11月27日", deadline)
 
 
 def test_okayama_no_individual_article_is_a_confirmed_zero():
-    c = _single(OKAYAMA, _fx(OKA_ZERO))
+    c = _collect(OKAYAMA, {OKA_URL: _fx(OKA_ZERO), OKA_LIST_URL: _oka_list("令和8年11月1日")})   # 一覧の表は期限の過ぎた行だけ
     assert c.status == "empty", (c.status, c.error)
     assert _res(c).animals == []
 
 
 def test_okayama_day_with_a_dog_reads_it_and_is_never_zero():
-    c = _collect(OKAYAMA, {OKA_URL: _fx(OKA_CHILD), OKA_DOG_URL: _fx(OKA_DOG)})
+    c = _collect(OKAYAMA, {OKA_URL: _fx(OKA_CHILD), OKA_DOG_URL: _fx(OKA_DOG), OKA_LIST_URL: _oka_list("令和30年1月1日")})
     assert c.status == "ok", c.error
     assert [a["management_no"] for a in _res(c).animals] == ["1D2026074"]
     assert _hits(OKAYAMA, OKA_URL, _fx(OKA_CHILD)) == []

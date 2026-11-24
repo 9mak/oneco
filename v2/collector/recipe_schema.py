@@ -55,7 +55,7 @@ FIELD_SPEC_KEYS = {
 }
 SPECIES_KEYS = {"from", "selector", "map", "allow_other", "infer"}
 PDF_KEYS = {"mode", "header_row", "header_has", "columns", "fold_blank_key", "join_ja_lines"}
-EMPTY_ABSENT_KEYS = {"page", "none"}
+EMPTY_ABSENT_KEYS = {"page", "none", "live_row", "live_until"}
 
 _BAD_SCHEMES = ("javascript:", "file:", "data:", "vbscript:")
 # 量指定子の付いた 1 つの部品だけを括弧に入れ、さらに繰り返すもの: (a+)+ (\d*)* ([a-z]+){2,} (?:.+)*
@@ -368,6 +368,8 @@ def validate_recipe_dict(raw: dict[str, Any], source_url: str) -> list[str]:
         ea = c.keys("empty_absent", raw["empty_absent"], EMPTY_ABSENT_KEYS)
         for k in EMPTY_ABSENT_KEYS & ea.keys():
             c.selector(f"empty_absent.{k}", ea[k])
+        if ("live_row" in ea) != ("live_until" in ea):
+            c.err("empty_absent: live_row と live_until は両方いっしょに書く")
 
     if "steps" in raw:
         steps = raw["steps"]
