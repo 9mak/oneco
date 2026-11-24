@@ -11,7 +11,7 @@
   "compatibility_date": "2026-09-01",
   // お問い合わせフォームの受け口（POLICY.md「API サーバーを持たない」の例外。2026-11-24 おまえさん決定）。
   // run_worker_first は /api/* だけ: ほかのパスは Worker を通さず静的アセットがそのまま返る（アセットの配信は無料・無制限、Worker の実行は 1 日 10 万回まで無料）。
-  // 止めるときは "main"・"send_email" を外して deploy（v2/docs/OPERATIONS.md）。
+  // 止めるときは "main"・"send_email"・assets の "binding" と "run_worker_first" を外して deploy（v2/docs/OPERATIONS.md）。
   "main": "../worker/contact.js",
   "assets": {
     "directory": "../site/dist",

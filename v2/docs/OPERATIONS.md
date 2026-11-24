@@ -326,7 +326,7 @@ POLICY.md「API サーバーを持たない」の唯一の例外。公開ペー�
 
 ### 止め方
 
-迷惑な送信が続くとき・メールが要らなくなったとき: `ops/wrangler.jsonc` の `"main"` と `"send_email"` の 2 つを外して `npx wrangler deploy --config v2/ops/wrangler.jsonc`。`/api/contact` は静的アセット側に回り、フォームを送ると 404 ページになる（`/contact/` のページ自体は残るので、止めたままにするなら `site/build.py` からフォームの案内も外す）。`TURNSTILE_SECRET` を消すだけでも、すべて `/contact/error/` になって送られなくなる（`npx wrangler secret delete TURNSTILE_SECRET --config v2/ops/wrangler.jsonc`）。
+迷惑な送信が続くとき・メールが要らなくなったとき: `ops/wrangler.jsonc` の `"main"`・`"send_email"`、`assets` の `"binding"` と `"run_worker_first"` の 4 つを外して（スクリプトの無い assets だけの設定に戻す） `npx wrangler deploy --config v2/ops/wrangler.jsonc`。`/api/contact` は静的アセット側に回り、フォームを送ると 404 ページになる（`/contact/` のページ自体は残るので、止めたままにするなら `site/build.py` からフォームの案内も外す）。`TURNSTILE_SECRET` を消すだけでも、すべて `/contact/error/` になって送られなくなる（`npx wrangler secret delete TURNSTILE_SECRET --config v2/ops/wrangler.jsonc`）。
 
 ### 試験
 
