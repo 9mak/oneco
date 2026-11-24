@@ -48,18 +48,18 @@ def test_oshu_decided_cats_are_not_listed():
     assert h.count("【決定】譲渡が決まりました！") == 2
     c = _run("pref_iwate_oshu", OSHU)
     assert c.status == "ok", c.error
-    assert len(c.result.animals) == 6    # 募集中 4 + 譲渡調整中 2（受付一時停止だが募集中の見出し）
+    # 募集中 4。譲渡調整中の 2 頭（R8-9-2・R8-9-3）は見出しが「（受付一時停止）」なので 2026-11-24 から載せない（方針 22）
+    assert len(c.result.animals) == 4
     nos = _names(c, "management_no")
     assert not any(n and (n.startswith("R8-9-4") or n.startswith("R8-9-5")) for n in nos)
-    assert any(n and n.startswith("R8-9-2") for n in nos) and any(n and n.startswith("R8-9-3") for n in nos)
+    assert not any(n and (n.startswith("R8-9-2") or n.startswith("R8-9-3")) for n in nos)
 
 
 def test_oshu_photos_stay_with_their_cats_after_the_decided_rows_are_dropped():
     # 行を外す前に写真を決めている（遡りは決まった子の行でも止まる）ので、残った子の写真は自分の写真
     c = _run("pref_iwate_oshu", OSHU)
     imgs = {a["management_no"].split("(")[0]: a["image_url"].rsplit("/", 1)[1] for a in c.result.animals}
-    assert imgs == {"R8-10-1": "081001.jpg", "R8-6-5": "080605.png", "R8-6-2": "azuki01.jpg", "R7-8-5": "0303.jpg",
-                    "R8-9-2": "yoruhoshi01.jpg", "R8-9-3": "yoruhoshi01.jpg"}   # R8-9-2 と R8-9-3 は元から同じ写真（既知）
+    assert imgs == {"R8-10-1": "081001.jpg", "R8-6-5": "080605.png", "R8-6-2": "azuki01.jpg", "R7-8-5": "0303.jpg"}
 
 
 def test_page_with_only_decided_cats_is_zero_by_the_heading_evidence():

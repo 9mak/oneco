@@ -82,16 +82,17 @@ def test_tottori_1_species_comes_from_the_table_caption():
 
 # --- 鳥取市 譲渡情報（-2・-3） -------------------------------------------------------------------------
 def test_tottori_2_adoption_rows_include_trial_and_take_photo_and_number():
-    # 2026-10-07 おまえさん方針: トライアル中の子も載せる（以前は捨てていた）。空白だけの行 1 つだけ捨てる
+    # 2026-10-07 おまえさん方針: トライアル中の子も載せる（以前は捨てていた）。空白だけの行 1 つと、
+    # 【治療のため募集一時停止】の 2 頭（ねね・べんけい。2026-11-24 方針 22）を捨てる
     res = _run("city_tottori-2", _fixture("t519_tottori-2.html"))
-    assert len(res.animals) == 18
+    assert len(res.animals) == 16
     assert [a["species"] for a in res.animals].count("dog") == 5
-    assert [a["species"] for a in res.animals].count("cat") == 13
+    assert [a["species"] for a in res.animals].count("cat") == 11
     assert all(a["image_url"] and a["management_no"] for a in res.animals)
     chibi = res.animals[0]
     assert _pick(chibi, "name", "sex", "age", "breed", "color", "management_no") == {
         "name": "チビ", "sex": "メス", "age": "18歳", "breed": "雑種", "color": "茶", "management_no": "R7−TD25"}
-    assert len(res.dropped) == 1
+    assert len(res.dropped) == 3
 
 
 def test_tottori_3_other_animals_table_is_blank_today_so_zero():
