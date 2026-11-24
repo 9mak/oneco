@@ -96,7 +96,7 @@ def test_placeholder_still_reads_as_one_image_with_the_same_words(tmp_path: Path
     for ph in (big, small):
         assert ph.get("role") == "img" and ph.get("aria-label") == "写真は自治体のページでご確認ください"
     assert big.select_one("span").get_text() == "写真は自治体のページでご確認ください"
-    assert small.select_one("span").decode_contents() == "写真は掲載元で<br/>ご確認ください"
+    assert small.select_one("span").decode_contents() == "写真は自治体の<br/>ページでご確認<br/>ください"
 
 
 def test_withheld_photo_keeps_the_button_under_the_dots_and_the_words(tmp_path: Path):
@@ -105,7 +105,7 @@ def test_withheld_photo_keeps_the_button_under_the_dots_and_the_words(tmp_path: 
     assert _children(ph) == [("div", ["ph-dots"]), ("span", None), ("a", ["ph-btn"])]
     assert ph.get("role") is None                                           # 中にリンクがあるので role="img" にしない
     assert ph.select_one(".ph-dots").get("aria-hidden") == "true"
-    assert ph.select_one("span").get_text() == "写真は自治体のページで見られます"
+    assert ph.select_one("span").get_text() == "写真は自治体のページでご確認ください"
 
 
 def test_fallback_for_a_photo_that_fails_to_load_has_the_dots_too(tmp_path: Path):

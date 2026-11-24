@@ -1,7 +1,8 @@
 """異常のある日だけ Discord に 1 通。平常時は何も送らない。
 
-規則は 1 つ: 読めない slug の顔ぶれが前日と変わった日だけ送る（新たに読めなくなった／読めるようになった）。
-回線断の日は先頭に 1 行足して必ず送る。state は読むだけで書かない。
+規則は 1 つ: 読めない slug（failed・ambiguous_empty）が 1 件でもある日は、顔ぶれが前日と同じでも毎日送る（POLICY.md 方針 25）。
+新たに読めなくなった／読めるようになった／引き続き読めない（名前も一覧に出す）に分けて書く。
+回線断の日は先頭に 1 行足す。state は読むだけで書かない。
 """
 
 from __future__ import annotations
@@ -23,9 +24,9 @@ class WebhookMissingError(RuntimeError):
 
 
 def decide(report: list[dict[str, Any]], state: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
-    """読めない顔ぶれが前日から変わった行を返す。state の prev_status が前日（update_sources が run の最後に書く）。
+    """読めない行を前日との関係で 3 つに分けて返す。state の prev_status が前日（update_sources が run の最後に書く）。
     new_failing: 今日読めず、前日は読めていた or 記録なし / recovered: 今日読めて、前日は読めなかった /
-    still_failing: 前日も今日も読めない（件数だけ出す）。"""
+    still_failing: 前日も今日も読めない（名前も出す）。"""
     sources = state.get("sources", {})
     out: dict[str, list[dict[str, Any]]] = {"new_failing": [], "recovered": [], "still_failing": []}
     for r in report:
@@ -41,11 +42,11 @@ def build_message(report: list[dict[str, Any]], state: dict[str, Any] | None = N
     """通知する内容が無ければ None。state が None なら記録なしとして、読めない slug を全部新規扱いにする。"""
     ev = decide(report, state or {})
     held = outage(report)
-    # AI 修復を隔離した（同じ失敗で 3 回試して直らない。T635）日は、顔ぶれが変わらなくても 1 回だけ知らせる
+    # AI 修復を隔離した（同じ失敗で 3 回試して直らない。T635）日は、1 回だけ知らせる
     quarantined = [r for r in report if r.get("quarantine_started")]
     # empty のまま本文が変わった（行の読み方が崩れて子がいるのに 0 頭と出ているかもしれない。T632）。誤報の率を測る最初の週は quiet=True で記録だけ
     changed = [r for r in report if r.get("empty_changed") and not r["empty_changed"].get("quiet")]
-    if not ev["new_failing"] and not ev["recovered"] and not held and not quarantined and not changed:
+    if not ev["new_failing"] and not ev["recovered"] and not ev["still_failing"] and not held and not quarantined and not changed:
         return None
     lines = []
     if held:
@@ -69,6 +70,7 @@ def build_message(report: list[dict[str, Any]], state: dict[str, Any] | None = N
             lines.append(f"- {r['name']}: 本文 {before}→{after} 字（{r['empty_changed'].get('from')} の 0 頭の日と比べて）")
     if ev["still_failing"]:
         lines.append(f"引き続き読めない {len(ev['still_failing'])} 件")
+        lines.extend(f"- {r['name']}: {r['error']}" + (f"（{r['repair']}）" if r.get("repair") else "") for r in ev["still_failing"])
     ok = sum(r["count"] for r in report if r["status"] == "ok")
     lines.append(f"（公開 {ok} 頭・成功 {sum(1 for r in report if r['status'] in GOOD)} ページ）")
     return "\n".join(lines)[:1900]

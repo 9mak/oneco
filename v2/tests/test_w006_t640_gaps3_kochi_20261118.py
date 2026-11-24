@@ -47,8 +47,8 @@ def _zero(c: Collected) -> bool:
 
 def test_registry():
     expect = {
-        SAGASU_NEKO: ("lost", "cat", "no"),
-        SAGASU_INU: ("lost", "dog", "no"),     # 飼い主が届けた迷子の写真は出さない（町田・前橋・宮崎の前例）
+        SAGASU_NEKO: ("lost", "cat", "pending"),
+        SAGASU_INU: ("lost", "dog", "pending"),     # 飼い主の写真だからとは止めない（方針 5）。可の返事が無いので確認が取れるまで出さない
         HOGO_NEKO: ("sheltered", "cat", "pending"),   # kochi_apc（譲渡）と同じ。返事が来るまで写真を出さない
         HOGO_INU: ("sheltered", "dog", "pending"),
     }

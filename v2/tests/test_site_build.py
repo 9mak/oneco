@@ -157,7 +157,12 @@ def test_placeholder_when_no_image(tmp_path: Path):
     assert 'property="og:image" content="https://oneco.pages.dev/brand/oneco-avatar-512.png"' in h   # 写真が無い子はブランド画像
     assert "D999" in h
     with_img = _read(out / "animals" / data["animals"][0]["id"] / "index.html")
-    assert "<img" in with_img and 'property="og:image" content="' + data["animals"][0]["image_url"] in with_img
+    assert "<img" in with_img.split("<main")[1].split("</main>")[0]   # 本文の写真は今までどおり出る
+    # 方針 34: SNS のカード画像は oneco の画像に固定し、自治体の写真の URL は head のどこにも出さない
+    head = with_img.split("</head>")[0]
+    assert 'property="og:image" content="https://oneco.pages.dev/brand/oneco-avatar-512.png"' in head
+    assert '<meta name="twitter:card" content="summary">' in head and "summary_large_image" not in head
+    assert data["animals"][0]["image_url"] not in head
 
 
 def test_affiliate_box_only_when_configured(tmp_path: Path):

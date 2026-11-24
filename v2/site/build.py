@@ -558,12 +558,12 @@ GA4_CLICK_JS = """(function(){
 
 
 def page(cfg: dict[str, Any], *, title: str, desc: str, path: str, body: str,
-         og_image: str = "", og_type: str = "website", extra_head: str = "", body_attrs: str = "") -> str:
+         og_type: str = "website", extra_head: str = "", body_attrs: str = "") -> str:
     site = esc(cfg["site_name"])
     base = cfg["base_url"].rstrip("/")
     url = esc(base + path)
-    # 写真の無いページは OG 画像にブランドのアバター（ふたつの円）を使う
-    og_src = og_image or f"{base}/brand/oneco-avatar-512.png"
+    # OG 画像は全ページ oneco のアバター（ふたつの円）1 枚に固定。自治体の写真を SNS 側に取り込ませない（POLICY.md 方針 34）
+    og_src = f"{base}/brand/oneco-avatar-512.png"
     og_img = f'\n<meta property="og:image" content="{esc(og_src)}">'
     full_title = esc(title) if title == cfg["site_name"] else f"{esc(title)}｜{site}"
     tagline = esc(cfg.get("tagline") or "")
@@ -584,7 +584,7 @@ def page(cfg: dict[str, Any], *, title: str, desc: str, path: str, body: str,
 <meta property="og:title" content="{full_title}">
 <meta property="og:description" content="{esc(desc)}">
 <meta property="og:url" content="{url}">{og_img}
-<meta name="twitter:card" content="{'summary_large_image' if og_image else 'summary'}">
+<meta name="twitter:card" content="summary">
 <meta name="theme-color" content="#ffffff">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
@@ -622,9 +622,8 @@ def placeholder(a: dict[str, Any] | None = None, *, small: bool = False, button_
     """写真が無い子の枠。丸 2 つ（PH_DOTS）の下に文を置く。写真を止めている掲載元（T630: 確認が取れるまで出さない・不可）の子は
     掲載元には写真があるので「写真はありません」とは書かない。それ以外も、取れなかっただけかもしれないので「無い」とは言い切らない（Codex #22）。
     small は一覧の小さな枠（96px）用に改行を入れた短い文。button_url があれば「自治体のページで写真を見る」ボタンを添える（個体ページ）。"""
-    withheld = bool(a and a.get("_photo_withheld"))
-    msg = "写真は自治体のページで見られます" if withheld else "写真は自治体のページでご確認ください"
-    shown = ("写真は自治体の<br>ページで見られます" if withheld else "写真は掲載元で<br>ご確認ください") if small else esc(msg)
+    msg = "写真は自治体のページでご確認ください"   # 止めている子も元から無い子も同じ文（POLICY.md 方針 4）
+    shown = "写真は自治体の<br>ページでご確認<br>ください" if small else esc(msg)
     if button_url:   # ボタン（リンク）を含むので role="img" にしない
         return (f'<div class="ph">{PH_DOTS}<span>{shown}</span><a class="ph-btn" href="{esc(button_url)}" rel="noopener" '
                 f'target="_blank">自治体のページで写真を見る ↗</a></div>')
@@ -936,7 +935,7 @@ def build_animal(cfg: dict[str, Any], data: dict[str, Any], a: dict[str, Any]) -
     lead_t = "飼い主さんが探している動物" if kind == "lost" else f"{kind_label(a)}の動物"   # 「探してますの動物」とはしない（#124 G-03）
     title_head = f"{lead_t}・{headline(a)}" if not disp_name(a) and _headline_parts(a)[1] == "none" else headline(a)
     return page(cfg, title=f"{title_head}｜{muni}", path=animal_path(a["id"]), body=body, og_type="article",
-                og_image=safe_url(a.get("image_url")), desc=shorten(desc, 160))
+                desc=shorten(desc, 160))
 
 
 def source_species(s: dict[str, Any]) -> str:
@@ -1411,7 +1410,7 @@ def build_site(data: dict[str, Any], cfg: dict[str, Any], out: Path, data_path: 
     写真を出さない掲載元（台帳 photo が ok 以外）があるときは image_url を落とした data を書く。"""
     cfg = {**DEFAULT_CFG, **cfg}
     prepare_out(out)
-    # 掲載元には写真があるが、確認が取れるまで・不可で止めている子（枠に「写真は自治体のページで見られます」と出す）
+    # 掲載元には写真があるが、確認が取れるまで・不可で止めている子（枠に「写真は自治体のページでご確認ください」と出す）
     hidden = no_photo_sources(data)
     withheld = {str(a.get("id")) for a in data.get("animals", [])
                 if isinstance(a, dict) and a.get("source") in hidden and a.get("image_url")}
