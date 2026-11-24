@@ -94,12 +94,13 @@ def _names(res):
 
 
 def test_joto_inu_matching_and_paused_recruiting_are_kept_decided_is_dropped():
-    # 2023-03: あいちゃん「お見合い中です。」・千代丸「希望者が多数ありましたので、募集を停止します。」は決まっていないので載せる（トライアル中と同じ扱い）
+    # 2023-03: あいちゃん「お見合い中です。」は決まっていないので載せる（トライアル中と同じ扱い）。
+    # 千代丸「希望者が多数ありましたので、募集を停止します。」は募集を止めているので載せない（2026-11-24 方針 22）
     res = _run("pref_saitama_joto_inu", _fx("t519v_g4b_saitama_joto_inu_20230327"))
-    assert _names(res) == ["マーブル", "ゆり", "はる", "あいちゃん", "さぬき", "千代丸"]
-    # 2026-06: 「マッチング中です！」「マッチング中です！（募集を停止しています）」は載せる。「譲渡になりました！」は載せない
+    assert _names(res) == ["マーブル", "ゆり", "はる", "あいちゃん", "さぬき"]
+    # 2026-06: 「マッチング中です！」は載せる。「マッチング中です！（募集を停止しています）」（コロ）と「譲渡になりました！」は載せない
     res = _run("pref_saitama_joto_inu", _fx("t519v_g4b_saitama_joto_inu_20260616"))
-    assert _names(res) == ["ガリバー", "キャビン", "コロ"]
+    assert _names(res) == ["ガリバー", "キャビン"]
 
 
 def test_joto_inu_decided_with_another_wording_is_dropped():
@@ -112,8 +113,12 @@ def test_joto_neko_minami_decided_cats_of_every_wording_are_zero_and_confirmed()
     # 2025-03: 3 頭とも「飼主さんが 決まりました！」+ 管理番号の欄が空の雛形の表 2 つ → 0 頭（以前は決まった 3 頭が募集中として載った）
     res = _run("pref_saitama_joto_neko_minami", _fx("t519v_g4b_saitama_joto_neko_minami_20250327"))
     assert res.animals == [] and res.empty_confirmed
-    # 2026-08: 「譲渡されました！」2 頭は載せない。「お声がかかりました！（現在募集を停止しています。）」の 1 頭（仮名: こま）は決まっていないので載せる
+    # 2026-08: 「譲渡されました！」2 頭は載せない。「お声がかかりました！（現在募集を停止しています。）」の 1 頭（仮名: こま）も
+    # 募集を止めているので載せない（2026-11-24 方針 22）= 0 頭
     res = _run("pref_saitama_joto_neko_minami", _fx("t519v_g4b_saitama_joto_neko_minami_20260805"))
+    assert res.animals == [] and res.empty_confirmed
+    # 「（現在募集を停止しています。）」が無い「お声がかかりました！」だけなら載せる
+    res = _run("pref_saitama_joto_neko_minami", _fx("t519v_g4b_saitama_joto_neko_minami_20260805").replace("（現在募集を停止しています。）", ""))
     assert _names(res) == ["こま"]
     # 全部「譲渡されました！」なら 0 頭
     res = _run("pref_saitama_joto_neko_minami", _fx("t519v_g4b_saitama_joto_neko_minami_20260805").replace("お声がかかりました！", "譲渡されました！"))
@@ -223,13 +228,18 @@ def test_joto_inu_decided_wording_adopted_by_a_new_owner_is_dropped():
     # 2020-10: 「新しい飼い主さんへ譲渡となりました」の子（ライト）と「飼い主さんが決まりました！」の子 → 0 頭
     res = _run("pref_saitama_joto_inu", _fx("t519v_g4b_saitama_joto_inu_20201026"))
     assert res.animals == [] and res.empty_confirmed
-    # 2020-06: 「飼い主さんが決まりました」の子（2020-D-001）は載せず、「お見合い中のため募集を一時停止します」の子（ライト）は決まっていないので載せる
+    # 2020-06: 「飼い主さんが決まりました」の子（2020-D-001）は載せない。「お見合い中のため募集を一時停止します」の子（ライト）も
+    # 募集を止めているので載せない（2026-11-24 方針 22）= 0 頭
     res = _run("pref_saitama_joto_inu", _fx("t519v_g4b_saitama_joto_inu_20200608"))
+    assert res.animals == [] and res.empty_confirmed
+    # 「募集を一時停止します」が無い「お見合い中」だけなら載せる
+    res = _run("pref_saitama_joto_inu", _fx("t519v_g4b_saitama_joto_inu_20200608").replace("のため募集を一時停止します", ""))
     assert [a["management_no"] for a in res.animals] == ["2020-3-001"]
 
 
 def test_joto_inu_south_branch_dog_carries_the_south_branch_contact():
-    res = _run("pref_saitama_joto_inu", _fx("t519v_g4b_saitama_joto_inu_20260616"))
+    # コロは「マッチング中です！（募集を停止しています）」で載せなくなったので、停止の語を外して読む
+    res = _run("pref_saitama_joto_inu", _fx("t519v_g4b_saitama_joto_inu_20260616").replace("（募集を停止しています）", ""))
     by = {a["name"]: a for a in res.animals}
     assert by["コロ"]["note"].endswith("問合せ先: 動物指導センター 南支所(さいたま市桜区在家473、電話:048-855-0484)")
     assert by["ガリバー"]["note"].endswith("電話:048-536-2465)")
@@ -260,7 +270,8 @@ def test_joto_old_numbers_keep_the_serial_part():
 def test_joto_neko_minami_ids_with_a_letter_are_read_not_dropped_as_a_template():
     # 「南2026-C67」のように連番の前に英字が付く番号を、空欄の雛形と取り違えて捨てない
     res = _run("pref_saitama_joto_neko_minami", _fx("t519v_g4b_saitama_joto_neko_minami_20260805").replace("譲渡されました！", "お見合い中です"))
-    assert [a["management_no"] for a in res.animals] == ["南2026-C10", "南2026-C11", "南2026-C37"]
+    # 南2026-C37 は「お声がかかりました！（現在募集を停止しています。）」なので載せない（2026-11-24 方針 22）
+    assert [a["management_no"] for a in res.animals] == ["南2026-C10", "南2026-C11"]
 
 
 def test_kojin_cat_zero_day_wording_of_2020_to_2022_is_zero():
@@ -275,6 +286,6 @@ def test_joto_inu_name_is_cut_before_the_status_words_even_without_a_space():
     res = _run("pref_saitama_joto_inu", _fx("t519v_g4b_saitama_joto_inu_20240908"))
     assert "きなこ" in _names(res) and "ポンタ" in _names(res)
     assert not any("募集中" in n or "お見合い" in n for n in _names(res))
-    # 2020-06: 「名前:ライト(お見合い中のため募集を一時停止します)」
-    res = _run("pref_saitama_joto_inu", _fx("t519v_g4b_saitama_joto_inu_20200608"))
+    # 2020-06: 「名前:ライト(お見合い中のため募集を一時停止します)」（停止の語は載せない対象なので外して名前だけ読む）
+    res = _run("pref_saitama_joto_inu", _fx("t519v_g4b_saitama_joto_inu_20200608").replace("のため募集を一時停止します", ""))
     assert _names(res) == ["ライト"]

@@ -35,18 +35,19 @@ def _build(slug: str, *htmls: str):
 
 # --- 鳥取市 -2 -----------------------------------------------------------------------------------
 def test_tottori_2_today_lists_trial_animals_and_reads_every_row():
-    # 2026-10-07 の実ページ: 犬 5 + 猫 13 = 18 頭（トライアル中 6 頭を含む）。空の行 1 つだけ捨てる
+    # 2026-10-07 の実ページ: 犬 5 + 猫 13 = 18 頭（トライアル中 6 頭を含む）。空の行 1 つと、
+    # 【治療のため募集一時停止】の 2 頭（2026-11-24 方針 22 から載せない）を捨てて 16 頭
     res = _build("city_tottori-2", _fixture("t519v_g7_tottori-2_20261007.html"))
-    assert len(res.animals) == 18
+    assert len(res.animals) == 16
     by = {a["name"]: a for a in res.animals}
     assert {"アル", "らん", "ひばり", "みつなり", "てれさ", "うめこ"} <= set(by)   # トライアル中の子も載せる
-    assert {"ねね", "べんけい"} <= set(by)                                       # 治療のため募集一時停止
+    assert not ({"ねね", "べんけい"} & set(by))                                   # 治療のため募集一時停止は載せない
     assert by["みゃー"]["breed"] == "雑種" and by["みゃー"]["species"] == "cat"    # 状態の p が無い子
     assert by["すー"]["breed"] is None                                            # 種類の p が無い猫の名前や管理番号を種類にしない
     assert by["ガンジー"]["breed"] == "ミックス (M・ダックス×T・プードル)"
     assert by["チビ"]["management_no"].startswith("R7") and by["チビ"]["age"] == "18歳" and by["チビ"]["species"] == "dog"
     assert all(a["image_url"] for a in res.animals)
-    assert len(res.dropped) == 1
+    assert len(res.dropped) == 3
 
 
 def test_tottori_2_adoption_decided_is_dropped_and_age_label_variant_is_read():

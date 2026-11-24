@@ -1,8 +1,10 @@
 # 福岡県動物愛護センター（団体譲渡犬）
 # 一覧ページに全頭（絞り込みフォームは未指定で全件）。1 頭 = div.animals-list li（写真 figure.list-pht img、番号 p.no-data、状態 span.ico-animal、dl > dt/dd に性別・登録日・推定年齢・大きさ・団体名、a は詳細ページ）。
 # 動物は登録団体の元にいるので団体名を location に入れる。品種と仮名は詳細ページにしか無いので取らない。
-# 募集中以外（面会決定・トライアル中・募集一時停止・譲渡準備中）も一覧に載るので note に状態を入れる。
+# 募集中以外（面会決定・トライアル中・譲渡準備中）も一覧に載るので note に状態を入れる。「募集一時停止」の子は載せない（2026-11-24 方針 22。再開して状態が変われば戻る）。
 rows: "div.animals-list li"
+row_filter:
+  field_lacks: {note: ["募集一時停止"]}   # 状態（span.ico-animal）
 image: "figure.list-pht img@src"
 fields:
   management_no: "p.no-data"
