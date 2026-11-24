@@ -51,7 +51,7 @@ DEFAULT_CFG: dict[str, Any] = {
     "site_name": "oneco",
     "base_url": "https://oneco.pet",
     "repo_url": "https://github.com/9mak/oneco",
-    "tagline": "全国の保護動物情報をひとつに",
+    "tagline": "全国の動物の里親募集・迷子情報をひとつに",
     "turnstile_sitekey": "",
     "affiliate": [],
 }
@@ -97,9 +97,10 @@ KIND_ORDER = {"adoption": 0, "sheltered": 1, "stray": 2, "lost": 3}
 FIELD_LABELS_BY_KIND = {"lost": {"shelter_date": "いなくなった日", "location": "いなくなった場所"}}
 STATUS = {
     "ok": "掲載あり",
-    "empty": "本日は 0 頭",
-    "failed": "本日は読めませんでした。自治体のページをご確認ください",
-    "ambiguous_empty": "本日は読めませんでした。自治体のページをご確認ください",   # 0 頭に見えるが確定できない日も前回分は載せず failed と同じ扱い
+    # 0 頭と確かめられた日も、読めなかった日も同じ文にする（前の日の子は出さない。2026-11-24 方針 18・19）
+    "empty": "最新の情報は自治体のページでご確認ください",
+    "failed": "最新の情報は自治体のページでご確認ください",
+    "ambiguous_empty": "最新の情報は自治体のページでご確認ください",   # 0 頭に見えるが確定できない日も前回分は載せず failed と同じ扱い
     "link_only": "リンクのみ",
     "disabled": "停止中",
 }
@@ -296,6 +297,37 @@ def parse_date(s: Any) -> date | None:
         if g.get("era"):
             y += _ERA[g["era"]]
         try:
+            return date(y, int(g["m"]), int(g["d"]))
+        except ValueError:
+            return None
+    return None
+
+
+_SORT_DATES = [   # 並べ替え用。parse_date と違い、日付の後ろに時刻・時間帯・曜日の注記が付いていてもよい（先頭が日付であること）
+    re.compile(r"(?P<y>\d{4})\s*[/\-.年]\s*(?P<m>\d{1,2})\s*[/\-.月]\s*(?P<d>\d{1,2})(?!\d)"),
+    # 「令和8(2026)年 11月11日」（西暦の併記）、「R7 8/27」（年と月日の区切りが空白）も読む
+    re.compile(r"(?P<era>令和|平成|[RrHh])\s*(?P<y>\d{1,2}|元)(?:\s*\(\d{4}\))?(?:\s*[年.\-/、]\s*|\s+)(?P<m>\d{1,2})\s*[月.\-/]\s*(?P<d>\d{1,2})(?!\d)"),
+    re.compile(r"(?P<m>\d{1,2})\s*(?:月\s*|/)(?P<d>\d{1,2})(?!\d)"),   # 年の無い日付
+]
+
+
+def parse_shelter_date(s: Any, ref: date | None) -> date | None:
+    """一覧を新しい順に並べるための収容日・保護日（POLICY.md 方針 40）。読めなければ None（推測しない）。
+    年の無い日付（「9月12日」）は、データの日付 ref より後の月日なら前の年、そうでなければ同じ年とみなす。ref が無ければ今日。"""
+    t = str(s or "").strip()
+    for p in _SORT_DATES:
+        m = p.match(t)
+        if not m:
+            continue
+        g = m.groupdict()
+        try:
+            if g.get("y") is None:
+                today = ref or date.today()
+                d = date(today.year, int(g["m"]), int(g["d"]))
+                return d if d <= today else date(today.year - 1, int(g["m"]), int(g["d"]))
+            y = int(g["y"]) if g["y"] != "元" else 1
+            if g.get("era"):
+                y += _ERA[g["era"]]
             return date(y, int(g["m"]), int(g["d"]))
         except ValueError:
             return None
@@ -695,7 +727,7 @@ def build_index(cfg: dict[str, Any], data: dict[str, Any], animals: list[dict[st
         f'<button type="button" class="tab-btn" data-top-tab="{k}" aria-pressed="{"true" if k == "all" else "false"}">{label} <span class="tab-cnt">{n}</span></button>'
         for k, label, n in (("all", "すべて", len(animals)), ("adopt", GROUPS["adopt"], n_adopt), ("missing", GROUPS["missing"], len(animals) - n_adopt)))
     body = f"""<section class="hero">
-<h1>お住まいの地域の保護動物を探す</h1>
+<h1>都道府県から動物の里親募集・迷子情報を探す</h1>
 <p>保護犬・保護猫をはじめ、地域ごとの里親募集と迷子情報を毎日更新しています。</p>
 <p class="hero-stats">{esc(fmt_date(data.get('date')))}時点：{stats}</p>
 </section>
@@ -705,7 +737,7 @@ def build_index(cfg: dict[str, Any], data: dict[str, Any], animals: list[dict[st
 </div>
 {chr(10).join(groups)}
 <script>{INDEX_JS}</script>"""
-    return page(cfg, title=cfg["site_name"], path="/", body=body,
+    return page(cfg, title="全国の動物の里親募集・迷子情報", path="/", body=body,
                 desc="全国の自治体が公開している保護犬・保護猫の情報を、都道府県ごとに 1 か所で探せます。里親募集と迷子情報を毎日更新、出典つき。")
 
 
@@ -838,7 +870,7 @@ def build_pref(cfg: dict[str, Any], data: dict[str, Any], pref: str, animals: li
 {cards}</div>
 <div class="empty-box" id="empty"{"" if not shown else " hidden"}>現在掲載されている子はありません。自治体の公式ページに掲載がある場合もあるため、<a href="/sources/#{esc(quote(pref))}">情報源の一覧</a>もあわせてご確認ください。</div>
 <script>{PREF_JS}</script>"""
-    return page(cfg, title=f"{pref}の保護犬・保護猫", path=pref_path(pref), body=body, body_attrs=f' data-pref="{esc(pref)}"',
+    return page(cfg, title=f"{pref}の動物の里親募集・迷子情報", path=pref_path(pref), body=body, body_attrs=f' data-pref="{esc(pref)}"',
                 desc=f"{pref}の自治体が{fmt_date(data.get('date'))}に公開している保護犬 {c['dog']} 頭・保護猫 {c['cat']} 頭{rest_desc}の一覧。里親募集と迷子情報。出典つき。")
 
 
@@ -952,7 +984,6 @@ def build_sources(cfg: dict[str, Any], data: dict[str, Any]) -> str:
     by_pref: dict[str, list[dict[str, Any]]] = {}
     for s in sources:
         by_pref.setdefault(str(s.get("prefecture") or "不明"), []).append(s)
-    st = Counter(str(s.get("status") or "") for s in sources)
     sections = []
     for p in sorted(by_pref, key=pref_key):
         items = []
@@ -983,12 +1014,9 @@ def build_sources(cfg: dict[str, Any], data: dict[str, Any]) -> str:
                 f'<span class="src-meta">{esc(" ・ ".join(m for m in meta if m))}</span>'
                 f'<span class="src-status">{res}</span><span class="src-link">{link}</span></li>')
         sections.append(f'<h2 id="{esc(p)}">{esc(p)}</h2><ul class="src-list">{"".join(items)}</ul>')
-    summary = f"掲載あり {st['ok']} 件、本日 0 頭 {st['empty']} 件、読めなかった {st['failed'] + st['ambiguous_empty']} 件、リンクのみ {st['link_only']} 件"
-    if st["disabled"]:
-        summary += f"、停止中 {st['disabled']} 件"
-    # 読めなかった理由は自治体側の変更だけではない（接続の失敗・503 もある。Codex #12）
+    # 状態ごとの件数は出さない。子がいない・読めなかった掲載元の行は、どれも自治体のページへ案内する（方針 18・19）
     body = f"""<h1>情報源（自治体ページ）の一覧</h1>
-<p>{esc(fmt_date(data.get('date')))}に確認した自治体ページ {len(sources)} 件の状況です（{summary}）。「本日は読めませんでした」のページは、接続できなかったり、ページの作りが変わったりして読み取れなかったものです。リンク先で直接ご確認ください。</p>
+<p>{esc(fmt_date(data.get('date')))}に確認した自治体ページ {len(sources)} 件の一覧です。oneco に掲載している子がいない場合も、自治体のページには情報が載っていることがあります。最新の情報はリンク先でご確認ください。</p>
 {chr(10).join(sections) if sections else '<p class="empty">情報源がありません。</p>'}"""
     return page(cfg, title="情報源の一覧", path="/sources/", body=body,
                 desc="oneco が毎日確認している自治体の保護犬・保護猫ページの一覧と、本日の確認状況。")
@@ -1085,7 +1113,7 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
 <li>掲載するのは自治体の公開ページに載っている情報だけです。写真・項目は元ページのまま、電話番号と所在地は自治体の公式情報から転記しています。</li>
 <li>毎日、各自治体のページを確認して、その日に載っている子を載せます。個体を追跡したり、過去の情報を残したりはしません。</li>
 <li>すべての子に「自治体の公式ページを見る」ボタンを付けています。譲渡の申し込みや迷子の問い合わせは、必ず自治体に直接行ってください。{site} は仲介をしません。</li>
-<li>読み取りに失敗した自治体は<a href="/sources/">情報源の一覧</a>に「本日は読めませんでした」と表示し、元ページへのリンクを残します。</li>
+<li>その日の情報を確認できない場合は、前の日の情報を載せず、<a href="/sources/">情報源の一覧</a>に「最新の情報は自治体のページでご確認ください」と表示します。</li>
 </ul>
 </section>
 <section>
@@ -1473,8 +1501,12 @@ def build_site(data: dict[str, Any], cfg: dict[str, Any], out: Path, data_path: 
         animals.append({**a, "_photo_withheld": True} if aid in withheld else a)
     d0 = parse_date(str(data.get("date") or "")[:10])
     _REF_DATE[:] = [d0] if d0 else []
-    # stable: 里親募集→保護中→迷子→探してます。同じ区分の中では写真のある子を先に（写真を止めている子は写真なし扱い。2026-11-13）。元の順は保つ
-    animals.sort(key=lambda a: (KIND_ORDER.get(str(a.get("kind")), 9), 0 if safe_url(a.get("image_url")) else 1))
+    # stable: 里親募集→保護中→迷子→探してます。同じ区分の中は、日付のある子を新しい順 → 日付の無い子（POLICY.md 方針 40。2026-11-24）。
+    # 同じ日付・日付の無い子どうしは掲載元の順（元の並び）を保つ。年の無い日付はデータの日付で年を決める
+    def _order(a: dict[str, Any]) -> tuple[int, int, int]:
+        d = parse_shelter_date(a.get("shelter_date"), d0)
+        return (KIND_ORDER.get(str(a.get("kind")), 9), 0 if d else 1, -d.toordinal() if d else 0)
+    animals.sort(key=_order)
 
     by_pref: dict[str, list[dict[str, Any]]] = {}
     for a in animals:

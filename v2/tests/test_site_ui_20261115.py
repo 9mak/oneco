@@ -181,7 +181,7 @@ def _top_data(tmp_path: Path) -> Path:
 
 def test_top_hero_and_stats(tmp_path: Path):
     h = _read(_top_data(tmp_path), "index.html")
-    assert "<h1>お住まいの地域の保護動物を探す</h1>" in h
+    assert "<h1>都道府県から動物の里親募集・迷子情報を探す</h1>" in h
     assert "保護犬・保護猫をはじめ、地域ごとの里親募集と迷子情報を毎日更新しています。" in h
     assert '<p class="hero-stats">2026年11月15日時点：犬 <b>21</b> ・ 猫 <b>1</b> ・ その他 <b>2</b></p>' in h
 
@@ -485,7 +485,7 @@ def test_footer_has_three_links_a_two_line_note_and_the_brand(tmp_path: Path):
 
 def test_header_keeps_brand_tagline_and_nav(tmp_path: Path):
     h = _read(_build(tmp_path, [_a("dog000000001")]), "index.html")
-    assert '<span class="tagline">全国の保護動物情報をひとつに</span>' in h
+    assert '<span class="tagline">全国の動物の里親募集・迷子情報をひとつに</span>' in h
     nav = BeautifulSoup(h, "lxml").select_one("header .nav")
     assert [(a.get_text(), a["href"]) for a in nav.select("a")] == [("都道府県", "/"), ("情報源", "/sources/"), ("このサイトについて", "/about/")]
 
@@ -528,3 +528,15 @@ def test_sources_page_uses_the_new_category_names(tmp_path: Path):
     t = _text(_read(_build(tmp_path, [], srcs), "sources/index.html"))
     assert "里親募集" in t and "保護中" in t and "飼い主が探してます" in t and "施設で保護中" not in t
     assert " 迷子 " not in t and "探してます" not in t.replace("飼い主が探してます", "")   # 旧呼称（迷子・探してます）は残さない
+
+
+def test_titles_use_adoption_and_lost_wording_w006_policy48(tmp_path: Path):
+    # POLICY.md 方針 48: 「保護犬・保護猫」は犬猫以外と飼い主が探している迷子を含まないので、題名は里親募集・迷子情報にそろえる
+    out = _build(tmp_path, [_a("dog000000001")])
+    top = _read(out, "index.html")
+    assert "<title>全国の動物の里親募集・迷子情報｜oneco</title>" in top
+    assert '<meta property="og:title" content="全国の動物の里親募集・迷子情報｜oneco">' in top
+    pref = _pref(out)
+    assert "<title>佐賀県の動物の里親募集・迷子情報｜oneco</title>" in pref
+    assert '<meta property="og:title" content="佐賀県の動物の里親募集・迷子情報｜oneco">' in pref
+    assert "の保護犬・保護猫｜" not in pref

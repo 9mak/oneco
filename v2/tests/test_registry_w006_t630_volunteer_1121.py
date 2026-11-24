@@ -28,9 +28,9 @@ TARGETS = [
 ]
 # 今回入れない（おまえさんの判断待ち）。台帳を変えない
 UNTOUCHED = (
-    [f"city_matsumoto-{n}" for n in range(2, 10)]
+    [f"city_matsumoto-{n}" for n in range(2, 4)]
     + [f"zaidan_fukuoka_douai-{n}" for n in (3, 4, 7, 8)]
-    + [f"kumamoto_doubutuaigo-{n}" for n in (3, 4, 5, 6)]
+    + [f"kumamoto_doubutuaigo-{n}" for n in (3, 4)]
     + ["city_nagano-4", "pref_kagoshima-4", "pref_kagoshima-5"]
 )
 

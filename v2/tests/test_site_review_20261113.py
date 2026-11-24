@@ -303,7 +303,7 @@ def test_sources_page_does_not_call_other_animal_pages_dogs_and_cats(tmp_path: P
     assert "犬・猫" not in meta and "その他の動物" in meta
     assert "旭川市あにまある" not in meta                    # 名前に自治体名があれば下の行で重ねない
     t = _text(h)
-    assert "自治体側の更新やページ構造の変化で" not in t and "接続できなかったり" in t
+    assert "自治体側の更新やページ構造の変化で" not in t and "接続できなかったり" not in t
     assert "確認済み" not in t.split("情報源（自治体ページ）の一覧")[1][:200]
 
 
