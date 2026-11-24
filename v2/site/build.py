@@ -21,8 +21,7 @@ site/static/ の中身（ブランドの SVG・favicon・about の写真）は�
 config.json:
     site_name   サイト名
     base_url    公開 URL（OG タグ・sitemap の絶対 URL に使う）
-    issues_url  取り下げ・訂正の依頼窓口（GitHub Issues）
-    contact_email  GitHub アカウントの無い人向けの連絡先メール（空なら「GitHub アカウント（無料）が必要」と書く）
+    turnstile_sitekey  お問い合わせフォーム（/contact/）の Cloudflare Turnstile の site key（公開してよい値。空ならウィジェットは出るが送れない）
     affiliate   「迎える準備」枠。[{"title": "…", "url": "https://…", "note": "…", "species": "dog か cat かその一覧（省略でどの子にも）", "beacon": "A8 の計測用画像の URL（省略可）"}]。里親募集の子のページにだけ出す。空なら枠ごと出さない（about も「いまは広告を載せていません」になる）
     ga4_id      GA4 の測定 ID（G-…）。あれば全ページの head に gtag.js を入れ、about に「アクセス解析」の節を出す。無い・形が違うときは何も出さない
 """
@@ -51,10 +50,9 @@ MARKER = ".oneco-build"
 DEFAULT_CFG: dict[str, Any] = {
     "site_name": "oneco",
     "base_url": "https://oneco.pet",
-    "issues_url": "https://github.com/9mak/oneco/issues",
     "repo_url": "https://github.com/9mak/oneco",
     "tagline": "全国の動物の里親募集・迷子情報をひとつに",
-    "contact_email": "",
+    "turnstile_sitekey": "",
     "affiliate": [],
 }
 
@@ -600,8 +598,8 @@ def page(cfg: dict[str, Any], *, title: str, desc: str, path: str, body: str,
     full_title = esc(title) if title == cfg["site_name"] else f"{esc(title)}｜{site}"
     tagline = esc(cfg.get("tagline") or "")
     tagline_html = f'<span class="tagline">{tagline}</span>' if tagline else ""
-    # フッター（2026-11-15 UI 刷新）: リンクは 3 つ。「運営への問い合わせ」は取り下げ・訂正の窓口（about）。フッターで「取り下げ」と
-    # 書いて不要な削除依頼を誘わず、動物の相談先（掲載元の自治体）と取り違えないように「運営への」と付ける（PR #126 Codex 8）。
+    # フッター（2026-11-15 UI 刷新）: リンクは 3 つ。「運営への問い合わせ」は oneco 自身のお問い合わせフォーム（/contact/。2026-11-24 から。
+    # それまでは about の窓口）。動物の相談先（掲載元の自治体）と取り違えないように「運営への」と付ける（PR #126 Codex 8）。
     # 著作権の主張（All Rights Reserved）は付けない（自治体情報のまとめのため）
     return f"""<!DOCTYPE html>
 <html lang="ja">
@@ -634,7 +632,7 @@ def page(cfg: dict[str, Any], *, title: str, desc: str, path: str, body: str,
 {body}
 </main>
 <footer class="site-foot">
-<nav class="foot-links" aria-label="サイトの案内"><a href="/about/">このサイトについて</a><a href="/sources/">情報源の一覧</a><a href="/about/#takedown">運営への問い合わせ</a></nav>
+<nav class="foot-links" aria-label="サイトの案内"><a href="/about/">このサイトについて</a><a href="/sources/">情報源の一覧</a><a href="/contact/">運営への問い合わせ</a></nav>
 <p class="foot-note">掲載情報は各自治体の公開データに基づきます。<br>最新の状況は掲載元のページ・電話でご確認ください。</p>
 <div class="foot-brand"><img src="/brand/oneco-mark.svg" width="18" height="18" alt="" loading="lazy"><span>{site}</span></div>
 </footer>
@@ -1046,7 +1044,6 @@ def photo_grid(photos: list[tuple[str, str]], caption: str, cls: str) -> str:
 
 
 def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
-    issues = safe_url(cfg.get("issues_url")) or safe_url(DEFAULT_CFG["issues_url"])
     repo = safe_url(cfg.get("repo_url")) or DEFAULT_CFG["repo_url"]
     site = esc(cfg["site_name"])
     srcs = [s for s in data.get("sources", []) if isinstance(s, dict) and s.get("enabled", True)]
@@ -1056,11 +1053,6 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
     n_pref = len({str(s.get("prefecture")) for s in srcs if s.get("prefecture")})
     reach = f"{n_pref} 都道府県の {n_src} ページのうち {n_read} ページを毎日読み取り、{n_link} ページはリンクだけを載せています" \
         if n_link else f"{n_pref} 都道府県の {n_src} ページを毎日読み取っています"
-    email = str(cfg.get("contact_email") or "").strip()
-    if not re.fullmatch(r"[^@\s<>\"']+@[^@\s<>\"']+\.[^@\s<>\"']+", email):
-        email = ""
-    contact = (f'GitHub アカウントをお持ちでない方は、メール（<a href="mailto:{esc(email)}">{esc(email)}</a>）でもお受けします。'
-               if email else "窓口の利用には GitHub アカウント（無料）が必要です。")
     if cfg.get("affiliate"):
         money = ("<p>サーバー代などの運営費をまかなうため、里親募集の子のページの「迎える準備」枠に広告（アフィリエイト）リンクを載せています。"
                  "広告の効果を測るため、そのページを開くと広告配信の A8.net（株式会社ファンコミュニケーションズ）に閲覧の情報が送られます。</p>")
@@ -1112,7 +1104,7 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
 </section>
 <section>
 <h2>運営者</h2>
-<p>{site} を作って運営しているのは個人（GitHub: <a href="https://github.com/9mak" rel="noopener" target="_blank">9mak</a>）です。トリミングの専門学校を出て動物病院で働いたあと、IT の仕事に移りました。ポムとは専門学校で、ビリーとは動物病院で出会いました。</p>
+<p>{site} を運営している小熊 和喜です。トリミングの専門学校を出て動物病院で働いたあと、IT の仕事に移りました。ポムとは専門学校で、ビリーとは動物病院で出会いました。</p>
 <p>サイトの中身と作業の記録は <a href="{esc(repo)}" rel="noopener" target="_blank">GitHub リポジトリ</a> で公開しています。</p>
 </section>
 <section>
@@ -1125,10 +1117,10 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
 </ul>
 </section>
 <section>
-<h2 id="takedown">掲載の取り下げ・訂正の依頼</h2>
-<p>自治体のご担当者様、写真や情報の権利をお持ちの方、飼い主さんなど、掲載の取り下げ・訂正・リンク方法の変更をご希望の方は、下記の窓口にページの URL とご要望をお書きください。確認のうえ速やかに対応します。{contact}</p>
+<h2 id="contact">掲載内容や運営について</h2>
+<p>写真や情報の掲載についてのご相談、内容の訂正、{site} へのご質問・ご意見は、お問い合わせフォームからお送りください。</p>
+<p><a class="cta" href="/contact/">フォームから問い合わせる</a></p>
 <p>自治体のページから消えた子は、{site} からも翌日の更新で消えます。</p>
-<p><a class="cta" href="{esc(issues)}" rel="noopener" target="_blank">取り下げ・訂正の依頼窓口（GitHub Issues）</a></p>
 </section>
 <section>
 <h2>運営費について</h2>
@@ -1144,7 +1136,52 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
 </section>
 </article>"""
     return page(cfg, title="このサイトについて", path="/about/", body=body,
-                desc=f"{cfg['site_name']} の名前の由来（犬のポムと猫のビリー）、運営者、運営方針、掲載の取り下げ・訂正の窓口について。")
+                desc=f"{cfg['site_name']} の名前の由来（犬のポムと猫のビリー）、運営者、運営方針、お問い合わせについて。")
+
+
+CONTACT_TITLE = "お問い合わせ"
+TURNSTILE_SCRIPT = '\n<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>'
+NOINDEX = '\n<meta name="robots" content="noindex">'
+
+
+def build_contact(cfg: dict[str, Any]) -> str:
+    """お問い合わせフォーム（送信先は Worker の POST /api/contact。v2/worker/contact.js）。Turnstile のスクリプトはこのページだけで読む"""
+    sitekey = esc(str(cfg.get("turnstile_sitekey") or "").strip())
+    site = esc(cfg["site_name"])
+    body = f"""<article class="contact">
+<h1>お問い合わせ</h1>
+<p>写真や情報の掲載についてのご相談、内容の訂正、{site} へのご質問・ご意見をお送りください。</p>
+<p class="contact-note">譲渡の申し込みや迷子の問い合わせは、各子のページにある自治体の問い合わせ先へ直接ご連絡ください。{site} ではお答えできません。</p>
+<form class="contact-form" method="post" action="/api/contact">
+<p><label for="f-message">お問い合わせ内容（必須）</label><textarea id="f-message" name="message" rows="8" required maxlength="4000"></textarea></p>
+<p><label for="f-page-url">該当するページの URL（あれば）</label><input id="f-page-url" type="url" name="page_url" maxlength="500"></p>
+<p><label for="f-name">お名前（任意）</label><input id="f-name" type="text" name="name" maxlength="100"></p>
+<p><label for="f-reply-to">返信先のメールアドレス（返信が必要な場合）</label><input id="f-reply-to" type="email" name="reply_to" maxlength="254"></p>
+<div class="cf-turnstile" data-sitekey="{sitekey}"></div>
+<p><button class="cta" type="submit">送信する</button></p>
+</form>
+</article>"""
+    return page(cfg, title=CONTACT_TITLE, path="/contact/", body=body, extra_head=TURNSTILE_SCRIPT,
+                desc=f"写真や情報の掲載についてのご相談、内容の訂正、{cfg['site_name']} へのご質問・ご意見をお送りください。")
+
+
+def build_contact_sent(cfg: dict[str, Any]) -> str:
+    body = """<article class="contact">
+<h1>お問い合わせ</h1>
+<p>お問い合わせを受け付けました。内容を確認し、必要に応じて、ご記入のメールアドレスへ返信します。</p>
+</article>"""
+    return page(cfg, title=CONTACT_TITLE, path="/contact/sent/", body=body, extra_head=NOINDEX,
+                desc="お問い合わせを受け付けました。")
+
+
+def build_contact_error(cfg: dict[str, Any]) -> str:
+    body = """<article class="contact">
+<h1>お問い合わせ</h1>
+<p>送信できませんでした。時間をおいて、もう一度お試しください。</p>
+<p><a href="/contact/">お問い合わせ</a></p>
+</article>"""
+    return page(cfg, title=CONTACT_TITLE, path="/contact/error/", body=body, extra_head=NOINDEX,
+                desc="お問い合わせを送信できませんでした。")
 
 
 def build_404(cfg: dict[str, Any]) -> str:
@@ -1157,7 +1194,7 @@ def build_404(cfg: dict[str, Any]) -> str:
 def build_sitemap(cfg: dict[str, Any], data: dict[str, Any], prefs: list[str], animals: list[dict[str, Any]]) -> str:
     base = cfg["base_url"].rstrip("/")
     lastmod = iso_date(data.get("date"))
-    paths = ["/", "/sources/", "/about/"] + [pref_path(p) for p in prefs] + [animal_path(a["id"]) for a in animals]
+    paths = ["/", "/sources/", "/about/", "/contact/"] + [pref_path(p) for p in prefs] + [animal_path(a["id"]) for a in animals]
     urls = "\n".join(f"<url><loc>{esc(base + p)}</loc><lastmod>{lastmod}</lastmod></url>" for p in paths)
     return f'<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n{urls}\n</urlset>\n'
 
@@ -1347,6 +1384,11 @@ p{margin:.4em 0}
 .about{max-width:72ch;overflow:clip;padding:0 2px}
 .about p{line-height:1.8}
 .about h2{margin-top:2em}
+.contact{max-width:72ch}
+.contact p{line-height:1.8}
+.contact-form label{display:block;font-weight:600;margin-bottom:4px}
+.contact-form textarea,.contact-form input{display:block;width:100%;box-sizing:border-box;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.contact-form button.cta{width:100%;border:0;cursor:pointer;font-family:inherit}
 .story{position:relative;isolation:isolate;margin:1.2em 0 2em}
 .story::before{content:"";position:absolute;z-index:-1;border-radius:50%;opacity:.13;pointer-events:none;width:260px;height:260px}
 .story-pom::before{background:var(--coral);left:-130px;bottom:-40px}
@@ -1479,6 +1521,9 @@ def build_site(data: dict[str, Any], cfg: dict[str, Any], out: Path, data_path: 
         write(out, f"animals/{a['id']}/index.html", build_animal(cfg, data, a))
     write(out, "sources/index.html", build_sources(cfg, data))
     write(out, "about/index.html", build_about(cfg, data))
+    write(out, "contact/index.html", build_contact(cfg))
+    write(out, "contact/sent/index.html", build_contact_sent(cfg))
+    write(out, "contact/error/index.html", build_contact_error(cfg))
     write(out, "404.html", build_404(cfg))
     write(out, "sitemap.xml", build_sitemap(cfg, data, prefs, animals))
     write(out, "robots.txt", build_robots(cfg))

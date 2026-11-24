@@ -1,7 +1,7 @@
 // oneco v2 の配信設定（Cloudflare Workers の静的アセット配信）。
 // 2026-09-30 時点、Cloudflare Pages の新規プロジェクトは Workers（static assets）に統合されているので、
 // `wrangler pages deploy` ではなく `wrangler deploy --config v2/ops/wrangler.jsonc` で site/dist を丸ごと置く。
-// スクリプトは無く、assets だけの Worker。URL は独自ドメイン https://oneco.pet（routes の custom_domain。W006 T073）と、
+// 2026-11-24 からお問い合わせフォーム用の Worker（v2/worker/contact.js。POST /api/contact だけを処理）が付いた。それまではスクリプトの無い assets だけの Worker。URL は独自ドメイン https://oneco.pet（routes の custom_domain。W006 T073）と、
 // 旧 URL https://oneco.<アカウントのサブドメイン>.workers.dev の 2 つ。独自ドメインは deploy のたびにこの設定どおり付け直される。
 // workers_dev は消さない: 自治体への写真許諾の依頼メール（T630）に旧 URL を書いている。routes があると既定値が false になり、
 // 消すと次の deploy で旧 URL が黙って止まる。canonical・OG・sitemap は site/config.json の base_url（oneco.pet）を指すので、旧 URL は転送しない。
@@ -9,11 +9,21 @@
   "$schema": "https://developers.cloudflare.com/schemas/wrangler.json",
   "name": "oneco",
   "compatibility_date": "2026-09-01",
+  // お問い合わせフォームの受け口（POLICY.md「API サーバーを持たない」の例外。2026-11-24 おまえさん決定）。
+  // run_worker_first は /api/* だけ: ほかのパスは Worker を通さず静的アセットがそのまま返る（アセットの配信は無料・無制限、Worker の実行は 1 日 10 万回まで無料）。
+  // 止めるときは "main"・"send_email"・assets の "binding" と "run_worker_first" を外して deploy（v2/docs/OPERATIONS.md）。
+  "main": "../worker/contact.js",
   "assets": {
     "directory": "../site/dist",
+    "binding": "ASSETS",
     "not_found_handling": "404-page",
-    "html_handling": "auto-trailing-slash"
+    "html_handling": "auto-trailing-slash",
+    "run_worker_first": ["/api/*"]
   },
+  // 宛先は 9mak.org@gmail.com だけ（Email Routing で確認済みの宛先あての送信は全プラン無料）。from は contact@oneco.pet
+  "send_email": [
+    { "name": "SEND_EMAIL", "destination_address": "9mak.org@gmail.com" }
+  ],
   "routes": [
     { "pattern": "oneco.pet", "custom_domain": true }
   ],

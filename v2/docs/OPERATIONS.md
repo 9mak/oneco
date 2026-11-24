@@ -309,6 +309,29 @@ cd v2   # 本番クローンなら ~/oneco-collect/v2
 
 エントリを消さず `enabled: false` にするのは、二度と載せない記録を残すため。返信では「翌日 0:05 の更新で消えます」と伝える。
 
+## 5a. お問い合わせフォーム（/contact/。2026-11-24 から）
+
+POLICY.md「API サーバーを持たない」の唯一の例外。公開ページの `/contact/` のフォームは `POST /api/contact` に飛び、Worker（`v2/worker/contact.js`）が Cloudflare Turnstile で人かどうかを確かめてから、メールを `9mak.org@gmail.com` に送る。送れたら `/contact/sent/`、入力の誤り・Turnstile の失敗・送信の失敗は `/contact/error/` に 303 で返す。Worker は `/api/*` だけで動き、ほかのパスは静的アセットがそのまま返る。無料の範囲: 静的ファイルは無料・無制限、Worker の実行は 1 日 10 万回まで無料、確認済みの宛先あてのメール送信は全プラン無料（https://developers.cloudflare.com/email-service/platform/pricing/）、Turnstile は無料。
+
+### Cloudflare 側の設定（deploy の前に 1 回。済んでいないと夜の deploy が失敗するおそれがある）
+
+1. 宛先: ダッシュボードで oneco.pet のゾーンを開き、Email Routing を有効にして、宛先アドレス `9mak.org@gmail.com` を追加する。Cloudflare から届く確認メールのリンクを開いて確認済みにする（`wrangler.jsonc` の `send_email` は確認済みの宛先にしか送れない）
+1b. 送信元（Email Sending への登録。Email Routing とは別の手順）: Cloudflare の公式ドキュメントでは、送信元アドレスは Email Service に登録（onboard）したドメインのものでなければならない。ダッシュボードの Compute → Email Service → Email Sending → Onboard Domain で oneco.pet を登録する。登録すると `cf-bounce` サブドメインに MX・SPF・DKIM・DMARC の DNS レコードが足される。oneco.pet の DNS を Cloudflare で持っていれば自動で追加される。DNS の画面でこれらが入っていること、Email Sending の画面で oneco.pet が確認済み（verified）になっていることを確かめる。済んでいないと、試し送りが `E_SENDER_NOT_VERIFIED`（送信元が未確認）で失敗し、利用者には `/contact/error/` が出る。送信元は `contact@oneco.pet`（登録したドメインのアドレス）
+2. Turnstile: ダッシュボード → Turnstile → ウィジェットを追加。ホスト名は `oneco.pet` と `workers.dev`（旧 URL の `oneco.<サブドメイン>.workers.dev` でも動かすなら）。モードは Managed。発行された site key（公開してよい値）を `site/config.json` の `turnstile_sitekey` に入れ、secret key を Worker に渡す: `npx wrangler secret put TURNSTILE_SECRET --config v2/ops/wrangler.jsonc`（値は標準入力に貼る。表示・コミットしない）
+3. 確認: `npx wrangler deploy --dry-run --config v2/ops/wrangler.jsonc` が通ること。本番に出したら https://oneco.pet/contact/ から 1 通送り、`9mak.org@gmail.com` に `[oneco] お問い合わせ` が届くことを確かめる（迷惑メールに入る場合は「迷惑メールではない」にする）
+
+### 届いたメールの見方
+
+件名は `[oneco] お問い合わせ`、差出人は `contact@oneco.pet`。本文に お名前・返信先・該当ページ・受け付けの日時（日本時間）・お問い合わせ内容が入る。返信先が書かれていれば、メールの「返信」で相手に返せる（Reply-To）。書かれていなければ返信できない。送信の失敗は利用者に `/contact/error/` が出るだけで、中身はどこにも残らない（Worker はログに問い合わせの中身を出さない）。Worker のエラーは Cloudflare ダッシュボード → Workers → oneco → Logs で `contact: send failed <エラーコード>` として見える。
+
+### 止め方
+
+迷惑な送信が続くとき・メールが要らなくなったとき: `ops/wrangler.jsonc` の `"main"`・`"send_email"`、`assets` の `"binding"` と `"run_worker_first"` の 4 つを外して（スクリプトの無い assets だけの設定に戻す） `npx wrangler deploy --config v2/ops/wrangler.jsonc`。`/api/contact` は静的アセット側に回り、フォームを送ると 404 ページになる（`/contact/` のページ自体は残るので、止めたままにするなら `site/build.py` からフォームの案内も外す）。`TURNSTILE_SECRET` を消すだけでも、すべて `/contact/error/` になって送られなくなる（`npx wrangler secret delete TURNSTILE_SECRET --config v2/ops/wrangler.jsonc`）。
+
+### 試験
+
+`node --test v2/worker/contact.test.js`（依存なし。CI は `v2 / worker-node`）。Turnstile の検証とメール送信は偽物に差し替えている。
+
 ## 6. 費用の見込み（概算・未検証）
 
 | 項目 | 月額 |
@@ -362,7 +385,7 @@ python ops/verify_registry.py --write                                           
 
 ## CI（W006 T612・T613）
 
-`.github/workflows/v2-ci.yml` が PR（main 向け）と main への push で 3 つの job を走らせる。paths フィルタは付けていない（付けると v2 以外だけの PR で必須 check が pending のまま残る）。
+`.github/workflows/v2-ci.yml` が PR（main 向け）と main への push で 4 つの job を走らせる（下の表の 3 つが必須 check、`v2 / worker-node` は 2026-11-24 に足したお問い合わせ Worker の node 試験で、必須 check には入れていない）。paths フィルタは付けていない（付けると v2 以外だけの PR で必須 check が pending のまま残る）。
 
 | check 名（branch protection の必須 check に登録する名前） | 中身 |
 |---|---|

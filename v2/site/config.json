@@ -1,8 +1,7 @@
 {
   "site_name": "oneco",
   "base_url": "https://oneco.pet",
-  "issues_url": "https://github.com/9mak/oneco/issues",
-  "contact_email": "9mak.org@gmail.com",
+  "turnstile_sitekey": "",
   "ga4_id": "G-KEE66C1E8B",
   "affiliate": [
     {

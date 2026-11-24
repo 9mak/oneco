@@ -261,12 +261,11 @@ def test_about_has_pom_billy_and_operator(built):
         assert f'/images/about/{f}' in h, f
         assert alt in h, alt
         assert (out / "images" / "about" / f).exists(), f
-    assert "運営者" in h and "9mak" in h
-    assert "小熊" not in h and "和喜" not in h   # 2026-10-04 おまえさん判断: 運営者欄は実名でなくハンドル名だけ
+    assert "運営者" in h and "小熊 和喜" in h   # 2026-11-24 おまえさん決定: 運営者は実名（方針 30 の変更）
     assert "トリミング実習" in h and "輸血ドナー" in h
     assert "非営利" not in h            # W005: 「非営利」とは書かない
     assert "アフィリエイト" in h        # 運営費の明記
-    assert "取り下げ・訂正の依頼窓口" in h
+    assert "お問い合わせフォームからお送りください" in h
 
 
 def test_about_review_fixes_20261004(tmp_path: Path):
@@ -278,7 +277,6 @@ def test_about_review_fixes_20261004(tmp_path: Path):
     mod.build_site(data, CONFIG, out)
     h = _read(out / "about" / "index.html")
     assert "同じページに記載の方法" not in h                      # F-01: 実在しない代替手段
-    assert "GitHub アカウント（無料）が必要" in h                  # contact_email が無いとき
     assert "いまは広告を載せていません" in h                       # F-02: affiliate が空
     assert "各ページの「迎える準備」枠に載せている" not in h
     assert "個人や団体の掲載情報は扱いません" not in h             # F-03
@@ -287,18 +285,17 @@ def test_about_review_fixes_20261004(tmp_path: Path):
     assert "犬猫以外" in h
     assert "ページを毎日読み取" in h and "毎日確認しています" not in h   # F-04（リンクのみが 0 件のときは「読み取っています」）
     assert "自治体の公式サイトではなく" in h                       # F-05
-    assert 'id="takedown"' in h                                    # F-06
-    assert "/about/#takedown" in _read(out / "index.html")
+    assert 'id="contact"' in h and "takedown" not in h              # F-06（2026-11-24: アンカーは #contact）
+    assert "/contact/" in _read(out / "index.html")
     assert "翌日の更新で消えます" in h
     assert "ひとつに、という意味" in h                             # F-07 (2)
 
     cfg = dict(CONFIG)
-    cfg["contact_email"] = "contact@example.com"
     cfg["affiliate"] = [{"title": "ケージ", "url": "https://example.com/cage", "note": ""}]
     out2 = tmp_path / "d2"
     mod.build_site(data, cfg, out2)
     h2 = _read(out2 / "about" / "index.html")
-    assert "mailto:contact@example.com" in h2 and "GitHub アカウント（無料）が必要" not in h2
+    assert "mailto:" not in h2
     assert "いまは広告を載せていません" not in h2 and "「迎える準備」枠" in h2
 
 
