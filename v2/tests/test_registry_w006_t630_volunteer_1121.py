@@ -31,7 +31,7 @@ UNTOUCHED = (
     [f"city_matsumoto-{n}" for n in range(2, 10)]
     + [f"zaidan_fukuoka_douai-{n}" for n in (3, 4, 7, 8)]
     + [f"kumamoto_doubutuaigo-{n}" for n in (3, 4, 5, 6)]
-    + ["nyantomo", "spec_aniwel", "city_nagano-4", "pref_kagoshima-4", "pref_kagoshima-5"]
+    + ["city_nagano-4", "pref_kagoshima-4", "pref_kagoshima-5"]
 )
 
 

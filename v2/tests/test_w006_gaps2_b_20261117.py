@@ -44,7 +44,7 @@ MB_LOST, MB_SHELTERED = "city_maebashi-2", "city_maebashi-3"
 def test_maebashi_registry():
     s = SOURCES[MB_LOST]
     assert (s.mode, s.enabled, s.kind, s.species, s.prefecture) == ("recipe", True, "lost", "mixed", "群馬県")
-    assert s.photo == "no" and s.phone == "027-220-5777" and s.recipe_path.exists()  # 飼い主が届けた写真は出さない
+    assert s.photo == "pending" and s.phone == "027-220-5777" and s.recipe_path.exists()  # 飼い主の写真だからとは止めない（方針 5）。可の返事が無いので確認が取れるまで出さない
     s = SOURCES[MB_SHELTERED]
     assert (s.mode, s.enabled, s.kind, s.species, s.prefecture) == ("recipe", True, "sheltered", "mixed", "群馬県")
     assert s.photo == "pending" and s.phone == "027-220-5777" and s.recipe_path.exists()  # 前橋市の規約は転載要申請（事前相談の要るホスト）
@@ -121,7 +121,7 @@ def test_funabashi_registry():
     assert s.photo == "pending" and s.phone == "047-435-3916" and "潮見町" in s.address and s.recipe_path.exists()  # CC BY・無断転載禁止（2026-11-22 方針 1・2: 可の返事も規約の可も無いので、確認が取れるまで出さない）
     s = SOURCES[FN_LOST]
     assert (s.mode, s.enabled, s.kind, s.species, s.prefecture) == ("recipe", True, "lost", "mixed", "千葉県")
-    assert s.photo == "no" and s.phone == "047-435-3916" and s.url == SOURCES[FN_SHELTERED].url and s.recipe_path.exists()
+    assert s.photo == "pending" and s.phone == "047-435-3916" and s.url == SOURCES[FN_SHELTERED].url and s.recipe_path.exists()
 
 
 def test_funabashi_sheltered_today_reads_the_3_cats_kept_by_private_people():
@@ -183,7 +183,7 @@ TT_FX = "w006_pref_tottori-2_20261117.html"   # 1 つのページに「捜して
 def test_tottori_registry():
     s = SOURCES[TT_LOST]
     assert (s.mode, s.enabled, s.kind, s.species, s.prefecture, s.contact_scope) == ("recipe", True, "lost", "mixed", "鳥取県", "operator")
-    assert s.photo == "no" and s.phone == "0857-26-7593" and s.address and s.url == "https://www.pref.tottori.lg.jp/243905.htm" and s.recipe_path.exists()
+    assert s.photo == "pending" and s.phone == "0857-26-7593" and s.address and s.url == "https://www.pref.tottori.lg.jp/243905.htm" and s.recipe_path.exists()
     s = SOURCES[TT_SHELTERED]
     assert (s.mode, s.enabled, s.kind, s.species, s.prefecture, s.contact_scope) == ("recipe", True, "sheltered", "mixed", "鳥取県", "operator")
     assert s.photo == "pending" and s.phone == "0857-26-7593" and s.url == SOURCES[TT_LOST].url and s.recipe_path.exists()  # 鳥取県の規約は転載要申請
@@ -272,11 +272,11 @@ MZ_LOST_CAT, MZ_LOST_DOG, MZ_SHELT_CAT, MZ_SHELT_DOG = "city_miyazaki-4", "city_
 
 
 def test_miyazaki_registry():
-    for slug, kind, species, photo in ((MZ_LOST_CAT, "lost", "cat", "no"), (MZ_LOST_DOG, "lost", "dog", "no"),
+    for slug, kind, species, photo in ((MZ_LOST_CAT, "lost", "cat", "pending"), (MZ_LOST_DOG, "lost", "dog", "pending"),
                                        (MZ_SHELT_CAT, "sheltered", "cat", "pending"), (MZ_SHELT_DOG, "sheltered", "dog", "pending")):
         s = SOURCES[slug]
         assert (s.mode, s.enabled, s.kind, s.species, s.prefecture) == ("recipe", True, kind, species, "宮崎県"), slug
-        assert s.photo == photo and s.phone == "0985-85-6011" and s.recipe_path.exists(), slug  # 宮崎市の規約は無断転載禁止のみ。lost の写真は出さない
+        assert s.photo == photo and s.phone == "0985-85-6011" and s.recipe_path.exists(), slug  # 宮崎市の規約は無断転載禁止のみ。lost も確認が取れるまで出さない（方針 5）
     assert SOURCES[MZ_LOST_CAT].url.endswith("/protection/109681.html") and SOURCES[MZ_LOST_DOG].url.endswith("/protection/57782.html")
     assert SOURCES[MZ_SHELT_CAT].url.endswith("/protection/109685.html") and SOURCES[MZ_SHELT_DOG].url.endswith("/protection/51360.html")
 
