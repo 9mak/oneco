@@ -1,11 +1,14 @@
-# 札幌市（迷子猫） — city_sapporo-1（迷子犬）と同じテンプレート。<h2>管理番号</h2><table>写真+ラベル値ul</table>。
-# こちらは表の後ろの装飾画像が table でなく <p><img></p> 単独なので rows="h2 + table" で自然に除外される。
-rows: "h2 + table"
+# proposal: run の日付 2026-11-24・元の失敗理由 0 頭で empty_text も無い（行 0・捨てた 0）・取れた頭数 1・採用条件は次の行（人が差分を見て recipes/ へ反映する。今日の HTML は <slug>.today.html）
+# 採用条件: 合格 a 必須項目・b 重複・c 行数・v1 見出し語・v2 日付・v3 現行の指定を保つ・v4 旧新比較（保存ページ 2 件） / 警告 回帰 NG（旧構造の可能性。保存 HTML で 0 頭。今日の HTML の頭数 1・前回 ok 1 頭）
+# agy note: ページのリニューアルに伴い、各個体の構造が h2 + table から h2 + div.col2（左列に写真、右列に属性 ul）に変わっていたため、rows を "h2 + div.col2" に修正しました。見出しからの管理番号取得、ul 内の label 指定、および empty_text はそのまま維持しています。
+# 札幌市（迷子猫） — <h2>管理番号</h2>の直後に続く <div class="col2">（左に写真、右に属性の ul）を 1 頭とみなす。
+# ページ末尾の装飾画像（<p><img></p>）は h2 + div.col2 に合致しないため除外される。
+rows: "h2 + div.col2"
 row_filter:
   text_has_any: ["収容年月日", "保護場所"]
 image: "img@src"
 fields:
-  management_no: {from: heading, selector: "h2", regex: "([A-Za-z]{1,3}\\d{6}-\\d+)"}   # 2026-11-07: 見出しから読む。市が写真のファイル名を打ち間違える（見出し LC081104-01 の 1 枚目が lc081104-03_1.jpeg）ので、写真の名前からは取らない（写真・ID は変えない）
+  management_no: {from: heading, selector: "h2", regex: "([A-Za-z]{1,3}\\d{6}-\\d+)"}
   shelter_date: {label: "収容年月日"}
   location: {label: "保護場所"}
   breed: {label: "種類"}
@@ -14,8 +17,8 @@ fields:
   size: {label: "体格"}
   note: {label: "首輪等"}
 empty_text:
-  - "現在迷子の猫は収容されていません"   # 2026-11-12 から: この文の下に空欄の雛形の表（収容年月日: 保護場所 ： …）が 2 つ残る
-  - "現在、迷子収容猫はいません"   # 0 頭の日の実際の文言（2026-10-05 昼に実ページで確認）
+  - "現在迷子の猫は収容されていません"
+  - "現在、迷子収容猫はいません"
   - "現在、迷子猫はいません"
   - "現在収容している猫はいません"
   - "現在、収容している猫はいません"
