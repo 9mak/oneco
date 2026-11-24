@@ -99,9 +99,10 @@ KIND_ORDER = {"adoption": 0, "sheltered": 1, "stray": 2, "lost": 3}
 FIELD_LABELS_BY_KIND = {"lost": {"shelter_date": "いなくなった日", "location": "いなくなった場所"}}
 STATUS = {
     "ok": "掲載あり",
-    "empty": "本日は 0 頭",
-    "failed": "本日は読めませんでした。自治体のページをご確認ください",
-    "ambiguous_empty": "本日は読めませんでした。自治体のページをご確認ください",   # 0 頭に見えるが確定できない日も前回分は載せず failed と同じ扱い
+    # 0 頭と確かめられた日も、読めなかった日も同じ文にする（前の日の子は出さない。2026-11-24 方針 18・19）
+    "empty": "最新の情報は自治体のページでご確認ください",
+    "failed": "最新の情報は自治体のページでご確認ください",
+    "ambiguous_empty": "最新の情報は自治体のページでご確認ください",   # 0 頭に見えるが確定できない日も前回分は載せず failed と同じ扱い
     "link_only": "リンクのみ",
     "disabled": "停止中",
 }
@@ -954,7 +955,6 @@ def build_sources(cfg: dict[str, Any], data: dict[str, Any]) -> str:
     by_pref: dict[str, list[dict[str, Any]]] = {}
     for s in sources:
         by_pref.setdefault(str(s.get("prefecture") or "不明"), []).append(s)
-    st = Counter(str(s.get("status") or "") for s in sources)
     sections = []
     for p in sorted(by_pref, key=pref_key):
         items = []
@@ -985,12 +985,9 @@ def build_sources(cfg: dict[str, Any], data: dict[str, Any]) -> str:
                 f'<span class="src-meta">{esc(" ・ ".join(m for m in meta if m))}</span>'
                 f'<span class="src-status">{res}</span><span class="src-link">{link}</span></li>')
         sections.append(f'<h2 id="{esc(p)}">{esc(p)}</h2><ul class="src-list">{"".join(items)}</ul>')
-    summary = f"掲載あり {st['ok']} 件、本日 0 頭 {st['empty']} 件、読めなかった {st['failed'] + st['ambiguous_empty']} 件、リンクのみ {st['link_only']} 件"
-    if st["disabled"]:
-        summary += f"、停止中 {st['disabled']} 件"
-    # 読めなかった理由は自治体側の変更だけではない（接続の失敗・503 もある。Codex #12）
+    # 状態ごとの件数は出さない。子がいない・読めなかった掲載元の行は、どれも自治体のページへ案内する（方針 18・19）
     body = f"""<h1>情報源（自治体ページ）の一覧</h1>
-<p>{esc(fmt_date(data.get('date')))}に確認した自治体ページ {len(sources)} 件の状況です（{summary}）。「本日は読めませんでした」のページは、接続できなかったり、ページの作りが変わったりして読み取れなかったものです。リンク先で直接ご確認ください。</p>
+<p>{esc(fmt_date(data.get('date')))}に確認した自治体ページ {len(sources)} 件の一覧です。oneco に掲載している子がいない場合も、自治体のページには情報が載っていることがあります。最新の情報はリンク先でご確認ください。</p>
 {chr(10).join(sections) if sections else '<p class="empty">情報源がありません。</p>'}"""
     return page(cfg, title="情報源の一覧", path="/sources/", body=body,
                 desc="oneco が毎日確認している自治体の保護犬・保護猫ページの一覧と、本日の確認状況。")
@@ -1093,7 +1090,7 @@ def build_about(cfg: dict[str, Any], data: dict[str, Any]) -> str:
 <li>掲載するのは自治体の公開ページに載っている情報だけです。写真・項目は元ページのまま、電話番号と所在地は自治体の公式情報から転記しています。</li>
 <li>毎日、各自治体のページを確認して、その日に載っている子を載せます。個体を追跡したり、過去の情報を残したりはしません。</li>
 <li>すべての子に「自治体の公式ページを見る」ボタンを付けています。譲渡の申し込みや迷子の問い合わせは、必ず自治体に直接行ってください。{site} は仲介をしません。</li>
-<li>読み取りに失敗した自治体は<a href="/sources/">情報源の一覧</a>に「本日は読めませんでした」と表示し、元ページへのリンクを残します。</li>
+<li>その日の情報を確認できない場合は、前の日の情報を載せず、<a href="/sources/">情報源の一覧</a>に「最新の情報は自治体のページでご確認ください」と表示します。</li>
 </ul>
 </section>
 <section>

@@ -97,9 +97,9 @@ def test_ambiguous_empty_drops_children_and_site_says_unreadable(tmp_path, monke
     dist = tmp_path / "dist"
     mod.build(p, dist, {"site_name": "oneco", "base_url": "https://x.test", "affiliate": []})
     sources = (dist / "sources" / "index.html").read_text(encoding="utf-8")
-    assert "本日は読めませんでした。自治体のページをご確認ください" in sources
+    assert "最新の情報は自治体のページでご確認ください" in sources and "本日は読めませんでした" not in sources
     assert ">ambiguous_empty<" not in sources and "最終確認" not in sources and "前回確認分" not in sources
-    assert "読めなかった 1 件" in sources   # 2026-11-13 夜:「確認できず」→「読めなかった」（掲載元の状態の言い方にそろえる）
+    assert "読めなかった" not in sources   # 2026-11-24 方針 18: 件数の内訳は出さず、行の文は「最新の情報は自治体のページでご確認ください」
 
 
 # ---------------------------------------------------------------- S2
