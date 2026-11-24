@@ -3,13 +3,22 @@ name: v2 deadman
 # v2 の夜間収集（Mac の launchd、毎日 00:05 JST）が「そもそも走らなかった日」を見つける（W006 T611）。
 # 失敗した日は collect.sh 自身が Discord に知らせるので、ここで見るのは「公開サイトの data.json の date が今日になっていない」ことだけ。
 # healthchecks.io のような外部サービスは使わない（アカウントを増やさない。2026-10-17 おまえさん決定）。
-# 02:00 JST（= 17:00 UTC 前日）に 1 回。収集〜deploy は 30 分弱なので 00:05 開始なら余裕で終わっている。
-# GitHub Actions の cron は数分〜数十分遅れることがあるが、日付の比較なので影響しない。
+# cron は 17:00 UTC（= 02:00 JST）に 1 回だが、GitHub Actions の schedule は混雑で大きく遅れ、実際の起動は 04:00〜09:40 JST ごろ
+# （2026-10-16〜11-22 の run 40 回で確かめた。gh run list --workflow v2-deadman.yml）。収集〜deploy は 30 分弱で 00:05 開始なら終わっているので、
+# 日付の比較には影響しない。
+# Discord への送信には User-Agent が要る（urllib の既定のままだと 403 になり、2026-10-22・10-29・11-14 の 3 回とも届かなかった）。
+# 送信が HTTP 4xx・5xx なら、その理由を出してジョブを失敗にする。
+# 手で試すとき: Actions → v2 deadman → Run workflow で test を true にすると、「試験の送信です」と分かる 1 通を送る（日付の判定は走らせて表示だけする）。
 
 on:
   schedule:
     - cron: "0 17 * * *"   # 02:00 JST
   workflow_dispatch:
+    inputs:
+      test:
+        description: "true にすると「試験の送信です」と分かる 1 通を Discord に送る"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -41,21 +50,36 @@ jobs:
             echo "reason=公開サイトの日付が $site_date のまま（今日は $today）。Mac の launchd が動いていないか deploy で止まっている" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: 走っていなければ Discord に知らせる
-        if: steps.probe.outputs.stale == 'true'
+      - name: 走っていなければ（または試し送りなら）Discord に知らせる
+        if: steps.probe.outputs.stale == 'true' || inputs.test
         env:
           WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
           REASON: ${{ steps.probe.outputs.reason }}
+          STALE: ${{ steps.probe.outputs.stale }}
+          TEST: ${{ inputs.test }}
         run: |
-          set -u
+          set -eu
           if [ -z "$WEBHOOK" ]; then
             echo "DISCORD_WEBHOOK_URL が無いので表示だけ: $REASON"
             exit 1
           fi
           python3 - <<'EOF'
-          import json, os, urllib.request
-          body = {"content": f"⚠️ oneco 夜間収集が今日は走っていません。{os.environ['REASON']}\n確認: `~/oneco-collect/v2/logs/launchd.log` と `collect-<日付>.log`"}
-          req = urllib.request.Request(os.environ["WEBHOOK"], data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
-          urllib.request.urlopen(req, timeout=20).read()
+          import json, os, sys, urllib.error, urllib.request
+          text = f"⚠️ oneco 夜間収集が今日は走っていません。{os.environ['REASON']}\n確認: `~/oneco-collect/v2/logs/launchd.log` と `collect-<日付>.log`"
+          if os.environ.get("TEST") == "true":
+              text = "試験の送信です（v2 deadman の手動実行。収集の状態は " + ("止まっている）" if os.environ.get("STALE") == "true" else "正常）")
+          req = urllib.request.Request(
+              os.environ["WEBHOOK"],
+              data=json.dumps({"content": text}).encode(),
+              headers={"Content-Type": "application/json", "User-Agent": "oneco-deadman/1.0 (+https://github.com/9mak/oneco)"},
+          )
+          try:
+              urllib.request.urlopen(req, timeout=20).read()
+          except urllib.error.HTTPError as e:   # 4xx・5xx。届いていないのでジョブを失敗にする
+              print(f"Discord への送信が HTTP {e.code} で失敗: {e.read()[:200]!r}", file=sys.stderr)
+              sys.exit(1)
+          print("Discord へ送信した")
           EOF
-          exit 1   # 走っていない日は run を失敗にして Actions の画面でも赤く見えるようにする
+          if [ "$STALE" = "true" ]; then
+            exit 1   # 走っていない日は run を失敗にして Actions の画面でも赤く見えるようにする
+          fi
