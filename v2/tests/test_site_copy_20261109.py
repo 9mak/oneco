@@ -102,7 +102,7 @@ def test_missing_phone_row_is_labelled_phone_under_contact_heading(tmp_path: Pat
 def test_about_wording(tmp_path: Path):
     about = (_build(tmp_path) / "about" / "index.html").read_text(encoding="utf-8")
     assert "自動に" not in about and "自動で読み取っている" in about
-    assert "本日は確認できませんでした" not in about and "本日は読めませんでした" in about
+    assert "本日は確認できませんでした" not in about and "本日は読めませんでした" not in about and "最新の情報は自治体のページでご確認ください" in about
 
 
 def test_pref_filter_does_not_fetch_data_json_and_toggles_rendered_cards(tmp_path: Path):
