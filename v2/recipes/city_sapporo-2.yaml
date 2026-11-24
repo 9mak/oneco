@@ -1,6 +1,7 @@
 # 札幌市（迷子猫） — city_sapporo-1（迷子犬）と同じテンプレート。<h2>管理番号</h2><table>写真+ラベル値ul</table>。
 # こちらは表の後ろの装飾画像が table でなく <p><img></p> 単独なので rows="h2 + table" で自然に除外される。
-rows: "h2 + table"
+# 2026-11-25: ホームページの改装（11/13〜11/24）で、子の 1 頭分が表でなく <div class="col2"> に変わった（h2 の管理番号 → div.col2 の写真と ul）。表の版（0 頭の日の雛形）も残す。
+rows: "h2 + table, h2 + div.col2"
 row_filter:
   text_has_any: ["収容年月日", "保護場所"]
 image: "img@src"
