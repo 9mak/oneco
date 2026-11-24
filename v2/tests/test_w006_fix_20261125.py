@@ -128,6 +128,20 @@ def test_kagoshima_1_returned_word_changed_on_a_dog_is_not_zero():
     assert len(res.animals) == 2 and not res.empty_confirmed
 
 
+def test_kagoshima_1_excluded_words_match_between_text_lacks_and_empty_absent():
+    # 除外語は text_lacks と empty_absent.none に二重に書いてある。片方だけ足すと 0 頭の根拠とずれるので一致を固定する
+    import re
+
+    import yaml
+
+    raw = yaml.safe_load((ROOT / "recipes" / f"{KAGO1}.yaml").read_text(encoding="utf-8"))
+    lacks = raw["row_filter"]["text_lacks"]
+    inside = re.search(r":-soup-contains\((.*)\)\)$", raw["empty_absent"]["none"])
+    assert inside is not None
+    in_none = re.findall(r"'([^']*)'", inside.group(1))
+    assert in_none == lacks
+
+
 # --- 佐賀県 鳥栖（pref_saga-2） ---------------------------------------------------------------------------------------
 SAGA2 = "pref_saga-2"
 SAGA_ZERO = ["t631_pref_saga-3_zero_20261106.html", "t631_pref_saga-3_zero_wb20260712.html"]   # 同じ雛形（事務所違い）
