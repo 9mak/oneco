@@ -2,6 +2,7 @@ name: v2 CI
 
 # v2（保護犬猫の日次収集）用。main のブランチ保護の必須 check にする名前は次の 3 つ（W006 T612・T613）:
 #   v2 / pytest   v2 / ruff   v2 / pii-scan
+# v2 / worker-node はお問い合わせ Worker（v2/worker）の node 試験。必須 check には入れていない（入れるかは親が決める）。
 # paths フィルタは付けない。付けると v2 以外だけの PR で check が起動せず、必須 check が pending のまま
 # マージできなくなる（GitHub docs「Handling skipped but required checks」）。
 # 代わりに毎回走らせる（pytest は数分）。Playwright は入れない（render のテストは FakeFetcher で動く）。
@@ -58,3 +59,15 @@ jobs:
       - run: pip install -c v2/requirements.txt beautifulsoup4 lxml pyyaml pytest
       - run: python -m pytest -q tests/test_fixtures_pii_guard.py
         working-directory: v2
+
+  worker-node:
+    name: v2 / worker-node
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      # 依存は無い（node の組み込みの試験）
+      - run: node --test v2/worker/contact.test.js
