@@ -304,6 +304,37 @@ def parse_date(s: Any) -> date | None:
     return None
 
 
+_SORT_DATES = [   # 並べ替え用。parse_date と違い、日付の後ろに時刻・時間帯・曜日の注記が付いていてもよい（先頭が日付であること）
+    re.compile(r"(?P<y>\d{4})\s*[/\-.年]\s*(?P<m>\d{1,2})\s*[/\-.月]\s*(?P<d>\d{1,2})(?!\d)"),
+    # 「令和8(2026)年 11月11日」（西暦の併記）、「R7 8/27」（年と月日の区切りが空白）も読む
+    re.compile(r"(?P<era>令和|平成|[RrHh])\s*(?P<y>\d{1,2}|元)(?:\s*\(\d{4}\))?(?:\s*[年.\-/、]\s*|\s+)(?P<m>\d{1,2})\s*[月.\-/]\s*(?P<d>\d{1,2})(?!\d)"),
+    re.compile(r"(?P<m>\d{1,2})\s*(?:月\s*|/)(?P<d>\d{1,2})(?!\d)"),   # 年の無い日付
+]
+
+
+def parse_shelter_date(s: Any, ref: date | None) -> date | None:
+    """一覧を新しい順に並べるための収容日・保護日（POLICY.md 方針 40）。読めなければ None（推測しない）。
+    年の無い日付（「9月12日」）は、データの日付 ref より後の月日なら前の年、そうでなければ同じ年とみなす。ref が無ければ今日。"""
+    t = str(s or "").strip()
+    for p in _SORT_DATES:
+        m = p.match(t)
+        if not m:
+            continue
+        g = m.groupdict()
+        try:
+            if g.get("y") is None:
+                today = ref or date.today()
+                d = date(today.year, int(g["m"]), int(g["d"]))
+                return d if d <= today else date(today.year - 1, int(g["m"]), int(g["d"]))
+            y = int(g["y"]) if g["y"] != "元" else 1
+            if g.get("era"):
+                y += _ERA[g["era"]]
+            return date(y, int(g["m"]), int(g["d"]))
+        except ValueError:
+            return None
+    return None
+
+
 def norm_date(s: Any) -> str:
     """日付だけの値を「2026年7月23日」に。日付だけでなければ空（元のまま出す）。"""
     d = parse_date(s)
@@ -1431,8 +1462,12 @@ def build_site(data: dict[str, Any], cfg: dict[str, Any], out: Path, data_path: 
         animals.append({**a, "_photo_withheld": True} if aid in withheld else a)
     d0 = parse_date(str(data.get("date") or "")[:10])
     _REF_DATE[:] = [d0] if d0 else []
-    # stable: 里親募集→保護中→迷子→探してます。同じ区分の中では写真のある子を先に（写真を止めている子は写真なし扱い。2026-11-13）。元の順は保つ
-    animals.sort(key=lambda a: (KIND_ORDER.get(str(a.get("kind")), 9), 0 if safe_url(a.get("image_url")) else 1))
+    # stable: 里親募集→保護中→迷子→探してます。同じ区分の中は、日付のある子を新しい順 → 日付の無い子（POLICY.md 方針 40。2026-11-24）。
+    # 同じ日付・日付の無い子どうしは掲載元の順（元の並び）を保つ。年の無い日付はデータの日付で年を決める
+    def _order(a: dict[str, Any]) -> tuple[int, int, int]:
+        d = parse_shelter_date(a.get("shelter_date"), d0)
+        return (KIND_ORDER.get(str(a.get("kind")), 9), 0 if d else 1, -d.toordinal() if d else 0)
+    animals.sort(key=_order)
 
     by_pref: dict[str, list[dict[str, Any]]] = {}
     for a in animals:
