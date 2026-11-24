@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # oneco v2 日次収集。Mac の launchd（ops/macos、毎日 JST 0:05）か VPS の systemd（oneco-collect.timer、0:00）から呼ばれる。
 #
-#   run（全ページ収集）→ notify（異常があれば Discord）→ propose（AI のレシピ案を draft PR に。ONECO_AI_REPAIR=1 のみ）→ build（静的サイト）→ Cloudflare Workers（静的アセット）へ deploy
+#   run（全ページ収集）→ notify（異常があれば Discord）→ propose（AI のレシピ案を draft PR に。ONECO_AI_REPAIR=1 のみ）
+#   （ONECO_REPAIR_AGENT=1 のときは propose の代わりに repair-night: 修復エージェントが実ページを見て直し、検査を通ったものを draft PR に。W006 T645）
+#   → build（静的サイト）→ Cloudflare Workers（静的アセット）へ deploy
 #   →（月曜だけ）discover（環境省リンク集と台帳の差分。確認済み一覧に無い差分があれば Discord）
 #   →（毎月最初の月曜＝JST の 1〜7 日の月曜だけ）discover --pages（台帳のページから 1 段たどった掲載漏れ・台帳のリンク切れ。あれば Discord）
 #   → 全部成功したら HEALTHCHECK_URL へ ping。discover・discover --pages の成否は「全部成功」に数えない。
@@ -16,7 +18,10 @@
 #   ONECO_LOG_DIR           ログ置き場（既定: $ONECO_V2_DIR/logs）
 #   DISCORD_WEBHOOK_URL     notify の送り先（無ければ表示だけ）
 #   ONECO_AI_REPAIR         1 で AI 修復を有効化（AI は agy。PATH に agy があり Antigravity にログイン済みであること。無ければ修復しない）
-#   ONECO_REPAIR_CLONE      propose が PR を作る作業用 clone（既定: $ONECO_V2_DIR/../.repair-clone）
+#   ONECO_REPAIR_AGENT      1 で夜間の修復をエージェント方式にする（旧 ai_repair の 1 発生成と propose は動かさない。shadow 段階: PR は draft のまま）
+#   ONECO_REPAIR_CLAUDE     1 で agy が直せなかった slug の予備と AI レビューに claude -p を使う（API の費用。Keychain の oneco-anthropic-api-key が要る）
+#   ONECO_REPAIR_MAX        1 晩に直す slug の上限（既定 5）
+#   ONECO_REPAIR_CLONE      propose / repair-night が PR を作る作業用 clone（既定: $ONECO_V2_DIR/../.repair-clone）
 #   CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID / ONECO_PAGES_PROJECT   deploy（ONECO_PAGES_PROJECT = Worker 名。無ければ deploy を飛ばす。Mac は wrangler login の OAuth でトークン不要）
 #   HEALTHCHECK_URL         healthchecks.io などの ping URL（無ければ飛ばす）
 #   WRANGLER                wrangler の呼び方（既定: "npx --yes wrangler"）
@@ -63,13 +68,28 @@ if [ ! -x "$PY" ]; then
 fi
 
 # 1. 収集（--date を渡さなければ collector 側が JST の今日を使う）
-step run "$PY" -m collector run
+#    エージェント方式のときは、収集の中の旧 AI 修復（1 発生成）を止める（修復は 2b の repair-night が行う）
+RUN_ARGS=()
+if [ "${ONECO_REPAIR_AGENT:-}" = "1" ]; then
+  RUN_ARGS=(--no-ai-repair)
+fi
+step run "$PY" -m collector run ${RUN_ARGS[@]+"${RUN_ARGS[@]}"}
 
 # 2. 通知（直近の report を見て、異常があるときだけ Discord に 1 通）
 step notify "$PY" -m collector notify
 
 # 2b. AI が書いたレシピ案（data/proposals）を draft PR にする。merge はオーナー（ONECO_AI_REPAIR=1 のときだけ）
-if [ "${ONECO_AI_REPAIR:-}" = "1" ]; then
+#     ONECO_REPAIR_AGENT=1 なら、代わりに修復エージェント（選別 → エージェント → 固定の検査 → draft PR → AI レビュー → Discord 1 通）。
+#     修復の失敗で収集・公開は止めない（discover と同じく step を使わず rc を変えない。healthcheck の /fail にもならない）
+if [ "${ONECO_REPAIR_AGENT:-}" = "1" ]; then
+  echo "== [$(date '+%H:%M:%S')] repair_agent"
+  if "$PY" -m collector repair-night; then
+    echo "-- repair_agent: ok"
+  else
+    repair_agent_code=$?
+    echo "-- repair_agent: 失敗 (exit ${repair_agent_code}) 日次収集の失敗には数えない"
+  fi
+elif [ "${ONECO_AI_REPAIR:-}" = "1" ]; then
   step propose "$PY" -m collector propose
 fi
 

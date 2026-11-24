@@ -1,4 +1,4 @@
-"""CLI: show / fetch / run / discover（--pages あり） / notify / promote / repair / propose"""
+"""CLI: show / fetch / run / discover（--pages あり） / notify / promote / repair / propose / repair-plan / repair-agent / repair-check / repair-night"""
 
 from __future__ import annotations
 
@@ -197,6 +197,82 @@ def cmd_propose(args: argparse.Namespace) -> int:
     return propose(dry_run=args.dry_run)
 
 
+def _today() -> str:
+    return datetime.now(JST).strftime("%Y-%m-%d")
+
+
+def cmd_repair_plan(args: argparse.Namespace) -> int:
+    """その日の report から、修復エージェントに渡す slug を選んで data/repair-plan-<日付>.json に書く（W006 T645）。"""
+    from .repair_plan import (
+        ATTEMPTS_DIRNAME,
+        max_per_night,
+        select,
+        unmerged_repair_branches,
+        write_plan,
+    )
+    from .run import DATA_DIR
+    from .state import load_state, save_state
+
+    date = args.date or _today()
+    report_path = DATA_DIR / f"report-{date}.json"
+    if not report_path.exists():
+        print(f"{report_path.name} が無い")
+        return 2
+    unmerged, err = unmerged_repair_branches()
+    state = load_state()
+    plan = select(json.loads(report_path.read_text(encoding="utf-8")), load_sources(), state, date, unmerged=unmerged,
+                  attempts_root=DATA_DIR / ATTEMPTS_DIRNAME, limit=max_per_night())
+    plan["unmerged_check_error"] = err
+    if not args.dry_run:
+        save_state(state)
+        print(f"書いた: {write_plan(plan, DATA_DIR, date)}")
+    print(f"対象 {len(plan['selected'])} 件: " + " ".join(s["slug"] for s in plan["selected"]))
+    for e in plan["excluded"]:
+        print(f"  外した {e['slug']}: {e['reason']}")
+    return 0
+
+
+def cmd_repair_agent(args: argparse.Namespace) -> int:
+    """1 slug を、作業 worktree でエージェントに直させ → 検査 → 通れば push・draft PR（--dry-run なら push しない）。0=通った 1=通らなかった"""
+    from .repair_agent import NIGHT_BUDGET_S
+    from .repair_flow import Budget, process_slug
+    from .run import DATA_DIR
+
+    date = args.date or _today()
+    sel = {"slug": args.slug, "name": args.slug, "url": None, "error": None, "error_kind": None, "http_status": None}
+    report_path = DATA_DIR / f"report-{date}.json"
+    if report_path.exists():
+        for row in json.loads(report_path.read_text(encoding="utf-8")):
+            if row.get("slug") == args.slug:
+                sel.update(name=row.get("name") or args.slug, error=row.get("error"),
+                           error_kind=(row.get("error_info") or {}).get("kind"))
+    r = process_slug(sel, date, DATA_DIR, Budget(NIGHT_BUDGET_S), runners=[args.runner] if args.runner else None, dry_run=args.dry_run)
+    print(json.dumps({k: v for k, v in r.items() if k != "details"} | {"details": r.get("details")}, ensure_ascii=False, indent=1, default=str))
+    return 0 if r["outcome"] in ("pr_created", "dry_run_ok") else 1
+
+
+def cmd_repair_check(args: argparse.Namespace) -> int:
+    """作業 worktree の修復を固定の基準で検査する。0=通った 1=通らなかった"""
+    from .propose import clone_dir
+    from .repair_agent import worktree_path
+    from .repair_check import check
+
+    wt = Path(args.worktree) if args.worktree else worktree_path(args.slug, clone_dir())
+    res = check(args.slug, wt, run_full=not args.fast)
+    print(json.dumps(res.details, ensure_ascii=False, indent=1, default=str))
+    for p in res.problems:
+        print(f"NG: {p}")
+    print("OK" if res.ok else "NG")
+    return 0 if res.ok else 1
+
+
+def cmd_repair_night(args: argparse.Namespace) -> int:
+    """夜間の修復（選別 → エージェント → 検査 → draft PR → AI レビュー → Discord）。収集・公開を止めないので、常に 0（W006 T645）"""
+    from .repair_flow import night
+
+    return night(args.date or _today())
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="collector")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -246,6 +322,24 @@ def main(argv: list[str] | None = None) -> int:
     a = sub.add_parser("propose", help="data/proposals の案を draft PR にする（作業用 clone から。merge はオーナー）")
     a.add_argument("--dry-run", action="store_true", help="PR にする予定の案を表示するだけ")
     a.set_defaults(fn=cmd_propose)
+    a = sub.add_parser("repair-plan", help="その日の report から修復エージェントに渡す slug を選ぶ（data/repair-plan-<日付>.json）")
+    a.add_argument("--date", help="YYYY-MM-DD（既定は JST の今日）")
+    a.add_argument("--dry-run", action="store_true", help="state とファイルを書かず、選別だけ表示")
+    a.set_defaults(fn=cmd_repair_plan)
+    a = sub.add_parser("repair-agent", help="1 slug をエージェントに直させ、検査して、通れば draft PR（作業用 clone の worktree）")
+    a.add_argument("slug")
+    a.add_argument("--runner", choices=("agy", "claude"), help="この runner だけを使う（既定は agy、ONECO_REPAIR_CLAUDE=1 なら失敗時に claude）")
+    a.add_argument("--dry-run", action="store_true", help="エージェントと検査までやり、push・PR はしない")
+    a.add_argument("--date", help="YYYY-MM-DD（既定は JST の今日。失敗理由を読む report の日付）")
+    a.set_defaults(fn=cmd_repair_agent)
+    a = sub.add_parser("repair-check", help="作業 worktree の修復を固定の基準で検査する")
+    a.add_argument("slug")
+    a.add_argument("--worktree", help="既定は <作業用 clone>/../.repair-wt/<slug>")
+    a.add_argument("--fast", action="store_true", help="v2 全体の pytest を飛ばす（手元の確認用。PR にする前の検査では使わない）")
+    a.set_defaults(fn=cmd_repair_check)
+    a = sub.add_parser("repair-night", help="夜間の修復（collect.sh から。ONECO_REPAIR_AGENT=1）")
+    a.add_argument("--date", help="YYYY-MM-DD（既定は JST の今日）")
+    a.set_defaults(fn=cmd_repair_night)
     args = p.parse_args(argv)
     return args.fn(args)
 

@@ -97,6 +97,19 @@ journalctl -u oneco-collect -f                 # ログ（/var/log/oneco/collect
 外部サービスは使わない（2026-10-17 決定: アカウントを増やさない）。GitHub Actions の `.github/workflows/v2-deadman.yml` が毎日 1 回（cron は 02:00 JST だが、Actions の schedule は遅れ、実際の起動は 04:00〜09:40 JST ごろ。2026-10-16〜11-22 の 40 回で確認）、公開サイトの `data.json` の `date` を見て、今日の日付でなければ repo secret `DISCORD_WEBHOOK_URL` へ 1 通送り、run を失敗にする。送信には User-Agent を付ける（付けないと Discord が 403 を返し、2026-10-22・10-29・11-14 の 3 回は届かなかった）。送信が HTTP 4xx・5xx のときも run は失敗になり、ログに状態コードが出る。設定は不要（secret は既にある）。手で試すときは Actions → v2 deadman → Run workflow で `test` を true にすると、「試験の送信です」と分かる 1 通を送る（日付が古いかどうかは表示だけ）。
 `HEALTHCHECK_URL` は healthchecks.io 等を使いたい場合の予備で、空のままでよい（collect.sh は全部成功した日に本体 URL、失敗した日に `URL/fail` を叩く）。
 
+### 1-5b. 修復エージェント（W006 T645。shadow 段階）
+
+`ONECO_REPAIR_AGENT=1`（collect.env）にすると、夜間の修復が旧方式（入口 HTML 1 枚を agy に渡して YAML を 1 回返させる）から **エージェント方式** に替わる。
+旧方式は止まる（collect.sh が `collector run --no-ai-repair` にし、`propose` も呼ばない）。`ONECO_REPAIR_AGENT` が無ければ今のまま。外すだけで戻せる。
+
+- 流れ（`collector repair-night`。notify の後・build の前）: `repair-plan`（その日の report から対象を選ぶ。固定のスクリプト）→ slug ごとに作業用 clone（`ONECO_REPAIR_CLONE`）に `repair/<slug>` の worktree → エージェント（agy。`--mode auto --sandbox`、cwd は worktree だけ）が実ページを取得・保存し、崩れを再現する試験を先に書き、レシピを直す →
+  `repair-check`（固定の検査。触ってよいパス・schema・今日のページ・過去の fixture での退行・個人の連絡先・追加した試験が直す前に落ちる・v2 全体の pytest・ruff）→ 通れば push → **draft PR** → 書いたのと別の runner の AI レビューをコメント → Discord に 1 晩 1 通。**merge は人**（shadow 段階）。
+- エージェントに渡す指示は `v2/docs/REPAIR_AGENT.md`（PR 本文に版のハッシュを書く）。子プロセスの環境変数は許可リスト方式（PATH・HOME・LANG 等だけ）で、`ONECO_GITHUB_TOKEN`・`CLOUDFLARE_*`・`DISCORD_*`・`HEALTHCHECK_*` は渡さない。
+- 対象から外す条件は `collector/repair_plan.py`: 入口の 401・403・404・子が全部 404・ホスト障害の疑い（T635・T656）、`mode: link_only`・`enabled: false`、作業用 clone に未マージの `repair/<slug>` がある、今日もう試した、直近 7 日の夜に 3 回直せなかった（人に回す）。1 晩の上限は 5 件（`ONECO_REPAIR_MAX`）・エージェントの合計 60 分（1 件 15 分）。選別の理由は `data/repair-plan-<日付>.json`、1 件ごとの記録は `data/repair-attempts/<日付>/<slug>.json`。
+- 予備（`ONECO_REPAIR_CLAUDE=1` のときだけ）: agy で検査を通らなかった slug を `claude -p` で同じ手順にもう 1 回。API キーは Keychain の `oneco-anthropic-api-key`（この子プロセスにだけ渡す。無ければ予備は使わない）。AI レビューも claude が書いたときは agy、agy が書いたときは claude（この変数があるときだけ）。
+- 本番に入れる前に要るもの: T622 の fine-grained PAT（`ONECO_GITHUB_TOKEN`。oneco だけ・Contents と Pull requests の RW）、作業用 clone（`ONECO_REPAIR_CLONE`）、予備を使うなら Keychain の API キー。
+- 手元で 1 件だけ試す: `PYTHONPATH=v2 python -m collector repair-agent <slug> --runner agy --dry-run`（エージェントと検査までやって push しない。記録は `<slug>.dry-run.json`）。検査だけ: `collector repair-check <slug>`。
+
 ### 1-5. agy（AI 修復）
 
 AI 修復は有料 API を使わず agy（Antigravity CLI、Gemini）で動かす。実行する Mac / VPS で `agy` が PATH にあり、Antigravity にログイン済みであること（agy は `~/.gemini` にログを書く）。
