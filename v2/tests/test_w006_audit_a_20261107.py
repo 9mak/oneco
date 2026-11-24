@@ -14,6 +14,7 @@ fixture は 2026-11-07 に保存した実ページ（script・style を落とし
 - ワンニャピアあきた: 一覧が 2 ページあるので次のページも辿る
 """
 
+import dataclasses
 import json
 import re
 from pathlib import Path
@@ -27,7 +28,12 @@ from collector.run import Collected, collect_one
 
 ROOT = Path(__file__).resolve().parent.parent
 FIX = Path(__file__).resolve().parent / "fixtures"
-SOURCES = {s.slug: s for s in load_sources(ROOT / "registry" / "sources.yaml")}
+# 松本市 -4 は 2026-11-24 の決定（POLICY.md 方針 41）で台帳がリンクのみ・写真なしになった。レシピは残してあり、読めることはここで確かめ続ける
+_LINK_ONLY_NOW = {"city_matsumoto-4"}
+SOURCES = {
+    s.slug: (dataclasses.replace(s, mode="recipe") if s.slug in _LINK_ONLY_NOW else s)
+    for s in load_sources(ROOT / "registry" / "sources.yaml")
+}
 
 
 def _fx(name: str) -> str:

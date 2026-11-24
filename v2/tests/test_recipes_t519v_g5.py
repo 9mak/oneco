@@ -23,7 +23,9 @@ _FROM = {"city_matsumoto-6": "city_matsumoto-5", "city_matsumoto-7": "city_matsu
          # 甲府市は 2026-11-16 の返事でリンクのみ（T630）。レシピは許諾が変わったときのために残し、読めることはここで確かめ続ける
          "city_kofu-1": "city_kofu-1", "city_kofu-2": "city_kofu-2",
          # 長野市 -7（市民・ボランティアの譲渡）は 2026-11-21 の決定でリンクのみ（T630）。同じくレシピは残して読めることを確かめ続ける
-         "city_nagano-7": "city_nagano-7"}
+         "city_nagano-7": "city_nagano-7",
+         # 松本市 -4・-5 は 2026-11-24 の決定（POLICY.md 方針 41。保護された子と個人の手放しが同じページ）でリンクのみ。同じくレシピは残して読めることを確かめ続ける
+         "city_matsumoto-4": "city_matsumoto-4", "city_matsumoto-5": "city_matsumoto-5"}
 
 
 def _source(slug: str) -> Source:
