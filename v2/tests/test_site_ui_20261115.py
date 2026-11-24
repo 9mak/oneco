@@ -473,7 +473,7 @@ def test_footer_has_three_links_a_two_line_note_and_the_brand(tmp_path: Path):
                 "sources/index.html", "404.html"):
         foot = BeautifulSoup(_read(out, rel), "lxml").select_one("footer.site-foot")
         links = [(a.get_text(), a["href"]) for a in foot.select(".foot-links a")]
-        assert links == [("このサイトについて", "/about/"), ("情報源の一覧", "/sources/"), ("運営への問い合わせ", "/about/#takedown")], rel
+        assert links == [("このサイトについて", "/about/"), ("情報源の一覧", "/sources/"), ("運営への問い合わせ", "/contact/")], rel
         assert len(foot.select("a")) == 3, rel
         assert "github" not in str(foot).lower() and "取り下げ" not in foot.get_text(), rel
         assert "掲載情報は各自治体の公開データに基づきます。<br/>最新の状況は掲載元のページ・電話でご確認ください。" in str(foot.select_one(".foot-note"))
