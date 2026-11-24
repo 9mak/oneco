@@ -53,7 +53,7 @@ DEFAULT_CFG: dict[str, Any] = {
     "base_url": "https://oneco.pet",
     "issues_url": "https://github.com/9mak/oneco/issues",
     "repo_url": "https://github.com/9mak/oneco",
-    "tagline": "全国の保護動物情報をひとつに",
+    "tagline": "全国の動物の里親募集・迷子情報をひとつに",
     "contact_email": "",
     "affiliate": [],
 }
@@ -697,7 +697,7 @@ def build_index(cfg: dict[str, Any], data: dict[str, Any], animals: list[dict[st
         f'<button type="button" class="tab-btn" data-top-tab="{k}" aria-pressed="{"true" if k == "all" else "false"}">{label} <span class="tab-cnt">{n}</span></button>'
         for k, label, n in (("all", "すべて", len(animals)), ("adopt", GROUPS["adopt"], n_adopt), ("missing", GROUPS["missing"], len(animals) - n_adopt)))
     body = f"""<section class="hero">
-<h1>お住まいの地域の保護動物を探す</h1>
+<h1>都道府県から動物の里親募集・迷子情報を探す</h1>
 <p>保護犬・保護猫をはじめ、地域ごとの里親募集と迷子情報を毎日更新しています。</p>
 <p class="hero-stats">{esc(fmt_date(data.get('date')))}時点：{stats}</p>
 </section>
@@ -707,7 +707,7 @@ def build_index(cfg: dict[str, Any], data: dict[str, Any], animals: list[dict[st
 </div>
 {chr(10).join(groups)}
 <script>{INDEX_JS}</script>"""
-    return page(cfg, title=cfg["site_name"], path="/", body=body,
+    return page(cfg, title="全国の動物の里親募集・迷子情報", path="/", body=body,
                 desc="全国の自治体が公開している保護犬・保護猫の情報を、都道府県ごとに 1 か所で探せます。里親募集と迷子情報を毎日更新、出典つき。")
 
 
@@ -840,7 +840,7 @@ def build_pref(cfg: dict[str, Any], data: dict[str, Any], pref: str, animals: li
 {cards}</div>
 <div class="empty-box" id="empty"{"" if not shown else " hidden"}>現在掲載されている子はありません。自治体の公式ページに掲載がある場合もあるため、<a href="/sources/#{esc(quote(pref))}">情報源の一覧</a>もあわせてご確認ください。</div>
 <script>{PREF_JS}</script>"""
-    return page(cfg, title=f"{pref}の保護犬・保護猫", path=pref_path(pref), body=body, body_attrs=f' data-pref="{esc(pref)}"',
+    return page(cfg, title=f"{pref}の動物の里親募集・迷子情報", path=pref_path(pref), body=body, body_attrs=f' data-pref="{esc(pref)}"',
                 desc=f"{pref}の自治体が{fmt_date(data.get('date'))}に公開している保護犬 {c['dog']} 頭・保護猫 {c['cat']} 頭{rest_desc}の一覧。里親募集と迷子情報。出典つき。")
 
 
