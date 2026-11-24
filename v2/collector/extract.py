@@ -196,6 +196,26 @@ def _absent_list(doc: Doc, spec: dict[str, str]) -> bool:
     return bool(doc.soup.select(spec["page"])) and not doc.soup.select(spec["none"])
 
 
+def _live_rows(pool: list[Doc], spec: dict[str, str]) -> int:
+    """empty_absent.live_row / live_until: 一覧の表に、掲載期限が今日以降（または読めない）の行がいくつあるか。
+    個別記事が一覧に出る前でも、一覧の表に期限が先の行があれば保護中の子がいるので、0 頭と確定させない（岡山市 W006 T653）。
+    live_row は表の行、live_until は行の中の期限のセル。読めない期限は保護中とみなす（fail-closed）。"""
+    row_sel, until_sel = spec.get("live_row"), spec.get("live_until")
+    if not row_sel or not until_sel:
+        return 0
+    today = _today()
+    n = 0
+    for d in pool:
+        if d.soup is None:
+            continue
+        for row in d.soup.select(row_sel):
+            cell = row.select_one(until_sel)
+            until = _parse_jp_date(cell.get_text() if cell is not None else None)
+            if until is None or until >= today:
+                n += 1
+    return n
+
+
 def expected_labels(recipe: Recipe) -> set[str]:
     """レシピが項目名で引いている語（fields の label / header。join の中も含む）。見出しの照合に使う。"""
     return {lb for g in _label_groups(recipe) for lb in g}
@@ -324,7 +344,7 @@ def empty_hits(recipe: Recipe, pool: list[Doc], docs: list[Doc] | None = None) -
         blank_in = [(d, found) for d, found in found_in if found and all(_is_blank(el) for el in found)]
         if blank_in:
             hits.append(EmptyHit("empty_selector", sel, [d.url for d, _ in blank_in], sum(len(f) for _, f in blank_in)))
-    if recipe.empty_absent:
+    if recipe.empty_absent and not _live_rows(pool, recipe.empty_absent):
         ok_docs = [d for d in pool if _absent_list(d, recipe.empty_absent)]
         if ok_docs:
             n = sum(len(d.soup.select(recipe.empty_absent["page"])) for d in ok_docs)  # type: ignore[union-attr]
