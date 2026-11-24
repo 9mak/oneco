@@ -101,7 +101,7 @@ def test_okayama_list_row_with_an_unreadable_deadline_is_not_a_zero():
 def test_okayama_list_page_gone_is_not_a_zero():
     # 一覧の表を読めない日は、辿れなかったので 0 頭にしない
     c = _oka(OKA_ZERO_INDEX, None, dogs=False)
-    assert c.status not in ("ok", "empty"), (c.status, c.error)
+    assert c.status == "failed", (c.status, c.error)
 
 
 # --- さいたま市 -----------------------------------------------------------------------------------------------------
