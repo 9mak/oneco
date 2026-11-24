@@ -352,5 +352,5 @@ def test_no_personal_contact_is_read():
     # 個人の連絡先は読まない: 問い合わせ先は保健所・センターの欄だけを note に入れる。氏名・個人の電話を取る項目は無い
     for slug in EXPECT:
         raw = yaml.safe_load((ROOT / "recipes" / f"{slug}.yaml").read_text(encoding="utf-8"))
-        assert set(raw["fields"]) <= {"management_no", "sex", "age", "shelter_date", "location", "note"}
+        assert set(raw["fields"]) <= {"management_no", "sex", "age", "shelter_date", "location", "note", "closed"}   # closed は除外判定用（animals に出ない）
         assert dataclasses.is_dataclass(SOURCES[slug])

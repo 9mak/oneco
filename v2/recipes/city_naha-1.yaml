@@ -3,14 +3,19 @@
 # 動物ごとに h3（名前）→ p.imagecenter の写真 → p（「名前：…」「犬種：…」「性別：…」「推定年齢：…」「体重：…」「性格・特徴：…」「写真撮影日：…」を br 区切り）。
 # h3 を 1 頭の始まりにして次の h2・h3 の手前までをまとめる。犬猫は直前の h2（譲渡犬紹介・譲渡猫紹介）で決める。猫の p には「犬種」が無い（breed は空）。
 # 「名前：まこ（譲渡交渉中）」は、まだ譲渡が決まったわけではないので載せて note に出す（トライアル中と同じ扱い）。
+# ただし掲載元が写真の枠を「譲渡されました」の画像（joutosaremashita.jpg・alt「譲渡されました」）に差し替えた子は、文が「譲渡交渉中」のままでも
+# 譲渡が決まっているので載せない（2026-11-23 まこ。POLICY.md 方針 21）。写真の alt かファイル名で見る（closed_alt・closed_file。animals には出ない）。
 # 仕様の「譲渡犬紹介の節だけ」から、同じページの「譲渡猫紹介」の節（今日 8 頭）も読む作りにした（同じテンプレート。猫を落とすと掲載漏れの穴が残る）。
 # 0 頭の日の版は Wayback に見つからない（2026-02 と今日だけ）ので文言は分からない。枠（h1）はあるが動物の見出し・写真が 1 つも無い日だけ 0 頭にする。
 rows: "div#voice h3"
 row_until: "h2, h3"
 row_filter:
   text_has_any: ["名前："]
+  field_lacks: {closed_alt: ["譲渡されました"], closed_file: ["joutosaremashita"]}
 image: "img@src"
 fields:
+  closed_alt: {selector: "p.imagecenter img", attr: alt}
+  closed_file: {selector: "p.imagecenter img", attr: src}
   name: {regex: "名前[:：]\\s*(\\S+)"}
   breed: {regex: "犬種[:：]\\s*(\\S+)"}
   sex: {regex: "性別[:：]\\s*(\\S+)"}
