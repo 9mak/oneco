@@ -44,7 +44,7 @@ def test_registry_entries():
         s = SOURCES[slug]
         assert s.mode == "recipe" and s.enabled and s.kind == "adoption" and s.prefecture == "北海道", slug
         assert s.species == species and s.phone == "011-736-6134" and s.address, slug
-        assert s.photo == "pending", slug  # 札幌市は規約の返事待ち・未依頼（既存の迷子 2 ページも pending）
+        assert s.photo == "ok", slug  # 2026-11-24 札幌市から「写真も含め表示することについては、特に問題ありません」と返事
         assert s.recipe_path.exists(), slug
 
 

@@ -513,16 +513,17 @@ sources:
   prefecture: 北海道
   phone: 011-736-6134
   address: 〒060-0022 札幌市中央区北22条西15丁目3-6
-  url: https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/maigoinu.html
-  verified_at: '2026-10-15'
-  verified_phone_url: "https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/maigoinu.html"
-  verified_address_url: "https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/maigoinu.html"
+  url: https://www.city.sapporo.jp/s049/68135.html
+  verified_at: '2026-11-25'
+  verified_phone_url: "https://www.city.sapporo.jp/s049/68135.html"
+  verified_address_url: "https://www.city.sapporo.jp/s049/68135.html"
   kind: stray
   species: dog
   mode: recipe
   recipe: recipes/city_sapporo-1.yaml
   enabled: true
-  photo: pending
+  photo: ok
+  note: 2026-11-24 札幌市保健所 動物愛護管理センターから、11/18 のお伺いに「複製・転用について、写真も含め表示することについては、特に問題ありません。」と返事（条件なし。T630）。写真を出す。2026-11-25 公式ホームページのリニューアルで URL が移った（301）ので url を s049/ の下に直した。
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_sapporo.py
     requires_js: false
@@ -535,16 +536,17 @@ sources:
   prefecture: 北海道
   phone: 011-736-6134
   address: 〒060-0022 札幌市中央区北22条西15丁目3-6
-  url: https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/maigoneko2.html
-  verified_at: '2026-10-15'
-  verified_phone_url: "https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/maigoinu.html"
-  verified_address_url: "https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/maigoinu.html"
+  url: https://www.city.sapporo.jp/s049/68127.html
+  verified_at: '2026-11-25'
+  verified_phone_url: "https://www.city.sapporo.jp/s049/68127.html"
+  verified_address_url: "https://www.city.sapporo.jp/s049/68127.html"
   kind: stray
   species: cat
   mode: recipe
   recipe: recipes/city_sapporo-2.yaml
   enabled: true
-  photo: pending
+  photo: ok
+  note: 2026-11-24 札幌市保健所 動物愛護管理センターから、11/18 のお伺いに「複製・転用について、写真も含め表示することについては、特に問題ありません。」と返事（条件なし。T630）。写真を出す。2026-11-25 公式ホームページのリニューアルで URL が移った（301）ので url を s049/ の下に直した。
   legacy:
     adapter_file: src/data_collector/adapters/rule_based/sites/city_sapporo.py
     requires_js: false
@@ -8821,34 +8823,34 @@ sources:
   prefecture: 北海道
   phone: 011-736-6134
   address: 〒060-0022 札幌市中央区北22条西15丁目3-6
-  url: https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/houkiken.html
-  verified_at: '2026-11-17'
-  verified_phone_url: "https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/houkiken.html"
-  verified_address_url: "https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/houkiken.html"
+  url: https://www.city.sapporo.jp/s049/30069.html
+  verified_at: '2026-11-25'
+  verified_phone_url: "https://www.city.sapporo.jp/s049/30069.html"
+  verified_address_url: "https://www.city.sapporo.jp/s049/30069.html"
   kind: adoption
   species: dog
   mode: recipe
   recipe: recipes/city_sapporo-3.yaml
   enabled: true
-  photo: pending
-  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。札幌市動物愛護管理センターで譲渡できる犬。既存の札幌市の 2 ページ（city_sapporo-1・2）は迷子だけだった。犬ごとに h2（管理番号）→ 表（写真・種類・性別・年齢・体格・愛称）。2026-11-17 時点は 0 頭（h2「AD081109-01は譲渡されました（11/13）」と空の雛形の表だけが残る。「現在いません」の文言は無い）。「譲渡されました」の子は載せない。犬が載った日の作りは Wayback 2026-05-18 で確認。写真は pending（札幌市は返事待ち・未依頼。新しいページの写真は改めて聞く）。
+  photo: ok
+  note: 2026-11-24 札幌市保健所 動物愛護管理センターから、11/18 のお伺いに「複製・転用について、写真も含め表示することについては、特に問題ありません。」と返事（条件なし。T630）。写真を出す。2026-11-25 公式ホームページのリニューアルで URL が移った（301）ので url を s049/ の下に直した。掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。札幌市動物愛護管理センターで譲渡できる犬。既存の札幌市の 2 ページ（city_sapporo-1・2）は迷子だけだった。犬ごとに h2（管理番号）→ 表（写真・種類・性別・年齢・体格・愛称）。2026-11-17 時点は 0 頭（h2「AD081109-01は譲渡されました（11/13）」と空の雛形の表だけが残る。「現在いません」の文言は無い）。「譲渡されました」の子は載せない。犬が載った日の作りは Wayback 2026-05-18 で確認。
 - slug: city_sapporo-4
   name: 札幌市（譲渡猫）
   municipality: 札幌市
   prefecture: 北海道
   phone: 011-736-6134
   address: 〒060-0022 札幌市中央区北22条西15丁目3-6
-  url: https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/jotoneko.html
-  verified_at: '2026-11-17'
-  verified_phone_url: "https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/houkiken.html"
-  verified_address_url: "https://www.city.sapporo.jp/inuneko/syuuyou_doubutsu/houkiken.html"
+  url: https://www.city.sapporo.jp/s049/99397.html
+  verified_at: '2026-11-25'
+  verified_phone_url: "https://www.city.sapporo.jp/s049/99397.html"
+  verified_address_url: "https://www.city.sapporo.jp/s049/99397.html"
   kind: adoption
   species: cat
   mode: recipe
   recipe: recipes/city_sapporo-4.yaml
   enabled: true
-  photo: pending
-  note: 掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。札幌市動物愛護管理センターで譲渡できる猫。h2 の区分（人に馴れている猫・あまり人に馴れていない猫…）の下に、h3「名前（管理番号） 年齢 性別」→ 写真 → 紹介文。2026-11-17 時点で 42 頭（ページの「譲渡可能な成猫の数 42匹」と合う）。「一時的に譲渡対象外の猫」の 1 頭は載せない。子猫は写真・詳細を載せない方針のページ。写真は pending（札幌市は返事待ち・未依頼）。
+  photo: ok
+  note: 2026-11-24 札幌市保健所 動物愛護管理センターから、11/18 のお伺いに「複製・転用について、写真も含め表示することについては、特に問題ありません。」と返事（条件なし。T630）。写真を出す。2026-11-25 公式ホームページのリニューアルで URL が移った（301）ので url を s049/ の下に直した。掲載漏れの棚卸しで追加（2026-11-17 W006 T640）。札幌市動物愛護管理センターで譲渡できる猫。h2 の区分（人に馴れている猫・あまり人に馴れていない猫…）の下に、h3「名前（管理番号） 年齢 性別」→ 写真 → 紹介文。2026-11-17 時点で 42 頭（ページの「譲渡可能な成猫の数 42匹」と合う）。「一時的に譲渡対象外の猫」の 1 頭は載せない。子猫は写真・詳細を載せない方針のページ。
 - slug: city_fukuyama-3
   name: 福山市（里親募集中の犬）
   municipality: 福山市
