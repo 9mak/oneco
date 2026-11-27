@@ -7077,6 +7077,40 @@ sources:
   photo: pending
   enabled: true
   note: "環境省リンク集から追加（2026-10-05 T519）。県の「収容犬情報」は動物愛護センターと県内各保健所（秋田市保健所を除く）で収容している犬を載せるページで、2026-10-05 時点は 0 頭（見出しと「掲載がない場合は、収容している犬はおりません」の説明文だけ。説明文は常に出ているので 0 頭の判定には使えない）。2026-11-07 W006 に Wayback の 16 版のうち 12 版を読み（残り 4 版は取得できず。うち 3 版は 10/05 に見出しと説明文だけと確認済み）、犬が載った日が 2020-04-16（能代保健所）・2020-09-19（由利本荘保健所）・2021-03-03 と 2022-03-08（大館保健所）の 4 版あった。どれも説明文の下に ul.c-list--archive が出て「収容犬一覧（能代保健所）」のような子ページ pages/archive/NNN へのリンクが 1 本あり、子ページは写真と入れ子の表（見出しのセルは th の版と td の版がある）。それ以外の版は 0 頭でリストが無い。これで recipe にした。0 頭は「説明文の枠があり、ul.c-list--archive・archive へのリンク・表・画像が本文に無い日」だけ（説明文では判定しない）。子のリンクがあれば子ページを辿って読み、読めなければ 0 頭にならず failed。未確認: 現行の作り（2024 年の CMS 刷新後）で犬が載った日の保存は無く、子ページの作りは 2020 年の版で確かめたもの（現行の分野ページ genre/11645 が同じ ul.c-list--archive で記事を並べていることだけ確認）。子ページへのリンクは ul.c-list--archive の中の pages/archive/ を含むものだけ辿る（無関係なリンクを辿らない。リンクの形が変われば行が取れず failed）。運用: 現行の作りで初めて犬が載った日（animals が 1 頭以上になった最初の収集）は、読み結果を人が実ページと見比べて目視する。新しく読む掲載元で写真の扱いを県に確かめていないので photo: pending。譲渡犬猫は ワンニャピアあきた（spec_wannyapia_akita-1・2）、秋田市保健所の収容・迷子・保護は city_akita-1・2・3。2026-10-18 掲載元ページに電話・所在地が無いので外した（T628。別資料の値は載せない）"
+- slug: pref_akita-2
+  name: 秋田県動物愛護センター（譲渡犬）
+  municipality: 秋田県動物愛護センター
+  prefecture: 秋田県
+  phone: 018-827-5051
+  address: 〒010-1211 秋田県秋田市雄和椿川字奥椿岱1番地
+  url: https://www.pref.akita.lg.jp/pages/archive/100841
+  verified_at: '2026-11-27'
+  verified_phone_url: "https://www.pref.akita.lg.jp/pages/archive/100841"
+  verified_address_url: "https://www.pref.akita.lg.jp/pages/archive/41009"
+  kind: adoption
+  species: dog
+  mode: recipe
+  recipe: recipes/pref_akita-2.yaml
+  photo: pending
+  enabled: true
+  note: "ワンニャピアあきた（spec_wannyapia_akita-1）が 2026-11-26 から全ページ「サイト公開停止のお知らせ」（点検・整備のため一時停止。再開日の記載なし）になったので、その代わりに県のサイト（美の国あきたネット）の「譲渡犬を探す」を足した（2026-11-27 おまえさんの決定。2026-11-27 W006）。ワンニャピアあきたが再開したら、同じ子が二重に載らないよう、この掲載元（pref_akita-2・3）を enabled: false にする。spec_wannyapia_akita-1・2 は再開を検知できるようそのまま残す。実ページ（2026-11-27 更新日 11/25）は 1 頭（個体No.18）。1 頭 = 1 つの表（caption に個体No.・th に名前・年齢・性別・毛色・体重・備考）。電話は同ページの問い合わせ欄、所在地は同ページから案内される「秋田県動物愛護センターについて」（pages/archive/41009）で確認。写真の扱いは県に確かめていないので photo: pending。0 頭の日の書き方は未確認で、保存も Wayback も無いので empty_text は書かない（0 個の日は読めなかった扱いで通知）。募集を終えた子の表示は 2026-11-27 時点のページに無い（出たら方針 21・22 で足す）"
+- slug: pref_akita-3
+  name: 秋田県動物愛護センター（譲渡猫）
+  municipality: 秋田県動物愛護センター
+  prefecture: 秋田県
+  phone: 018-827-5051
+  address: 〒010-1211 秋田県秋田市雄和椿川字奥椿岱1番地
+  url: https://www.pref.akita.lg.jp/pages/archive/100815
+  verified_at: '2026-11-27'
+  verified_phone_url: "https://www.pref.akita.lg.jp/pages/archive/100815"
+  verified_address_url: "https://www.pref.akita.lg.jp/pages/archive/41009"
+  kind: adoption
+  species: cat
+  mode: recipe
+  recipe: recipes/pref_akita-3.yaml
+  photo: pending
+  enabled: true
+  note: "ワンニャピアあきた（spec_wannyapia_akita-2）が 2026-11-26 から全ページ「サイト公開停止のお知らせ」になったので、その代わりに県のサイト（美の国あきたネット）の「譲渡猫を探す」を足した（2026-11-27 おまえさんの決定。2026-11-27 W006）。ワンニャピアあきたが再開したら、同じ子が二重に載らないよう、この掲載元（pref_akita-2・3）を enabled: false にする。作りは譲渡犬（pref_akita-2）と同じ。実ページ（2026-11-27 更新日 11/25）は 12 頭。写真は photo: pending。0 頭の日の書き方は未確認で empty_text は書かない"
 - slug: city_yamagata-1
   name: 山形市動物愛護センター（保護・収容の犬猫）
   municipality: 山形市動物愛護センター（わんにゃんポート）
