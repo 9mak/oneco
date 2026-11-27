@@ -4,22 +4,27 @@
 # 譲渡された子は h2 が「AD081109-01は譲渡されました（11/13）」に変わり、表は空の雛形（種類： 性別： …）になる（2026-11-17 の今日がこの状態で 0 頭）。
 # 見出しに「譲渡されました」が付いた子は載せない。全部がそうなら 0 頭（文言の「現在いません」は今日のページに無い）。
 # 0 頭は「h2 の下の表に写真が無い」ことでも確かめる（雛形の表は写真が空）。子のいる日は表に写真がある。
-rows: "h2 + table"
+# 2026-11-27: 11/24 の改装で 1 頭分が表（table + ul/li）でなく h2 の後ろに p が平らに並ぶ作り（写真の p → 「・種類：」などの p → 紹介文の p）に変わり、
+# 11/26 から行が 0 になった。h2 を 1 頭の始まりにして次の h2 の手前までをまとめる（row_until）。表の版（11/25 の保存ページ・0 頭の日の雛形）も同じ設定で読める。
+# 本文の外の h2（お問い合わせ・注意事項・即日譲渡不可犬など）は 種類 が無く row_filter で落ちる。
+rows: "#tmp_contents > h2"
+row_until: "h2"
 row_filter:
   text_has_any: ["種類"]
   field_lacks: {status: ["譲渡されました", "譲渡済"]}
 image: "img@src"
 fields:
-  status: {from: heading, selector: "h2"}
-  management_no: {from: heading, selector: "h2", regex: "([A-Za-z]{1,3}\\d{6}-\\d+)"}
-  breed: {selector: "li:-soup-contains('種類')", regex: "種類\\s*[:：]\\s*([^\\s:：]+)"}
-  sex: {selector: "li:-soup-contains('性別')", regex: "性別\\s*[:：]\\s*(オス|メス)"}
-  age: {selector: "li:-soup-contains('年齢')", regex: "年齢\\s*[:：]\\s*([^\\s:：]+)"}
-  size: {selector: "li:-soup-contains('体格')", regex: "体格\\s*[:：]\\s*(\\S+(?:\\s*[（(][^）)]*[）)])?)"}
-  name: {selector: "li:-soup-contains('愛称')", regex: "愛称\\s*[:：]\\s*(\\S+)"}
-  note: {selector: "li:not(:-soup-contains('種類')):not(:-soup-contains('性別')):not(:-soup-contains('年齢')):not(:-soup-contains('体格')):not(:-soup-contains('愛称'))"}
+  status: {selector: "h2"}
+  management_no: {selector: "h2", regex: "([A-Za-z]{1,3}\\d{6}-\\d+)"}
+  breed: {selector: "li:-soup-contains('種類'), p:-soup-contains('種類')", regex: "種類\\s*[:：]\\s*([^\\s:：]+)"}
+  sex: {selector: "li:-soup-contains('性別'), p:-soup-contains('性別')", regex: "性別\\s*[:：]\\s*(オス|メス)"}
+  age: {selector: "li:-soup-contains('年齢'), p:-soup-contains('年齢')", regex: "年齢\\s*[:：]\\s*([^\\s:：]+)"}
+  size: {selector: "li:-soup-contains('体格'), p:-soup-contains('体格')", regex: "体格\\s*[:：]\\s*(\\S+(?:\\s*[（(][^）)]*[）)])?)"}
+  name: {selector: "li:-soup-contains('愛称'), p:-soup-contains('愛称')", regex: "愛称\\s*[:：]\\s*(\\S+)"}
+  note: {selector: "p:not(:has(img)):not(:-soup-contains('種類')):not(:-soup-contains('性別')):not(:-soup-contains('年齢')):not(:-soup-contains('体格')):not(:-soup-contains('愛称')), li:not(:-soup-contains('種類')):not(:-soup-contains('性別')):not(:-soup-contains('年齢')):not(:-soup-contains('体格')):not(:-soup-contains('愛称'))"}
 empty_absent:
   page: "#tmp_contents h1:-soup-contains('譲渡可能犬情報')"
   # 行の形（h2 + table）に縛らない（#129 reviewer F-01）。子の写真は管理番号の名前（ad080511-01.jpg・ac080427-02.jpg）で、
   # バナー（kaiunsisagasino-to_banner.png 等）やロゴ（rogo.jpg）とは名前で分かれる。見出しは「譲渡されました」の付かない管理番号。
-  none: "#tmp_contents img[src*='/syuuyou_doubutsu/images/ad'], #tmp_contents img[src*='/syuuyou_doubutsu/images/ac'], #tmp_contents :is(h2, h3, h4):-soup-contains('AD0'):not(:-soup-contains('譲渡されました'))"
+  # 2026-11-27: 画像の道は /images/ 以下の名前で当てる（旧 /inuneko/syuuyou_doubutsu/images/ad…・改装後 /images/30069/ad…。#168 reviewer）
+  none: "#tmp_contents img[src*='/images/'][src*='/ad0'], #tmp_contents img[src*='/images/'][src*='/ac0'], #tmp_contents :is(h2, h3, h4):-soup-contains('AD0'):not(:-soup-contains('譲渡されました'))"
