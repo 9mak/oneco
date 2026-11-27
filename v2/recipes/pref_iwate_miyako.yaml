@@ -8,7 +8,10 @@
 # 2026-10-04: そらちゃんだけ「性格：」（「等」なし）で note が空だったため note を「性格(等)」の regex に変更。
 #   写真は h2 直後の figure（ローザ・アモレ・そら）は prev_siblings で取れる。大半は直前が p.imageright で、
 #   エンジンが同じ p タグで遡りを止めるため届かない（engine_needs）。p.imageright 側の selector は先に書いておく。
+# 2026-11-28 POLICY.md 方針 24: 兄弟を 1 件にまとめた掲載（「管理番号：【左側】2026-10-086C（仮名：シルビアちゃん）【右側】2026-10-085C（仮名：みかん君）」「性別：シルビアちゃんはメス（不妊手術済）、みかん君はオス（去勢済）」）を 1 匹ずつに分ける（split_names。collector/members.py）。
+#   名前と管理番号は【右側】の子の分も読んで「、」でつなぐ（今までは【左側】の印で管理番号が読めず、名前も 1 匹目だけだった）。
 rows: "p:-soup-contains('管理番号：')"
+split_names: true
 image: {selector: "h2 + p.imageright img, h2 + figure img@src", scope: prev_siblings, stop_at: row}   # 2026-10-04: 行も写真も p なので前の行まで遡る
 # 2026-11-07 W006 監査: 譲渡済みの除外を、行の文でなく直前の h2（【御報告】譲渡が決まりました💛）で見る。以前は行に「譲渡が決まりました」があれば捨てていて、
 #   備考に「右側のわんや君は譲渡が決まりました」とある現役のてんや君（2026-9-067C）まで捨てていた。迷子の節 h2「【保護】元の飼い主さんを捜しています。」は
@@ -18,8 +21,8 @@ row_filter:
 fields:
   section: {from: heading, selector: "h2"}   # 除外判定用（animals には出ない）
   species: {label: "動物種"}   # 2026-11-07: 台帳の猫固定をやめ、各子の「動物種：」のとおり（犬の子の譲渡報告が載る日がある）
-  management_no: {regex: "管理番号[:：]\\s*([A-Za-z0-9\\-]+)"}
-  name: {regex: "仮名[:：]\\s*([^）\\s]+)"}
+  management_no: {join: [{regex: "管理番号[:：]\\s*(?:【[^】]{1,4}】\\s*)?([A-Za-z0-9\\-]+)"}, {regex: "管理番号[:：].*?【右側】\\s*([A-Za-z0-9\\-]+)"}], sep: "、"}
+  name: {join: [{regex: "仮名[:：]\\s*([^）\\s]+)"}, {regex: "【右側】[^（(]*[（(]仮名[:：]\\s*([^）)\\s]+)"}], sep: "、"}
   breed: {label: "種類"}
   sex: {label: "性別"}
   color: {label: "毛色"}

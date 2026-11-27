@@ -76,6 +76,7 @@ class Recipe:
     row_until: str | None = None    # 指定時は rows の要素を 1 頭の始まりとし、後ろの兄弟要素を次の始まりかこの要素の手前までまとめて 1 行にする
     row_split: str | None = None    # row_until でまとめた行を、この正規表現の位置で 1 頭ずつに分ける（空の一致でもよい）。最初の断片（写真・導入文）は全頭に付く。箇条書き「・まめ　メス　黒」の 1 行 1 頭（空知 滝川）。分けた行の ID は名前から作る
     id_by_management_no: list[str] = field(default_factory=list)   # 同じ写真を共有する子のうち、この管理番号（前方一致）の行は写真でなく管理番号から ID を作る。先に載った子が消えても残った子の ID が写真由来（消えた子の ID）に移らないよう、先頭の子以外を固定する
+    split_names: bool = False       # 名前が「、」で 2 つ以上並び、ほかの項目が全員共通か名前ごとに書いてある 1 件を 1 匹ずつに分ける（POLICY.md 方針 24。岩手県の保健所「(左)三郎、(右)二郎」「オス×2」）。collector/members.py
     unique_management_no: bool = False   # 同じ管理番号の行が 2 つ以上あるとき、先の行だけ採る（上が最新で下に古い掲載が残るページ。鹿児島市 保護犬）。写真の有無で ID が別になるので「同じ ID」の判定では重なりを捨てられない
     source_url: str | None = None   # PDF の子の元ページリンク。既定は入口ページ（日次で差し替わる PDF は翌日 404 になる）。"doc" で PDF そのもの
 

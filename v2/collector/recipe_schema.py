@@ -320,6 +320,8 @@ def validate_recipe_dict(raw: dict[str, Any], source_url: str) -> list[str]:
         c.regex("rows_regex", raw["rows_regex"])
     if raw.get("row_split") is not None:
         c.regex("row_split", raw["row_split"])
+    if raw.get("split_names") is not None and not isinstance(raw["split_names"], bool):
+        c.err("split_names: true か false でない")
     for key in ("url", "base_url"):
         if raw.get(key) is not None:
             c.url(key, raw[key])

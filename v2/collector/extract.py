@@ -13,6 +13,7 @@ from zoneinfo import ZoneInfo
 
 from bs4 import Tag
 
+from .members import parse_names, split_members
 from .recipe import (
     Doc,
     Recipe,
@@ -485,41 +486,57 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
                 # 上が最新で、下に同じ番号の古い掲載が残るページ（鹿児島市 No.260039 の退院前の掲載）。写真の有無で ID が別になり下の行が別の子に見えていた
                 res.dropped.append(Dropped("同じ管理番号の行が既にある", row.text()[:80]))
                 continue
-            if aid in seen_ids and img_raw and f.get("management_no") and seen_mgmt.get(aid) not in (None, f["management_no"]):
-                # 写真が先に ID になるので、同じ写真を使う別の子（管理番号が違う）が「同じ ID」で捨てられていた
-                # （埼玉 南支所 南2026-C77・C78、岩手 奥州 R8-9-3。2026-11-07）。載っている子の ID は変えず、
-                # 衝突した行だけ管理番号から作る。管理番号が同じ（同じ子が 2 行）・管理番号が無い行は従来どおり捨てる
-                aid = make_id(source, None, f, detail=source_url if dv else None)
-            if aid in seen_ids:
-                res.dropped.append(Dropped("同じ ID の行が既にある", row.text()[:80]))
-                continue
-            seen_ids.add(aid)
-            seen_mgmt[aid] = f.get("management_no")
-            if mgmt:
-                seen_mgmt_nos.add(mgmt)
-            if dv:
-                res.detail_ids.add(aid)
-            animal = {
-                "id": aid,
-                "source": source.slug,
-                "municipality": source.municipality,
-                "prefecture": source.prefecture,
-                "phone": source.phone,
-                "address": source.address,
-                "contact_scope": source.contact_scope,
-                "kind": source.kind,
-                "species": species,
-                "image_url": img_abs,
-                "source_url": source_url,
-            }
-            for k in FIELD_NAMES:
-                animal[k], n = mask_contacts(f.get(k))   # ID は上で決め済み（置き換えで ID が変わらない）
-                res.contacts_masked += n
-            # レシピの phone 項目: 子ごとに収容先の電話が載る掲載元（熊本県動愛の各保健所）は、読めた子だけその電話を出す。
-            # 読めなければ台帳の値のまま（T628: 電話は掲載元ページにあるものだけ。子の行の電話も掲載元ページの値）
-            if f.get("phone"):
-                animal["phone"] = f["phone"]
-            res.animals.append(animal)
+            members = split_members(f, row.text()) if recipe.split_names else None
+            if members is not None:
+                # 1 件に名前つきで並ぶ子（「(左)三郎、(右)二郎」「オス×2」）を 1 匹ずつに（POLICY.md 方針 24）。写真は全員に同じ 1 枚、
+                # ID は子ごとの管理番号か、印と敬称を外した名前から（並び順・ほかの子が消えても動かない）。決まった子は載せない（方針 21）
+                kept = {m.fields.get("name") for m in members}
+                for shown in (parse_names(f.get("name")) or ([], [], False))[0]:
+                    if shown not in kept:
+                        res.dropped.append(Dropped(f"まとめた子のうち決まった子（{shown}）", row.text()[:80]))
+                if not members:
+                    excluded += 1
+                    continue
+                emits = [(m.fields, make_id(source, None, {"management_no": m.id_key} if m.by_management_no
+                                           else {"name": m.id_key, "shelter_date": f.get("shelter_date")})) for m in members]
+            else:
+                if aid in seen_ids and img_raw and f.get("management_no") and seen_mgmt.get(aid) not in (None, f["management_no"]):
+                    # 写真が先に ID になるので、同じ写真を使う別の子（管理番号が違う）が「同じ ID」で捨てられていた
+                    # （埼玉 南支所 南2026-C77・C78、岩手 奥州 R8-9-3。2026-11-07）。載っている子の ID は変えず、
+                    # 衝突した行だけ管理番号から作る。管理番号が同じ（同じ子が 2 行）・管理番号が無い行は従来どおり捨てる
+                    aid = make_id(source, None, f, detail=source_url if dv else None)
+                emits = [(f, aid)]
+            for fields, eid in emits:
+                if eid in seen_ids:
+                    res.dropped.append(Dropped("同じ ID の行が既にある", row.text()[:80]))
+                    continue
+                seen_ids.add(eid)
+                seen_mgmt[eid] = fields.get("management_no")
+                if mgmt:
+                    seen_mgmt_nos.add(mgmt)
+                if dv:
+                    res.detail_ids.add(eid)
+                animal = {
+                    "id": eid,
+                    "source": source.slug,
+                    "municipality": source.municipality,
+                    "prefecture": source.prefecture,
+                    "phone": source.phone,
+                    "address": source.address,
+                    "contact_scope": source.contact_scope,
+                    "kind": source.kind,
+                    "species": species,
+                    "image_url": img_abs,
+                    "source_url": source_url,
+                }
+                for k in FIELD_NAMES:
+                    animal[k], n = mask_contacts(fields.get(k))   # ID は上で決め済み（置き換えで ID が変わらない）
+                    res.contacts_masked += n
+                # レシピの phone 項目: 子ごとに収容先の電話が載る掲載元（熊本県動愛の各保健所）は、読めた子だけその電話を出す。
+                # 読めなければ台帳の値のまま（T628: 電話は掲載元ページにあるものだけ。子の行の電話も掲載元ページの値）
+                if fields.get("phone"):
+                    animal["phone"] = fields["phone"]
+                res.animals.append(animal)
     pool = list(docs) + [d for d in (visited or []) if d not in docs]
     if not res.animals:
         hits = empty_hits(recipe, pool, docs)

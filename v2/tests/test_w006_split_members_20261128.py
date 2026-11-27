@@ -1,0 +1,295 @@
+"""POLICY.md 方針 21・24（2026-11-28・ネットワークなし）: 1 件に複数の子が名前つきで並ぶ掲載を 1 匹ずつに分ける。
+
+岩手県の保健所などは、兄弟の子を写真 1 枚・1 件にまとめて「名前：(左)三郎、(右)二郎」「性別：オス×2」のように書く。
+方針 24「性別・毛色などが分かれば 1 匹ずつに分けて載せる」に沿って、レシピに split_names: true を書いた掲載元だけ、
+名前が「、」で 2 つ以上並び、ほかの項目が全員共通（「オス×2」「みんな女の子」「メス(避妊手術済)」）か名前ごと
+（「らん→オス　すー→メス」「シルビアちゃんはメス…、みかん君はオス…」）に書いてある行を分ける。
+どの子の値か分からない項目（「黒白、黒白、黒」を 2 匹に）が 1 つでもあれば分けない（今までどおり 1 件）。
+分けた子のうち、本文に「◯◯は譲渡が決まりました」とある子は載せない（方針 21）。
+fixture は 2026-11-28 の実ページ（岩手 大船渡・宮古・県南・中部、和歌山市）。
+"""
+
+from __future__ import annotations
+
+import re
+from dataclasses import replace
+from pathlib import Path
+
+import pytest
+from collector.fetch import FakeFetcher
+from collector.members import split_members
+from collector.recipe_schema import validate_recipe_dict
+from collector.registry import load_sources
+from collector.run import Collected, collect_one
+
+ROOT = Path(__file__).resolve().parent.parent
+FIX = Path(__file__).resolve().parent / "fixtures"
+SOURCES = {s.slug: s for s in load_sources(ROOT / "registry" / "sources.yaml")}
+DAY = "20261128"
+
+
+# --- 分け方の規則（split_members） -------------------------------------------------
+
+
+def _names(ms):
+    return [m.fields["name"] for m in ms]
+
+
+def test_count_suffix_is_shared_by_all():
+    # 岩手 県南「名前：(左)三郎、(右)二郎」「性別：オス×2」「毛色：キジシロ×2」
+    f = {"name": "(左)三郎、(右)二郎", "sex": "オス×2", "color": "キジシロ×2", "age": "生後半年くらい", "breed": "雑種",
+         "note": "三郎は大人しいが少々ビビり、二郎はすごくフレンドリーです。"}
+    ms = split_members(f, "")
+    assert ms is not None
+    assert _names(ms) == ["(左)三郎", "(右)二郎"]   # 位置の印は名前に残す（写真 1 枚に 2 匹が写っている）
+    assert [m.fields["sex"] for m in ms] == ["オス", "オス"]
+    assert [m.fields["color"] for m in ms] == ["キジシロ", "キジシロ"]
+    assert all(m.fields["note"] == f["note"] and m.fields["age"] == "生後半年くらい" for m in ms)
+    assert [m.id_key for m in ms] == ["三郎", "二郎"]   # ID は印を外した名前から（印が変わっても ID が動かない）
+
+
+def test_all_prefix_is_shared_by_all():
+    # 大船渡「愛称：左からえぴ、ねり、うるい、ばい、てぃい」「性別：みんな女の子」
+    f = {"name": "左からえぴ、ねり、うるい、ばい、てぃい", "sex": "みんな女の子", "color": "キジトラ", "age": "3か月齢"}
+    ms = split_members(f, "")
+    assert _names(ms) == ["えぴ", "ねり", "うるい", "ばい", "てぃい"]
+    assert {m.fields["sex"] for m in ms} == {"女の子"}
+    assert {m.fields["color"] for m in ms} == {"キジトラ"}
+
+
+def test_single_value_with_parenthesis_is_shared():
+    # 大船渡「愛称：ココ(左)、ロコ(右)」「性別：メス(避妊手術済)」「毛色：キジトラ(ココは茶色が混じってます。)」
+    f = {"name": "ココ(左)、ロコ(右)", "sex": "メス(避妊手術済)", "color": "キジトラ(ココは茶色が混じってます。)"}
+    ms = split_members(f, "")
+    assert _names(ms) == ["ココ(左)", "ロコ(右)"]
+    assert {m.fields["sex"] for m in ms} == {"メス(避妊手術済)"}
+    assert {m.fields["color"] for m in ms} == {"キジトラ(ココは茶色が混じってます。)"}
+
+
+def test_arrow_mapping_per_name():
+    # 岩手 中部「仮名：らん、すー、みき」「性別：らん→オス　すー→メス　　みき→メス」（印は無いが名前ごとの性別が根拠）
+    f = {"name": "らん、すー、みき", "sex": "らん→オス　すー→メス　　みき→メス", "breed": "雑種"}
+    ms = split_members(f, "")
+    assert _names(ms) == ["らん", "すー", "みき"]
+    assert [m.fields["sex"] for m in ms] == ["オス", "メス", "メス"]
+
+
+def test_wa_mapping_per_name_and_management_numbers_in_order():
+    # 宮古「管理番号：【左側】2026-10-086C（仮名：シルビアちゃん） 【右側】2026-10-085C（仮名：みかん君）」
+    f = {"name": "シルビアちゃん、みかん君", "management_no": "2026-10-086C、2026-10-085C",
+         "sex": "シルビアちゃんはメス（不妊手術済）、みかん君はオス（去勢済）", "color": "シルビアちゃんはサバ白、みかん君は茶白"}
+    ms = split_members(f, "")
+    assert _names(ms) == ["シルビアちゃん", "みかん君"]
+    assert [m.fields["sex"] for m in ms] == ["メス（不妊手術済）", "オス（去勢済）"]
+    assert [m.fields["color"] for m in ms] == ["サバ白", "茶白"]
+    assert [m.fields["management_no"] for m in ms] == ["2026-10-086C", "2026-10-085C"]
+    assert [m.id_key for m in ms] == ["2026-10-086C", "2026-10-085C"]   # 子ごとの管理番号があればそれで ID を作る
+
+
+def test_shared_management_number_is_kept_but_not_used_for_id():
+    f = {"name": "(左)三郎、(右)二郎", "sex": "オス×2", "management_no": "26034"}
+    ms = split_members(f, "")
+    assert [m.fields["management_no"] for m in ms] == ["26034", "26034"]   # 掲載元が 2 匹に 1 つの番号を付けている
+    assert [m.id_key for m in ms] == ["三郎", "二郎"]
+
+
+def test_unmappable_list_keeps_one_listing():
+    # 大船渡「愛称：カナン、チェスター」「毛色：黒白、黒白、黒」（譲渡が決まったヤスパーの分が残り、どの子の毛色か分からない）
+    f = {"name": "カナン、チェスター", "sex": "みんなオス(去勢済み)", "color": "黒白、黒白、黒"}
+    assert split_members(f, "") is None
+
+
+def test_same_count_list_is_not_mapped_by_order():
+    # 並び順で当てはめない（どの子の値かは掲載元に書いていない）
+    f = {"name": "(左)たま、(右)くろ", "sex": "オス×2", "color": "白、黒"}
+    assert split_members(f, "") is None
+
+
+def test_mapping_that_names_someone_else_is_not_split():
+    # 名前の欄が 2 匹なのに性別が 3 匹分（3 匹目の値を 2 匹目につないで「オス C君はオス」にしない）
+    f = {"name": "(左)Aちゃん、(右)B君", "sex": "Aちゃんはメス、B君はオス、C君はオス"}
+    assert split_members(f, "") is None
+
+
+def test_mapping_continuation_is_joined():
+    f = {"name": "らん、すー", "sex": "らん→オス 去勢済み　すー→メス"}
+    assert [m.fields["sex"] for m in split_members(f, "")] == ["オス 去勢済み", "メス"]
+
+
+def test_management_number_count_must_match():
+    f = {"name": "シルビアちゃん、みかん君", "management_no": "2026-10-086C、2026-10-085C、2026-10-084C",
+         "sex": "シルビアちゃんはメス、みかん君はオス"}
+    assert split_members(f, "") is None
+
+
+def test_two_call_names_of_one_cat_are_not_split():
+    # 高崎市「呼名：チビ、チー」は 1 匹の呼び名（印も、名前ごとの値も、×2 も無い）
+    f = {"name": "チビ、チー", "sex": "メス", "color": "キジ白八割れ", "management_no": "2024-89", "note": "・呼名:チビ、チー"}
+    assert split_members(f, "") is None
+
+
+@pytest.mark.parametrize("name", [None, "", "ミント", "おとひめちゃん ※アシストファーム南国店にいます"])
+def test_one_name_is_not_split(name):
+    assert split_members({"name": name, "sex": "オス×2"}, "") is None
+
+
+def test_group_without_names_is_not_split():
+    # 福井 fapscsite-2「管理番号：HC26468~470」「性別：オス:2匹、メス:1匹」（名前が無く、どの番号が何色かも書いていない）
+    f = {"name": None, "management_no": "HC26468~470", "sex": "オス:2匹、メス:1匹", "color": "短毛/黒トラ白×2、キジ白"}
+    assert split_members(f, "") is None
+
+
+def test_member_with_closed_note_is_dropped():
+    # 方針 21: まとめた子のうち「◯◯は譲渡が決まりました」とある子は載せない
+    f = {"name": "(左)てんや、(右)わんや", "sex": "オス×2", "note": "兄弟です。右側のわんや君は譲渡が決まりました。"}
+    ms = split_members(f, "兄弟です。右側のわんや君は譲渡が決まりました。")
+    assert _names(ms) == ["(左)てんや"]
+
+
+def test_comma_inside_name_parenthesis_does_not_split_the_name():
+    f = {"name": "ココ(左、茶色が混じる)、ロコ(右)", "sex": "メス×2"}
+    assert _names(split_members(f, "")) == ["ココ(左、茶色が混じる)", "ロコ(右)"]
+
+
+@pytest.mark.parametrize(
+    ("note", "left"),
+    [
+        ("ねりちゃん、うるい君は譲渡が決まりました。", ["えぴ"]),          # 名前を並べた主語は全員
+        ("ねりもうるいも新しいお家が決まりました。", ["えぴ"]),
+        ("えぴとねりは姉妹で、ねりは譲渡が決まりました。", ["えぴ", "うるい"]),   # 前の文節の名前まで外さない
+        ("うるいは、新しい家族が決まりました。", ["えぴ", "ねり"]),
+        ("えぴは里親さんが決まり次第お知らせします。", ["えぴ", "ねり", "うるい"]),   # 条件・願いは決まっていない
+    ],
+)
+def test_closed_subjects(note, left):
+    f = {"name": "左からえぴ、ねり、うるい", "sex": "みんな女の子", "note": note}
+    assert _names(split_members(f, note)) == left
+
+
+def test_closed_name_that_contains_a_sibling_name():
+    # 「みきお」が決まっても「みき」は外さない
+    f = {"name": "(左)みき、(右)みきお", "sex": "オス×2", "note": "みきおは譲渡が決まりました。"}
+    assert _names(split_members(f, f["note"])) == ["(左)みき"]
+
+
+def test_closed_note_of_someone_outside_the_names_keeps_all():
+    # 大船渡: 名前から外れたヤスパーの「譲渡が決まりました」は、残った 2 匹に効かない
+    f = {"name": "(左)カナン、(右)チェスター", "sex": "みんなオス(去勢済み)", "note": "仲良し3兄弟です。ヤスパーは譲渡が決まりました!"}
+    ms = split_members(f, "仲良し3兄弟です。ヤスパーは譲渡が決まりました!")
+    assert _names(ms) == ["(左)カナン", "(右)チェスター"]
+
+
+def test_wish_is_not_closed():
+    f = {"name": "(左)たま、(右)くろ", "sex": "オス×2", "note": "たまは早く新しい家族が見つかりますように。"}
+    assert len(split_members(f, f["note"])) == 2
+
+
+# --- レシピの検査 -------------------------------------------------------------------
+
+
+def test_schema_accepts_bool_only():
+    url = "https://www.pref.iwate.jp/morioka/hoken/1012494.html"
+    assert not validate_recipe_dict({"rows": "li", "split_names": True}, url)
+    assert validate_recipe_dict({"rows": "li", "split_names": "yes"}, url)
+
+
+# --- 実ページ（2026-11-28） ---------------------------------------------------------
+
+
+def _run(slug: str, pages: dict[str, str], mutate=None) -> Collected:
+    html = {u: (FIX / f).read_text(encoding="utf-8") for u, f in pages.items()}
+    if mutate:
+        html = {u: mutate(h) for u, h in html.items()}
+    return collect_one(SOURCES[slug], FakeFetcher(html))
+
+
+OFUNATO = {"https://www.pref.iwate.jp/engan/ofuna_hoken/1014212/1014213.html": f"w006_pref_iwate_ofunato_{DAY}.html"}
+MIYAKO = {"https://www.pref.iwate.jp/engan/miya_hoken/hogodoubutsu/1014161.html": f"w006_pref_iwate_miyako_{DAY}.html"}
+KENNAN = {"https://www.pref.iwate.jp/morioka/hoken/1012494.html": f"w006_pref_iwate_kennan_{DAY}.html"}
+CHUBU = {
+    "https://www.pref.iwate.jp/kennan/hana_hoken/1013542/index.html": f"w006_pref_iwate_chubu_index_{DAY}.html",
+    "https://www.pref.iwate.jp/kennan/hana_hoken/1013542/1020659.html": f"w006_pref_iwate_chubu_1020659_{DAY}.html",
+    "https://www.pref.iwate.jp/kennan/hana_hoken/1013542/1013544.html": f"w006_pref_iwate_chubu_1013544_{DAY}.html",
+}
+WAKAYAMA = {"https://www.city.wakayama.wakayama.jp/kurashi/kenko_iryo/1009125/1035775/1002096.html": f"w006_city_wakayama_{DAY}.html"}
+
+
+def _by_name(c: Collected) -> dict[str, dict]:
+    return {a["name"]: a for a in c.result.animals if a.get("name")}
+
+
+def test_ofunato_two_groups_are_split_and_one_stays():
+    c = _run("pref_iwate_ofunato", OFUNATO)
+    assert c.status == "ok", c.error
+    assert len(c.result.animals) == 19   # 14 件のうち えぴたち（5 匹）と ココ・ロコ（2 匹）を分けた
+    by = _by_name(c)
+    for n in ("えぴ", "ねり", "うるい", "ばい", "てぃい"):
+        assert (by[n]["sex"], by[n]["color"], by[n]["age"], by[n]["species"]) == ("女の子", "キジトラ", "3か月齢", "cat")
+    assert by["ココ(左)"]["sex"] == by["ロコ(右)"]["sex"] == "メス(避妊手術済)"
+    assert by["えぴ"]["image_url"] == by["てぃい"]["image_url"] and by["えぴ"]["image_url"]   # 写真は 1 枚を全員に
+    assert "カナン、チェスター" in by   # 毛色がどの子のものか分からないので 1 件のまま
+    assert len({a["id"] for a in c.result.animals}) == 19
+
+
+def test_ofunato_ids_do_not_move_when_a_sister_leaves():
+    full = {a["name"]: a["id"] for a in _run("pref_iwate_ofunato", OFUNATO).result.animals}
+    c = _run("pref_iwate_ofunato", OFUNATO, lambda h: h.replace("左からえぴ、ねり、うるい、ばい、てぃい", "左からねり、うるい、ばい、てぃい"))
+    got = {a["name"]: a["id"] for a in c.result.animals}
+    assert "えぴ" not in got
+    assert all(got[n] == full[n] for n in ("ねり", "うるい", "ばい", "てぃい"))
+
+
+def test_miyako_pair_with_own_numbers():
+    c = _run("pref_iwate_miyako", MIYAKO)
+    assert c.status == "ok", c.error
+    by = _by_name(c)
+    s, m = by["シルビアちゃん"], by["みかん君"]
+    # 項目の値のかっこは既存の処理で半角にそろう（_norm_text）
+    assert (s["management_no"], s["sex"], s["color"]) == ("2026-10-086C", "メス(不妊手術済)", "サバ白")
+    assert (m["management_no"], m["sex"], m["color"]) == ("2026-10-085C", "オス(去勢済)", "茶白")
+    assert s["image_url"] == m["image_url"]
+    assert len(c.result.animals) == 20
+    # ほかの子の名前・管理番号は 1 つのまま（「仮名」の読み方を変えた影響が無い）
+    assert by["ミレ君"]["management_no"] == "R7-159-17-3"
+    assert all("、" not in (a.get("management_no") or "") for a in c.result.animals)
+
+
+def test_kennan_pair():
+    c = _run("pref_iwate_kennan", KENNAN)
+    assert c.status == "ok", c.error
+    by = _by_name(c)
+    assert (by["(左)三郎"]["sex"], by["(左)三郎"]["color"]) == ("オス", "キジシロ")
+    assert (by["(右)二郎"]["sex"], by["(右)二郎"]["color"]) == ("オス", "キジシロ")
+    assert len(c.result.animals) == 7
+
+
+def test_chubu_three_with_sex_per_name():
+    c = _run("pref_iwate_chubu", CHUBU)
+    assert c.status == "ok", c.error
+    by = _by_name(c)
+    assert [by[n]["sex"] for n in ("らん", "すー", "みき")] == ["オス", "メス", "メス"]
+    assert len(c.result.animals) == 9
+    # 性別の読み方を「次の項目名の手前まで」に変えても、1 匹の子の性別は今までどおり
+    assert by["キジ太"]["sex"] in ("オス", "メス") or by["キジ太"]["sex"].startswith(("オス", "メス"))
+    assert all(not re.search(r"[:：]", a.get("sex") or "") for a in c.result.animals)
+
+
+def test_wakayama_pair():
+    c = _run("city_wakayama", WAKAYAMA)
+    assert c.status == "ok", c.error
+    by = _by_name(c)
+    assert by["むさし(手前)"]["sex"] == by["あけぼの(奥)"]["sex"] == "オス(手術済)"
+    assert by["むさし(手前)"]["age"] == "4才"
+    assert len(c.result.animals) == 25
+
+
+def test_split_is_opt_in(tmp_path):
+    # split_names を書いていない掲載元は今までどおり 1 件（高崎市の「チビ、チー」のような 1 匹の呼び名を分けないため、掲載元ごとに書く）
+    src = SOURCES["pref_iwate_kennan"]
+    body = src.recipe_path.read_text(encoding="utf-8")
+    assert re.search(r"^split_names: true", body, re.M)
+    off = tmp_path / "kennan.yaml"
+    off.write_text(re.sub(r"^split_names: true.*$", "", body, flags=re.M), encoding="utf-8")
+    c = collect_one(replace(src, recipe=str(off)), FakeFetcher({u: (FIX / f).read_text(encoding="utf-8") for u, f in KENNAN.items()}))
+    assert c.status == "ok", c.error
+    assert "(左)三郎、(右)二郎" in _by_name(c) and len(c.result.animals) == 6
