@@ -7,7 +7,9 @@
 # 2026-11-20 T656: 決まった子は見出しで外す。h2「【譲渡】新しい飼い主さんが決定しました」の下の子が載っていた（さら・我愛羅(ガーラ)・グリード）。
 #   見出しは行の前の直近の h2（section）で見る。行の文には「決定」と書かれないので、行の文では外せない（宮古 pref_iwate_miyako の「【御報告】」と同じ読み方）。
 #   行としては残すので、写真の遡り（stop_at: row）は決まった子の行で止まり、残った子に決まった子の写真が付かない。
+# 2026-11-28 POLICY.md 方針 24: 岩手県の保健所は兄弟を 1 件にまとめて「名前：(左)三郎、(右)二郎」「性別：オス×2」と書くことがある（県南・中部・宮古・大船渡）。同じ書き方の日に 1 匹ずつに分ける（split_names。今日の掲載には該当なし）。
 rows: "h2:-soup-contains('【譲渡】') + p.imageleft + p"
+split_names: true
 row_filter:
   field_lacks: {section: ["決定", "決まりました"]}
 image: {selector: "p.imageleft img@src", scope: prev_siblings, stop_at: row}

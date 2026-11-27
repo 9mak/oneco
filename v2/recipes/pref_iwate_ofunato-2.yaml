@@ -10,7 +10,9 @@
 #   page = 本文の h1 がある（ブロック画面・作り替えの日は枠が無く failed）、none = 迷子の節の見出し（探して・飼い主を）と、【譲渡】以外の h2 の
 #   すぐ後ろの写真（見出しの言い回しが変わった迷子の節）が 1 つも無い。譲渡の節・最近の保護動物さん・催しの h2 は none に入れない（毎日出る）。
 #   image の h2 も迷子の節に絞った（譲渡側と対称。節の順が入れ替わっても、他の節の写真を拾わない）。
+# 2026-11-28 POLICY.md 方針 24: 岩手県の保健所は兄弟を 1 件にまとめて「名前：(左)三郎、(右)二郎」「性別：オス×2」と書くことがある（県南・中部・宮古・大船渡）。同じ書き方の日に 1 匹ずつに分ける（split_names。今日の掲載には該当なし）。
 rows: "h2:-soup-contains('を探しています') + p:has(> img) + p"
+split_names: true
 image: {selector: "h2:-soup-contains('を探しています') + p:has(> img) img@src", scope: prev_siblings, stop_at: row, exclude: ["ireisai"]}
 fields:
   name: {label: "愛称"}

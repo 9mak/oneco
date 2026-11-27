@@ -6,7 +6,9 @@
 # 「管理番号：」「愛称：」ラベルを想定した暫定形（実データが無いため未検証・反証未了）。
 # 今後動物が掲載された際は collector show pref_iwate_ninohe で再確認し、実際のラベル構造に
 # 合わせて breed/sex/color/age/note のラベル名を調整すること。
+# 2026-11-28 POLICY.md 方針 24: 岩手県の保健所は兄弟を 1 件にまとめて「名前：(左)三郎、(右)二郎」「性別：オス×2」と書くことがある（県南・中部・宮古・大船渡）。同じ書き方の日に 1 匹ずつに分ける（split_names。今日の掲載には該当なし）。
 rows: "p:-soup-contains('管理番号：'), p:-soup-contains('愛称：')"
+split_names: true
 fields:
   management_no: {label: "管理番号"}
   name: {label: "愛称"}
