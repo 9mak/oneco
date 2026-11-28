@@ -12,9 +12,8 @@ steps:
   - follow_all: "a:-soup-contains('岩手県中部保健所保護動物情報'), a:-soup-contains('犬、猫の譲渡情報')"
 # 2026-11-20 T656: 久慈で「【譲渡】新しい飼い主さんが決定しました」の下の子が載っていたので、同じ作りの中部も決定の見出しの下は載せない
 #   （今の実ページには無い。見出しは行の前の直近の h2。久慈 pref_iwate_kuji と同じ読み方）。
-# 2026-11-28 POLICY.md 方針 24: 兄弟を 1 件にまとめた掲載（「仮名：らん、すー、みき」「性別：らん→オス　すー→メス　　みき→メス」）を 1 匹ずつに分ける（split_names。collector/members.py）。
+# 2026-11-28 POLICY.md 方針 24（11/28 変更）: 兄弟を写真 1 枚・1 件にまとめた掲載（「仮名：らん、すー、みき」「性別：らん→オス　すー→メス　　みき→メス」）は分けずに 1 件で載せる（split_names は使わない。#172 で分けたのを戻した）。
 rows: "h2:-soup-contains('【譲渡】') + p.imageright + p"
-split_names: true
 row_filter:
   field_lacks: {section: ["決定", "決まりました"]}
 image: {selector: "p.imageright img@src", scope: prev_siblings, stop_at: row}
