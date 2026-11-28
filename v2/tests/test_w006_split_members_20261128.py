@@ -1,4 +1,4 @@
-"""POLICY.md 方針 21・24（2026-11-28・ネットワークなし）: 1 件に複数の子が名前つきで並ぶ掲載を 1 匹ずつに分ける。
+"""POLICY.md 方針 21・24（2026-11-28・ネットワークなし）: 1 件に複数の子が名前つきで並ぶ掲載を 1 匹ずつに分ける作り（split_names）。\n\n同じ日の方針 24 の変更で、写真 1 枚にまとめた掲載は分けずに 1 件で載せることになり、split_names はどのレシピにも書かない。\n下の規則の試験は作り（collector/members.py）の試験として残し、実ページの試験はまとめたまま 1 件で読むことを確かめる。
 
 岩手県の保健所などは、兄弟の子を写真 1 枚・1 件にまとめて「名前：(左)三郎、(右)二郎」「性別：オス×2」のように書く。
 方針 24「性別・毛色などが分かれば 1 匹ずつに分けて載せる」に沿って、レシピに split_names: true を書いた掲載元だけ、
@@ -12,7 +12,6 @@ fixture は 2026-11-28 の実ページ（岩手 大船渡・宮古・県南・�
 from __future__ import annotations
 
 import re
-from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -333,79 +332,60 @@ def _by_name(c: Collected) -> dict[str, dict]:
     return {a["name"]: a for a in c.result.animals if a.get("name")}
 
 
-def test_ofunato_two_groups_are_split_and_one_stays():
+# 2026-11-28 POLICY.md 方針 24 の変更（おまえさん「写真が同じなら同じにしよう 説明欄に同じように書けばいいもんね」）:
+# 写真 1 枚・1 件にまとめた掲載は分けずに 1 件で載せる。split_names はどのレシピにも書かない（作りと上の規則の試験は残す）。
+
+
+def test_no_recipe_splits_members():
+    texts = {p.name: p.read_text(encoding="utf-8") for p in (ROOT / "recipes").glob("*.yaml")}
+    assert not [n for n, t in texts.items() if re.search(r"^split_names:\s*true", t, re.M)]
+
+
+def test_ofunato_groups_stay_one_listing_each():
     c = _run("pref_iwate_ofunato", OFUNATO)
     assert c.status == "ok", c.error
-    assert len(c.result.animals) == 19   # 14 件のうち えぴたち（5 匹）と ココ・ロコ（2 匹）を分けた
+    assert len(c.result.animals) == 14
     by = _by_name(c)
-    for n in ("えぴ", "ねり", "うるい", "ばい", "てぃい"):
-        assert (by[n]["sex"], by[n]["color"], by[n]["age"], by[n]["species"]) == ("女の子", "キジトラ", "3か月齢", "cat")
-    assert by["ココ(左)"]["sex"] == by["ロコ(右)"]["sex"] == "メス(避妊手術済)"
-    assert by["えぴ"]["image_url"] == by["てぃい"]["image_url"] and by["えぴ"]["image_url"]   # 写真は 1 枚を全員に
-    assert "カナン、チェスター" in by   # 毛色がどの子のものか分からないので 1 件のまま
-    assert len({a["id"] for a in c.result.animals}) == 19
+    assert by["左からえぴ、ねり、うるい、ばい、てぃい"]["sex"] == "みんな女の子"
+    assert by["ココ(左)、ロコ(右)"]["sex"] == "メス(避妊手術済)"
+    assert by["カナン、チェスター"]["color"] == "黒白、黒白、黒"
 
 
-def test_ofunato_ids_do_not_move_when_a_sister_leaves():
-    full = {a["name"]: a["id"] for a in _run("pref_iwate_ofunato", OFUNATO).result.animals}
-    c = _run("pref_iwate_ofunato", OFUNATO, lambda h: h.replace("左からえぴ、ねり、うるい、ばい、てぃい", "左からねり、うるい、ばい、てぃい"))
-    got = {a["name"]: a["id"] for a in c.result.animals}
-    assert "えぴ" not in got
-    assert all(got[n] == full[n] for n in ("ねり", "うるい", "ばい", "てぃい"))
-
-
-def test_miyako_pair_with_own_numbers():
+def test_miyako_pair_shows_both_names_and_numbers_in_one_listing():
+    # 宮古は 2 匹目の名前・管理番号も読む（#172 の読み方の直しは残す。今までは【左側】の印で管理番号が読めず、名前も 1 匹目だけだった）
     c = _run("pref_iwate_miyako", MIYAKO)
     assert c.status == "ok", c.error
+    assert len(c.result.animals) == 19
     by = _by_name(c)
-    s, m = by["シルビアちゃん"], by["みかん君"]
-    # 項目の値のかっこは既存の処理で半角にそろう（_norm_text）
-    assert (s["management_no"], s["sex"], s["color"]) == ("2026-10-086C", "メス(不妊手術済)", "サバ白")
-    assert (m["management_no"], m["sex"], m["color"]) == ("2026-10-085C", "オス(去勢済)", "茶白")
-    assert s["image_url"] == m["image_url"]
-    assert len(c.result.animals) == 20
-    # ほかの子の名前・管理番号は 1 つのまま（「仮名」の読み方を変えた影響が無い）
+    a = by["シルビアちゃん、みかん君"]
+    assert a["management_no"] == "2026-10-086C、2026-10-085C"
+    assert a["sex"] == "シルビアちゃんはメス(不妊手術済)、みかん君はオス(去勢済)"
     assert by["ミレ君"]["management_no"] == "R7-159-17-3"
-    assert all("、" not in (a.get("management_no") or "") for a in c.result.animals)
+    assert [x["name"] for x in c.result.animals if "、" in (x.get("management_no") or "")] == ["シルビアちゃん、みかん君"]
 
 
-def test_kennan_pair():
+def test_kennan_pair_stays_one_listing():
     c = _run("pref_iwate_kennan", KENNAN)
     assert c.status == "ok", c.error
-    by = _by_name(c)
-    assert (by["(左)三郎"]["sex"], by["(左)三郎"]["color"]) == ("オス", "キジシロ")
-    assert (by["(右)二郎"]["sex"], by["(右)二郎"]["color"]) == ("オス", "キジシロ")
-    assert len(c.result.animals) == 7
+    assert len(c.result.animals) == 6
+    assert _by_name(c)["(左)三郎、(右)二郎"]["sex"] == "オス×2"
 
 
-def test_chubu_three_with_sex_per_name():
+def test_chubu_sex_is_read_to_the_next_label():
+    # 中部の性別は次の項目名の手前まで読む（#172 の直しは残す。label では「らん→オス」で切れていた）
     c = _run("pref_iwate_chubu", CHUBU)
     assert c.status == "ok", c.error
+    assert len(c.result.animals) == 7
     by = _by_name(c)
-    assert [by[n]["sex"] for n in ("らん", "すー", "みき")] == ["オス", "メス", "メス"]
-    assert len(c.result.animals) == 9
-    # 性別の読み方を「次の項目名の手前まで」に変えても、1 匹の子の性別は今までどおり
-    # 変更前のエンジン（origin/main cd15c40）で同じページを読んだ値と同じ
+    sex = by["らん、すー、みき"]["sex"]
+    assert sex.startswith("らん→オス") and "すー→メス" in sex and "みき→メス" in sex
+    # 1 匹の子の性別は、変更前のエンジン（origin/main cd15c40）で同じページを読んだ値と同じ
     before = {"トッシー": "オス", "キジ太": "オス", "しろ吉": "オス", "みこ": "メス", "しーちゃん": "メス", "トム": "オス"}
     assert {n: by[n]["sex"] for n in before} == before
 
 
-def test_wakayama_pair():
+def test_wakayama_pair_stays_one_listing():
     c = _run("city_wakayama", WAKAYAMA)
     assert c.status == "ok", c.error
-    by = _by_name(c)
-    assert by["むさし(手前)"]["sex"] == by["あけぼの(奥)"]["sex"] == "オス(手術済)"
-    assert by["むさし(手前)"]["age"] == "4才"
-    assert len(c.result.animals) == 25
-
-
-def test_split_is_opt_in(tmp_path):
-    # split_names を書いていない掲載元は今までどおり 1 件（高崎市の「チビ、チー」のような 1 匹の呼び名を分けないため、掲載元ごとに書く）
-    src = SOURCES["pref_iwate_kennan"]
-    body = src.recipe_path.read_text(encoding="utf-8")
-    assert re.search(r"^split_names: true", body, re.M)
-    off = tmp_path / "kennan.yaml"
-    off.write_text(re.sub(r"^split_names: true.*$", "", body, flags=re.M), encoding="utf-8")
-    c = collect_one(replace(src, recipe=str(off)), FakeFetcher({u: (FIX / f).read_text(encoding="utf-8") for u, f in KENNAN.items()}))
-    assert c.status == "ok", c.error
-    assert "(左)三郎、(右)二郎" in _by_name(c) and len(c.result.animals) == 6
+    assert len(c.result.animals) == 24
+    assert _by_name(c)["むさし(手前)、あけぼの(奥)"]["sex"] == "オス(手術済)"

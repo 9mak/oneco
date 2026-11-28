@@ -249,10 +249,9 @@ KENNAN = "w006_pref_iwate_kennan_20261107.html"
 def test_kennan_adoption_cats_keep_their_own_photos():
     res = _run("pref_iwate_kennan", _fx(KENNAN))
     by = _by(res, "name")
-    # 2026-11-28 POLICY.md 方針 24: 「(左)三郎、(右)二郎」「オス×2」は 1 匹ずつに分ける（split_names）。写真は 2 匹とも同じ 1 枚
-    for name in ("(左)三郎", "(右)二郎"):
-        assert by[name]["image_url"].endswith("/2026.10.14.jpg")
-    assert len(res.animals) == 9 and not any(a["management_no"] == "26040" for a in res.animals)
+    sabu = by["(左)三郎、(右)二郎"]
+    assert sabu["image_url"].endswith("/2026.10.14.jpg")
+    assert len(res.animals) == 8 and not any(a["management_no"] == "26040" for a in res.animals)
 
 
 def test_kennan_adoption_other_ids_do_not_change():

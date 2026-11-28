@@ -4,9 +4,8 @@
 # div.imglows カードが1頭ずつ（写真 + 仮名/種類/年齢（推定）/性別 を <br> 区切りの1つの<p>に記載）。
 # 管理番号・収容日はページに無いため写真の有無だけで動物として通る。
 
-# 2026-11-28 POLICY.md 方針 24: 兄弟を 1 件にまとめた掲載（「仮名：むさし(手前)、あけぼの(奥)」「性別：オス(手術済)」）を 1 匹ずつに分ける（split_names。collector/members.py）。
+# 2026-11-28 POLICY.md 方針 24（11/28 変更）: 兄弟を写真 1 枚・1 件にまとめた掲載（「仮名：むさし(手前)、あけぼの(奥)」）は分けずに 1 件で載せる（split_names は使わない。#172 で分けたのを戻した）。
 rows: "div.imglows"
-split_names: true
 image: "p.imagecenter img@src"
 fields:
   name: {label: "仮名"}
