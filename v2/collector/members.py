@@ -5,14 +5,16 @@
 
 - 名前が「、」で 2 つ以上並ぶ（「左から」や「(左)」「(手前)」の印は外して照合する。表示の名前には印を残す）
 - ほかの項目が、全員共通（「オス×2」「みんな女の子」「3匹ともメス」、並びの無い 1 つの値）か、名前ごと
-  （「らん→オス　すー→メス」「シルビアちゃんはメス、みかん君はオス」）。どの子の値か分からない並び（「黒白、黒白、黒」）が
-  1 つでもあれば分けない。並び順で当てはめることはしない（掲載元が対応を書いていないため）。管理番号だけは、名前と同じ数が
+  （「らん→オス　すー→メス」「シルビアちゃんはメス、みかん君はオス」）。どの子の値か分からない形（「黒白、黒白、黒」
+  「黒と白」「オスとメス」「オス(左)メス(右)」、1 匹の名前だけを挙げた「三郎は茶色」）が 1 つでもあれば分けない。
+  並び順で当てはめることはしない（掲載元が対応を書いていないため）。管理番号だけは、名前と同じ数が
   並ぶとき（宮古「【左側】2026-10-086C（仮名：シルビアちゃん）【右側】2026-10-085C（仮名：みかん君）」をレシピで並べたもの）
   に並び順で当てる
 - 複数の子だと言える印がある（位置の印・名前ごとの値・「×2」「みんな」・名前と同じ数の管理番号のどれか）。高崎市の
   「呼名：チビ、チー」のような 1 匹の呼び名は分けない
 
-説明（note）は分けず全員に同じ文を付ける。分けた子のうち、本文に「◯◯は譲渡が決まりました」とある子は載せない（方針 21）。
+説明（note）は分けず全員に同じ文を付ける。分けた子のうち、本文に「◯◯は譲渡が決まりました」「◯◯の譲渡が決まりました」
+「◯◯は返還されました」のように書かれた子は載せない（方針 21。「決まりそう」「決まりにくい」は決まっていない）。
 """
 
 from __future__ import annotations
@@ -35,9 +37,21 @@ _COUNT_WORD = re.compile(r"[0-9０-９]+\s*(?:匹|頭|羽)")
 _KANJI_NUM = {"二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10}
 # 分けて当てはめる項目。name は分ける元、note は全員に同じ文。ほか（section 等の内部の項目）はそのまま写す
 _RESOLVE = ("sex", "age", "breed", "color", "size", "shelter_date", "location", "species", "phone")
-# 掲載が終わった言い方（extract._CLOSED_LISTING と同じ考え方。「見つかりますように」「見つかり次第」は願い・条件なので外す）
-_CLOSED = (r"(?:譲渡先?|飼い?主(?:さん|様)?|里親(?:さん|様)?|新しい(?:飼い?主(?:さん|様)?|家族|お家|おうち)|お家|おうち)"
-           r"(?:が|も)?(?:決まり|決定|見つかり)(?!ます|ません|次第)|譲渡済(?!みの場合)")
+# 掲載が終わった言い方（extract._CLOSED_LISTING と同じ言い方に、「旅立ちました」と、まだ決まっていない言い方の除外を足した。
+# 「見つかりますように」「決まり次第」「決まりにくい」「決まりそう」「決まりましたら」は願い・条件・見込みなので外す。#172 reviewer M-3）
+_NOT_YET = r"(?!ます|ません|次第|にくい|づらい|そう|ましたら)"
+_CLOSED = (r"返還(?:しました|済|することができました|されました|いたしました|となりました|になりました)"
+           r"|飼い?主(?:さん|様)?(?:が見つかり" + _NOT_YET + r"|の(?:元|もと)(?:に|へ)(?:戻り|帰り)(?!たい)|に戻りました)"
+           r"|(?:譲渡先?|飼い?主(?:さん|様)?|里親(?:さん|様)?|新しい(?:飼い?主(?:さん|様)?|家族|お家|おうち)|お家|おうち)"
+           r"(?:が|も)?(?:決まり|決定|見つかり)" + _NOT_YET
+           + r"|譲渡済(?!みの場合)|譲渡(?:されました|しました|決定(?!次第))|旅立ちました")
+# 1 つの値に 2 匹分が入っている形（#172 reviewer M-1）。読点のほか「と・/・空白」でつないだ並びは、どの子の値か書いていない
+_AND = r"(?<=[\u30A0-\u30FF\u4E00-\u9FFF0-9０-９])と(?=[\u30A0-\u30FF\u4E00-\u9FFF0-9０-９])"
+_SEP_WORD = re.compile(rf"\s*(?:{_AND}|[・/／&＆])\s*")
+_SEP_SPACE = re.compile(r"\s+")
+_MALE = re.compile(r"オス|雄|♂|おす|男の子")
+_FEMALE = re.compile(r"メス|雌|♀|めす|女の子")
+_PARENS = re.compile(r"[（(][^）)]*[）)]")
 
 
 @dataclass
@@ -112,8 +126,8 @@ def _mapped(value: str, keys: list[str]) -> list[str] | None:
     return [got[i] for i in range(len(keys))]
 
 
-def _shared(value: str, n: int) -> tuple[str, bool] | None:
-    """全員に共通の値と、「×2」「みんな」のような複数の印があったか。並び・数の合わない印なら None。"""
+def _shared(value: str, n: int, field: str, keys: list[str]) -> tuple[str, bool] | None:
+    """全員に共通の値と、「×2」「みんな」のような複数の印があったか。どの子の値か分からない形なら None。"""
     m = _COUNT_SUFFIX.match(value)
     if m:
         return (m.group(1).strip(), True) if _num(m.group(2)) == n else None
@@ -121,10 +135,23 @@ def _shared(value: str, n: int) -> tuple[str, bool] | None:
     if m:
         if m.group(1) and _num(m.group(1)) != n:
             return None
-        return m.group(2).strip(), True
-    if len(_top_split(value, "、，,")) > 1 or _COUNT_WORD.search(value):
-        return None   # 「黒白、黒白、黒」「オス:2匹、メス:1匹」: どの子の値か書いていない
-    return value, False
+        value, plural = m.group(2).strip(), True
+    else:
+        plural = False
+    top = _PARENS.sub("", value)   # かっこの中の注記（「キジトラ(ココは茶色が混じってます。)」）は全員に同じ文として付ける
+    if len(_top_split(value, "、，,")) > 1 or _COUNT_WORD.search(value) or _POS_MARK.search(value):
+        return None   # 「黒白、黒白、黒」「オス:2匹、メス:1匹」「オス(左)メス(右)」
+    if any(re.search(re.escape(k) + _HONORIFIC + "?" + _CONNECT, top) for k in keys):
+        return None   # 「三郎は茶色」: 1 匹の名前だけを挙げた値（M-2）
+    if field == "sex":
+        if _MALE.search(top) and _FEMALE.search(top):
+            return None   # 「オスとメス」「雄雌」「オス1メス1」
+    elif field in ("color", "age", "size", "breed", "species"):
+        if len([t for t in _SEP_WORD.split(top) if t]) > 1 or len([t for t in _SEP_SPACE.split(top.strip()) if t]) > 1:
+            return None   # 「黒と白」「黒・白」「黒 白」「3か月と5か月」
+    elif field == "shelter_date" and len([t for t in _SEP_WORD.split(top) if t]) > 1:
+        return None
+    return value, plural
 
 
 def _closed_keys(keys: list[str], text: str) -> set[str]:
@@ -134,7 +161,8 @@ def _closed_keys(keys: list[str], text: str) -> set[str]:
     """
     alt = "(?:" + "|".join(re.escape(k) for k in sorted(keys, key=len, reverse=True)) + ")"
     one = alt + _HONORIFIC + r"?(?:[（(][^）)]{0,10}[）)])?"
-    pat = re.compile(rf"({one}(?:\s*[、・と,]\s*{one})*)\s*(?:は|も)[、,]?\s*[^。！!？?\n、,]{{0,15}}?(?:{_CLOSED})")
+    gap = rf"(?:(?!{alt})[^。！!？?\n、,]){{0,15}}?"   # 別の子の名前をまたがない（「二郎は、三郎の譲渡が決まりました」の二郎を外さない）
+    pat = re.compile(rf"({one}(?:(?:\s*[、・と,]\s*|\s*も\s*){one})*)\s*(?:は|も|の)[、,]?\s*{gap}(?:{_CLOSED})")   # 「ねりもうるいも…」も並べた全員
     out: set[str] = set()
     for m in re.finditer(alt, text):   # 主語の名前ごとに当てる（「ねりもうるいも…」の 2 匹目も見る）
         hit = pat.match(text, m.start())
@@ -160,7 +188,7 @@ def split_members(f: dict[str, str | None], text: str) -> list[Member] | None:
         if mapped is not None:
             per[k], evidence = list(mapped), True
             continue
-        sh = _shared(v, n)
+        sh = _shared(v, n, k, keys)
         if sh is None:
             return None
         per[k] = [sh[0]] * n

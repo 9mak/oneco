@@ -498,7 +498,7 @@ def build(source: Source, recipe: Recipe, docs: list[Doc], visited: list[Doc] | 
                     excluded += 1
                     continue
                 emits = [(m.fields, make_id(source, None, {"management_no": m.id_key} if m.by_management_no
-                                           else {"name": m.id_key, "shelter_date": f.get("shelter_date")})) for m in members]
+                                           else {"name": m.id_key, "shelter_date": m.fields.get("shelter_date")})) for m in members]
             else:
                 if aid in seen_ids and img_raw and f.get("management_no") and seen_mgmt.get(aid) not in (None, f["management_no"]):
                     # 写真が先に ID になるので、同じ写真を使う別の子（管理番号が違う）が「同じ ID」で捨てられていた

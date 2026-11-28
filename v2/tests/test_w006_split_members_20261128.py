@@ -184,6 +184,88 @@ def test_wish_is_not_closed():
     assert len(split_members(f, f["note"])) == 2
 
 
+# --- reviewer 指摘（2026-11-28 #172 M-1〜M-3・m-1） ---------------------------------------
+
+PAIR = "(左)三郎、(右)二郎"
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("sex", "オスとメス"), ("sex", "オス・メス"), ("sex", "オス/メス"), ("sex", "オス メス"), ("sex", "雄雌"),
+        ("sex", "オス(左)メス(右)"), ("sex", "オス1メス1"), ("color", "黒と白"), ("color", "黒・白"), ("color", "黒 白"),
+        ("age", "3か月と5か月"),
+    ],
+)
+def test_one_value_holding_two_animals_is_not_shared(field, value):
+    # M-1: 読点でなく「と・/・空白」でつないだ 2 匹分や、オスとメスが並ぶ値は、どの子の値か書いていないので分けない
+    f = {"name": PAIR, "sex": "オス×2", field: value}
+    assert split_members(f, "") is None
+
+
+@pytest.mark.parametrize("value", ["オス 去勢済み", "メス(避妊手術済)", "オス(去勢手術済み)", "メス・不妊手術済"])
+def test_sex_with_surgery_note_is_still_shared(value):
+    f = {"name": PAIR, "sex": value}
+    assert [m.fields["sex"] for m in split_members(f, "")] == [value, value]
+
+
+@pytest.mark.parametrize(("field", "value"), [("color", "三郎は茶色"), ("sex", "三郎はオス"), ("sex", "三郎→オス")])
+def test_value_naming_only_one_member_is_not_shared(field, value):
+    # M-2: 1 匹の名前だけを挙げる値を、全員の値にしない
+    f = {"name": PAIR, "sex": "オス×2", field: value}
+    assert split_members(f, "") is None
+
+
+@pytest.mark.parametrize(
+    "note",
+    [
+        "二郎は飼い主さんのもとに戻りました。", "二郎は返還されました。", "二郎は譲渡されました。", "二郎は譲渡しました。",
+        "二郎の譲渡が決まりました。", "二郎君の飼い主さんが見つかりました。", "二郎は新しい飼い主さんの元へ旅立ちました。",
+    ],
+)
+def test_closed_wordings_drop_the_member(note):
+    # M-3: 方針 21「飼い主に返りました」なども載せない
+    f = {"name": PAIR, "sex": "オス×2", "note": note}
+    assert _names(split_members(f, note)) == ["(左)三郎"]
+
+
+@pytest.mark.parametrize("note", ["二郎はお家が決まりにくいかもしれません。", "二郎は譲渡が決まりそうです。", "二郎は飼い主さんが決まりましたらお知らせします。"])
+def test_not_yet_closed_wordings_keep_the_member(note):
+    f = {"name": PAIR, "sex": "オス×2", "note": note}
+    assert _names(split_members(f, note)) == ["(左)三郎", "(右)二郎"]
+
+
+def test_closed_phrase_of_another_member_after_comma():
+    # 「二郎は、三郎の譲渡が決まりました」は三郎が決まった（二郎ではない）
+    note = "二郎は、三郎の譲渡が決まりました。"
+    f = {"name": PAIR, "sex": "オス×2", "note": note}
+    assert _names(split_members(f, note)) == ["(右)二郎"]
+
+
+def test_member_id_uses_own_shelter_date():
+    # m-1: 収容日が名前ごとのとき、ほかの子が抜けても残った子の ID は動かない
+    from bs4 import BeautifulSoup
+    from collector.extract import build
+    from collector.recipe import Doc, Recipe
+
+    recipe = Recipe.from_dict({
+        "rows": "div.row", "image": "img@src", "split_names": True,
+        "fields": {"name": {"regex": "名前[:：]\\s*(\\S+)"}, "sex": {"regex": "性別[:：]\\s*(.+?)\\s*収容日"},
+                   "shelter_date": {"regex": "収容日[:：]\\s*(.+)$"}},
+    })
+
+    def ids(html: str) -> dict[str, str]:
+        doc = Doc(url="https://example.jp/p.html", html=html, soup=BeautifulSoup(html, "lxml"))
+        return {a["name"]: a["id"] for a in build(SOURCES["pref_iwate_chubu"], recipe, [doc]).animals}
+
+    three = ("<div class='row'><img src='/p.jpg'><p>名前：らん、すー、みき</p><p>性別：らん→オス すー→メス みき→メス</p>"
+             "<p>収容日：らん→10月1日 すー→10月3日 みき→10月5日</p></div>")
+    two = three.replace("、みき", "").replace(" みき→メス", "").replace(" みき→10月5日", "")
+    a, b = ids(three), ids(two)
+    assert set(a) == {"らん", "すー", "みき"} and set(b) == {"らん", "すー"}
+    assert a["らん"] == b["らん"] and a["すー"] == b["すー"]
+
+
 # --- レシピの検査 -------------------------------------------------------------------
 
 
@@ -270,8 +352,9 @@ def test_chubu_three_with_sex_per_name():
     assert [by[n]["sex"] for n in ("らん", "すー", "みき")] == ["オス", "メス", "メス"]
     assert len(c.result.animals) == 9
     # 性別の読み方を「次の項目名の手前まで」に変えても、1 匹の子の性別は今までどおり
-    assert by["キジ太"]["sex"] in ("オス", "メス") or by["キジ太"]["sex"].startswith(("オス", "メス"))
-    assert all(not re.search(r"[:：]", a.get("sex") or "") for a in c.result.animals)
+    # 変更前のエンジン（origin/main cd15c40）で同じページを読んだ値と同じ
+    before = {"トッシー": "オス", "キジ太": "オス", "しろ吉": "オス", "みこ": "メス", "しーちゃん": "メス", "トム": "オス"}
+    assert {n: by[n]["sex"] for n in before} == before
 
 
 def test_wakayama_pair():
