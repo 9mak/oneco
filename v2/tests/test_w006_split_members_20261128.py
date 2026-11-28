@@ -1,4 +1,7 @@
-"""POLICY.md 方針 21・24（2026-11-28・ネットワークなし）: 1 件に複数の子が名前つきで並ぶ掲載を 1 匹ずつに分ける作り（split_names）。\n\n同じ日の方針 24 の変更で、写真 1 枚にまとめた掲載は分けずに 1 件で載せることになり、split_names はどのレシピにも書かない。\n下の規則の試験は作り（collector/members.py）の試験として残し、実ページの試験はまとめたまま 1 件で読むことを確かめる。
+"""POLICY.md 方針 21・24（2026-11-28・ネットワークなし）: 1 件に複数の子が名前つきで並ぶ掲載を 1 匹ずつに分ける作り（split_names）。
+
+同じ日の方針 24 の変更で、写真 1 枚にまとめた掲載は分けずに 1 件で載せることになり、split_names はどのレシピにも書かない。
+下の規則の試験は作り（collector/members.py）の試験として残し、実ページの試験はまとめたまま 1 件で読むことを確かめる。
 
 岩手県の保健所などは、兄弟の子を写真 1 枚・1 件にまとめて「名前：(左)三郎、(右)二郎」「性別：オス×2」のように書く。
 方針 24「性別・毛色などが分かれば 1 匹ずつに分けて載せる」に沿って、レシピに split_names: true を書いた掲載元だけ、
@@ -11,12 +14,12 @@ fixture は 2026-11-28 の実ページ（岩手 大船渡・宮古・県南・�
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
 import pytest
 from collector.fetch import FakeFetcher
 from collector.members import split_members
+from collector.recipe import Recipe
 from collector.recipe_schema import validate_recipe_dict
 from collector.registry import load_sources
 from collector.run import Collected, collect_one
@@ -337,8 +340,8 @@ def _by_name(c: Collected) -> dict[str, dict]:
 
 
 def test_no_recipe_splits_members():
-    texts = {p.name: p.read_text(encoding="utf-8") for p in (ROOT / "recipes").glob("*.yaml")}
-    assert not [n for n, t in texts.items() if re.search(r"^split_names:\s*true", t, re.M)]
+    # 読み込んで確かめる（「True」「yes」の書き方も拾う）
+    assert not [p.name for p in sorted((ROOT / "recipes").glob("*.yaml")) if Recipe.load(p).split_names]
 
 
 def test_ofunato_groups_stay_one_listing_each():
