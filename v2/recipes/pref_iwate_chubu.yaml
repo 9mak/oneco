@@ -12,7 +12,9 @@ steps:
   - follow_all: "a:-soup-contains('岩手県中部保健所保護動物情報'), a:-soup-contains('犬、猫の譲渡情報')"
 # 2026-11-20 T656: 久慈で「【譲渡】新しい飼い主さんが決定しました」の下の子が載っていたので、同じ作りの中部も決定の見出しの下は載せない
 #   （今の実ページには無い。見出しは行の前の直近の h2。久慈 pref_iwate_kuji と同じ読み方）。
+# 2026-11-28 POLICY.md 方針 24: 兄弟を 1 件にまとめた掲載（「仮名：らん、すー、みき」「性別：らん→オス　すー→メス　　みき→メス」）を 1 匹ずつに分ける（split_names。collector/members.py）。
 rows: "h2:-soup-contains('【譲渡】') + p.imageright + p"
+split_names: true
 row_filter:
   field_lacks: {section: ["決定", "決まりました"]}
 image: {selector: "p.imageright img@src", scope: prev_siblings, stop_at: row}
@@ -21,7 +23,8 @@ fields:
   name: {label: "仮名"}
   species: {label: "動物種"}
   breed: {label: "種類"}
-  sex: {label: "性別"}
+  # 2026-11-28: label は最初の空白で切れ、「性別：らん→オス　すー→メス　　みき→メス」が「らん→オス」だけになっていた。次の項目名の手前まで読む
+  sex: {regex: "性別[:：]\\s*(?=\\S)(?![^\\s\\d:：]{1,8}[:：])(.+?)(?=\\s+(?![A-Za-zＡ-Ｚａ-ｚ])[^\\s\\d:：]{1,8}[:：]|$)"}
   size: {label: "大きさ"}
   age: {regex: "生年月日[:：]\\s*(\\S+)"}
   note: {regex: "備考[:：]\\s*(.+)"}

@@ -10,7 +10,10 @@
 #   image の h2 も【譲渡】に絞った: 迷子の行がこの slug の行ではなくなり、遡りが迷子の節まで届くため、絞らないと最初の子が迷子の写真を拾う（実ページで確認）。
 # 2026-10-07 T520: Wayback 2024-04・2024-06・2025-09・2026-03 の作り（写真が p.imageright）で譲渡も迷子も failed だった。写真の p を
 #   p:has(> img) に広げ、管理番号を取り、本文に「飼い主さんが決まりました」とある子（2025-09 の 250105）は載せない。
+# 2026-11-28 POLICY.md 方針 24: 兄弟を 1 件にまとめた掲載（「愛称：左からえぴ、ねり、うるい、ばい、てぃい」「性別：みんな女の子」、「ココ(左)、ロコ(右)」）を 1 匹ずつに分ける（split_names。collector/members.py）。
+#   「カナン、チェスター」は毛色が「黒白、黒白、黒」（譲渡が決まったヤスパーの分が残る）でどの子の毛色か分からないので 1 件のまま。
 rows: "h2:-soup-contains('【譲渡】') + p:has(> img) + p"
+split_names: true
 image: {selector: "h2:-soup-contains('【譲渡】') + p:has(> img) img@src", scope: prev_siblings, stop_at: row, exclude: ["ireisai"]}
 row_filter:
   text_lacks: ["飼い主さんが決まりました"]
