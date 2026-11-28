@@ -128,16 +128,16 @@ def _mapped(value: str, keys: list[str]) -> list[str] | None:
 
 def _shared(value: str, n: int, field: str, keys: list[str]) -> tuple[str, bool] | None:
     """全員に共通の値と、「×2」「みんな」のような複数の印があったか。どの子の値か分からない形なら None。"""
+    plural = False   # 「×2」「みんな」: 全員が同じと掲載元が書いている（外した値にも下の確認をかける。#172 再レビュー n-2）
     m = _COUNT_SUFFIX.match(value)
     if m:
-        return (m.group(1).strip(), True) if _num(m.group(2)) == n else None
-    m = _ALL_PREFIX.match(value)
-    if m:
+        if _num(m.group(2)) != n:
+            return None
+        value, plural = m.group(1).strip(), True
+    elif m := _ALL_PREFIX.match(value):
         if m.group(1) and _num(m.group(1)) != n:
             return None
         value, plural = m.group(2).strip(), True
-    else:
-        plural = False
     top = _PARENS.sub("", value)   # かっこの中の注記（「キジトラ(ココは茶色が混じってます。)」）は全員に同じ文として付ける
     if len(_top_split(value, "、，,")) > 1 or _COUNT_WORD.search(value) or _POS_MARK.search(value):
         return None   # 「黒白、黒白、黒」「オス:2匹、メス:1匹」「オス(左)メス(右)」
@@ -146,6 +146,8 @@ def _shared(value: str, n: int, field: str, keys: list[str]) -> tuple[str, bool]
     if field == "sex":
         if _MALE.search(top) and _FEMALE.search(top):
             return None   # 「オスとメス」「雄雌」「オス1メス1」
+    elif plural:
+        pass   # 「白と黒×2」「みんな白と黒」は全員が白と黒（1 匹が 2 色）と書いてある
     elif field in ("color", "age", "size", "breed", "species"):
         if len([t for t in _SEP_WORD.split(top) if t]) > 1 or len([t for t in _SEP_SPACE.split(top.strip()) if t]) > 1:
             return None   # 「黒と白」「黒・白」「黒 白」「3か月と5か月」
@@ -162,7 +164,9 @@ def _closed_keys(keys: list[str], text: str) -> set[str]:
     alt = "(?:" + "|".join(re.escape(k) for k in sorted(keys, key=len, reverse=True)) + ")"
     one = alt + _HONORIFIC + r"?(?:[（(][^）)]{0,10}[）)])?"
     gap = rf"(?:(?!{alt})[^。！!？?\n、,]){{0,15}}?"   # 別の子の名前をまたがない（「二郎は、三郎の譲渡が決まりました」の二郎を外さない）
-    pat = re.compile(rf"({one}(?:(?:\s*[、・と,]\s*|\s*も\s*){one})*)\s*(?:は|も|の)[、,]?\s*{gap}(?:{_CLOSED})")   # 「ねりもうるいも…」も並べた全員
+    # 「は・も」の主語は決まった言い方まで 15 字を許し、「の」の主語は決まった言い方がすぐ続く形だけ（「二郎の譲渡が決まりました」。
+    # 「カナンの兄のヤスパーは…」のカナンを外さない。#172 再レビュー N-1）。「ねりもうるいも…」は並べた全員
+    pat = re.compile(rf"({one}(?:(?:\s*[、・と,]\s*|\s*も\s*){one})*)\s*(?:(?:は|も)[、,]?\s*{gap}|の)(?:{_CLOSED})")
     out: set[str] = set()
     for m in re.finditer(alt, text):   # 主語の名前ごとに当てる（「ねりもうるいも…」の 2 匹目も見る）
         hit = pat.match(text, m.start())

@@ -242,6 +242,36 @@ def test_closed_phrase_of_another_member_after_comma():
     assert _names(split_members(f, note)) == ["(右)二郎"]
 
 
+@pytest.mark.parametrize(
+    "note",
+    ["カナンの兄のヤスパーは譲渡が決まりました。", "カナンの兄弟は譲渡が決まりました。", "カナンとチェスターの兄ヤスパーは譲渡が決まりました。"],
+)
+def test_no_subject_does_not_reach_over_other_words(note):
+    # 再レビュー N-1: 「◯◯の兄の△△は…」の「の」を主語にしない（残っている子を外さない）
+    f = {"name": "(左)カナン、(右)チェスター", "sex": "オス×2", "note": note}
+    assert _names(split_members(f, note)) == ["(左)カナン", "(右)チェスター"]
+
+
+@pytest.mark.parametrize("note", ["チェスターの譲渡が決まりました。", "チェスター君の飼い主さんが見つかりました。", "チェスターのお家が決まりました!"])
+def test_no_subject_right_before_closed_phrase(note):
+    f = {"name": "(左)カナン、(右)チェスター", "sex": "オス×2", "note": note}
+    assert _names(split_members(f, note)) == ["(左)カナン"]
+
+
+@pytest.mark.parametrize(("field", "value"), [("sex", "オスとメス×2"), ("sex", "三郎はオス×2"), ("color", "三郎は白×2"), ("sex", "みんなオスとメス")])
+def test_plural_mark_does_not_skip_the_checks(field, value):
+    # 再レビュー n-2: 「×2」「みんな」を外した値にも、2 匹分の値・1 匹だけの名前の確認をかける
+    f = {"name": PAIR, "sex": "オス×2", field: value}
+    assert split_members(f, "") is None
+
+
+@pytest.mark.parametrize(("value", "shared"), [("白と黒×2", "白と黒"), ("みんな白と黒", "白と黒")])
+def test_plural_mark_makes_two_colors_shared(value, shared):
+    # 「×2」「みんな」は全員が同じと書いてあるので、1 匹が 2 色の値として全員に付ける
+    f = {"name": PAIR, "sex": "オス×2", "color": value}
+    assert [m.fields["color"] for m in split_members(f, "")] == [shared, shared]
+
+
 def test_member_id_uses_own_shelter_date():
     # m-1: 収容日が名前ごとのとき、ほかの子が抜けても残った子の ID は動かない
     from bs4 import BeautifulSoup
