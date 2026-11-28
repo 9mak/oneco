@@ -252,7 +252,10 @@ def test_no_subject_does_not_reach_over_other_words(note):
     assert _names(split_members(f, note)) == ["(左)カナン", "(右)チェスター"]
 
 
-@pytest.mark.parametrize("note", ["チェスターの譲渡が決まりました。", "チェスター君の飼い主さんが見つかりました。", "チェスターのお家が決まりました!"])
+@pytest.mark.parametrize(
+    "note",
+    ["チェスターの譲渡が決まりました。", "チェスター君の飼い主さんが見つかりました。", "チェスターのお家が決まりました!", "チェスターの元の飼い主さんが見つかりました。"],
+)
 def test_no_subject_right_before_closed_phrase(note):
     f = {"name": "(左)カナン、(右)チェスター", "sex": "オス×2", "note": note}
     assert _names(split_members(f, note)) == ["(左)カナン"]
